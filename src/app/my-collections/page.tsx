@@ -247,7 +247,7 @@ export default function MyCollectionsPage() {
                     Plan your timeline, design your products, and launch with confidence.
                   </p>
                   <Link
-                    href="/creative-space"
+                    href="/new-collection"
                     className="inline-flex items-center gap-2 px-10 py-4 bg-crema text-carbon text-sm font-medium tracking-[0.15em] uppercase hover:bg-crema/90 transition-colors"
                   >
                     <Plus className="h-4 w-4" />
@@ -265,7 +265,7 @@ export default function MyCollectionsPage() {
                   Collections
                 </h1>
                 <Link
-                  href="/creative-space"
+                  href="/new-collection"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-sm font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />

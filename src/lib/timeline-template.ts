@@ -89,7 +89,7 @@ export const PHASE_ORDER: TimelinePhase[] = [
 
 type MilestoneTemplate = Omit<TimelineMilestone, 'status'>;
 
-const DEFAULT_MILESTONES: MilestoneTemplate[] = [
+export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   // ── Product & Merchandising (wk 48 → 39) — starts March 1 ──
   { id: 'ow-1', phase: 'olawave', name: 'Trend Research & Moodboarding', nameEs: 'Investigación de tendencias y moodboarding', responsible: 'US', startWeeksBefore: 48, durationWeeks: 3, color: '#FF6B6B' },
   { id: 'ow-2', phase: 'olawave', name: 'Range Strategy & Framework', nameEs: 'Estrategia y framework de colección', responsible: 'US', startWeeksBefore: 45, durationWeeks: 2, color: '#FF6B6B' },

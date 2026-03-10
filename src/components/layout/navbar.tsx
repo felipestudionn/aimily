@@ -40,7 +40,7 @@ export function Navbar() {
                   My Collections
                 </Link>
                 <Link
-                  href="/creative-space"
+                  href="/new-collection"
                   className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
@@ -73,7 +73,7 @@ export function Navbar() {
                   Sign In
                 </button>
                 <Link
-                  href="/creative-space"
+                  href="/new-collection"
                   className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
@@ -135,7 +135,7 @@ export function Navbar() {
             )}
             <div className="pt-2">
               <Link
-                href="/creative-space"
+                href="/new-collection"
                 className="w-full inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
