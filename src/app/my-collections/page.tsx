@@ -20,7 +20,6 @@ import {
   CheckCircle2,
   TrendingUp,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface CollectionPlan {
   id: string;
@@ -80,7 +79,6 @@ export default function MyCollectionsPage() {
 
     setLoading(true);
     try {
-      // Fetch collections and timelines in parallel
       const [collectionsRes, timelinesRes] = await Promise.all([
         supabase
           .from('collection_plans')
@@ -95,7 +93,6 @@ export default function MyCollectionsPage() {
       if (collectionsRes.error) throw collectionsRes.error;
       setCollections(collectionsRes.data || []);
 
-      // Filter timelines to only user's collections
       const planIds = new Set((collectionsRes.data || []).map((p: CollectionPlan) => p.id));
       const userTimelines = (timelinesRes.data || []).filter((t: TimelineData) => planIds.has(t.collection_plan_id));
       setTimelines(userTimelines);
@@ -122,7 +119,6 @@ export default function MyCollectionsPage() {
     }
   };
 
-  // Merge collections with timeline data
   const enrichedCollections: CollectionWithProgress[] = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -158,27 +154,24 @@ export default function MyCollectionsPage() {
     });
   }, [collections, timelines]);
 
-  // Aggregate stats
   const stats = useMemo(() => {
     const totalOverdue = enrichedCollections.reduce((sum, c) => sum + c.overdue, 0);
-    const totalUpcoming = enrichedCollections.reduce((sum, c) => sum + c.upcoming, 0);
     const avgProgress = enrichedCollections.length > 0
       ? Math.round(enrichedCollections.reduce((sum, c) => sum + c.progress, 0) / enrichedCollections.length)
       : 0;
     const nextLaunch = enrichedCollections
       .filter((c) => c.daysUntilLaunch !== undefined && c.daysUntilLaunch > 0)
       .sort((a, b) => (a.daysUntilLaunch || Infinity) - (b.daysUntilLaunch || Infinity))[0];
-    return { totalOverdue, totalUpcoming, avgProgress, nextLaunch };
+    return { totalOverdue, avgProgress, nextLaunch };
   }, [enrichedCollections]);
 
-  // Upcoming deadlines across all collections
   const upcomingDeadlines = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const sevenDays = new Date(today);
     sevenDays.setDate(sevenDays.getDate() + 7);
 
-    const deadlines: { milestone: string; milestoneEs: string; collection: string; collectionId: string; endDate: Date; phase: string; isOverdue: boolean }[] = [];
+    const deadlines: { milestone: string; collection: string; collectionId: string; endDate: Date; isOverdue: boolean }[] = [];
 
     for (const c of enrichedCollections) {
       if (!c.timeline) continue;
@@ -193,111 +186,106 @@ export default function MyCollectionsPage() {
         if (isOverdue || endDate <= sevenDays) {
           deadlines.push({
             milestone: m.name,
-            milestoneEs: m.nameEs,
             collection: c.name,
             collectionId: c.id,
             endDate,
-            phase: m.phase,
             isOverdue,
           });
         }
       }
     }
 
-    // Sort: overdue first, then by end date
     deadlines.sort((a, b) => {
       if (a.isOverdue && !b.isOverdue) return -1;
       if (!a.isOverdue && b.isOverdue) return 1;
       return a.endDate.getTime() - b.endDate.getTime();
     });
 
-    return deadlines.slice(0, 8);
+    return deadlines.slice(0, 6);
   }, [enrichedCollections]);
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-[#fff6dc] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="min-h-screen bg-crema flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-carbon/40" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#fff6dc]">
+    <div className="min-h-screen bg-crema">
       <Navbar />
 
-      <main className="pt-32 pb-16 px-4 md:px-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Collections</h1>
-              <p className="text-gray-600 mt-1">Manage your collection plans</p>
-            </div>
-            <Link href="/creative-space">
-              <Button className="bg-gray-900 hover:bg-gray-800">
-                <Plus className="h-4 w-4 mr-2" />
-                New Collection
-              </Button>
+      <main className="pt-28 pb-16 px-4 md:px-6">
+        <div className="max-w-5xl mx-auto">
+
+          {/* Hub Header — two actions */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
+            <h1 className="text-3xl font-light text-texto tracking-tight">
+              Collections
+            </h1>
+            <Link
+              href="/creative-space"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-sm font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              New Collection
             </Link>
           </div>
 
-          {/* Loading */}
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-carbon/40" />
             </div>
           ) : collections.length === 0 ? (
-            <div className="text-center py-20">
-              <FolderOpen className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-              <h2 className="text-xl font-semibold text-gray-700 mb-2">No collections yet</h2>
-              <p className="text-gray-500 mb-6">Start by creating your first collection plan</p>
-              <Link href="/creative-space">
-                <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Collection
-                </Button>
+            /* Empty state */
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <FolderOpen className="h-12 w-12 text-gris mb-6" />
+              <h2 className="text-xl font-light text-texto mb-2">No collections yet</h2>
+              <p className="text-sm text-texto/50 mb-8">Start by creating your first collection plan</p>
+              <Link
+                href="/creative-space"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-carbon text-crema text-sm font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Create Collection
               </Link>
             </div>
           ) : (
             <div className="space-y-8">
+
               {/* Aggregate Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-                  <FolderOpen className="h-5 w-5 mx-auto text-orange-500 mb-1" />
-                  <p className="text-2xl font-bold text-gray-900">{collections.length}</p>
-                  <p className="text-xs text-gray-500">Collections</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gris/30">
+                <div className="bg-crema p-5 text-center">
+                  <p className="text-2xl font-light text-texto">{collections.length}</p>
+                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Collections</p>
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-                  <TrendingUp className="h-5 w-5 mx-auto text-green-500 mb-1" />
-                  <p className="text-2xl font-bold text-green-600">{stats.avgProgress}%</p>
-                  <p className="text-xs text-gray-500">Avg Progress</p>
+                <div className="bg-crema p-5 text-center">
+                  <p className="text-2xl font-light text-texto">{stats.avgProgress}%</p>
+                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Avg Progress</p>
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-                  <AlertTriangle className="h-5 w-5 mx-auto text-red-500 mb-1" />
-                  <p className="text-2xl font-bold text-red-600">{stats.totalOverdue}</p>
-                  <p className="text-xs text-gray-500">Overdue</p>
+                <div className="bg-crema p-5 text-center">
+                  <p className={`text-2xl font-light ${stats.totalOverdue > 0 ? 'text-error' : 'text-texto'}`}>
+                    {stats.totalOverdue}
+                  </p>
+                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Overdue</p>
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-                  <Rocket className="h-5 w-5 mx-auto text-blue-500 mb-1" />
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="bg-crema p-5 text-center">
+                  <p className="text-2xl font-light text-texto">
                     {stats.nextLaunch ? `${stats.nextLaunch.daysUntilLaunch}d` : '--'}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {stats.nextLaunch ? `Next Launch` : 'No Launch'}
-                  </p>
+                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Next Launch</p>
                 </div>
               </div>
 
               {/* Upcoming Deadlines */}
               {upcomingDeadlines.length > 0 && (
-                <div className="bg-white rounded-2xl border border-gray-100 p-5">
+                <div className="border border-gris/40 bg-white p-5">
                   <div className="flex items-center gap-2 mb-4">
-                    <Clock className="h-4 w-4 text-amber-500" />
-                    <h3 className="font-semibold text-gray-900 text-sm">Upcoming Deadlines</h3>
-                    <span className="text-xs text-gray-400">Proximos vencimientos</span>
+                    <Clock className="h-4 w-4 text-texto/40" />
+                    <h3 className="text-xs font-medium text-texto uppercase tracking-widest">Upcoming Deadlines</h3>
                   </div>
-                  <div className="space-y-2">
+                  <div className="divide-y divide-gris/30">
                     {upcomingDeadlines.map((d, i) => {
                       const now = new Date();
                       now.setHours(0, 0, 0, 0);
@@ -311,22 +299,16 @@ export default function MyCollectionsPage() {
                         <Link
                           key={i}
                           href={`/collection/${d.collectionId}`}
-                          className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="flex items-center gap-3 py-3 hover:bg-crema/50 transition-colors -mx-1 px-1"
                         >
                           {d.isOverdue ? (
-                            <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                            <AlertTriangle className="h-3.5 w-3.5 text-error flex-shrink-0" />
                           ) : (
-                            <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                            <Clock className="h-3.5 w-3.5 text-texto/30 flex-shrink-0" />
                           )}
-                          <span className="text-sm text-gray-900 flex-1 truncate">{d.milestone}</span>
-                          <span className="text-xs text-gray-400 truncate max-w-[120px]">{d.collection}</span>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                            d.isOverdue
-                              ? 'bg-red-50 text-red-600'
-                              : daysLeft === 0
-                              ? 'bg-amber-50 text-amber-600'
-                              : 'bg-blue-50 text-blue-600'
-                          }`}>
+                          <span className="text-sm text-texto flex-1 truncate">{d.milestone}</span>
+                          <span className="text-xs text-texto/40 truncate max-w-[120px]">{d.collection}</span>
+                          <span className={`text-xs font-medium ${d.isOverdue ? 'text-error' : 'text-texto/50'}`}>
                             {d.isOverdue
                               ? `${daysOverdue}d overdue`
                               : daysLeft === 0
@@ -341,104 +323,90 @@ export default function MyCollectionsPage() {
               )}
 
               {/* Collections Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gris/30">
                 {enrichedCollections.map((collection) => (
-                  <div
-                    key={collection.id}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
-                  >
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
-                          <FolderOpen className="h-6 w-6 text-white" />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {collection.overdue > 0 && (
-                            <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-50 text-red-600 font-medium">
-                              <AlertTriangle className="h-3 w-3" />
-                              {collection.overdue}
-                            </span>
-                          )}
-                          <button
-                            onClick={() => handleDelete(collection.id)}
-                            className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                            title="Delete collection"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{collection.name}</h3>
-
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>
+                  <div key={collection.id} className="bg-white p-6 flex flex-col">
+                    {/* Header row */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base font-medium text-texto truncate">
+                          {collection.name}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-texto/40">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
                             {new Date(collection.updated_at).toLocaleDateString('es-ES')}
                           </span>
-                        </div>
-                        {collection.setup_data?.totalSalesTarget && (
-                          <div className="flex items-center gap-1">
-                            <Euro className="h-4 w-4" />
-                            <span>
+                          {collection.setup_data?.totalSalesTarget && (
+                            <span className="flex items-center gap-1">
+                              <Euro className="h-3 w-3" />
                               {collection.setup_data.totalSalesTarget.toLocaleString()}
                             </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Progress Bar */}
-                      {collection.timeline && (
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                            <span>Progress</span>
-                            <span className="font-medium">{collection.progress}%</span>
-                          </div>
-                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                collection.progress === 100
-                                  ? 'bg-green-500'
-                                  : collection.overdue > 0
-                                  ? 'bg-gradient-to-r from-orange-400 to-red-400'
-                                  : 'bg-gradient-to-r from-orange-400 to-amber-500'
-                              }`}
-                              style={{ width: `${collection.progress}%` }}
-                            />
-                          </div>
+                          )}
                         </div>
-                      )}
-
-                      {/* Status badges row */}
-                      <div className="flex items-center gap-2 mb-4 flex-wrap">
-                        {collection.setup_data?.productCategory && (
-                          <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                            {collection.setup_data.productCategory}
-                          </span>
-                        )}
-                        {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">
-                            <Rocket className="h-3 w-3" />
-                            {collection.daysUntilLaunch}d to launch
-                          </span>
-                        )}
-                        {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch <= 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 text-xs rounded-full">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Launched
-                          </span>
-                        )}
                       </div>
-
-                      <Link
-                        href={`/collection/${collection.id}`}
-                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition-colors"
+                      <button
+                        onClick={() => handleDelete(collection.id)}
+                        className="p-1.5 text-gris hover:text-error transition-colors"
+                        title="Delete collection"
                       >
-                        Continue Working
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
+
+                    {/* Progress */}
+                    {collection.timeline && (
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-xs text-texto/40 mb-1.5">
+                          <span>Progress</span>
+                          <span className="font-medium text-texto">{collection.progress}%</span>
+                        </div>
+                        <div className="h-1 bg-gris/30 overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-500 ${
+                              collection.progress === 100 ? 'bg-carbon' : 'bg-carbon/60'
+                            }`}
+                            style={{ width: `${collection.progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Status badges */}
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                      {collection.setup_data?.productCategory && (
+                        <span className="text-xs text-texto/50 border border-gris/40 px-2 py-0.5">
+                          {collection.setup_data.productCategory}
+                        </span>
+                      )}
+                      {collection.overdue > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-error border border-error/20 px-2 py-0.5">
+                          <AlertTriangle className="h-3 w-3" />
+                          {collection.overdue} overdue
+                        </span>
+                      )}
+                      {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-texto/50 border border-gris/40 px-2 py-0.5">
+                          <Rocket className="h-3 w-3" />
+                          {collection.daysUntilLaunch}d to launch
+                        </span>
+                      )}
+                      {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch <= 0 && (
+                        <span className="flex items-center gap-1 text-xs text-texto/50 border border-gris/40 px-2 py-0.5">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Launched
+                        </span>
+                      )}
+                    </div>
+
+                    {/* CTA */}
+                    <Link
+                      href={`/collection/${collection.id}`}
+                      className="mt-auto flex items-center justify-center gap-2 w-full py-2.5 bg-carbon text-crema text-xs font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
+                    >
+                      Continue
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
                   </div>
                 ))}
               </div>
