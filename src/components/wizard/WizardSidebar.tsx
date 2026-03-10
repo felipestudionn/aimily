@@ -22,10 +22,11 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Loader2,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
-import type { TimelineMilestone } from '@/types/timeline';
-import type { WizardPhaseId, WizardPhaseState } from '@/lib/wizard-phases';
+import { useTimeline } from '@/contexts/TimelineContext';
+import type { WizardPhaseId } from '@/lib/wizard-phases';
 
 const PHASE_ICONS: Record<WizardPhaseId, React.ElementType> = {
   olawave: ShoppingBag,
@@ -44,16 +45,15 @@ interface WizardSidebarProps {
   collectionId: string;
   collectionName: string;
   season?: string;
-  milestones: TimelineMilestone[];
 }
 
 export function WizardSidebar({
   collectionId,
   collectionName,
   season,
-  milestones,
 }: WizardSidebarProps) {
   const pathname = usePathname();
+  const { milestones, cycleMilestoneStatus, saving } = useTimeline();
   const { phases, overallProgress, activePhase } = useWizardState(milestones);
   const [collapsed, setCollapsed] = useState(false);
   const [expandedPhases, setExpandedPhases] = useState<Set<WizardPhaseId>>(new Set());
@@ -90,7 +90,7 @@ export function WizardSidebar({
   const getMilestonesByPhase = (milestoneIds: string[]) =>
     milestoneIds
       .map((id) => milestones.find((m) => m.id === id))
-      .filter(Boolean) as TimelineMilestone[];
+      .filter(Boolean) as typeof milestones;
 
   return (
     <aside
@@ -101,9 +101,14 @@ export function WizardSidebar({
       {/* Collection Header */}
       {!collapsed && (
         <div className="px-5 pt-5 pb-4 border-b border-white/10">
-          <h2 className="font-semibold text-crema truncate text-sm tracking-wide uppercase">
-            {collectionName}
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-crema truncate text-sm tracking-wide uppercase">
+              {collectionName}
+            </h2>
+            {saving && (
+              <Loader2 className="h-3 w-3 text-crema/40 animate-spin flex-shrink-0" />
+            )}
+          </div>
           {season && (
             <p className="text-xs text-white/40 mt-0.5">{season}</p>
           )}
@@ -119,6 +124,24 @@ export function WizardSidebar({
                 style={{ width: `${overallProgress}%` }}
               />
             </div>
+          </div>
+          {/* Mini Phase Progress Dots */}
+          <div className="flex items-center gap-1 mt-2.5">
+            {phases.map((ps) => (
+              <div
+                key={ps.phase.id}
+                className={`flex-1 h-1 transition-colors ${
+                  ps.state === 'completed'
+                    ? 'bg-green-400'
+                    : ps.state === 'in-progress'
+                    ? 'bg-crema/60'
+                    : ps.state === 'available'
+                    ? 'bg-white/20'
+                    : 'bg-white/5'
+                }`}
+                title={`${ps.phase.name}: ${ps.progress}%`}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -226,9 +249,11 @@ export function WizardSidebar({
                     return (
                       <div
                         key={m.id}
-                        className="flex items-center gap-2 py-1.5 px-2 text-xs group/ms"
+                        className="flex items-center gap-2 py-1.5 px-2 text-xs group/ms cursor-pointer hover:bg-white/5 transition-colors"
+                        onClick={() => cycleMilestoneStatus(m.id)}
+                        title="Click to change status"
                       >
-                        {/* Status dot */}
+                        {/* Status indicator (clickable) */}
                         <div className="flex-shrink-0">
                           {isMilestoneCompleted ? (
                             <div className="w-3.5 h-3.5 bg-green-400 flex items-center justify-center">
@@ -239,7 +264,7 @@ export function WizardSidebar({
                               <div className="w-1.5 h-1.5 bg-crema/60" />
                             </div>
                           ) : (
-                            <div className="w-3.5 h-3.5 border border-white/20" />
+                            <div className="w-3.5 h-3.5 border border-white/20 group-hover/ms:border-white/40 transition-colors" />
                           )}
                         </div>
 
@@ -250,7 +275,7 @@ export function WizardSidebar({
                               ? 'text-white/30 line-through'
                               : isMilestoneInProgress
                               ? 'text-crema/80'
-                              : 'text-white/45'
+                              : 'text-white/45 group-hover/ms:text-white/60'
                           }`}
                         >
                           {m.name}
