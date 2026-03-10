@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 
@@ -35,10 +36,17 @@ export default function LandingPage() {
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl">
-        {/* Logo / Brand */}
-        <h1 className="text-crema text-[clamp(3rem,8vw,6rem)] font-light tracking-tight leading-[0.95] mb-6 animate-fade-in-up">
-          OLAWAVE
-        </h1>
+        {/* Logo */}
+        <div className="mb-8 animate-fade-in-up">
+          <Image
+            src="/images/olawave-logo-white.png"
+            alt="OLAWAVE"
+            width={220}
+            height={220}
+            className="object-contain brightness-[0.95] sepia-[0.15]"
+            priority
+          />
+        </div>
 
         <p className="text-gris text-lg md:text-xl font-light tracking-wide leading-relaxed max-w-xl mb-12 animate-fade-in-up animate-delay-100">
           Plan, design, and launch your fashion collection.
