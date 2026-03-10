@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, User, LogOut, FolderOpen, Palette, PenTool, CalendarDays } from "lucide-react";
+import { Sparkles, User, LogOut, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -17,76 +17,46 @@ export function Navbar() {
     <div className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 animate-fade-in">
       <div className="container mx-auto">
       <div className="flex h-24 items-center px-2 md:px-4">
-        <div className="flex items-center gap-3">
-          {/* OLAWAVE Logo */}
-          <div className="relative h-16 w-16 flex items-center">
-            <Image
-              src="/images/olawave-logo.png"
-              alt="OLAWAVE Logo"
-              width={67}
-              height={67}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <Link href="/" className="flex flex-col">
-            <span className="text-xl font-light tracking-normal uppercase">
-              OLAWAVE AI
-            </span>
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/images/olawave-logo-black.png"
+            alt="OLAWAVE AI"
+            width={160}
+            height={40}
+            className="object-contain h-8 w-auto"
+            priority
+          />
+        </Link>
         <div className="ml-auto flex items-center gap-3">
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
                 <Link
-                  href="/color-palettes"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
-                >
-                  <Palette className="mr-1.5 h-3.5 w-3.5" />
-                  Color Palettes
-                </Link>
-                <Link
-                  href="/sketch-flow"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
-                >
-                  <PenTool className="mr-1.5 h-3.5 w-3.5" />
-                  SketchFlow
-                </Link>
-                <Link
-                  href="/collection-calendar"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
-                >
-                  <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
-                  Calendar
-                </Link>
-                <Link
                   href="/my-collections"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
+                  className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
                 >
                   <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
                   My Collections
                 </Link>
                 <Link
                   href="/creative-space"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-carbon text-crema text-sm font-medium transition-all hover:bg-carbon/90"
+                  className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   New Collection
                 </Link>
                 <NotificationBell />
                 {/* User Profile */}
-                <div className="flex items-center gap-1 pl-2 border-l border-gris">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50">
-                    <div className="w-6 h-6 bg-carbon flex items-center justify-center text-white text-xs font-medium">
+                <div className="flex items-center gap-1 pl-3 border-l border-gris/40">
+                  <div className="flex items-center gap-2 px-2 py-1.5">
+                    <div className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-xs font-medium">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm text-gray-700 max-w-[100px] truncate">{user.email?.split('@')[0]}</span>
                   </div>
                   <button
                     onClick={() => signOut()}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white/50 transition-colors"
+                    className="p-2 text-texto/40 hover:text-texto transition-colors"
                     title="Sign out"
                   >
                     <LogOut className="h-4 w-4" />
@@ -95,30 +65,16 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <Link
-                  href="/color-palettes"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
-                >
-                  <Palette className="mr-1.5 h-3.5 w-3.5" />
-                  Color Palettes
-                </Link>
-                <Link
-                  href="/sketch-flow"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
-                >
-                  <PenTool className="mr-1.5 h-3.5 w-3.5" />
-                  SketchFlow
-                </Link>
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
+                  className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
                 >
                   <User className="mr-1.5 h-3.5 w-3.5" />
                   Sign In
                 </button>
                 <Link
                   href="/creative-space"
-                  className="inline-flex items-center justify-center px-4 py-2 bg-carbon text-crema text-sm font-medium transition-all hover:bg-carbon/90"
+                  className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   New Collection
@@ -152,42 +108,27 @@ export function Navbar() {
           <div className="flex flex-col space-y-4 p-6">
             {user ? (
               <>
-                <div className="flex items-center justify-between py-3 border-b">
+                <div className="flex items-center justify-between py-3 border-b border-gris/30">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-carbon flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-8 h-8 bg-carbon flex items-center justify-center text-crema text-sm font-medium">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm text-gray-700">{user.email}</span>
+                    <span className="text-sm text-texto">{user.email}</span>
                   </div>
                   <button
                     onClick={() => { signOut(); setMobileMenuOpen(false); }}
-                    className="text-sm text-gray-500 hover:text-gray-700"
+                    className="text-sm text-texto/50 hover:text-texto"
                   >
                     Sign Out
                   </button>
                 </div>
-                <Link href="/color-palettes" className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                  <Palette className="h-4 w-4" /> Color Palettes
-                </Link>
-                <Link href="/sketch-flow" className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                  <PenTool className="h-4 w-4" /> SketchFlow
-                </Link>
-                <Link href="/collection-calendar" className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                  <CalendarDays className="h-4 w-4" /> Calendar
-                </Link>
-                <Link href="/my-collections" className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/my-collections" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
                   <FolderOpen className="h-4 w-4" /> My Collections
                 </Link>
               </>
             ) : (
               <>
-                <Link href="/color-palettes" className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                  <Palette className="h-4 w-4" /> Color Palettes
-                </Link>
-                <Link href="/sketch-flow" className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary" onClick={() => setMobileMenuOpen(false)}>
-                  <PenTool className="h-4 w-4" /> SketchFlow
-                </Link>
-                <button onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary">
+                <button onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70">
                   <User className="h-4 w-4" /> Sign In
                 </button>
               </>

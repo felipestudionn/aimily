@@ -19,6 +19,7 @@ import {
   Rocket,
   CheckCircle2,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 
 interface CollectionPlan {
@@ -219,40 +220,58 @@ export default function MyCollectionsPage() {
       <main className="pt-28 pb-16 px-4 md:px-6">
         <div className="max-w-5xl mx-auto">
 
-          {/* Hub Header — two actions */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
-            <h1 className="text-3xl font-light text-texto tracking-tight">
-              Collections
-            </h1>
-            <Link
-              href="/creative-space"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-sm font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              New Collection
-            </Link>
-          </div>
-
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-carbon/40" />
             </div>
           ) : collections.length === 0 ? (
-            /* Empty state */
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <FolderOpen className="h-12 w-12 text-gris mb-6" />
-              <h2 className="text-xl font-light text-texto mb-2">No collections yet</h2>
-              <p className="text-sm text-texto/50 mb-8">Start by creating your first collection plan</p>
-              <Link
-                href="/creative-space"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-carbon text-crema text-sm font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Create Collection
-              </Link>
+            /* Empty state — editorial dark card */
+            <div className="flex items-center justify-center min-h-[70vh]">
+              <div className="relative bg-carbon w-full max-w-lg mx-auto overflow-hidden border border-gris/20">
+                {/* Subtle grid texture */}
+                <div
+                  className="absolute inset-0 opacity-[0.03]"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+                    backgroundSize: '40px 40px',
+                  }}
+                />
+                <div className="relative z-10 flex flex-col items-center text-center px-10 py-16">
+                  <div className="w-14 h-14 border border-gris/30 flex items-center justify-center mb-8">
+                    <Sparkles className="h-6 w-6 text-gris/60" />
+                  </div>
+                  <h2 className="text-2xl font-light text-crema tracking-tight mb-3">
+                    Your first collection awaits
+                  </h2>
+                  <p className="text-gris/60 text-sm leading-relaxed max-w-xs mb-10">
+                    Plan your timeline, design your products, and launch with confidence.
+                  </p>
+                  <Link
+                    href="/creative-space"
+                    className="inline-flex items-center gap-2 px-10 py-4 bg-crema text-carbon text-sm font-medium tracking-[0.15em] uppercase hover:bg-crema/90 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Collection
+                  </Link>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-8">
+
+              {/* Hub Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <h1 className="text-3xl font-light text-texto tracking-tight">
+                  Collections
+                </h1>
+                <Link
+                  href="/creative-space"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-sm font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Collection
+                </Link>
+              </div>
 
               {/* Aggregate Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gris/30">
