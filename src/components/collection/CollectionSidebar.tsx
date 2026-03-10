@@ -15,6 +15,7 @@ import {
   Megaphone,
   Factory,
   Zap,
+  Sparkles,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -30,21 +31,33 @@ const PHASE_ICONS: Record<string, React.ElementType> = {
   design: Pencil,
   prototyping: Wrench,
   sampling: Scissors,
+  studio: Sparkles,
   digital: Monitor,
   marketing: Megaphone,
   production: Factory,
   launch: Rocket,
 };
 
+// Insert AI Studio between sampling and digital in the nav
+const PHASE_ITEMS: Array<{ id: string; path: string; label: string; labelEs: string }> = PHASE_ORDER.map((phase) => ({
+  id: phase,
+  path: `/${phase === 'olawave' ? 'product' : phase}`,
+  label: PHASES[phase].name,
+  labelEs: PHASES[phase].nameEs,
+}));
+
+const samplingIdx = PHASE_ITEMS.findIndex((p) => p.id === 'sampling');
+PHASE_ITEMS.splice(samplingIdx + 1, 0, {
+  id: 'studio',
+  path: '/studio',
+  label: 'AI Creative Studio',
+  labelEs: 'Estudio Creativo IA',
+});
+
 const SIDEBAR_ITEMS = [
   { id: 'overview', path: '', label: 'Overview', labelEs: 'Vista General' },
   { id: 'calendar', path: '/calendar', label: 'Calendar', labelEs: 'Calendario' },
-  ...PHASE_ORDER.map((phase) => ({
-    id: phase,
-    path: `/${phase === 'olawave' ? 'product' : phase}`,
-    label: PHASES[phase].name,
-    labelEs: PHASES[phase].nameEs,
-  })),
+  ...PHASE_ITEMS,
 ];
 
 interface CollectionSidebarProps {
@@ -114,15 +127,14 @@ export function CollectionSidebar({
               ? pathname === basePath || pathname === `${basePath}/`
               : pathname?.startsWith(fullPath);
 
-          const phaseColor =
-            item.id !== 'overview' && item.id !== 'calendar'
-              ? PHASES[item.id as TimelinePhase]?.color
-              : undefined;
+          const isSpecial = item.id === 'overview' || item.id === 'calendar' || item.id === 'studio';
+          const phaseColor = !isSpecial
+            ? PHASES[item.id as TimelinePhase]?.color
+            : item.id === 'studio' ? '#9C27B0' : undefined;
 
-          const progress =
-            item.id !== 'overview' && item.id !== 'calendar' && milestones.length > 0
-              ? getPhaseProgress(milestones, item.id as TimelinePhase)
-              : undefined;
+          const progress = !isSpecial && milestones.length > 0
+            ? getPhaseProgress(milestones, item.id as TimelinePhase)
+            : undefined;
 
           return (
             <Link
