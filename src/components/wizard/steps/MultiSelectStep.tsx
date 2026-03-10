@@ -3,8 +3,10 @@
 import { Check } from 'lucide-react';
 
 interface MultiSelectOption {
-  id: string;
+  id?: string;
+  value?: string;
   label: string;
+  sublabel?: string;
 }
 
 interface MultiSelectStepProps {
@@ -39,11 +41,12 @@ export function MultiSelectStep({
       )}
       <div className={gridClass}>
         {options.map((o) => {
-          const isSelected = selected.has(o.id);
+          const optId = o.id || o.value || o.label;
+          const isSelected = selected.has(optId);
           return (
             <button
-              key={o.id}
-              onClick={() => onToggle(o.id)}
+              key={optId}
+              onClick={() => onToggle(optId)}
               className={`relative py-6 text-sm font-medium tracking-[0.15em] uppercase transition-all ${
                 isSelected
                   ? 'bg-carbon text-crema'
@@ -54,6 +57,11 @@ export function MultiSelectStep({
                 <Check className="absolute top-2 right-2 h-3.5 w-3.5 text-crema/60" />
               )}
               {o.label}
+              {o.sublabel && (
+                <span className="block text-[10px] mt-1 font-normal tracking-normal normal-case opacity-50">
+                  {o.sublabel}
+                </span>
+              )}
             </button>
           );
         })}

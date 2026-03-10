@@ -1,15 +1,36 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { LaunchWorkspace } from '@/components/launch/LaunchWorkspace';
+import { LaunchMiniWizard } from '@/components/launch/LaunchMiniWizard';
+import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
 
 interface PageProps { params: Promise<{ id: string }>; }
 
 export default async function LaunchPage({ params }: PageProps) {
   const { id } = await params;
-  const { data } = await supabaseAdmin
-    .from('collection_timelines')
-    .select('milestones')
-    .eq('collection_plan_id', id)
-    .single();
 
-  return <LaunchWorkspace milestones={data?.milestones || []} />;
+  const [{ data: timeline }, { data: plan }] = await Promise.all([
+    supabaseAdmin
+      .from('collection_timelines')
+      .select('milestones')
+      .eq('collection_plan_id', id)
+      .single(),
+    supabaseAdmin
+      .from('collection_plans')
+      .select('id, setup_data')
+      .eq('id', id)
+      .single(),
+  ]);
+
+  const isConfigured =
+    (plan?.setup_data as any)?.workspace_config?.launch?.configured === true;
+
+  return (
+    <WorkspaceGate
+      isConfigured={isConfigured}
+      wizard={(onComplete) => (
+        <LaunchMiniWizard planId={id} onComplete={onComplete} />
+      )}
+      workspace={<LaunchWorkspace milestones={timeline?.milestones || []} />}
+    />
+  );
 }

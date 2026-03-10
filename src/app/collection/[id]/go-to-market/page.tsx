@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { GoToMarketDashboard } from '@/components/gtm/GoToMarketDashboard';
+import { GtmWorkspaceGate } from '@/components/gtm/GtmWorkspaceGate';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -20,10 +20,14 @@ export default async function GoToMarketPage({ params }: PageProps) {
 
   if (planRes.error || !planRes.data) notFound();
 
+  const isConfigured =
+    (planRes.data.setup_data as any)?.workspace_config?.['go-to-market']?.configured === true;
+
   return (
-    <GoToMarketDashboard
+    <GtmWorkspaceGate
       plan={planRes.data}
       initialSkus={skusRes.data || []}
+      isConfigured={isConfigured}
     />
   );
 }

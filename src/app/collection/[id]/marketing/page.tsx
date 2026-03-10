@@ -1,15 +1,36 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { MarketingWorkspace } from '@/components/marketing/MarketingWorkspace';
+import { MarketingMiniWizard } from '@/components/marketing/MarketingMiniWizard';
+import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
 
 interface PageProps { params: Promise<{ id: string }>; }
 
 export default async function MarketingPage({ params }: PageProps) {
   const { id } = await params;
-  const { data } = await supabaseAdmin
-    .from('collection_timelines')
-    .select('milestones')
-    .eq('collection_plan_id', id)
-    .single();
 
-  return <MarketingWorkspace milestones={data?.milestones || []} />;
+  const [{ data: timeline }, { data: plan }] = await Promise.all([
+    supabaseAdmin
+      .from('collection_timelines')
+      .select('milestones')
+      .eq('collection_plan_id', id)
+      .single(),
+    supabaseAdmin
+      .from('collection_plans')
+      .select('id, setup_data')
+      .eq('id', id)
+      .single(),
+  ]);
+
+  const isConfigured =
+    (plan?.setup_data as any)?.workspace_config?.marketing?.configured === true;
+
+  return (
+    <WorkspaceGate
+      isConfigured={isConfigured}
+      wizard={(onComplete) => (
+        <MarketingMiniWizard planId={id} onComplete={onComplete} />
+      )}
+      workspace={<MarketingWorkspace milestones={timeline?.milestones || []} />}
+    />
+  );
 }
