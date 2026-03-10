@@ -32,7 +32,12 @@ function lightenHex(hex: string, factor = 0.7): string {
   );
 }
 
-export async function exportTimelineToExcel(timeline: CollectionTimeline) {
+type Lang = 'en' | 'es';
+
+export async function exportTimelineToExcel(timeline: CollectionTimeline, lang: Lang = 'en') {
+  const mName = (m: TimelineMilestone) => lang === 'es' ? m.nameEs : m.name;
+  const pName = (phase: TimelinePhase) => lang === 'es' ? PHASES[phase].nameEs : PHASES[phase].name;
+  const tt = (en: string, es: string) => lang === 'es' ? es : en;
   const wb = new ExcelJS.Workbook();
   wb.creator = 'OLA Wave';
   wb.created = new Date();
@@ -67,7 +72,7 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
       start: new Date(current),
       end: weekEnd,
       label: `${current.getDate()}/${current.getMonth() + 1}`,
-      month: current.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' }),
+      month: current.toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { month: 'short', year: 'numeric' }),
     });
     current.setDate(current.getDate() + 7);
   }
@@ -91,7 +96,7 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
   titleRow.getCell(1).value = `${timeline.collectionName} — ${timeline.season}`;
   titleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FF000000' } };
   ws.mergeCells(1, 1, 1, FIXED_COLS);
-  titleRow.getCell(FIXED_COLS + 1).value = `Launch: ${launchDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  titleRow.getCell(FIXED_COLS + 1).value = `Launch: ${launchDate.toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`;
   titleRow.getCell(FIXED_COLS + 1).font = { bold: true, size: 11, color: { argb: 'FFFF0000' } };
   titleRow.height = 24;
 
@@ -122,10 +127,10 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
   const weekHeaderRow = ws.getRow(3);
   weekHeaderRow.height = 16;
   weekHeaderRow.getCell(1).value = '';
-  weekHeaderRow.getCell(2).value = 'Hito';
-  weekHeaderRow.getCell(3).value = 'Resp.';
-  weekHeaderRow.getCell(4).value = 'Inicio';
-  weekHeaderRow.getCell(5).value = 'Sem.';
+  weekHeaderRow.getCell(2).value = tt('Milestone', 'Hito');
+  weekHeaderRow.getCell(3).value = tt('Resp.', 'Resp.');
+  weekHeaderRow.getCell(4).value = tt('Start', 'Inicio');
+  weekHeaderRow.getCell(5).value = tt('Wk.', 'Sem.');
   for (let i = 1; i <= FIXED_COLS; i++) {
     weekHeaderRow.getCell(i).font = { bold: true, size: 9, color: { argb: 'FF666666' } };
     weekHeaderRow.getCell(i).fill = {
@@ -185,7 +190,7 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
     phaseRow.height = 22;
     ws.mergeCells(rowIdx, 1, rowIdx, FIXED_COLS);
     const phaseCell = phaseRow.getCell(1);
-    phaseCell.value = `${phase.nameEs.toUpperCase()} (${milestones.filter(m => m.status === 'completed').length}/${milestones.length})`;
+    phaseCell.value = `${pName(phaseKey).toUpperCase()} (${milestones.filter(m => m.status === 'completed').length}/${milestones.length})`;
     phaseCell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
     phaseCell.fill = {
       type: 'pattern',
@@ -229,7 +234,7 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
 
       // Milestone name
       const nameCell = row.getCell(2);
-      nameCell.value = m.nameEs;
+      nameCell.value = mName(m);
       nameCell.font = {
         size: 10,
         color: { argb: m.status === 'completed' ? 'FF999999' : 'FF333333' },
@@ -246,7 +251,7 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
       // Start date
       const startDate = getMilestoneDate(timeline.launchDate, m.startWeeksBefore);
       const startCell = row.getCell(4);
-      startCell.value = startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+      startCell.value = startDate.toLocaleDateString(lang === 'es' ? 'es-ES' : 'en-US', { day: 'numeric', month: 'short' });
       startCell.font = { size: 9, color: { argb: 'FF666666' } };
       startCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -338,7 +343,7 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
   // --- Summary row ---
   rowIdx++;
   const summaryRow = ws.getRow(rowIdx);
-  summaryRow.getCell(2).value = 'Resumen';
+  summaryRow.getCell(2).value = tt('Summary', 'Resumen');
   summaryRow.getCell(2).font = { bold: true, size: 10 };
 
   rowIdx++;
@@ -348,7 +353,10 @@ export async function exportTimelineToExcel(timeline: CollectionTimeline) {
   const percent = Math.round((completed / timeline.milestones.length) * 100);
 
   const statsRow = ws.getRow(rowIdx);
-  statsRow.getCell(2).value = `${completed} completados | ${inProgress} en progreso | ${pending} pendientes | ${percent}% total`;
+  statsRow.getCell(2).value = tt(
+    `${completed} completed | ${inProgress} in progress | ${pending} pending | ${percent}% total`,
+    `${completed} completados | ${inProgress} en progreso | ${pending} pendientes | ${percent}% total`
+  );
   statsRow.getCell(2).font = { size: 10, color: { argb: 'FF666666' } };
 
   // --- Generate and download ---

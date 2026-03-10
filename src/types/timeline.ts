@@ -10,7 +10,7 @@ export type TimelinePhase =
   | 'launch';
 
 export type MilestoneStatus = 'pending' | 'in-progress' | 'completed';
-export type Responsible = 'US' | 'FACTORY' | 'ALL' | 'AGENCY' | 'DIGITAL';
+export type Responsible = 'US' | 'FACTORY' | 'ALL' | 'AGENCY/US';
 
 export interface TimelineMilestone {
   id: string;

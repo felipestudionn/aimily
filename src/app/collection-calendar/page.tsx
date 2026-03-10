@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Navbar } from '@/components/layout/navbar';
-import { GanttChart } from '@/components/timeline/GanttChart';
+import { GanttChart, CalendarLang } from '@/components/timeline/GanttChart';
 import { createDefaultTimeline } from '@/lib/timeline-template';
 import { CollectionTimeline, TimelineMilestone } from '@/types/timeline';
 import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight, Download } from 'lucide-react';
@@ -45,6 +45,7 @@ export default function CollectionCalendarPage() {
   const [editSeason, setEditSeason] = useState('');
   const [editLaunchDate, setEditLaunchDate] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const [lang, setLang] = useState<CalendarLang>('en');
 
   // Load user's collections
   useEffect(() => {
@@ -276,6 +277,21 @@ export default function CollectionCalendarPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Language toggle */}
+            <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLang('es')}
+                className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                ES
+              </button>
+            </div>
             {timelines.length > 1 && (
               <select
                 value={activeId || ''}
@@ -310,7 +326,7 @@ export default function CollectionCalendarPage() {
               onClick={async () => {
                 if (!activeTimeline) return;
                 const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
-                await exportTimelineToExcel(activeTimeline);
+                await exportTimelineToExcel(activeTimeline, lang);
               }}
               className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
               title="Exportar a Excel"
@@ -370,6 +386,7 @@ export default function CollectionCalendarPage() {
               onUpdateTimeline={(updates) =>
                 updateTimeline(activeTimeline.id, updates)
               }
+              lang={lang}
             />
           </div>
         )}

@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Navbar } from '@/components/layout/navbar';
-import { GanttChart } from '@/components/timeline/GanttChart';
+import { GanttChart, CalendarLang } from '@/components/timeline/GanttChart';
 import { useCollectionTimeline } from '@/hooks/useCollectionTimeline';
 import {
   Calendar,
@@ -91,6 +91,8 @@ export function CollectionCalendarClient({
     derivedLaunchDate
   );
 
+  const [lang, setLang] = useState<CalendarLang>('en');
+
   // Collection summary stats
   const stats = useMemo(() => {
     const families = Array.from(new Set(skus.map((s) => s.family)));
@@ -170,11 +172,26 @@ export function CollectionCalendarClient({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Language toggle */}
+            <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLang('es')}
+                className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              >
+                ES
+              </button>
+            </div>
             <button
               onClick={async () => {
                 if (!timeline) return;
                 const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
-                await exportTimelineToExcel(timeline);
+                await exportTimelineToExcel(timeline, lang);
               }}
               className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
               title="Exportar a Excel"
@@ -327,6 +344,7 @@ export function CollectionCalendarClient({
               timeline={timeline}
               onUpdateMilestone={updateMilestone}
               onUpdateTimeline={updateTimeline}
+              lang={lang}
             />
           </div>
         )}
