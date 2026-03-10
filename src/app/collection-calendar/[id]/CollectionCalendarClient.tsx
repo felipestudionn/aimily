@@ -283,7 +283,7 @@ export function CollectionCalendarClient({
         {/* Phase legend */}
         <div className="flex flex-wrap gap-2 mb-4">
           {[
-            { label: 'OLA Wave Digital', color: '#FF6B6B' },
+            { label: 'Product & Merchandising', color: '#FF6B6B' },
             { label: 'Marca e Identidad', color: '#4ECDC4' },
             { label: 'Diseño y Desarrollo', color: '#F5A623' },
             { label: 'Prototipado', color: '#7B68EE' },

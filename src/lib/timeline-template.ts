@@ -3,8 +3,8 @@ import { TimelineMilestone, PhaseInfo, TimelinePhase, CollectionTimeline } from 
 export const PHASES: Record<TimelinePhase, PhaseInfo> = {
   olawave: {
     id: 'olawave',
-    name: 'OLA Wave Digital',
-    nameEs: 'OLA Wave Digital',
+    name: 'Product & Merchandising',
+    nameEs: 'Product & Merchandising',
     color: '#FF6B6B',
     bgColor: '#FFE8E8',
     icon: '🌊',
