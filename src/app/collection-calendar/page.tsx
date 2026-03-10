@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Navbar } from '@/components/layout/navbar';
 import { GanttChart, CalendarLang } from '@/components/timeline/GanttChart';
 import { createDefaultTimeline } from '@/lib/timeline-template';
 import { CollectionTimeline, TimelineMilestone } from '@/types/timeline';
-import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight, Download } from 'lucide-react';
+import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight, Download, Cloud } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
@@ -46,6 +46,37 @@ export default function CollectionCalendarPage() {
   const [editLaunchDate, setEditLaunchDate] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [lang, setLang] = useState<CalendarLang>('en');
+  const [syncing, setSyncing] = useState(false);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync standalone timeline to Supabase (debounced)
+  const syncToCloud = useCallback(
+    (timeline: CollectionTimeline) => {
+      if (!user) return;
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = setTimeout(async () => {
+        try {
+          setSyncing(true);
+          await fetch('/api/standalone-timelines', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: user.id,
+              collection_name: timeline.collectionName,
+              season: timeline.season,
+              launch_date: timeline.launchDate,
+              milestones: timeline.milestones,
+            }),
+          });
+        } catch (err) {
+          console.error('Error syncing to cloud:', err);
+        } finally {
+          setSyncing(false);
+        }
+      }, 1500);
+    },
+    [user]
+  );
 
   // Load user's collections
   useEffect(() => {
@@ -75,20 +106,25 @@ export default function CollectionCalendarPage() {
     fetchCollections();
   }, [user]);
 
-  // Load standalone timelines from localStorage
+  // Load standalone timelines from localStorage + initial cloud sync
   useEffect(() => {
     const saved = loadTimelines();
     if (saved.length > 0) {
       setTimelines(saved);
       setActiveId(saved[0].id);
+      // Initial sync all timelines to cloud
+      if (user) {
+        saved.forEach((t) => syncToCloud(t));
+      }
     } else {
       const defaultTimeline = createDefaultTimeline('VAKSA', 'SS27', '2027-02-01');
       setTimelines([defaultTimeline]);
       setActiveId(defaultTimeline.id);
       saveTimelines([defaultTimeline]);
+      if (user) syncToCloud(defaultTimeline);
     }
     setLoaded(true);
-  }, []);
+  }, [user, syncToCloud]);
 
   const activeTimeline = timelines.find((t) => t.id === activeId) || null;
 
@@ -99,10 +135,12 @@ export default function CollectionCalendarPage() {
           t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
         );
         saveTimelines(next);
+        const updated = next.find((t) => t.id === id);
+        if (updated) syncToCloud(updated);
         return next;
       });
     },
-    []
+    [syncToCloud]
   );
 
   const updateMilestone = useCallback(
@@ -120,10 +158,12 @@ export default function CollectionCalendarPage() {
           };
         });
         saveTimelines(next);
+        const updated = next.find((t) => t.id === activeId);
+        if (updated) syncToCloud(updated);
         return next;
       });
     },
-    [activeId]
+    [activeId, syncToCloud]
   );
 
   const createNewTimeline = () => {
@@ -165,6 +205,13 @@ export default function CollectionCalendarPage() {
     });
     setIsEditing(false);
   };
+
+  // Cleanup sync timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, []);
 
   if (!loaded) {
     return (
@@ -270,6 +317,17 @@ export default function CollectionCalendarPage() {
                           })
                         : ''}
                     </span>
+                    {syncing && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-blue-500">
+                        <Cloud className="w-3 h-3" />
+                        Syncing...
+                      </span>
+                    )}
+                    {user && !syncing && (
+                      <span className="ml-2 inline-flex items-center gap-1 text-xs text-green-500">
+                        <Cloud className="w-3 h-3" />
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
