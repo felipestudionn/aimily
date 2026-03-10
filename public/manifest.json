@@ -1,0 +1,17 @@
+{
+  "name": "OLAWAVE — Collection Management",
+  "short_name": "OLAWAVE",
+  "description": "Plan, design, and launch fashion collections.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAEFE0",
+  "theme_color": "#282A29",
+  "icons": [
+    {
+      "src": "/images/olawave-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
