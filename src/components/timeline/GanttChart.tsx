@@ -17,12 +17,27 @@ import {
   formatDate,
   daysBetween,
 } from '@/lib/timeline-template';
-import { ChevronDown, ChevronRight, Check, Clock, Circle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, Clock, Circle, GripVertical } from 'lucide-react';
 
 const DAY_WIDTH = 4;
-const ROW_HEIGHT = 36;
+const ROW_HEIGHT = 40;
 const PHASE_ROW_HEIGHT = 40;
-const LEFT_PANEL_WIDTH = 320;
+const LEFT_PANEL_WIDTH = 340;
+const DAYS_PER_WEEK = 7;
+
+// Snap pixel distance to nearest week
+function snapToWeek(days: number): number {
+  return Math.round(days / DAYS_PER_WEEK) * DAYS_PER_WEEK;
+}
+
+interface DragState {
+  milestoneId: string;
+  type: 'move' | 'resize-right' | 'resize-left';
+  startX: number;
+  originalStartWeeksBefore: number;
+  originalDurationWeeks: number;
+  currentDeltaDays: number;
+}
 
 interface GanttChartProps {
   timeline: CollectionTimeline;
@@ -38,10 +53,17 @@ export function GanttChart({
   const [collapsedPhases, setCollapsedPhases] = useState<Set<TimelinePhase>>(
     new Set()
   );
-  const [editingWeeks, setEditingWeeks] = useState<string | null>(null);
-  const [editingStart, setEditingStart] = useState<string | null>(null);
+  const [editingMilestone, setEditingMilestone] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{
+    nameEs: string;
+    durationWeeks: number;
+    startWeeksBefore: number;
+    notes: string;
+  }>({ nameEs: '', durationWeeks: 0, startWeeksBefore: 0, notes: '' });
+  const [dragState, setDragState] = useState<DragState | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
+  const leftPanelRef = useRef<HTMLDivElement>(null);
 
   const bounds = useMemo(() => getTimelineBounds(timeline), [timeline]);
   const months = useMemo(
@@ -69,6 +91,16 @@ export function GanttChart({
     }
   }, []);
 
+  // Sync vertical scroll between left panel and body
+  const handleBodyScroll = useCallback(() => {
+    if (scrollRef.current && leftPanelRef.current) {
+      leftPanelRef.current.scrollTop = scrollRef.current.scrollTop;
+      if (headerScrollRef.current) {
+        headerScrollRef.current.scrollLeft = scrollRef.current.scrollLeft;
+      }
+    }
+  }, []);
+
   // Scroll to today on mount
   useEffect(() => {
     if (scrollRef.current) {
@@ -76,6 +108,84 @@ export function GanttChart({
       scrollRef.current.scrollLeft = target;
     }
   }, [todayOffset]);
+
+  // --- DRAG HANDLERS ---
+  const handleDragStart = useCallback(
+    (e: React.MouseEvent, milestoneId: string, type: DragState['type']) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const m = timeline.milestones.find((m) => m.id === milestoneId);
+      if (!m) return;
+
+      setDragState({
+        milestoneId,
+        type,
+        startX: e.clientX,
+        originalStartWeeksBefore: m.startWeeksBefore,
+        originalDurationWeeks: m.durationWeeks,
+        currentDeltaDays: 0,
+      });
+    },
+    [timeline.milestones]
+  );
+
+  useEffect(() => {
+    if (!dragState) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaPx = e.clientX - dragState.startX;
+      const deltaDays = deltaPx / DAY_WIDTH;
+      setDragState((prev) => (prev ? { ...prev, currentDeltaDays: deltaDays } : null));
+    };
+
+    const handleMouseUp = () => {
+      if (!dragState) return;
+
+      const snappedDays = snapToWeek(dragState.currentDeltaDays);
+      const deltaWeeks = snappedDays / DAYS_PER_WEEK;
+
+      if (dragState.type === 'move') {
+        // Moving right means starting later → fewer weeks before launch
+        const newStart = dragState.originalStartWeeksBefore - deltaWeeks;
+        if (newStart !== dragState.originalStartWeeksBefore) {
+          onUpdateMilestone(dragState.milestoneId, {
+            startWeeksBefore: Math.round(newStart * 2) / 2, // snap to 0.5
+          });
+        }
+      } else if (dragState.type === 'resize-right') {
+        const newDuration = dragState.originalDurationWeeks + deltaWeeks;
+        const clamped = Math.max(0.5, Math.round(newDuration * 2) / 2);
+        if (clamped !== dragState.originalDurationWeeks) {
+          onUpdateMilestone(dragState.milestoneId, {
+            durationWeeks: clamped,
+          });
+        }
+      } else if (dragState.type === 'resize-left') {
+        // Resize from left: moving left increases duration and startWeeksBefore
+        const newStart = dragState.originalStartWeeksBefore - deltaWeeks;
+        const newDuration = dragState.originalDurationWeeks - deltaWeeks;
+        const clampedDuration = Math.max(0.5, Math.round(newDuration * 2) / 2);
+        const adjustedStart = Math.round(
+          (dragState.originalStartWeeksBefore + (clampedDuration - dragState.originalDurationWeeks)) * 2
+        ) / 2;
+        if (clampedDuration !== dragState.originalDurationWeeks) {
+          onUpdateMilestone(dragState.milestoneId, {
+            startWeeksBefore: adjustedStart,
+            durationWeeks: clampedDuration,
+          });
+        }
+      }
+
+      setDragState(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragState, onUpdateMilestone]);
 
   const togglePhase = (phase: TimelinePhase) => {
     setCollapsedPhases((prev) => {
@@ -94,6 +204,27 @@ export function GanttChart({
           ? 'completed'
           : 'pending';
     onUpdateMilestone(id, { status: next });
+  };
+
+  const openEditor = (m: TimelineMilestone) => {
+    setEditingMilestone(m.id);
+    setEditValues({
+      nameEs: m.nameEs,
+      durationWeeks: m.durationWeeks,
+      startWeeksBefore: m.startWeeksBefore,
+      notes: m.notes || '',
+    });
+  };
+
+  const saveEditor = () => {
+    if (!editingMilestone) return;
+    onUpdateMilestone(editingMilestone, {
+      nameEs: editValues.nameEs,
+      durationWeeks: editValues.durationWeeks,
+      startWeeksBefore: editValues.startWeeksBefore,
+      notes: editValues.notes || undefined,
+    });
+    setEditingMilestone(null);
   };
 
   const StatusIcon = ({ status }: { status: MilestoneStatus }) => {
@@ -150,20 +281,51 @@ export function GanttChart({
     return { total, completed, inProgress, percent: Math.round((completed / total) * 100) };
   }, [timeline.milestones]);
 
+  // Calculate bar position with drag preview
+  const getBarPosition = (m: TimelineMilestone) => {
+    let startWeeksBefore = m.startWeeksBefore;
+    let durationWeeks = m.durationWeeks;
+
+    if (dragState && dragState.milestoneId === m.id) {
+      const deltaDays = dragState.currentDeltaDays;
+      if (dragState.type === 'move') {
+        startWeeksBefore = dragState.originalStartWeeksBefore - deltaDays / DAYS_PER_WEEK;
+      } else if (dragState.type === 'resize-right') {
+        durationWeeks = Math.max(0.5, dragState.originalDurationWeeks + deltaDays / DAYS_PER_WEEK);
+      } else if (dragState.type === 'resize-left') {
+        const newDuration = Math.max(0.5, dragState.originalDurationWeeks - deltaDays / DAYS_PER_WEEK);
+        startWeeksBefore = dragState.originalStartWeeksBefore + (newDuration - dragState.originalDurationWeeks);
+        durationWeeks = newDuration;
+      }
+    }
+
+    const startDate = getMilestoneDate(timeline.launchDate, startWeeksBefore);
+    const endDate = getMilestoneEndDate(timeline.launchDate, startWeeksBefore, durationWeeks);
+    const startDay = daysBetween(bounds.earliestDate, startDate);
+    const duration = daysBetween(startDate, endDate);
+    return {
+      left: startDay * DAY_WIDTH,
+      width: Math.max(duration * DAY_WIDTH, 8),
+      startDate,
+      endDate,
+      durationWeeks,
+    };
+  };
+
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       {/* Stats bar */}
       <div className="flex items-center gap-6 px-6 py-3 bg-gray-50 border-b border-gray-100 text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-28 h-2.5 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-full bg-green-500 rounded-full transition-all duration-500"
               style={{ width: `${stats.percent}%` }}
             />
           </div>
-          <span className="text-gray-500 font-medium">{stats.percent}%</span>
+          <span className="text-gray-600 font-bold">{stats.percent}%</span>
         </div>
-        <span className="text-gray-400">|</span>
+        <span className="text-gray-300">|</span>
         <span className="text-green-600 font-medium">
           {stats.completed} completados
         </span>
@@ -174,7 +336,10 @@ export function GanttChart({
           {stats.total - stats.completed - stats.inProgress} pendientes
         </span>
         <div className="ml-auto text-gray-500">
-          {timeline.milestones.length} hitos &middot; ~40 semanas
+          {timeline.milestones.length} hitos &middot; ~{Math.round(
+            (Math.max(...timeline.milestones.map(m => m.startWeeksBefore)) +
+             Math.max(...timeline.milestones.map(m => m.startWeeksBefore === Math.max(...timeline.milestones.map(mm => mm.startWeeksBefore)) ? m.durationWeeks : 0)))
+          )} semanas
         </div>
       </div>
 
@@ -188,7 +353,7 @@ export function GanttChart({
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Fase / Hito
           </span>
-          <span className="ml-auto text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          <span className="ml-auto text-xs font-semibold text-gray-400 uppercase tracking-wider mr-1">
             Sem.
           </span>
         </div>
@@ -241,7 +406,8 @@ export function GanttChart({
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel - milestone names */}
         <div
-          className="flex-shrink-0 overflow-y-auto border-r border-gray-200 bg-white"
+          ref={leftPanelRef}
+          className="flex-shrink-0 overflow-hidden border-r border-gray-200 bg-white"
           style={{ width: LEFT_PANEL_WIDTH }}
         >
           {PHASE_ORDER.map((phaseKey) => {
@@ -270,7 +436,7 @@ export function GanttChart({
                     <ChevronDown className="w-4 h-4 text-gray-400" />
                   )}
                   <div
-                    className="w-2 h-2 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: phase.color }}
                   />
                   <span className="text-xs font-bold text-gray-700 uppercase tracking-wide flex-1">
@@ -290,84 +456,26 @@ export function GanttChart({
                     >
                       <button
                         onClick={() => cycleStatus(m.id, m.status)}
-                        className="flex-shrink-0 hover:scale-110 transition-transform"
+                        className="flex-shrink-0 hover:scale-125 transition-transform"
                         title="Cambiar estado"
                       >
                         <StatusIcon status={m.status} />
                       </button>
-                      <span
-                        className={`text-xs flex-1 truncate ${m.status === 'completed' ? 'line-through text-gray-400' : 'text-gray-700'}`}
-                        title={m.nameEs}
+                      <button
+                        onClick={() => openEditor(m)}
+                        className={`text-xs text-left flex-1 leading-tight hover:text-blue-600 transition-colors ${
+                          m.status === 'completed'
+                            ? 'line-through text-gray-400'
+                            : 'text-gray-700'
+                        }`}
+                        title="Click para editar"
                       >
                         {m.nameEs}
-                      </span>
+                      </button>
                       <ResponsibleBadge resp={m.responsible} />
-                      {/* Editable weeks */}
-                      {editingWeeks === m.id ? (
-                        <input
-                          type="number"
-                          className="w-10 text-[10px] text-center border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                          defaultValue={m.durationWeeks}
-                          step={0.5}
-                          min={0.15}
-                          autoFocus
-                          onBlur={(e) => {
-                            const val = parseFloat(e.target.value);
-                            if (val > 0 && val !== m.durationWeeks) {
-                              onUpdateMilestone(m.id, {
-                                durationWeeks: val,
-                              });
-                            }
-                            setEditingWeeks(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              (e.target as HTMLInputElement).blur();
-                            }
-                            if (e.key === 'Escape') setEditingWeeks(null);
-                          }}
-                        />
-                      ) : (
-                        <button
-                          onClick={() => setEditingWeeks(m.id)}
-                          className="text-[10px] text-gray-400 font-mono w-10 text-center hover:text-blue-600 hover:bg-blue-50 rounded px-1 py-0.5 transition-colors"
-                          title="Editar duración (semanas)"
-                        >
-                          {m.durationWeeks}w
-                        </button>
-                      )}
-                      {/* Editable start offset */}
-                      {editingStart === m.id ? (
-                        <input
-                          type="number"
-                          className="w-10 text-[10px] text-center border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                          defaultValue={m.startWeeksBefore}
-                          step={0.5}
-                          autoFocus
-                          onBlur={(e) => {
-                            const val = parseFloat(e.target.value);
-                            if (val !== m.startWeeksBefore) {
-                              onUpdateMilestone(m.id, {
-                                startWeeksBefore: val,
-                              });
-                            }
-                            setEditingStart(null);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter')
-                              (e.target as HTMLInputElement).blur();
-                            if (e.key === 'Escape') setEditingStart(null);
-                          }}
-                        />
-                      ) : (
-                        <button
-                          onClick={() => setEditingStart(m.id)}
-                          className="text-[10px] text-gray-400 font-mono w-8 text-center hover:text-green-600 hover:bg-green-50 rounded px-0.5 py-0.5 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Editar inicio (semanas antes del launch)"
-                        >
-                          -{m.startWeeksBefore}
-                        </button>
-                      )}
+                      <span className="text-[10px] text-gray-400 font-mono w-8 text-right tabular-nums">
+                        {m.durationWeeks}w
+                      </span>
                     </div>
                   ))}
               </div>
@@ -379,7 +487,8 @@ export function GanttChart({
         <div
           ref={scrollRef}
           className="flex-1 overflow-auto"
-          onScroll={handleScroll}
+          onScroll={handleBodyScroll}
+          style={{ cursor: dragState ? (dragState.type === 'move' ? 'grabbing' : 'col-resize') : undefined }}
         >
           <div
             className="relative"
@@ -471,42 +580,40 @@ export function GanttChart({
                 }
 
                 return milestones.map((m) => {
-                  const startDate = getMilestoneDate(
-                    timeline.launchDate,
-                    m.startWeeksBefore
-                  );
-                  const endDate = getMilestoneEndDate(
-                    timeline.launchDate,
-                    m.startWeeksBefore,
-                    m.durationWeeks
-                  );
-                  const startDay = daysBetween(
-                    bounds.earliestDate,
-                    startDate
-                  );
-                  const duration = daysBetween(startDate, endDate);
-                  const barLeft = startDay * DAY_WIDTH;
-                  const barWidth = Math.max(duration * DAY_WIDTH, 6);
+                  const pos = getBarPosition(m);
                   const barY = yOffset;
                   yOffset += ROW_HEIGHT;
 
                   const isCompleted = m.status === 'completed';
                   const isInProgress = m.status === 'in-progress';
+                  const isDragging = dragState?.milestoneId === m.id;
+                  const barHeight = ROW_HEIGHT - 12;
 
                   return (
                     <div
                       key={m.id}
-                      className="absolute group/bar"
+                      className={`absolute group/bar ${isDragging ? 'z-20' : 'z-[5]'}`}
                       style={{
-                        left: barLeft,
-                        width: barWidth,
-                        top: barY + 8,
-                        height: ROW_HEIGHT - 16,
+                        left: pos.left,
+                        width: pos.width,
+                        top: barY + 6,
+                        height: barHeight,
+                        transition: isDragging ? 'none' : 'left 0.2s ease, width 0.2s ease',
                       }}
                     >
-                      {/* Bar */}
+                      {/* Left resize handle */}
                       <div
-                        className={`w-full h-full rounded-md shadow-sm transition-all cursor-pointer hover:shadow-md hover:brightness-105 ${isCompleted ? 'opacity-50' : ''}`}
+                        className="absolute left-0 top-0 w-2 h-full cursor-col-resize z-10 group/left"
+                        onMouseDown={(e) => handleDragStart(e, m.id, 'resize-left')}
+                      >
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-white/60 rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity" />
+                      </div>
+
+                      {/* Main bar - draggable */}
+                      <div
+                        className={`w-full h-full rounded-lg shadow-sm transition-shadow cursor-grab active:cursor-grabbing hover:shadow-lg ${
+                          isCompleted ? 'opacity-50' : ''
+                        } ${isDragging ? 'shadow-xl ring-2 ring-blue-400/50' : ''}`}
                         style={{
                           backgroundColor: m.color,
                           backgroundImage: isInProgress
@@ -519,19 +626,60 @@ export function GanttChart({
                               )`
                             : undefined,
                         }}
-                      />
-                      {/* Tooltip on hover */}
-                      <div className="absolute bottom-full left-0 mb-1 hidden group-hover/bar:block z-30 pointer-events-none">
-                        <div className="bg-gray-900 text-white text-[10px] px-2 py-1.5 rounded-md shadow-lg whitespace-nowrap">
-                          <div className="font-semibold">{m.nameEs}</div>
-                          <div className="text-gray-300 mt-0.5">
-                            {formatDate(startDate)} → {formatDate(endDate)}
+                        onMouseDown={(e) => handleDragStart(e, m.id, 'move')}
+                        onDoubleClick={() => openEditor(m)}
+                      >
+                        {/* Text on bar when wide enough */}
+                        {pos.width > 60 && (
+                          <div className="absolute inset-0 flex items-center px-2 overflow-hidden pointer-events-none">
+                            <span className="text-[10px] font-semibold text-white truncate drop-shadow-sm">
+                              {m.nameEs}
+                            </span>
                           </div>
-                          <div className="text-gray-400">
-                            {m.durationWeeks} semanas &middot; {m.responsible}
+                        )}
+                      </div>
+
+                      {/* Right resize handle */}
+                      <div
+                        className="absolute right-0 top-0 w-2 h-full cursor-col-resize z-10 group/right"
+                        onMouseDown={(e) => handleDragStart(e, m.id, 'resize-right')}
+                      >
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-white/60 rounded-full opacity-0 group-hover/bar:opacity-100 transition-opacity" />
+                      </div>
+
+                      {/* Tooltip on hover (not during drag) */}
+                      {!isDragging && (
+                        <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/bar:block z-30 pointer-events-none">
+                          <div className="bg-gray-900 text-white text-[11px] px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
+                            <div className="font-bold text-[12px]">{m.nameEs}</div>
+                            <div className="text-gray-300 mt-1">
+                              {formatDate(pos.startDate)} → {formatDate(pos.endDate)}
+                            </div>
+                            <div className="text-gray-400 mt-0.5">
+                              {pos.durationWeeks.toFixed(1)} semanas &middot; {m.responsible}
+                            </div>
+                            {m.notes && (
+                              <div className="text-yellow-300 mt-1 text-[10px] max-w-[200px] break-words">
+                                {m.notes}
+                              </div>
+                            )}
+                            <div className="text-gray-500 mt-1 text-[9px]">
+                              Arrastra para mover &middot; Bordes para redimensionar &middot; Doble click para editar
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Drag preview tooltip */}
+                      {isDragging && (
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+                          <div className="bg-blue-600 text-white text-[10px] px-2 py-1 rounded-md shadow-lg whitespace-nowrap font-mono">
+                            {dragState.type === 'move'
+                              ? `${formatDate(pos.startDate)} → ${formatDate(pos.endDate)}`
+                              : `${pos.durationWeeks.toFixed(1)}w`}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 });
@@ -540,6 +688,112 @@ export function GanttChart({
           </div>
         </div>
       </div>
+
+      {/* Inline editor modal */}
+      {editingMilestone && (() => {
+        const m = timeline.milestones.find((m) => m.id === editingMilestone);
+        if (!m) return null;
+        const startDate = getMilestoneDate(timeline.launchDate, editValues.startWeeksBefore);
+        const endDate = getMilestoneEndDate(timeline.launchDate, editValues.startWeeksBefore, editValues.durationWeeks);
+
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setEditingMilestone(null)}>
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header with phase color */}
+              <div className="px-5 py-3 flex items-center gap-3" style={{ backgroundColor: m.color + '20' }}>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} />
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                  {PHASES[m.phase]?.nameEs}
+                </span>
+                <ResponsibleBadge resp={m.responsible} />
+              </div>
+
+              <div className="px-5 py-4 space-y-4">
+                {/* Name */}
+                <div>
+                  <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Nombre</label>
+                  <input
+                    type="text"
+                    value={editValues.nameEs}
+                    onChange={(e) => setEditValues((v) => ({ ...v, nameEs: e.target.value }))}
+                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Start & Duration */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                      Inicio (sem. antes del launch)
+                    </label>
+                    <input
+                      type="number"
+                      value={editValues.startWeeksBefore}
+                      onChange={(e) =>
+                        setEditValues((v) => ({ ...v, startWeeksBefore: parseFloat(e.target.value) || 0 }))
+                      }
+                      step={0.5}
+                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
+                      Duración (semanas)
+                    </label>
+                    <input
+                      type="number"
+                      value={editValues.durationWeeks}
+                      onChange={(e) =>
+                        setEditValues((v) => ({ ...v, durationWeeks: parseFloat(e.target.value) || 0.5 }))
+                      }
+                      step={0.5}
+                      min={0.15}
+                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Date preview */}
+                <div className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                  {formatDate(startDate)} → {formatDate(endDate)}
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Notas</label>
+                  <textarea
+                    value={editValues.notes}
+                    onChange={(e) => setEditValues((v) => ({ ...v, notes: e.target.value }))}
+                    rows={2}
+                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 resize-none"
+                    placeholder="Añadir notas..."
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="px-5 py-3 flex items-center justify-end gap-2 border-t border-gray-100">
+                <button
+                  onClick={() => setEditingMilestone(null)}
+                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={saveEditor}
+                  className="px-4 py-2 text-sm font-semibold bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
