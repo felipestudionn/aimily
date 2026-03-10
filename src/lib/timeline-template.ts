@@ -90,61 +90,61 @@ export const PHASE_ORDER: TimelinePhase[] = [
 type MilestoneTemplate = Omit<TimelineMilestone, 'status'>;
 
 const DEFAULT_MILESTONES: MilestoneTemplate[] = [
-  // ── OLA Wave Digital (wk 40 → 33) ──
-  { id: 'ow-1', phase: 'olawave', name: 'Trend Research & Moodboarding', nameEs: 'Investigación de tendencias y moodboarding', responsible: 'US', startWeeksBefore: 40, durationWeeks: 2, color: '#FF6B6B' },
-  { id: 'ow-2', phase: 'olawave', name: 'Range Strategy & Framework', nameEs: 'Estrategia y framework de colección', responsible: 'US', startWeeksBefore: 38, durationWeeks: 1, color: '#FF6B6B' },
-  { id: 'ow-3', phase: 'olawave', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 37, durationWeeks: 3, color: '#FF6B6B' },
-  { id: 'ow-4', phase: 'olawave', name: 'Go-to-Market Strategy', nameEs: 'Estrategia Go-to-Market', responsible: 'US', startWeeksBefore: 34, durationWeeks: 1, color: '#FF6B6B' },
-  { id: 'ow-5', phase: 'olawave', name: 'SketchFlow / Technical Sketches', nameEs: 'SketchFlow / Bocetos técnicos', responsible: 'US', startWeeksBefore: 36, durationWeeks: 2, color: '#FF6B6B' },
+  // ── Product & Merchandising (wk 48 → 39) — starts March 1 ──
+  { id: 'ow-1', phase: 'olawave', name: 'Trend Research & Moodboarding', nameEs: 'Investigación de tendencias y moodboarding', responsible: 'US', startWeeksBefore: 48, durationWeeks: 3, color: '#FF6B6B' },
+  { id: 'ow-2', phase: 'olawave', name: 'Range Strategy & Framework', nameEs: 'Estrategia y framework de colección', responsible: 'US', startWeeksBefore: 45, durationWeeks: 2, color: '#FF6B6B' },
+  { id: 'ow-3', phase: 'olawave', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 43, durationWeeks: 3, color: '#FF6B6B' },
+  { id: 'ow-5', phase: 'olawave', name: 'SketchFlow / Technical Sketches', nameEs: 'SketchFlow / Bocetos técnicos', responsible: 'US', startWeeksBefore: 43, durationWeeks: 3, color: '#FF6B6B' },
+  { id: 'ow-4', phase: 'olawave', name: 'Go-to-Market Strategy', nameEs: 'Estrategia Go-to-Market', responsible: 'US', startWeeksBefore: 40, durationWeeks: 1, color: '#FF6B6B' },
 
-  // ── Brand & Identity (wk 38 → 29) ──
-  { id: 'br-1', phase: 'brand', name: 'Brand Naming & Strategy', nameEs: 'Naming y estrategia de marca', responsible: 'US', startWeeksBefore: 38, durationWeeks: 2, color: '#4ECDC4' },
-  { id: 'br-2', phase: 'brand', name: 'Logo & Visual Identity', nameEs: 'Logo e identidad visual', responsible: 'AGENCY/US', startWeeksBefore: 36, durationWeeks: 3, color: '#4ECDC4' },
-  { id: 'br-3', phase: 'brand', name: 'Brand Guidelines', nameEs: 'Manual de marca', responsible: 'AGENCY/US', startWeeksBefore: 33, durationWeeks: 1, color: '#4ECDC4' },
-  { id: 'br-4', phase: 'brand', name: 'Packaging Design', nameEs: 'Diseño de packaging', responsible: 'AGENCY/US', startWeeksBefore: 32, durationWeeks: 3, color: '#4ECDC4' },
+  // ── Brand & Identity (wk 46 → 34) ──
+  { id: 'br-1', phase: 'brand', name: 'Brand Naming & Strategy', nameEs: 'Naming y estrategia de marca', responsible: 'US', startWeeksBefore: 46, durationWeeks: 3, color: '#4ECDC4' },
+  { id: 'br-2', phase: 'brand', name: 'Logo & Visual Identity', nameEs: 'Logo e identidad visual', responsible: 'AGENCY/US', startWeeksBefore: 43, durationWeeks: 4, color: '#4ECDC4' },
+  { id: 'br-3', phase: 'brand', name: 'Brand Guidelines', nameEs: 'Manual de marca', responsible: 'AGENCY/US', startWeeksBefore: 39, durationWeeks: 2, color: '#4ECDC4' },
+  { id: 'br-4', phase: 'brand', name: 'Packaging Design', nameEs: 'Diseño de packaging', responsible: 'AGENCY/US', startWeeksBefore: 37, durationWeeks: 3, color: '#4ECDC4' },
 
-  // ── Design & Development (wk 30 → 21) ──
-  { id: 'ds-1', phase: 'design', name: 'Launch Last / Define Forms', nameEs: 'Definición de hormas', responsible: 'US', startWeeksBefore: 30, durationWeeks: 4, color: '#F5A623' },
-  { id: 'ds-2', phase: 'design', name: 'Design Shot 1', nameEs: 'Diseño ronda 1', responsible: 'US', startWeeksBefore: 26, durationWeeks: 1.5, color: '#F5A623' },
-  { id: 'ds-3', phase: 'design', name: 'Design Shot 2', nameEs: 'Diseño ronda 2', responsible: 'US', startWeeksBefore: 24.5, durationWeeks: 1, color: '#F5A623' },
-  { id: 'ds-4', phase: 'design', name: 'Paper Pattern Development', nameEs: 'Desarrollo de patronaje', responsible: 'US', startWeeksBefore: 24.5, durationWeeks: 1, color: '#F5A623' },
-  { id: 'ds-5', phase: 'design', name: 'Colorways Development', nameEs: 'Desarrollo de colorways', responsible: 'US', startWeeksBefore: 23.5, durationWeeks: 2, color: '#F5A623' },
+  // ── Design & Development (wk 36 → 26) ──
+  { id: 'ds-1', phase: 'design', name: 'Launch Last / Define Forms', nameEs: 'Definición de hormas', responsible: 'US', startWeeksBefore: 36, durationWeeks: 5, color: '#F5A623' },
+  { id: 'ds-2', phase: 'design', name: 'Design Shot 1', nameEs: 'Diseño ronda 1', responsible: 'US', startWeeksBefore: 31, durationWeeks: 2, color: '#F5A623' },
+  { id: 'ds-3', phase: 'design', name: 'Design Shot 2', nameEs: 'Diseño ronda 2', responsible: 'US', startWeeksBefore: 29, durationWeeks: 1.5, color: '#F5A623' },
+  { id: 'ds-4', phase: 'design', name: 'Paper Pattern Development', nameEs: 'Desarrollo de patronaje', responsible: 'US', startWeeksBefore: 29, durationWeeks: 1.5, color: '#F5A623' },
+  { id: 'ds-5', phase: 'design', name: 'Colorways Development', nameEs: 'Desarrollo de colorways', responsible: 'US', startWeeksBefore: 27.5, durationWeeks: 2, color: '#F5A623' },
 
-  // ── Prototyping (wk 23 → 13) ──
-  { id: 'pt-1', phase: 'prototyping', name: 'White Proto Development', nameEs: 'Desarrollo de proto blanco', responsible: 'FACTORY', startWeeksBefore: 23, durationWeeks: 6, color: '#7B68EE' },
-  { id: 'pt-2', phase: 'prototyping', name: 'White Proto Delivery', nameEs: 'Entrega de proto blanco', responsible: 'FACTORY', startWeeksBefore: 17, durationWeeks: 1, color: '#7B68EE' },
-  { id: 'pt-3', phase: 'prototyping', name: 'White Proto Rectification', nameEs: 'Rectificación de proto blanco', responsible: 'US', startWeeksBefore: 16, durationWeeks: 3, color: '#7B68EE' },
-  { id: 'pt-4', phase: 'prototyping', name: 'Technical Sheets Completion', nameEs: 'Fichas técnicas completas', responsible: 'US', startWeeksBefore: 16, durationWeeks: 3, color: '#7B68EE' },
+  // ── Prototyping (wk 28 → 16) ──
+  { id: 'pt-1', phase: 'prototyping', name: 'White Proto Development', nameEs: 'Desarrollo de proto blanco', responsible: 'FACTORY', startWeeksBefore: 28, durationWeeks: 7, color: '#7B68EE' },
+  { id: 'pt-2', phase: 'prototyping', name: 'White Proto Delivery', nameEs: 'Entrega de proto blanco', responsible: 'FACTORY', startWeeksBefore: 21, durationWeeks: 1, color: '#7B68EE' },
+  { id: 'pt-3', phase: 'prototyping', name: 'White Proto Rectification', nameEs: 'Rectificación de proto blanco', responsible: 'US', startWeeksBefore: 20, durationWeeks: 4, color: '#7B68EE' },
+  { id: 'pt-4', phase: 'prototyping', name: 'Technical Sheets Completion', nameEs: 'Fichas técnicas completas', responsible: 'US', startWeeksBefore: 20, durationWeeks: 4, color: '#7B68EE' },
 
-  // ── Sampling (wk 16 → 8) ──
-  { id: 'sm-1', phase: 'sampling', name: 'Color Samples Development', nameEs: 'Desarrollo de muestras de color', responsible: 'FACTORY', startWeeksBefore: 16, durationWeeks: 6, color: '#E91E63' },
-  { id: 'sm-2', phase: 'sampling', name: 'Fitting Samples Development', nameEs: 'Desarrollo de muestras de fitting', responsible: 'FACTORY', startWeeksBefore: 12, durationWeeks: 2.5, color: '#E91E63' },
-  { id: 'sm-3', phase: 'sampling', name: 'Fitting Samples Confirmation', nameEs: 'Confirmación de muestras de fitting', responsible: 'US', startWeeksBefore: 11, durationWeeks: 3, color: '#E91E63' },
-  { id: 'sm-4', phase: 'sampling', name: 'Collection Completed', nameEs: 'Colección completada', responsible: 'ALL', startWeeksBefore: 8, durationWeeks: 0.5, color: '#E91E63' },
+  // ── Sampling (wk 19 → 10) ──
+  { id: 'sm-1', phase: 'sampling', name: 'Color Samples Development', nameEs: 'Desarrollo de muestras de color', responsible: 'FACTORY', startWeeksBefore: 19, durationWeeks: 6, color: '#E91E63' },
+  { id: 'sm-2', phase: 'sampling', name: 'Fitting Samples Development', nameEs: 'Desarrollo de muestras de fitting', responsible: 'FACTORY', startWeeksBefore: 14, durationWeeks: 3, color: '#E91E63' },
+  { id: 'sm-3', phase: 'sampling', name: 'Fitting Samples Confirmation', nameEs: 'Confirmación de muestras de fitting', responsible: 'US', startWeeksBefore: 13, durationWeeks: 3, color: '#E91E63' },
+  { id: 'sm-4', phase: 'sampling', name: 'Collection Completed', nameEs: 'Colección completada', responsible: 'ALL', startWeeksBefore: 10, durationWeeks: 0.5, color: '#E91E63' },
 
-  // ── Digital Presence (wk 24 → 8) ──
-  { id: 'dg-1', phase: 'digital', name: 'Website Design & Development', nameEs: 'Diseño y desarrollo web', responsible: 'AGENCY/US', startWeeksBefore: 24, durationWeeks: 6, color: '#9C27B0' },
-  { id: 'dg-2', phase: 'digital', name: 'E-commerce Setup', nameEs: 'Setup de e-commerce', responsible: 'AGENCY/US', startWeeksBefore: 18, durationWeeks: 3, color: '#9C27B0' },
-  { id: 'dg-3', phase: 'digital', name: 'Product Photography / AI Renders', nameEs: 'Fotografía de producto / Renders IA', responsible: 'AGENCY/US', startWeeksBefore: 14, durationWeeks: 3, color: '#9C27B0' },
-  { id: 'dg-4', phase: 'digital', name: 'Lookbook / Campaign Creative', nameEs: 'Lookbook / Creatividad de campaña', responsible: 'AGENCY/US', startWeeksBefore: 12, durationWeeks: 3, color: '#9C27B0' },
-  { id: 'dg-5', phase: 'digital', name: 'Copywriting & Brand Story', nameEs: 'Copywriting e historia de marca', responsible: 'US', startWeeksBefore: 14, durationWeeks: 2, color: '#9C27B0' },
+  // ── Digital Presence (wk 30 → 10) ──
+  { id: 'dg-1', phase: 'digital', name: 'Website Design & Development', nameEs: 'Diseño y desarrollo web', responsible: 'AGENCY/US', startWeeksBefore: 30, durationWeeks: 8, color: '#9C27B0' },
+  { id: 'dg-2', phase: 'digital', name: 'E-commerce Setup', nameEs: 'Setup de e-commerce', responsible: 'AGENCY/US', startWeeksBefore: 22, durationWeeks: 4, color: '#9C27B0' },
+  { id: 'dg-3', phase: 'digital', name: 'Product Photography / AI Renders', nameEs: 'Fotografía de producto / Renders IA', responsible: 'AGENCY/US', startWeeksBefore: 17, durationWeeks: 3, color: '#9C27B0' },
+  { id: 'dg-5', phase: 'digital', name: 'Copywriting & Brand Story', nameEs: 'Copywriting e historia de marca', responsible: 'US', startWeeksBefore: 17, durationWeeks: 3, color: '#9C27B0' },
+  { id: 'dg-4', phase: 'digital', name: 'Lookbook / Campaign Creative', nameEs: 'Lookbook / Creatividad de campaña', responsible: 'AGENCY/US', startWeeksBefore: 14, durationWeeks: 4, color: '#9C27B0' },
 
-  // ── Marketing Pre-launch (wk 16 → 3) ──
-  { id: 'mk-1', phase: 'marketing', name: 'Social Media Setup & Profiles', nameEs: 'Setup de redes sociales y perfiles', responsible: 'US', startWeeksBefore: 16, durationWeeks: 1, color: '#FF9800' },
-  { id: 'mk-2', phase: 'marketing', name: 'Content Calendar & Production', nameEs: 'Calendario y producción de contenido', responsible: 'US', startWeeksBefore: 15, durationWeeks: 4, color: '#FF9800' },
-  { id: 'mk-3', phase: 'marketing', name: 'Influencer & PR Outreach', nameEs: 'Outreach de influencers y PR', responsible: 'US', startWeeksBefore: 12, durationWeeks: 4, color: '#FF9800' },
-  { id: 'mk-4', phase: 'marketing', name: 'Email List Building & Flows', nameEs: 'Captación de emails y flujos', responsible: 'AGENCY/US', startWeeksBefore: 12, durationWeeks: 6, color: '#FF9800' },
-  { id: 'mk-5', phase: 'marketing', name: 'Paid Ads Setup & Creative', nameEs: 'Setup de paid ads y creatividad', responsible: 'AGENCY/US', startWeeksBefore: 8, durationWeeks: 3, color: '#FF9800' },
-  { id: 'mk-6', phase: 'marketing', name: 'PR & Seeding Shipments', nameEs: 'Envíos de PR y seeding', responsible: 'US', startWeeksBefore: 6, durationWeeks: 3, color: '#FF9800' },
+  // ── Marketing Pre-launch (wk 20 → 3) ──
+  { id: 'mk-1', phase: 'marketing', name: 'Social Media Setup & Profiles', nameEs: 'Setup de redes sociales y perfiles', responsible: 'US', startWeeksBefore: 20, durationWeeks: 2, color: '#FF9800' },
+  { id: 'mk-2', phase: 'marketing', name: 'Content Calendar & Production', nameEs: 'Calendario y producción de contenido', responsible: 'US', startWeeksBefore: 18, durationWeeks: 5, color: '#FF9800' },
+  { id: 'mk-3', phase: 'marketing', name: 'Influencer & PR Outreach', nameEs: 'Outreach de influencers y PR', responsible: 'US', startWeeksBefore: 14, durationWeeks: 5, color: '#FF9800' },
+  { id: 'mk-4', phase: 'marketing', name: 'Email List Building & Flows', nameEs: 'Captación de emails y flujos', responsible: 'AGENCY/US', startWeeksBefore: 14, durationWeeks: 8, color: '#FF9800' },
+  { id: 'mk-5', phase: 'marketing', name: 'Paid Ads Setup & Creative', nameEs: 'Setup de paid ads y creatividad', responsible: 'AGENCY/US', startWeeksBefore: 10, durationWeeks: 4, color: '#FF9800' },
+  { id: 'mk-6', phase: 'marketing', name: 'PR & Seeding Shipments', nameEs: 'Envíos de PR y seeding', responsible: 'US', startWeeksBefore: 8, durationWeeks: 4, color: '#FF9800' },
 
-  // ── Production (wk 8 → 1.5) ──
-  { id: 'pd-1', phase: 'production', name: 'Production Order', nameEs: 'Orden de producción', responsible: 'US', startWeeksBefore: 8, durationWeeks: 0.5, color: '#2196F3' },
-  { id: 'pd-2', phase: 'production', name: 'Production Timeline', nameEs: 'Timeline de producción en fábrica', responsible: 'FACTORY', startWeeksBefore: 7.5, durationWeeks: 5, color: '#2196F3' },
-  { id: 'pd-3', phase: 'production', name: 'Quality Control', nameEs: 'Control de calidad', responsible: 'FACTORY', startWeeksBefore: 2.5, durationWeeks: 1, color: '#2196F3' },
-  { id: 'pd-4', phase: 'production', name: 'Production Delivery & Logistics', nameEs: 'Entrega de producción y logística', responsible: 'FACTORY', startWeeksBefore: 1.5, durationWeeks: 1, color: '#2196F3' },
+  // ── Production (wk 10 → 1) ──
+  { id: 'pd-1', phase: 'production', name: 'Production Order', nameEs: 'Orden de producción', responsible: 'US', startWeeksBefore: 10, durationWeeks: 1, color: '#2196F3' },
+  { id: 'pd-2', phase: 'production', name: 'Production Timeline', nameEs: 'Timeline de producción en fábrica', responsible: 'FACTORY', startWeeksBefore: 9, durationWeeks: 6, color: '#2196F3' },
+  { id: 'pd-3', phase: 'production', name: 'Quality Control', nameEs: 'Control de calidad', responsible: 'FACTORY', startWeeksBefore: 3, durationWeeks: 1, color: '#2196F3' },
+  { id: 'pd-4', phase: 'production', name: 'Production Delivery & Logistics', nameEs: 'Entrega de producción y logística', responsible: 'FACTORY', startWeeksBefore: 2, durationWeeks: 1, color: '#2196F3' },
 
-  // ── Launch (wk 3 → -3) ──
-  { id: 'ln-1', phase: 'launch', name: 'Pre-launch Teasing Campaign', nameEs: 'Campaña de teasing pre-lanzamiento', responsible: 'US', startWeeksBefore: 3, durationWeeks: 3, color: '#F44336' },
+  // ── Launch (wk 4 → -3) ──
+  { id: 'ln-1', phase: 'launch', name: 'Pre-launch Teasing Campaign', nameEs: 'Campaña de teasing pre-lanzamiento', responsible: 'US', startWeeksBefore: 4, durationWeeks: 4, color: '#F44336' },
   { id: 'ln-2', phase: 'launch', name: 'Launch Day Execution', nameEs: 'Ejecución día de lanzamiento', responsible: 'ALL', startWeeksBefore: 0, durationWeeks: 0.15, color: '#F44336' },
   { id: 'ln-3', phase: 'launch', name: 'Launch Week Push', nameEs: 'Push semana de lanzamiento', responsible: 'ALL', startWeeksBefore: 0, durationWeeks: 1, color: '#F44336' },
   { id: 'ln-4', phase: 'launch', name: 'Post-launch Analysis & Optimization', nameEs: 'Análisis y optimización post-lanzamiento', responsible: 'US', startWeeksBefore: -1, durationWeeks: 3, color: '#F44336' },
