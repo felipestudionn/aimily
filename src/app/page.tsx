@@ -37,13 +37,13 @@ export default function LandingPage() {
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl">
         {/* Logo */}
-        <div className="mb-8 animate-fade-in-up">
+        <div className="mb-10 animate-fade-in-up w-full flex justify-center">
           <Image
             src="/images/olawave-logo-white.png"
             alt="OLAWAVE"
-            width={220}
-            height={220}
-            className="object-contain brightness-[0.95] sepia-[0.15]"
+            width={500}
+            height={500}
+            className="object-contain w-[clamp(200px,50vw,480px)] h-auto brightness-[0.95] sepia-[0.15]"
             priority
           />
         </div>
