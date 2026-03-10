@@ -43,7 +43,7 @@ export default function LandingPage() {
             alt="aimily"
             width={500}
             height={500}
-            className="object-contain w-[clamp(200px,50vw,480px)] h-auto brightness-[0.95] sepia-[0.15]"
+            className="object-contain w-[clamp(140px,35vw,336px)] h-auto brightness-[0.95] sepia-[0.15]"
             priority
           />
         </div>
