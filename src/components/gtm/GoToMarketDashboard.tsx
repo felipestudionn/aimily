@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Plus, Trash2, GripVertical, Sparkles, Loader2, Filter, AlertTriangle, CheckCircle, TrendingUp, Save, User, LogOut } from 'lucide-react';
+import { Calendar, CalendarDays, Plus, Trash2, GripVertical, Sparkles, Loader2, Filter, AlertTriangle, CheckCircle, TrendingUp, Save, User, LogOut } from 'lucide-react';
 import { useDrops, type Drop } from '@/hooks/useDrops';
 import { useCommercialActions, type CommercialAction } from '@/hooks/useCommercialActions';
 import { useSkus, type SKU } from '@/hooks/useSkus';
@@ -248,6 +248,13 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
           <h1 className="text-2xl font-bold">{plan.name} - GTM Planning</h1>
         </div>
         <div className="flex items-center gap-4">
+          <a
+            href={`/collection-calendar/${plan.id}`}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Calendar
+          </a>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total Sales Target</p>
             <p className="text-2xl font-bold text-green-600">€{totalPlannedSales.toLocaleString()}</p>

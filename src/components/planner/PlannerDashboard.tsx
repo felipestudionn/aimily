@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Sparkles, Calculator, Loader2, Target, TrendingUp, DollarSign } from "lucide-react";
+import { ArrowLeft, ArrowRight, Sparkles, Calculator, Loader2, Target, TrendingUp, DollarSign, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -154,12 +154,20 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
                 </p>
               </div>
             </div>
-            {setupComplete && (
-              <Button onClick={() => router.push(`/go-to-market/${plan.id}`)} className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
-                Go to Market
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {setupComplete && (
+                <Button variant="outline" onClick={() => router.push(`/collection-calendar/${plan.id}`)}>
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                  Calendar
+                </Button>
+              )}
+              {setupComplete && (
+                <Button onClick={() => router.push(`/go-to-market/${plan.id}`)} className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+                  Go to Market
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

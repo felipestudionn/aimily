@@ -5,9 +5,20 @@ import { Navbar } from '@/components/layout/navbar';
 import { GanttChart } from '@/components/timeline/GanttChart';
 import { createDefaultTimeline } from '@/lib/timeline-template';
 import { CollectionTimeline, TimelineMilestone } from '@/types/timeline';
-import { Calendar, Edit3, Save, RotateCcw } from 'lucide-react';
+import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 const STORAGE_KEY = 'olawave_collection_timelines';
+
+interface CollectionPlanSummary {
+  id: string;
+  name: string;
+  season?: string;
+  status: string;
+  updated_at: string;
+  setup_data?: { totalSalesTarget?: number; expectedSkus?: number };
+}
 
 function loadTimelines(): CollectionTimeline[] {
   if (typeof window === 'undefined') return [];
@@ -24,6 +35,9 @@ function saveTimelines(timelines: CollectionTimeline[]) {
 }
 
 export default function CollectionCalendarPage() {
+  const { user } = useAuth();
+  const [collections, setCollections] = useState<CollectionPlanSummary[]>([]);
+  const [loadingCollections, setLoadingCollections] = useState(true);
   const [timelines, setTimelines] = useState<CollectionTimeline[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -32,19 +46,42 @@ export default function CollectionCalendarPage() {
   const [editLaunchDate, setEditLaunchDate] = useState('');
   const [loaded, setLoaded] = useState(false);
 
-  // Load from localStorage
+  // Load user's collections
+  useEffect(() => {
+    async function fetchCollections() {
+      if (!user) {
+        setLoadingCollections(false);
+        return;
+      }
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        const { data } = await supabase
+          .from('collection_plans')
+          .select('id, name, season, status, updated_at, setup_data')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false });
+        setCollections((data as CollectionPlanSummary[]) || []);
+      } catch (err) {
+        console.error('Error fetching collections:', err);
+      } finally {
+        setLoadingCollections(false);
+      }
+    }
+    fetchCollections();
+  }, [user]);
+
+  // Load standalone timelines from localStorage
   useEffect(() => {
     const saved = loadTimelines();
     if (saved.length > 0) {
       setTimelines(saved);
       setActiveId(saved[0].id);
     } else {
-      // Create default SS27 timeline
-      const defaultTimeline = createDefaultTimeline(
-        'VAKSA',
-        'SS27',
-        '2027-02-01'
-      );
+      const defaultTimeline = createDefaultTimeline('VAKSA', 'SS27', '2027-02-01');
       setTimelines([defaultTimeline]);
       setActiveId(defaultTimeline.id);
       saveTimelines([defaultTimeline]);
@@ -58,9 +95,7 @@ export default function CollectionCalendarPage() {
     (id: string, updates: Partial<CollectionTimeline>) => {
       setTimelines((prev) => {
         const next = prev.map((t) =>
-          t.id === id
-            ? { ...t, ...updates, updatedAt: new Date().toISOString() }
-            : t
+          t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t
         );
         saveTimelines(next);
         return next;
@@ -91,11 +126,7 @@ export default function CollectionCalendarPage() {
   );
 
   const createNewTimeline = () => {
-    const newTimeline = createDefaultTimeline(
-      'Nueva Colección',
-      'SS27',
-      '2027-02-01'
-    );
+    const newTimeline = createDefaultTimeline('Nueva Colección', 'SS27', '2027-02-01');
     setTimelines((prev) => {
       const next = [...prev, newTimeline];
       saveTimelines(next);
@@ -106,21 +137,14 @@ export default function CollectionCalendarPage() {
 
   const resetTimeline = () => {
     if (!activeTimeline) return;
-    if (
-      !confirm(
-        '¿Resetear todos los hitos a los valores por defecto? Se perderán los cambios.'
-      )
-    )
-      return;
+    if (!confirm('¿Resetear todos los hitos a los valores por defecto?')) return;
     const fresh = createDefaultTimeline(
       activeTimeline.collectionName,
       activeTimeline.season,
       activeTimeline.launchDate
     );
     fresh.id = activeTimeline.id;
-    updateTimeline(activeTimeline.id, {
-      milestones: fresh.milestones,
-    });
+    updateTimeline(activeTimeline.id, { milestones: fresh.milestones });
   };
 
   const startEditing = () => {
@@ -156,7 +180,42 @@ export default function CollectionCalendarPage() {
     <div className="min-h-screen bg-[#fff6dc]">
       <Navbar />
       <div className="pt-24 pb-8 px-4 max-w-[1600px] mx-auto">
-        {/* Page header */}
+        {/* Collections with linked calendars */}
+        {collections.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <FolderOpen className="w-4 h-4" />
+              Tus colecciones
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {collections.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/collection-calendar/${c.id}`}
+                  className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md hover:border-gray-200 transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-bold text-gray-800 truncate">
+                      {c.name}
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-600 transition-colors" />
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    {c.season && <span>{c.season}</span>}
+                    {c.setup_data?.expectedSkus && (
+                      <span>{c.setup_data.expectedSkus} SKUs</span>
+                    )}
+                    {c.setup_data?.totalSalesTarget && (
+                      <span>€{c.setup_data.totalSalesTarget.toLocaleString()}</span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Standalone calendar header */}
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -202,9 +261,7 @@ export default function CollectionCalendarPage() {
                     Lanzamiento:{' '}
                     <span className="font-semibold text-gray-700">
                       {activeTimeline
-                        ? new Date(
-                            activeTimeline.launchDate
-                          ).toLocaleDateString('es-ES', {
+                        ? new Date(activeTimeline.launchDate).toLocaleDateString('es-ES', {
                             weekday: 'long',
                             day: 'numeric',
                             month: 'long',
@@ -219,7 +276,6 @@ export default function CollectionCalendarPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Timeline selector */}
             {timelines.length > 1 && (
               <select
                 value={activeId || ''}
@@ -296,7 +352,7 @@ export default function CollectionCalendarPage() {
 
         {/* Gantt chart */}
         {activeTimeline && (
-          <div style={{ height: 'calc(100vh - 240px)' }}>
+          <div style={{ height: 'calc(100vh - 300px)' }}>
             <GanttChart
               timeline={activeTimeline}
               onUpdateMilestone={updateMilestone}
@@ -307,18 +363,14 @@ export default function CollectionCalendarPage() {
           </div>
         )}
 
-        {/* Instructions */}
         <div className="mt-4 text-xs text-gray-400 flex items-center gap-4">
-          <span>
-            Click en el circulo para cambiar estado (pendiente / en progreso /
-            completado)
-          </span>
+          <span>Click en el circulo para cambiar estado</span>
           <span>|</span>
-          <span>Click en las semanas (ej. 2w) para editar la duracion</span>
+          <span>Click en las semanas para editar duracion</span>
           <span>|</span>
           <span>Hover sobre un hito para editar su inicio</span>
           <span>|</span>
-          <span>La linea roja marca HOY, la negra marca LAUNCH</span>
+          <span>Linea roja = HOY, Linea negra = LAUNCH</span>
         </div>
       </div>
     </div>
