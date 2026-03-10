@@ -1,10 +1,29 @@
-# OLAWAVE WIND — Master Plan v1.0
+# OLAWAVE WIND — Master Plan v2.0
 
 ## Vision
 
-Transform OlaWave from a collection planning tool into a **full end-to-end fashion brand operating system** that covers every milestone from trend research to post-launch analytics. Every phase in the Gantt calendar becomes a living, trackable workflow with real tools, AI assistance, and automated status updates.
+Transform OlaWave into the **ultimate fashion brand operating system** — a visually stunning, AI-powered platform where every phase of creating a collection is an inspiring, creative experience. From moodboarding to AI-generated lookbooks, from brand identity to launch day — everything lives in one beautiful workspace.
 
-**Core principle**: Each milestone in the calendar links to a real feature in OlaWave. When a user completes work inside a feature, the milestone status updates automatically. Alfred reads these as tasks. The calendar becomes the single source of truth.
+**Core principles**:
+1. **Every milestone = a real tool** in OlaWave. Calendar milestones auto-update as work gets done.
+2. **Visual-first** — every module is designed to inspire. Moodboards, galleries, visual reviews, beautiful layouts.
+3. **AI-native** — fal.ai powers image generation (FASHN for fashion, Flux 2 for editorial, Kling 3.0 for video). Claude/Gemini power text. AI is everywhere.
+4. **One platform** — no need for Figma, Canva, Klaviyo, or spreadsheets. OlaWave does it all.
+
+## AI Stack
+
+| Service | Provider | Use Case | API |
+|---|---|---|---|
+| **Virtual Try-On** | FASHN v1.6 via fal.ai | Flat-lay → on-model photos | `fal-ai/fashn/tryon/v1.6` |
+| **Model Creation** | FASHN via fal.ai | Generate custom AI models for the brand | `fal-ai/fashn/model-create` |
+| **Product-to-Model** | FASHN via fal.ai | Put product on any model | `fal-ai/fashn/product-to-model` |
+| **Editorial/Lifestyle** | Flux 2 Pro via fal.ai | Campaign shots, lifestyle scenes | `fal-ai/flux-2-pro` |
+| **Image-to-Video** | Kling 3.0 via fal.ai | Transform photos into fashion videos | `fal-ai/kling-video/v3/standard` |
+| **Text Generation** | Claude Sonnet | Brand stories, product copy, email flows | Anthropic API |
+| **Analysis/Short-form** | Gemini 2.5 Flash | Trend analysis, captions, SEO | Google AI API |
+| **Tech Sketches** | OpenAI gpt-image-1 | Technical fashion sketches (SketchFlow) | OpenAI API |
+
+**Single dependency**: `@fal-ai/client` with existing `FAL_KEY` in `.env.local`.
 
 ---
 
@@ -228,15 +247,48 @@ CREATE TABLE ai_generations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   collection_plan_id uuid REFERENCES collection_plans(id) ON DELETE SET NULL,
   user_id uuid NOT NULL REFERENCES auth.users(id),
-  generation_type text NOT NULL,        -- 'product_render', 'lookbook_image', 'ad_creative', 'social_post', 'copy', 'email'
+  generation_type text NOT NULL,        -- 'tryon', 'product_render', 'lifestyle', 'editorial', 'ad_creative', 'video', 'copy'
   prompt text NOT NULL,
-  input_data jsonb,                     -- { reference_images[], sku_id, style, etc. }
-  output_data jsonb,                    -- { images: [{ url, base64 }], text, variants[] }
-  model_used text,                      -- 'gpt-image-1', 'gemini', 'claude', etc.
+  input_data jsonb,                     -- { reference_images[], sku_id, model_id, style, format, etc. }
+  output_data jsonb,                    -- { images: [{ url, base64 }], video_url, text, variants[] }
+  fal_request_id text,                  -- fal.ai request ID for status polling
+  model_used text,                      -- 'fashn-tryon-v1.6', 'flux-2-pro', 'kling-3.0', 'claude', 'gemini'
+  cost_credits decimal(8,4),            -- cost tracking
   status text DEFAULT 'pending',        -- 'pending', 'processing', 'completed', 'failed'
+  is_favorite boolean DEFAULT false,    -- user marked as best
   error text,
   created_at timestamptz DEFAULT now(),
   completed_at timestamptz
+);
+
+-- 11. Brand AI models (persistent virtual models for the brand)
+CREATE TABLE brand_models (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  collection_plan_id uuid NOT NULL REFERENCES collection_plans(id) ON DELETE CASCADE,
+  name text NOT NULL,                   -- e.g. "Main Female Model", "Street Style Male"
+  gender text,                          -- 'female', 'male', 'non-binary'
+  age_range text,                       -- e.g. '20-25', '30-35'
+  ethnicity text,
+  body_type text,
+  hair_description text,
+  style_vibe text,                      -- e.g. 'editorial', 'streetwear', 'classic'
+  reference_image_url text,             -- base image for the model
+  fal_model_id text,                    -- ID from FASHN model creation
+  preview_images jsonb,                 -- [{ url, pose }] preview shots
+  created_at timestamptz DEFAULT now()
+);
+
+-- 12. Lookbook pages (for the visual lookbook builder)
+CREATE TABLE lookbook_pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  collection_plan_id uuid NOT NULL REFERENCES collection_plans(id) ON DELETE CASCADE,
+  lookbook_name text NOT NULL DEFAULT 'Main Lookbook',
+  page_number integer NOT NULL,
+  layout_type text NOT NULL,            -- 'full_bleed', 'two_column', 'grid_4', 'text_image', 'cover', 'quote'
+  content jsonb NOT NULL,               -- [{ type: 'image'|'text'|'product_info', asset_id?, text?, sku_id?, position, size }]
+  background_color text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 ```
 
@@ -415,81 +467,147 @@ supabase storage:
 
 ---
 
-### PHASE 5: AI Image Generation Hub
-**Goal**: Unified AI render pipeline for product shots, lookbook, and ad creative
+### PHASE 5: AI Creative Studio (fal.ai powered)
+**Goal**: Full AI image & video generation hub — product renders, lookbooks, campaign visuals, video content
 
-**New page**: `/collection/[id]/digital/renders`
+**New pages**:
+- `/collection/[id]/studio` — Main creative studio
+- `/collection/[id]/studio/lookbook` — Lookbook builder
+
+**Dependency**: `npm install @fal-ai/client` (uses existing `FAL_KEY` from `.env.local`)
 
 **Tasks**:
-1. Product Render Generator:
-   - Select SKU + colorway
-   - Choose background/setting (studio, lifestyle, flat lay)
-   - Generate with AI (user-provided API key for their image gen service)
-   - Batch mode: render all SKUs in a colorway
-   - Save to `collection_assets` + `ai_generations`
 
-2. Lookbook Image Generator:
-   - Select styling/mood from brand profile
-   - Choose model type, pose, setting
-   - Generate lookbook compositions
-   - Editorial style options
+1. **Product Render Generator** (`/collection/[id]/studio`):
+   - Visual gallery layout with SKU selector sidebar
+   - Select SKU → see flat-lay/sketch from SketchFlow or uploaded photo
+   - Choose generation mode:
+     - **On-Model** (FASHN Try-On): pick model type (gender, ethnicity, body type, pose) → generates product on model
+     - **Studio Shot** (Flux 2): choose background (white studio, marble, gradient, custom) → clean product photo
+     - **Lifestyle** (Flux 2): choose scene (street, cafe, beach, office, runway) → editorial context shot
+   - Each generation shows 2-4 variations to choose from
+   - Favorite/approve the best → saved to `collection_assets`
+   - **Batch mode**: select multiple SKUs → queue all generations → process in background
+   - Beautiful masonry gallery of all generated images with filters (by SKU, by type, by status)
 
-3. Ad Creative Generator:
-   - Select product renders
-   - Choose format (Instagram square, Story, Facebook, Google)
-   - Add text overlays (product name, price, CTA)
-   - Generate variations for A/B testing
+2. **AI Model Studio**:
+   - Create persistent AI models for the brand using FASHN Model Create
+   - Define: gender, age range, ethnicity, body type, hair, style vibe
+   - Save as "brand models" — reuse across all product shoots for visual consistency
+   - Model gallery with preview shots
 
-4. AI Generation Queue:
-   - Unified job queue (`ai_generations` table)
-   - Status tracking (pending → processing → completed)
-   - Gallery of all generated images
-   - Favorite/approve for use
+3. **Lookbook Builder** (`/collection/[id]/studio/lookbook`):
+   - Visual drag-and-drop page builder (magazine-style layout)
+   - Page templates: full-bleed image, 2-column, grid, text+image, quote page
+   - Drag images from the asset gallery (AI-generated or uploaded)
+   - Add text blocks with brand fonts (from `brand_profiles`)
+   - Add product info overlays (name, price, colorway from SKU data)
+   - Cover page with collection name, season, brand logo
+   - **AI-assist**: "Generate a lookbook spread for [SKU]" → picks best renders + writes copy
+   - Preview as flipbook in-browser
+   - Export as PDF lookbook (print-ready, 300dpi)
+   - Share via public link (read-only)
+
+4. **Campaign Creative Generator**:
+   - Select product renders from gallery
+   - Choose format presets:
+     - Instagram Feed (1080x1080)
+     - Instagram Story / Reel cover (1080x1920)
+     - Facebook Ad (1200x628)
+     - Pinterest Pin (1000x1500)
+     - Google Display (various)
+     - Email Header (600x200)
+   - AI generates creative with product + background + optional text overlay
+   - Text overlay editor: headline, subheadline, CTA, price badge
+   - Brand colors/fonts auto-applied from `brand_profiles`
+   - Export individual or batch all formats for one product
+
+5. **Video Generator**:
+   - Select any generated image → convert to video with Kling 3.0
+   - Choose motion type: subtle movement, model walk, camera pan, zoom
+   - 3-5 second clips perfect for Reels/TikTok/Stories
+   - Preview + download MP4
+   - Save to `collection_assets` as video
+
+6. **Inspiration Gallery** (visual-first experience):
+   - Full-screen masonry gallery of ALL generated content
+   - Filter by: phase, SKU, type (product/lookbook/campaign/video), status
+   - Mood board mode: drag images to create visual groupings
+   - Side-by-side comparison tool
+   - Full-screen lightbox with zoom
+   - Bulk download as ZIP
+   - This is the "wow" page — beautiful, Pinterest-like, inspires the user
+
+7. **AI Generation Queue & History**:
+   - Background job processing via `ai_generations` table
+   - Real-time status updates (pending → processing → completed/failed)
+   - Cost tracking (credits used per generation)
+   - Re-generate with tweaked parameters
+   - Generation history with all prompts saved
+
+**API Routes**:
+```
+POST /api/ai/fal/tryon          — FASHN virtual try-on
+POST /api/ai/fal/model-create   — Create AI model
+POST /api/ai/fal/product-render — Flux 2 product shot
+POST /api/ai/fal/lifestyle      — Flux 2 lifestyle/editorial
+POST /api/ai/fal/video          — Kling 3.0 image-to-video
+GET  /api/ai/fal/status/[id]    — Check generation status
+```
+
+All routes use the same pattern:
+```typescript
+import { fal } from '@fal-ai/client';
+fal.config({ credentials: process.env.FAL_KEY });
+const result = await fal.subscribe('fal-ai/fashn/tryon/v1.6', { input: {...} });
+```
 
 **Supabase migrations**:
-- `ai_generations` table
+- `ai_generations` table (with fal_request_id, model_used, cost_credits fields)
 - `campaign_shoots` table
+- `lookbook_pages` table (for the lookbook builder)
 
-**API**:
-- `/api/ai/generate-render` — product renders
-- `/api/ai/generate-lookbook` — lookbook images
-- `/api/ai/generate-ad-creative` — ad creatives
-- Image gen API is pluggable (user provides their key)
-
-**Calendar auto-sync**: dg-3, dg-4
+**Calendar auto-sync**: dg-3, dg-4, dg-5
 
 ---
 
-### PHASE 6: Digital Presence & Copywriting
-**Goal**: Website prep, e-commerce setup, and AI-assisted copy
+### PHASE 6: Digital Presence & AI Copywriting
+**Goal**: Website prep, e-commerce catalog, AI-powered brand copy, and visual content workspace
 
 **New page**: `/collection/[id]/digital`
 
 **Tasks**:
-1. Website/E-commerce tracker:
-   - Milestone checklist for web development
-   - Link to external tools (Shopify, WordPress, etc.)
-   - Product catalog preview (auto-generated from SKUs + renders)
-   - SEO checklist
 
-2. AI Copywriting workspace:
-   - Brand story generator (from brand profile data)
-   - Product descriptions per SKU (from tech specs + brand voice)
-   - About page copy
-   - Email copy templates (welcome, launch, cart abandonment)
-   - Social media captions per content calendar item
-   - All copy respects brand voice from `brand_profiles`
+1. **Product Catalog Preview**:
+   - Auto-generated from SKUs + best AI renders
+   - Grid view: product image, name, price, colorways available
+   - Click to expand: all photos, description, materials, sizes
+   - Export as CSV (for Shopify/WooCommerce import)
+   - Export as PDF catalog (with brand styling)
+   - This is a live preview of what the e-commerce will look like
 
-3. Lookbook builder:
-   - Drag-and-drop layout
-   - Combine AI renders + real photos
-   - Add copy blocks
-   - Export as PDF lookbook
-   - Share via link
+2. **AI Copywriting Studio** (visual workspace):
+   - Split-screen: product image on left, AI-generated copy on right
+   - **Brand Story**: AI generates founding story, brand manifesto, about page (from brand_profiles data)
+   - **Product Descriptions**: Per-SKU copy that references materials, colorways, design inspiration
+   - **SEO Copy**: Meta titles, descriptions, alt texts for all product images
+   - **Email Templates**: Welcome series, launch announcement, cart abandonment, post-purchase
+   - **Social Captions**: Per-platform copy (IG, TikTok, Pinterest) with hashtag suggestions
+   - All copy auto-respects brand voice from `brand_profiles` (tone, keywords, personality)
+   - Edit inline, regenerate with tweaks, save approved versions
+   - Bulk generate: "Write descriptions for all 15 SKUs" → processes in background
+
+3. **Website/E-commerce Tracker**:
+   - Visual checklist for web development milestones
+   - Domain, hosting, platform selection (Shopify/WooCommerce/custom)
+   - Integration links to external tools
+   - SEO audit checklist
+   - Performance targets
 
 **AI integrations**:
-- Claude for long-form copy (brand story, product descriptions)
-- Gemini for short-form (captions, CTAs, subject lines)
+- Claude Sonnet for long-form (brand story, product descriptions, emails)
+- Gemini Flash for short-form (captions, CTAs, subject lines, SEO)
+- All copy generation includes brand_profiles context in system prompt
 
 **Calendar auto-sync**: dg-1, dg-2, dg-4, dg-5
 
@@ -643,6 +761,20 @@ Phase 1: Collection Hub ──────────────────�
 Phase 10: Polish ─────────────────────────────► after all phases
 ```
 
+## Design Philosophy — Visual First
+
+Every module should feel like a **creative tool**, not an admin panel. Guidelines:
+
+- **Gallery views by default** — show images, renders, and visual assets as masonry grids, not tables
+- **Large previews** — click any image for full-screen lightbox with zoom
+- **Side-by-side comparisons** — design iterations, proto vs sketch, colorway options
+- **Drag-and-drop everywhere** — reorder pages, assign images, build layouts
+- **Inspiration mode** — every phase has a "mood board" area where users can collect reference images
+- **Dark overlays on hover** — show metadata (SKU name, status, date) as elegant overlay on images
+- **Smooth transitions** — fade in galleries, slide panels, skeleton loading for AI generations
+- **Brand colors throughout** — use the collection's own brand palette as accent colors in the UI
+- **Progress feels visual** — phase completion shown as visual progress rings, not just percentages
+
 ## Execution Notes
 
 - Each phase should be its own git branch + PR
@@ -650,14 +782,23 @@ Phase 10: Polish ─────────────────────
 - Test each phase independently before merging
 - Use consistent patterns: `useXxx` hook per table, `/api/xxx` route, same CRUD pattern
 - All new pages follow existing convention: `'use client'`, `<Navbar />`, `bg-[#fff6dc]`, `pt-28`
-- AI image generation API is **pluggable** — user provides their own API key, we provide the orchestration
+- **fal.ai is the single AI image gateway** — all image/video generation goes through `@fal-ai/client` with the existing `FAL_KEY`
 - Every phase module includes a "Phase Overview" card showing linked milestones and their status from the calendar
+- Every phase module includes an "Inspiration Board" section for reference images
 
 ## Tech Decisions
 
-- **Image storage**: Supabase Storage (free tier = 1GB, Pro = 100GB)
-- **AI models**: Keep current pattern (Gemini for analysis, Claude for text, OpenAI/user-provided for images)
+- **AI Image/Video**: fal.ai as single gateway (`@fal-ai/client`, existing `FAL_KEY`)
+  - FASHN (try-on, model create, product-to-model)
+  - Flux 2 Pro (editorial, lifestyle, studio shots)
+  - Kling 3.0 (image-to-video for reels/TikTok)
+- **AI Text**: Claude Sonnet (long-form) + Gemini Flash (short-form, analysis)
+- **AI Sketches**: OpenAI gpt-image-1 (existing SketchFlow)
+- **Image storage**: Supabase Storage (upgrade to Pro for 100GB if needed)
 - **PDF generation**: Extend existing html2canvas + jsPDF pattern from SketchFlow
-- **Rich text**: Use simple Markdown editor (no heavy WYSIWYG)
+- **Rich text**: Simple Markdown editor (no heavy WYSIWYG)
 - **Drag & drop**: Keep existing mouse event pattern from GanttChart (no external lib)
 - **Calendar view for content**: Simple CSS grid (month view) + list view
+- **Lookbook builder**: CSS grid layout with drag-and-drop, export via html2canvas
+- **Video preview**: Native HTML5 `<video>` element, MP4 from Kling
+- **Gallery layouts**: Masonry grid (CSS columns) for Pinterest-like visual feel
