@@ -18,13 +18,14 @@ export function Navbar() {
   const getCurrentStep = () => {
     if (pathname?.startsWith('/creative-space')) return 1;
     if (pathname?.startsWith('/ai-advisor')) return 2;
-    if (pathname?.startsWith('/planner')) return 3;
+    if (pathname?.startsWith('/planner') || pathname?.startsWith('/collection/')) return 3;
     if (pathname?.startsWith('/go-to-market')) return 4;
     return 0;
   };
 
   const currentStep = getCurrentStep();
-  const isInJourney = currentStep > 0;
+  const isInCollection = pathname?.startsWith('/collection/');
+  const isInJourney = currentStep > 0 && !isInCollection;
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 animate-fade-in">

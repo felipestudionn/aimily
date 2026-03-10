@@ -161,8 +161,8 @@ export default function MyCollectionsPage() {
                       </span>
                     )}
                     
-                    <Link 
-                      href={`/planner/${collection.id}`}
+                    <Link
+                      href={`/collection/${collection.id}`}
                       className="flex items-center justify-center gap-2 w-full py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
                     >
                       Continue Working
