@@ -9,6 +9,7 @@ import {
   Edit3,
   Save,
   RotateCcw,
+  Download,
   Package,
   Layers,
   Megaphone,
@@ -169,6 +170,17 @@ export function CollectionCalendarClient({
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                if (!timeline) return;
+                const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
+                await exportTimelineToExcel(timeline);
+              }}
+              className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+              title="Exportar a Excel"
+            >
+              <Download className="w-4 h-4" />
+            </button>
             <button
               onClick={resetToDefaults}
               className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"

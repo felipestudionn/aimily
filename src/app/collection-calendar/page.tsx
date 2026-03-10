@@ -5,7 +5,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { GanttChart } from '@/components/timeline/GanttChart';
 import { createDefaultTimeline } from '@/lib/timeline-template';
 import { CollectionTimeline, TimelineMilestone } from '@/types/timeline';
-import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight } from 'lucide-react';
+import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
@@ -306,6 +306,17 @@ export default function CollectionCalendarPage() {
                 Editar
               </button>
             )}
+            <button
+              onClick={async () => {
+                if (!activeTimeline) return;
+                const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
+                await exportTimelineToExcel(activeTimeline);
+              }}
+              className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+              title="Exportar a Excel"
+            >
+              <Download className="w-4 h-4" />
+            </button>
             <button
               onClick={resetTimeline}
               className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
