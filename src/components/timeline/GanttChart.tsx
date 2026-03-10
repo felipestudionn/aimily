@@ -17,7 +17,7 @@ import {
   formatDate,
   daysBetween,
 } from '@/lib/timeline-template';
-import { ChevronDown, ChevronRight, Check, Clock, Circle, GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronRight, Check, Clock, Circle, Plus, Trash2 } from 'lucide-react';
 
 const DAY_WIDTH = 4;
 const ROW_HEIGHT = 40;
@@ -223,6 +223,49 @@ export function GanttChart({
       durationWeeks: editValues.durationWeeks,
       startWeeksBefore: editValues.startWeeksBefore,
       notes: editValues.notes || undefined,
+    });
+    setEditingMilestone(null);
+  };
+
+  const addMilestone = (phase: TimelinePhase) => {
+    const phaseInfo = PHASES[phase];
+    const phaseMilestones = timeline.milestones.filter((m) => m.phase === phase);
+    // Place new milestone near existing ones in this phase, or at week 20
+    const avgStart = phaseMilestones.length > 0
+      ? Math.round(phaseMilestones.reduce((s, m) => s + m.startWeeksBefore, 0) / phaseMilestones.length)
+      : 20;
+
+    const newMilestone: TimelineMilestone = {
+      id: crypto.randomUUID(),
+      phase,
+      name: 'New Milestone',
+      nameEs: 'Nuevo hito',
+      responsible: 'US',
+      startWeeksBefore: avgStart,
+      durationWeeks: 2,
+      color: phaseInfo.color,
+      status: 'pending',
+    };
+
+    onUpdateTimeline({
+      milestones: [...timeline.milestones, newMilestone],
+    });
+
+    // Open editor immediately for the new milestone
+    setTimeout(() => {
+      setEditingMilestone(newMilestone.id);
+      setEditValues({
+        nameEs: newMilestone.nameEs,
+        durationWeeks: newMilestone.durationWeeks,
+        startWeeksBefore: newMilestone.startWeeksBefore,
+        notes: '',
+      });
+    }, 50);
+  };
+
+  const deleteMilestone = (id: string) => {
+    onUpdateTimeline({
+      milestones: timeline.milestones.filter((m) => m.id !== id),
     });
     setEditingMilestone(null);
   };
@@ -442,9 +485,19 @@ export function GanttChart({
                   <span className="text-xs font-bold text-gray-700 uppercase tracking-wide flex-1">
                     {phase.nameEs}
                   </span>
-                  <span className="text-[10px] text-gray-400 font-medium">
+                  <span className="text-[10px] text-gray-400 font-medium mr-1">
                     {phaseCompleted}/{milestones.length}
                   </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addMilestone(phaseKey);
+                    }}
+                    className="w-5 h-5 flex items-center justify-center rounded-md hover:bg-white/60 text-gray-400 hover:text-gray-700 transition-colors"
+                    title="Añadir hito"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 {/* Milestones */}
                 {!isCollapsed &&
@@ -776,7 +829,20 @@ export function GanttChart({
               </div>
 
               {/* Actions */}
-              <div className="px-5 py-3 flex items-center justify-end gap-2 border-t border-gray-100">
+              <div className="px-5 py-3 flex items-center gap-2 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    if (confirm('¿Eliminar este hito?')) {
+                      deleteMilestone(editingMilestone!);
+                    }
+                  }}
+                  className="flex items-center gap-1 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Eliminar hito"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Eliminar
+                </button>
+                <div className="flex-1" />
                 <button
                   onClick={() => setEditingMilestone(null)}
                   className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
