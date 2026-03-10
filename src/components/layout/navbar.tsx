@@ -7,6 +7,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -168,6 +169,8 @@ export function Navbar() {
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   New Collection
                 </Link>
+                {/* Notifications */}
+                <NotificationBell />
                 {/* User Profile */}
                 <div className="flex items-center gap-1 pl-2 border-l border-gray-300">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-full">

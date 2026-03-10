@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { PhasePlaceholder } from '@/components/collection/PhasePlaceholder';
+import { LaunchWorkspace } from '@/components/launch/LaunchWorkspace';
 
 interface PageProps { params: Promise<{ id: string }>; }
 
@@ -11,5 +11,5 @@ export default async function LaunchPage({ params }: PageProps) {
     .eq('collection_plan_id', id)
     .single();
 
-  return <PhasePlaceholder phase="launch" milestones={data?.milestones || []} />;
+  return <LaunchWorkspace milestones={data?.milestones || []} />;
 }
