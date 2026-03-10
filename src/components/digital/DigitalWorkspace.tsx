@@ -70,11 +70,11 @@ export function DigitalWorkspace({ milestones }: DigitalWorkspaceProps) {
   return (
     <div className="space-y-6">
       {/* Phase Header */}
-      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-600 flex items-center justify-center">
-              <Monitor className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 bg-crema flex items-center justify-center text-carbon">
+              <Monitor className="h-5 w-5" fill="currentColor" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">Digital Presence</h2>

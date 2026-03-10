@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Clock, AlertCircle, CalendarDays } from 'lucide-react';
 import { PHASES } from '@/lib/timeline-template';
+import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 
 interface PhasePlaceholderProps {
@@ -26,10 +27,8 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Phase Header */}
       <div className="flex items-center gap-4">
-        <div
-          className="w-14 h-14 flex items-center justify-center text-2xl bg-carbon/5"
-        >
-          {info.icon}
+        <div className="w-14 h-14 flex items-center justify-center bg-crema text-carbon">
+          <PhaseIcon phase={phase} className="h-7 w-7" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{info.name}</h1>

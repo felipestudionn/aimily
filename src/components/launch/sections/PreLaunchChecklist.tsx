@@ -14,6 +14,7 @@ import {
   Minus,
 } from 'lucide-react';
 import { PHASES, PHASE_ORDER } from '@/lib/timeline-template';
+import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelineMilestone, TimelinePhase } from '@/types/timeline';
 import type { PhaseGoNoGo, PhaseReadiness } from '@/types/launch';
 
@@ -126,7 +127,9 @@ export function PreLaunchChecklist({ milestones }: PreLaunchChecklistProps) {
                   onClick={() => setExpandedPhase(isExpanded ? null : phase.phase)}
                   className="w-full flex items-center gap-3 py-3 px-4 hover:bg-gray-50 transition-colors"
                 >
-                  <span className="text-xl">{phase.icon}</span>
+                  <div className="w-6 h-6 flex items-center justify-center text-carbon">
+                    <PhaseIcon phase={phase.phase} className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-medium text-gray-900">{phase.label}</p>
                     <p className="text-xs text-gray-400">{phase.labelEs}</p>

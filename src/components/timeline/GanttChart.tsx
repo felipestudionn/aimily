@@ -364,13 +364,13 @@ export function GanttChart({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white shadow-sm border border-gray-100 overflow-hidden">
+    <div className="flex flex-col h-full bg-white shadow-sm border border-gris overflow-hidden">
       {/* Stats bar */}
-      <div className="flex items-center gap-6 px-6 py-3 bg-gray-50 border-b border-gray-100 text-sm">
+      <div className="flex items-center gap-6 px-6 py-3 bg-crema/40 border-b border-gris text-sm">
         <div className="flex items-center gap-2">
-          <div className="w-28 h-2.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-28 h-2.5 bg-gris rounded-full overflow-hidden">
             <div
-              className="h-full bg-green-500 rounded-full transition-all duration-500"
+              className="h-full bg-carbon rounded-full transition-all duration-500"
               style={{ width: `${stats.percent}%` }}
             />
           </div>
@@ -395,10 +395,10 @@ export function GanttChart({
       </div>
 
       {/* Header row */}
-      <div className="flex border-b border-gray-200 bg-white sticky top-0 z-20">
+      <div className="flex border-b border-gris bg-white sticky top-0 z-20">
         {/* Left header */}
         <div
-          className="flex-shrink-0 flex items-end px-4 py-2 border-r border-gray-200 bg-white"
+          className="flex-shrink-0 flex items-end px-4 py-2 border-r border-gris bg-white"
           style={{ width: LEFT_PANEL_WIDTH }}
         >
           <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -418,7 +418,7 @@ export function GanttChart({
             {months.map((month, i) => (
               <div
                 key={i}
-                className="absolute top-0 h-full flex items-end border-l border-gray-200"
+                className="absolute top-0 h-full flex items-end border-l border-gris"
                 style={{
                   left: month.startDay * DAY_WIDTH,
                   width: month.days * DAY_WIDTH,
@@ -432,20 +432,20 @@ export function GanttChart({
             {/* Today marker in header */}
             {todayOffset > 0 && todayOffset < chartWidth && (
               <div
-                className="absolute top-0 h-full w-0.5 bg-red-500 z-10"
+                className="absolute top-0 h-full w-0.5 bg-error z-10"
                 style={{ left: todayOffset }}
               >
-                <div className="absolute -top-0 -left-3 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded-b">
+                <div className="absolute -top-0 -left-3 px-1.5 py-0.5 bg-error text-white text-[9px] font-bold rounded-b">
                   HOY
                 </div>
               </div>
             )}
             {/* Launch marker in header */}
             <div
-              className="absolute top-0 h-full w-0.5 bg-black z-10"
+              className="absolute top-0 h-full w-0.5 bg-carbon z-10"
               style={{ left: launchOffset }}
             >
-              <div className="absolute -top-0 -left-6 px-1.5 py-0.5 bg-black text-white text-[9px] font-bold rounded-b">
+              <div className="absolute -top-0 -left-6 px-1.5 py-0.5 bg-carbon text-white text-[9px] font-bold rounded-b">
                 LAUNCH
               </div>
             </div>
@@ -458,7 +458,7 @@ export function GanttChart({
         {/* Left panel - milestone names */}
         <div
           ref={leftPanelRef}
-          className="flex-shrink-0 overflow-hidden border-r border-gray-200 bg-white"
+          className="flex-shrink-0 overflow-hidden border-r border-gris bg-white"
           style={{ width: LEFT_PANEL_WIDTH }}
         >
           {PHASE_ORDER.map((phaseKey) => {
@@ -581,14 +581,14 @@ export function GanttChart({
             {/* Today line */}
             {todayOffset > 0 && todayOffset < chartWidth && (
               <div
-                className="absolute top-0 h-full w-0.5 bg-red-500/60 z-10"
+                className="absolute top-0 h-full w-0.5 bg-error/60 z-10"
                 style={{ left: todayOffset }}
               />
             )}
 
             {/* Launch line */}
             <div
-              className="absolute top-0 h-full w-0.5 bg-black/80 z-10"
+              className="absolute top-0 h-full w-0.5 bg-carbon/80 z-10"
               style={{ left: launchOffset }}
             />
 
@@ -711,7 +711,7 @@ export function GanttChart({
                       {/* Tooltip on hover (not during drag) */}
                       {!isDragging && (
                         <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/bar:block z-30 pointer-events-none">
-                          <div className="bg-gray-900 text-white text-[11px] px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
+                          <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
                             <div className="font-bold text-[12px]">{mName(m)}</div>
                             <div className="text-gray-300 mt-1">
                               {formatDate(pos.startDate)} → {formatDate(pos.endDate)}
@@ -859,7 +859,7 @@ export function GanttChart({
                 </button>
                 <button
                   onClick={saveEditor}
-                  className="px-4 py-2 text-sm font-semibold bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+                  className="px-4 py-2 text-sm font-semibold bg-carbon text-white rounded-lg hover:bg-carbon/80 transition-colors"
                 >
                   {t('Save', 'Guardar')}
                 </button>

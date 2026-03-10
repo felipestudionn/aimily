@@ -89,8 +89,8 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
       {/* Phase Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 flex items-center justify-center bg-purple-50">
-            <Sparkles className="h-7 w-7 text-purple-600" />
+          <div className="w-14 h-14 flex items-center justify-center bg-crema text-carbon">
+            <Sparkles className="h-7 w-7" fill="currentColor" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">AI Creative Studio</h1>

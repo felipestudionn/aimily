@@ -146,8 +146,8 @@ export function CollectionCalendarClient({
             </Link>
           )}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-crema flex items-center justify-center text-carbon">
+              <Calendar className="w-5 h-5" fill="currentColor" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
@@ -184,16 +184,16 @@ export function CollectionCalendarClient({
 
         <div className="flex items-center gap-2">
           {/* Language toggle */}
-          <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="flex bg-white border border-gris overflow-hidden">
             <button
               onClick={() => setLang('en')}
-              className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-carbon text-white' : 'text-gray-500 hover:bg-gray-50'}`}
             >
               EN
             </button>
             <button
               onClick={() => setLang('es')}
-              className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-black text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-carbon text-white' : 'text-gray-500 hover:bg-gray-50'}`}
             >
               ES
             </button>
@@ -230,9 +230,9 @@ export function CollectionCalendarClient({
       {/* Collection data cards */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         {/* SKUs card */}
-        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+        <div className="bg-white border border-gris p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-orange-500" />
+            <Package className="w-4 h-4 text-carbon" />
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
               Modelos a Desarrollar
             </span>
@@ -246,7 +246,7 @@ export function CollectionCalendarClient({
               {stats.families.slice(0, 5).map((f) => (
                 <span
                   key={f}
-                  className="text-[10px] bg-orange-50 text-orange-600 px-1.5 py-0.5 rounded-full"
+                  className="text-[10px] bg-crema text-carbon px-1.5 py-0.5 rounded-full"
                 >
                   {f}
                 </span>
@@ -261,9 +261,9 @@ export function CollectionCalendarClient({
         </div>
 
         {/* Drops card */}
-        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+        <div className="bg-white border border-gris p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Layers className="w-4 h-4 text-blue-500" />
+            <Layers className="w-4 h-4 text-carbon" />
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
               Drops Planificados
             </span>
@@ -293,9 +293,9 @@ export function CollectionCalendarClient({
         </div>
 
         {/* Commercial Actions card */}
-        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+        <div className="bg-white border border-gris p-3">
           <div className="flex items-center gap-2 mb-2">
-            <Megaphone className="w-4 h-4 text-purple-500" />
+            <Megaphone className="w-4 h-4 text-carbon" />
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
               Acciones Comerciales
             </span>
@@ -337,13 +337,13 @@ export function CollectionCalendarClient({
         ].map((p) => (
           <div
             key={p.label}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-full border border-gray-100 shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gris"
           >
             <div
               className="w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: p.color }}
             />
-            <span className="text-[11px] font-medium text-gray-600">
+            <span className="text-[11px] font-medium text-texto">
               {p.label}
             </span>
           </div>

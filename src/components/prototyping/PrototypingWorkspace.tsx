@@ -13,6 +13,7 @@ import {
 import { useSkus } from '@/hooks/useSkus';
 import { useSampleReviews } from '@/hooks/useSampleReviews';
 import { PHASES } from '@/lib/timeline-template';
+import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelineMilestone } from '@/types/timeline';
 
 import { ProtoTracker } from './sections/ProtoTracker';
@@ -66,11 +67,8 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Phase Header */}
       <div className="flex items-center gap-4">
-        <div
-          className="w-14 h-14 flex items-center justify-center text-2xl"
-          style={{ backgroundColor: info.bgColor }}
-        >
-          {info.icon}
+        <div className="w-14 h-14 flex items-center justify-center bg-crema text-carbon">
+          <PhaseIcon phase="prototyping" className="h-7 w-7" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{info.name}</h1>

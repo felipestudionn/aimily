@@ -58,7 +58,15 @@ const CATEGORIES = [
   { id: 'clothing', label: 'Clothing' },
   { id: 'footwear', label: 'Footwear' },
   { id: 'accessories', label: 'Accessories' },
-  { id: 'mixed', label: 'Mixed' },
+  { id: 'bags', label: 'Bags' },
+  { id: 'jewelry', label: 'Jewelry' },
+  { id: 'eyewear', label: 'Eyewear' },
+  { id: 'swimwear', label: 'Swimwear' },
+  { id: 'activewear', label: 'Activewear' },
+  { id: 'denim', label: 'Denim' },
+  { id: 'socks', label: 'Socks' },
+  { id: 'hats', label: 'Hats' },
+  { id: 'scarves', label: 'Scarves' },
 ];
 
 const COLLECTION_SIZES = [
@@ -159,7 +167,7 @@ export default function NewCollectionPage() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [season, setSeason] = useState('');
-  const [category, setCategory] = useState<CategoryType | ''>('');
+  const [categories, setCategories] = useState<Set<string>>(new Set());
   const [collectionSize, setCollectionSize] = useState('');
   const [distribution, setDistribution] = useState('');
   const [launchDate, setLaunchDate] = useState('');
@@ -173,13 +181,20 @@ export default function NewCollectionPage() {
   // ── Dynamic data ──
   const SEASONS = useMemo(generateSeasons, []);
 
+  // Derive primary category for terminology in phase questions
+  const primaryCategory: CategoryType = useMemo(() => {
+    if (categories.has('footwear')) return 'footwear';
+    if (categories.has('clothing') || categories.has('denim') || categories.has('swimwear') || categories.has('activewear')) return 'clothing';
+    if (categories.size > 0) return 'accessories';
+    return 'mixed';
+  }, [categories]);
+
   const filteredQuestions = useMemo(() => {
-    if (!category) return PHASE_QUESTIONS;
     return PHASE_QUESTIONS.filter((q) => {
-      if (q.skipFor?.includes(category as CategoryType)) return false;
+      if (q.skipFor?.includes(primaryCategory)) return false;
       return true;
     });
-  }, [category]);
+  }, [primaryCategory]);
 
   /* Step layout:
      0: name | 1: season | 2: category | 3: collection size | 4: distribution | 5: launch date
@@ -225,11 +240,13 @@ export default function NewCollectionPage() {
 
   const canAdvance = useMemo(() => {
     if (step === 0) return name.trim().length > 0;
+    if (step === 2) return categories.size > 0;
     if (step === 5) return launchDate.length > 0;
     return true;
-  }, [step, name, launchDate]);
+  }, [step, name, categories.size, launchDate]);
 
-  const isAutoAdvanceStep = step >= 1 && step <= 4;
+  // Steps 1, 3, 4 are auto-advance (season, size, distribution). Step 2 (category) is now manual.
+  const isAutoAdvanceStep = step === 1 || step === 3 || step === 4;
   const isQuestionStep = step >= SETUP_STEPS && step < SETUP_STEPS + QUESTION_STEPS;
   const isSummaryStep = step === TOTAL_STEPS - 1;
 
@@ -257,7 +274,8 @@ export default function NewCollectionPage() {
           name,
           season,
           setup_data: {
-            productCategory: category,
+            productCategory: primaryCategory,
+            productCategories: Array.from(categories),
             collectionSize,
             distribution,
             workspace_config: {},
@@ -313,20 +331,34 @@ export default function NewCollectionPage() {
     </div>
   );
 
+  const toggleCategory = (id: string) => {
+    setCategories((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   const renderCategory = () => (
     <div className="flex flex-col items-center animate-fade-in-up">
       <h1 className="text-3xl font-light text-texto tracking-tight mb-2">What are you making?</h1>
-      <p className="text-texto/40 text-sm mb-14">This affects terminology throughout your workspace</p>
-      <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => { setCategory(c.id as CategoryType); next(); }}
-            className={`py-6 text-sm font-medium tracking-[0.15em] uppercase transition-all ${category === c.id ? 'bg-carbon text-crema' : 'border border-gris/30 text-texto hover:border-carbon'}`}
-          >
-            {c.label}
-          </button>
-        ))}
+      <p className="text-texto/40 text-sm mb-14">Select all that apply</p>
+      <div className="grid grid-cols-3 gap-2.5 w-full max-w-md">
+        {CATEGORIES.map((c) => {
+          const isSelected = categories.has(c.id);
+          return (
+            <button
+              key={c.id}
+              onClick={() => toggleCategory(c.id)}
+              className={`relative py-5 text-xs font-medium tracking-[0.12em] uppercase transition-all ${isSelected ? 'bg-carbon text-crema' : 'border border-gris/30 text-texto hover:border-carbon'}`}
+            >
+              {isSelected && (
+                <Check className="absolute top-1.5 right-1.5 h-3 w-3 text-crema/60" />
+              )}
+              {c.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -408,7 +440,7 @@ export default function NewCollectionPage() {
           <div className="text-xs text-texto/25 uppercase tracking-[0.2em] mb-6">{phase.name}</div>
         )}
         <h1 className="text-3xl font-light text-texto tracking-tight mb-2 text-center max-w-lg">
-          {question.getTitle((category || 'mixed') as CategoryType)}
+          {question.getTitle(primaryCategory)}
         </h1>
         {question.subtitle && (
           <p className="text-texto/40 text-sm mb-14 text-center max-w-md">{question.subtitle}</p>
@@ -442,7 +474,7 @@ export default function NewCollectionPage() {
         {[
           ['Name', name],
           ['Season', season],
-          ['Category', category.charAt(0).toUpperCase() + category.slice(1)],
+          ['Category', Array.from(categories).map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')],
           ['Size', COLLECTION_SIZES.find((s) => s.id === collectionSize)?.label || collectionSize],
           ['Distribution', DISTRIBUTIONS.find((d) => d.id === distribution)?.label || distribution],
           ['Launch', new Date(launchDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })],
