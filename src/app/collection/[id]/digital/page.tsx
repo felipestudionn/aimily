@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { PhasePlaceholder } from '@/components/collection/PhasePlaceholder';
+import { DigitalWorkspace } from '@/components/digital/DigitalWorkspace';
 
 interface PageProps { params: Promise<{ id: string }>; }
 
@@ -29,7 +29,7 @@ export default async function DigitalPage({ params }: PageProps) {
         <span className="text-purple-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
       </Link>
 
-      <PhasePlaceholder phase="digital" milestones={data?.milestones || []} />
+      <DigitalWorkspace milestones={data?.milestones || []} />
     </div>
   );
 }
