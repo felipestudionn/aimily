@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, ChevronRight, User, LogOut, FolderOpen, Palette, PenTool } from "lucide-react";
+import { Sparkles, ChevronRight, User, LogOut, FolderOpen, Palette, PenTool, CalendarDays } from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -142,6 +142,14 @@ export function Navbar() {
                 >
                   <PenTool className="mr-1.5 h-3.5 w-3.5" />
                   SketchFlow
+                </Link>
+                {/* Calendar */}
+                <Link
+                  href="/collection-calendar"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/50 text-gray-700 text-sm font-medium transition-all hover:bg-white/80"
+                >
+                  <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
+                  Calendar
                 </Link>
                 {/* My Collections */}
                 <Link
@@ -331,6 +339,14 @@ export function Navbar() {
                 >
                   <PenTool className="h-4 w-4" />
                   SketchFlow
+                </Link>
+                <Link
+                  href="/collection-calendar"
+                  className="flex items-center gap-2 py-2 text-base font-medium transition-colors hover:text-primary"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Calendar
                 </Link>
                 <Link
                   href="/my-collections"
