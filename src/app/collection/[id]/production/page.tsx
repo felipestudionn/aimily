@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { PhasePlaceholder } from '@/components/collection/PhasePlaceholder';
+import { ProductionWorkspace } from '@/components/production/ProductionWorkspace';
 
 interface PageProps { params: Promise<{ id: string }>; }
 
@@ -11,5 +11,5 @@ export default async function ProductionPage({ params }: PageProps) {
     .eq('collection_plan_id', id)
     .single();
 
-  return <PhasePlaceholder phase="production" milestones={data?.milestones || []} />;
+  return <ProductionWorkspace milestones={data?.milestones || []} />;
 }
