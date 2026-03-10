@@ -1,0 +1,89 @@
+'use client';
+
+import { useState } from 'react';
+import { Swords, Plus, Trash2 } from 'lucide-react';
+import type { BrandProfile, Competitor } from '@/types/brand';
+
+interface Props {
+  competitors: Competitor[] | null;
+  onUpdate: (updates: Partial<BrandProfile>) => void;
+}
+
+export function CompetitorMap({ competitors, onUpdate }: Props) {
+  const [list, setList] = useState<Competitor[]>(competitors || []);
+
+  const add = () => {
+    const updated = [...list, { name: '', positioning: '', priceRange: '' }];
+    setList(updated);
+    onUpdate({ competitors: updated });
+  };
+
+  const remove = (idx: number) => {
+    const updated = list.filter((_, i) => i !== idx);
+    setList(updated);
+    onUpdate({ competitors: updated });
+  };
+
+  const updateItem = (idx: number, partial: Partial<Competitor>) => {
+    const updated = list.map((c, i) => (i === idx ? { ...c, ...partial } : c));
+    setList(updated);
+    onUpdate({ competitors: updated });
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Swords className="h-4 w-4 text-teal-500" />
+          <h2 className="font-semibold text-gray-900">Competitor Mapping</h2>
+        </div>
+        <button
+          onClick={add}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 text-teal-600 text-xs font-medium hover:bg-teal-100 transition-colors"
+        >
+          <Plus className="h-3.5 w-3.5" /> Add
+        </button>
+      </div>
+
+      {list.length === 0 && (
+        <p className="text-sm text-gray-400 text-center py-4">
+          No competitors mapped yet. Click &quot;Add&quot; to start.
+        </p>
+      )}
+
+      <div className="space-y-3">
+        {list.map((c, i) => (
+          <div key={i} className="grid grid-cols-[1fr_1fr_140px_32px] gap-3 items-start">
+            <input
+              type="text"
+              value={c.name}
+              onChange={(e) => updateItem(i, { name: e.target.value })}
+              placeholder="Brand name"
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            />
+            <input
+              type="text"
+              value={c.positioning}
+              onChange={(e) => updateItem(i, { positioning: e.target.value })}
+              placeholder="Positioning"
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            />
+            <input
+              type="text"
+              value={c.priceRange}
+              onChange={(e) => updateItem(i, { priceRange: e.target.value })}
+              placeholder="Price range"
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            />
+            <button
+              onClick={() => remove(i)}
+              className="p-2 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
