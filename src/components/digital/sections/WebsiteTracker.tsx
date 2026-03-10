@@ -82,10 +82,10 @@ export function WebsiteTracker({ collectionId }: WebsiteTrackerProps) {
   return (
     <div className="space-y-6">
       {/* Overview Card */}
-      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-xl p-5">
+      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 bg-purple-600 flex items-center justify-center">
               <Globe className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -162,7 +162,7 @@ export function WebsiteTracker({ collectionId }: WebsiteTrackerProps) {
         const catChecked = items.filter((i) => data.checklist[i.id]).length;
 
         return (
-          <div key={cat} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div key={cat} className="bg-white border border-gray-200 overflow-hidden">
             {/* Category header */}
             <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
               <div className="flex items-center gap-2">

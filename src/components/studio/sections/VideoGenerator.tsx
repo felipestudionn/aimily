@@ -102,7 +102,7 @@ export function VideoGenerator({
         {/* Left: Controls */}
         <div className="col-span-4 space-y-4">
           {/* Source Image */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Source Image</label>
             {sourceImage ? (
               <div className="relative">
@@ -150,7 +150,7 @@ export function VideoGenerator({
           </div>
 
           {/* Motion Type */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-3">Motion Type</label>
             <div className="space-y-2">
               {MOTION_TYPES.map((m) => (
@@ -170,7 +170,7 @@ export function VideoGenerator({
           </div>
 
           {/* Custom Prompt */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Custom Prompt (optional)</label>
             <textarea
               value={customPrompt}
@@ -185,7 +185,7 @@ export function VideoGenerator({
           <button
             onClick={handleGenerate}
             disabled={!sourceImage || generating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {generating ? (
               <>
@@ -209,7 +209,7 @@ export function VideoGenerator({
 
         {/* Right: Results */}
         <div className="col-span-8">
-          <div className="bg-white rounded-xl border border-gray-100 p-4 min-h-[500px]">
+          <div className="bg-white border border-gray-100 p-4 min-h-[500px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-700">Generated Videos</h3>
               <span className="text-xs text-gray-400">{generations.length} videos</span>

@@ -158,7 +158,7 @@ export function InfluencerCRM({ contacts, collectionId, onAdd, onUpdate, onDelet
           <button
             key={s.id}
             onClick={() => setFilterStatus(filterStatus === s.id ? 'all' : s.id)}
-            className={`p-2 rounded-xl border text-center transition-colors ${
+            className={`p-2 border text-center transition-colors ${
               filterStatus === s.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200'
             }`}
           >
@@ -202,7 +202,7 @@ export function InfluencerCRM({ contacts, collectionId, onAdd, onUpdate, onDelet
       {/* Contact Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {filtered.length === 0 ? (
-          <div className="col-span-full bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <div className="col-span-full bg-white border border-gray-100 p-8 text-center">
             <Users className="h-8 w-8 mx-auto text-gray-300 mb-2" />
             <p className="text-sm text-gray-400">No contacts found</p>
           </div>
@@ -210,7 +210,7 @@ export function InfluencerCRM({ contacts, collectionId, onAdd, onUpdate, onDelet
           filtered.map((contact) => (
             <div
               key={contact.id}
-              className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-sm transition-shadow"
+              className="bg-white border border-gray-100 p-4 hover:shadow-sm transition-shadow"
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -300,7 +300,7 @@ export function InfluencerCRM({ contacts, collectionId, onAdd, onUpdate, onDelet
       {/* Add/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => { setShowForm(false); resetForm(); }}>
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">
                 {editingContact ? 'Edit Contact' : 'Add Contact'}

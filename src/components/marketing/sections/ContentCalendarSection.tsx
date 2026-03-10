@@ -222,7 +222,7 @@ export function ContentCalendarSection({ entries, collectionId, onAdd, onUpdate,
 
       {/* Month View */}
       {view === 'month' && (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="bg-white border border-gray-100 overflow-hidden">
           {/* Month Header */}
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
             <button onClick={prevMonth} className="p-1 rounded hover:bg-gray-100">
@@ -298,7 +298,7 @@ export function ContentCalendarSection({ entries, collectionId, onAdd, onUpdate,
 
       {/* List View */}
       {view === 'list' && (
-        <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+        <div className="bg-white border border-gray-100 divide-y divide-gray-50">
           {entries.length === 0 ? (
             <div className="p-8 text-center text-gray-400 text-sm">
               No content scheduled yet. Click &quot;Add Content&quot; to get started.
@@ -360,7 +360,7 @@ export function ContentCalendarSection({ entries, collectionId, onAdd, onUpdate,
       {/* Day Detail Panel */}
       {selectedDay && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setSelectedDay(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-md max-h-[80vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">
                 {new Date(selectedDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -379,7 +379,7 @@ export function ContentCalendarSection({ entries, collectionId, onAdd, onUpdate,
             </div>
             <div className="p-4 space-y-3">
               {(entriesByDate[selectedDay] || []).map((entry) => (
-                <div key={entry.id} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div key={entry.id} className="bg-gray-50 p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900">
                       {getTypeEmoji(entry.content_type)} {entry.title}
@@ -422,7 +422,7 @@ export function ContentCalendarSection({ entries, collectionId, onAdd, onUpdate,
       {/* Add/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => { setShowForm(false); resetForm(); }}>
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">
                 {editingEntry ? 'Edit Content' : 'Add Content'}
@@ -574,7 +574,7 @@ export function ContentCalendarSection({ entries, collectionId, onAdd, onUpdate,
 
       {/* Campaign Summary */}
       {campaigns.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <div className="bg-white border border-gray-100 p-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Campaigns</h3>
           <div className="flex flex-wrap gap-2">
             {campaigns.map((campaign) => {

@@ -30,7 +30,7 @@ export function TypographySection({ typography, onUpdate }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+    <div className="bg-white border border-gray-100 p-6 space-y-5">
       <div className="flex items-center gap-2">
         <Type className="h-4 w-4 text-teal-500" />
         <h2 className="font-semibold text-gray-900">Typography</h2>
@@ -61,7 +61,7 @@ export function TypographySection({ typography, onUpdate }: Props) {
             <option value="900">Black (900)</option>
           </select>
           {t.primary.family && (
-            <div className="p-4 rounded-xl bg-gray-50">
+            <div className="p-4 bg-gray-50">
               <p className="text-2xl font-bold text-gray-900">Aa Bb Cc</p>
               <p className="text-sm text-gray-500 mt-1">{t.primary.family} · {t.primary.weight}</p>
             </div>
@@ -92,7 +92,7 @@ export function TypographySection({ typography, onUpdate }: Props) {
             <option value="900">Black (900)</option>
           </select>
           {t.secondary.family && (
-            <div className="p-4 rounded-xl bg-gray-50">
+            <div className="p-4 bg-gray-50">
               <p className="text-2xl text-gray-900">Aa Bb Cc</p>
               <p className="text-sm text-gray-500 mt-1">{t.secondary.family} · {t.secondary.weight}</p>
             </div>

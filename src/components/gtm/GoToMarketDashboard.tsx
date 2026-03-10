@@ -270,7 +270,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
             <Button 
               onClick={handleSavePlan} 
               disabled={isSaving}
-              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+              className="bg-carbon hover:bg-carbon/90"
             >
               {isSaving ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
@@ -446,7 +446,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
           <div className="flex gap-4 overflow-x-auto pb-4">
             {drops.map((drop) => (
               <div key={drop.id} className="flex-shrink-0 w-64 border rounded-lg bg-white">
-                <div className="p-3 border-b bg-gradient-to-r from-orange-50 to-amber-50">
+                <div className="p-3 border-b bg-crema">
                   <div className="flex items-center justify-between mb-1">
                     <Input value={drop.name} onChange={(e) => updateDrop(drop.id, { name: e.target.value })} className="h-7 text-sm font-semibold bg-transparent border-none p-0 focus-visible:ring-0" />
                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => deleteDrop(drop.id)}><Trash2 className="h-3 w-3" /></Button>

@@ -86,24 +86,24 @@ export function PreLaunchChecklist({ milestones }: PreLaunchChecklistProps) {
             <h3 className="text-lg font-bold text-gray-900">Launch Readiness</h3>
             <p className="text-sm text-gray-500">Preparacion para el Lanzamiento</p>
           </div>
-          <div className={`px-4 py-2 rounded-xl font-bold text-sm ${
+          <div className={`px-4 py-2 font-bold text-sm ${
             overallReady ? 'bg-green-500 text-white' :
-            overallAtRisk ? 'bg-amber-500 text-white' :
+            overallAtRisk ? 'bg-carbon text-white' :
             'bg-red-500 text-white'
           }`}>
             {overallReady ? 'READY TO LAUNCH' : overallAtRisk ? 'PROCEED WITH CAUTION' : 'NOT READY'}
           </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white/60 rounded-xl p-4 text-center">
+          <div className="bg-white/60 p-4 text-center">
             <p className="text-3xl font-bold text-green-600">{goCount}</p>
             <p className="text-xs text-gray-500 mt-1">Phases GO</p>
           </div>
-          <div className="bg-white/60 rounded-xl p-4 text-center">
+          <div className="bg-white/60 p-4 text-center">
             <p className="text-3xl font-bold text-amber-600">{atRiskCount}</p>
             <p className="text-xs text-gray-500 mt-1">At Risk</p>
           </div>
-          <div className="bg-white/60 rounded-xl p-4 text-center">
+          <div className="bg-white/60 p-4 text-center">
             <p className="text-3xl font-bold text-red-600">{noGoCount}</p>
             <p className="text-xs text-gray-500 mt-1">NO-GO</p>
           </div>
@@ -111,7 +111,7 @@ export function PreLaunchChecklist({ milestones }: PreLaunchChecklistProps) {
       </div>
 
       {/* Phase-by-Phase Go/No-Go */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Phase Readiness</h3>
         <div className="space-y-2">
           {phases.map((phase) => {
@@ -124,7 +124,7 @@ export function PreLaunchChecklist({ milestones }: PreLaunchChecklistProps) {
               <div key={phase.phase}>
                 <button
                   onClick={() => setExpandedPhase(isExpanded ? null : phase.phase)}
-                  className="w-full flex items-center gap-3 py-3 px-4 rounded-xl hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center gap-3 py-3 px-4 hover:bg-gray-50 transition-colors"
                 >
                   <span className="text-xl">{phase.icon}</span>
                   <div className="flex-1 text-left">
@@ -162,7 +162,7 @@ export function PreLaunchChecklist({ milestones }: PreLaunchChecklistProps) {
                         {m.status === 'completed' ? (
                           <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
                         ) : m.status === 'in-progress' ? (
-                          <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                          <Clock className="h-4 w-4 text-texto/60 flex-shrink-0" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-gray-300 flex-shrink-0" />
                         )}
@@ -182,7 +182,7 @@ export function PreLaunchChecklist({ milestones }: PreLaunchChecklistProps) {
 
       {/* Critical Path — Pending Items */}
       {pendingMilestones.length > 0 && (
-        <div className="bg-white rounded-2xl border border-red-100 p-5">
+        <div className="bg-white border border-red-100 p-5">
           <div className="flex items-center gap-2 mb-4">
             <XCircle className="h-5 w-5 text-red-500" />
             <h3 className="font-semibold text-gray-900">Critical Path — {pendingMilestones.length} Items Remaining</h3>
@@ -196,7 +196,7 @@ export function PreLaunchChecklist({ milestones }: PreLaunchChecklistProps) {
                   className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   {m.status === 'in-progress' ? (
-                    <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                    <Clock className="h-4 w-4 text-texto/60 flex-shrink-0" />
                   ) : (
                     <AlertCircle className="h-4 w-4 text-gray-300 flex-shrink-0" />
                   )}

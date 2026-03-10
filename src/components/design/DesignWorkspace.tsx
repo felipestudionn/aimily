@@ -128,7 +128,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+            className="w-14 h-14 flex items-center justify-center text-2xl"
             style={{ backgroundColor: info.bgColor }}
           >
             {info.icon}
@@ -146,7 +146,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-900 text-sm">Phase Progress</h2>
           <span className="text-xl font-bold" style={{ color: info.color }}>
@@ -165,7 +165,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
             <span className="text-gray-500">{completed} completed</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-amber-500" />
+            <Clock className="h-3.5 w-3.5 text-texto/60" />
             <span className="text-gray-500">{inProgress} in progress</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -176,7 +176,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-white rounded-xl border border-gray-100 p-1">
+      <div className="flex gap-1 bg-white border border-gray-100 p-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -233,7 +233,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
       )}
 
       {/* Milestones Checklist */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white border border-gray-100 p-6">
         <h2 className="font-semibold text-gray-900 mb-4">Milestones</h2>
         <div className="space-y-3">
           {phaseMilestones.map((m) => (
@@ -246,7 +246,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
                   m.status === 'completed'
                     ? 'bg-green-500 border-green-500'
                     : m.status === 'in-progress'
-                    ? 'border-amber-500'
+                    ? 'border-carbon'
                     : 'border-gray-200'
                 }`}
               >
@@ -256,7 +256,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
                   </svg>
                 )}
                 {m.status === 'in-progress' && (
-                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <div className="w-2 h-2 rounded-full bg-carbon" />
                 )}
               </div>
               <div className="flex-1">

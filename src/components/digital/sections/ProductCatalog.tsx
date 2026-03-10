@@ -181,7 +181,7 @@ export function ProductCatalog({ skus, generations, loading }: ProductCatalogPro
             return (
               <div
                 key={sku.id}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
+                className="bg-white border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer group"
                 onClick={() => setExpandedSku(expandedSku === sku.id ? null : sku.id)}
               >
                 {/* Image */}
@@ -258,7 +258,7 @@ export function ProductCatalog({ skus, generations, loading }: ProductCatalogPro
         </div>
       ) : (
         /* List View */
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-white border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>

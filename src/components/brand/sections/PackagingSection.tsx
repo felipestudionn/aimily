@@ -13,7 +13,7 @@ export function PackagingSection({ notes, onUpdate }: Props) {
   const [text, setText] = useState(notes || '');
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+    <div className="bg-white border border-gray-100 p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Package className="h-4 w-4 text-teal-500" />
         <h2 className="font-semibold text-gray-900">Packaging Design</h2>
@@ -30,7 +30,7 @@ export function PackagingSection({ notes, onUpdate }: Props) {
             }}
             rows={5}
             placeholder="Describe packaging requirements: box type, materials, printing method, sustainability, inserts, tissue paper, stickers, labels, hangtags, dust bags, etc."
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="w-full px-4 py-3 border border-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
           />
         </div>
       </div>

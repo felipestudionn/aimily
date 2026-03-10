@@ -18,7 +18,7 @@ interface FinalApprovalProps {
 
 const STATUS_ICON = {
   pending: { icon: Clock, color: 'text-gray-400', bg: 'bg-gray-50' },
-  issues_found: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' },
+  issues_found: { icon: AlertTriangle, color: 'text-texto/60', bg: 'bg-amber-50' },
   approved: { icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
   rejected: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
 };
@@ -79,7 +79,7 @@ export function FinalApproval({ skus, reviews }: FinalApprovalProps) {
 
       {/* Per-SKU Status Table */}
       {skus.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white border border-gray-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-gray-500 text-xs">
@@ -125,7 +125,7 @@ export function FinalApproval({ skus, reviews }: FinalApprovalProps) {
                     <td className="px-4 py-3 text-center">{renderStatus(fittingReview)}</td>
                     <td className="px-4 py-3 text-center">
                       {avgRating > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-amber-500">
+                        <span className="inline-flex items-center gap-1 text-xs text-texto/60">
                           <Star className="h-3.5 w-3.5 fill-amber-400" />
                           {avgRating.toFixed(1)}
                         </span>

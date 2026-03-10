@@ -140,22 +140,22 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
     <div className="space-y-6">
       {/* Status Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-          <Zap className="h-5 w-5 mx-auto text-amber-500 mb-1" />
+        <div className="bg-white border border-gray-100 p-4 text-center">
+          <Zap className="h-5 w-5 mx-auto text-texto/60 mb-1" />
           <p className="text-2xl font-bold text-gray-900">{issues.length}</p>
           <p className="text-xs text-gray-500">Total Issues</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <AlertTriangle className="h-5 w-5 mx-auto text-red-500 mb-1" />
           <p className="text-2xl font-bold text-red-600">{criticalIssues}</p>
           <p className="text-xs text-gray-500">Critical Open</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <Clock className="h-5 w-5 mx-auto text-blue-500 mb-1" />
           <p className="text-2xl font-bold text-gray-900">{openIssues}</p>
           <p className="text-xs text-gray-500">Open Issues</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <CheckCircle2 className="h-5 w-5 mx-auto text-green-500 mb-1" />
           <p className="text-2xl font-bold text-gray-900">{doneTasks}/{tasks.length}</p>
           <p className="text-xs text-gray-500">Tasks Done</p>
@@ -163,7 +163,7 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
       </div>
 
       {/* Quick Links */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-gray-500" />
@@ -181,7 +181,7 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {links.map((link) => (
-              <div key={link.id} className="group flex items-center gap-2 bg-gray-50 hover:bg-gray-100 rounded-xl px-3 py-2 transition-colors">
+              <div key={link.id} className="group flex items-center gap-2 bg-gray-50 hover:bg-gray-100 px-3 py-2 transition-colors">
                 <Link2 className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                 <a
                   href={link.url}
@@ -216,7 +216,7 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
       </div>
 
       {/* Issue Log */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -233,7 +233,7 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
 
         {/* Issue form */}
         {showIssueForm && (
-          <div className="bg-red-50/50 rounded-xl p-4 mb-4 space-y-3 border border-red-100">
+          <div className="bg-red-50/50 p-4 mb-4 space-y-3 border border-red-100">
             <input
               value={issueTitle}
               onChange={(e) => setIssueTitle(e.target.value)}
@@ -316,7 +316,7 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
       </div>
 
       {/* Task Assignments */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-blue-500" />
@@ -333,7 +333,7 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
 
         {/* Task form */}
         {showTaskForm && (
-          <div className="bg-blue-50/50 rounded-xl p-4 mb-4 space-y-3 border border-blue-100">
+          <div className="bg-blue-50/50 p-4 mb-4 space-y-3 border border-blue-100">
             <div className="grid grid-cols-3 gap-2">
               <input
                 value={taskTitle}
@@ -383,7 +383,7 @@ export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
                     {task.status === 'done' ? (
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
                     ) : task.status === 'in_progress' ? (
-                      <Clock className="h-5 w-5 text-amber-500" />
+                      <Clock className="h-5 w-5 text-texto/60" />
                     ) : (
                       <Circle className="h-5 w-5 text-gray-300" />
                     )}

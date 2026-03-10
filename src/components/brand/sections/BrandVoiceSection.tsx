@@ -40,7 +40,7 @@ export function BrandVoiceSection({ voice, onUpdate }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+    <div className="bg-white border border-gray-100 p-6 space-y-5">
       <div className="flex items-center gap-2">
         <MessageSquare className="h-4 w-4 text-teal-500" />
         <h2 className="font-semibold text-gray-900">Brand Voice</h2>

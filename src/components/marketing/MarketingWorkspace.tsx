@@ -71,7 +71,7 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-carbon" />
           <span className="text-sm text-gray-500">Loading Marketing Workspace...</span>
         </div>
       </div>
@@ -81,10 +81,10 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
   return (
     <div className="space-y-6">
       {/* Phase Header */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-5">
+      <div className="bg-crema border border-gris p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center">
+            <div className="w-10 h-10 bg-carbon flex items-center justify-center">
               <Megaphone className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -96,7 +96,7 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
         </div>
         <div className="h-2 bg-white/60 rounded-full overflow-hidden mb-3">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-500 transition-all duration-500"
+            className="h-full rounded-full bg-carbon transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -106,7 +106,7 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
             <span className="text-gray-600">{completed} completed</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-amber-500" />
+            <Clock className="h-3.5 w-3.5 text-texto/60" />
             <span className="text-gray-600">{inProgress} in progress</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -117,7 +117,7 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-gray-100 p-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -168,7 +168,7 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
       )}
 
       {/* Milestones Checklist */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Marketing Milestones</h3>
         <div className="space-y-2">
           {phaseMilestones.map((m) => (
@@ -181,7 +181,7 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
                   m.status === 'completed'
                     ? 'bg-green-500 border-green-500'
                     : m.status === 'in-progress'
-                    ? 'border-amber-500'
+                    ? 'border-carbon'
                     : 'border-gray-200'
                 }`}
               >
@@ -191,7 +191,7 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
                   </svg>
                 )}
                 {m.status === 'in-progress' && (
-                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <div className="w-2 h-2 rounded-full bg-carbon" />
                 )}
               </div>
               <div className="flex-1">

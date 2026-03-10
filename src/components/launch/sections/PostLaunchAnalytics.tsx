@@ -124,23 +124,23 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
     <div className="space-y-6">
       {/* Sales Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <ShoppingBag className="h-5 w-5 mx-auto text-blue-500 mb-1" />
           <p className="text-2xl font-bold text-gray-900">{summary.totalUnits}</p>
           <p className="text-xs text-gray-500">Units Sold</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <DollarSign className="h-5 w-5 mx-auto text-green-500 mb-1" />
           <p className="text-2xl font-bold text-green-600">{formatCurrency(summary.totalRevenue, summary.mainCurrency)}</p>
           <p className="text-xs text-gray-500">Total Revenue</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <TrendingUp className="h-5 w-5 mx-auto text-purple-500 mb-1" />
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.avgOrderValue, summary.mainCurrency)}</p>
           <p className="text-xs text-gray-500">Avg. per Unit</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-          <BarChart3 className="h-5 w-5 mx-auto text-amber-500 mb-1" />
+        <div className="bg-white border border-gray-100 p-4 text-center">
+          <BarChart3 className="h-5 w-5 mx-auto text-texto/60 mb-1" />
           <p className="text-2xl font-bold text-gray-900">{Object.keys(summary.byChannel).length}</p>
           <p className="text-xs text-gray-500">Active Channels</p>
         </div>
@@ -148,7 +148,7 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
 
       {/* Sales by Channel */}
       {Object.keys(summary.byChannel).length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="bg-white border border-gray-100 p-5">
           <h3 className="font-semibold text-gray-900 mb-3">Sales by Channel</h3>
           <div className="space-y-2">
             {Object.entries(summary.byChannel)
@@ -173,7 +173,7 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
       )}
 
       {/* Sales Tracker */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-green-500" />
@@ -190,7 +190,7 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
 
         {/* Sales form */}
         {showSalesForm && (
-          <div className="bg-green-50/50 rounded-xl p-4 mb-4 space-y-3 border border-green-100">
+          <div className="bg-green-50/50 p-4 mb-4 space-y-3 border border-green-100">
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               <input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200" />
               <select value={saleChannel} onChange={(e) => setSaleChannel(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200">
@@ -245,7 +245,7 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
       </div>
 
       {/* Lessons Learned */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-purple-500" />
@@ -273,7 +273,7 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
 
         {/* Lesson form */}
         {showLessonForm && (
-          <div className="bg-purple-50/50 rounded-xl p-4 mb-4 space-y-3 border border-purple-100">
+          <div className="bg-purple-50/50 p-4 mb-4 space-y-3 border border-purple-100">
             <input
               value={lessonTitle}
               onChange={(e) => setLessonTitle(e.target.value)}

@@ -72,10 +72,10 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
   return (
     <div className="space-y-6">
       {/* Phase Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-500 flex items-center justify-center">
               <Factory className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -97,7 +97,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
             <span className="text-gray-600">{completed} completed</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-amber-500" />
+            <Clock className="h-3.5 w-3.5 text-texto/60" />
             <span className="text-gray-600">{inProgress} in progress</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -108,7 +108,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-gray-100 p-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -150,7 +150,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
       )}
 
       {/* Milestones Checklist */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Production Milestones</h3>
         <div className="space-y-2">
           {phaseMilestones.map((m) => (
@@ -163,7 +163,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
                   m.status === 'completed'
                     ? 'bg-green-500 border-green-500'
                     : m.status === 'in-progress'
-                    ? 'border-amber-500'
+                    ? 'border-carbon'
                     : 'border-gray-200'
                 }`}
               >
@@ -173,7 +173,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
                   </svg>
                 )}
                 {m.status === 'in-progress' && (
-                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <div className="w-2 h-2 rounded-full bg-carbon" />
                 )}
               </div>
               <div className="flex-1">

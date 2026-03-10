@@ -31,7 +31,7 @@ export function CompetitorMap({ competitors, onUpdate }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+    <div className="bg-white border border-gray-100 p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Swords className="h-4 w-4 text-teal-500" />

@@ -120,7 +120,7 @@ export function AiModelStudio({
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white text-sm font-medium hover:bg-purple-700 transition-colors"
         >
           <Plus className="h-4 w-4" />
           New Model
@@ -129,7 +129,7 @@ export function AiModelStudio({
 
       {/* Create Form Modal */}
       {showCreateForm && (
-        <div className="bg-white rounded-xl border border-purple-200 p-6 shadow-sm">
+        <div className="bg-white border border-purple-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-sm font-semibold text-gray-900">Create New AI Model</h4>
             <button onClick={() => setShowCreateForm(false)} className="text-gray-400 hover:text-gray-600">
@@ -249,7 +249,7 @@ export function AiModelStudio({
 
       {/* Models Grid */}
       {models.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+        <div className="bg-white border border-gray-100 p-12 text-center">
           <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-gray-600">No AI models yet</p>
           <p className="text-xs text-gray-400 mt-1">Create your first brand model for consistent visuals</p>
@@ -257,7 +257,7 @@ export function AiModelStudio({
       ) : (
         <div className="grid grid-cols-3 gap-4">
           {models.map((model) => (
-            <div key={model.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden group">
+            <div key={model.id} className="bg-white border border-gray-100 overflow-hidden group">
               {/* Preview */}
               {model.preview_images && model.preview_images.length > 0 ? (
                 <div className="aspect-[3/4] overflow-hidden">

@@ -93,15 +93,15 @@ export function QcTracker({ orders, onUpdate }: Props) {
     <div className="space-y-4">
       {/* QC Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-gray-900">{qcOrders.length}</div>
           <div className="text-xs text-gray-500">Orders in QC Pipeline</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-amber-600">{unresolvedIssues}</div>
           <div className="text-xs text-gray-500">Open Issues / Problemas</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-green-600">
             {totalIssues - unresolvedIssues}
           </div>
@@ -111,7 +111,7 @@ export function QcTracker({ orders, onUpdate }: Props) {
 
       {/* QC per Order */}
       {qcOrders.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <div className="bg-white border border-gray-100 p-8 text-center">
           <ClipboardCheck className="h-8 w-8 mx-auto text-gray-300 mb-2" />
           <p className="text-sm text-gray-400">No orders in QC pipeline yet</p>
           <p className="text-xs text-gray-300 mt-1">Orders in production or beyond will appear here</p>
@@ -124,7 +124,7 @@ export function QcTracker({ orders, onUpdate }: Props) {
             const openCount = issues.filter((i) => !i.resolved).length;
 
             return (
-              <div key={order.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div key={order.id} className="bg-white border border-gray-100 overflow-hidden">
                 <button
                   onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
                   className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
@@ -136,7 +136,7 @@ export function QcTracker({ orders, onUpdate }: Props) {
                       }`}
                     >
                       {openCount > 0 ? (
-                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <AlertTriangle className="h-4 w-4 text-texto/60" />
                       ) : (
                         <CheckCircle2 className="h-4 w-4 text-green-500" />
                       )}

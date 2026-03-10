@@ -70,10 +70,10 @@ export function DigitalWorkspace({ milestones }: DigitalWorkspaceProps) {
   return (
     <div className="space-y-6">
       {/* Phase Header */}
-      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-2xl p-5">
+      <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 bg-purple-600 flex items-center justify-center">
               <Monitor className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -122,7 +122,7 @@ export function DigitalWorkspace({ milestones }: DigitalWorkspaceProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+      <div className="flex items-center gap-1 bg-gray-100 p-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (

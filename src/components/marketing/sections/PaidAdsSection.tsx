@@ -133,19 +133,19 @@ export function PaidAdsSection({ collectionId }: Props) {
     <div className="space-y-5">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <Target className="h-5 w-5 mx-auto text-orange-500 mb-1" />
           <div className="text-xl font-bold text-gray-900">{campaigns.length}</div>
           <div className="text-xs text-gray-500">Campaigns</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <DollarSign className="h-5 w-5 mx-auto text-green-500 mb-1" />
           <div className="text-xl font-bold text-gray-900">
             {totalBudget.toLocaleString('en', { minimumFractionDigits: 0 })}
           </div>
           <div className="text-xs text-gray-500">Total Budget</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <TrendingUp className="h-5 w-5 mx-auto text-blue-500 mb-1" />
           <div className="text-xl font-bold text-gray-900">
             {campaigns.reduce((sum, c) => sum + c.ad_sets.length, 0)}
@@ -167,7 +167,7 @@ export function PaidAdsSection({ collectionId }: Props) {
 
       {/* Campaign List */}
       {campaigns.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <div className="bg-white border border-gray-100 p-8 text-center">
           <Target className="h-8 w-8 mx-auto text-gray-300 mb-2" />
           <p className="text-sm text-gray-400">No campaigns planned yet</p>
           <p className="text-xs text-gray-300 mt-1">Plan your paid ad campaigns to promote your collection launch</p>
@@ -175,7 +175,7 @@ export function PaidAdsSection({ collectionId }: Props) {
       ) : (
         <div className="space-y-3">
           {campaigns.map((campaign, idx) => (
-            <div key={campaign.id} className="bg-white rounded-xl border border-gray-100 p-4">
+            <div key={campaign.id} className="bg-white border border-gray-100 p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -243,7 +243,7 @@ export function PaidAdsSection({ collectionId }: Props) {
       {/* Add/Edit Campaign Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => { setShowForm(false); resetForm(); }}>
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">
                 {editingIdx !== null ? 'Edit Campaign' : 'New Campaign'}

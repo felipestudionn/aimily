@@ -76,21 +76,21 @@ export function LogisticsTracker({ orders, onUpdate }: Props) {
     <div className="space-y-4">
       {/* Logistics Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="flex items-center justify-center gap-1.5 mb-1">
-            <Clock className="h-4 w-4 text-amber-500" />
+            <Clock className="h-4 w-4 text-texto/60" />
           </div>
           <div className="text-2xl font-bold text-amber-600">{pendingCount}</div>
           <div className="text-xs text-gray-500">Pending Shipment</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <Truck className="h-4 w-4 text-cyan-500" />
           </div>
           <div className="text-2xl font-bold text-cyan-600">{shippedCount}</div>
           <div className="text-xs text-gray-500">In Transit / En transito</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </div>
@@ -101,7 +101,7 @@ export function LogisticsTracker({ orders, onUpdate }: Props) {
 
       {/* Orders List */}
       {logisticsOrders.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+        <div className="bg-white border border-gray-100 p-8 text-center">
           <Truck className="h-8 w-8 mx-auto text-gray-300 mb-2" />
           <p className="text-sm text-gray-400">No orders ready for logistics</p>
           <p className="text-xs text-gray-300 mt-1">Confirmed orders and beyond will appear here</p>
@@ -113,7 +113,7 @@ export function LogisticsTracker({ orders, onUpdate }: Props) {
             const isEditing = editingId === order.id;
 
             return (
-              <div key={order.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div key={order.id} className="bg-white border border-gray-100 p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div

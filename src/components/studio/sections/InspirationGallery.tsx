@@ -126,7 +126,7 @@ export function InspirationGallery({
 
       {/* Masonry Gallery */}
       {galleryItems.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-16 text-center">
+        <div className="bg-white border border-gray-100 p-16 text-center">
           <LayoutGrid className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-sm font-medium text-gray-600">No content yet</p>
           <p className="text-xs text-gray-400 mt-1">
@@ -142,7 +142,7 @@ export function InspirationGallery({
               {item.type === 'video' ? (
                 <video
                   src={item.url}
-                  className="w-full rounded-xl object-cover cursor-pointer"
+                  className="w-full object-cover cursor-pointer"
                   muted
                   loop
                   playsInline
@@ -158,7 +158,7 @@ export function InspirationGallery({
                 <img
                   src={item.url}
                   alt={item.generation.prompt}
-                  className="w-full rounded-xl object-cover cursor-pointer"
+                  className="w-full object-cover cursor-pointer"
                   onClick={() => setLightboxIdx(idx)}
                 />
               )}
@@ -173,7 +173,7 @@ export function InspirationGallery({
               </div>
 
               {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded-xl flex items-end opacity-0 group-hover:opacity-100">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-end opacity-0 group-hover:opacity-100">
                 <div className="w-full p-3 flex items-center justify-between">
                   <div className="text-white text-xs">
                     <p className="font-medium truncate max-w-[150px]">
@@ -262,7 +262,7 @@ export function InspirationGallery({
             {lightboxItem.type === 'video' ? (
               <video
                 src={lightboxItem.url}
-                className="max-w-full max-h-[85vh] rounded-xl"
+                className="max-w-full max-h-[85vh]"
                 controls
                 autoPlay
                 loop
@@ -271,7 +271,7 @@ export function InspirationGallery({
               <img
                 src={lightboxItem.url}
                 alt={lightboxItem.generation.prompt}
-                className="max-w-full max-h-[85vh] rounded-xl object-contain"
+                className="max-w-full max-h-[85vh] object-contain"
               />
             )}
 

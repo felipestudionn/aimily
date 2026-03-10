@@ -26,7 +26,7 @@ interface ProtoTrackerProps {
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', labelEs: 'Pendiente', icon: Clock, color: 'text-gray-400', bg: 'bg-gray-50' },
-  issues_found: { label: 'Issues Found', labelEs: 'Con problemas', icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' },
+  issues_found: { label: 'Issues Found', labelEs: 'Con problemas', icon: AlertTriangle, color: 'text-texto/60', bg: 'bg-amber-50' },
   approved: { label: 'Approved', labelEs: 'Aprobado', icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
   rejected: { label: 'Rejected', labelEs: 'Rechazado', icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
 };
@@ -129,7 +129,7 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
         const unresolvedIssues = review?.issues?.filter((i) => !i.resolved).length || 0;
 
         return (
-          <div key={sku.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div key={sku.id} className="bg-white border border-gray-100 overflow-hidden">
             {/* SKU Header */}
             <div
               className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50 transition-colors"

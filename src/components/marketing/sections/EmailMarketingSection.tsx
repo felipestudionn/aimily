@@ -76,7 +76,7 @@ export function EmailMarketingSection({ collectionId }: Props) {
   return (
     <div className="space-y-5">
       {/* Progress Bar */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-orange-500" />
@@ -86,7 +86,7 @@ export function EmailMarketingSection({ collectionId }: Props) {
         </div>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-500 transition-all duration-500"
+            className="h-full rounded-full bg-carbon transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -107,7 +107,7 @@ export function EmailMarketingSection({ collectionId }: Props) {
       </div>
 
       {/* Platform URL */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+      <div className="bg-white border border-gray-100 p-4">
         <label className="block text-xs font-medium text-gray-600 mb-1.5">Email Platform URL</label>
         <input
           type="url"
@@ -119,7 +119,7 @@ export function EmailMarketingSection({ collectionId }: Props) {
       </div>
 
       {/* Setup Checklist */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Setup Checklist</h3>
         <div className="space-y-2">
           {checklist.map((item) => (
@@ -145,7 +145,7 @@ export function EmailMarketingSection({ collectionId }: Props) {
       </div>
 
       {/* Email Flow Templates */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-900 mb-4">Email Flow Templates</h3>
         <p className="text-xs text-gray-500 mb-4">
           Reference templates for your email flows. Build these in your email platform.
@@ -154,7 +154,7 @@ export function EmailMarketingSection({ collectionId }: Props) {
           {EMAIL_FLOW_TEMPLATES.map((flow) => {
             const isExpanded = expandedFlow === flow.id;
             return (
-              <div key={flow.id} className="border border-gray-100 rounded-xl overflow-hidden">
+              <div key={flow.id} className="border border-gray-100 overflow-hidden">
                 <button
                   onClick={() => setExpandedFlow(isExpanded ? null : flow.id)}
                   className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors"

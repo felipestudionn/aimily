@@ -89,7 +89,7 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
       {/* Phase Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-purple-50">
+          <div className="w-14 h-14 flex items-center justify-center bg-purple-50">
             <Sparkles className="h-7 w-7 text-purple-600" />
           </div>
           <div>
@@ -99,7 +99,7 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
         </div>
         <Link
           href={`/collection/${collectionId}/studio/lookbook`}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
         >
           <BookOpen className="h-4 w-4" />
           Lookbook Builder
@@ -108,21 +108,21 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
 
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white p-4 border border-gray-100">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
             <Image className="h-4 w-4" />
             Generations
           </div>
           <p className="text-2xl font-bold text-gray-900">{generations.length}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white p-4 border border-gray-100">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
             <Users className="h-4 w-4" />
             AI Models
           </div>
           <p className="text-2xl font-bold text-gray-900">{models.length}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white p-4 border border-gray-100">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
             <Sparkles className="h-4 w-4" />
             Favorites
@@ -131,7 +131,7 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
             {generations.filter((g) => g.is_favorite).length}
           </p>
         </div>
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white p-4 border border-gray-100">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
             <Clock className="h-4 w-4" />
             Progress
@@ -161,7 +161,7 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
 
       {/* Milestone Checklist */}
       {phaseMilestones.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="bg-white border border-gray-100 p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Milestones</h3>
           <div className="flex flex-wrap gap-3">
             {phaseMilestones.map((m) => (
@@ -190,7 +190,7 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+      <div className="flex gap-1 bg-gray-100 p-1">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

@@ -52,7 +52,7 @@ function SkuPatternCard({
   };
 
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
+    <div className="border border-gray-100 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
@@ -168,9 +168,9 @@ export function PatternSection({ skus, patterns, onUpdate }: Props) {
 
   if (skus.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white border border-gray-100 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Scissors className="h-4 w-4 text-amber-500" />
+          <Scissors className="h-4 w-4 text-texto/60" />
           <h2 className="font-semibold text-gray-900">Pattern Management</h2>
         </div>
         <p className="text-sm text-gray-400 text-center py-6">
@@ -181,10 +181,10 @@ export function PatternSection({ skus, patterns, onUpdate }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+    <div className="bg-white border border-gray-100 p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Scissors className="h-4 w-4 text-amber-500" />
+          <Scissors className="h-4 w-4 text-texto/60" />
           <h2 className="font-semibold text-gray-900">Pattern Management</h2>
         </div>
         {totalFiles > 0 && (

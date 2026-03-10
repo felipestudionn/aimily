@@ -1,6 +1,6 @@
 'use client';
 
-import { CollectionSidebar } from '@/components/collection/CollectionSidebar';
+import { WizardLayout } from '@/components/wizard/WizardLayout';
 import type { TimelineMilestone } from '@/types/timeline';
 
 interface CollectionHubShellProps {
@@ -19,16 +19,13 @@ export function CollectionHubShell({
   milestones,
 }: CollectionHubShellProps) {
   return (
-    <>
-      <CollectionSidebar
-        collectionId={collectionId}
-        collectionName={collectionName}
-        season={season}
-        milestones={milestones}
-      />
-      <main className="ml-64 pt-28 pb-16 px-6 transition-all duration-300">
-        {children}
-      </main>
-    </>
+    <WizardLayout
+      collectionId={collectionId}
+      collectionName={collectionName}
+      season={season}
+      milestones={milestones}
+    >
+      {children}
+    </WizardLayout>
   );
 }

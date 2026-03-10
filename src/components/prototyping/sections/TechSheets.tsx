@@ -46,7 +46,7 @@ export function TechSheets({ skus, reviews }: TechSheetsProps) {
           return (
             <div
               key={sku.id}
-              className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-4"
+              className="bg-white border border-gray-100 p-4 flex items-center gap-4"
             >
               <div
                 className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -85,7 +85,7 @@ export function TechSheets({ skus, reviews }: TechSheetsProps) {
       </div>
 
       {skus.length > 0 && (
-        <div className="bg-purple-50 rounded-xl p-4 text-center">
+        <div className="bg-purple-50 p-4 text-center">
           <p className="text-sm text-purple-700">
             Tech packs auto-compile from SketchFlow sketches, SKU data, and proto review notes.
           </p>

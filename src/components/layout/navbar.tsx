@@ -174,7 +174,7 @@ export function Navbar() {
                 {/* User Profile */}
                 <div className="flex items-center gap-1 pl-2 border-l border-gray-300">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-full">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-xs font-medium">
+                    <div className="w-6 h-6 rounded-full bg-carbon flex items-center justify-center text-white text-xs font-medium">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-sm text-gray-700 max-w-[100px] truncate">{user.email?.split('@')[0]}</span>
@@ -316,7 +316,7 @@ export function Navbar() {
               <>
                 <div className="flex items-center justify-between py-3 border-b">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-8 h-8 rounded-full bg-carbon flex items-center justify-center text-white text-sm font-medium">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-sm text-gray-700">{user.email}</span>

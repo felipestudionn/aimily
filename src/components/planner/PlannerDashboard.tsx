@@ -108,7 +108,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
   return (
     <div className="max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 py-6">
       {/* Step Indicator - 4 AI Power Steps */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100 mb-6">
+      <div className="flex items-center justify-between bg-gradient-to-r from-green-50 to-emerald-50 p-4 border border-green-100 mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-bold">
             3
@@ -133,7 +133,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
       </div>
 
       {/* Header */}
-      <div className="bg-white shadow-sm border rounded-xl mb-6">
+      <div className="bg-white shadow-sm border mb-6">
         <div className="px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
@@ -162,7 +162,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
                 </Button>
               )}
               {setupComplete && (
-                <Button onClick={() => router.push(`/go-to-market/${plan.id}`)} className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600">
+                <Button onClick={() => router.push(`/go-to-market/${plan.id}`)} className="bg-carbon hover:bg-carbon/90">
                   Go to Market
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>

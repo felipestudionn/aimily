@@ -121,7 +121,7 @@ export function CollectionCalendarClient({
       );
     }
     return (
-      <div className="min-h-screen bg-[#fff6dc]">
+      <div className="min-h-screen bg-crema">
         <Navbar />
         <div className="pt-28 flex items-center justify-center gap-3">
           <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
@@ -384,7 +384,7 @@ export function CollectionCalendarClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#fff6dc]">
+    <div className="min-h-screen bg-crema">
       <Navbar />
       <div className="pt-24 pb-8 px-4 max-w-[1600px] mx-auto">
         {calendarContent}

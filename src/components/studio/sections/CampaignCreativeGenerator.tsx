@@ -118,7 +118,7 @@ export function CampaignCreativeGenerator({
         {/* Left: Controls */}
         <div className="col-span-4 space-y-4">
           {/* Format Presets */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-3">Format</label>
             <div className="space-y-2">
               {FORMAT_PRESETS.map((f) => (
@@ -139,7 +139,7 @@ export function CampaignCreativeGenerator({
           </div>
 
           {/* Source Image */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Source Image</label>
             {sourceImage ? (
               <div className="relative">
@@ -187,7 +187,7 @@ export function CampaignCreativeGenerator({
           </div>
 
           {/* Text Overlay */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+          <div className="bg-white border border-gray-100 p-4 space-y-3">
             <label className="block text-sm font-semibold text-gray-700">Text Overlay</label>
             <input
               value={headline}
@@ -207,7 +207,7 @@ export function CampaignCreativeGenerator({
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50"
           >
             {generating ? (
               <>
@@ -231,7 +231,7 @@ export function CampaignCreativeGenerator({
 
         {/* Right: Results */}
         <div className="col-span-8">
-          <div className="bg-white rounded-xl border border-gray-100 p-4 min-h-[500px]">
+          <div className="bg-white border border-gray-100 p-4 min-h-[500px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-700">Campaign Creatives</h3>
               <span className="text-xs text-gray-400">{generations.length} creatives</span>
@@ -249,15 +249,15 @@ export function CampaignCreativeGenerator({
                   const images = gen.output_data?.images || [];
                   if (gen.status === 'processing') {
                     return (
-                      <div key={gen.id} className="break-inside-avoid aspect-square bg-gray-50 rounded-xl flex items-center justify-center mb-4">
+                      <div key={gen.id} className="break-inside-avoid aspect-square bg-gray-50 flex items-center justify-center mb-4">
                         <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
                       </div>
                     );
                   }
                   return images.map((img, idx) => (
                     <div key={`${gen.id}-${idx}`} className="break-inside-avoid relative group mb-4">
-                      <img src={img.url} alt={gen.prompt} className="w-full rounded-xl object-cover" />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded-xl flex items-end opacity-0 group-hover:opacity-100">
+                      <img src={img.url} alt={gen.prompt} className="w-full object-cover" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-end opacity-0 group-hover:opacity-100">
                         <div className="w-full p-3 flex items-center justify-between">
                           <span className="text-white text-xs font-medium">
                             {gen.input_data?.format || 'Creative'}

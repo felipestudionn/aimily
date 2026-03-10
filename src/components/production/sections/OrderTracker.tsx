@@ -170,21 +170,21 @@ export function OrderTracker({ orders, skus, collectionId, onAdd, onUpdate, onDe
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
           <div className="text-xs text-gray-500">Total Orders / Pedidos</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-blue-600">{totalUnits.toLocaleString()}</div>
           <div className="text-xs text-gray-500">Total Units / Unidades</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-green-600">
             {totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="text-xs text-gray-500">Total Cost / Costo</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+        <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-purple-600">
             {orders.filter((o) => o.status === 'delivered').length}
           </div>
@@ -198,7 +198,7 @@ export function OrderTracker({ orders, skus, collectionId, onAdd, onUpdate, onDe
           <button
             key={s.id}
             onClick={() => setFilterStatus(filterStatus === s.id ? 'all' : s.id)}
-            className={`p-2 rounded-xl border text-center transition-colors ${
+            className={`p-2 border text-center transition-colors ${
               filterStatus === s.id ? 'border-gray-300 bg-gray-50' : 'border-gray-100 hover:border-gray-200'
             }`}
           >
@@ -232,7 +232,7 @@ export function OrderTracker({ orders, skus, collectionId, onAdd, onUpdate, onDe
       {/* Order Cards */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
+          <div className="bg-white border border-gray-100 p-8 text-center">
             <Package className="h-8 w-8 mx-auto text-gray-300 mb-2" />
             <p className="text-sm text-gray-400">No production orders yet</p>
             <p className="text-xs text-gray-300">Aun no hay ordenes de produccion</p>
@@ -243,7 +243,7 @@ export function OrderTracker({ orders, skus, collectionId, onAdd, onUpdate, onDe
             return (
               <div
                 key={order.id}
-                className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-sm transition-shadow"
+                className="bg-white border border-gray-100 overflow-hidden hover:shadow-sm transition-shadow"
               >
                 {/* Order Header */}
                 <div className="p-4">
@@ -346,7 +346,7 @@ export function OrderTracker({ orders, skus, collectionId, onAdd, onUpdate, onDe
       {/* Add/Edit Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => { setShowForm(false); resetForm(); }}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">
                 {editingOrder ? 'Edit Order / Editar Orden' : 'New Production Order / Nueva Orden'}

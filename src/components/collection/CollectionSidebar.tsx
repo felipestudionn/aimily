@@ -109,7 +109,7 @@ export function CollectionSidebar({
             </div>
             <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-orange-400 to-amber-500 rounded-full transition-all duration-500"
+                className="h-full bg-carbon rounded-full transition-all duration-500"
                 style={{ width: `${overallProgress}%` }}
               />
             </div>

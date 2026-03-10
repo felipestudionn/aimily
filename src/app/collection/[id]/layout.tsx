@@ -33,7 +33,7 @@ export default async function CollectionHubLayout({ children, params }: LayoutPr
   if (!data) notFound();
 
   return (
-    <div className="min-h-screen bg-[#fff6dc]">
+    <div className="min-h-screen bg-crema">
       <Navbar />
       <CollectionHubShell
         collectionId={id}

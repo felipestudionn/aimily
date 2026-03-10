@@ -215,7 +215,7 @@ export default function CollectionCalendarPage() {
 
   if (!loaded) {
     return (
-      <div className="min-h-screen bg-[#fff6dc]">
+      <div className="min-h-screen bg-crema">
         <Navbar />
         <div className="pt-28 flex items-center justify-center">
           <div className="animate-spin w-8 h-8 border-2 border-black border-t-transparent rounded-full" />
@@ -225,7 +225,7 @@ export default function CollectionCalendarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff6dc]">
+    <div className="min-h-screen bg-crema">
       <Navbar />
       <div className="pt-24 pb-8 px-4 max-w-[1600px] mx-auto">
         {/* Collections with linked calendars */}

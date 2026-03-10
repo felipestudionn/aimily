@@ -61,7 +61,7 @@ function SkuDesignCard({
   const approvedCount = files.filter((f) => f.status === 'approved').length;
 
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
+    <div className="border border-gray-100 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
@@ -102,7 +102,7 @@ function SkuDesignCard({
                 .filter((_, i) => i === selectedIdx || i === (selectedIdx > 0 ? selectedIdx - 1 : 1))
                 .slice(0, 2)
                 .map((f, i) => (
-                  <div key={i} className="aspect-square bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center overflow-hidden">
+                  <div key={i} className="aspect-square bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden">
                     {f.url ? (
                       <img
                         src={f.url}
@@ -224,9 +224,9 @@ export function DesignReviewHub({ skus, designFiles, onUpdate }: Props) {
 
   if (skus.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white border border-gray-100 p-6">
         <div className="flex items-center gap-2 mb-4">
-          <ImageIcon className="h-4 w-4 text-amber-500" />
+          <ImageIcon className="h-4 w-4 text-texto/60" />
           <h2 className="font-semibold text-gray-900">Design Review Hub</h2>
         </div>
         <p className="text-sm text-gray-400 text-center py-6">
@@ -237,10 +237,10 @@ export function DesignReviewHub({ skus, designFiles, onUpdate }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+    <div className="bg-white border border-gray-100 p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-amber-500" />
+          <ImageIcon className="h-4 w-4 text-texto/60" />
           <h2 className="font-semibold text-gray-900">Design Review Hub</h2>
         </div>
         {totalFiles > 0 && (

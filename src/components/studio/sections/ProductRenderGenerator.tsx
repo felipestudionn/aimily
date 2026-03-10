@@ -148,7 +148,7 @@ export function ProductRenderGenerator({
         {/* Left: Controls */}
         <div className="col-span-4 space-y-4">
           {/* SKU Selector */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Select SKU</label>
             <div className="relative">
               <button
@@ -187,7 +187,7 @@ export function ProductRenderGenerator({
 
           {/* Reference Image Preview */}
           {selectedSku?.reference_image_url && (
-            <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="bg-white border border-gray-100 p-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">Reference</label>
               <img
                 src={selectedSku.reference_image_url}
@@ -198,7 +198,7 @@ export function ProductRenderGenerator({
           )}
 
           {/* Render Mode */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-3">Generation Mode</label>
             <div className="space-y-2">
               {RENDER_MODES.map((m) => {
@@ -226,7 +226,7 @@ export function ProductRenderGenerator({
 
           {/* Scene (for studio & lifestyle) */}
           {mode !== 'tryon' && (
-            <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="bg-white border border-gray-100 p-4">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 {mode === 'lifestyle' ? 'Scene' : 'Background'}
               </label>
@@ -252,7 +252,7 @@ export function ProductRenderGenerator({
           )}
 
           {/* Custom Prompt */}
-          <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="bg-white border border-gray-100 p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">Custom Prompt (optional)</label>
             <textarea
               value={customPrompt}
@@ -267,7 +267,7 @@ export function ProductRenderGenerator({
           <button
             onClick={handleGenerate}
             disabled={!selectedSku || generating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {generating ? (
               <>
@@ -291,7 +291,7 @@ export function ProductRenderGenerator({
 
         {/* Right: Results Gallery */}
         <div className="col-span-8">
-          <div className="bg-white rounded-xl border border-gray-100 p-4 min-h-[500px]">
+          <div className="bg-white border border-gray-100 p-4 min-h-[500px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-700">
                 {selectedSku ? `${selectedSku.name} — Renders` : 'All Renders'}
@@ -337,14 +337,14 @@ function GenerationCard({
   return (
     <div className="break-inside-avoid">
       {isProcessing ? (
-        <div className="aspect-square bg-gray-50 rounded-xl flex items-center justify-center">
+        <div className="aspect-square bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-6 w-6 animate-spin text-purple-500 mx-auto mb-2" />
             <p className="text-xs text-gray-500">Generating...</p>
           </div>
         </div>
       ) : isFailed ? (
-        <div className="aspect-square bg-red-50 rounded-xl flex items-center justify-center p-4">
+        <div className="aspect-square bg-red-50 flex items-center justify-center p-4">
           <div className="text-center">
             <p className="text-xs text-red-600 font-medium">Failed</p>
             <p className="text-xs text-red-400 mt-1">{generation.error || 'Unknown error'}</p>
@@ -356,10 +356,10 @@ function GenerationCard({
             <img
               src={img.url}
               alt={generation.prompt}
-              className="w-full rounded-xl object-cover"
+              className="w-full object-cover"
             />
             {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all rounded-xl flex items-end opacity-0 group-hover:opacity-100">
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-end opacity-0 group-hover:opacity-100">
               <div className="w-full p-3 flex items-center justify-between">
                 <div className="text-white text-xs">
                   <p className="font-medium truncate max-w-[180px]">

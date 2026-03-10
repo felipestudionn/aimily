@@ -89,7 +89,7 @@ function ColorGroup({
           {colors.map((c, i) => (
             <div
               key={i}
-              className="w-12 h-12 rounded-xl border border-gray-100 shadow-sm"
+              className="w-12 h-12 border border-gray-100 shadow-sm"
               style={{ backgroundColor: c.hex }}
               title={`${c.name || c.hex}${c.pantone ? ` (${c.pantone})` : ''}`}
             />
@@ -110,7 +110,7 @@ export function ColorPalette({ primaryColors, secondaryColors, onUpdate }: Props
   const [secondary, setSecondary] = useState<BrandColor[]>(secondaryColors || []);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
+    <div className="bg-white border border-gray-100 p-6 space-y-6">
       <div className="flex items-center gap-2">
         <Palette className="h-4 w-4 text-teal-500" />
         <h2 className="font-semibold text-gray-900">Color Palette</h2>

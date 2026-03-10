@@ -161,7 +161,7 @@ export function LookbookBuilder({ collectionName, season }: LookbookBuilderProps
           </div>
 
           {/* Add Page */}
-          <div className="bg-white rounded-xl border border-gray-100 p-3">
+          <div className="bg-white border border-gray-100 p-3">
             <p className="text-xs font-semibold text-gray-600 mb-2">Add Page</p>
             <div className="grid grid-cols-3 gap-1.5">
               {LAYOUT_OPTIONS.map((layout) => {
@@ -184,7 +184,7 @@ export function LookbookBuilder({ collectionName, season }: LookbookBuilderProps
         {/* Center: Page Preview */}
         <div className="col-span-6">
           {currentPage ? (
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className="bg-white border border-gray-100 overflow-hidden">
               {/* Page Navigation */}
               <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
                 <button
@@ -225,7 +225,7 @@ export function LookbookBuilder({ collectionName, season }: LookbookBuilderProps
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-100 p-16 text-center aspect-[3/4] flex flex-col items-center justify-center">
+            <div className="bg-white border border-gray-100 p-16 text-center aspect-[3/4] flex flex-col items-center justify-center">
               <BookOpen className="h-12 w-12 text-gray-300 mb-3" />
               <p className="text-sm font-medium text-gray-600">No pages yet</p>
               <p className="text-xs text-gray-400 mt-1">Add a page to start building your lookbook</p>
@@ -238,7 +238,7 @@ export function LookbookBuilder({ collectionName, season }: LookbookBuilderProps
           <h3 className="text-sm font-semibold text-gray-700">Image Library</h3>
 
           {completedImages.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
+            <div className="bg-white border border-gray-100 p-6 text-center">
               <Image className="h-8 w-8 text-gray-300 mx-auto mb-2" />
               <p className="text-xs text-gray-500">Generate some renders in the Studio to use here</p>
             </div>
@@ -279,7 +279,7 @@ export function LookbookBuilder({ collectionName, season }: LookbookBuilderProps
 
           {/* Page Settings */}
           {currentPage && (
-            <div className="bg-white rounded-xl border border-gray-100 p-3 space-y-3">
+            <div className="bg-white border border-gray-100 p-3 space-y-3">
               <h4 className="text-xs font-semibold text-gray-600">Page Settings</h4>
               <div>
                 <label className="block text-[10px] text-gray-500 mb-1">Background Color</label>

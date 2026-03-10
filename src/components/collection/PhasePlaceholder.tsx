@@ -27,8 +27,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
       {/* Phase Header */}
       <div className="flex items-center gap-4">
         <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
-          style={{ backgroundColor: info.bgColor }}
+          className="w-14 h-14 flex items-center justify-center text-2xl bg-carbon/5"
         >
           {info.icon}
         </div>
@@ -39,17 +38,17 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
       </div>
 
       {/* Progress Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-900">Phase Progress</h2>
-          <span className="text-2xl font-bold" style={{ color: info.color }}>
+          <span className="text-2xl font-bold text-carbon">
             {progress}%
           </span>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+        <div className="h-2 bg-gray-100 overflow-hidden mb-4">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progress}%`, backgroundColor: info.color }}
+            className="h-full bg-carbon transition-all duration-500"
+            style={{ width: `${progress}%` }}
           />
         </div>
         <div className="flex gap-6 text-sm">
@@ -58,7 +57,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
             <span className="text-gray-600">{completed} completed</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-amber-500" />
+            <Clock className="h-4 w-4 text-texto/60" />
             <span className="text-gray-600">{inProgress} in progress</span>
           </div>
           <div className="flex items-center gap-2">
@@ -69,7 +68,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
       </div>
 
       {/* Milestones Checklist */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="bg-white border border-gray-100 p-6">
         <h2 className="font-semibold text-gray-900 mb-4">Milestones</h2>
         <div className="space-y-3">
           {phaseMilestones.map((m) => (
@@ -82,7 +81,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
                   m.status === 'completed'
                     ? 'bg-green-500 border-green-500'
                     : m.status === 'in-progress'
-                    ? 'border-amber-500'
+                    ? 'border-carbon'
                     : 'border-gray-200'
                 }`}
               >
@@ -92,7 +91,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
                   </svg>
                 )}
                 {m.status === 'in-progress' && (
-                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <div className="w-2 h-2 rounded-full bg-carbon" />
                 )}
               </div>
               <div className="flex-1">
@@ -109,8 +108,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
 
       {/* Coming Soon Banner */}
       <div
-        className="rounded-2xl border-2 border-dashed p-8 text-center"
-        style={{ borderColor: info.color + '40' }}
+        className="border-2 border-dashed border-gris p-8 text-center"
       >
         <p className="text-lg font-semibold text-gray-700 mb-2">
           Phase tools coming soon
@@ -118,7 +116,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
         <p className="text-sm text-gray-500 mb-4">
           This module will include specialized tools for the {info.name.toLowerCase()} phase.
           Track milestone progress from the{' '}
-          <Link href={`/collection/${id}/calendar`} className="text-blue-600 hover:underline">
+          <Link href={`/collection/${id}/calendar`} className="text-carbon underline hover:text-carbon/70">
             Calendar
           </Link>.
         </p>

@@ -364,7 +364,7 @@ export function GanttChart({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="flex flex-col h-full bg-white shadow-sm border border-gray-100 overflow-hidden">
       {/* Stats bar */}
       <div className="flex items-center gap-6 px-6 py-3 bg-gray-50 border-b border-gray-100 text-sm">
         <div className="flex items-center gap-2">
@@ -760,7 +760,7 @@ export function GanttChart({
         return (
           <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setEditingMilestone(null)}>
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+              className="bg-white shadow-2xl w-full max-w-md mx-4 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header with phase color */}

@@ -28,7 +28,7 @@ interface ColorSampleReviewProps {
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', icon: Clock, color: 'text-gray-400', bg: 'bg-gray-50' },
-  issues_found: { label: 'Issues', icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50' },
+  issues_found: { label: 'Issues', icon: AlertTriangle, color: 'text-texto/60', bg: 'bg-amber-50' },
   approved: { label: 'Approved', icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-50' },
   rejected: { label: 'Rejected', icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
 };
@@ -92,7 +92,7 @@ export function ColorSampleReview({
         const isExpanded = expandedSku === sku.id;
 
         return (
-          <div key={sku.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div key={sku.id} className="bg-white border border-gray-100 overflow-hidden">
             <div
               className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
               onClick={() => setExpandedSku(isExpanded ? null : sku.id)}

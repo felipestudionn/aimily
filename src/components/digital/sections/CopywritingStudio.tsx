@@ -257,7 +257,7 @@ export function CopywritingStudio({
   return (
     <div className="space-y-4">
       {/* Sub-tabs */}
-      <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
+      <div className="flex items-center gap-1 bg-gray-100 p-1 overflow-x-auto">
         {SUB_TABS.map((tab) => {
           const Icon = tab.icon;
           const count = copies.filter((c) => c.copy_type === tab.copyType).length;
@@ -355,7 +355,7 @@ export function CopywritingStudio({
         <button
           onClick={handleGenerate}
           disabled={generating || (needsSkuSelector && !selectedSkuId && activeSubTab !== 'social')}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white text-sm font-medium rounded-xl hover:from-purple-700 hover:to-violet-700 disabled:opacity-50 transition-all shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-violet-600 text-white text-sm font-medium hover:from-purple-700 hover:to-violet-700 disabled:opacity-50 transition-all shadow-sm"
         >
           {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           Generate{activeSubTab === 'brand_story' ? ' Story' : activeSubTab === 'emails' ? ' Email' : ''}
@@ -364,7 +364,7 @@ export function CopywritingStudio({
           <button
             onClick={handleBulkGenerate}
             disabled={generating || skus.length === 0}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-purple-200 text-purple-700 text-sm font-medium rounded-xl hover:bg-purple-50 disabled:opacity-50 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-purple-200 text-purple-700 text-sm font-medium hover:bg-purple-50 disabled:opacity-50 transition-all"
           >
             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Bulk Generate All SKUs
@@ -389,7 +389,7 @@ export function CopywritingStudio({
             const isEditing = editingId === copy.id;
 
             return (
-              <div key={copy.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+              <div key={copy.id} className="bg-white border border-gray-200 p-4 space-y-2">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

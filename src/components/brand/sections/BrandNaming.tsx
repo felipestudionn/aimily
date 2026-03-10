@@ -37,7 +37,7 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+    <div className="bg-white border border-gray-100 p-6 space-y-5">
       <h2 className="font-semibold text-gray-900">Brand Naming & Strategy</h2>
 
       {/* Brand Name */}

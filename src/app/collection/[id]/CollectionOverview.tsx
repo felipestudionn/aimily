@@ -48,7 +48,7 @@ function PhaseCard({
   return (
     <Link
       href={`/collection/${collectionId}/${path}`}
-      className="group bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition-all"
+      className="group bg-white border border-gray-100 p-5 hover:shadow-md transition-all"
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -70,9 +70,9 @@ function PhaseCard({
               d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
             />
             <path
-              stroke={info.color}
+              stroke="#282A29"
               strokeWidth="3"
-              strokeLinecap="round"
+              strokeLinecap="square"
               fill="none"
               strokeDasharray={`${progress}, 100`}
               d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -89,7 +89,7 @@ function PhaseCard({
           </div>
           {inProgress > 0 && (
             <div className="flex items-center gap-1.5">
-              <Clock className="h-3 w-3 text-amber-500" />
+              <Clock className="h-3 w-3 text-texto/60" />
               <span>{inProgress} in progress</span>
             </div>
           )}
@@ -140,7 +140,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="bg-white border border-gray-100 p-5">
           <div className="flex items-center gap-2 text-gray-500 text-xs mb-2">
             <TrendingUp className="h-4 w-4" />
             <span>Progress</span>
@@ -151,7 +151,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="bg-white border border-gray-100 p-5">
           <div className="flex items-center gap-2 text-gray-500 text-xs mb-2">
             <CalendarDays className="h-4 w-4" />
             <span>Launch Date</span>
@@ -159,7 +159,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           <p className="text-lg font-bold text-gray-900">{launchDate}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="bg-white border border-gray-100 p-5">
           <div className="flex items-center gap-2 text-gray-500 text-xs mb-2">
             <ShoppingBag className="h-4 w-4" />
             <span>SKUs</span>
@@ -170,7 +170,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="bg-white border border-gray-100 p-5">
           <div className="flex items-center gap-2 text-gray-500 text-xs mb-2">
             <Euro className="h-4 w-4" />
             <span>Sales Target</span>
@@ -205,24 +205,23 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
       {upcomingMilestones.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Next Up</h2>
-          <div className="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-50">
+          <div className="bg-white border border-gray-100 divide-y divide-gray-50">
             {upcomingMilestones.map((m) => {
               const phaseInfo = PHASES[m.phase];
               return (
                 <div key={m.id} className="flex items-center gap-4 px-5 py-3">
                   <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: phaseInfo.color }}
+                    className="w-2 h-2 flex-shrink-0 bg-carbon"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>
                     <p className="text-xs text-gray-500">{phaseInfo.name}</p>
                   </div>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
+                    className={`text-xs px-2 py-0.5 ${
                       m.status === 'in-progress'
-                        ? 'bg-amber-50 text-amber-700'
-                        : 'bg-gray-50 text-gray-500'
+                        ? 'bg-carbon text-crema'
+                        : 'bg-gray-100 text-texto/50'
                     }`}
                   >
                     {m.status === 'in-progress' ? 'In Progress' : 'Pending'}
