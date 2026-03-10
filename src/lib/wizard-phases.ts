@@ -5,7 +5,7 @@ import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
  * "studio" is a virtual phase (not in the timeline type) mapped to digital milestones dg-3/dg-4/dg-5.
  */
 export type WizardPhaseId =
-  | 'olawave'
+  | 'aimily'
   | 'brand'
   | 'design'
   | 'prototyping'
@@ -41,7 +41,7 @@ export interface WizardPhase {
  */
 export const WIZARD_PHASES: WizardPhase[] = [
   {
-    id: 'olawave',
+    id: 'aimily',
     name: 'Product & Merchandising',
     nameEs: 'Producto y Merchandising',
     path: 'product',

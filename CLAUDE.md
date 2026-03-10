@@ -1,4 +1,4 @@
-# OLAWAVE WIND
+# aimily
 
 Fashion collection management platform for planning, designing, and launching clothing/footwear collections.
 

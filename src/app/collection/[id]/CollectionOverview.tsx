@@ -43,7 +43,7 @@ function PhaseCard({
   const total = phaseMilestones.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const path = phase === 'olawave' ? 'product' : phase;
+  const path = phase === 'aimily' ? 'product' : phase;
 
   return (
     <Link

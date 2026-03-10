@@ -1,4 +1,4 @@
-const CACHE_NAME = 'olawave-v1';
+const CACHE_NAME = 'aimily-v1';
 
 // Install — cache shell assets
 self.addEventListener('install', (event) => {
@@ -6,8 +6,8 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) =>
       cache.addAll([
         '/',
-        '/images/olawave-icon-512.png',
-        '/images/olawave-logo.png',
+        '/images/aimily-icon-512.png',
+        '/images/aimily-logo-black.png',
       ])
     )
   );

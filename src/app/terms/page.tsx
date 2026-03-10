@@ -8,12 +8,12 @@ export default function TermsPage() {
         <div className="prose prose-lg">
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Acceptance of Terms</h2>
           <p>
-            By accessing and using OLAWAVE, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.
+            By accessing and using aimily, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">2. Description of Service</h2>
           <p>
-            OLAWAVE is a fashion merchandising and collection planning platform that provides:
+            aimily is a fashion merchandising and collection planning platform that provides:
           </p>
           <ul className="list-disc pl-6 mb-4">
             <li>AI-powered trend insights and analysis</li>
@@ -55,7 +55,7 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">6. Intellectual Property</h2>
           <p>
-            You retain ownership of your content. By using OLAWAVE, you grant us a license to use your content solely for providing and improving our services.
+            You retain ownership of your content. By using aimily, you grant us a license to use your content solely for providing and improving our services.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">7. AI-Generated Content</h2>
@@ -65,7 +65,7 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">8. Limitation of Liability</h2>
           <p>
-            OLAWAVE is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the service.
+            aimily is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the service.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">9. Termination</h2>
@@ -81,8 +81,8 @@ export default function TermsPage() {
           <h2 className="text-2xl font-semibold mt-8 mb-4">11. Contact</h2>
           <p>
             For questions about these Terms, contact us at:{" "}
-            <a href="mailto:legal@olawave.ai" className="text-primary hover:underline">
-              legal@olawave.ai
+            <a href="mailto:legal@aimily.app" className="text-primary hover:underline">
+              legal@aimily.app
             </a>
           </p>
 

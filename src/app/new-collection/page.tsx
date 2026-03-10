@@ -100,10 +100,10 @@ interface PhaseQuestion {
 
 const PHASE_QUESTIONS: PhaseQuestion[] = [
   // ── Product & Merchandising ──
-  { id: 'q-ow-range', phase: 'olawave', getTitle: () => 'Do you have a product range plan?', subtitle: 'Trend research, moodboarding, and range strategy', milestones: ['ow-1', 'ow-2'] },
-  { id: 'q-ow-skus', phase: 'olawave', getTitle: () => 'Do you have SKU definitions?', subtitle: 'Collection planning with specific SKUs defined', milestones: ['ow-3'] },
-  { id: 'q-ow-sketches', phase: 'olawave', getTitle: () => 'Do you have technical sketches?', milestones: ['ow-5'] },
-  { id: 'q-ow-gtm', phase: 'olawave', getTitle: () => 'Do you have a go-to-market strategy?', milestones: ['ow-4'] },
+  { id: 'q-ow-range', phase: 'aimily', getTitle: () => 'Do you have a product range plan?', subtitle: 'Trend research, moodboarding, and range strategy', milestones: ['ow-1', 'ow-2'] },
+  { id: 'q-ow-skus', phase: 'aimily', getTitle: () => 'Do you have SKU definitions?', subtitle: 'Collection planning with specific SKUs defined', milestones: ['ow-3'] },
+  { id: 'q-ow-sketches', phase: 'aimily', getTitle: () => 'Do you have technical sketches?', milestones: ['ow-5'] },
+  { id: 'q-ow-gtm', phase: 'aimily', getTitle: () => 'Do you have a go-to-market strategy?', milestones: ['ow-4'] },
 
   // ── Brand & Identity ──
   { id: 'q-br-brand', phase: 'brand', getTitle: () => 'Do you already have a brand?', subtitle: 'Brand naming, logo, visual identity, and guidelines', milestones: ['br-1', 'br-2', 'br-3'] },
@@ -617,8 +617,8 @@ export default function NewCollectionPage() {
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex h-20 items-center justify-between">
             <Image
-              src="/images/olawave-logo-black.png"
-              alt="OLAWAVE AI"
+              src="/images/aimily-logo-black.png"
+              alt="aimily"
               width={120}
               height={30}
               className="object-contain h-6 w-auto"

@@ -19,12 +19,13 @@ export function Navbar() {
       <div className="flex h-24 items-center px-2 md:px-4">
         <Link href="/" className="flex items-center">
           <Image
-            src="/images/olawave-logo.png"
-            alt="OLAWAVE AI"
-            width={160}
-            height={40}
-            className="object-contain h-8 w-auto"
+            src="/images/aimily-logo-black.png"
+            alt="aimily"
+            width={774}
+            height={96}
+            className="object-contain h-7 w-auto"
             priority
+            unoptimized
           />
         </Link>
         <div className="ml-auto flex items-center gap-3">

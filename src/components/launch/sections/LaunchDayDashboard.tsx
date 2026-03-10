@@ -40,7 +40,7 @@ function useLocalStorage<T>(key: string, initial: T): [T, (val: T | ((prev: T) =
 }
 
 export function LaunchDayDashboard({ collectionId }: LaunchDayDashboardProps) {
-  const storageKey = (sub: string) => `olawave_launch_${collectionId}_${sub}`;
+  const storageKey = (sub: string) => `aimily_launch_${collectionId}_${sub}`;
 
   const [issues, setIssues] = useLocalStorage<LaunchIssue[]>(storageKey('issues'), []);
   const [tasks, setTasks] = useLocalStorage<LaunchTask[]>(storageKey('tasks'), []);

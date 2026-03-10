@@ -26,7 +26,7 @@ import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 const PHASE_ICONS: Record<string, React.ElementType> = {
   overview: LayoutDashboard,
   calendar: CalendarDays,
-  olawave: ShoppingBag,
+  aimily: ShoppingBag,
   brand: Paintbrush,
   design: Pencil,
   prototyping: Wrench,
@@ -41,7 +41,7 @@ const PHASE_ICONS: Record<string, React.ElementType> = {
 // Insert AI Studio between sampling and digital in the nav
 const PHASE_ITEMS: Array<{ id: string; path: string; label: string; labelEs: string }> = PHASE_ORDER.map((phase) => ({
   id: phase,
-  path: `/${phase === 'olawave' ? 'product' : phase}`,
+  path: `/${phase === 'aimily' ? 'product' : phase}`,
   label: PHASES[phase].name,
   labelEs: PHASES[phase].nameEs,
 }));

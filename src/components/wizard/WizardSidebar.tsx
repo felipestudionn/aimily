@@ -29,7 +29,7 @@ import { useTimeline } from '@/contexts/TimelineContext';
 import type { WizardPhaseId } from '@/lib/wizard-phases';
 
 const PHASE_ICONS: Record<WizardPhaseId, React.ElementType> = {
-  olawave: ShoppingBag,
+  aimily: ShoppingBag,
   brand: Paintbrush,
   design: Pencil,
   prototyping: Wrench,

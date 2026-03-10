@@ -1,8 +1,8 @@
 import { TimelineMilestone, PhaseInfo, TimelinePhase, CollectionTimeline } from '@/types/timeline';
 
 export const PHASES: Record<TimelinePhase, PhaseInfo> = {
-  olawave: {
-    id: 'olawave',
+  aimily: {
+    id: 'aimily',
     name: 'Product & Merchandising',
     nameEs: 'Product & Merchandising',
     color: '#FF6B6B',
@@ -76,7 +76,7 @@ export const PHASES: Record<TimelinePhase, PhaseInfo> = {
 };
 
 export const PHASE_ORDER: TimelinePhase[] = [
-  'olawave',
+  'aimily',
   'brand',
   'design',
   'prototyping',
@@ -91,11 +91,11 @@ type MilestoneTemplate = Omit<TimelineMilestone, 'status'>;
 
 export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   // ── Product & Merchandising (wk 48 → 39) — starts March 1 ──
-  { id: 'ow-1', phase: 'olawave', name: 'Trend Research & Moodboarding', nameEs: 'Investigación de tendencias y moodboarding', responsible: 'US', startWeeksBefore: 48, durationWeeks: 3, color: '#FF6B6B' },
-  { id: 'ow-2', phase: 'olawave', name: 'Range Strategy & Framework', nameEs: 'Estrategia y framework de colección', responsible: 'US', startWeeksBefore: 45, durationWeeks: 2, color: '#FF6B6B' },
-  { id: 'ow-3', phase: 'olawave', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 43, durationWeeks: 3, color: '#FF6B6B' },
-  { id: 'ow-5', phase: 'olawave', name: 'SketchFlow / Technical Sketches', nameEs: 'SketchFlow / Bocetos técnicos', responsible: 'US', startWeeksBefore: 43, durationWeeks: 3, color: '#FF6B6B' },
-  { id: 'ow-4', phase: 'olawave', name: 'Go-to-Market Strategy', nameEs: 'Estrategia Go-to-Market', responsible: 'US', startWeeksBefore: 40, durationWeeks: 1, color: '#FF6B6B' },
+  { id: 'ow-1', phase: 'aimily', name: 'Trend Research & Moodboarding', nameEs: 'Investigación de tendencias y moodboarding', responsible: 'US', startWeeksBefore: 48, durationWeeks: 3, color: '#FF6B6B' },
+  { id: 'ow-2', phase: 'aimily', name: 'Range Strategy & Framework', nameEs: 'Estrategia y framework de colección', responsible: 'US', startWeeksBefore: 45, durationWeeks: 2, color: '#FF6B6B' },
+  { id: 'ow-3', phase: 'aimily', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 43, durationWeeks: 3, color: '#FF6B6B' },
+  { id: 'ow-5', phase: 'aimily', name: 'SketchFlow / Technical Sketches', nameEs: 'SketchFlow / Bocetos técnicos', responsible: 'US', startWeeksBefore: 43, durationWeeks: 3, color: '#FF6B6B' },
+  { id: 'ow-4', phase: 'aimily', name: 'Go-to-Market Strategy', nameEs: 'Estrategia Go-to-Market', responsible: 'US', startWeeksBefore: 40, durationWeeks: 1, color: '#FF6B6B' },
 
   // ── Brand & Identity (wk 46 → 34) ──
   { id: 'br-1', phase: 'brand', name: 'Brand Naming & Strategy', nameEs: 'Naming y estrategia de marca', responsible: 'US', startWeeksBefore: 46, durationWeeks: 3, color: '#4ECDC4' },

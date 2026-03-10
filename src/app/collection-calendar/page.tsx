@@ -9,7 +9,7 @@ import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight, Download, Clo
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
-const STORAGE_KEY = 'olawave_collection_timelines';
+const STORAGE_KEY = 'aimily_collection_timelines';
 
 interface CollectionPlanSummary {
   id: string;

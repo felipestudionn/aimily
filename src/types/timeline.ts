@@ -1,5 +1,5 @@
 export type TimelinePhase =
-  | 'olawave'
+  | 'aimily'
   | 'brand'
   | 'design'
   | 'prototyping'

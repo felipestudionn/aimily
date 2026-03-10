@@ -1,7 +1,7 @@
 {
-  "name": "fashion-trend-analyzer",
+  "name": "aimily",
   "version": "1.0.0",
-  "description": "A fashion trend analysis web application that analyzes data from multiple platforms and presents results in a user-friendly dashboard",
+  "description": "Fashion collection management platform — plan, design, and launch collections.",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

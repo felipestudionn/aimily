@@ -8,7 +8,7 @@ export default function PrivacyPage() {
         <div className="prose prose-lg">
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Introduction</h2>
           <p>
-            OLAWAVE ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information when you use our fashion merchandising platform.
+            aimily ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information when you use our fashion merchandising platform.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">2. Information We Collect</h2>
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">5. Pinterest Data</h2>
           <p>
-            Pinterest data is used exclusively within OLAWAVE for creating moodboards and generating insights. We comply with Pinterest's API Terms of Service and do not use Pinterest data for any other purpose.
+            Pinterest data is used exclusively within aimily for creating moodboards and generating insights. We comply with Pinterest's API Terms of Service and do not use Pinterest data for any other purpose.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">6. Data Security</h2>
@@ -71,8 +71,8 @@ export default function PrivacyPage() {
           <h2 className="text-2xl font-semibold mt-8 mb-4">8. Contact Us</h2>
           <p>
             For privacy-related questions, contact us at:{" "}
-            <a href="mailto:privacy@olawave.ai" className="text-primary hover:underline">
-              privacy@olawave.ai
+            <a href="mailto:privacy@aimily.app" className="text-primary hover:underline">
+              privacy@aimily.app
             </a>
           </p>
 

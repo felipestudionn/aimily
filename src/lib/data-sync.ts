@@ -74,7 +74,7 @@ export function saveCreativeSpaceData(data: CreativeSpaceData): void {
   if (typeof window === 'undefined') return;
   
   try {
-    localStorage.setItem('olawave_creative_data', JSON.stringify(data));
+    localStorage.setItem('aimily_creative_data', JSON.stringify(data));
   } catch (error) {
     console.error('Failed to save creative space data:', error);
   }
@@ -87,7 +87,7 @@ export function loadCreativeSpaceData(): CreativeSpaceData | null {
   if (typeof window === 'undefined') return null;
   
   try {
-    const data = localStorage.getItem('olawave_creative_data');
+    const data = localStorage.getItem('aimily_creative_data');
     return data ? JSON.parse(data) : null;
   } catch (error) {
     console.error('Failed to load creative space data:', error);

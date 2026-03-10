@@ -26,7 +26,7 @@ export function useNotifications() {
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set();
     try {
-      const stored = localStorage.getItem('olawave_dismissed_notifications');
+      const stored = localStorage.getItem('aimily_dismissed_notifications');
       return stored ? new Set(JSON.parse(stored)) : new Set();
     } catch {
       return new Set();
@@ -63,7 +63,7 @@ export function useNotifications() {
     setDismissed((prev) => {
       const next = new Set(prev);
       next.add(id);
-      try { localStorage.setItem('olawave_dismissed_notifications', JSON.stringify(Array.from(next))); } catch {}
+      try { localStorage.setItem('aimily_dismissed_notifications', JSON.stringify(Array.from(next))); } catch {}
       return next;
     });
     setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -73,7 +73,7 @@ export function useNotifications() {
     const allIds = notifications.map((n) => n.id);
     setDismissed((prev) => {
       const next = new Set(Array.from(prev).concat(allIds));
-      try { localStorage.setItem('olawave_dismissed_notifications', JSON.stringify(Array.from(next))); } catch {}
+      try { localStorage.setItem('aimily_dismissed_notifications', JSON.stringify(Array.from(next))); } catch {}
       return next;
     });
     setUnreadCount(0);

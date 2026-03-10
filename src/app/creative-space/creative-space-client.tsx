@@ -357,14 +357,14 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
     }
 
     // Check stored Pinterest state
-    const storedPinterestState = localStorage.getItem('olawave_pinterest_connected');
+    const storedPinterestState = localStorage.getItem('aimily_pinterest_connected');
     if (storedPinterestState === 'true') {
       setPinterestConnected(true);
-      const storedBoards = localStorage.getItem('olawave_pinterest_boards');
+      const storedBoards = localStorage.getItem('aimily_pinterest_boards');
       if (storedBoards) {
         setPinterestBoards(JSON.parse(storedBoards));
       }
-      const storedSelected = localStorage.getItem('olawave_pinterest_selected');
+      const storedSelected = localStorage.getItem('aimily_pinterest_selected');
       if (storedSelected) {
         setSelectedBoards(JSON.parse(storedSelected));
       }
@@ -381,7 +381,7 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
         count: images.length,
         names: images.map((img) => img.name).slice(0, 20),
       };
-      window.localStorage.setItem('olawave_moodboard_summary', JSON.stringify(summary));
+      window.localStorage.setItem('aimily_moodboard_summary', JSON.stringify(summary));
 
       // New unified format - use AI analysis if available
       const selectedBoardsData = pinterestBoards.filter(b => selectedBoards.includes(b.id));
@@ -405,7 +405,7 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
       
       // Store Pinterest selected boards
       if (selectedBoards.length > 0) {
-        localStorage.setItem('olawave_pinterest_selected', JSON.stringify(selectedBoards));
+        localStorage.setItem('aimily_pinterest_selected', JSON.stringify(selectedBoards));
       }
     } catch (e) {
       // ignore storage errors
@@ -529,8 +529,8 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
       
       if (data.items && Array.isArray(data.items)) {
         setPinterestBoards(data.items);
-        localStorage.setItem('olawave_pinterest_boards', JSON.stringify(data.items));
-        localStorage.setItem('olawave_pinterest_connected', 'true');
+        localStorage.setItem('aimily_pinterest_boards', JSON.stringify(data.items));
+        localStorage.setItem('aimily_pinterest_connected', 'true');
         setShowBoardSelector(true);
         setPinterestError(null);
       } else {
@@ -558,9 +558,9 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
       setBoardPins([]);
       
       // Clear localStorage
-      localStorage.removeItem('olawave_pinterest_connected');
-      localStorage.removeItem('olawave_pinterest_boards');
-      localStorage.removeItem('olawave_pinterest_selected');
+      localStorage.removeItem('aimily_pinterest_connected');
+      localStorage.removeItem('aimily_pinterest_boards');
+      localStorage.removeItem('aimily_pinterest_selected');
     } catch (err) {
       console.error('Error disconnecting Pinterest:', err);
     } finally {
@@ -681,7 +681,7 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
 
   const handlePinterestConnect = () => {
     const clientId = process.env.NEXT_PUBLIC_PINTEREST_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI || 'https://olawave.ai/api/auth/pinterest/callback';
+    const redirectUri = process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI || 'https://aimily.app/api/auth/pinterest/callback';
     const scope = 'boards:read,pins:read';
     const state = Math.random().toString(36).substring(7);
     
@@ -1992,7 +1992,7 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
                   isSelected ? 'ring-2 ring-primary border-primary' : ''
                 }`}
               >
-                <div className="absolute top-0 right-0 w-full h-1 olawave-gradient"></div>
+                <div className="absolute top-0 right-0 w-full h-1 aimily-gradient"></div>
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

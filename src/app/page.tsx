@@ -39,8 +39,8 @@ export default function LandingPage() {
         {/* Logo */}
         <div className="mb-10 animate-fade-in-up w-full flex justify-center">
           <Image
-            src="/images/olawave-logo-white.png"
-            alt="OLAWAVE"
+            src="/images/aimily-logo-white.png"
+            alt="aimily"
             width={500}
             height={500}
             className="object-contain w-[clamp(200px,50vw,480px)] h-auto brightness-[0.95] sepia-[0.15]"

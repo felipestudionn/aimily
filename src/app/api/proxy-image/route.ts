@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     // Fetch the image from the external URL
     const response = await fetch(imageUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; OlawaveBot/1.0)',
+        'User-Agent': 'Mozilla/5.0 (compatible; AimilyBot/1.0)',
       },
     });
 

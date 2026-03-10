@@ -4,13 +4,13 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 
 export const metadata: Metadata = {
-  title: 'OLAWAVE — Collection Management',
+  title: 'aimily — Collection Management',
   description: 'Plan, design, and launch fashion collections.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'OLAWAVE',
+    title: 'aimily',
   },
   themeColor: '#282A29',
   viewport: {
@@ -28,7 +28,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/images/olawave-icon-512.png" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-screen antialiased">
         <AuthProvider>

@@ -18,7 +18,7 @@ import type { ElementType } from 'react';
  * Used by WizardSidebar, workspace headers, GanttChart, etc.
  */
 export const PHASE_ICONS: Record<TimelinePhase, ElementType> = {
-  olawave: ShoppingBag,
+  aimily: ShoppingBag,
   brand: Paintbrush,
   design: PenTool,
   prototyping: Wrench,

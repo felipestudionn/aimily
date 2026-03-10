@@ -37,7 +37,7 @@ function useLocalStorage<T>(key: string, initial: T): [T, (val: T | ((prev: T) =
 }
 
 export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) {
-  const storageKey = (sub: string) => `olawave_launch_${collectionId}_${sub}`;
+  const storageKey = (sub: string) => `aimily_launch_${collectionId}_${sub}`;
 
   const [sales, setSales] = useLocalStorage<SalesEntry[]>(storageKey('sales'), []);
   const [lessons, setLessons] = useLocalStorage<LessonLearned[]>(storageKey('lessons'), []);

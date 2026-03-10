@@ -63,7 +63,7 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
   // Load creative data from localStorage if exists
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem('olawave_creative_data');
+      const raw = window.localStorage.getItem('aimily_creative_data');
       if (raw) {
         const d = JSON.parse(raw);
         setCreativeData((prev) => ({
@@ -217,7 +217,7 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
         creativeData.keyItems.length
       ) {
         window.localStorage.setItem(
-          'olawave_creative_data',
+          'aimily_creative_data',
           JSON.stringify({
             keyColors: creativeData.keyColors,
             keyTrends: creativeData.keyTrends,

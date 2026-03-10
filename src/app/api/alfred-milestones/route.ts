@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const PHASE_NAMES: Record<string, { name: string; nameEs: string }> = {
-  olawave: { name: 'Product & Merchandising', nameEs: 'Producto y Merchandising' },
+  aimily: { name: 'Product & Merchandising', nameEs: 'Producto y Merchandising' },
   brand: { name: 'Brand & Identity', nameEs: 'Marca e Identidad' },
   design: { name: 'Design & Development', nameEs: 'Diseño y Desarrollo' },
   prototyping: { name: 'Prototyping', nameEs: 'Prototipado' },
