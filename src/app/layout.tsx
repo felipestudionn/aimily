@@ -3,8 +3,8 @@ import '@/styles/globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'OLAWAVE AI - Fashion Trend Analyzer',
-  description: 'Analyze fashion trends across multiple platforms with AI-powered insights.',
+  title: 'OLAWAVE — Collection Management',
+  description: 'Plan, design, and launch fashion collections.',
 };
 
 export default function RootLayout({
@@ -14,12 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen font-sans antialiased">
+      <body className="min-h-screen antialiased">
         <AuthProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <div className="fixed inset-0 -z-10 bg-[#f8f7f2]"></div>
-            <main className="flex-1">{children}</main>
-          </div>
+          <main className="relative min-h-screen">{children}</main>
         </AuthProvider>
       </body>
     </html>

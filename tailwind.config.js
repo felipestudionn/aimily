@@ -17,17 +17,16 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-open-sauce)', 'sans-serif'],
-        olawave: ['var(--font-open-sauce)', 'sans-serif'],
-      },
-      fontSize: {
-        'olawave-title': ['2.5rem', {
-          lineHeight: '1',
-          letterSpacing: '0.01em',
-          fontWeight: '400',
-        }],
+        sans: ["'Helvetica Neue'", "'Helvetica'", "'Arial'", "sans-serif"],
       },
       colors: {
+        /* Alfred palette */
+        crema: "#FAEFE0",
+        carbon: "#282A29",
+        texto: "#191919",
+        gris: "#D8D8D8",
+        error: "#A0463C",
+        /* shadcn/ui semantic tokens */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -64,8 +63,8 @@ module.exports = {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius))",
+        sm: "calc(var(--radius))",
       },
       keyframes: {
         "accordion-down": {
