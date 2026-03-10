@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { PlannerDashboard } from '@/components/planner/PlannerDashboard';
+import { ProductWorkspaceGate } from './ProductWorkspaceGate';
 import type { CollectionPlan } from '@/types/planner';
 
 interface PageProps {
@@ -18,5 +18,5 @@ export default async function ProductPage({ params }: PageProps) {
 
   if (error || !plan) notFound();
 
-  return <PlannerDashboard plan={plan as CollectionPlan} />;
+  return <ProductWorkspaceGate plan={plan as CollectionPlan} />;
 }

@@ -701,7 +701,7 @@ export function CreativeSpaceClient({ signals = [] }: CreativeSpaceClientProps) 
   const hasContent = images.length > 0 || selectedBoards.length > 0;
 
   const handleContinue = () => {
-    router.push('/ai-advisor');
+    router.push('/my-collections');
   };
 
   // Load market trends
