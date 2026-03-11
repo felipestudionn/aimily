@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { CookieConsent } from '@/components/CookieConsent';
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
   title: 'aimily — Collection Management',
@@ -39,6 +40,7 @@ export default function RootLayout({
             <ServiceWorkerRegistrar />
             <main className="relative min-h-screen">{children}</main>
             <CookieConsent />
+            <Analytics />
           </SubscriptionProvider>
         </AuthProvider>
       </body>
