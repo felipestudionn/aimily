@@ -316,7 +316,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ── */}
-      <div className="relative z-20">
+      <div className="relative z-20 pb-6">
         <div className="flex items-center justify-center gap-6 py-5">
           <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
             Terms
@@ -329,6 +329,9 @@ export default function LandingPage() {
           </Link>
         </div>
         <div className="h-px bg-gris/20" />
+        <p className="text-center text-gris/20 text-[10px] tracking-wide mt-4">
+          aimily is a product by StudioNN Agency S.L.
+        </p>
       </div>
 
       {/* Auth */}
