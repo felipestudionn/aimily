@@ -124,10 +124,10 @@ Las 26 tablas referenciadas en codigo son:
 > Emails profesionales con branding aimily
 
 ### 3.1 Configurar Resend (SMTP)
-- [ ] Crear cuenta en resend.com
-- [ ] Verificar dominio `aimily.app` (DNS: SPF, DKIM, DMARC)
-- [ ] Obtener SMTP credentials
-- [ ] Configurar en Supabase Dashboard > Authentication > SMTP Settings:
+- [x] Crear cuenta en resend.com
+- [x] Verificar dominio `aimily.app` (DNS: SPF, DKIM, DMARC) — IONOS, verified
+- [x] Obtener SMTP credentials — API key creada
+- [x] Configurar en Supabase via Management API:
   - Host: `smtp.resend.com`
   - Port: `465` (SSL)
   - Username: `resend`
@@ -151,8 +151,8 @@ Cada template incluye:
 
 ### 3.3 Actualizar Supabase URL Configuration
 En Supabase Dashboard > Authentication > URL Configuration:
-- [ ] Site URL: `https://www.aimily.app`
-- [ ] Redirect URLs: `https://www.aimily.app/**`, `http://localhost:3000/**`
+- [x] Site URL: `https://www.aimily.app`
+- [x] Redirect URLs: `https://www.aimily.app/**`, `http://localhost:3000/**`
 
 ---
 
