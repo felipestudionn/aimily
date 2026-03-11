@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
+import { CookieConsent } from '@/components/CookieConsent';
 
 export const metadata: Metadata = {
   title: 'aimily — Collection Management',
@@ -37,6 +38,7 @@ export default function RootLayout({
           <SubscriptionProvider>
             <ServiceWorkerRegistrar />
             <main className="relative min-h-screen">{children}</main>
+            <CookieConsent />
           </SubscriptionProvider>
         </AuthProvider>
       </body>

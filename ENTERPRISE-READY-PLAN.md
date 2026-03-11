@@ -201,33 +201,44 @@ En Supabase Dashboard > Authentication > URL Configuration:
 ### 5.4 Actualizaciones legales
 - [x] Actualizar `/privacy` — sub-processors (Supabase, Stripe, Google, Anthropic, Resend, Vercel), GDPR rights, data controller
 - [x] Actualizar `/terms` — suscripcion/pricing, cancelacion, account deletion
-- [ ] Cookie consent banner (pendiente para Fase 6)
+- [x] Cookie consent banner (implementado en Fase 6)
 
 ---
 
 ## FASE 6: Seguridad + Hardening
 > Rate limiting, CAPTCHA, seguridad avanzada
 
-### 6.1 CAPTCHA
-- [ ] Configurar Cloudflare Turnstile (gratuito) o hCaptcha
-- [ ] Activar en Supabase Dashboard > Authentication > Bot Detection
-- [ ] Integrar en AuthModal (signup + signin + forgot password)
+### 6.1 CAPTCHA — Cloudflare Turnstile
+- [x] Integrar `@marsidev/react-turnstile` en AuthModal (signup + signin)
+- [x] Integrar en forgot-password page
+- [x] AuthContext actualizado: `signUp`, `signIn`, `resetPassword` aceptan `captchaToken`
+- [x] Widget solo aparece si `NEXT_PUBLIC_TURNSTILE_SITE_KEY` esta configurado (graceful fallback)
+- [ ] **MANUAL**: Crear sitio en Cloudflare Turnstile (https://dash.cloudflare.com → Turnstile)
+- [ ] **MANUAL**: Activar captcha en Supabase Dashboard > Authentication > Bot Detection (provider: Turnstile, pegar secret key)
+- [ ] **MANUAL**: Anadir env vars a Vercel: `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
 
 ### 6.2 Rate Limits
-- [ ] Revisar rate limits en Supabase Dashboard > Authentication > Rate Limits
-- [ ] Configurar limites apropiados para SaaS
+- [x] Revisados rate limits via Management API — valores por defecto OK para SaaS:
+  - Email sent: 30/hour, OTP: 30/hour, Token refresh: 150/hour, Verify: 30/hour
 
 ### 6.3 Security Hardening
-- [ ] Activar SSL enforcement en Supabase
-- [ ] Verificar RLS en TODAS las tablas (fase 0.3)
-- [ ] Activar MFA en cuenta de Supabase organization
-- [ ] Configurar Network Restrictions en Supabase (opcional)
-- [ ] Ejecutar Security Advisor en Supabase Dashboard
+- [x] Ejecutado Security Advisor — todos los issues corregidos
+- [x] RLS activado en TODAS las 22 tablas restantes sin RLS (migracion `security_hardening_rls_and_functions`)
+- [x] Policies `service_role_full_access` añadidas para que backend siga funcionando
+- [x] 3 funciones con `search_path` mutable corregidas (`update_drops_updated_at`, `update_updated_at_column`, `prune_bot_memory`)
+- [x] `password_min_length` subido a 8 (server-side, coincide con frontend)
+- [x] `password_required_characters` configurado: letras + digitos obligatorios
+- [x] `security_update_password_require_reauthentication` activado
+- [x] `mailer_notifications_password_changed_enabled` activado
+- [ ] `password_hibp_enabled` — requiere Supabase Pro plan (pendiente cuando se upgrade)
+- [ ] **MANUAL**: Activar MFA en cuenta de Supabase organization
 
-### 6.4 Monitoreo
-- [ ] Configurar alertas de Stripe (pagos fallidos, disputas)
-- [ ] Revisar logs de Supabase periodicamente
-- [ ] Configurar Vercel Analytics (si no esta activo)
+### 6.4 Cookie Consent + Monitoreo
+- [x] Cookie consent banner creado (`src/components/CookieConsent.tsx`)
+- [x] Integrado en layout global — aparece 1 vez, respeta la eleccion del usuario via localStorage
+- [x] Enlace a `/cookies` policy, botones Accept/Decline, estilo editorial dark
+- [ ] **MANUAL**: Configurar alertas de Stripe (Dashboard > Settings > Alerts: pagos fallidos, disputas)
+- [ ] **MANUAL**: Activar Vercel Analytics (Dashboard > Analytics > Enable)
 
 ---
 
@@ -252,6 +263,9 @@ STRIPE_BUSINESS_MONTHLY_PRICE_ID
 STRIPE_BUSINESS_ANNUAL_PRICE_ID
 STRIPE_ENTERPRISE_MONTHLY_PRICE_ID
 STRIPE_ENTERPRISE_ANNUAL_PRICE_ID
+
+# Cloudflare Turnstile (CAPTCHA)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 # AI APIs
 GEMINI_API_KEY

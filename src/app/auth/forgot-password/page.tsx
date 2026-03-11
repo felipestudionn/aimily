@@ -1,15 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { ArrowLeft, Mail, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { createClient } from '@/lib/supabase/client';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,18 +22,29 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
+      if (TURNSTILE_SITE_KEY && !captchaToken) {
+        setError('Please complete the security check');
+        setLoading(false);
+        return;
+      }
+
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+        captchaToken: captchaToken || undefined,
       });
 
       if (error) {
         setError(error.message);
+        turnstileRef.current?.reset();
+        setCaptchaToken(null);
       } else {
         setSent(true);
       }
     } catch {
       setError('An unexpected error occurred');
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -104,10 +120,22 @@ export default function ForgotPasswordPage() {
                   </div>
                 </div>
 
+                {TURNSTILE_SITE_KEY && (
+                  <div className="flex justify-center">
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                      options={{ theme: 'light', size: 'flexible' }}
+                    />
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   className="w-full py-3 bg-carbon text-crema text-sm font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
-                  disabled={loading}
+                  disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">

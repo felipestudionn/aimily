@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Loader2, Mail, Lock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { useAuth } from '@/contexts/AuthContext';
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -46,6 +49,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
   const [error, setError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
   const { signIn, signUp, signInWithGoogle } = useAuth();
 
   // Reset mode when defaultMode changes
@@ -62,6 +67,13 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
     setLoading(true);
 
     try {
+      // Require CAPTCHA if Turnstile is configured
+      if (TURNSTILE_SITE_KEY && !captchaToken) {
+        setError('Please complete the security check');
+        setLoading(false);
+        return;
+      }
+
       if (mode === 'signup') {
         // Validate password before submitting
         const validationError = validatePassword(password);
@@ -71,17 +83,21 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
           return;
         }
 
-        const { error } = await signUp(email, password);
+        const { error } = await signUp(email, password, captchaToken || undefined);
         if (error) {
           setError(getErrorMessage(error.message));
+          turnstileRef.current?.reset();
+          setCaptchaToken(null);
         } else {
           // Show "check your email" message instead of auto-login
           setSignupSuccess(true);
         }
       } else {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(email, password, captchaToken || undefined);
         if (error) {
           setError(getErrorMessage(error.message));
+          turnstileRef.current?.reset();
+          setCaptchaToken(null);
         } else {
           onSuccess?.();
           onClose();
@@ -89,6 +105,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
       }
     } catch {
       setError('An unexpected error occurred');
+      turnstileRef.current?.reset();
+      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -259,10 +277,22 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
             </div>
           )}
 
+          {TURNSTILE_SITE_KEY && (
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={TURNSTILE_SITE_KEY}
+                onSuccess={(token) => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+                options={{ theme: 'dark', size: 'flexible' }}
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             className="w-full py-3 bg-crema text-carbon text-sm font-medium tracking-[0.1em] uppercase hover:bg-crema/90 transition-colors disabled:opacity-50"
-            disabled={loading}
+            disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
