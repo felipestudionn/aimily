@@ -335,7 +335,11 @@ export function PinterestImporter({ onImportImages, compact = false }: Pinterest
       {!pinterestConnected ? (
         <div className="text-center py-6 text-muted-foreground">
           <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p>Connect your Pinterest account to import boards as creative inspiration</p>
+          <p className="mb-4">Connect your Pinterest account to import boards as creative inspiration</p>
+          <Button onClick={handlePinterestConnect}>
+            <LinkIcon className="h-4 w-4 mr-2" />
+            Connect Pinterest
+          </Button>
         </div>
       ) : loadingBoards ? (
         <div className="flex items-center justify-center py-8">
