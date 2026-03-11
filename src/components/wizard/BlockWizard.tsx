@@ -10,6 +10,8 @@ export interface WizardStep {
   autoAdvance?: boolean;
   /** If true, the Next button is enabled */
   canAdvance?: boolean;
+  /** If true, use wider layout (max-w-6xl) for content-heavy steps */
+  wide?: boolean;
 }
 
 interface BlockWizardProps {
@@ -70,9 +72,9 @@ export function BlockWizard({
         </div>
       )}
 
-      {/* Content — centered vertically in remaining space */}
-      <div className="flex-1 flex items-center justify-center px-8 py-12">
-        <div className="w-full max-w-2xl" key={step.id}>
+      {/* Content — centered vertically (or scrollable for wide steps) */}
+      <div className={`flex-1 ${step.wide ? 'overflow-y-auto' : 'flex items-center justify-center'} px-8 py-12`}>
+        <div className={`w-full ${step.wide ? 'max-w-6xl mx-auto' : 'max-w-2xl'}`} key={step.id}>
           {step.render(next)}
         </div>
       </div>
@@ -80,7 +82,7 @@ export function BlockWizard({
       {/* Footer nav — subtle, bottom */}
       {!step.autoAdvance && (
         <div className="border-t border-black/[0.04] bg-white py-5">
-          <div className="max-w-2xl mx-auto px-8 flex items-center justify-between">
+          <div className={`${step.wide ? 'max-w-6xl' : 'max-w-2xl'} mx-auto px-8 flex items-center justify-between`}>
             {currentStep > 0 ? (
               <button
                 onClick={back}

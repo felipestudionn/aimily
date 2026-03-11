@@ -11,12 +11,42 @@ import {
   Target,
   Plus,
   X,
-  Search,
-  ImageIcon,
+  Check,
+  MapPin,
+  RefreshCw,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { MoodboardUploader } from '@/components/creative/MoodboardUploader';
-import type { MoodImage, MoodboardAnalysis } from '@/types/creative';
+import { InsightsPanel } from '@/components/creative/InsightsPanel';
+import { TrendExplorer, ColorGrid, TrendCardGrid } from '@/components/creative/TrendExplorer';
+import { PinterestImporter } from '@/components/creative/PinterestImporter';
+import { MarketTrendsPanel } from '@/components/creative/MarketTrendsPanel';
+import { getColorValue, getContrastColor } from '@/lib/image-utils';
+import type { MoodImage, MoodboardAnalysis, SelectedTrends } from '@/types/creative';
 import type { CollectionPlan, SetupData } from '@/types/planner';
+
+/* ── City / Neighborhood types ── */
+interface NeighborhoodGarment { name: string; mentions: number; isNew: boolean; rank: number; }
+interface NeighborhoodStyle { name: string; mentions: number; isNew: boolean; }
+interface NeighborhoodBrand { name: string; mentions: number; type: string; }
+interface NeighborhoodSpot { name: string; mentions: number; }
+interface MicroTrend { name: string; description: string; confidence: number; }
+interface NeighborhoodData {
+  city: string;
+  neighborhood: string;
+  garments: NeighborhoodGarment[];
+  styles: NeighborhoodStyle[];
+  brands: NeighborhoodBrand[];
+  localSpots: NeighborhoodSpot[];
+  microTrends: MicroTrend[];
+}
+interface CityTrendsResponse {
+  neighborhoods: NeighborhoodData[];
+  tiktokTrends: { hashtag: string; total_plays: number; total_likes: number; post_count: number; neighborhood?: string; top_related_hashtags?: string[] }[];
+  period: string;
+  hasProcessedData: boolean;
+}
 
 interface ProductMiniWizardProps {
   plan: CollectionPlan;
@@ -28,53 +58,51 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
   const [moodImages, setMoodImages] = useState<MoodImage[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<MoodboardAnalysis | null>(null);
-  const [creativeTab, setCreativeTab] = useState<'moodboard' | 'trends' | 'manual'>('moodboard');
-  const [trendQuery, setTrendQuery] = useState('');
-  const [isExploring, setIsExploring] = useState(false);
 
-  const [creativeData, setCreativeData] = useState({
-    keyColors: [] as string[],
-    keyTrends: [] as string[],
-    keyItems: [] as string[],
-    newColor: '',
-    newTrend: '',
-    newItem: '',
+  // Shared trend selection (used by MarketTrends, TrendExplorer, Live Signals)
+  const [selectedTrends, setSelectedTrends] = useState<SelectedTrends>({
+    colors: [],
+    trends: [],
+    items: [],
   });
 
+  // City Trends / Street Intelligence
+  const [cityTrends, setCityTrends] = useState<CityTrendsResponse | null>(null);
+  const [loadingCityTrends, setLoadingCityTrends] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<string>('London');
+  const [selectedCityTrends, setSelectedCityTrends] = useState<string[]>([]);
+
+  // Wizard form state
   const [targetConsumer, setTargetConsumer] = useState('');
   const [customConsumer, setCustomConsumer] = useState('');
-
   const [season, setSeason] = useState('');
   const [customSeason, setCustomSeason] = useState('');
-
   const [skuCount, setSkuCount] = useState('');
   const [customSkuCount, setCustomSkuCount] = useState('');
-
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [priceNotes, setPriceNotes] = useState('');
-
   const [categories, setCategories] = useState<Set<string>>(new Set());
   const [customCategory, setCustomCategory] = useState('');
 
+  // AI generation
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<SetupData | null>(null);
   const [genError, setGenError] = useState('');
-
   const [budgetSalesTarget, setBudgetSalesTarget] = useState(0);
   const [budgetMargin, setBudgetMargin] = useState(0);
   const [isSavingSKUs, setIsSavingSKUs] = useState(false);
 
+  // Load saved creative data
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem('aimily_creative_data');
       if (raw) {
         const d = JSON.parse(raw);
-        setCreativeData((prev) => ({
-          ...prev,
-          keyColors: d.keyColors || [],
-          keyTrends: d.keyTrends || [],
-          keyItems: d.keyItems || [],
+        setSelectedTrends((prev) => ({
+          colors: d.keyColors || prev.colors,
+          trends: d.keyTrends || prev.trends,
+          items: d.keyItems || prev.items,
         }));
       }
     } catch {}
@@ -90,6 +118,25 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
     else if (sd?.collectionSize === 'medium') setSkuCount('21-50');
     else if (sd?.collectionSize === 'full') setSkuCount('51-100');
   }, [plan.setup_data]);
+
+  // ─── Toggle Handlers ───────────────────────────────────
+  const toggleTrendSelection = useCallback(
+    (type: 'colors' | 'trends' | 'items', value: string) => {
+      setSelectedTrends((prev) => ({
+        ...prev,
+        [type]: prev[type].includes(value)
+          ? prev[type].filter((v) => v !== value)
+          : [...prev[type], value],
+      }));
+    },
+    []
+  );
+
+  const toggleCityTrendSelection = (trendName: string) => {
+    setSelectedCityTrends((prev) =>
+      prev.includes(trendName) ? prev.filter((t) => t !== trendName) : [...prev, trendName]
+    );
+  };
 
   // ─── Moodboard Analysis ───────────────────────────────────
   const analyzeMoodboard = useCallback(async () => {
@@ -121,11 +168,11 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
       if (res.ok) {
         const analysis = (await res.json()) as MoodboardAnalysis;
         setAnalysisResult(analysis);
-        setCreativeData((prev) => ({
-          ...prev,
-          keyColors: Array.from(new Set([...prev.keyColors, ...(analysis.keyColors || [])])),
-          keyTrends: Array.from(new Set([...prev.keyTrends, ...(analysis.keyTrends || [])])),
-          keyItems: Array.from(new Set([...prev.keyItems, ...(analysis.keyItems || [])])),
+        // Merge analysis into selected trends
+        setSelectedTrends((prev) => ({
+          colors: Array.from(new Set([...prev.colors, ...(analysis.keyColors || [])])),
+          trends: Array.from(new Set([...prev.trends, ...(analysis.keyTrends || [])])),
+          items: Array.from(new Set([...prev.items, ...(analysis.keyItems || [])])),
         }));
       }
     } catch (err) {
@@ -135,32 +182,41 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
     }
   }, [moodImages]);
 
-  // ─── Trend Explorer ───────────────────────────────────────
-  const exploreTrend = useCallback(async () => {
-    if (!trendQuery.trim()) return;
-    setIsExploring(true);
-    try {
-      const res = await fetch('/api/ai/explore-trends', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: trendQuery }),
+  // ─── Pinterest Import ───────────────────────────────────
+  const handlePinterestImport = useCallback(
+    (newImages: MoodImage[]) => {
+      setMoodImages((prev) => {
+        const existingIds = new Set(prev.map((img) => img.id));
+        const unique = newImages.filter((img) => !existingIds.has(img.id));
+        return [...prev, ...unique];
       });
-      if (res.ok) {
-        const data = await res.json();
-        setCreativeData((prev) => ({
-          ...prev,
-          keyColors: Array.from(new Set([...prev.keyColors, ...(data.keyColors || [])])),
-          keyTrends: Array.from(new Set([...prev.keyTrends, ...(data.keyTrends || [])])),
-          keyItems: Array.from(new Set([...prev.keyItems, ...(data.keyItems || [])])),
-        }));
-        setTrendQuery('');
+    },
+    []
+  );
+
+  // ─── City Trends ───────────────────────────────────────
+  const loadCityTrends = async () => {
+    setLoadingCityTrends(true);
+    try {
+      const response = await fetch('/api/city-trends');
+      if (response.ok) {
+        const data = await response.json();
+        setCityTrends(data);
+        if (data.neighborhoods?.length > 0) {
+          const found = data.neighborhoods.find((n: NeighborhoodData) => n.neighborhood === selectedCity);
+          if (!found) setSelectedCity(data.neighborhoods[0].neighborhood);
+        }
       }
-    } catch (err) {
-      console.error('Trend exploration error:', err);
+    } catch (error) {
+      console.error('Error loading city trends:', error);
     } finally {
-      setIsExploring(false);
+      setLoadingCityTrends(false);
     }
-  }, [trendQuery]);
+  };
+
+  const currentNeighborhoodData = cityTrends?.neighborhoods?.find(
+    (n: NeighborhoodData) => n.neighborhood === selectedCity
+  );
 
   // ─── AI Generation ──────────────────────────────────────
   const generatePlan = useCallback(async () => {
@@ -168,10 +224,12 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
     setGenError('');
     try {
       const ctxParts: string[] = [];
-      if (creativeData.keyColors.length) ctxParts.push(`Key colors: ${creativeData.keyColors.join(', ')}`);
-      if (creativeData.keyTrends.length) ctxParts.push(`Key trends: ${creativeData.keyTrends.join(', ')}`);
-      if (creativeData.keyItems.length) ctxParts.push(`Key items: ${creativeData.keyItems.join(', ')}`);
+      if (selectedTrends.colors.length) ctxParts.push(`Key colors: ${selectedTrends.colors.join(', ')}`);
+      if (selectedTrends.trends.length) ctxParts.push(`Key trends: ${selectedTrends.trends.join(', ')}`);
+      if (selectedTrends.items.length) ctxParts.push(`Key items: ${selectedTrends.items.join(', ')}`);
       if (analysisResult?.moodDescription) ctxParts.push(`Mood: ${analysisResult.moodDescription}`);
+      if (analysisResult?.keyBrands?.length) ctxParts.push(`Reference brands: ${analysisResult.keyBrands.join(', ')}`);
+      if (analysisResult?.keyMaterials?.length) ctxParts.push(`Key materials: ${analysisResult.keyMaterials.join(', ')}`);
 
       const res = await fetch('/api/ai/generate-plan', {
         method: 'POST',
@@ -197,7 +255,7 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
     } finally {
       setIsGenerating(false);
     }
-  }, [targetConsumer, customConsumer, season, customSeason, skuCount, customSkuCount, priceMin, priceMax, categories, creativeData, analysisResult]);
+  }, [targetConsumer, customConsumer, season, customSeason, skuCount, customSkuCount, priceMin, priceMax, categories, selectedTrends, analysisResult]);
 
   // ─── Save & Generate SKUs ──────────────────────────────
   const handleConfirmBudget = useCallback(async () => {
@@ -244,9 +302,10 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
         body: JSON.stringify({ phase: 'product', configured: true }),
       });
 
-      if (creativeData.keyColors.length || creativeData.keyTrends.length || creativeData.keyItems.length) {
+      // Save creative data for later use
+      if (selectedTrends.colors.length || selectedTrends.trends.length || selectedTrends.items.length) {
         window.localStorage.setItem('aimily_creative_data', JSON.stringify({
-          keyColors: creativeData.keyColors, keyTrends: creativeData.keyTrends, keyItems: creativeData.keyItems,
+          keyColors: selectedTrends.colors, keyTrends: selectedTrends.trends, keyItems: selectedTrends.items,
         }));
       }
 
@@ -257,7 +316,7 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
     } finally {
       setIsSavingSKUs(false);
     }
-  }, [generatedPlan, budgetSalesTarget, budgetMargin, plan.id, creativeData, onComplete]);
+  }, [generatedPlan, budgetSalesTarget, budgetMargin, plan.id, selectedTrends, onComplete]);
 
   const handleSkipBudget = useCallback(async () => {
     if (generatedPlan) {
@@ -276,16 +335,6 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
   }, [generatedPlan, plan.id, onComplete]);
 
   // ─── Helpers ────────────────────────────────────────────
-  const addTag = (field: 'keyColors' | 'keyTrends' | 'keyItems', inputField: 'newColor' | 'newTrend' | 'newItem') => {
-    const val = creativeData[inputField].trim();
-    if (!val) return;
-    setCreativeData((prev) => ({ ...prev, [field]: [...prev[field], val], [inputField]: '' }));
-  };
-
-  const removeTag = (field: 'keyColors' | 'keyTrends' | 'keyItems', index: number) => {
-    setCreativeData((prev) => ({ ...prev, [field]: prev[field].filter((_, i) => i !== index) }));
-  };
-
   const toggleCategory = (cat: string) => {
     setCategories((prev) => { const next = new Set(prev); if (next.has(cat)) next.delete(cat); else next.add(cat); return next; });
   };
@@ -297,46 +346,39 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
     setCustomCategory('');
   };
 
-  const hasCreativeInput = creativeData.keyColors.length > 0 || creativeData.keyTrends.length > 0 || creativeData.keyItems.length > 0;
+  const hasCreativeInput = selectedTrends.colors.length > 0 || selectedTrends.trends.length > 0 || selectedTrends.items.length > 0 || moodImages.length > 0;
 
   // ─── Build Steps ────────────────────────────────────────
   const steps: WizardStep[] = [];
 
-  // Step 0: Creative Direction — Rich with moodboard + trends + manual
+  // Step 0: Creative Direction — FULL Creative Space experience
   steps.push({
     id: 'creative-direction',
     canAdvance: true,
+    wide: true,
     render: () => (
-      <div className="animate-fade-in-up w-full">
-        <div className="text-center mb-8">
+      <div className="animate-fade-in-up space-y-8">
+        {/* Header */}
+        <div className="text-center">
           <h1 className="text-3xl font-light text-texto tracking-tight mb-2">Creative Direction</h1>
-          <p className="text-texto/40 text-sm">Upload a moodboard, explore trends, or add your vision manually</p>
+          <p className="text-texto/40 text-sm">Build your moodboard, explore trends, and define your collection&apos;s creative identity</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-8 border-b border-neutral-200">
-          {([
-            { id: 'moodboard' as const, label: 'Moodboard', icon: ImageIcon },
-            { id: 'trends' as const, label: 'Explore Trends', icon: Search },
-            { id: 'manual' as const, label: 'Manual', icon: Plus },
-          ]).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setCreativeTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-3 text-[11px] font-medium tracking-[0.08em] uppercase transition-all border-b-2 -mb-px ${
-                creativeTab === tab.id ? 'border-carbon text-texto' : 'border-transparent text-texto/30 hover:text-texto/60'
-              }`}
-            >
-              <tab.icon className="h-3.5 w-3.5" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Moodboard Tab */}
-        {creativeTab === 'moodboard' && (
+        {/* ─── Section 1: Moodboard + Pinterest ─── */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Moodboard */}
           <div className="space-y-4">
-            <MoodboardUploader images={moodImages} onImagesChange={setMoodImages} isAnalyzing={isAnalyzing} onAnalyze={analyzeMoodboard} compact />
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-texto/40">Moodboard</h2>
+              <div className="flex-1 h-px bg-gradient-to-r from-neutral-200 to-transparent" />
+            </div>
+            <MoodboardUploader
+              images={moodImages}
+              onImagesChange={setMoodImages}
+              isAnalyzing={isAnalyzing}
+              onAnalyze={analyzeMoodboard}
+              compact
+            />
             {moodImages.length > 0 && !analysisResult && (
               <button
                 onClick={analyzeMoodboard}
@@ -346,100 +388,368 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
                 {isAnalyzing ? (<><Loader2 className="h-4 w-4 animate-spin" />Analyzing your moodboard...</>) : (<><Sparkles className="h-4 w-4" />Analyze with AI</>)}
               </button>
             )}
-            {analysisResult && (
-              <div className="bg-neutral-50 border border-neutral-200 p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-texto/50" />
-                  <span className="text-[11px] font-medium tracking-[0.08em] uppercase text-texto/60">AI Analysis</span>
-                </div>
-                {analysisResult.moodDescription && (
-                  <p className="text-sm text-texto/60 italic leading-relaxed">{analysisResult.moodDescription}</p>
-                )}
-                <div className="text-[10px] text-texto/30">Colors, trends, and items have been added to your selection below.</div>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* Trends Tab */}
-        {creativeTab === 'trends' && (
+          {/* Pinterest */}
           <div className="space-y-4">
-            <p className="text-sm text-texto/40">Search any aesthetic, style, or trend — AI will extract colors, trends, and key items.</p>
-            <div className="flex gap-2">
-              <input
-                type="text" value={trendQuery} onChange={(e) => setTrendQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), exploreTrend())}
-                placeholder="e.g., Quiet Luxury, Gorpcore, Y2K, Boho..."
-                className="flex-1 px-4 py-3 text-sm border border-neutral-200 bg-white focus:border-carbon outline-none"
-              />
-              <button
-                onClick={exploreTrend} disabled={isExploring || !trendQuery.trim()}
-                className="px-5 py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.1em] uppercase flex items-center gap-2 disabled:opacity-30 transition-colors"
-              >
-                {isExploring ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Search className="h-3.5 w-3.5" />Explore</>}
-              </button>
+            <div className="flex items-center gap-2 mb-2">
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-texto/40">Pinterest</h2>
+              <div className="flex-1 h-px bg-gradient-to-r from-neutral-200 to-transparent" />
             </div>
+            <PinterestImporter onImportImages={handlePinterestImport} compact />
           </div>
+        </div>
+
+        {/* ─── AI Analysis Results ─── */}
+        {analysisResult && (
+          <InsightsPanel
+            analysis={analysisResult}
+            onAnalysisChange={setAnalysisResult}
+          />
         )}
 
-        {/* Manual Tab */}
-        {creativeTab === 'manual' && (
-          <div className="space-y-5">
-            <div>
-              <label className="text-[11px] font-medium tracking-[0.08em] uppercase text-texto/40 mb-2 block">Key Colors</label>
-              <div className="flex gap-2">
-                <input type="text" value={creativeData.newColor} onChange={(e) => setCreativeData((p) => ({ ...p, newColor: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag('keyColors', 'newColor'))} placeholder="e.g., Sage green" className="flex-1 px-3 py-2.5 text-sm border border-neutral-200 bg-white focus:border-carbon outline-none" />
-                <button onClick={() => addTag('keyColors', 'newColor')} className="px-3 py-2.5 border border-neutral-200 hover:bg-carbon hover:text-crema transition-colors"><Plus className="h-4 w-4" /></button>
-              </div>
-            </div>
-            <div>
-              <label className="text-[11px] font-medium tracking-[0.08em] uppercase text-texto/40 mb-2 block">Key Trends</label>
-              <div className="flex gap-2">
-                <input type="text" value={creativeData.newTrend} onChange={(e) => setCreativeData((p) => ({ ...p, newTrend: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag('keyTrends', 'newTrend'))} placeholder="e.g., Quiet luxury" className="flex-1 px-3 py-2.5 text-sm border border-neutral-200 bg-white focus:border-carbon outline-none" />
-                <button onClick={() => addTag('keyTrends', 'newTrend')} className="px-3 py-2.5 border border-neutral-200 hover:bg-carbon hover:text-crema transition-colors"><Plus className="h-4 w-4" /></button>
-              </div>
-            </div>
-            <div>
-              <label className="text-[11px] font-medium tracking-[0.08em] uppercase text-texto/40 mb-2 block">Key Items</label>
-              <div className="flex gap-2">
-                <input type="text" value={creativeData.newItem} onChange={(e) => setCreativeData((p) => ({ ...p, newItem: e.target.value }))} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag('keyItems', 'newItem'))} placeholder="e.g., Oversized blazer" className="flex-1 px-3 py-2.5 text-sm border border-neutral-200 bg-white focus:border-carbon outline-none" />
-                <button onClick={() => addTag('keyItems', 'newItem')} className="px-3 py-2.5 border border-neutral-200 hover:bg-carbon hover:text-crema transition-colors"><Plus className="h-4 w-4" /></button>
-              </div>
-            </div>
+        {/* ─── Section 2: AI Trend Intelligence ─── */}
+        <div className="space-y-6 pt-4">
+          <div className="text-center">
+            <h2 className="text-2xl font-light text-texto tracking-tight mb-1">AI Trend Intelligence</h2>
+            <p className="text-texto/40 text-sm">Discover trends from multiple sources to inform your collection</p>
           </div>
-        )}
 
-        {/* Collected Tags — always visible */}
-        {hasCreativeInput && (
-          <div className="mt-8 pt-6 border-t border-neutral-100 space-y-3">
-            <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-texto/30">Your Selection</span>
-            {creativeData.keyColors.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {creativeData.keyColors.map((c, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-3 py-1.5 bg-neutral-100 text-texto text-[11px]">
-                    {c}<button onClick={() => removeTag('keyColors', i)} className="ml-0.5 text-texto/30 hover:text-texto"><X className="h-3 w-3" /></button>
-                  </span>
-                ))}
+          {/* Macro Trends */}
+          <MarketTrendsPanel
+            selectedTrends={selectedTrends}
+            onToggleTrend={toggleTrendSelection}
+          />
+
+          {/* Explore Specific Trends */}
+          <TrendExplorer
+            selectedTrends={selectedTrends}
+            onToggleTrend={toggleTrendSelection}
+          />
+
+          {/* ─── Live Signals ─── */}
+          <div className="rounded-2xl border-0 bg-gradient-to-br from-slate-50 to-white p-8 space-y-8 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    <TrendingUp className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold tracking-tight">Live Signals</h3>
+                    <p className="text-sm text-muted-foreground">Real-time trends from Shoreditch &middot; Reddit, YouTube &amp; Pinterest</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ColorGrid
+              colors={['Warm Beige', 'Olive Green', 'Electric Blue', 'Camel']}
+              selectedColors={selectedTrends.colors}
+              onToggle={(color) => toggleTrendSelection('colors', color)}
+            />
+
+            <TrendCardGrid
+              title="Key Trends"
+              items={[
+                'Oversized Tailoring: Relaxed blazers and wide-leg trousers dominating Reddit fashion discussions',
+                'Gorpcore Evolution: Technical outdoor wear meets urban style, trending across YouTube fashion channels',
+                'Y2K Revival: Low-rise, butterfly clips, and metallic fabrics resurging on Pinterest boards',
+              ]}
+              selectedItems={selectedTrends.trends}
+              onToggle={(trend) => toggleTrendSelection('trends', trend)}
+              variant="primary"
+            />
+
+            <TrendCardGrid
+              title="Key Items"
+              items={[
+                'Utility Vests: Functional layering piece trending in street style',
+                'Cargo Pants: Relaxed fit with multiple pockets, Reddit favorite',
+                'Bomber Jackets: Classic silhouette with modern updates',
+                'Platform Sandals: Chunky soles dominating Pinterest searches',
+              ]}
+              selectedItems={selectedTrends.items}
+              onToggle={(item) => toggleTrendSelection('items', item)}
+              variant="dark"
+            />
+          </div>
+
+          {/* ─── Street Intelligence ─── */}
+          <div className="rounded-2xl border-0 bg-gradient-to-br from-slate-50 to-white p-8 space-y-8 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-violet-500/10">
+                    <MapPin className="h-6 w-6 text-violet-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold tracking-tight">Street Intelligence</h3>
+                    <p className="text-sm text-muted-foreground">Real-time trends from fashion neighborhoods &middot; TikTok</p>
+                  </div>
+                </div>
+              </div>
+              <Button onClick={loadCityTrends} disabled={loadingCityTrends} variant="outline" className="gap-2 rounded-full px-6">
+                {loadingCityTrends ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {cityTrends ? 'Refresh' : 'Load'}
+              </Button>
+            </div>
+
+            {cityTrends && cityTrends.neighborhoods && cityTrends.neighborhoods.length > 0 ? (
+              <>
+                {/* Neighborhood Selector */}
+                <div className="flex flex-wrap gap-2">
+                  {cityTrends.neighborhoods.map((n: NeighborhoodData) => (
+                    <button
+                      key={n.neighborhood}
+                      onClick={() => setSelectedCity(n.neighborhood)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        selectedCity === n.neighborhood
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:border-violet-300 hover:text-violet-600'
+                      }`}
+                    >
+                      {n.neighborhood}
+                      <span className="opacity-70 ml-1">&middot; {n.city}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {currentNeighborhoodData && (
+                  <div className="space-y-8">
+                    {/* Micro-Trends */}
+                    {currentNeighborhoodData.microTrends?.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Emerging Micro-Trends</h4>
+                          <div className="flex-1 h-px bg-gradient-to-r from-muted to-transparent" />
+                        </div>
+                        <div className="grid gap-4">
+                          {currentNeighborhoodData.microTrends.map((mt: MicroTrend, idx: number) => (
+                            <div
+                              key={idx}
+                              onClick={() => toggleCityTrendSelection(`${selectedCity}:micro:${mt.name}`)}
+                              className={`p-4 rounded-xl cursor-pointer transition-all border ${
+                                selectedCityTrends.includes(`${selectedCity}:micro:${mt.name}`)
+                                  ? 'bg-violet-50 border-violet-300'
+                                  : 'bg-white border-slate-200 hover:border-violet-200'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <h5 className="font-semibold text-slate-800">{mt.name}</h5>
+                                <div className="flex items-center gap-2">
+                                  <div className="h-2 w-16 bg-slate-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-violet-400 to-pink-400 rounded-full" style={{ width: `${mt.confidence}%` }} />
+                                  </div>
+                                  <span className="text-xs text-violet-600 font-bold">{mt.confidence}%</span>
+                                </div>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{mt.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Garments */}
+                    {currentNeighborhoodData.garments?.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Rising Garments</h4>
+                          <div className="flex-1 h-px bg-gradient-to-r from-muted to-transparent" />
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {currentNeighborhoodData.garments.slice(0, 12).map((g: NeighborhoodGarment, idx: number) => {
+                            const isSelected = selectedCityTrends.includes(`${selectedCity}:garment:${g.name}`);
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => toggleCityTrendSelection(`${selectedCity}:garment:${g.name}`)}
+                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
+                                  isSelected
+                                    ? 'bg-violet-600 text-white'
+                                    : 'bg-white border border-slate-200 text-slate-700 hover:border-violet-300'
+                                }`}
+                              >
+                                {g.name}
+                                {g.isNew && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-100 text-orange-600">NEW</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Styles + Brands grid */}
+                    <div className="grid gap-6 md:grid-cols-2">
+                      {currentNeighborhoodData.styles?.length > 0 && (
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Aesthetics</h4>
+                          <div className="space-y-2">
+                            {currentNeighborhoodData.styles.slice(0, 6).map((s: NeighborhoodStyle, idx: number) => {
+                              const isSelected = selectedCityTrends.includes(`${selectedCity}:style:${s.name}`);
+                              return (
+                                <div
+                                  key={idx}
+                                  onClick={() => toggleCityTrendSelection(`${selectedCity}:style:${s.name}`)}
+                                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                                    isSelected ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 hover:border-violet-200'
+                                  }`}
+                                >
+                                  <span className={`font-medium ${isSelected ? '' : 'text-slate-800'}`}>{s.name}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs ${isSelected ? 'text-violet-200' : 'text-slate-500'}`}>{s.mentions} mentions</span>
+                                    {s.isNew && <span className={`text-xs px-1.5 py-0.5 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-orange-100 text-orange-600'}`}>NEW</span>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {currentNeighborhoodData.brands?.length > 0 && (
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Brands Mentioned</h4>
+                          <div className="space-y-2">
+                            {currentNeighborhoodData.brands.slice(0, 6).map((b: NeighborhoodBrand, idx: number) => {
+                              const isSelected = selectedCityTrends.includes(`${selectedCity}:brand:${b.name}`);
+                              const typeColors: Record<string, string> = {
+                                'streetwear': 'bg-pink-100 text-pink-700',
+                                'vintage': 'bg-amber-100 text-amber-700',
+                                'luxury': 'bg-purple-100 text-purple-700',
+                                'concept store': 'bg-blue-100 text-blue-700',
+                                'emerging-designer': 'bg-green-100 text-green-700',
+                              };
+                              return (
+                                <div
+                                  key={idx}
+                                  onClick={() => toggleCityTrendSelection(`${selectedCity}:brand:${b.name}`)}
+                                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                                    isSelected ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 hover:border-violet-200'
+                                  }`}
+                                >
+                                  <span className={`font-medium ${isSelected ? '' : 'text-slate-800'}`}>{b.name}</span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${isSelected ? 'bg-white/20 text-white' : typeColors[b.type] || 'bg-slate-100 text-slate-600'}`}>
+                                    {b.type}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Local Spots */}
+                    {currentNeighborhoodData.localSpots?.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Local Hotspots</h4>
+                          <div className="flex-1 h-px bg-gradient-to-r from-muted to-transparent" />
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {currentNeighborhoodData.localSpots.map((spot: NeighborhoodSpot, idx: number) => (
+                            <div key={idx} className="px-3 py-1.5 rounded-full text-sm bg-slate-100 text-slate-700 flex items-center gap-2">
+                              <MapPin className="h-3 w-3 text-slate-500" />
+                              {spot.name}
+                              <span className="text-xs text-slate-400">{spot.mentions}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Selected City Trends */}
+                {selectedCityTrends.length > 0 && (
+                  <div className="pt-6 border-t">
+                    <h4 className="font-semibold flex items-center gap-2 mb-3 text-violet-600">
+                      <Check className="h-4 w-4" />
+                      Selected for Collection ({selectedCityTrends.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCityTrends.map((trend, i) => {
+                        const parts = trend.split(':');
+                        const displayName = parts.length >= 3 ? parts[2] : trend;
+                        return (
+                          <Badge key={i} className="bg-violet-600 hover:bg-violet-700">
+                            {displayName}
+                            <X className="h-3 w-3 ml-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); toggleCityTrendSelection(trend); }} />
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground text-center">
+                  Week {cityTrends.period} &middot; Powered by TikTok + Gemini AI
+                </p>
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-violet-50 mb-4">
+                  <MapPin className="h-8 w-8 text-violet-600" />
+                </div>
+                <h4 className="font-semibold text-lg mb-2">Discover Street Intelligence</h4>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                  Real-time trends from Shoreditch, Le Marais, Williamsburg, Harajuku, Kreuzberg &amp; Hongdae.
+                </p>
+                <Button onClick={loadCityTrends} disabled={loadingCityTrends} className="bg-violet-600 hover:bg-violet-700">
+                  {loadingCityTrends ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
+                  Load Street Intelligence
+                </Button>
               </div>
             )}
-            {creativeData.keyTrends.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {creativeData.keyTrends.map((t, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-3 py-1.5 bg-carbon/5 text-texto text-[11px]">
-                    {t}<button onClick={() => removeTag('keyTrends', i)} className="ml-0.5 text-texto/30 hover:text-texto"><X className="h-3 w-3" /></button>
-                  </span>
-                ))}
-              </div>
-            )}
-            {creativeData.keyItems.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {creativeData.keyItems.map((it, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-3 py-1.5 bg-carbon/[0.08] text-texto text-[11px]">
-                    {it}<button onClick={() => removeTag('keyItems', i)} className="ml-0.5 text-texto/30 hover:text-texto"><X className="h-3 w-3" /></button>
-                  </span>
-                ))}
-              </div>
-            )}
+          </div>
+        </div>
+
+        {/* ─── Your Selection Summary ─── */}
+        {(selectedTrends.colors.length > 0 || selectedTrends.trends.length > 0 || selectedTrends.items.length > 0) && (
+          <div className="rounded-lg border bg-card p-6 sticky bottom-4 shadow-lg">
+            <h4 className="font-semibold flex items-center gap-2 mb-4">
+              <Check className="h-4 w-4 text-primary" />
+              Your Trend Selection
+            </h4>
+            <div className="grid gap-4 md:grid-cols-3">
+              {selectedTrends.colors.length > 0 && (
+                <div>
+                  <span className="text-xs font-medium text-primary">Colors ({selectedTrends.colors.length})</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selectedTrends.colors.map((color, i) => {
+                      const bgColor = getColorValue(color);
+                      const textColor = bgColor ? getContrastColor(bgColor) : undefined;
+                      return (
+                        <Badge key={i} className="border" style={bgColor ? { backgroundColor: bgColor, color: textColor, borderColor: bgColor } : {}}>
+                          {color}<X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => toggleTrendSelection('colors', color)} />
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {selectedTrends.trends.length > 0 && (
+                <div>
+                  <span className="text-xs font-medium text-primary">Trends ({selectedTrends.trends.length})</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selectedTrends.trends.map((trend, i) => (
+                      <Badge key={i} className="bg-primary">{trend}<X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => toggleTrendSelection('trends', trend)} /></Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selectedTrends.items.length > 0 && (
+                <div>
+                  <span className="text-xs font-medium text-primary">Items ({selectedTrends.items.length})</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selectedTrends.items.map((item, i) => (
+                      <Badge key={i} className="bg-primary">{item}<X className="h-3 w-3 ml-1 cursor-pointer" onClick={() => toggleTrendSelection('items', item)} /></Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
