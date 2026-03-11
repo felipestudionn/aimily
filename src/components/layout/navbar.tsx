@@ -57,11 +57,15 @@ export function Navbar() {
                 <NotificationBell />
                 {/* User Profile */}
                 <div className="flex items-center gap-1 pl-3 border-l border-gris/40">
-                  <div className="flex items-center gap-2 px-2 py-1.5">
+                  <Link
+                    href="/account"
+                    className="flex items-center gap-2 px-2 py-1.5 hover:opacity-70 transition-opacity"
+                    title="Account settings"
+                  >
                     <div className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-xs font-medium">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
-                  </div>
+                  </Link>
                   <button
                     onClick={() => signOut()}
                     className="p-2 text-texto/40 hover:text-texto transition-colors"
@@ -132,6 +136,9 @@ export function Navbar() {
                 </div>
                 <Link href="/my-collections" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
                   <FolderOpen className="h-4 w-4" /> My Collections
+                </Link>
+                <Link href="/account" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
+                  <User className="h-4 w-4" /> Account
                 </Link>
                 <Link href="/pricing" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
                   <Zap className="h-4 w-4" /> Pricing

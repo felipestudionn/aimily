@@ -3,7 +3,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
-        <p className="text-sm text-gray-600 mb-8">Last updated: November 24, 2025</p>
+        <p className="text-sm text-gray-600 mb-8">Last updated: March 11, 2026</p>
 
         <div className="prose prose-lg">
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Introduction</h2>
@@ -40,35 +40,68 @@ export default function PrivacyPage() {
             <li>To communicate with you about your account</li>
           </ul>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">4. Data Sharing</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">4. Data Sharing &amp; Sub-Processors</h2>
           <p>
-            We do NOT sell your personal information. We may share data with:
+            We do NOT sell your personal information. We share data with the following service providers (sub-processors) as necessary to operate our platform:
           </p>
           <ul className="list-disc pl-6 mb-4">
-            <li>Service providers (Supabase for database, Google for AI processing)</li>
-            <li>When required by law</li>
+            <li><strong>Supabase</strong> (Singapore Pte. Ltd.) — Database hosting, authentication, and user management</li>
+            <li><strong>Stripe</strong> (Stripe, Inc.) — Payment processing and subscription billing</li>
+            <li><strong>Google</strong> (Google LLC) — AI processing (Gemini), OAuth authentication</li>
+            <li><strong>Anthropic</strong> (Anthropic PBC) — AI processing (Claude, SketchFlow)</li>
+            <li><strong>Resend</strong> (Resend, Inc.) — Transactional email delivery</li>
+            <li><strong>Vercel</strong> (Vercel, Inc.) — Application hosting and CDN</li>
+            <li>When required by law or to protect our rights</li>
           </ul>
+          <p>
+            All sub-processors are bound by data processing agreements and comply with applicable data protection regulations.
+          </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">5. Pinterest Data</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">5. Payment Data</h2>
+          <p>
+            Payment information is processed directly by Stripe. We do not store credit card numbers, CVVs, or full payment details on our servers. Stripe acts as an independent data controller for payment data. See{" "}
+            <a href="https://stripe.com/privacy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+              Stripe&apos;s Privacy Policy
+            </a>{" "}
+            for details.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-8 mb-4">6. Pinterest Data</h2>
           <p>
             Pinterest data is used exclusively within aimily for creating moodboards and generating insights. We comply with Pinterest's API Terms of Service and do not use Pinterest data for any other purpose.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">6. Data Security</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">7. Data Security</h2>
           <p>
             We implement industry-standard security measures to protect your data, including encryption, secure authentication, and regular security audits.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">7. Your Rights</h2>
-          <p>You have the right to:</p>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">8. Your Rights (GDPR)</h2>
+          <p>Under EU/EEA data protection law, you have the right to:</p>
           <ul className="list-disc pl-6 mb-4">
-            <li>Access your personal data</li>
-            <li>Correct inaccurate data</li>
-            <li>Delete your account and data</li>
+            <li><strong>Access</strong> — Download all your personal data from your{" "}
+              <a href="/account" className="text-primary hover:underline">account settings</a>
+            </li>
+            <li><strong>Rectification</strong> — Correct inaccurate data in your account</li>
+            <li><strong>Erasure</strong> — Permanently delete your account and all associated data from your{" "}
+              <a href="/account" className="text-primary hover:underline">account settings</a>
+            </li>
+            <li><strong>Portability</strong> — Export your data in JSON format</li>
+            <li><strong>Objection</strong> — Object to processing of your data</li>
             <li>Disconnect your Pinterest account at any time</li>
           </ul>
+          <p>
+            To exercise any of these rights, visit your{" "}
+            <a href="/account" className="text-primary hover:underline">account settings</a>{" "}
+            or contact us at the email below.
+          </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">8. Contact Us</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">9. Data Controller</h2>
+          <p>
+            The data controller is StudioNN Agency S.L. (NIF: B42978130), based in Alicante, Spain.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-8 mb-4">10. Contact Us</h2>
           <p>
             For privacy-related questions, contact us at:{" "}
             <a href="mailto:privacy@aimily.app" className="text-primary hover:underline">
@@ -76,7 +109,7 @@ export default function PrivacyPage() {
             </a>
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">9. Changes to This Policy</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">11. Changes to This Policy</h2>
           <p>
             We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
           </p>

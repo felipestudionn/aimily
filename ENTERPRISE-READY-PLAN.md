@@ -182,32 +182,26 @@ En Supabase Dashboard > Authentication > URL Configuration:
 > Pagina de perfil, gestion de cuenta, cumplimiento legal
 
 ### 5.1 Pagina de Account/Profile
-- [ ] `src/app/account/page.tsx` — Pagina de cuenta del usuario
-- [ ] Mostrar: email, plan actual, uso de AI, fecha de registro
-- [ ] Boton "Change password" → `supabase.auth.updateUser({ password })`
-- [ ] Boton "Change email" → `supabase.auth.updateUser({ email })`
-- [ ] Boton "Manage subscription" → Stripe Portal
-- [ ] Link a cuenta desde navbar (avatar/icono)
+- [x] `src/app/account/page.tsx` — Pagina de cuenta del usuario
+- [x] Mostrar: email, plan actual, uso de AI, fecha de registro, auth method
+- [x] Boton "Change password" → `supabase.auth.updateUser({ password })` (solo email users)
+- [x] Boton "Manage subscription" → Stripe Portal
+- [x] Link a cuenta desde navbar (avatar clickable → /account)
+- [x] Link "Account" en menu movil
 
 ### 5.2 Borrado de cuenta (GDPR Right to Erasure)
-- [ ] `src/app/api/account/delete/route.ts` — API para borrar cuenta
-- [ ] Flow:
-  1. Confirmar con password
-  2. Cancelar suscripcion Stripe
-  3. Eliminar Stripe customer
-  4. Borrar todos los datos del usuario (cascade via FK)
-  5. `supabaseAdmin.auth.admin.deleteUser(userId)`
-  6. Redirigir a landing con mensaje de confirmacion
-- [ ] Boton "Delete my account" en pagina de cuenta (con doble confirmacion)
+- [x] `src/app/api/account/delete/route.ts` — API para borrar cuenta
+- [x] Flow: Cancel Stripe sub → Delete Stripe customer → Delete all user data → Delete auth user
+- [x] Boton "Delete my account" en pagina de cuenta (triple confirmacion)
 
 ### 5.3 Exportar datos (GDPR Right of Access)
-- [ ] `src/app/api/account/export/route.ts` — Exportar datos del usuario en JSON
-- [ ] Incluir: colecciones, SKUs, timelines, configuraciones
+- [x] `src/app/api/account/export/route.ts` — Exportar datos del usuario en JSON
+- [x] Incluir: colecciones, SKUs, timelines, subscriptions, AI usage, todo
 
 ### 5.4 Actualizaciones legales
-- [ ] Actualizar `/privacy` con informacion de Supabase y Stripe como procesadores de datos
-- [ ] Actualizar `/terms` con terminos de suscripcion y cancelacion
-- [ ] Cookie consent banner (si no existe ya)
+- [x] Actualizar `/privacy` — sub-processors (Supabase, Stripe, Google, Anthropic, Resend, Vercel), GDPR rights, data controller
+- [x] Actualizar `/terms` — suscripcion/pricing, cancelacion, account deletion
+- [ ] Cookie consent banner (pendiente para Fase 6)
 
 ---
 

@@ -3,7 +3,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
-        <p className="text-sm text-gray-600 mb-8">Last updated: November 24, 2025</p>
+        <p className="text-sm text-gray-600 mb-8">Last updated: March 11, 2026</p>
 
         <div className="prose prose-lg">
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Acceptance of Terms</h2>
@@ -53,32 +53,61 @@ export default function TermsPage() {
             <li>Scrape or harvest data from the platform</li>
           </ul>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">6. Intellectual Property</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">6. Subscriptions &amp; Billing</h2>
+          <p>aimily offers the following subscription plans:</p>
+          <ul className="list-disc pl-6 mb-4">
+            <li><strong>Trial</strong> — 14 days of full access at no cost</li>
+            <li><strong>Starter</strong> — €199/month (or €159/month billed annually)</li>
+            <li><strong>Professional</strong> — €599/month (or €479/month billed annually)</li>
+            <li><strong>Enterprise</strong> — Custom pricing (minimum €1,500/month)</li>
+          </ul>
+          <p>All prices are in EUR, exclusive of VAT. VAT is calculated and applied automatically by Stripe Tax based on your location.</p>
+
+          <h3 className="text-xl font-semibold mt-6 mb-3">6.1 Cancellation</h3>
+          <p>
+            You may cancel your subscription at any time from your{" "}
+            <a href="/account" className="text-primary hover:underline">account settings</a>{" "}
+            or via the Stripe customer portal. Upon cancellation:
+          </p>
+          <ul className="list-disc pl-6 mb-4">
+            <li>You retain access until the end of your current billing period</li>
+            <li>No refunds are provided for partial billing periods</li>
+            <li>After the period ends, your account becomes read-only</li>
+          </ul>
+
+          <h3 className="text-xl font-semibold mt-6 mb-3">6.2 Account Deletion</h3>
+          <p>
+            You may permanently delete your account and all associated data from your{" "}
+            <a href="/account" className="text-primary hover:underline">account settings</a>.
+            This action is irreversible. Your subscription will be cancelled and your Stripe customer profile deleted.
+          </p>
+
+          <h2 className="text-2xl font-semibold mt-8 mb-4">7. Intellectual Property</h2>
           <p>
             You retain ownership of your content. By using aimily, you grant us a license to use your content solely for providing and improving our services.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">7. AI-Generated Content</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">8. AI-Generated Content</h2>
           <p>
             AI-generated insights and recommendations are provided "as is" for informational purposes. We do not guarantee the accuracy or suitability of AI-generated content for your specific business needs.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">8. Limitation of Liability</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">9. Limitation of Liability</h2>
           <p>
             aimily is provided "as is" without warranties of any kind. We are not liable for any damages arising from your use of the service.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">9. Termination</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">10. Termination</h2>
           <p>
             We reserve the right to suspend or terminate your account at any time for violation of these terms.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">10. Changes to Terms</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">11. Changes to Terms</h2>
           <p>
             We may modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">11. Contact</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">12. Contact</h2>
           <p>
             For questions about these Terms, contact us at:{" "}
             <a href="mailto:legal@aimily.app" className="text-primary hover:underline">
@@ -86,7 +115,7 @@ export default function TermsPage() {
             </a>
           </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">12. Governing Law</h2>
+          <h2 className="text-2xl font-semibold mt-8 mb-4">13. Governing Law</h2>
           <p>
             These terms are governed by the laws of Spain. Any disputes shall be resolved in the courts of Spain.
           </p>
