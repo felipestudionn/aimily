@@ -209,7 +209,7 @@ export default function PricingPage() {
 
                 <div className="mb-6">
                   <span className="text-4xl font-bold text-[#282A29]">
-                    ${price}
+                    {price}€
                   </span>
                   {price > 0 && (
                     <span className="text-[#282A29]/50 text-sm">
@@ -223,9 +223,9 @@ export default function PricingPage() {
                   )}
                   {annual && price > 0 && (
                     <div className="text-xs text-[#282A29]/40 mt-1">
-                      ${price * 12}/{lang === 'es' ? 'ano' : 'year'}{' '}
+                      {price * 12}€/{lang === 'es' ? 'ano' : 'year'}{' '}
                       <span className="line-through text-[#282A29]/30">
-                        ${plan.price * 12}
+                        {plan.price * 12}€
                       </span>
                     </div>
                   )}
@@ -281,6 +281,12 @@ export default function PricingPage() {
             {lang === 'es'
               ? 'Todos los planes incluyen SketchFlow, AI Studio, y Gantt Timeline.'
               : 'All plans include SketchFlow, AI Studio, and Gantt Timeline.'}
+            <br />
+            <span className="text-[#282A29]/30 text-xs">
+              {lang === 'es'
+                ? 'Precios sin IVA. Impuestos calculados en el checkout.'
+                : 'Prices excl. VAT. Tax calculated at checkout.'}
+            </span>
           </p>
           {isPaid && (
             <button

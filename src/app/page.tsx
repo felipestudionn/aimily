@@ -260,7 +260,7 @@ export default function LandingPage() {
                   </div>
 
                   <div className="mb-6">
-                    <span className="text-4xl font-bold text-crema">${price}</span>
+                    <span className="text-4xl font-bold text-crema">{price}€</span>
                     {price > 0 && (
                       <span className="text-gris/40 text-sm">/mo</span>
                     )}
@@ -269,8 +269,8 @@ export default function LandingPage() {
                     )}
                     {annual && price > 0 && (
                       <div className="text-xs text-gris/30 mt-1">
-                        ${price * 12}/year{' '}
-                        <span className="line-through text-gris/20">${plan.price * 12}</span>
+                        {price * 12}€/year{' '}
+                        <span className="line-through text-gris/20">{plan.price * 12}€</span>
                       </div>
                     )}
                   </div>
@@ -309,6 +309,8 @@ export default function LandingPage() {
           {/* Bottom note */}
           <p className="text-center text-gris/30 text-sm mt-12">
             All plans include SketchFlow, AI Studio, and Gantt Timeline.
+            <br />
+            <span className="text-gris/20 text-xs">Prices excl. VAT. Tax calculated at checkout.</span>
           </p>
         </div>
       </section>
