@@ -160,25 +160,21 @@ En Supabase Dashboard > Authentication > URL Configuration:
 > Reducir friccion de registro con OAuth
 
 ### 4.1 Google Cloud Console
-- [ ] Crear proyecto en Google Cloud Console (o usar existente de StudioNN)
-- [ ] Activar Google People API
-- [ ] Configurar OAuth Consent Screen:
-  - App name: aimily
-  - User support email
-  - Authorized domains: `aimily.app`, `supabase.co`
-  - Privacy policy: `https://www.aimily.app/privacy`
-- [ ] Crear OAuth Client ID (Web application):
+- [x] Crear proyecto en Google Cloud Console (proyecto Gemini API 936283260324)
+- [x] Configurar OAuth Consent Screen (app: aimily, externo)
+- [x] Crear OAuth Client ID (Web application): `aimily web`
   - JS origins: `https://www.aimily.app`, `http://localhost:3000`
   - Redirect URI: `https://sbweszownvspzjfejmfx.supabase.co/auth/v1/callback`
+  - Client ID: `936283260324-ou20mchmn6j7oq54i1f7j1t4tmo4rfop.apps.googleusercontent.com`
 
 ### 4.2 Configurar en Supabase
-- [ ] Dashboard > Authentication > Providers > Google
-- [ ] Pegar Client ID + Client Secret
+- [x] Google provider activado via Management API
+- [x] Client ID + Client Secret configurados
 
 ### 4.3 Implementar en UI
-- [ ] Boton "Continue with Google" en AuthModal
-- [ ] `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })`
-- [ ] Asegurar que callback route maneja OAuth
+- [x] Boton "Continue with Google" en AuthModal
+- [x] `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })`
+- [x] Asegurar que callback route maneja OAuth
 
 ---
 
