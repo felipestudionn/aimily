@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
 
     const { plan, annual } = await req.json() as { plan: PlanId; annual?: boolean };
 
-    if (!plan || !PLANS[plan] || plan === 'free') {
-      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+    if (!plan || !PLANS[plan] || plan === 'trial' || plan === 'enterprise') {
+      return NextResponse.json({ error: 'Invalid plan — only starter and professional support self-serve checkout' }, { status: 400 });
     }
 
     const planConfig = PLANS[plan];
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       await supabaseAdmin.from('subscriptions').upsert({
         user_id: user.id,
         stripe_customer_id: customerId,
-        plan: 'free',
+        plan: 'trial',
         status: 'active',
       }, { onConflict: 'user_id' });
     }

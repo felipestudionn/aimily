@@ -19,7 +19,7 @@ export async function POST() {
       .eq('user_id', user.id)
       .single();
 
-    const plan = (sub?.plan || 'free') as PlanId;
+    const plan = (sub?.plan || 'trial') as PlanId;
     const limit = PLANS[plan].limits.aiGenerations;
 
     // Get current month
@@ -69,6 +69,6 @@ export async function POST() {
   } catch (error) {
     console.error('Usage tracking error:', error);
     // Don't block AI usage on tracking errors
-    return NextResponse.json({ allowed: true, current: 0, limit: -1, plan: 'free' });
+    return NextResponse.json({ allowed: true, current: 0, limit: -1, plan: 'trial' });
   }
 }

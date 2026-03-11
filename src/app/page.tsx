@@ -6,76 +6,62 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { Check, X, Sparkles, Zap, Building2, Crown, ArrowRight, ChevronDown } from 'lucide-react';
+import { Check, X, Sparkles, Rocket, Building2, Crown, ArrowRight, ChevronDown, Clock } from 'lucide-react';
 
 const PRICING_PLANS = [
   {
-    id: 'free',
-    name: 'Free',
-    icon: Sparkles,
-    price: 0,
-    priceAnnual: 0,
-    description: 'Explore the platform',
+    id: 'starter',
+    name: 'Starter',
+    icon: Rocket,
+    price: 199,
+    priceAnnual: 159,
+    description: 'For founders & solo designers',
+    tagline: '1 person, 1 brand',
     features: [
-      { text: '1 collection', included: true },
-      { text: '10 AI generations/month', included: true },
       { text: '1 user', included: true },
-      { text: 'Basic timeline', included: true },
-      { text: 'Excel export', included: false },
-      { text: 'Trend analytics', included: false },
-      { text: 'Go-to-market planning', included: false },
+      { text: '2 active collections', included: true },
+      { text: '100 AI generations/month', included: true },
+      { text: 'All AI tools (sketches, models, video)', included: true },
+      { text: 'Timeline / Gantt + export', included: true },
+      { text: 'Tech Packs + PDF', included: true },
+      { text: 'Trend analytics', included: true },
     ],
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    icon: Zap,
-    price: 49,
-    priceAnnual: 39,
-    description: 'For independent designers',
+    id: 'professional',
+    name: 'Professional',
+    icon: Building2,
+    price: 599,
+    priceAnnual: 479,
+    description: 'For teams & growing brands',
+    tagline: '1 team, multiple brands',
     popular: true,
     features: [
-      { text: 'Unlimited collections', included: true },
-      { text: '100 AI generations/month', included: true },
-      { text: 'Up to 3 users', included: true },
-      { text: 'Full Gantt timeline + export', included: true },
-      { text: 'Excel export', included: true },
-      { text: 'Trend analytics', included: true },
-      { text: 'Go-to-market planning', included: false },
-    ],
-  },
-  {
-    id: 'business',
-    name: 'Business',
-    icon: Building2,
-    price: 299,
-    priceAnnual: 199,
-    description: 'For brands with a team',
-    features: [
+      { text: '10 users', included: true },
       { text: 'Unlimited collections', included: true },
       { text: '500 AI generations/month', included: true },
-      { text: 'Up to 10 users', included: true },
-      { text: 'Full Gantt timeline + export', included: true },
-      { text: 'Excel export', included: true },
-      { text: 'Advanced trend analytics', included: true },
-      { text: 'Go-to-market planning', included: true },
+      { text: 'All AI tools + trend alerts', included: true },
+      { text: 'Real-time collaboration', included: true },
+      { text: 'Roles & permissions', included: true },
+      { text: 'Multi-brand support', included: true },
     ],
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
     icon: Crown,
-    price: 499,
-    priceAnnual: 399,
-    description: 'For growing brands',
+    price: null,
+    priceAnnual: null,
+    description: 'For established brands',
+    tagline: 'Multiple teams, full control',
     features: [
-      { text: 'Unlimited collections', included: true },
-      { text: 'Unlimited AI generations', included: true },
       { text: 'Unlimited users', included: true },
-      { text: 'Full Gantt timeline + export', included: true },
-      { text: 'Excel export', included: true },
-      { text: 'Advanced trend analytics', included: true },
-      { text: 'Go-to-market planning', included: true },
+      { text: 'Unlimited AI generations', included: true },
+      { text: 'SSO & API access', included: true },
+      { text: 'Custom integrations', included: true },
+      { text: 'Dedicated support', included: true },
+      { text: 'Custom onboarding (3 sessions)', included: true },
+      { text: 'Everything in Professional', included: true },
     ],
   },
 ];
@@ -201,9 +187,15 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-bold text-crema mb-3">
               Plans & Pricing
             </h2>
-            <p className="text-gris/60 text-lg mb-8">
-              Choose the plan that fits your brand
+            <p className="text-gris/60 text-lg mb-4">
+              All plans include every AI tool. The difference is scale.
             </p>
+
+            {/* Trial badge */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+              <Clock className="w-4 h-4 text-crema/60" />
+              <span className="text-crema/60 text-sm">14-day free trial — full access, no credit card</span>
+            </div>
 
             {/* Toggle annual/monthly */}
             <div className="flex items-center justify-center gap-3">
@@ -227,14 +219,14 @@ export default function LandingPage() {
               </span>
               {annual && (
                 <span className="text-xs bg-crema/10 text-crema/80 px-2.5 py-0.5 rounded-full font-medium border border-crema/20">
-                  Save ~25%
+                  Save ~20%
                 </span>
               )}
             </div>
           </div>
 
           {/* Plans grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {PRICING_PLANS.map((plan) => {
               const price = annual ? plan.priceAnnual : plan.price;
 
@@ -257,33 +249,41 @@ export default function LandingPage() {
                     <plan.icon className="w-7 h-7 text-crema/70 mb-3" />
                     <h3 className="text-xl font-bold text-crema">{plan.name}</h3>
                     <p className="text-sm text-gris/40 mt-1">{plan.description}</p>
+                    <p className="text-xs text-gris/30 mt-0.5 italic">{plan.tagline}</p>
                   </div>
 
                   <div className="mb-6">
-                    <span className="text-4xl font-bold text-crema">{price}€</span>
-                    {price > 0 && (
-                      <span className="text-gris/40 text-sm">/mo</span>
-                    )}
-                    {price === 0 && (
-                      <span className="text-gris/40 text-sm ml-1">forever</span>
-                    )}
-                    {annual && price > 0 && (
-                      <div className="text-xs text-gris/30 mt-1">
-                        {price * 12}€/year{' '}
-                        <span className="line-through text-gris/20">{plan.price * 12}€</span>
-                      </div>
+                    {price !== null ? (
+                      <>
+                        <span className="text-4xl font-bold text-crema">{price}€</span>
+                        <span className="text-gris/40 text-sm">/mo</span>
+                        {annual && (
+                          <div className="text-xs text-gris/30 mt-1">
+                            {price * 12}€/year{' '}
+                            <span className="line-through text-gris/20">{plan.price! * 12}€</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold text-crema">Custom</span>
+                        <div className="text-xs text-gris/30 mt-1">From €1,500/mo</div>
+                      </>
                     )}
                   </div>
 
                   <button
-                    onClick={() => openAuth('signup')}
+                    onClick={() => plan.id === 'enterprise'
+                      ? (window.location.href = 'mailto:hello@aimily.app?subject=Enterprise%20Plan%20Inquiry')
+                      : openAuth('signup')
+                    }
                     className={`w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
                       plan.popular
                         ? 'bg-crema text-carbon hover:bg-crema/90'
                         : 'bg-crema/10 text-crema hover:bg-crema/20 border border-crema/10'
                     }`}
                   >
-                    {plan.id === 'free' ? 'Start free' : 'Get started'}
+                    {plan.id === 'enterprise' ? 'Contact sales' : 'Start free trial'}
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
@@ -308,7 +308,7 @@ export default function LandingPage() {
 
           {/* Bottom note */}
           <p className="text-center text-gris/30 text-sm mt-12">
-            All plans include SketchFlow, AI Studio, and Gantt Timeline.
+            All plans include every AI tool. The difference is scale and collaboration.
             <br />
             <span className="text-gris/20 text-xs">Prices excl. VAT. Tax calculated at checkout.</span>
           </p>

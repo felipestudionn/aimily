@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useAuth } from './AuthContext';
 import { createClient } from '@/lib/supabase/client';
 
-type PlanId = 'free' | 'pro' | 'business' | 'enterprise';
+type PlanId = 'trial' | 'starter' | 'professional' | 'enterprise';
 
 interface PlanLimits {
   collections: number;
@@ -12,7 +12,17 @@ interface PlanLimits {
   users: number;
   exportEnabled: boolean;
   trendsEnabled: boolean;
+  trendAlertsEnabled: boolean;
   goToMarketEnabled: boolean;
+  aiModelsEnabled: boolean;
+  aiVideoEnabled: boolean;
+  collaborationEnabled: boolean;
+  rolesEnabled: boolean;
+  multiBrandEnabled: boolean;
+  lookbookEnabled: boolean;
+  techPackPdfEnabled: boolean;
+  ssoEnabled: boolean;
+  apiAccessEnabled: boolean;
 }
 
 interface SubscriptionData {
@@ -30,10 +40,11 @@ interface SubscriptionData {
 interface SubscriptionContextType {
   subscription: SubscriptionData | null;
   loading: boolean;
-  isPro: boolean;
-  isBusiness: boolean;
+  isStarter: boolean;
+  isProfessional: boolean;
   isEnterprise: boolean;
   isPaid: boolean;
+  isTrial: boolean;
   canUseAI: boolean;
   aiUsagePercent: number;
   refresh: () => Promise<void>;
@@ -42,13 +53,24 @@ interface SubscriptionContextType {
   trackAIUsage: () => Promise<boolean>;
 }
 
-const DEFAULT_LIMITS: PlanLimits = {
-  collections: 1,
-  aiGenerations: 10,
-  users: 1,
-  exportEnabled: false,
-  trendsEnabled: false,
-  goToMarketEnabled: false,
+// Trial defaults — full access for 14 days
+const TRIAL_LIMITS: PlanLimits = {
+  collections: -1,
+  aiGenerations: 250,
+  users: 10,
+  exportEnabled: true,
+  trendsEnabled: true,
+  trendAlertsEnabled: true,
+  goToMarketEnabled: true,
+  aiModelsEnabled: true,
+  aiVideoEnabled: true,
+  collaborationEnabled: true,
+  rolesEnabled: true,
+  multiBrandEnabled: false,
+  lookbookEnabled: true,
+  techPackPdfEnabled: true,
+  ssoEnabled: false,
+  apiAccessEnabled: false,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -62,11 +84,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const fetchSubscription = useCallback(async () => {
     if (!user) {
       setSubscription({
-        plan: 'free',
+        plan: 'trial',
         status: 'active',
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        limits: DEFAULT_LIMITS,
+        limits: TRIAL_LIMITS,
         usage: { aiGenerations: 0, month: '' },
       });
       setLoading(false);
@@ -80,23 +102,23 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         const data = await res.json();
         setSubscription(data);
       } else {
-        // No subscription yet — default to free
+        // No subscription yet — default to trial
         setSubscription({
-          plan: 'free',
+          plan: 'trial',
           status: 'active',
           currentPeriodEnd: null,
           cancelAtPeriodEnd: false,
-          limits: DEFAULT_LIMITS,
+          limits: TRIAL_LIMITS,
           usage: { aiGenerations: 0, month: '' },
         });
       }
     } catch {
       setSubscription({
-        plan: 'free',
+        plan: 'trial',
         status: 'active',
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
-        limits: DEFAULT_LIMITS,
+        limits: TRIAL_LIMITS,
         usage: { aiGenerations: 0, month: '' },
       });
     } finally {
@@ -127,13 +149,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     return () => { supabase.removeChannel(channel); };
   }, [user?.id, fetchSubscription]);
 
-  const plan = subscription?.plan || 'free';
-  const isPro = plan === 'pro' || plan === 'business' || plan === 'enterprise';
-  const isBusiness = plan === 'business' || plan === 'enterprise';
+  const plan = subscription?.plan || 'trial';
+  const isStarter = plan === 'starter' || plan === 'professional' || plan === 'enterprise';
+  const isProfessional = plan === 'professional' || plan === 'enterprise';
   const isEnterprise = plan === 'enterprise';
-  const isPaid = plan !== 'free';
+  const isPaid = plan !== 'trial';
+  const isTrial = plan === 'trial';
 
-  const limits = subscription?.limits || DEFAULT_LIMITS;
+  const limits = subscription?.limits || TRIAL_LIMITS;
   const aiUsed = subscription?.usage?.aiGenerations || 0;
   const aiLimit = limits.aiGenerations;
   const canUseAI = aiLimit === -1 || aiUsed < aiLimit;
@@ -194,10 +217,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     <SubscriptionContext.Provider value={{
       subscription,
       loading,
-      isPro,
-      isBusiness,
+      isStarter,
+      isProfessional,
       isEnterprise,
       isPaid,
+      isTrial,
       canUseAI,
       aiUsagePercent,
       refresh: fetchSubscription,

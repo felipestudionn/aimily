@@ -18,7 +18,7 @@ export async function GET() {
       .eq('user_id', user.id)
       .single();
 
-    const plan = (sub?.plan || 'free') as PlanId;
+    const plan = (sub?.plan || 'trial') as PlanId;
     const limits = PLANS[plan].limits;
 
     // Get current month AI usage

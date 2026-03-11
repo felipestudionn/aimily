@@ -15,14 +15,12 @@ function mapSubscriptionPlan(priceId: string): string {
   const priceMap: Record<string, string> = {};
 
   // Build map from env vars
-  if (process.env.STRIPE_PRO_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PRO_MONTHLY_PRICE_ID] = 'pro';
-  if (process.env.STRIPE_PRO_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PRO_ANNUAL_PRICE_ID] = 'pro';
-  if (process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_BUSINESS_MONTHLY_PRICE_ID] = 'business';
-  if (process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID] = 'business';
-  if (process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID] = 'enterprise';
-  if (process.env.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID] = 'enterprise';
+  if (process.env.STRIPE_STARTER_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_STARTER_MONTHLY_PRICE_ID] = 'starter';
+  if (process.env.STRIPE_STARTER_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_STARTER_ANNUAL_PRICE_ID] = 'starter';
+  if (process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID] = 'professional';
+  if (process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID] = 'professional';
 
-  return priceMap[priceId] || 'free';
+  return priceMap[priceId] || 'trial';
 }
 
 async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
@@ -83,7 +81,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .upsert({
       user_id: userId,
       stripe_customer_id: customerId,
-      plan: session.metadata?.plan || 'pro',
+      plan: session.metadata?.plan || 'starter',
       status: 'active',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
