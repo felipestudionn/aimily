@@ -135,18 +135,19 @@ Las 26 tablas referenciadas en codigo son:
   - Sender: `aimily <noreply@aimily.app>`
 
 ### 3.2 Personalizar Email Templates
-Configurar en Supabase Dashboard > Authentication > Email Templates:
+Templates HTML creados en `supabase/email-templates/` — pegar en Supabase Dashboard > Authentication > Email Templates:
 
-- [ ] **Signup Confirmation** — "Welcome to aimily — confirm your email"
-- [ ] **Password Reset** — "Reset your aimily password"
-- [ ] **Magic Link** — (opcional, por si lo activamos mas adelante)
-- [ ] **Email Change** — "Confirm your new email address"
+- [x] **Signup Confirmation** — `signup-confirmation.html` — Subject: "Welcome to aimily — confirm your email"
+- [x] **Password Reset** — `password-reset.html` — Subject: "Reset your aimily password"
+- [x] **Magic Link** — `magic-link.html` — Subject: "Sign in to aimily"
+- [x] **Email Change** — `email-change.html` — Subject: "Confirm your new email address"
 
-Cada template debe incluir:
-- Logo aimily (hosted en aimily.app/images/aimily-logo-black.png)
-- Colores de marca: fondo `#fff6dc`, texto `#282A29`, botones `#282A29`
-- Footer: "aimily is a product by StudioNN Agency S.L."
-- Usar `{{ .ConfirmationURL }}` para los links
+Cada template incluye:
+- [x] Logo aimily (hosted en aimily.app/images/aimily-logo-black.png)
+- [x] Colores de marca: fondo `#fff6dc`, texto `#282A29`, botones `#282A29`
+- [x] Footer: "aimily is a product by StudioNN Agency S.L."
+- [x] Usa `{{ .ConfirmationURL }}` para los links
+- [x] Guia de setup: `supabase/email-templates/SETUP.md`
 
 ### 3.3 Actualizar Supabase URL Configuration
 En Supabase Dashboard > Authentication > URL Configuration:
