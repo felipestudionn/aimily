@@ -162,12 +162,14 @@ export default function DiscoverPage() {
           <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-8 animate-fade-in-up">
             The future of fashion collection management
           </p>
-          <h1 className="text-crema text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-8 animate-fade-in-up animate-delay-100">
-            From concept to runway,{' '}
-            <span className="italic">powered by AI</span>
+          <h1 className="text-crema text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-4 animate-fade-in-up animate-delay-100">
+            From concept to market.
           </h1>
+          <p className="text-crema/70 text-xl sm:text-2xl md:text-3xl font-light italic tracking-tight mb-8 animate-fade-in-up animate-delay-150">
+            Built on expertise and powered by AI.
+          </p>
           <p className="text-gris text-lg md:text-xl font-light tracking-wide leading-relaxed max-w-2xl mx-auto mb-12 animate-fade-in-up animate-delay-200">
-            aimily is the all-in-one platform where fashion brands plan, design, produce, and launch their collections — with artificial intelligence embedded in every step.
+            The all-in-one platform for fashion brands to plan, design, produce, and launch their collections.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animate-delay-300">
             {user ? (
