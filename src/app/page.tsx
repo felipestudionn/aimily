@@ -119,9 +119,9 @@ export default function LandingPage() {
             </button>
             <button
               onClick={() => openAuth('signup')}
-              className="text-crema text-xs font-medium tracking-widest uppercase hover:text-crema/70 transition-colors"
+              className="bg-crema text-carbon text-xs font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors"
             >
-              Sign up
+              Start free trial
             </button>
           </div>
         </nav>
@@ -150,14 +150,14 @@ export default function LandingPage() {
               onClick={() => openAuth('signup')}
               className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
             >
-              GET STARTED
+              START FREE TRIAL
             </button>
-            <button
-              onClick={() => openAuth('signin')}
-              className="btn-secondary px-10 py-4 text-sm tracking-[0.15em]"
+            <a
+              href="#pricing"
+              className="btn-secondary px-10 py-4 text-sm tracking-[0.15em] text-center"
             >
-              SIGN IN
-            </button>
+              SEE PRICING
+            </a>
           </div>
         </div>
 

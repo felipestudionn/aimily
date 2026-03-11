@@ -11,7 +11,13 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const { user, signOut } = useAuth();
+
+  const openAuth = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 animate-fade-in">
@@ -78,19 +84,17 @@ export function Navbar() {
             ) : (
               <>
                 <button
-                  onClick={() => setShowAuthModal(true)}
+                  onClick={() => openAuth('signin')}
                   className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
                 >
-                  <User className="mr-1.5 h-3.5 w-3.5" />
-                  Sign In
+                  Log in
                 </button>
-                <Link
-                  href="/new-collection"
+                <button
+                  onClick={() => openAuth('signup')}
                   className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
                 >
-                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                  New Collection
-                </Link>
+                  Start Free Trial
+                </button>
               </>
             )}
           </div>
@@ -146,20 +150,18 @@ export function Navbar() {
               </>
             ) : (
               <>
-                <button onClick={() => { setShowAuthModal(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70">
-                  <User className="h-4 w-4" /> Sign In
+                <button onClick={() => { openAuth('signin'); setMobileMenuOpen(false); }} className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70">
+                  <User className="h-4 w-4" /> Log in
                 </button>
               </>
             )}
             <div className="pt-2">
-              <Link
-                href="/new-collection"
-                className="w-full inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2"
-                onClick={() => setMobileMenuOpen(false)}
+              <button
+                onClick={() => { openAuth('signup'); setMobileMenuOpen(false); }}
+                className="w-full inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors bg-carbon text-crema shadow hover:bg-carbon/90 h-10 px-4 py-2"
               >
-                <Sparkles className="mr-2 h-4 w-4" />
-                New Collection
-              </Link>
+                Start Free Trial
+              </button>
             </div>
           </div>
         </div>
@@ -168,6 +170,7 @@ export function Navbar() {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+        defaultMode={authMode}
       />
       </div>
     </div>
