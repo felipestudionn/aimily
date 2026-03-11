@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -33,6 +34,32 @@ export default function LandingPage() {
           backgroundSize: '60px 60px',
         }}
       />
+
+      {/* Discrete top navigation — cosmos.so style */}
+      <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 md:px-10 py-5 animate-fade-in-up">
+        <div className="flex items-center gap-6">
+          <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+            Discover
+          </Link>
+          <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+            Contact
+          </Link>
+        </div>
+        <div className="flex items-center gap-6">
+          <button
+            onClick={() => openAuth('signin')}
+            className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
+          >
+            Log in
+          </button>
+          <button
+            onClick={() => openAuth('signup')}
+            className="text-crema text-xs font-medium tracking-widest uppercase hover:text-crema/70 transition-colors"
+          >
+            Sign up
+          </button>
+        </div>
+      </nav>
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl">
@@ -69,8 +96,21 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Bottom line accent */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gris/20" />
+      {/* Bottom legal links */}
+      <div className="absolute bottom-0 left-0 right-0 z-20">
+        <div className="flex items-center justify-center gap-6 py-5">
+          <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
+            Terms
+          </Link>
+          <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
+            Privacy
+          </Link>
+          <Link href="/cookies" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
+            Cookies
+          </Link>
+        </div>
+        <div className="h-px bg-gris/20" />
+      </div>
 
       {/* Auth */}
       <AuthModal
