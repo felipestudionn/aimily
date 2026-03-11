@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px;
+    background: #282A29;
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .label {
+    color: rgba(216,216,216,0.4);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 56px;
+    text-align: center;
+  }
+  .list {
+    width: 100%;
+    list-style: none;
+  }
+  .list li {
+    color: #FAEFE0;
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    padding: 22px 0;
+    border-bottom: 1px solid rgba(216,216,216,0.08);
+    text-align: left;
+  }
+  .list li:last-child {
+    border-bottom: none;
+  }
+  .list li .num {
+    color: rgba(216,216,216,0.2);
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    margin-right: 24px;
+  }
+  .headline {
+    color: #FAEFE0;
+    font-size: 42px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .headline em { font-style: italic; }
+  .logo {
+    position: absolute;
+    bottom: 60px;
+    opacity: 0.3;
+    height: 18px;
+  }
+</style>
+</head>
+<body>
+  <p class="label">Capabilities</p>
+  <ul class="list">
+    <li><span class="num">01</span>Trend Research & Strategy</li>
+    <li><span class="num">02</span>Brand Identity & Creative Direction</li>
+    <li><span class="num">03</span>Collection Merchandising</li>
+    <li><span class="num">04</span>Studio & Content Production</li>
+    <li><span class="num">05</span>Go-to-Market Strategy</li>
+    <li><span class="num">06</span>Production & Supply Chain</li>
+  </ul>
+  <img src="../public/images/aimily-logo-white.png" class="logo" alt="aimily">
+</body>
+</html>

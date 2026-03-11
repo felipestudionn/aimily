@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    background: #282A29;
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Grid texture */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridIn 2s 0.3s ease forwards;
+  }
+
+  @keyframes gridIn {
+    to { opacity: 0.03; }
+  }
+
+  /* Horizontal line accent */
+  .line-accent {
+    width: 0;
+    height: 1px;
+    background: rgba(250,239,224,0.15);
+    margin-bottom: 60px;
+    animation: lineGrow 1s 0.5s cubic-bezier(0.25, 0, 0.25, 1) forwards;
+  }
+  @keyframes lineGrow {
+    to { width: 120px; }
+  }
+
+  /* Label */
+  .label {
+    color: rgba(216,216,216,0.4);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 64px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeSlideUp 0.8s 1s cubic-bezier(0.25, 0, 0.25, 1) forwards;
+  }
+
+  /* Main headline */
+  .headline {
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .headline-line {
+    color: #FAEFE0;
+    font-size: 82px;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  .headline-line em {
+    font-style: italic;
+  }
+  .line-1 {
+    animation: fadeSlideUp 0.9s 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .line-2 {
+    animation: fadeSlideUp 0.9s 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Subtitle */
+  .subtitle {
+    color: rgba(250,239,224,0.55);
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    margin-top: 32px;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeSlideUp 0.8s 3.2s cubic-bezier(0.25, 0, 0.25, 1) forwards;
+  }
+  .subtitle em {
+    font-style: italic;
+    color: rgba(250,239,224,0.75);
+  }
+
+  /* Separator line 2 */
+  .line-accent-2 {
+    width: 0;
+    height: 1px;
+    background: rgba(250,239,224,0.15);
+    margin-top: 60px;
+    margin-bottom: 48px;
+    animation: lineGrow 1s 4s cubic-bezier(0.25, 0, 0.25, 1) forwards;
+  }
+
+  /* Description */
+  .description {
+    color: rgba(216,216,216,0.35);
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+    max-width: 680px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeSlideUp 0.8s 4.4s cubic-bezier(0.25, 0, 0.25, 1) forwards;
+  }
+
+  /* CTA */
+  .cta {
+    margin-top: 64px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeSlideUp 0.8s 5.2s cubic-bezier(0.25, 0, 0.25, 1) forwards;
+  }
+  .cta-btn {
+    display: inline-block;
+    color: #282A29;
+    background: #FAEFE0;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 20px 56px;
+    border: none;
+    cursor: pointer;
+  }
+
+  /* Logo */
+  .logo-wrap {
+    position: absolute;
+    bottom: 80px;
+    opacity: 0;
+    animation: fadeIn 1s 5.8s ease forwards;
+  }
+  .logo {
+    height: 20px;
+    opacity: 0.35;
+  }
+
+  /* ─── Keyframes ─── */
+  @keyframes fadeSlideUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="line-accent"></div>
+  <p class="label">The future of fashion collection management</p>
+
+  <div class="headline">
+    <div class="headline-line line-1">From <em>concept</em></div>
+    <div class="headline-line line-2">to <em>market</em>.</div>
+  </div>
+
+  <p class="subtitle">Built on <em>expertise</em> and powered by <em>AI</em>.</p>
+
+  <div class="line-accent-2"></div>
+
+  <p class="description">
+    Plan, design, produce, and launch<br>
+    your collections — all in one place.
+  </p>
+
+  <div class="cta">
+    <div class="cta-btn">Start free</div>
+  </div>
+
+  <div class="logo-wrap">
+    <img src="../public/images/aimily-logo-white.png" class="logo" alt="aimily">
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px;
+    background: #282A29;
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Subtle grid texture */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .label {
+    color: rgba(216,216,216,0.4);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+  .headline {
+    color: #FAEFE0;
+    font-size: 72px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 24px;
+  }
+  .headline em {
+    font-style: italic;
+  }
+  .subtitle {
+    color: rgba(250,239,224,0.6);
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    margin-bottom: 64px;
+  }
+  .subtitle em {
+    font-style: italic;
+  }
+  .logo {
+    position: absolute;
+    bottom: 60px;
+    opacity: 0.3;
+    height: 18px;
+  }
+</style>
+</head>
+<body>
+  <p class="label">The future of fashion collection management</p>
+  <h1 class="headline">From <em>concept</em><br>to <em>market</em>.</h1>
+  <p class="subtitle">Built on <em>expertise</em> and powered by <em>AI</em>.</p>
+  <img src="../public/images/aimily-logo-white.png" class="logo" alt="aimily">
+</body>
+</html>

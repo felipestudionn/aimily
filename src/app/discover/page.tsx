@@ -201,21 +201,21 @@ export default function DiscoverPage() {
                 Why aimily
               </p>
               <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] mb-8">
-                The entire collection lifecycle,{' '}
-                <span className="italic">in one place</span>
+                The resources of a full team,{' '}
+                <span className="italic">at your fingertips</span>
               </h2>
               <p className="text-gris text-base md:text-lg font-light leading-relaxed mb-6">
-                Traditionally, managing a fashion collection requires dozens of tools, endless spreadsheets, and constant back-and-forth between teams. Brand identity in one folder. SKU planning in another. Timelines in a third. Photography outsourced. Marketing siloed.
+                You know the industry. You know your product. But not every project has the budget for a full team — trend research, creative direction, merchandising, photography, marketing. That&apos;s where aimily comes in.
               </p>
               <p className="text-gris text-base md:text-lg font-light leading-relaxed">
-                aimily replaces all of that with a single, intelligent workspace — where every phase of your collection connects seamlessly, and AI accelerates the decisions that used to take weeks.
+                aimily gives you access to world-class resources powered by AI — so you can deliver with the speed and quality of a large operation, on any budget. Your expertise drives the vision. aimily amplifies the execution.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-px bg-gris/10">
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
-                <Zap className="h-6 w-6 text-crema/60 mb-4" />
-                <p className="text-crema text-2xl font-light mb-1">10x</p>
-                <p className="text-gris/60 text-xs tracking-widest uppercase">Faster planning</p>
+                <Sparkles className="h-6 w-6 text-crema/60 mb-4" />
+                <p className="text-crema text-2xl font-light mb-1">AI</p>
+                <p className="text-gris/60 text-xs tracking-widest uppercase">Agents</p>
               </div>
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
                 <Layers className="h-6 w-6 text-crema/60 mb-4" />
@@ -223,9 +223,9 @@ export default function DiscoverPage() {
                 <p className="text-gris/60 text-xs tracking-widest uppercase">Workspaces</p>
               </div>
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
-                <Sparkles className="h-6 w-6 text-crema/60 mb-4" />
-                <p className="text-crema text-2xl font-light mb-1">AI</p>
-                <p className="text-gris/60 text-xs tracking-widest uppercase">Every step</p>
+                <Zap className="h-6 w-6 text-crema/60 mb-4" />
+                <p className="text-crema text-2xl font-light mb-1">24/7</p>
+                <p className="text-gris/60 text-xs tracking-widest uppercase">Available</p>
               </div>
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
                 <BarChart3 className="h-6 w-6 text-crema/60 mb-4" />
@@ -259,6 +259,44 @@ export default function DiscoverPage() {
                 <p className="text-gris/60 text-sm font-light leading-relaxed">
                   {cap.description}
                 </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── YOUR ADVANTAGE ─── */}
+      <section className="relative py-32 px-6 border-t border-gris/10">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-20">
+            <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
+              Your advantage
+            </p>
+            <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15]">
+              Your expertise,{' '}
+              <span className="italic">multiplied</span>
+            </h2>
+          </div>
+          <div className="space-y-0">
+            {[
+              { before: 'Weeks of trend research', after: 'Done in minutes' },
+              { before: 'Outsourced photography', after: 'AI-generated lookbooks' },
+              { before: 'Scattered across 10 tools', after: 'One intelligent workspace' },
+              { before: 'Limited by team size', after: 'Unlimited by AI' },
+            ].map((row, i) => (
+              <div
+                key={i}
+                className={`flex items-center justify-center gap-6 md:gap-10 py-8 ${
+                  i < 3 ? 'border-b border-gris/10' : ''
+                }`}
+              >
+                <span className="text-gris/40 text-base md:text-lg font-light tracking-wide text-right w-[200px] md:w-[280px]">
+                  {row.before}
+                </span>
+                <ArrowRight className="h-4 w-4 text-crema/20 shrink-0" />
+                <span className="text-crema text-base md:text-lg font-medium tracking-wide text-left w-[200px] md:w-[280px]">
+                  {row.after}
+                </span>
               </div>
             ))}
           </div>
@@ -309,14 +347,17 @@ export default function DiscoverPage() {
             The evolution
           </p>
           <h2 className="text-carbon text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] mb-8">
-            Where fashion expertise{' '}
-            <span className="italic">meets technology</span>
+            Decades of expertise,{' '}
+            <span className="italic">now in your hands</span>
           </h2>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto mb-8">
-            Built by fashion professionals with decades of experience at brands like Zara, Nike, and Karl Lagerfeld. aimily is the natural evolution — taking everything we know about building successful collections and amplifying it with artificial intelligence.
+            Built by fashion professionals with decades of experience at brands like Zara, Nike, and Karl Lagerfeld. We know every process, every bottleneck, every decision that makes or breaks a collection — because we&apos;ve lived them.
+          </p>
+          <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto mb-8">
+            We&apos;ve packaged all of that knowledge into AI-powered tools that work at your pace. Whether you&apos;re a solo designer, a brand manager, or a team of ten — aimily gives everyone the same resources and quality.
           </p>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto">
-            The consumer, the product, and a strategic approach to merchandising remain the pillars. The difference is speed, precision, and the ability to do what once required entire teams — with one platform.
+            Multiple team members can work on the same collection, each owning their block — research, design, merchandising, production. Everything stays connected, nothing gets lost.
           </p>
         </div>
       </section>

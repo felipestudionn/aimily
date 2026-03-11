@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    background: #282A29;
+    font-family: 'Inter', -apple-system, sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Grid texture */
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* ─── Shared ─── */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 120px 80px;
+    opacity: 0;
+  }
+
+  em { font-style: italic; }
+
+  .label {
+    color: rgba(216,216,216,0.4);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 56px;
+  }
+
+  /* Logo — always visible */
+  .logo-wrap {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    opacity: 0;
+    animation: fadeIn 1s 0.5s ease forwards;
+  }
+  .logo { height: 20px; opacity: 0.3; }
+
+  /* ─── SLIDE 1: HERO — 0s to 5s ─── */
+  .s1 { animation: slideLife 5s 0s ease both; }
+  .s1 .s1-label { opacity: 0; transform: translateY(20px); animation: fadeSlideUp 0.7s 0.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s1 .s1-line1 { opacity: 0; transform: translateY(50px); animation: fadeSlideUp 0.8s 1.2s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s1 .s1-line2 { opacity: 0; transform: translateY(50px); animation: fadeSlideUp 0.8s 1.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s1 .s1-sub { opacity: 0; transform: translateY(20px); animation: fadeSlideUp 0.7s 2.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+  .s1 .s1-line1, .s1 .s1-line2 {
+    color: #FAEFE0;
+    font-size: 82px;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  .s1 .s1-sub {
+    color: rgba(250,239,224,0.55);
+    font-size: 30px;
+    font-weight: 300;
+    margin-top: 32px;
+  }
+  .s1 .s1-sub em { color: rgba(250,239,224,0.75); }
+
+  /* ─── SLIDE 2: THE OLD WAY — 5s to 10.5s ─── */
+  .s2 { animation: slideLife 5.5s 5s ease both; }
+  .s2 .old-label {
+    opacity: 0; transform: translateY(15px);
+    animation: fadeSlideUp 0.6s 5.6s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s2 .old-items span {
+    display: block;
+    color: rgba(250,239,224,0.45);
+    font-size: 26px;
+    font-weight: 300;
+    line-height: 2.4;
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  .s2 .old-items span:nth-child(1) { animation: fadeSlideUp 0.5s 6.2s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s2 .old-items span:nth-child(2) { animation: fadeSlideUp 0.5s 6.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s2 .old-items span:nth-child(3) { animation: fadeSlideUp 0.5s 6.8s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s2 .old-items span:nth-child(4) { animation: fadeSlideUp 0.5s 7.1s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s2 .old-items span:nth-child(5) { animation: fadeSlideUp 0.5s 7.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s2 .new-way {
+    color: #FAEFE0;
+    font-size: 52px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin-top: 56px;
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    animation: punchIn 0.8s 8.2s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+
+  /* ─── SLIDE 3: AI AUTONOMY — 10.5s to 16s ─── */
+  .s3 { animation: slideLife 5.5s 10.5s ease both; }
+  .s3 .ai-headline {
+    color: #FAEFE0;
+    font-size: 56px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeSlideUp 0.9s 11.2s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s3 .ai-details {
+    margin-top: 56px;
+    width: 100%;
+  }
+  .s3 .ai-detail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 20px 0;
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  .s3 .ai-detail .before {
+    color: rgba(250,239,224,0.4);
+    font-size: 18px;
+    font-weight: 300;
+    width: 280px;
+    text-align: right;
+  }
+  .s3 .ai-detail .arrow {
+    color: rgba(250,239,224,0.3);
+    font-size: 16px;
+  }
+  .s3 .ai-detail .after {
+    color: #FAEFE0;
+    font-size: 18px;
+    font-weight: 400;
+    width: 280px;
+    text-align: left;
+  }
+  .s3 .ai-detail:nth-child(1) { animation: fadeSlideUp 0.5s 12.2s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s3 .ai-detail:nth-child(2) { animation: fadeSlideUp 0.5s 12.6s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s3 .ai-detail:nth-child(3) { animation: fadeSlideUp 0.5s 13.0s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s3 .ai-detail:nth-child(4) { animation: fadeSlideUp 0.5s 13.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+  /* ─── SLIDE 4: WHAT YOU GET — 16s to 21.5s ─── */
+  .s4 { animation: slideLife 5.5s 16s ease both; }
+  .s4 .cap-headline {
+    color: #FAEFE0;
+    font-size: 48px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 56px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeSlideUp 0.7s 16.6s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s4 .cap-list { width: 100%; text-align: left; }
+  .s4 .cap-item {
+    display: flex;
+    align-items: baseline;
+    gap: 28px;
+    padding: 22px 0;
+    border-bottom: 1px solid rgba(216,216,216,0.06);
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  .s4 .cap-item .num {
+    color: rgba(216,216,216,0.18);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+  }
+  .s4 .cap-item .txt {
+    color: #FAEFE0;
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+  }
+  .s4 .cap-item:nth-child(1) { animation: fadeSlideRight 0.5s 17.2s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s4 .cap-item:nth-child(2) { animation: fadeSlideRight 0.5s 17.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s4 .cap-item:nth-child(3) { animation: fadeSlideRight 0.5s 17.8s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s4 .cap-item:nth-child(4) { animation: fadeSlideRight 0.5s 18.1s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s4 .cap-item:nth-child(5) { animation: fadeSlideRight 0.5s 18.4s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .s4 .cap-item:nth-child(6) { animation: fadeSlideRight 0.5s 18.7s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+  /* ─── SLIDE 5: CREDIBILITY — 21.5s to 26.5s ─── */
+  .s5 { animation: slideLife 5s 21.5s ease both; }
+  .s5 .cred-label {
+    opacity: 0; transform: translateY(15px);
+    animation: fadeSlideUp 0.6s 22s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s5 .quote {
+    color: #FAEFE0;
+    font-size: 46px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeSlideUp 0.9s 22.6s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s5 .brands {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    margin-top: 56px;
+    opacity: 0;
+    animation: fadeIn 0.8s 23.8s ease forwards;
+  }
+  .s5 .brands span {
+    color: rgba(216,216,216,0.25);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .s5 .dot {
+    width: 3px; height: 3px;
+    background: rgba(216,216,216,0.15);
+    border-radius: 50%;
+  }
+
+  /* ─── SLIDE 6: CTA — 26.5s to 32s ─── */
+  .s6 { animation: slideLife 5.5s 26.5s ease both; }
+  .s6 .cta-headline {
+    color: #FAEFE0;
+    font-size: 56px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeSlideUp 0.9s 27.3s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s6 .cta-sub {
+    color: rgba(216,216,216,0.4);
+    font-size: 20px;
+    font-weight: 300;
+    line-height: 1.6;
+    margin-top: 32px;
+    opacity: 0;
+    transform: translateY(15px);
+    animation: fadeSlideUp 0.7s 28.2s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s6 .cta-btn {
+    display: inline-block;
+    color: #282A29;
+    background: #FAEFE0;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 22px 60px;
+    margin-top: 48px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeSlideUp 0.7s 28.8s cubic-bezier(0.16,1,0.3,1) forwards;
+  }
+  .s6 .url {
+    color: rgba(216,216,216,0.35);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    margin-top: 24px;
+    opacity: 0;
+    animation: fadeIn 0.7s 29.4s ease forwards;
+  }
+
+  /* ─── KEYFRAMES ─── */
+
+  @keyframes slideLife {
+    0% { opacity: 0; }
+    8% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes fadeSlideUp {
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes fadeSlideRight {
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes punchIn {
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- SLIDE 1: HERO -->
+  <div class="slide s1">
+    <p class="label s1-label">The future of fashion collection management</p>
+    <div>
+      <div class="s1-line1">From <em>concept</em></div>
+      <div class="s1-line2">to <em>market</em>.</div>
+    </div>
+    <p class="s1-sub">Built on <em>expertise</em> and powered by <em>AI</em>.</p>
+  </div>
+
+  <!-- SLIDE 2: YOUR FULL TEAM -->
+  <div class="slide s2">
+    <p class="label old-label">You know your craft</p>
+    <div class="old-items">
+      <span>Trend research</span>
+      <span>Creative direction</span>
+      <span>Merchandising</span>
+      <span>Photography</span>
+      <span>Go-to-market</span>
+    </div>
+    <div class="new-way">Full team resources. <em>Any</em> budget.</div>
+  </div>
+
+  <!-- SLIDE 3: AI AUTONOMY -->
+  <div class="slide s3">
+    <h1 class="ai-headline">Your expertise,<br><em>multiplied</em>.</h1>
+    <div class="ai-details">
+      <div class="ai-detail">
+        <span class="before">Weeks of trend research</span>
+        <span class="arrow">&rarr;</span>
+        <span class="after">Done in minutes</span>
+      </div>
+      <div class="ai-detail">
+        <span class="before">Outsourced photography</span>
+        <span class="arrow">&rarr;</span>
+        <span class="after">AI-generated lookbooks</span>
+      </div>
+      <div class="ai-detail">
+        <span class="before">Scattered across 10 tools</span>
+        <span class="arrow">&rarr;</span>
+        <span class="after">One intelligent workspace</span>
+      </div>
+      <div class="ai-detail">
+        <span class="before">Limited by budget</span>
+        <span class="arrow">&rarr;</span>
+        <span class="after">Unlimited by AI</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: WHAT YOU GET -->
+  <div class="slide s4">
+    <h2 class="cap-headline">Everything your brand needs,<br><em>nothing it doesn't</em>.</h2>
+    <div class="cap-list">
+      <div class="cap-item"><span class="num">01</span><span class="txt">Trend Research & Strategy</span></div>
+      <div class="cap-item"><span class="num">02</span><span class="txt">Brand Identity & Creative Direction</span></div>
+      <div class="cap-item"><span class="num">03</span><span class="txt">Collection Merchandising</span></div>
+      <div class="cap-item"><span class="num">04</span><span class="txt">Studio & Content Production</span></div>
+      <div class="cap-item"><span class="num">05</span><span class="txt">Go-to-Market Strategy</span></div>
+      <div class="cap-item"><span class="num">06</span><span class="txt">Production & Supply Chain</span></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: CREDIBILITY -->
+  <div class="slide s5">
+    <p class="label cred-label">Who built this</p>
+    <h1 class="quote">Decades of experience<br>at the world's top brands.<br><em>Now in your hands.</em></h1>
+    <div class="brands">
+      <span>Zara</span>
+      <div class="dot"></div>
+      <span>Nike</span>
+      <div class="dot"></div>
+      <span>Karl Lagerfeld</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: CTA -->
+  <div class="slide s6">
+    <h1 class="cta-headline">Your <em>next collection</em><br>starts here.</h1>
+    <p class="cta-sub">World-class resources. AI-powered speed.<br>Built on decades of fashion expertise.</p>
+    <div class="cta-btn">Start free</div>
+    <p class="url">aimily.app</p>
+  </div>
+
+  <!-- Logo persistent -->
+  <div class="logo-wrap">
+    <img src="../public/images/aimily-logo-white.png" class="logo" alt="aimily">
+  </div>
+
+</body>
+</html>

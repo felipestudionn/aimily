@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px;
+    background: #282A29;
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .quote {
+    color: #FAEFE0;
+    font-size: 48px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin-bottom: 56px;
+  }
+  .quote em { font-style: italic; }
+  .brands {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    justify-content: center;
+  }
+  .brands span {
+    color: rgba(216,216,216,0.25);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .dot {
+    width: 3px;
+    height: 3px;
+    background: rgba(216,216,216,0.15);
+    border-radius: 50%;
+  }
+  .logo {
+    position: absolute;
+    bottom: 60px;
+    opacity: 0.3;
+    height: 18px;
+  }
+</style>
+</head>
+<body>
+  <h1 class="quote">Decades of <em>fashion<br>expertise</em>.<br>Now in your hands.</h1>
+  <div class="brands">
+    <span>Zara</span>
+    <div class="dot"></div>
+    <span>Nike</span>
+    <div class="dot"></div>
+    <span>Karl Lagerfeld</span>
+  </div>
+  <img src="../public/images/aimily-logo-white.png" class="logo" alt="aimily">
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1080px;
+    background: #282A29;
+    font-family: 'Inter', -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .problems {
+    color: rgba(216,216,216,0.35);
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 2.2;
+    letter-spacing: 0.02em;
+    margin-bottom: 56px;
+  }
+  .problems span {
+    display: block;
+  }
+  .solution {
+    color: #FAEFE0;
+    font-size: 64px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .solution em {
+    font-style: italic;
+  }
+  .logo {
+    position: absolute;
+    bottom: 60px;
+    opacity: 0.3;
+    height: 18px;
+  }
+</style>
+</head>
+<body>
+  <div class="problems">
+    <span>Trend research.</span>
+    <span>Creative direction.</span>
+    <span>Merchandising.</span>
+    <span>Photography.</span>
+    <span>Go-to-market.</span>
+  </div>
+  <h1 class="solution">Full team resources. <em>Any</em> budget.</h1>
+  <img src="../public/images/aimily-logo-white.png" class="logo" alt="aimily">
+</body>
+</html>
