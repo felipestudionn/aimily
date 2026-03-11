@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
 
       if (error) {
@@ -35,69 +35,67 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff6dc] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-carbon flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Back link */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm text-carbon/60 hover:text-carbon transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-sm text-gris/60 hover:text-crema transition-colors mb-8"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to home
         </Link>
 
-        <div className="bg-white border border-carbon/10 p-8">
+        <div className="border border-gris/20 p-8">
           {sent ? (
-            /* Success state */
             <div className="text-center space-y-4">
-              <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-              <h1 className="text-2xl font-light text-carbon tracking-tight">
+              <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+              <h1 className="text-2xl font-light text-crema tracking-tight">
                 Check your email
               </h1>
-              <p className="text-sm text-carbon/60">
-                We sent a password reset link to <strong className="text-carbon">{email}</strong>.
+              <p className="text-sm text-gris/60">
+                We sent a password reset link to <strong className="text-crema">{email}</strong>.
                 Click the link in the email to reset your password.
               </p>
-              <p className="text-xs text-carbon/40">
+              <p className="text-xs text-gris/40">
                 Didn&apos;t receive the email? Check your spam folder or{' '}
                 <button
                   onClick={() => { setSent(false); setError(null); }}
-                  className="text-carbon underline hover:text-carbon/80"
+                  className="text-crema underline hover:text-crema/80"
                 >
                   try again
                 </button>
               </p>
             </div>
           ) : (
-            /* Form state */
             <>
-              <h1 className="text-2xl font-light text-carbon tracking-tight">
+              <h1 className="text-2xl font-light text-crema tracking-tight">
                 Reset your password
               </h1>
-              <p className="text-sm text-carbon/60 mt-2 mb-6">
+              <p className="text-sm text-gris/60 mt-2 mb-6">
                 Enter your email address and we&apos;ll send you a link to reset your password.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm">
+                  <div className="p-3 bg-error/10 border border-error/30 text-error text-sm">
                     {error}
                   </div>
                 )}
 
                 <div className="space-y-1.5">
-                  <label htmlFor="email" className="text-xs font-medium text-carbon/70 uppercase tracking-widest">
+                  <label htmlFor="email" className="text-xs font-medium text-gris uppercase tracking-widest">
                     Email
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-carbon/30" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gris/50" />
                     <input
                       id="email"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-3 bg-transparent border border-carbon/20 text-carbon text-sm placeholder:text-carbon/30 focus:outline-none focus:border-carbon/50 transition-colors"
+                      className="w-full pl-10 pr-4 py-3 bg-transparent border border-gris/30 text-crema text-sm placeholder:text-gris/40 focus:outline-none focus:border-crema/50 transition-colors"
                       required
                       autoFocus
                     />
@@ -106,7 +104,7 @@ export default function ForgotPasswordPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-carbon text-crema text-sm font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-crema text-carbon text-sm font-medium tracking-[0.1em] uppercase hover:bg-crema/90 transition-colors disabled:opacity-50"
                   disabled={loading}
                 >
                   {loading ? (
@@ -120,9 +118,9 @@ export default function ForgotPasswordPage() {
                 </button>
               </form>
 
-              <div className="text-center text-sm text-carbon/50 mt-6">
+              <div className="text-center text-sm text-gris/50 mt-6">
                 Remember your password?{' '}
-                <Link href="/" className="text-carbon font-medium hover:text-carbon/80 transition-colors">
+                <Link href="/" className="text-crema font-medium hover:text-crema/80 transition-colors">
                   Sign in
                 </Link>
               </div>
