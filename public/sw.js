@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aimily-v1';
+const CACHE_NAME = 'aimily-v2';
 
 // Install — cache shell assets
 self.addEventListener('install', (event) => {
@@ -6,7 +6,8 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) =>
       cache.addAll([
         '/',
-        '/images/aimily-icon-512.png',
+        '/images/aimily-pwa-512.png',
+        '/images/aimily-pwa-192.png',
         '/images/aimily-logo-black.png',
       ])
     )
