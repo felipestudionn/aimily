@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import {
   FolderOpen,
   Plus,
@@ -59,6 +59,7 @@ interface CollectionWithProgress extends CollectionPlan {
 export default function MyCollectionsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const supabase = createClient();
   const [collections, setCollections] = useState<CollectionPlan[]>([]);
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [loading, setLoading] = useState(true);

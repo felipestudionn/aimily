@@ -65,29 +65,30 @@ Las 26 tablas referenciadas en codigo son:
 > Migrar de auth client-only a server-side auth con @supabase/ssr
 
 ### 1.1 Instalar dependencias
-- [ ] `npm install @supabase/ssr`
+- [x] `npm install @supabase/ssr`
 
 ### 1.2 Crear clientes Supabase SSR
-- [ ] `src/lib/supabase/client.ts` — createBrowserClient (reemplaza `src/lib/supabase.ts`)
-- [ ] `src/lib/supabase/server.ts` — createServerClient (para Server Components + API routes)
-- [ ] Mantener `src/lib/supabase-admin.ts` — service role (sin cambios)
+- [x] `src/lib/supabase/client.ts` — createBrowserClient (reemplaza `src/lib/supabase.ts`)
+- [x] `src/lib/supabase/server.ts` — createServerClient (para Server Components + API routes)
+- [x] Mantener `src/lib/supabase-admin.ts` — service role (sin cambios)
 
 ### 1.3 Crear middleware.ts
-- [ ] `src/middleware.ts` — Refresh de tokens en cada request
-- [ ] Usar `supabase.auth.getUser()` (NO `getSession()`)
-- [ ] Configurar `matcher` para excluir assets estaticos, `_next`, API webhooks
-- [ ] Proteger rutas autenticadas: redirigir a `/` si no hay sesion
-- [ ] Permitir rutas publicas: `/`, `/discover`, `/contact`, `/pricing`, `/terms`, `/privacy`, `/cookies`
+- [x] `src/middleware.ts` — Refresh de tokens en cada request
+- [x] Usar `supabase.auth.getUser()` (NO `getSession()`)
+- [x] Configurar `matcher` para excluir assets estaticos, `_next`, API webhooks
+- [x] Proteger rutas autenticadas: redirigir a `/` si no hay sesion
+- [x] Permitir rutas publicas: `/`, `/discover`, `/contact`, `/pricing`, `/terms`, `/privacy`, `/cookies`
 
 ### 1.4 Actualizar AuthContext
-- [ ] Migrar a `createBrowserClient` de `@supabase/ssr`
-- [ ] Usar cookies para sesion (no solo memoria)
-- [ ] Anadir `resetPassword(email)` al context
-- [ ] Anadir `updatePassword(newPassword)` al context
+- [x] Migrar a `createBrowserClient` de `@supabase/ssr`
+- [x] Usar cookies para sesion (no solo memoria)
+- [x] Anadir `resetPassword(email)` al context
+- [x] Anadir `updatePassword(newPassword)` al context
 
 ### 1.5 Migrar API routes
-- [ ] Actualizar todas las API routes que usan auth para usar `createServerClient`
-- [ ] Verificar que `/api/webhooks/stripe` NO pasa por el middleware de auth
+- [x] Actualizar 4 billing API routes (subscription, checkout, portal, usage) a `createServerClient`
+- [x] `/api/webhooks/stripe` y `/api/cron/*` excluidos del middleware
+- [x] SubscriptionContext migrado: ya no envia Authorization headers (usa cookies)
 
 ---
 

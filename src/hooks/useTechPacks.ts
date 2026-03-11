@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { TechPack } from '@/types/tech-pack';
 
 export function useTechPacks(userId: string | undefined) {
+  const supabase = createClient();
   const [techPacks, setTechPacks] = useState<TechPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

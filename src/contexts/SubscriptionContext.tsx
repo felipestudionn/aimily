@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 type PlanId = 'free' | 'pro' | 'business' | 'enterprise';
 
@@ -54,12 +54,13 @@ const DEFAULT_LIMITS: PlanLimits = {
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
+  const supabase = createClient();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSubscription = useCallback(async () => {
-    if (!session?.access_token) {
+    if (!user) {
       setSubscription({
         plan: 'free',
         status: 'active',
@@ -73,9 +74,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
 
     try {
-      const res = await fetch('/api/billing/subscription', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const res = await fetch('/api/billing/subscription');
 
       if (res.ok) {
         const data = await res.json();
@@ -103,7 +102,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token]);
+  }, [user]);
 
   useEffect(() => {
     fetchSubscription();
@@ -141,14 +140,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const aiUsagePercent = aiLimit === -1 ? 0 : Math.round((aiUsed / aiLimit) * 100);
 
   const checkoutPlan = async (targetPlan: PlanId, annual?: boolean) => {
-    if (!session?.access_token) return;
+    if (!user) return;
 
     const res = await fetch('/api/billing/checkout', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan: targetPlan, annual }),
     });
 
@@ -157,11 +153,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   };
 
   const openPortal = async () => {
-    if (!session?.access_token) return;
+    if (!user) return;
 
     const res = await fetch('/api/billing/portal', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
     });
 
     const { url } = await res.json();
@@ -169,11 +164,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   };
 
   const trackAIUsage = async (): Promise<boolean> => {
-    if (!session?.access_token) return false;
+    if (!user) return false;
 
     const res = await fetch('/api/billing/usage', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
     });
 
     const data = await res.json();
