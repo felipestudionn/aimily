@@ -20,13 +20,13 @@ Ve a: **https://developers.pinterest.com/apps/**
 
 **Formulario:**
 ```
-App name: OLAWAVE
+App name: aimily
 Company: StudioNN Agency SL
-Website: https://olawave.ai
-Privacy Policy: https://olawave.ai/privacy
+Website: https://aimily.app
+Privacy Policy: https://aimily.app/privacy
 
 App purpose:
-OLAWAVE is a fashion merchandising and collection planning platform that helps fashion brands create data-driven collections. Users connect their Pinterest boards to build creative moodboards, which are then analyzed by AI to generate strategic collection plans with trend insights, product recommendations, and financial projections.
+aimily is a fashion merchandising and collection planning platform that helps fashion brands create data-driven collections. Users connect their Pinterest boards to build creative moodboards, which are then analyzed by AI to generate strategic collection plans with trend insights, product recommendations, and financial projections.
 
 Developer purpose: I am developing an app for my organization/personal use
 Use case: Other - Reading user Pinterest boards and pins to create fashion collection moodboards and extract creative insights (colors, trends, items) for AI-powered merchandising recommendations.
@@ -34,7 +34,7 @@ Use case: Other - Reading user Pinterest boards and pins to create fashion colle
 
 **Redirect URIs:**
 ```
-https://olawave.ai/api/auth/pinterest/callback
+https://aimily.app/api/auth/pinterest/callback
 http://localhost:3000/api/auth/pinterest/callback
 ```
 
@@ -80,7 +80,7 @@ vercel env add PINTEREST_CLIENT_SECRET
 # Environments: Production, Preview, Development
 ```
 
-**Nota:** La variable `NEXT_PUBLIC_PINTEREST_REDIRECT_URI` ya está configurada en Vercel apuntando a `https://olawave.ai/api/auth/pinterest/callback`
+**Nota:** La variable `NEXT_PUBLIC_PINTEREST_REDIRECT_URI` ya está configurada en Vercel apuntando a `https://aimily.app/api/auth/pinterest/callback`
 
 ---
 
@@ -112,7 +112,7 @@ npm run dev
 
 #### **Producción:**
 ```
-# Ve a https://olawave.ai/creative-space
+# Ve a https://aimily.app/creative-space
 # Click en "Connect Pinterest"
 ```
 
@@ -132,7 +132,7 @@ npm run dev
 **Causa:** La URL no coincide exactamente
 
 **Solución:**
-- Verifica en Pinterest Developers que tengas: `https://olawave.ai/api/auth/pinterest/callback`
+- Verifica en Pinterest Developers que tengas: `https://aimily.app/api/auth/pinterest/callback`
 - NO uses `http://` en producción
 - NO añadas `/` al final
 
@@ -174,4 +174,4 @@ npm run dev
 
 ---
 
-**Cuando completes todos los pasos, Pinterest OAuth estará 100% funcional en OLAWAVE.**
+**Cuando completes todos los pasos, Pinterest OAuth estará 100% funcional en aimily.**

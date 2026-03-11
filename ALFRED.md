@@ -1,12 +1,12 @@
-# Alfred Integration Guide — OLAWAVE WIND Milestones as Tasks
+# Alfred Integration Guide — aimily Milestones as Tasks
 
-This document explains how the OLAWAVE WIND timeline system works so that **Alfred** (the user's personal assistant from another project) can read milestones and present them as actionable tasks/todos.
+This document explains how the aimily timeline system works so that **Alfred** (the user's personal assistant from another project) can read milestones and present them as actionable tasks/todos.
 
 ---
 
 ## Overview
 
-OLAWAVE WIND manages **fashion collection timelines** — each collection has a launch date and ~41 milestones organized in 9 phases. Each milestone has a start date, duration, status, and responsible party. Alfred should treat these milestones as the user's task list for collection launches.
+aimily manages **fashion collection timelines** — each collection has a launch date and ~41 milestones organized in 9 phases. Each milestone has a start date, duration, status, and responsible party. Alfred should treat these milestones as the user's task list for collection launches.
 
 ---
 
@@ -77,7 +77,7 @@ GET  /api/standalone-timelines?userId={auth_user_id}
 POST /api/standalone-timelines  (body: { user_id, collection_name, season, launch_date, milestones })
 ```
 
-> Note: Standalone timelines are also cached in `localStorage` key `"olawave_collection_timelines"` for offline/fast access, but the Supabase copy is the source of truth for Alfred.
+> Note: Standalone timelines are also cached in `localStorage` key `"aimily_collection_timelines"` for offline/fast access, but the Supabase copy is the source of truth for Alfred.
 
 ---
 
@@ -103,7 +103,7 @@ GET /api/alfred-milestones?email=user@example.com
       "id": "ow-1",
       "title": "Trend Research & Moodboarding",
       "title_es": "Investigación de tendencias y moodboarding",
-      "phase": "olawave",
+      "phase": "aimily",
       "responsible": "US",
       "status": "pending",
       "start_date": "2026-03-02",
@@ -179,7 +179,7 @@ function getMilestoneEndDate(launchDate, startWeeksBefore, durationWeeks) {
 
 | Phase Key | Name (EN) | Name (ES) | Color | Typical Weeks Before Launch |
 |---|---|---|---|---|
-| `olawave` | Product & Merchandising | Product & Merchandising | #FF6B6B | 48–39 |
+| `aimily` | Product & Merchandising | Product & Merchandising | #FF6B6B | 48–39 |
 | `brand` | Brand & Identity | Marca e Identidad | #4ECDC4 | 46–34 |
 | `design` | Design & Development | Diseño y Desarrollo | #F5A623 | 36–26 |
 | `prototyping` | Prototyping | Prototipado | #7B68EE | 28–16 |
@@ -195,7 +195,7 @@ function getMilestoneEndDate(launchDate, startWeeksBefore, durationWeeks) {
 
 | Value | Meaning |
 |---|---|
-| `US` | The brand team (the user / OLAWAVE) |
+| `US` | The brand team (the user) |
 | `FACTORY` | The manufacturing partner |
 | `AGENCY/US` | Shared between agency and brand team |
 | `ALL` | Everyone involved |
@@ -315,4 +315,4 @@ Key milestone IDs follow the pattern: `{phase_prefix}-{number}`
 3. **User tasks** — Focus on `responsible: "US"` and `responsible: "ALL"`. Tasks with `responsible: "FACTORY"` are external dependencies to track but not assign to the user.
 4. **New milestones can be added** — The user can create custom milestones via the Gantt UI. Always read the live data, don't assume the default 41.
 5. **Multiple collections** — A user can have multiple collection plans, each with its own timeline. Present them grouped by collection.
-6. **Supabase project**: `sbweszownvspzjfejmfx` (same as OLAWAVE WIND app)
+6. **Supabase project**: `sbweszownvspzjfejmfx`

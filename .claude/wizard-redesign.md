@@ -49,7 +49,7 @@ NO → milestones stay "pending" (work to do in the workspace).
 
 Questions adapt terminology based on Category selected in Block 1.
 
-### Product & Merchandising (phase: olawave)
+### Product & Merchandising (phase: aimily)
 - Q: "Do you have a product range plan?" → YES: mark ow-1, ow-2 completed
 - Q: "Do you have SKU definitions?" → YES: mark ow-3 completed
 - Q: "Do you have technical sketches?" → YES: mark ow-5 completed
@@ -129,7 +129,7 @@ We reorganize them into the mini-wizard format.
 1. **Creative Input (Optional)**
    - "Want to start with inspiration?" — YES opens moodboard/Pinterest tools, NO skips
    - If YES: moodboard upload, Pinterest board connect, key colors, trends, items
-   - Stored in localStorage as `olawave_creative_data`
+   - Stored in localStorage as `aimily_creative_data`
    - This feeds context to the AI Advisor in step 7
 
 2. **Target Consumer**
@@ -514,8 +514,8 @@ POST /api/planner/create
   "user_id": "...",
   "launch_date": "2027-02-01",
   "milestones": [
-    { "id": "ow-1", "phase": "olawave", "name": "...", "status": "completed", ... },
-    { "id": "ow-2", "phase": "olawave", "name": "...", "status": "pending", ... }
+    { "id": "ow-1", "phase": "aimily", "name": "...", "status": "completed", ... },
+    { "id": "ow-2", "phase": "aimily", "name": "...", "status": "pending", ... }
   ]
 }
 ```

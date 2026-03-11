@@ -1,0 +1,309 @@
+# aimily — Enterprise Ready Plan
+
+Plan de implementacion para dejar aimily listo para produccion profesional.
+Ejecutar fase por fase, en orden.
+
+---
+
+## FASE 0: Limpieza — Renombrar a aimily + auditar tablas
+> Eliminar toda referencia legacy a "OlaWave" y dejar el proyecto limpio.
+
+### 0.1 Renombrar referencias "OlaWave" en codigo
+- [x] `localStorage` keys: ya no existen refs a olawave en src/
+- [x] Phase ID en timeline: ya renombrado a `"aimily"` en timeline-template.ts
+- [x] Milestone IDs: `ow-1`..`ow-5` se mantienen (renombrarlos romperia timelines existentes en Supabase)
+
+### 0.2 Limpiar documentacion legacy
+- [x] Eliminados: `MASTER_PLAN.md`, `ANALYSIS_COMPLETE.md`, `DEPLOYMENT_GUIDE.md`, `IMPLEMENTATION_SUMMARY.md`, `REDESIGN_PROPOSAL.md`, `NAVIGATION_AUDIT.md`
+- [x] Actualizado `ALFRED.md` — todas las refs cambiadas a aimily
+- [x] Actualizado `PINTEREST_SETUP.md` — URLs cambiadas a aimily.app
+- [x] Eliminado `netlify.toml`
+
+### 0.3 Auditar tablas de Supabase
+Las 26 tablas referenciadas en codigo son:
+
+| # | Tabla | Migracion | RLS | Estado |
+|---|-------|-----------|-----|--------|
+| 1 | `collection_plans` | 004 (parcial) | Si | Falta migracion base |
+| 2 | `collection_timelines` | (ninguna) | ? | Falta migracion base |
+| 3 | `collection_skus` | 002 | Si | OK |
+| 4 | `drops` | 003 | ? | Verificar RLS |
+| 5 | `commercial_actions` | 003 | ? | Verificar RLS |
+| 6 | `market_predictions` | 003 | ? | Verificar RLS |
+| 7 | `subscriptions` | 005 | Si | OK |
+| 8 | `ai_usage` | 005 | Si | OK |
+| 9 | `ai_generations` | (ninguna) | ? | Crear migracion |
+| 10 | `brand_models` | (ninguna) | ? | Crear migracion |
+| 11 | `brand_profiles` | (ninguna) | ? | Crear migracion |
+| 12 | `city_trends_processed` | (ninguna) | ? | Verificar |
+| 13 | `city_trends_raw` | (ninguna) | ? | Verificar |
+| 14 | `content_calendar` | (ninguna) | ? | Crear migracion |
+| 15 | `lookbook_pages` | (ninguna) | ? | Crear migracion |
+| 16 | `pr_contacts` | (ninguna) | ? | Crear migracion |
+| 17 | `product_copy` | (ninguna) | ? | Crear migracion |
+| 18 | `production_orders` | (ninguna) | ? | Crear migracion |
+| 19 | `raw_content` | (ninguna) | ? | Crear migracion |
+| 20 | `reports` | (ninguna) | ? | Crear migracion |
+| 21 | `sample_reviews` | (ninguna) | ? | Crear migracion |
+| 22 | `signals` | (ninguna) | ? | Verificar |
+| 23 | `sku_colorways` | (ninguna) | ? | Crear migracion |
+| 24 | `standalone_timelines` | (ninguna) | ? | Crear migracion |
+| 25 | `tech_packs` | (ninguna) | ? | Crear migracion |
+| 26 | `tiktok_hashtag_trends` | (ninguna) | ? | Verificar |
+
+**Acciones:**
+- [x] Obtener schema actual de Supabase — encontradas 49 tablas (26 aimily + 23 otro proyecto)
+- [x] Crear migracion `006_schema_audit_rls.sql` — aplicada exitosamente
+- [x] Corregidas 13 tablas con policies inseguras (`true` o solo `authenticated`)
+- [x] Activado RLS en `raw_content`, `reports`, `signals`
+- [x] Todas las tablas aimily ahora verifican `user_id` via `collection_plan_id`
+- [x] Service role access añadido para que API routes sigan funcionando
+
+---
+
+## FASE 1: Auth SSR + Middleware (seguridad base)
+> Migrar de auth client-only a server-side auth con @supabase/ssr
+
+### 1.1 Instalar dependencias
+- [ ] `npm install @supabase/ssr`
+
+### 1.2 Crear clientes Supabase SSR
+- [ ] `src/lib/supabase/client.ts` — createBrowserClient (reemplaza `src/lib/supabase.ts`)
+- [ ] `src/lib/supabase/server.ts` — createServerClient (para Server Components + API routes)
+- [ ] Mantener `src/lib/supabase-admin.ts` — service role (sin cambios)
+
+### 1.3 Crear middleware.ts
+- [ ] `src/middleware.ts` — Refresh de tokens en cada request
+- [ ] Usar `supabase.auth.getUser()` (NO `getSession()`)
+- [ ] Configurar `matcher` para excluir assets estaticos, `_next`, API webhooks
+- [ ] Proteger rutas autenticadas: redirigir a `/` si no hay sesion
+- [ ] Permitir rutas publicas: `/`, `/discover`, `/contact`, `/pricing`, `/terms`, `/privacy`, `/cookies`
+
+### 1.4 Actualizar AuthContext
+- [ ] Migrar a `createBrowserClient` de `@supabase/ssr`
+- [ ] Usar cookies para sesion (no solo memoria)
+- [ ] Anadir `resetPassword(email)` al context
+- [ ] Anadir `updatePassword(newPassword)` al context
+
+### 1.5 Migrar API routes
+- [ ] Actualizar todas las API routes que usan auth para usar `createServerClient`
+- [ ] Verificar que `/api/webhooks/stripe` NO pasa por el middleware de auth
+
+---
+
+## FASE 2: Flujos de Auth completos
+> Password reset, email confirmation, auth callback
+
+### 2.1 Auth callback route (PKCE)
+- [ ] `src/app/auth/callback/route.ts` — Intercambia code por sesion
+- [ ] Maneja: signup confirmation, password reset, OAuth callback, magic link
+- [ ] Redirige segun `type` param: signup → `/my-collections`, recovery → `/auth/reset-password`
+
+### 2.2 Password Reset
+- [ ] `src/app/auth/forgot-password/page.tsx` — Formulario "introduce tu email"
+- [ ] `src/app/auth/reset-password/page.tsx` — Formulario "nueva contrasena"
+- [ ] Anadir link "Forgot password?" en AuthModal
+- [ ] Flow: email → click link → callback route → reset-password page → updateUser()
+
+### 2.3 Email Confirmation
+- [ ] `src/app/auth/confirm/page.tsx` — Pagina "verificando tu email..."
+- [ ] Activar "Confirm email" en Supabase Dashboard
+- [ ] Actualizar AuthModal signup flow: mostrar "Revisa tu email" despues de registrarse
+- [ ] Manejar reenvio de email de confirmacion
+
+### 2.4 Actualizar AuthModal
+- [ ] Anadir link "Forgot password?" que abre `/auth/forgot-password`
+- [ ] Mostrar mensaje post-signup: "Check your email to confirm your account"
+- [ ] Mejorar mensajes de error (email ya existe, password debil, etc.)
+- [ ] Validacion de password: minimo 8 chars, al menos 1 numero
+
+---
+
+## FASE 3: SMTP + Email Templates
+> Emails profesionales con branding aimily
+
+### 3.1 Configurar Resend (SMTP)
+- [ ] Crear cuenta en resend.com
+- [ ] Verificar dominio `aimily.app` (DNS: SPF, DKIM, DMARC)
+- [ ] Obtener SMTP credentials
+- [ ] Configurar en Supabase Dashboard > Authentication > SMTP Settings:
+  - Host: `smtp.resend.com`
+  - Port: `465` (SSL)
+  - Username: `resend`
+  - Password: API key de Resend
+  - Sender: `aimily <noreply@aimily.app>`
+
+### 3.2 Personalizar Email Templates
+Configurar en Supabase Dashboard > Authentication > Email Templates:
+
+- [ ] **Signup Confirmation** — "Welcome to aimily — confirm your email"
+- [ ] **Password Reset** — "Reset your aimily password"
+- [ ] **Magic Link** — (opcional, por si lo activamos mas adelante)
+- [ ] **Email Change** — "Confirm your new email address"
+
+Cada template debe incluir:
+- Logo aimily (hosted en aimily.app/images/aimily-logo-black.png)
+- Colores de marca: fondo `#fff6dc`, texto `#282A29`, botones `#282A29`
+- Footer: "aimily is a product by StudioNN Agency S.L."
+- Usar `{{ .ConfirmationURL }}` para los links
+
+### 3.3 Actualizar Supabase URL Configuration
+En Supabase Dashboard > Authentication > URL Configuration:
+- [ ] Site URL: `https://www.aimily.app`
+- [ ] Redirect URLs: `https://www.aimily.app/**`, `http://localhost:3000/**`
+
+---
+
+## FASE 4: Google Sign-In
+> Reducir friccion de registro con OAuth
+
+### 4.1 Google Cloud Console
+- [ ] Crear proyecto en Google Cloud Console (o usar existente de StudioNN)
+- [ ] Activar Google People API
+- [ ] Configurar OAuth Consent Screen:
+  - App name: aimily
+  - User support email
+  - Authorized domains: `aimily.app`, `supabase.co`
+  - Privacy policy: `https://www.aimily.app/privacy`
+- [ ] Crear OAuth Client ID (Web application):
+  - JS origins: `https://www.aimily.app`, `http://localhost:3000`
+  - Redirect URI: `https://sbweszownvspzjfejmfx.supabase.co/auth/v1/callback`
+
+### 4.2 Configurar en Supabase
+- [ ] Dashboard > Authentication > Providers > Google
+- [ ] Pegar Client ID + Client Secret
+
+### 4.3 Implementar en UI
+- [ ] Boton "Continue with Google" en AuthModal
+- [ ] `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })`
+- [ ] Asegurar que callback route maneja OAuth
+
+---
+
+## FASE 5: Cuenta de usuario + GDPR
+> Pagina de perfil, gestion de cuenta, cumplimiento legal
+
+### 5.1 Pagina de Account/Profile
+- [ ] `src/app/account/page.tsx` — Pagina de cuenta del usuario
+- [ ] Mostrar: email, plan actual, uso de AI, fecha de registro
+- [ ] Boton "Change password" → `supabase.auth.updateUser({ password })`
+- [ ] Boton "Change email" → `supabase.auth.updateUser({ email })`
+- [ ] Boton "Manage subscription" → Stripe Portal
+- [ ] Link a cuenta desde navbar (avatar/icono)
+
+### 5.2 Borrado de cuenta (GDPR Right to Erasure)
+- [ ] `src/app/api/account/delete/route.ts` — API para borrar cuenta
+- [ ] Flow:
+  1. Confirmar con password
+  2. Cancelar suscripcion Stripe
+  3. Eliminar Stripe customer
+  4. Borrar todos los datos del usuario (cascade via FK)
+  5. `supabaseAdmin.auth.admin.deleteUser(userId)`
+  6. Redirigir a landing con mensaje de confirmacion
+- [ ] Boton "Delete my account" en pagina de cuenta (con doble confirmacion)
+
+### 5.3 Exportar datos (GDPR Right of Access)
+- [ ] `src/app/api/account/export/route.ts` — Exportar datos del usuario en JSON
+- [ ] Incluir: colecciones, SKUs, timelines, configuraciones
+
+### 5.4 Actualizaciones legales
+- [ ] Actualizar `/privacy` con informacion de Supabase y Stripe como procesadores de datos
+- [ ] Actualizar `/terms` con terminos de suscripcion y cancelacion
+- [ ] Cookie consent banner (si no existe ya)
+
+---
+
+## FASE 6: Seguridad + Hardening
+> Rate limiting, CAPTCHA, seguridad avanzada
+
+### 6.1 CAPTCHA
+- [ ] Configurar Cloudflare Turnstile (gratuito) o hCaptcha
+- [ ] Activar en Supabase Dashboard > Authentication > Bot Detection
+- [ ] Integrar en AuthModal (signup + signin + forgot password)
+
+### 6.2 Rate Limits
+- [ ] Revisar rate limits en Supabase Dashboard > Authentication > Rate Limits
+- [ ] Configurar limites apropiados para SaaS
+
+### 6.3 Security Hardening
+- [ ] Activar SSL enforcement en Supabase
+- [ ] Verificar RLS en TODAS las tablas (fase 0.3)
+- [ ] Activar MFA en cuenta de Supabase organization
+- [ ] Configurar Network Restrictions en Supabase (opcional)
+- [ ] Ejecutar Security Advisor en Supabase Dashboard
+
+### 6.4 Monitoreo
+- [ ] Configurar alertas de Stripe (pagos fallidos, disputas)
+- [ ] Revisar logs de Supabase periodicamente
+- [ ] Configurar Vercel Analytics (si no esta activo)
+
+---
+
+## FASE 7: Deploy + Env Vars en Vercel
+> Desplegar todo a produccion
+
+### 7.1 Variables de entorno en Vercel
+Subir TODAS las env vars necesarias:
+```
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+
+# Stripe (test por ahora, live cuando Stripe este verificado)
+STRIPE_SECRET_KEY
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+STRIPE_WEBHOOK_SECRET
+STRIPE_PRO_MONTHLY_PRICE_ID
+STRIPE_PRO_ANNUAL_PRICE_ID
+STRIPE_BUSINESS_MONTHLY_PRICE_ID
+STRIPE_BUSINESS_ANNUAL_PRICE_ID
+STRIPE_ENTERPRISE_MONTHLY_PRICE_ID
+STRIPE_ENTERPRISE_ANNUAL_PRICE_ID
+
+# AI APIs
+GEMINI_API_KEY
+ANTHROPIC_API_KEY
+OPENAI_API_KEY
+HUGGING_FACE_ACCESS_TOKEN
+FAL_KEY
+
+# Pinterest
+NEXT_PUBLIC_PINTEREST_CLIENT_ID
+PINTEREST_CLIENT_SECRET
+NEXT_PUBLIC_PINTEREST_REDIRECT_URI (actualizar a aimily.app)
+
+# Apify
+APIFY_API_TOKEN
+
+# Cron
+CRON_SECRET
+```
+
+### 7.2 Verificar deploy
+- [ ] Build exitoso en Vercel
+- [ ] Auth funciona: signup, signin, signout, password reset
+- [ ] Stripe checkout funciona en test mode
+- [ ] Webhook recibe eventos correctamente
+- [ ] Emails llegan via Resend SMTP
+- [ ] Google Sign-In funciona
+
+---
+
+## Resumen de prioridades
+
+| Fase | Que | Impacto | Esfuerzo |
+|------|-----|---------|----------|
+| 0 | Limpieza + renombrar | Base limpia | Bajo |
+| 1 | Auth SSR + Middleware | Seguridad critica | Medio |
+| 2 | Password reset + email confirm | Funcionalidad basica | Medio |
+| 3 | SMTP + Email templates | Emails llegan a usuarios | Bajo (config) |
+| 4 | Google Sign-In | Reducir friccion 50%+ | Bajo |
+| 5 | Cuenta + GDPR | Compliance legal EU | Medio |
+| 6 | Seguridad + CAPTCHA | Proteccion abuse | Bajo |
+| 7 | Deploy final | Todo en produccion | Bajo |
+
+---
+
+*Creado: 2026-03-11*
+*Proyecto: aimily by StudioNN Agency S.L.*
