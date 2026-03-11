@@ -1,6 +1,7 @@
 'use client';
 
 import { WizardLayout } from '@/components/wizard/WizardLayout';
+import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import type { TimelineMilestone } from '@/types/timeline';
 
 interface CollectionHubShellProps {
@@ -19,13 +20,15 @@ export function CollectionHubShell({
   milestones,
 }: CollectionHubShellProps) {
   return (
-    <WizardLayout
-      collectionId={collectionId}
-      collectionName={collectionName}
-      season={season}
-      milestones={milestones}
-    >
-      {children}
-    </WizardLayout>
+    <SubscriptionGate>
+      <WizardLayout
+        collectionId={collectionId}
+        collectionName={collectionName}
+        season={season}
+        milestones={milestones}
+      >
+        {children}
+      </WizardLayout>
+    </SubscriptionGate>
   );
 }

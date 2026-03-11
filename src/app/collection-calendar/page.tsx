@@ -8,6 +8,7 @@ import { CollectionTimeline, TimelineMilestone } from '@/types/timeline';
 import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight, Download, Cloud } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import SubscriptionGate from '@/components/billing/SubscriptionGate';
 
 const STORAGE_KEY = 'aimily_collection_timelines';
 
@@ -225,6 +226,7 @@ export default function CollectionCalendarPage() {
   }
 
   return (
+    <SubscriptionGate>
     <div className="min-h-screen bg-crema">
       <Navbar />
       <div className="pt-24 pb-8 px-4 max-w-[1600px] mx-auto">
@@ -460,5 +462,6 @@ export default function CollectionCalendarPage() {
         </div>
       </div>
     </div>
+    </SubscriptionGate>
   );
 }

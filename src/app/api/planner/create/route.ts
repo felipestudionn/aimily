@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createDefaultTimeline } from '@/lib/timeline-template';
+import { ADMIN_EMAILS, getPlanLimits, PlanId } from '@/lib/stripe';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,44 @@ export async function POST(req: NextRequest) {
         { error: 'Missing required fields' },
         { status: 400 },
       );
+    }
+
+    // Check collection limit
+    if (user_id) {
+      const { data: sub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('plan, status, trial_ends_at, is_admin')
+        .eq('user_id', user_id)
+        .single();
+
+      const isAdmin = sub?.is_admin || false;
+
+      if (!isAdmin) {
+        // Trial expiration check
+        if (sub?.plan === 'trial' && sub?.trial_ends_at && new Date(sub.trial_ends_at) < new Date()) {
+          return NextResponse.json(
+            { error: 'Your trial has expired. Choose a plan to create collections.' },
+            { status: 403 }
+          );
+        }
+
+        const plan = (sub?.plan || 'trial') as PlanId;
+        const limits = getPlanLimits(plan);
+
+        if (limits.collections !== -1) {
+          const { count } = await supabaseAdmin
+            .from('collection_plans')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user_id);
+
+          if ((count || 0) >= limits.collections) {
+            return NextResponse.json(
+              { error: `Your ${plan} plan allows ${limits.collections} collection${(limits.collections as number) === 1 ? '' : 's'}. Upgrade to create more.` },
+              { status: 403 }
+            );
+          }
+        }
+      }
     }
 
     const { data, error } = await supabaseAdmin

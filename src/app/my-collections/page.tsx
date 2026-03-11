@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import {
   FolderOpen,
   Plus,
@@ -215,6 +216,7 @@ export default function MyCollectionsPage() {
   }
 
   return (
+    <SubscriptionGate>
     <div className="min-h-screen bg-crema">
       <Navbar />
 
@@ -435,5 +437,6 @@ export default function MyCollectionsPage() {
         </div>
       </main>
     </div>
+    </SubscriptionGate>
   );
 }

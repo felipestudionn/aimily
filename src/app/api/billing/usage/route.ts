@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { PLANS, PlanId } from '@/lib/stripe';
+import { PLANS, PlanId, ADMIN_EMAILS } from '@/lib/stripe';
 
 // Increment AI usage count and check limits
 export async function POST() {
@@ -12,12 +12,32 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Admin bypass
+    if (ADMIN_EMAILS.includes(user.email || '')) {
+      return NextResponse.json({ allowed: true, current: 0, limit: -1, plan: 'enterprise' });
+    }
+
     // Get user plan
     const { data: sub } = await supabaseAdmin
       .from('subscriptions')
-      .select('plan')
+      .select('plan, is_admin, status, trial_ends_at')
       .eq('user_id', user.id)
       .single();
+
+    // Admin flag bypass
+    if (sub?.is_admin) {
+      return NextResponse.json({ allowed: true, current: 0, limit: -1, plan: 'enterprise' });
+    }
+
+    // Trial expiration check
+    if (sub?.plan === 'trial' && sub?.trial_ends_at && new Date(sub.trial_ends_at) < new Date()) {
+      return NextResponse.json({ allowed: false, current: 0, limit: 0, plan: 'trial', reason: 'trial_expired' }, { status: 403 });
+    }
+
+    // Subscription status check
+    if (sub?.status === 'canceled' || sub?.status === 'unpaid') {
+      return NextResponse.json({ allowed: false, current: 0, limit: 0, plan: sub.plan, reason: 'subscription_inactive' }, { status: 403 });
+    }
 
     const plan = (sub?.plan || 'trial') as PlanId;
     const limit = PLANS[plan].limits.aiGenerations;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { PLANS, PlanId } from '@/lib/stripe';
+import { PLANS, PlanId, ADMIN_EMAILS } from '@/lib/stripe';
 
 export async function GET() {
   try {
@@ -18,7 +18,9 @@ export async function GET() {
       .eq('user_id', user.id)
       .single();
 
-    const plan = (sub?.plan || 'trial') as PlanId;
+    // Admin bypass — always return enterprise
+    const isAdmin = sub?.is_admin || ADMIN_EMAILS.includes(user.email || '');
+    const plan = isAdmin ? 'enterprise' : ((sub?.plan || 'trial') as PlanId);
     const limits = PLANS[plan].limits;
 
     // Get current month AI usage
@@ -34,10 +36,12 @@ export async function GET() {
 
     return NextResponse.json({
       plan,
-      status: sub?.status || 'active',
+      status: isAdmin ? 'active' : (sub?.status || 'active'),
       currentPeriodEnd: sub?.current_period_end,
       cancelAtPeriodEnd: sub?.cancel_at_period_end || false,
       limits,
+      trialEndsAt: sub?.trial_ends_at || null,
+      isAdmin,
       usage: {
         aiGenerations: usage?.generation_count || 0,
         month,

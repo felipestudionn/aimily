@@ -4,6 +4,7 @@ import {
   COMMENT_PROPOSAL_PROMPT,
   buildCommentUserPrompt,
 } from '@/lib/prompts/sketch-generation';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -30,6 +31,12 @@ interface RequestBody {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
+    const usage = await checkAIUsage(user.id, user.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
+
     const body: RequestBody = await req.json();
 
     if (!body.conceptDescription) {

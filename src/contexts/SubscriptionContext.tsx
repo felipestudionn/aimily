@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { createClient } from '@/lib/supabase/client';
 
@@ -31,6 +31,8 @@ interface SubscriptionData {
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   limits: PlanLimits;
+  trialEndsAt: string | null;
+  isAdmin: boolean;
   usage: {
     aiGenerations: number;
     month: string;
@@ -45,6 +47,9 @@ interface SubscriptionContextType {
   isEnterprise: boolean;
   isPaid: boolean;
   isTrial: boolean;
+  isTrialExpired: boolean;
+  isAdmin: boolean;
+  trialDaysLeft: number | null;
   canUseAI: boolean;
   aiUsagePercent: number;
   refresh: () => Promise<void>;
@@ -54,23 +59,32 @@ interface SubscriptionContextType {
 }
 
 // Trial defaults — full access for 14 days
-const TRIAL_LIMITS: PlanLimits = {
-  collections: -1,
-  aiGenerations: 250,
-  users: 10,
-  exportEnabled: true,
-  trendsEnabled: true,
-  trendAlertsEnabled: true,
-  goToMarketEnabled: true,
-  aiModelsEnabled: true,
-  aiVideoEnabled: true,
-  collaborationEnabled: true,
-  rolesEnabled: true,
-  multiBrandEnabled: false,
-  lookbookEnabled: true,
-  techPackPdfEnabled: true,
-  ssoEnabled: false,
-  apiAccessEnabled: false,
+const TRIAL_DEFAULTS: SubscriptionData = {
+  plan: 'trial',
+  status: 'active',
+  currentPeriodEnd: null,
+  cancelAtPeriodEnd: false,
+  limits: {
+    collections: -1,
+    aiGenerations: 250,
+    users: 10,
+    exportEnabled: true,
+    trendsEnabled: true,
+    trendAlertsEnabled: true,
+    goToMarketEnabled: true,
+    aiModelsEnabled: true,
+    aiVideoEnabled: true,
+    collaborationEnabled: true,
+    rolesEnabled: true,
+    multiBrandEnabled: false,
+    lookbookEnabled: true,
+    techPackPdfEnabled: true,
+    ssoEnabled: false,
+    apiAccessEnabled: false,
+  },
+  trialEndsAt: null,
+  isAdmin: false,
+  usage: { aiGenerations: 0, month: '' },
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -83,14 +97,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const fetchSubscription = useCallback(async () => {
     if (!user) {
-      setSubscription({
-        plan: 'trial',
-        status: 'active',
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-        limits: TRIAL_LIMITS,
-        usage: { aiGenerations: 0, month: '' },
-      });
+      setSubscription(TRIAL_DEFAULTS);
       setLoading(false);
       return;
     }
@@ -102,25 +109,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         const data = await res.json();
         setSubscription(data);
       } else {
-        // No subscription yet — default to trial
-        setSubscription({
-          plan: 'trial',
-          status: 'active',
-          currentPeriodEnd: null,
-          cancelAtPeriodEnd: false,
-          limits: TRIAL_LIMITS,
-          usage: { aiGenerations: 0, month: '' },
-        });
+        setSubscription(TRIAL_DEFAULTS);
       }
     } catch {
-      setSubscription({
-        plan: 'trial',
-        status: 'active',
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-        limits: TRIAL_LIMITS,
-        usage: { aiGenerations: 0, month: '' },
-      });
+      setSubscription(TRIAL_DEFAULTS);
     } finally {
       setLoading(false);
     }
@@ -150,16 +142,27 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, [user?.id, fetchSubscription]);
 
   const plan = subscription?.plan || 'trial';
+  const isAdmin = subscription?.isAdmin || false;
   const isStarter = plan === 'starter' || plan === 'professional' || plan === 'enterprise';
   const isProfessional = plan === 'professional' || plan === 'enterprise';
   const isEnterprise = plan === 'enterprise';
   const isPaid = plan !== 'trial';
   const isTrial = plan === 'trial';
 
-  const limits = subscription?.limits || TRIAL_LIMITS;
+  const isTrialExpired = useMemo(() => {
+    if (isAdmin) return false;
+    return isTrial && !!subscription?.trialEndsAt && new Date(subscription.trialEndsAt) < new Date();
+  }, [isTrial, subscription?.trialEndsAt, isAdmin]);
+
+  const trialDaysLeft = useMemo(() => {
+    if (!isTrial || !subscription?.trialEndsAt || isAdmin) return null;
+    return Math.max(0, Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+  }, [isTrial, subscription?.trialEndsAt, isAdmin]);
+
+  const limits = subscription?.limits || TRIAL_DEFAULTS.limits;
   const aiUsed = subscription?.usage?.aiGenerations || 0;
   const aiLimit = limits.aiGenerations;
-  const canUseAI = aiLimit === -1 || aiUsed < aiLimit;
+  const canUseAI = isAdmin || aiLimit === -1 || aiUsed < aiLimit;
   const aiUsagePercent = aiLimit === -1 ? 0 : Math.round((aiUsed / aiLimit) * 100);
 
   const checkoutPlan = async (targetPlan: PlanId, annual?: boolean) => {
@@ -222,6 +225,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       isEnterprise,
       isPaid,
       isTrial,
+      isTrialExpired,
+      isAdmin,
+      trialDaysLeft,
       canUseAI,
       aiUsagePercent,
       refresh: fetchSubscription,

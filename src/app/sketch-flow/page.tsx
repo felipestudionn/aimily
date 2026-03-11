@@ -19,6 +19,7 @@ import {
   SuggestedMeasurements,
   FlowStep,
 } from '@/types/tech-pack';
+import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import {
   PenTool,
   Loader2,
@@ -219,6 +220,7 @@ export default function SketchFlowPage() {
   const isGenerating = flowStep === 'generating-sketches' || flowStep === 'generating-comments';
 
   return (
+    <SubscriptionGate>
     <div className="min-h-screen bg-[#fff6dc]">
       <Navbar />
       <main className="pt-28 pb-16 px-4 md:px-6">
@@ -435,5 +437,6 @@ export default function SketchFlowPage() {
         </div>
       </main>
     </div>
+    </SubscriptionGate>
   );
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = 'models/gemini-2.5-flash';
@@ -56,6 +57,12 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+
+  const { user, error: authError } = await getAuthenticatedUser();
+  if (authError) return authError;
+
+  const usage = await checkAIUsage(user.id, user.email!);
+  if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
     const url = new URL(

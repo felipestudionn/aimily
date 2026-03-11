@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -171,6 +172,12 @@ function parseJsonFromText(text: string): unknown {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
+    const usage = await checkAIUsage(user.id, user.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
+
     const body: GenerateRequest = await req.json();
     const { mode, brandContext } = body;
 

@@ -7,6 +7,7 @@ import { TrendingUp, Filter, Instagram, Search, ChevronRight, MessageSquare, Hea
 import { Badge } from "@/components/ui/badge";
 import { TrendEvolutionChart } from "@/components/charts/trend-evolution-chart";
 import Link from "next/link";
+import SubscriptionGate from '@/components/billing/SubscriptionGate';
 
 export default function TrendsPage() {
   // State for active filters
@@ -235,6 +236,7 @@ export default function TrendsPage() {
   };
 
   return (
+    <SubscriptionGate>
     <div className="flex flex-col gap-10 px-4 md:px-6 py-6 md:py-10 max-w-7xl mx-auto">
       <div className="space-y-4">
         <h1 className="text-3xl font-bold tracking-tight mb-3">Trend Analysis</h1>
@@ -446,7 +448,7 @@ export default function TrendsPage() {
         <div className="text-center py-12">
           <h3 className="text-lg font-medium mb-2">No trends match your filters</h3>
           <p className="text-muted-foreground mb-4">Try adjusting your filter criteria to see more results.</p>
-          <Button 
+          <Button
             onClick={() => setActiveFilters({
               platforms: [],
               sentiment: [],
@@ -458,5 +460,6 @@ export default function TrendsPage() {
         </div>
       )}
     </div>
+    </SubscriptionGate>
   );
 }

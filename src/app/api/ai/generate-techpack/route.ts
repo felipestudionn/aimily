@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { SKETCH_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/prompts/sketch-generation';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -135,6 +136,12 @@ async function generateWithGemini(body: RequestBody) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
+    const usage = await checkAIUsage(user.id, user.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
+
     const body: RequestBody = await req.json();
 
     // Validation

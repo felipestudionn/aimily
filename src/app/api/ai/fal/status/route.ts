@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
+import { getAuthenticatedUser } from '@/lib/api-auth';
 
 fal.config({ credentials: process.env.FAL_KEY || '' });
 
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const requestId = req.nextUrl.searchParams.get('requestId');
     const endpointId = req.nextUrl.searchParams.get('endpointId');
 

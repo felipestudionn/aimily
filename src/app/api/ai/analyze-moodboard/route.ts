@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // Use stable Gemini 2.5 Flash for vision (supports images, video, audio)
@@ -97,6 +98,12 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
+
+  const { user, error: authError } = await getAuthenticatedUser();
+  if (authError) return authError;
+
+  const usage = await checkAIUsage(user.id, user.email!);
+  if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
     const body = await req.json();

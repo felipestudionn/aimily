@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 
 fal.config({ credentials: process.env.FAL_KEY || '' });
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
+    const usage = await checkAIUsage(user.id, user.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
+
     const { garment_image_url, model_image_url, category } = await req.json();
 
     if (!garment_image_url) {

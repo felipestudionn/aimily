@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -91,6 +92,12 @@ async function generateSketchWithOpenAI(
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
+    const usage = await checkAIUsage(user.id, user.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
+
     const body: RequestBody = await req.json();
 
     // Validation

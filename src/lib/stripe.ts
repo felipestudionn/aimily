@@ -12,6 +12,13 @@ export function getStripeServer(): Stripe {
   return _stripe;
 }
 
+// Admin bypass — owner accounts with permanent enterprise access
+export const ADMIN_EMAILS = ['felipe.studionn@gmail.com'];
+
+export function isAdminUser(email: string | undefined): boolean {
+  return ADMIN_EMAILS.includes(email || '');
+}
+
 // Convenience alias for route handlers
 export const stripe = new Proxy({} as Stripe, {
   get(_, prop) {

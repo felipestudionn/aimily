@@ -12,6 +12,7 @@ import {
   getMilestoneDate,
   getMilestoneEndDate,
 } from '@/lib/timeline-template';
+import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import {
   ArrowRight,
   ArrowLeft,
@@ -611,6 +612,7 @@ export default function NewCollectionPage() {
      ═══════════════════════════════════════════════════════════ */
 
   return (
+    <SubscriptionGate>
     <div className="min-h-screen bg-crema flex flex-col">
       {/* Top bar */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-crema">
@@ -681,5 +683,6 @@ export default function NewCollectionPage() {
       {/* Auth modal */}
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} onSuccess={handleCreate} defaultMode="signup" />
     </div>
+    </SubscriptionGate>
   );
 }
