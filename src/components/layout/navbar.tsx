@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, User, LogOut, FolderOpen } from "lucide-react";
+import { Sparkles, User, LogOut, FolderOpen, Zap } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -46,6 +46,13 @@ export function Navbar() {
                 >
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   New Collection
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
+                >
+                  <Zap className="mr-1.5 h-3.5 w-3.5" />
+                  Pricing
                 </Link>
                 <NotificationBell />
                 {/* User Profile */}
@@ -125,6 +132,9 @@ export function Navbar() {
                 </div>
                 <Link href="/my-collections" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
                   <FolderOpen className="h-4 w-4" /> My Collections
+                </Link>
+                <Link href="/pricing" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
+                  <Zap className="h-4 w-4" /> Pricing
                 </Link>
               </>
             ) : (

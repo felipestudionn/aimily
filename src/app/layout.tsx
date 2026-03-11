@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '@/styles/globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 
 export const metadata: Metadata = {
@@ -33,8 +34,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased">
         <AuthProvider>
-          <ServiceWorkerRegistrar />
-          <main className="relative min-h-screen">{children}</main>
+          <SubscriptionProvider>
+            <ServiceWorkerRegistrar />
+            <main className="relative min-h-screen">{children}</main>
+          </SubscriptionProvider>
         </AuthProvider>
       </body>
     </html>
