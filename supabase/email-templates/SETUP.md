@@ -10,15 +10,7 @@
 ## Step 2: Configure SMTP in Supabase
 Dashboard > Authentication > SMTP Settings > Enable Custom SMTP
 
-| Field | Value |
-|---|---|
-| Host | `smtp.resend.com` |
-| Port | `465` |
-| Username | `resend` |
-| Password | _(your Resend API key)_ |
-| Sender name | `aimily` |
-| Sender email | `noreply@aimily.app` |
-| Minimum interval | `30` seconds |
+SMTP is already configured via Supabase Management API. See `.env.local` for credentials.
 
 ## Step 3: Paste Email Templates
 Dashboard > Authentication > Email Templates

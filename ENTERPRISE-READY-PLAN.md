@@ -127,12 +127,7 @@ Las 26 tablas referenciadas en codigo son:
 - [x] Crear cuenta en resend.com
 - [x] Verificar dominio `aimily.app` (DNS: SPF, DKIM, DMARC) — IONOS, verified
 - [x] Obtener SMTP credentials — API key creada
-- [x] Configurar en Supabase via Management API:
-  - Host: `smtp.resend.com`
-  - Port: `465` (SSL)
-  - Username: `resend`
-  - Password: API key de Resend
-  - Sender: `aimily <noreply@aimily.app>`
+- [x] Configurar en Supabase via Management API (credentials in `.env.local`)
 
 ### 3.2 Personalizar Email Templates
 Templates HTML creados en `supabase/email-templates/` — pegar en Supabase Dashboard > Authentication > Email Templates:
