@@ -26,7 +26,7 @@ export function WizardLayout({
         collectionName={collectionName}
         season={season}
       />
-      <main className="ml-72 pt-28 pb-16 px-6 transition-all duration-300 min-h-screen">
+      <main className="ml-64 pt-14 min-h-screen transition-all duration-300">
         {children}
       </main>
     </TimelineProvider>

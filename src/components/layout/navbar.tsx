@@ -8,7 +8,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
-export function Navbar() {
+interface NavbarProps {
+  /** Slim mode for workspace context — logo in corner, minimal actions */
+  variant?: 'default' | 'workspace';
+}
+
+export function Navbar({ variant = 'default' }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -18,6 +23,44 @@ export function Navbar() {
     setAuthMode(mode);
     setShowAuthModal(true);
   };
+
+  // Slim workspace navbar — just logo + user avatar
+  if (variant === 'workspace') {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b border-black/[0.04]">
+        <div className="flex h-14 items-center justify-between px-5">
+          <Link href="/my-collections" className="flex items-center">
+            <Image
+              src="/images/aimily-logo-black.png"
+              alt="aimily"
+              width={774}
+              height={96}
+              className="object-contain h-5 w-auto opacity-40 hover:opacity-70 transition-opacity"
+              priority
+              unoptimized
+            />
+          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            {user && (
+              <Link
+                href="/account"
+                className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:opacity-80 transition-opacity"
+                title="Account"
+              >
+                {user.email?.charAt(0).toUpperCase()}
+              </Link>
+            )}
+          </div>
+        </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          defaultMode={authMode}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 animate-fade-in">

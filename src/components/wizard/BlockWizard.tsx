@@ -45,17 +45,22 @@ export function BlockWizard({
   if (!step) return null;
 
   return (
-    <div className="min-h-screen bg-crema flex flex-col">
+    <div className="flex flex-col min-h-[calc(100vh-3.5rem)] bg-white">
       {/* Header */}
       {header}
 
-      {/* Progress bar */}
+      {/* Progress bar — thin, top of content area */}
       {showProgress && (
-        <div className="fixed top-20 left-0 right-0 z-40">
-          <div className="max-w-5xl mx-auto px-6">
-            <div className="h-px bg-gris/20">
+        <div className="px-8 pt-6">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[9px] tracking-[0.15em] uppercase text-texto/20">
+                Step {currentStep + 1} of {steps.length}
+              </span>
+            </div>
+            <div className="h-[1px] bg-black/[0.06]">
               <div
-                className="h-px bg-carbon transition-all duration-700 ease-out"
+                className="h-[1px] bg-texto/40 transition-all duration-700 ease-out"
                 style={{
                   width: `${((currentStep + 1) / steps.length) * 100}%`,
                 }}
@@ -65,23 +70,23 @@ export function BlockWizard({
         </div>
       )}
 
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-6 pt-28 pb-32">
+      {/* Content — centered vertically in remaining space */}
+      <div className="flex-1 flex items-center justify-center px-8 py-12">
         <div className="w-full max-w-2xl" key={step.id}>
           {step.render(next)}
         </div>
       </div>
 
-      {/* Footer nav */}
+      {/* Footer nav — subtle, bottom */}
       {!step.autoAdvance && (
-        <div className="fixed bottom-0 left-0 right-0 bg-crema pb-10 pt-6">
-          <div className="max-w-2xl mx-auto px-6 flex items-center justify-between">
+        <div className="border-t border-black/[0.04] bg-white py-5">
+          <div className="max-w-2xl mx-auto px-8 flex items-center justify-between">
             {currentStep > 0 ? (
               <button
                 onClick={back}
-                className="inline-flex items-center gap-2 text-sm text-texto/30 hover:text-texto transition-colors"
+                className="inline-flex items-center gap-2 text-[11px] tracking-[0.08em] uppercase text-texto/25 hover:text-texto/50 transition-colors"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-3.5 w-3.5" />
                 Back
               </button>
             ) : (
@@ -91,10 +96,10 @@ export function BlockWizard({
             <button
               onClick={next}
               disabled={step.canAdvance === false}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-carbon text-crema text-sm font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-20"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-15"
             >
               Next
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

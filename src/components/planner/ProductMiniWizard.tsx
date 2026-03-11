@@ -1015,13 +1015,6 @@ export function ProductMiniWizard({ plan, onComplete }: ProductMiniWizardProps) 
     <BlockWizard
       steps={steps}
       onComplete={onComplete}
-      header={
-        <div className="fixed top-20 right-6 z-50">
-          <span className="text-[10px] tracking-[0.15em] uppercase text-texto/30">
-            Product Setup
-          </span>
-        </div>
-      }
     />
   );
 }
