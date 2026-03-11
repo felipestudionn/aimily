@@ -246,7 +246,7 @@ En Supabase Dashboard > Authentication > URL Configuration:
 > Desplegar todo a produccion
 
 ### 7.1 Variables de entorno en Vercel
-Subir TODAS las env vars necesarias:
+Auditadas contra el codigo fuente — 21 env vars requeridas:
 ```
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL
@@ -257,21 +257,19 @@ SUPABASE_SERVICE_ROLE_KEY
 STRIPE_SECRET_KEY
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 STRIPE_WEBHOOK_SECRET
-STRIPE_PRO_MONTHLY_PRICE_ID
-STRIPE_PRO_ANNUAL_PRICE_ID
-STRIPE_BUSINESS_MONTHLY_PRICE_ID
-STRIPE_BUSINESS_ANNUAL_PRICE_ID
-STRIPE_ENTERPRISE_MONTHLY_PRICE_ID
-STRIPE_ENTERPRISE_ANNUAL_PRICE_ID
+STRIPE_STARTER_MONTHLY_PRICE_ID
+STRIPE_STARTER_ANNUAL_PRICE_ID
+STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID
+STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID
 
 # Cloudflare Turnstile (CAPTCHA)
 NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 # AI APIs
 GEMINI_API_KEY
+GEMINI_MODEL (opcional, default en codigo)
 ANTHROPIC_API_KEY
 OPENAI_API_KEY
-HUGGING_FACE_ACCESS_TOKEN
 FAL_KEY
 
 # Pinterest
@@ -286,8 +284,16 @@ APIFY_API_TOKEN
 CRON_SECRET
 ```
 
-### 7.2 Verificar deploy
-- [ ] Build exitoso en Vercel
+### 7.2 Env vars auditadas
+- [x] Comparadas env vars del codigo (23) vs `.env.local` (24) — todas presentes
+- [x] Corregidos price IDs en plan: `STRIPE_STARTER_*` y `STRIPE_PROFESSIONAL_*` (no Pro/Business/Enterprise)
+- [x] Eliminado `HUGGING_FACE_ACCESS_TOKEN` del plan (no se usa en codigo)
+- [x] Añadido `GEMINI_MODEL` al plan (usado en 7+ API routes)
+- [ ] **MANUAL**: Subir env vars a Vercel Dashboard > Settings > Environment Variables
+- [ ] **MANUAL**: Verificar que `NEXT_PUBLIC_PINTEREST_REDIRECT_URI` apunta a `aimily.app` (no localhost)
+
+### 7.3 Verificar deploy
+- [ ] Push a main y verificar build exitoso en Vercel
 - [ ] Auth funciona: signup, signin, signout, password reset
 - [ ] Stripe checkout funciona en test mode
 - [ ] Webhook recibe eventos correctamente
