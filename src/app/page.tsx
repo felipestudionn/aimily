@@ -72,6 +72,7 @@ export default function LandingPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [annual, setAnnual] = useState(true);
+  const [mobileNav, setMobileNav] = useState(false);
 
   // If already authenticated, redirect to collections
   if (user) {
@@ -98,32 +99,85 @@ export default function LandingPage() {
         />
 
         {/* Discrete top navigation */}
-        <nav className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 md:px-10 py-5 animate-fade-in-up">
-          <div className="flex items-center gap-6">
+        <nav className="absolute top-0 left-0 right-0 z-20 px-6 md:px-10 py-5 animate-fade-in-up">
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Discover
+              </Link>
+              <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Contact
+              </Link>
+              <a href="#pricing" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Pricing
+              </a>
+            </div>
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => openAuth('signin')}
+                className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
+              >
+                Log in
+              </button>
+              <button
+                onClick={() => openAuth('signup')}
+                className="bg-crema text-carbon text-xs font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors"
+              >
+                Start free trial
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile nav */}
+          <div className="md:hidden flex items-center justify-between">
             <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
               Discover
             </Link>
-            <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              Contact
-            </Link>
-            <a href="#pricing" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              Pricing
-            </a>
-          </div>
-          <div className="flex items-center gap-6">
             <button
-              onClick={() => openAuth('signin')}
-              className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
+              onClick={() => setMobileNav(!mobileNav)}
+              className="text-gris/60 hover:text-crema transition-colors p-1"
+              aria-label="Toggle menu"
             >
-              Log in
-            </button>
-            <button
-              onClick={() => openAuth('signup')}
-              className="bg-crema text-carbon text-xs font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors"
-            >
-              Start free trial
+              {mobileNav ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
+                </svg>
+              )}
             </button>
           </div>
+
+          {/* Mobile dropdown */}
+          {mobileNav && (
+            <div className="md:hidden mt-4 bg-carbon/95 backdrop-blur-sm border border-gris/20 rounded-xl p-5 flex flex-col gap-4">
+              <Link href="/discover" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Discover
+              </Link>
+              <Link href="/contact" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Contact
+              </Link>
+              <a href="#pricing" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Pricing
+              </a>
+              <hr className="border-gris/20" />
+              <button
+                onClick={() => { openAuth('signin'); setMobileNav(false); }}
+                className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors text-left"
+              >
+                Log in
+              </button>
+              <button
+                onClick={() => { openAuth('signup'); setMobileNav(false); }}
+                className="bg-crema text-carbon text-sm font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors text-center"
+              >
+                Start free trial
+              </button>
+            </div>
+          )}
         </nav>
 
         {/* Content */}
@@ -164,9 +218,8 @@ export default function LandingPage() {
         {/* Scroll indicator */}
         <a
           href="#pricing"
-          className="absolute bottom-10 z-20 flex flex-col items-center gap-2 text-gris/30 hover:text-gris/60 transition-colors animate-bounce"
+          className="absolute bottom-6 md:bottom-10 z-20 flex flex-col items-center gap-1 text-gris/20 hover:text-gris/50 transition-colors animate-bounce"
         >
-          <span className="text-[10px] tracking-widest uppercase font-medium">Pricing</span>
           <ChevronDown className="w-4 h-4" />
         </a>
       </div>
