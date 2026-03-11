@@ -96,27 +96,27 @@ Las 26 tablas referenciadas en codigo son:
 > Password reset, email confirmation, auth callback
 
 ### 2.1 Auth callback route (PKCE)
-- [ ] `src/app/auth/callback/route.ts` — Intercambia code por sesion
-- [ ] Maneja: signup confirmation, password reset, OAuth callback, magic link
-- [ ] Redirige segun `type` param: signup → `/my-collections`, recovery → `/auth/reset-password`
+- [x] `src/app/auth/callback/route.ts` — Intercambia code por sesion
+- [x] Maneja: signup confirmation, password reset, OAuth callback, magic link
+- [x] Redirige segun `type` param: signup → `/my-collections`, recovery → `/auth/reset-password`
 
 ### 2.2 Password Reset
-- [ ] `src/app/auth/forgot-password/page.tsx` — Formulario "introduce tu email"
-- [ ] `src/app/auth/reset-password/page.tsx` — Formulario "nueva contrasena"
-- [ ] Anadir link "Forgot password?" en AuthModal
-- [ ] Flow: email → click link → callback route → reset-password page → updateUser()
+- [x] `src/app/auth/forgot-password/page.tsx` — Formulario "introduce tu email"
+- [x] `src/app/auth/reset-password/page.tsx` — Formulario "nueva contrasena"
+- [x] Anadir link "Forgot password?" en AuthModal
+- [x] Flow: email → click link → callback route → reset-password page → updateUser()
 
 ### 2.3 Email Confirmation
-- [ ] `src/app/auth/confirm/page.tsx` — Pagina "verificando tu email..."
+- [x] `src/app/auth/confirm/page.tsx` — Pagina "verificando tu email..."
 - [ ] Activar "Confirm email" en Supabase Dashboard
-- [ ] Actualizar AuthModal signup flow: mostrar "Revisa tu email" despues de registrarse
-- [ ] Manejar reenvio de email de confirmacion
+- [x] Actualizar AuthModal signup flow: mostrar "Revisa tu email" despues de registrarse
+- [x] Manejar reenvio de email de confirmacion
 
 ### 2.4 Actualizar AuthModal
-- [ ] Anadir link "Forgot password?" que abre `/auth/forgot-password`
-- [ ] Mostrar mensaje post-signup: "Check your email to confirm your account"
-- [ ] Mejorar mensajes de error (email ya existe, password debil, etc.)
-- [ ] Validacion de password: minimo 8 chars, al menos 1 numero
+- [x] Anadir link "Forgot password?" que abre `/auth/forgot-password`
+- [x] Mostrar mensaje post-signup: "Check your email to confirm your account"
+- [x] Mejorar mensajes de error (email ya existe, password debil, etc.)
+- [x] Validacion de password: minimo 8 chars, al menos 1 numero
 
 ---
 

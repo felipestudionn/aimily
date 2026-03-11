@@ -10,6 +10,10 @@ const publicRoutes = [
   '/terms',
   '/privacy',
   '/cookies',
+  '/auth/callback',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/confirm',
 ];
 
 // Routes that should be completely skipped by middleware

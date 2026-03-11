@@ -49,8 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        // Skip email confirmation for now
-        emailRedirectTo: undefined,
+        emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
       },
     });
     return { error: error as Error | null };

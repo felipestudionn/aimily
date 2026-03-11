@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Loader2, Mail, Lock } from 'lucide-react';
+import { X, Loader2, Mail, Lock, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AuthModalProps {
@@ -11,17 +12,45 @@ interface AuthModalProps {
   defaultMode?: 'signin' | 'signup';
 }
 
+function getErrorMessage(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes('user already registered') || lower.includes('already been registered')) {
+    return 'An account with this email already exists. Try signing in instead.';
+  }
+  if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
+    return 'Invalid email or password. Please try again.';
+  }
+  if (lower.includes('email not confirmed')) {
+    return 'Please confirm your email before signing in. Check your inbox.';
+  }
+  if (lower.includes('password') && lower.includes('weak')) {
+    return 'Password is too weak. Use at least 8 characters with a number.';
+  }
+  if (lower.includes('rate limit') || lower.includes('too many requests')) {
+    return 'Too many attempts. Please wait a moment and try again.';
+  }
+  return message;
+}
+
+function validatePassword(password: string): string | null {
+  if (password.length < 8) return 'Password must be at least 8 characters';
+  if (!/\d/.test(password)) return 'Password must contain at least 1 number';
+  return null;
+}
+
 export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }: AuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const { signIn, signUp } = useAuth();
 
   // Reset mode when defaultMode changes
   React.useEffect(() => {
     setMode(defaultMode);
+    setSignupSuccess(false);
   }, [defaultMode]);
 
   if (!isOpen) return null;
@@ -33,23 +62,25 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
 
     try {
       if (mode === 'signup') {
+        // Validate password before submitting
+        const validationError = validatePassword(password);
+        if (validationError) {
+          setError(validationError);
+          setLoading(false);
+          return;
+        }
+
         const { error } = await signUp(email, password);
         if (error) {
-          setError(error.message);
+          setError(getErrorMessage(error.message));
         } else {
-          const { error: signInError } = await signIn(email, password);
-          if (signInError) {
-            setError('Account created! Please sign in.');
-            setMode('signin');
-          } else {
-            onSuccess?.();
-            onClose();
-          }
+          // Show "check your email" message instead of auto-login
+          setSignupSuccess(true);
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
-          setError(error.message);
+          setError(getErrorMessage(error.message));
         } else {
           onSuccess?.();
           onClose();
@@ -61,6 +92,45 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
       setLoading(false);
     }
   };
+
+  // Post-signup success view
+  if (signupSuccess) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          onClick={onClose}
+        />
+        <div className="relative bg-carbon w-full max-w-md mx-auto overflow-hidden border border-gris/20">
+          <div className="px-8 py-8 text-center space-y-4">
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 text-gris hover:text-crema transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+            <h2 className="text-2xl font-light text-crema tracking-tight">
+              Check your email
+            </h2>
+            <p className="text-sm text-gris/70">
+              We sent a confirmation link to <strong className="text-crema">{email}</strong>.
+              Click the link to activate your account.
+            </p>
+            <p className="text-xs text-gris/50">
+              Didn&apos;t receive it? Check your spam folder or try signing up again.
+            </p>
+            <button
+              onClick={onClose}
+              className="w-full py-3 bg-crema text-carbon text-sm font-medium tracking-[0.1em] uppercase hover:bg-crema/90 transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -129,14 +199,27 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full pl-10 pr-4 py-3 bg-transparent border border-gris/30 text-crema text-sm placeholder:text-gris/40 focus:outline-none focus:border-crema/50 transition-colors"
-                minLength={6}
+                minLength={mode === 'signup' ? 8 : 6}
                 required
               />
             </div>
             {mode === 'signup' && (
-              <p className="text-xs text-gris/50">Minimum 6 characters</p>
+              <p className="text-xs text-gris/50">Minimum 8 characters, at least 1 number</p>
             )}
           </div>
+
+          {/* Forgot password link */}
+          {mode === 'signin' && (
+            <div className="text-right -mt-2">
+              <Link
+                href="/auth/forgot-password"
+                onClick={onClose}
+                className="text-xs text-gris/60 hover:text-crema transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          )}
 
           <button
             type="submit"
