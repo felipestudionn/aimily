@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { PHASES, PHASE_ORDER } from '@/lib/timeline-template';
+import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 
@@ -52,7 +53,7 @@ function PhaseCard({
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">{info.icon}</span>
+          <PhaseIcon phase={phase} className="h-5 w-5 text-carbon" />
           <h3 className="font-semibold text-gray-900 text-sm">{info.name}</h3>
         </div>
         <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
