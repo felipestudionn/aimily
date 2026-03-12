@@ -21,7 +21,6 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import type { TimelinePhase } from '@/types/timeline';
 
 /* ═══════════════════════════════════════════════════════════
    DYNAMIC SEASONS — generate from current date + 2 years
@@ -83,61 +82,6 @@ const DISTRIBUTIONS = [
 ];
 
 /* ═══════════════════════════════════════════════════════════
-   PHASE QUESTIONS — category-aware YES/NO
-   YES → mark related milestones as "completed" (already done)
-   NO  → milestones stay "pending" (work to do)
-   ═══════════════════════════════════════════════════════════ */
-
-type CategoryType = 'clothing' | 'footwear' | 'accessories' | 'mixed';
-
-interface PhaseQuestion {
-  id: string;
-  phase: TimelinePhase;
-  getTitle: (category: CategoryType) => string;
-  subtitle?: string;
-  milestones: string[];
-  skipFor?: CategoryType[];
-}
-
-const PHASE_QUESTIONS: PhaseQuestion[] = [
-  // ── Creative & Brand ──
-  { id: 'q-cr-consumer', phase: 'creative', getTitle: () => 'Do you know your target consumer?', subtitle: 'Consumer definition, trends, and creative direction', milestones: ['cr-1', 'cr-2'] },
-  { id: 'q-cr-brand', phase: 'creative', getTitle: () => 'Do you already have a brand?', subtitle: 'Brand naming, logo, visual identity, and guidelines', milestones: ['br-1', 'br-2', 'br-3'] },
-  { id: 'q-cr-packaging', phase: 'creative', getTitle: () => 'Do you have packaging design?', milestones: ['br-4'] },
-
-  // ── Range Planning & Strategy ──
-  { id: 'q-rp-market', phase: 'planning', getTitle: () => 'Do you have a market analysis?', subtitle: 'Consumer, market, and channel strategy', milestones: ['rp-1', 'rp-2'] },
-  { id: 'q-rp-budget', phase: 'planning', getTitle: () => 'Do you have a sales budget?', subtitle: 'Financial framework and sales targets', milestones: ['rp-3'] },
-  { id: 'q-rp-range', phase: 'planning', getTitle: () => 'Do you have a product range plan?', subtitle: 'Range strategy and collection framework', milestones: ['rp-4'] },
-  { id: 'q-rp-skus', phase: 'planning', getTitle: () => 'Do you have SKU definitions?', subtitle: 'Collection planning with specific SKUs defined', milestones: ['rp-5'] },
-  { id: 'q-rp-gtm', phase: 'planning', getTitle: () => 'Do you have a go-to-market strategy?', milestones: ['rp-6'] },
-
-  // ── Design & Development ──
-  { id: 'q-dd-sketches', phase: 'development', getTitle: () => 'Do you have technical sketches?', milestones: ['dd-1'] },
-  { id: 'q-dd-lasts', phase: 'development', getTitle: (cat) => cat === 'footwear' ? 'Do you have lasts/forms defined?' : 'Do you have base patterns/blocks defined?', skipFor: ['accessories'], milestones: ['dd-2'] },
-  { id: 'q-dd-rounds', phase: 'development', getTitle: () => 'Have you completed design rounds?', subtitle: 'Design shots, paper patterns, and iterations', milestones: ['dd-3', 'dd-4', 'dd-5'] },
-  { id: 'q-dd-colorways', phase: 'development', getTitle: () => 'Are colorways developed?', milestones: ['dd-6'] },
-  { id: 'q-dd-protos', phase: 'development', getTitle: (cat) => cat === 'footwear' ? 'Have white protos been developed?' : 'Have first samples/toiles been made?', milestones: ['dd-7', 'dd-8'] },
-  { id: 'q-dd-techsheets', phase: 'development', getTitle: () => 'Are tech sheets complete?', subtitle: 'Rectification and technical sheets finalized', milestones: ['dd-9', 'dd-10'] },
-  { id: 'q-dd-color-samples', phase: 'development', getTitle: () => 'Do you have approved color samples?', milestones: ['dd-11'] },
-  { id: 'q-dd-fitting', phase: 'development', getTitle: () => 'Do you have approved fitting samples?', subtitle: 'Fitting development, confirmation, and collection completion', milestones: ['dd-12', 'dd-13', 'dd-14'] },
-  { id: 'q-dd-production', phase: 'development', getTitle: () => 'Have production orders been placed?', milestones: ['dd-15'] },
-  { id: 'q-dd-prod-underway', phase: 'development', getTitle: () => 'Is production underway?', milestones: ['dd-16'] },
-
-  // ── Marketing & Digital ──
-  { id: 'q-gm-website', phase: 'go_to_market', getTitle: () => 'Do you have a website?', subtitle: 'Website design, development, and e-commerce setup', milestones: ['gm-1', 'gm-2'] },
-  { id: 'q-gm-photography', phase: 'go_to_market', getTitle: () => 'Do you have product photography?', milestones: ['gm-3'] },
-  { id: 'q-gm-copy', phase: 'go_to_market', getTitle: () => 'Do you have your brand copy written?', subtitle: 'Copywriting and brand story', milestones: ['gm-4'] },
-  { id: 'q-gm-lookbook', phase: 'go_to_market', getTitle: () => 'Do you have a lookbook?', milestones: ['gm-5'] },
-  { id: 'q-gm-social', phase: 'go_to_market', getTitle: () => 'Do you have social media set up?', milestones: ['gm-6'] },
-  { id: 'q-gm-calendar', phase: 'go_to_market', getTitle: () => 'Do you have a content calendar?', milestones: ['gm-7'] },
-  { id: 'q-gm-pr', phase: 'go_to_market', getTitle: () => 'Do you have influencer/PR relationships?', milestones: ['gm-8', 'gm-11'] },
-  { id: 'q-gm-email', phase: 'go_to_market', getTitle: () => 'Do you have email marketing set up?', milestones: ['gm-9'] },
-
-  // ── Launch — no questions (always pending) ──
-];
-
-/* ═══════════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════════ */
 
@@ -167,64 +111,25 @@ export default function NewCollectionPage() {
   const [collectionSize, setCollectionSize] = useState('');
   const [distribution, setDistribution] = useState('');
   const [launchDate, setLaunchDate] = useState('');
-
-  // ── Phase question answers ──
-  const [completedMilestones, setCompletedMilestones] = useState<Set<string>>(new Set());
-  const [manualToggles, setManualToggles] = useState<Set<string>>(new Set());
   const [creating, setCreating] = useState(false);
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
 
   // ── Dynamic data ──
   const SEASONS = useMemo(generateSeasons, []);
 
-  // Derive primary category for terminology in phase questions
-  const primaryCategory: CategoryType = useMemo(() => {
+  // Derive primary category for workspace terminology
+  const primaryCategory = useMemo(() => {
     if (categories.has('footwear')) return 'footwear';
     if (categories.has('clothing') || categories.has('denim') || categories.has('swimwear') || categories.has('activewear')) return 'clothing';
     if (categories.size > 0) return 'accessories';
     return 'mixed';
   }, [categories]);
 
-  const filteredQuestions = useMemo(() => {
-    return PHASE_QUESTIONS.filter((q) => {
-      if (q.skipFor?.includes(primaryCategory)) return false;
-      return true;
-    });
-  }, [primaryCategory]);
+  /* Step layout: 0-5 setup, 6 summary = 7 total */
+  const TOTAL_STEPS = 7;
 
-  /* Step layout:
-     0: name | 1: season | 2: category | 3: collection size | 4: distribution | 5: launch date
-     6..6+N-1: phase questions
-     6+N: calendar summary / confirm */
-  const SETUP_STEPS = 6;
-  const QUESTION_STEPS = filteredQuestions.length;
-  const TOTAL_STEPS = SETUP_STEPS + QUESTION_STEPS + 1;
-
-  const next = useCallback(() => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1)), [TOTAL_STEPS]);
+  const next = useCallback(() => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1)), []);
   const back = useCallback(() => setStep((s) => Math.max(s - 1, 0)), []);
-
-  const handleAnswer = useCallback((question: PhaseQuestion, yes: boolean) => {
-    if (yes) {
-      setCompletedMilestones((prev) => {
-        const n = new Set(prev);
-        question.milestones.forEach((m) => n.add(m));
-        return n;
-      });
-    }
-    next();
-  }, [next]);
-
-  const toggleMilestoneSummary = useCallback((id: string) => {
-    setManualToggles((prev) => {
-      const n = new Set(prev);
-      if (n.has(id)) n.delete(id); else n.add(id);
-      return n;
-    });
-  }, []);
-
-  const isMilestoneCompleted = useCallback((id: string) => {
-    return completedMilestones.has(id) !== manualToggles.has(id);
-  }, [completedMilestones, manualToggles]);
 
   const togglePhaseExpand = useCallback((phaseId: string) => {
     setExpandedPhases((prev) => {
@@ -241,9 +146,8 @@ export default function NewCollectionPage() {
     return true;
   }, [step, name, categories.size, launchDate]);
 
-  // Steps 1, 3, 4 are auto-advance (season, size, distribution). Step 2 (category) is now manual.
+  // Steps 1, 3, 4 are auto-advance (season, size, distribution)
   const isAutoAdvanceStep = step === 1 || step === 3 || step === 4;
-  const isQuestionStep = step >= SETUP_STEPS && step < SETUP_STEPS + QUESTION_STEPS;
   const isSummaryStep = step === TOTAL_STEPS - 1;
 
   const earliestDate = useMemo(() => {
@@ -252,14 +156,14 @@ export default function NewCollectionPage() {
     return getMilestoneDate(launchDate, maxWeeks);
   }, [launchDate]);
 
-  /* ── Create collection ── */
+  /* ── Create collection — all milestones start as pending ── */
   const handleCreate = async () => {
     if (!user) { setShowAuth(true); return; }
     setCreating(true);
 
     const milestones = DEFAULT_MILESTONES.map((m) => ({
       ...m,
-      status: isMilestoneCompleted(m.id) ? ('completed' as const) : ('pending' as const),
+      status: 'pending' as const,
     }));
 
     try {
@@ -274,7 +178,6 @@ export default function NewCollectionPage() {
             productCategories: Array.from(categories),
             collectionSize,
             distribution,
-            workspace_config: {},
           },
           user_id: user.id,
           launch_date: launchDate,
@@ -422,48 +325,10 @@ export default function NewCollectionPage() {
     </div>
   );
 
-  const renderPhaseQuestion = (questionIndex: number) => {
-    const question = filteredQuestions[questionIndex];
-    if (!question) return null;
-
-    const prevQuestion = questionIndex > 0 ? filteredQuestions[questionIndex - 1] : null;
-    const isNewPhase = !prevQuestion || prevQuestion.phase !== question.phase;
-    const phase = PHASES[question.phase];
-
-    return (
-      <div className="flex flex-col items-center animate-fade-in-up">
-        {isNewPhase && (
-          <div className="text-xs text-texto/25 uppercase tracking-[0.2em] mb-6">{phase.name}</div>
-        )}
-        <h1 className="text-3xl font-light text-texto tracking-tight mb-2 text-center max-w-lg">
-          {question.getTitle(primaryCategory)}
-        </h1>
-        {question.subtitle && (
-          <p className="text-texto/40 text-sm mb-14 text-center max-w-md">{question.subtitle}</p>
-        )}
-        {!question.subtitle && <div className="mb-14" />}
-        <div className="flex gap-4 w-full max-w-xs">
-          <button
-            onClick={() => handleAnswer(question, true)}
-            className="flex-1 py-8 text-sm font-medium tracking-[0.15em] uppercase border border-gris/30 text-texto hover:bg-carbon hover:text-crema transition-all"
-          >
-            Yes
-          </button>
-          <button
-            onClick={() => handleAnswer(question, false)}
-            className="flex-1 py-8 text-sm font-medium tracking-[0.15em] uppercase border border-gris/30 text-texto hover:bg-carbon hover:text-crema transition-all"
-          >
-            Not yet
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   const renderSummary = () => (
     <div className="flex flex-col items-center animate-fade-in-up w-full max-w-lg mx-auto">
       <h1 className="text-3xl font-light text-texto tracking-tight mb-2">Your collection plan</h1>
-      <p className="text-texto/40 text-sm mb-4">Review and adjust before creating</p>
+      <p className="text-texto/40 text-sm mb-4">Review before creating</p>
 
       {/* Setup summary */}
       <div className="w-full space-y-0 mb-8">
@@ -492,13 +357,11 @@ export default function NewCollectionPage() {
         </div>
       )}
 
-      {/* Phase breakdown — expandable */}
+      {/* Timeline overview — expandable phases (read-only) */}
       <div className="w-full space-y-1 mb-10">
         {PHASE_ORDER.map((phaseId) => {
           const phase = PHASES[phaseId];
           const milestones = DEFAULT_MILESTONES.filter((m) => m.phase === phaseId);
-          const pendingCount = milestones.filter((m) => !isMilestoneCompleted(m.id)).length;
-          const allDone = pendingCount === 0;
           const isExpanded = expandedPhases.has(phaseId);
 
           return (
@@ -515,36 +378,25 @@ export default function NewCollectionPage() {
                   )}
                   <span className="text-sm text-texto font-medium">{phase.name}</span>
                 </div>
-                {allDone ? (
-                  <span className="text-xs font-medium text-green-600 uppercase tracking-wider">Done</span>
-                ) : (
-                  <span className="text-xs text-texto/30">{pendingCount} pending</span>
-                )}
+                <span className="text-xs text-texto/30">{milestones.length} milestones</span>
               </button>
 
               {isExpanded && (
                 <div className="border-t border-gris/10 px-4 py-2 space-y-1">
                   {milestones.map((m) => {
-                    const isCompleted = isMilestoneCompleted(m.id);
                     const startDate = getMilestoneDate(launchDate, m.startWeeksBefore);
                     const endDate = getMilestoneEndDate(launchDate, m.startWeeksBefore, m.durationWeeks);
 
                     return (
-                      <button
-                        key={m.id}
-                        onClick={() => toggleMilestoneSummary(m.id)}
-                        className="w-full flex items-center gap-3 py-2 text-left"
-                      >
-                        <div className={`w-4 h-4 border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isCompleted ? 'border-carbon bg-carbon' : 'border-gris/40'}`}>
-                          {isCompleted && <Check className="h-2.5 w-2.5 text-crema" />}
-                        </div>
+                      <div key={m.id} className="flex items-center gap-3 py-2">
+                        <div className="w-2 h-2 rounded-full bg-gris/30 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className={`text-xs ${isCompleted ? 'text-texto/40 line-through' : 'text-texto'}`}>{m.name}</p>
+                          <p className="text-xs text-texto">{m.name}</p>
                         </div>
                         <p className="text-[10px] text-texto/20 flex-shrink-0">
                           {formatShort(startDate)} — {formatShort(endDate)}
                         </p>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -580,13 +432,7 @@ export default function NewCollectionPage() {
     if (step === 3) return renderCollectionSize();
     if (step === 4) return renderDistribution();
     if (step === 5) return renderLaunchDate();
-
-    const questionIndex = step - SETUP_STEPS;
-    if (questionIndex >= 0 && questionIndex < QUESTION_STEPS) {
-      return renderPhaseQuestion(questionIndex);
-    }
-
-    if (step === TOTAL_STEPS - 1) return renderSummary();
+    if (step === 6) return renderSummary();
     return null;
   };
 
@@ -644,8 +490,8 @@ export default function NewCollectionPage() {
         </div>
       </div>
 
-      {/* Footer nav — only for non-auto-advance setup steps (name, launch date) */}
-      {!isAutoAdvanceStep && !isQuestionStep && !isSummaryStep && (
+      {/* Footer nav — only for non-auto-advance setup steps */}
+      {!isAutoAdvanceStep && !isSummaryStep && (
         <div className="fixed bottom-0 left-0 right-0 bg-crema pb-10 pt-6">
           <div className="max-w-2xl mx-auto px-6 flex items-center justify-between">
             {step > 0 ? (
@@ -664,8 +510,8 @@ export default function NewCollectionPage() {
         </div>
       )}
 
-      {/* Back button for question + summary steps */}
-      {(isQuestionStep || isSummaryStep) && step > 0 && (
+      {/* Back button for summary step */}
+      {isSummaryStep && (
         <div className="fixed bottom-0 left-0 right-0 bg-crema pb-10 pt-6">
           <div className="max-w-2xl mx-auto px-6">
             <button onClick={back} className="inline-flex items-center gap-2 text-sm text-texto/30 hover:text-texto transition-colors">

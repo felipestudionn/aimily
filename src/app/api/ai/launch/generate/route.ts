@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
+import { buildPromptContext, renderPrompt } from '@/lib/prompts/prompt-context';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'models/gemini-2.5-flash-lite';
@@ -25,35 +26,37 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       mode, // 'asistido' | 'propuesta'
+      collectionPlanId,
       launchDate,
       channels,
-      dropsCount,
-      skuCount,
-      storiesCount,
       // Asistido
       userDirection,
       existingTasks,
     } = body;
 
-    let promptTemplate: string = MARKETING_PROMPTS.launch_checklist.user;
+    // Build real context from all collection data
+    const context = collectionPlanId
+      ? await buildPromptContext(collectionPlanId)
+      : null;
 
-    // Replace template vars
-    promptTemplate = promptTemplate
-      .replace('{{has_website}}', 'Yes')
-      .replace('{{website_platform}}', 'Shopify/DTC')
-      .replace('{{social_channels}}', channels || 'Instagram, TikTok, Email')
-      .replace('{{has_email_list}}', 'Yes')
-      .replace('{{email_platform}}', 'Klaviyo')
-      .replace('{{season}}', 'Current')
-      .replace('{{launch_date}}', launchDate || 'TBD')
-      .replace('{{drops_count}}', String(dropsCount || 0))
-      .replace('{{sku_count}}', String(skuCount || 0))
-      .replace('{{stories_count}}', String(storiesCount || 0))
-      .replace('{{render_count}}', '0')
-      .replace('{{video_count}}', '0')
-      .replace('{{copy_count}}', '0')
-      .replace('{{email_template_count}}', '0')
-      .replace('{{calendar_entries_count}}', '0');
+    const templateContext: Record<string, unknown> = {
+      brand_name: context?.brand_name ?? '',
+      season: context?.season ?? 'Current',
+      launch_date: launchDate || context?.launch_date || 'TBD',
+      channels: channels || context?.channels?.join(', ') || 'DTC',
+      sku_count: context?.sku_count ?? 0,
+      stories_count: context?.stories?.length ?? 0,
+      drops: context?.drops ?? [],
+      commercial_actions: context?.commercial_actions ?? [],
+      render_count: context?.render_count ?? 0,
+      video_count: context?.video_count ?? 0,
+      copy_count: context?.copy_count ?? 0,
+      email_template_count: context?.email_template_count ?? 0,
+      calendar_entries_count: context?.calendar_entries_count ?? 0,
+      user_direction: userDirection || '',
+    };
+
+    const promptTemplate = renderPrompt(MARKETING_PROMPTS.launch_checklist.user, templateContext);
 
     let userInput = '';
     if (mode === 'asistido') {

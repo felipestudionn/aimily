@@ -55,6 +55,23 @@ export interface BrandVoiceContext {
   example_caption: string;
 }
 
+export interface DropContext {
+  id: string;
+  name: string;
+  launch_date: string;
+  weeks_active: number;
+  story_alignment: string;
+  channels: string[];
+  expected_sales_weight: number;
+}
+
+export interface CommercialActionContext {
+  name: string;
+  action_type: string;
+  start_date: string;
+  category: string;
+}
+
 // ─── Full PromptContext ───
 
 export interface PromptContext {
@@ -89,18 +106,21 @@ export interface PromptContext {
   sku_count: number;
   skus: SkuContext[];
 
-  // Block 4: Marketing (cumulative)
+  // Block 4: Marketing (cumulative — all from real DB tables)
   stories: StoryContext[];
   content_pillars: PillarContext[];
   brand_voice_config: BrandVoiceContext;
+  drops: DropContext[];
+  commercial_actions: CommercialActionContext[];
 
-  // Config (from setup_data.workspace_config.marketing_block)
-  has_website: boolean;
-  website_url?: string;
-  website_platform?: string;
-  social_channels: string[];
-  has_email_list: boolean;
-  email_platform?: string;
+  // Content readiness counts (from real tables)
+  render_count: number;
+  video_count: number;
+  copy_count: number;
+  email_template_count: number;
+  calendar_entries_count: number;
+
+  // Timeline
   launch_date: string;
 }
 
@@ -118,6 +138,12 @@ export async function buildPromptContext(
     storiesRes,
     pillarsRes,
     voiceRes,
+    dropsRes,
+    actionsRes,
+    generationsRes,
+    copyRes,
+    emailTemplatesRes,
+    calendarRes,
   ] = await Promise.all([
     supabase
       .from('collection_plans')
@@ -142,6 +168,32 @@ export async function buildPromptContext(
       .select('*')
       .eq('collection_plan_id', collectionPlanId)
       .single(),
+    supabase
+      .from('drops')
+      .select('*')
+      .eq('collection_plan_id', collectionPlanId)
+      .order('drop_number'),
+    supabase
+      .from('commercial_actions')
+      .select('*')
+      .eq('collection_plan_id', collectionPlanId)
+      .order('start_date'),
+    supabase
+      .from('ai_generations')
+      .select('id, generation_type')
+      .eq('collection_plan_id', collectionPlanId),
+    supabase
+      .from('product_copy')
+      .select('id')
+      .eq('collection_plan_id', collectionPlanId),
+    supabase
+      .from('email_templates')
+      .select('id')
+      .eq('collection_plan_id', collectionPlanId),
+    supabase
+      .from('content_calendar')
+      .select('id')
+      .eq('collection_plan_id', collectionPlanId),
   ]);
 
   const plan = planRes.data;
@@ -150,7 +202,6 @@ export async function buildPromptContext(
   const consumer = setupData.consumer ?? {};
   const creative = setupData.creative ?? {};
   const merchandising = setupData.merchandising ?? {};
-  const marketingConfig = setupData.workspace_config?.marketing_block ?? {};
 
   const skus = (skusRes.data ?? []).map((s: Record<string, unknown>) => ({
     id: s.id as string,
@@ -175,9 +226,7 @@ export async function buildPromptContext(
       mood: (s.mood as string[]) ?? [],
       tone: (s.tone as string) ?? '',
       color_palette: (s.color_palette as string[]) ?? [],
-      sku_ids: skus
-        .filter((sk: SkuContext) => sk.id && (s as Record<string, unknown>).id === sk.id)
-        .map((sk: SkuContext) => sk.id),
+      sku_ids: [],
       hero_sku_id: (s.hero_sku_id as string) ?? '',
       content_direction: (s.content_direction as string) ?? '',
     })
@@ -211,6 +260,37 @@ export async function buildPromptContext(
     vocabulary: voice?.vocabulary ?? [],
     example_caption: voice?.example_caption ?? '',
   };
+
+  const drops: DropContext[] = (dropsRes.data ?? []).map(
+    (d: Record<string, unknown>) => ({
+      id: d.id as string,
+      name: (d.name as string) ?? '',
+      launch_date: (d.launch_date as string) ?? '',
+      weeks_active: (d.weeks_active as number) ?? 0,
+      story_alignment: (d.story as string) ?? '',
+      channels: (d.channels as string[]) ?? [],
+      expected_sales_weight: (d.expected_sales_weight as number) ?? 0,
+    })
+  );
+
+  const commercialActions: CommercialActionContext[] = (actionsRes.data ?? []).map(
+    (a: Record<string, unknown>) => ({
+      name: (a.name as string) ?? '',
+      action_type: (a.action_type as string) ?? '',
+      start_date: (a.start_date as string) ?? '',
+      category: (a.category as string) ?? '',
+    })
+  );
+
+  // Content readiness counts
+  const generations = generationsRes.data ?? [];
+  const renderCount = generations.filter(
+    (g: Record<string, unknown>) =>
+      g.generation_type === 'product-render' || g.generation_type === 'lifestyle' || g.generation_type === 'tryon'
+  ).length;
+  const videoCount = generations.filter(
+    (g: Record<string, unknown>) => g.generation_type === 'video'
+  ).length;
 
   const prices = skus.map((s: SkuContext) => s.pvp).filter((p: number) => p > 0);
 
@@ -254,12 +334,13 @@ export async function buildPromptContext(
     stories,
     content_pillars: pillars,
     brand_voice_config: brandVoice,
-    has_website: marketingConfig.has_website ?? false,
-    website_url: marketingConfig.website_url,
-    website_platform: marketingConfig.website_platform,
-    social_channels: marketingConfig.social_channels ?? [],
-    has_email_list: marketingConfig.has_email_list ?? false,
-    email_platform: marketingConfig.email_platform,
+    drops,
+    commercial_actions: commercialActions,
+    render_count: renderCount,
+    video_count: videoCount,
+    copy_count: copyRes.data?.length ?? 0,
+    email_template_count: emailTemplatesRes.data?.length ?? 0,
+    calendar_entries_count: calendarRes.data?.length ?? 0,
     launch_date: plan?.launch_date ?? '',
   };
 }

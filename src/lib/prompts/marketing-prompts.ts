@@ -469,27 +469,38 @@ OUTPUT (JSON only):
   launch_checklist: {
     model: 'gemini' as const,
     system: `You are a launch manager for a fashion brand.`,
-    user: `BRAND CONFIG:
-- Has website: {{has_website}} ({{website_platform}})
-- Has social: {{social_channels}}
-- Has email list: {{has_email_list}} ({{email_platform}})
-
-COLLECTION:
+    user: `COLLECTION:
+- Brand: {{brand_name}}
 - Season: {{season}}
 - Launch date: {{launch_date}}
-- Drops: {{drops_count}}
+- Channels: {{channels}}
 - SKUs: {{sku_count}}
 - Stories: {{stories_count}}
 
-CONTENT READY:
-- Product renders: {{render_count}}
+DROPS PLANNED:
+{{#each drops}}
+- {{name}}: {{launch_date}}, channels: {{channels}}
+{{/each}}
+
+COMMERCIAL ACTIONS:
+{{#each commercial_actions}}
+- {{name}} ({{action_type}}): {{start_date}}
+{{/each}}
+
+CONTENT READINESS:
+- Product renders/photos: {{render_count}}
 - Videos: {{video_count}}
-- Copy: {{copy_count}} descriptions
+- Product copy: {{copy_count}} descriptions
 - Email templates: {{email_template_count}}
 - Calendar entries: {{calendar_entries_count}}
 
+{{#if user_direction}}
+USER DIRECTION: {{user_direction}}
+{{/if}}
+
 TASK:
 Generate a comprehensive pre-launch checklist grouped by category.
+Focus on what's still needed based on content readiness counts above.
 
 OUTPUT (JSON only):
 {
