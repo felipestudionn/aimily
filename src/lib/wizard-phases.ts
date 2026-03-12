@@ -11,11 +11,9 @@ export type WizardPhaseId =
   | 'design'
   | 'prototyping'
   | 'sampling'
-  | 'studio'
-  | 'digital'
-  | 'marketing'
   | 'production'
-  | 'launch';
+  | 'marketing-creation'
+  | 'marketing-distribution';
 
 export interface WizardPhase {
   id: WizardPhaseId;
@@ -115,42 +113,24 @@ export const WIZARD_PHASES: WizardPhase[] = [
     unlockWhen: ['dd-14'], // Requires: Collection completed (sampling done)
   },
 
-  // ── Block 4: Marketing & Digital ──
+  // ── Block 4: Marketing & Digital (2 screens) ──
   {
-    id: 'studio',
-    name: 'AI Creative Studio',
-    nameEs: 'Estudio Creativo IA',
-    path: 'studio',
+    id: 'marketing-creation',
+    name: 'Creation',
+    nameEs: 'Creación',
+    path: 'marketing/creation',
     block: 'go_to_market',
     milestoneIds: ['gm-3', 'gm-4', 'gm-5'],
-    unlockWhen: ['dd-14'], // Requires: Sampling done (for renders)
+    unlockWhen: ['dd-14'], // Requires: Sampling done (for renders/visuals)
   },
   {
-    id: 'digital',
-    name: 'Digital Presence',
-    nameEs: 'Presencia Digital',
-    path: 'digital',
+    id: 'marketing-distribution',
+    name: 'Distribution & Launch',
+    nameEs: 'Distribución y Lanzamiento',
+    path: 'marketing/distribution',
     block: 'go_to_market',
-    milestoneIds: ['gm-1', 'gm-2'],
-    unlockWhen: ['br-4', 'gm-3'], // Requires: Brand done + Studio renders
-  },
-  {
-    id: 'marketing',
-    name: 'Marketing',
-    nameEs: 'Marketing',
-    path: 'marketing',
-    block: 'go_to_market',
-    milestoneIds: ['gm-6', 'gm-7', 'gm-8', 'gm-9', 'gm-10', 'gm-11'],
-    unlockWhen: ['gm-1', 'br-4'], // Requires: Digital + Brand
-  },
-  {
-    id: 'launch',
-    name: 'Launch',
-    nameEs: 'Lanzamiento',
-    path: 'launch',
-    block: 'go_to_market',
-    milestoneIds: ['gm-12', 'gm-13', 'gm-14', 'gm-15'],
-    unlockWhen: ['dd-18', 'gm-11', 'gm-2'], // Requires: Production + Marketing + Digital
+    milestoneIds: ['gm-1', 'gm-2', 'gm-6', 'gm-7', 'gm-8', 'gm-9', 'gm-10', 'gm-11', 'gm-12', 'gm-13', 'gm-14', 'gm-15'],
+    unlockWhen: ['gm-5'], // Requires: Creation done
   },
 ];
 
