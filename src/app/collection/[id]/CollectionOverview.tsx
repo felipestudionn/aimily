@@ -2,18 +2,12 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import {
-  CheckCircle2,
-  Clock,
-  Circle,
-  ArrowRight,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { PHASES, PHASE_ORDER, getMilestoneDate } from '@/lib/timeline-template';
 import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 
-/** Map each calendar block to its primary workspace route */
 const BLOCK_ROUTES: Record<TimelinePhase, string> = {
   creative: 'product',
   planning: 'product',
@@ -50,82 +44,85 @@ function PhaseCard({
   const total = phaseMilestones.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
   const pending = total - completed - inProgress;
-
   const path = BLOCK_ROUTES[phase];
 
-  // Get next milestone for this phase
-  const nextMilestone = phaseMilestones
+  // Next 3 milestones for this phase
+  const nextMilestones = phaseMilestones
     .filter((m) => m.status !== 'completed')
-    .sort((a, b) => b.startWeeksBefore - a.startWeeksBefore)[0];
+    .sort((a, b) => b.startWeeksBefore - a.startWeeksBefore)
+    .slice(0, 3);
 
   return (
     <Link
       href={`/collection/${collectionId}/${path}`}
-      className="group relative bg-white p-8 hover:shadow-lg transition-all duration-300 border-b-2 overflow-hidden"
-      style={{ borderBottomColor: info.color }}
+      className="group relative bg-carbon/[0.03] border border-carbon/[0.06] p-7 hover:bg-carbon hover:text-crema transition-all duration-300 overflow-hidden"
     >
       {/* Progress bar top */}
-      <div
-        className="absolute top-0 left-0 h-[3px] transition-all duration-700"
-        style={{ width: `${progress}%`, backgroundColor: info.color }}
-      />
+      <div className="absolute top-0 left-0 h-[2px] bg-carbon/10 w-full">
+        <div
+          className="h-full bg-carbon group-hover:bg-crema transition-all duration-700"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
 
-      <div className="flex items-start justify-between mb-6">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 flex items-center justify-center"
-            style={{ backgroundColor: info.bgColor }}
-          >
-            <PhaseIcon phase={phase} className="h-5 w-5" filled={false} />
-          </div>
+          <PhaseIcon phase={phase} className="h-5 w-5 text-carbon group-hover:text-crema transition-colors" filled={false} />
           <div>
-            <h3 className="font-medium text-texto text-base tracking-tight">{info.name}</h3>
-            <p className="text-[11px] text-neutral-400 uppercase tracking-widest mt-0.5">
+            <h3 className="font-semibold text-carbon group-hover:text-crema text-[15px] tracking-tight transition-colors">
+              {info.name}
+            </h3>
+            <p className="text-[10px] text-carbon/40 group-hover:text-crema/50 uppercase tracking-[0.15em] mt-0.5 transition-colors">
               {info.nameEs}
             </p>
           </div>
         </div>
-        <ArrowRight className="h-4 w-4 text-neutral-300 group-hover:text-carbon group-hover:translate-x-1 transition-all" />
+        <ArrowRight className="h-4 w-4 text-carbon/20 group-hover:text-crema/60 group-hover:translate-x-1 transition-all" />
       </div>
 
-      {/* Big progress number */}
-      <div className="flex items-end gap-6 mb-5">
+      {/* Progress + counts */}
+      <div className="flex items-end gap-5 mb-5">
         <div>
-          <span className="text-4xl font-light text-carbon tracking-tight">{progress}</span>
-          <span className="text-lg font-light text-neutral-400">%</span>
+          <span className="text-[42px] leading-none font-semibold text-carbon group-hover:text-crema tracking-tight transition-colors">
+            {progress}
+          </span>
+          <span className="text-base text-carbon/30 group-hover:text-crema/40 transition-colors">%</span>
         </div>
-        <div className="flex gap-4 pb-1.5 text-[11px] text-neutral-400">
-          <span className="flex items-center gap-1">
-            <CheckCircle2 className="h-3 w-3 text-carbon" />
-            {completed}
-          </span>
+        <div className="flex gap-3 pb-2 text-[11px] font-medium text-carbon/40 group-hover:text-crema/50 transition-colors">
+          <span>{completed} done</span>
+          <span className="text-carbon/15 group-hover:text-crema/25">/</span>
           {inProgress > 0 && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {inProgress}
-            </span>
+            <>
+              <span>{inProgress} active</span>
+              <span className="text-carbon/15 group-hover:text-crema/25">/</span>
+            </>
           )}
-          <span className="flex items-center gap-1">
-            <Circle className="h-3 w-3" />
-            {pending}
-          </span>
+          <span>{pending} pending</span>
         </div>
       </div>
 
-      {/* Next milestone */}
-      {nextMilestone && (
-        <div className="pt-4 border-t border-neutral-100">
-          <p className="text-[10px] text-neutral-400 uppercase tracking-widest mb-1">Next</p>
-          <p className="text-sm text-texto truncate">{nextMilestone.name}</p>
-          {launchDate && (
-            <p className="text-[11px] text-neutral-400 mt-0.5">
-              {getMilestoneDate(launchDate, nextMilestone.startWeeksBefore).toLocaleDateString('es-ES', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </p>
-          )}
+      {/* Next milestones list */}
+      {nextMilestones.length > 0 && (
+        <div className="pt-4 border-t border-carbon/[0.06] group-hover:border-crema/10 transition-colors space-y-2.5">
+          <p className="text-[10px] text-carbon/35 group-hover:text-crema/40 uppercase tracking-[0.2em] font-semibold transition-colors">
+            Next
+          </p>
+          {nextMilestones.map((m) => (
+            <div key={m.id} className="flex items-center justify-between">
+              <p className="text-[13px] text-carbon/70 group-hover:text-crema/80 truncate pr-4 transition-colors">
+                {m.name}
+              </p>
+              {launchDate && (
+                <p className="text-[11px] text-carbon/30 group-hover:text-crema/40 flex-shrink-0 tabular-nums transition-colors">
+                  {getMilestoneDate(launchDate, m.startWeeksBefore).toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </Link>
@@ -142,11 +139,6 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const inProgressMilestones = milestones.filter((m) => m.status === 'in-progress').length;
   const overallProgress = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
 
-  const upcomingMilestones = milestones
-    .filter((m) => m.status !== 'completed')
-    .sort((a, b) => b.startWeeksBefore - a.startWeeksBefore)
-    .slice(0, 6);
-
   const launchDate = timeline?.launch_date
     ? new Date(timeline.launch_date).toLocaleDateString('es-ES', {
         day: 'numeric',
@@ -160,27 +152,27 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     : null;
 
   return (
-    <div className="min-h-screen bg-crema/40">
+    <div className="min-h-screen bg-carbon">
       {/* Hero Header */}
-      <div className="bg-carbon text-white px-10 py-14">
+      <div className="px-10 pt-12 pb-10">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[11px] uppercase tracking-[0.25em] text-white/50 mb-3">
-            {plan.season || 'Collection'} Overview
+          <p className="text-[11px] uppercase tracking-[0.25em] text-crema/30 font-medium mb-3">
+            {plan.season || 'Collection'}
           </p>
-          <h1 className="text-4xl md:text-5xl font-light tracking-tight lowercase">
+          <h1 className="text-4xl md:text-5xl font-semibold text-crema tracking-tight lowercase">
             {plan.name}
           </h1>
           {plan.description && (
-            <p className="text-white/60 mt-3 text-base font-light max-w-2xl">{plan.description}</p>
+            <p className="text-crema/50 mt-3 text-base max-w-2xl">{plan.description}</p>
           )}
 
           {/* Progress bar */}
-          <div className="mt-10 max-w-md">
-            <div className="flex items-center justify-between text-[11px] mb-2 tracking-wider uppercase">
-              <span className="text-white/40">Overall Progress</span>
-              <span className="text-white font-medium">{overallProgress}%</span>
+          <div className="mt-8 max-w-md">
+            <div className="flex items-center justify-between text-[11px] mb-2.5 tracking-[0.15em] uppercase font-medium">
+              <span className="text-crema/30">Progress</span>
+              <span className="text-crema/70">{overallProgress}%</span>
             </div>
-            <div className="h-[2px] bg-white/10 overflow-hidden">
+            <div className="h-[2px] bg-crema/10 overflow-hidden">
               <div
                 className="h-full bg-crema transition-all duration-700"
                 style={{ width: `${overallProgress}%` }}
@@ -191,61 +183,61 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
       </div>
 
       {/* Key Metrics Strip */}
-      <div className="bg-white border-b border-neutral-100">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-5 divide-x divide-neutral-100">
-          <div className="px-8 py-7">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-2">Progress</p>
-            <p className="text-3xl font-light text-carbon tracking-tight">
-              {overallProgress}<span className="text-lg text-neutral-300">%</span>
+      <div className="border-y border-crema/[0.06]">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-5 divide-x divide-crema/[0.06]">
+          <div className="px-8 py-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-crema/30 mb-2 font-medium">Progress</p>
+            <p className="text-2xl font-semibold text-crema tracking-tight">
+              {overallProgress}<span className="text-sm text-crema/30 ml-0.5">%</span>
             </p>
-            <p className="text-[11px] text-neutral-400 mt-1">
+            <p className="text-[11px] text-crema/35 mt-1 font-medium">
               {completedMilestones} of {totalMilestones}
             </p>
           </div>
 
-          <div className="px-8 py-7">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-2">Launch</p>
-            <p className="text-lg font-light text-carbon tracking-tight">{launchDate}</p>
+          <div className="px-8 py-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-crema/30 mb-2 font-medium">Launch</p>
+            <p className="text-[15px] font-semibold text-crema tracking-tight">{launchDate}</p>
             {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
-              <p className="text-[11px] text-neutral-400 mt-1">{daysUntilLaunch} days</p>
+              <p className="text-[11px] text-crema/35 mt-1 font-medium">{daysUntilLaunch} days</p>
             )}
           </div>
 
-          <div className="px-8 py-7">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-2">SKUs</p>
-            <p className="text-3xl font-light text-carbon tracking-tight">{skuCount}</p>
-            <p className="text-[11px] text-neutral-400 mt-1">
+          <div className="px-8 py-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-crema/30 mb-2 font-medium">SKUs</p>
+            <p className="text-2xl font-semibold text-crema tracking-tight">{skuCount}</p>
+            <p className="text-[11px] text-crema/35 mt-1 font-medium">
               {plan.setup_data?.productCategory || 'All categories'}
             </p>
           </div>
 
-          <div className="px-8 py-7">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-2">Active</p>
-            <p className="text-3xl font-light text-carbon tracking-tight">{inProgressMilestones}</p>
-            <p className="text-[11px] text-neutral-400 mt-1">milestones</p>
+          <div className="px-8 py-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-crema/30 mb-2 font-medium">Active</p>
+            <p className="text-2xl font-semibold text-crema tracking-tight">{inProgressMilestones}</p>
+            <p className="text-[11px] text-crema/35 mt-1 font-medium">milestones</p>
           </div>
 
-          <div className="px-8 py-7">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 mb-2">Target</p>
-            <p className="text-xl font-light text-carbon tracking-tight">
+          <div className="px-8 py-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-crema/30 mb-2 font-medium">Target</p>
+            <p className="text-lg font-semibold text-crema tracking-tight">
               {plan.setup_data?.totalSalesTarget
                 ? `€${plan.setup_data.totalSalesTarget.toLocaleString()}`
                 : '—'}
             </p>
-            <p className="text-[11px] text-neutral-400 mt-1">
+            <p className="text-[11px] text-crema/35 mt-1 font-medium">
               {plan.setup_data?.targetMargin ? `${plan.setup_data.targetMargin}% margin` : ''}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Phase Grid */}
-      <div className="max-w-5xl mx-auto px-10 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">Team Blocks</h2>
-          <div className="h-[1px] flex-1 bg-neutral-200 ml-6" />
+      {/* Team Blocks Grid */}
+      <div className="max-w-5xl mx-auto px-10 py-10">
+        <div className="flex items-center mb-8">
+          <h2 className="text-[11px] uppercase tracking-[0.25em] text-crema/30 font-semibold">Team Blocks</h2>
+          <div className="h-[1px] flex-1 bg-crema/[0.06] ml-5" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {PHASE_ORDER.map((phase) => (
             <PhaseCard
               key={phase}
@@ -257,51 +249,6 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           ))}
         </div>
       </div>
-
-      {/* Upcoming Timeline */}
-      {upcomingMilestones.length > 0 && (
-        <div className="max-w-5xl mx-auto px-10 pb-16">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">Next Up</h2>
-            <div className="h-[1px] flex-1 bg-neutral-200 ml-6" />
-          </div>
-          <div className="bg-white divide-y divide-neutral-50">
-            {upcomingMilestones.map((m) => {
-              const phaseInfo = PHASES[m.phase];
-              const startDate = timeline?.launch_date
-                ? getMilestoneDate(timeline.launch_date, m.startWeeksBefore)
-                : null;
-
-              return (
-                <div key={m.id} className="flex items-center gap-6 px-8 py-5 group hover:bg-neutral-50/50 transition-colors">
-                  <div
-                    className="w-1 h-8 flex-shrink-0"
-                    style={{ backgroundColor: phaseInfo.color }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-texto font-medium">{m.name}</p>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">{phaseInfo.name}</p>
-                  </div>
-                  {startDate && (
-                    <p className="text-[11px] text-neutral-400 flex-shrink-0 tabular-nums">
-                      {startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-                    </p>
-                  )}
-                  <span
-                    className={`text-[10px] uppercase tracking-widest px-3 py-1 flex-shrink-0 ${
-                      m.status === 'in-progress'
-                        ? 'bg-carbon text-white'
-                        : 'bg-neutral-100 text-neutral-400'
-                    }`}
-                  >
-                    {m.status === 'in-progress' ? 'Active' : 'Pending'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
