@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { SamplingWorkspace } from '@/components/sampling/SamplingWorkspace';
 import { SamplingMiniWizard } from '@/components/sampling/SamplingMiniWizard';
 import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
@@ -21,6 +22,7 @@ export default async function SamplingPage({ params }: PageProps) {
       .single(),
   ]);
 
+  const milestones = migrateLegacyMilestones(timeline?.milestones || []);
   const isConfigured =
     (plan?.setup_data as any)?.workspace_config?.sampling?.configured === true;
 
@@ -30,7 +32,7 @@ export default async function SamplingPage({ params }: PageProps) {
       wizard={(onComplete) => (
         <SamplingMiniWizard planId={id} onComplete={onComplete} />
       )}
-      workspace={<SamplingWorkspace milestones={timeline?.milestones || []} />}
+      workspace={<SamplingWorkspace milestones={milestones} />}
     />
   );
 }

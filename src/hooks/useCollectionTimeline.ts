@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CollectionTimeline, TimelineMilestone } from '@/types/timeline';
-import { createDefaultTimeline } from '@/lib/timeline-template';
+import { createDefaultTimeline, migrateLegacyMilestones } from '@/lib/timeline-template';
 
 export function useCollectionTimeline(
   collectionPlanId: string,
@@ -25,14 +25,14 @@ export function useCollectionTimeline(
       const data = await res.json();
 
       if (data) {
-        // Existing timeline from DB
+        // Existing timeline from DB — migrate legacy phases/IDs
         setTimeline({
           id: data.id,
           collectionId: data.collection_plan_id,
           collectionName,
           season,
           launchDate: data.launch_date,
-          milestones: data.milestones,
+          milestones: migrateLegacyMilestones(data.milestones),
           createdAt: data.created_at,
           updatedAt: data.updated_at,
         } as CollectionTimeline);

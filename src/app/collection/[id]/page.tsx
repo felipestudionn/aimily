@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { CollectionOverview } from './CollectionOverview';
 
 interface PageProps {
@@ -22,9 +23,15 @@ async function getCollectionData(id: string) {
 
   if (planRes.error || !planRes.data) return null;
 
+  // Migrate legacy milestones to new 4-block system
+  const timeline = timelineRes.data;
+  if (timeline?.milestones) {
+    timeline.milestones = migrateLegacyMilestones(timeline.milestones);
+  }
+
   return {
     plan: planRes.data,
-    timeline: timelineRes.data,
+    timeline,
     skuCount: skusRes.data?.length || 0,
   };
 }

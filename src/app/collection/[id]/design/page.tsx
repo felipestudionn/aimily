@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { DesignWorkspace } from '@/components/design/DesignWorkspace';
 import { DesignMiniWizard } from '@/components/design/DesignMiniWizard';
 import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
@@ -21,6 +22,7 @@ export default async function DesignPage({ params }: PageProps) {
       .single(),
   ]);
 
+  const milestones = migrateLegacyMilestones(timeline?.milestones || []);
   const setupData = plan?.setup_data as any;
   const isConfigured = setupData?.workspace_config?.design?.configured === true;
   const category = setupData?.productCategory || 'clothing';
@@ -31,7 +33,7 @@ export default async function DesignPage({ params }: PageProps) {
       wizard={(onComplete) => (
         <DesignMiniWizard planId={id} category={category} onComplete={onComplete} />
       )}
-      workspace={<DesignWorkspace milestones={timeline?.milestones || []} />}
+      workspace={<DesignWorkspace milestones={milestones} />}
     />
   );
 }

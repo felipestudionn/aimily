@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { Navbar } from '@/components/layout/navbar';
 import { CollectionHubShell } from './CollectionHubShell';
 
@@ -20,9 +21,10 @@ async function getCollectionWithTimeline(id: string) {
 
   if (planRes.error || !planRes.data) return null;
 
+  const rawMilestones = timelineRes.data?.milestones || [];
   return {
     plan: planRes.data,
-    milestones: timelineRes.data?.milestones || [],
+    milestones: migrateLegacyMilestones(rawMilestones),
   };
 }
 

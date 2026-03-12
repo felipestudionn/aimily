@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { LaunchWorkspace } from '@/components/launch/LaunchWorkspace';
 import { LaunchMiniWizard } from '@/components/launch/LaunchMiniWizard';
 import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
@@ -21,6 +22,7 @@ export default async function LaunchPage({ params }: PageProps) {
       .single(),
   ]);
 
+  const milestones = migrateLegacyMilestones(timeline?.milestones || []);
   const isConfigured =
     (plan?.setup_data as any)?.workspace_config?.launch?.configured === true;
 
@@ -30,7 +32,7 @@ export default async function LaunchPage({ params }: PageProps) {
       wizard={(onComplete) => (
         <LaunchMiniWizard planId={id} onComplete={onComplete} />
       )}
-      workspace={<LaunchWorkspace milestones={timeline?.milestones || []} />}
+      workspace={<LaunchWorkspace milestones={milestones} />}
     />
   );
 }

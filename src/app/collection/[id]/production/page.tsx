@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { ProductionWorkspace } from '@/components/production/ProductionWorkspace';
 import { ProductionMiniWizard } from '@/components/production/ProductionMiniWizard';
 import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
@@ -21,6 +22,7 @@ export default async function ProductionPage({ params }: PageProps) {
       .single(),
   ]);
 
+  const milestones = migrateLegacyMilestones(timeline?.milestones || []);
   const isConfigured =
     (plan?.setup_data as any)?.workspace_config?.production?.configured === true;
 
@@ -30,7 +32,7 @@ export default async function ProductionPage({ params }: PageProps) {
       wizard={(onComplete) => (
         <ProductionMiniWizard planId={id} onComplete={onComplete} />
       )}
-      workspace={<ProductionWorkspace milestones={timeline?.milestones || []} />}
+      workspace={<ProductionWorkspace milestones={milestones} />}
     />
   );
 }

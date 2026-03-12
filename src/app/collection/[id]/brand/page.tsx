@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { BrandWorkspaceGate } from '@/components/brand/BrandWorkspaceGate';
 
 interface PageProps { params: Promise<{ id: string }>; }
@@ -19,13 +20,14 @@ export default async function BrandPage({ params }: PageProps) {
       .single(),
   ]);
 
+  const milestones = migrateLegacyMilestones(timeline?.milestones || []);
   const isConfigured =
     (plan?.setup_data as any)?.workspace_config?.brand?.configured === true;
 
   return (
     <BrandWorkspaceGate
       planId={id}
-      milestones={timeline?.milestones || []}
+      milestones={milestones}
       isConfigured={isConfigured}
     />
   );

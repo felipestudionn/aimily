@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { MarketingWorkspace } from '@/components/marketing/MarketingWorkspace';
 import { MarketingMiniWizard } from '@/components/marketing/MarketingMiniWizard';
 import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
@@ -21,6 +22,7 @@ export default async function MarketingPage({ params }: PageProps) {
       .single(),
   ]);
 
+  const milestones = migrateLegacyMilestones(timeline?.milestones || []);
   const isConfigured =
     (plan?.setup_data as any)?.workspace_config?.marketing?.configured === true;
 
@@ -30,7 +32,7 @@ export default async function MarketingPage({ params }: PageProps) {
       wizard={(onComplete) => (
         <MarketingMiniWizard planId={id} onComplete={onComplete} />
       )}
-      workspace={<MarketingWorkspace milestones={timeline?.milestones || []} />}
+      workspace={<MarketingWorkspace milestones={milestones} />}
     />
   );
 }

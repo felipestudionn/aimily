@@ -188,6 +188,19 @@ export const LEGACY_MILESTONE_MAP: Record<string, string> = {
   'ln-4': 'gm-15',
 };
 
+/** Map old 9-phase names to new 4-block names */
+export const LEGACY_PHASE_MAP: Record<string, TimelinePhase> = {
+  'aimily': 'creative',
+  'brand': 'creative',
+  'design': 'development',
+  'prototyping': 'development',
+  'sampling': 'development',
+  'digital': 'go_to_market',
+  'marketing': 'go_to_market',
+  'production': 'development',
+  'launch': 'go_to_market',
+};
+
 /** Resolve a milestone ID (legacy or new) to a new ID */
 export function resolveNewMilestoneId(id: string): string {
   return LEGACY_MILESTONE_MAP[id] || id;
@@ -198,6 +211,36 @@ export function getPhaseForMilestone(id: string): TimelinePhase | undefined {
   const newId = resolveNewMilestoneId(id);
   const milestone = DEFAULT_MILESTONES.find((m) => m.id === newId);
   return milestone?.phase;
+}
+
+/**
+ * Migrate legacy milestones from Supabase to the new 4-block system.
+ * - Remaps old IDs (ow-*, ds-*, etc.) to new IDs (cr-*, dd-*, etc.)
+ * - Remaps old phase names (brand, design, etc.) to new block names (creative, development, etc.)
+ * - Fills in missing fields from the default template
+ */
+export function migrateLegacyMilestones(milestones: TimelineMilestone[]): TimelineMilestone[] {
+  return milestones.map((m) => {
+    const newId = resolveNewMilestoneId(m.id);
+    const template = DEFAULT_MILESTONES.find((t) => t.id === newId);
+
+    // Resolve the phase: use template phase if available, else map legacy phase name
+    const newPhase = template?.phase
+      ?? LEGACY_PHASE_MAP[m.phase]
+      ?? (PHASES[m.phase as TimelinePhase] ? m.phase as TimelinePhase : 'creative');
+
+    return {
+      ...m,
+      id: newId,
+      phase: newPhase,
+      name: template?.name ?? m.name,
+      nameEs: template?.nameEs ?? m.nameEs,
+      responsible: template?.responsible ?? m.responsible,
+      startWeeksBefore: template?.startWeeksBefore ?? m.startWeeksBefore,
+      durationWeeks: template?.durationWeeks ?? m.durationWeeks,
+      color: template?.color ?? m.color,
+    };
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { DigitalWorkspace } from '@/components/digital/DigitalWorkspace';
 import { DigitalMiniWizard } from '@/components/digital/DigitalMiniWizard';
 import { WorkspaceGate } from '@/components/wizard/WorkspaceGate';
@@ -22,6 +23,7 @@ export default async function DigitalPage({ params }: PageProps) {
       .single(),
   ]);
 
+  const milestones = migrateLegacyMilestones(timeline?.milestones || []);
   const isConfigured =
     (plan?.setup_data as any)?.workspace_config?.digital?.configured === true;
 
@@ -48,7 +50,7 @@ export default async function DigitalPage({ params }: PageProps) {
             <span className="text-purple-400 group-hover:translate-x-1 transition-transform">&rarr;</span>
           </Link>
 
-          <DigitalWorkspace milestones={timeline?.milestones || []} />
+          <DigitalWorkspace milestones={milestones} />
         </div>
       }
     />
