@@ -6,6 +6,8 @@ export async function GET(req: NextRequest) {
     const planId = req.nextUrl.searchParams.get('planId');
     const type = req.nextUrl.searchParams.get('type');
     const status = req.nextUrl.searchParams.get('status');
+    const storyId = req.nextUrl.searchParams.get('storyId');
+    const skuId = req.nextUrl.searchParams.get('skuId');
 
     let query = supabaseAdmin
       .from('ai_generations')
@@ -15,6 +17,8 @@ export async function GET(req: NextRequest) {
     if (planId) query = query.eq('collection_plan_id', planId);
     if (type) query = query.eq('generation_type', type);
     if (status) query = query.eq('status', status);
+    if (storyId) query = query.eq('story_id', storyId);
+    if (skuId) query = query.contains('input_data', { sku_id: skuId });
 
     const { data, error } = await query;
     if (error) throw error;

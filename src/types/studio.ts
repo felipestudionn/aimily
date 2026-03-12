@@ -32,6 +32,7 @@ export interface AiGeneration {
   status: GenerationStatus;
   is_favorite: boolean;
   error: string | null;
+  story_id: string | null;
   created_at: string;
   completed_at: string | null;
 }

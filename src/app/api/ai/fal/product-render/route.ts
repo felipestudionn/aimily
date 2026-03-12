@@ -12,18 +12,24 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const { image_url, prompt, background, width, height } = await req.json();
+    const { image_url, prompt, background, width, height, story_context } = await req.json();
 
     if (!image_url && !prompt) {
       return NextResponse.json({ error: 'image_url or prompt is required' }, { status: 400 });
     }
 
-    const fullPrompt = [
+    const promptParts = [
       prompt || 'Professional product photography',
-      background ? `Background: ${background}` : 'Clean white studio background',
-      'High resolution, commercial quality, fashion product shot',
-      'Sharp focus, professional lighting, e-commerce ready',
-    ].join('. ');
+    ];
+    if (story_context) {
+      promptParts.push(`Story context: "${story_context.name}" — ${story_context.tone || ''}`);
+      if (story_context.brand_personality) promptParts.push(`Brand aesthetic: ${story_context.brand_personality}`);
+    }
+    promptParts.push(background ? `Background: ${background}` : 'Clean white studio background');
+    promptParts.push('High resolution, commercial quality, fashion product shot');
+    promptParts.push('Sharp focus, professional lighting, e-commerce ready');
+
+    const fullPrompt = promptParts.join('. ');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const input: any = {

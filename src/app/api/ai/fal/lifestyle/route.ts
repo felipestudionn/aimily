@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const { image_url, scene, prompt, width, height } = await req.json();
+    const { image_url, scene, prompt, width, height, story_context } = await req.json();
 
     if (!image_url && !prompt) {
       return NextResponse.json({ error: 'image_url or prompt is required' }, { status: 400 });
@@ -33,12 +33,21 @@ export async function POST(req: NextRequest) {
 
     const sceneDesc = sceneDescriptions[scene] || scene || 'Editorial lifestyle setting';
 
-    const fullPrompt = [
+    const promptParts = [
       prompt || 'Fashion lifestyle editorial photograph',
-      sceneDesc,
-      'Professional fashion photography, high-end editorial quality',
-      'Natural pose, aspirational lifestyle, magazine-worthy',
-    ].join('. ');
+    ];
+    if (story_context) {
+      promptParts.push(`Story: "${story_context.name}" — ${story_context.narrative || ''}`);
+      promptParts.push(`Mood: ${(story_context.mood || []).join(', ')}`);
+      if (story_context.tone) promptParts.push(`Tone: ${story_context.tone}`);
+      if (story_context.color_palette?.length) promptParts.push(`Color palette: ${story_context.color_palette.join(', ')}`);
+      if (story_context.brand_personality) promptParts.push(`Brand: ${story_context.brand_personality}`);
+    }
+    promptParts.push(sceneDesc);
+    promptParts.push('Professional fashion photography, high-end editorial quality');
+    promptParts.push('Natural pose, aspirational lifestyle, magazine-worthy');
+
+    const fullPrompt = promptParts.join('. ');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const input: any = {
