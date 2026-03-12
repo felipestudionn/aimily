@@ -30,10 +30,72 @@ export interface ProductCopy {
   content: string;
   metadata: Record<string, unknown> | null; // { platform, seo_title, seo_description, alt_text, subject_line, hashtags[], etc. }
   status: CopyStatus;
+  story_id: string | null;
   model_used: string | null;
   created_at: string;
   updated_at: string;
 }
+
+// ── Content Strategy Types ──
+
+export interface ContentPillar {
+  id: string;
+  collection_plan_id: string;
+  name: string;
+  description: string | null;
+  examples: string[] | null;
+  stories_alignment: string[] | null;
+  created_at: string;
+}
+
+export interface BrandVoiceConfig {
+  id: string;
+  collection_plan_id: string;
+  personality: string | null;
+  tone: string | null;
+  do_rules: string[] | null;
+  dont_rules: string[] | null;
+  vocabulary: string[] | null;
+  example_caption: string | null;
+  created_at: string;
+}
+
+export type SocialTemplateType =
+  | 'product_feature'
+  | 'lifestyle'
+  | 'behind_the_scenes'
+  | 'styling_tip'
+  | 'story_narrative';
+
+export interface SocialTemplate {
+  id: string;
+  collection_plan_id: string;
+  story_id: string | null;
+  platform: SocialPlatform;
+  type: SocialTemplateType;
+  caption: string | null;
+  hashtags: string[] | null;
+  cta: string | null;
+  best_paired_with: string | null;
+  created_at: string;
+}
+
+export interface EmailTemplateContent {
+  id: string;
+  collection_plan_id: string;
+  story_id: string | null;
+  email_type: EmailTemplateType;
+  subject_line: string | null;
+  preview_text: string | null;
+  heading: string | null;
+  body: string | null;
+  cta_text: string | null;
+  cta_url: string | null;
+  status: string | null;
+  created_at: string;
+}
+
+export type ContentStrategyTab = 'pillars-voice' | 'product-copy' | 'social' | 'email' | 'seo';
 
 export type DigitalTab = 'catalog' | 'copywriting' | 'tracker';
 

@@ -1,28 +1,17 @@
 'use client';
 
-import { ArrowRight, PenTool } from 'lucide-react';
 import type { TimelineMilestone } from '@/types/timeline';
 import { StoriesCard } from './StoriesCard';
 import { ProductVisualsCard } from './ProductVisualsCard';
 import { CampaignVideoCard } from './CampaignVideoCard';
+import { ContentStrategyCard } from './ContentStrategyCard';
 
 interface Props {
   collectionPlanId: string;
   milestones: TimelineMilestone[];
 }
 
-/* ── Card config for the 1 remaining placeholder card ── */
-const PLACEHOLDER_CARDS = [
-  {
-    id: 'content-strategy',
-    title: 'Content Strategy',
-    titleEs: 'Estrategia de Contenido',
-    description: 'Brand voice, content pillars, product copy, social templates, and SEO.',
-    Icon: PenTool,
-  },
-] as const;
-
-export function MarketingCreationScreen({ collectionPlanId, milestones }: Props) {
+export function MarketingCreationScreen({ collectionPlanId }: Props) {
   return (
     <div className="px-8 md:px-12 lg:px-16 py-12">
       {/* Header */}
@@ -49,41 +38,8 @@ export function MarketingCreationScreen({ collectionPlanId, milestones }: Props)
         {/* Campaign & Video — live card */}
         <CampaignVideoCard collectionPlanId={collectionPlanId} />
 
-        {/* Remaining placeholder */}
-        {PLACEHOLDER_CARDS.map((card) => {
-          const Icon = card.Icon;
-          return (
-            <div
-              key={card.id}
-              className="group relative bg-white p-10 lg:p-12 border border-carbon/[0.06] flex flex-col min-h-[340px] hover:shadow-lg transition-all duration-300"
-            >
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
-                  <Icon className="h-5 w-5 text-carbon/40 group-hover:text-carbon/70 transition-colors" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-                    {card.titleEs}
-                  </p>
-                  <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-                    {card.title}
-                  </h3>
-                </div>
-              </div>
-              <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-                {card.description}
-              </p>
-              <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
-                <p className="text-xs text-carbon/20 tracking-wide">
-                  Coming in Phase 5
-                </p>
-              </div>
-              <div className="mt-6 flex items-center justify-center gap-2 bg-carbon/[0.04] text-carbon/30 py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em]">
-                Open <ArrowRight className="h-3.5 w-3.5" />
-              </div>
-            </div>
-          );
-        })}
+        {/* Content Strategy — live card */}
+        <ContentStrategyCard collectionPlanId={collectionPlanId} />
       </div>
     </div>
   );

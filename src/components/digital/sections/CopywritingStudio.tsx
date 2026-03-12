@@ -164,6 +164,7 @@ export function CopywritingStudio({
         content,
         metadata: Object.keys(metadata).length > 0 ? metadata : null,
         status: 'draft',
+        story_id: null,
         model_used: model,
       });
     } catch (err) {
@@ -232,6 +233,7 @@ export function CopywritingStudio({
           content,
           metadata: Object.keys(metadata).length > 0 ? metadata : null,
           status: 'draft',
+          story_id: null,
           model_used: model,
         });
       }
