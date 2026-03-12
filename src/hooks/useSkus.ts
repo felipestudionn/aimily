@@ -17,9 +17,13 @@ export interface SKU {
   expected_sales: number;
   margin: number;
   channel: 'DTC' | 'WHOLESALE' | 'BOTH';
+  origin?: 'LOCAL' | 'CHINA' | 'EUROPE' | 'OTHER';
+  size_run?: Record<string, number>; // e.g. { "36": 10, "37": 20, "38": 30, ... }
+  sku_role?: 'NEW' | 'BESTSELLER_REINVENTION' | 'CARRYOVER' | 'CAPSULE';
   launch_date: string;
   notes?: string;
   reference_image_url?: string;
+  source_sku_id?: string; // Reference to original SKU if carry-over/reinvention
   created_at?: string;
   updated_at?: string;
 }

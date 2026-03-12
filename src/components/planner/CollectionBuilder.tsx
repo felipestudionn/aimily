@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X } from 'lucide-react';
+import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download } from 'lucide-react';
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 
@@ -21,6 +21,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [family, setFamily] = useState('');
   const [type, setType] = useState<'REVENUE' | 'IMAGEN' | 'ENTRY'>('REVENUE');
   const [channel, setChannel] = useState<'DTC' | 'WHOLESALE' | 'BOTH'>('DTC');
+  const [origin, setOrigin] = useState<'LOCAL' | 'CHINA' | 'EUROPE' | 'OTHER'>('LOCAL');
+  const [skuRole, setSkuRole] = useState<'NEW' | 'BESTSELLER_REINVENTION' | 'CARRYOVER' | 'CAPSULE'>('NEW');
   const [dropNumber, setDropNumber] = useState(1);
   const [pvp, setPvp] = useState(0);
   const [cost, setCost] = useState(0);
@@ -32,8 +34,57 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
   const [editingNotes, setEditingNotes] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showCarryOver, setShowCarryOver] = useState(false);
+  const [carryOverData, setCarryOverData] = useState<{ collections: any[]; skus: SKU[] } | null>(null);
+  const [carryOverLoading, setCarryOverLoading] = useState(false);
+  const [selectedImports, setSelectedImports] = useState<Set<string>>(new Set());
+  const [importingSkus, setImportingSkus] = useState(false);
 
   const { skus, addSku, updateSku, deleteSku, loading } = useSkus(collectionPlanId);
+
+  // Carry-over: fetch SKUs from other collections
+  const handleOpenCarryOver = async () => {
+    setShowCarryOver(true);
+    setCarryOverLoading(true);
+    setSelectedImports(new Set());
+    try {
+      const res = await fetch(`/api/skus/carry-over?excludePlanId=${collectionPlanId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCarryOverData(data);
+      }
+    } catch (e) {
+      console.error('Error fetching carry-over SKUs:', e);
+    } finally {
+      setCarryOverLoading(false);
+    }
+  };
+
+  const handleImportSkus = async (role: 'CARRYOVER' | 'BESTSELLER_REINVENTION') => {
+    if (selectedImports.size === 0) return;
+    setImportingSkus(true);
+    try {
+      const res = await fetch('/api/skus/carry-over', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetPlanId: collectionPlanId,
+          sourceSkuIds: Array.from(selectedImports),
+          role,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Refetch SKUs to show imported ones
+        window.location.reload();
+      }
+    } catch (e) {
+      console.error('Error importing SKUs:', e);
+    } finally {
+      setImportingSkus(false);
+      setShowCarryOver(false);
+    }
+  };
 
   // Calculate totals
   const totalExpectedSales = useMemo(() => {
@@ -66,6 +117,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       category: (setupData.productCategory || 'ROPA') as 'CALZADO' | 'ROPA' | 'ACCESORIOS',
       type,
       channel,
+      origin,
+      sku_role: skuRole,
       drop_number: dropNumber,
       pvp,
       cost,
@@ -154,9 +207,25 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
     const marginTarget = setupData.targetMargin;
     const marginDiff = marginTarget > 0 ? marginPercentage - marginTarget : 0;
 
+    // Role distribution (bestseller target: 60-70% carry/bestseller)
+    const roleDistribution = (['NEW', 'BESTSELLER_REINVENTION', 'CARRYOVER', 'CAPSULE'] as const).map(role => {
+      const roleSkus = skus.filter(s => (s.sku_role || 'NEW') === role);
+      const actual = skus.length > 0 ? (roleSkus.length / skus.length) * 100 : 0;
+      return { name: role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : role === 'CARRYOVER' ? 'Carry-over' : role === 'CAPSULE' ? 'Capsule' : 'New', actual: Math.round(actual) };
+    });
+
+    // Origin distribution
+    const originDistribution = (['LOCAL', 'CHINA', 'EUROPE', 'OTHER'] as const).map(orig => {
+      const origSkus = skus.filter(s => (s.origin || 'LOCAL') === orig);
+      const actual = skus.length > 0 ? (origSkus.length / skus.length) * 100 : 0;
+      return { name: orig, actual: Math.round(actual) };
+    });
+
     return {
       familyDistribution,
       typeDistribution,
+      roleDistribution,
+      originDistribution,
       avgPrice: Math.round(avgPrice),
       avgPriceTarget,
       avgPriceDiff: Math.round(avgPriceDiff),
@@ -265,24 +334,34 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 <span className="text-muted-foreground">SKUs Created</span>
                 <Badge variant="secondary">{skus.length} / {setupData.expectedSkus}</Badge>
               </div>
-              <Button
-                onClick={handleGenerateSkus}
-                disabled={isGenerating || skus.length >= setupData.expectedSkus}
-                variant="outline"
-                size="sm"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate with AI
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleOpenCarryOver}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Import Bestsellers
+                </Button>
+                <Button
+                  onClick={handleGenerateSkus}
+                  disabled={isGenerating || skus.length >= setupData.expectedSkus}
+                  variant="outline"
+                  size="sm"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate with AI
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -369,6 +448,41 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 </div>
               </div>
             </div>
+
+            {/* Second row: Role + Origin distribution */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 mt-4 pt-4 border-t border-blue-200">
+              {/* Role Distribution */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-blue-900">Product Role Mix</h4>
+                <div className="space-y-1">
+                  {frameworkValidation.roleDistribution.map((r) => (
+                    <div key={r.name} className="flex items-center justify-between text-xs">
+                      <span>{r.name}</span>
+                      <span className="font-medium">{r.actual}%</span>
+                    </div>
+                  ))}
+                </div>
+                {(() => {
+                  const carryPct = (frameworkValidation.roleDistribution.find(r => r.name === 'Bestseller')?.actual || 0) + (frameworkValidation.roleDistribution.find(r => r.name === 'Carry-over')?.actual || 0);
+                  return carryPct > 0 && carryPct < 50 ? (
+                    <p className="text-[10px] text-orange-600 mt-1">Tip: aim for 60-70% carry-over + bestseller for lower risk</p>
+                  ) : null;
+                })()}
+              </div>
+
+              {/* Origin Distribution */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-blue-900">Origin Mix</h4>
+                <div className="space-y-1">
+                  {frameworkValidation.originDistribution.filter(o => o.actual > 0).map((o) => (
+                    <div key={o.name} className="flex items-center justify-between text-xs">
+                      <span>{o.name}</span>
+                      <span className="font-medium">{o.actual}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -426,6 +540,34 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   <SelectItem value="DTC">DTC</SelectItem>
                   <SelectItem value="WHOLESALE">Wholesale</SelectItem>
                   <SelectItem value="BOTH">Both</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Origin</Label>
+              <Select value={origin} onValueChange={(v) => setOrigin(v as any)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOCAL">Local</SelectItem>
+                  <SelectItem value="CHINA">China</SelectItem>
+                  <SelectItem value="EUROPE">Europe</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Role</Label>
+              <Select value={skuRole} onValueChange={(v) => setSkuRole(v as any)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NEW">New</SelectItem>
+                  <SelectItem value="BESTSELLER_REINVENTION">Bestseller</SelectItem>
+                  <SelectItem value="CARRYOVER">Carry-over</SelectItem>
+                  <SelectItem value="CAPSULE">Capsule</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -547,6 +689,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     <th className="text-left py-2 px-2">Name</th>
                     <th className="text-left py-2 px-2">Family</th>
                     <th className="text-left py-2 px-2">Type</th>
+                    <th className="text-left py-2 px-2">Role</th>
+                    <th className="text-left py-2 px-2">Origin</th>
                     <th className="text-right py-2 px-2">Cost</th>
                     <th className="text-right py-2 px-2">PVP</th>
                     <th className="text-right py-2 px-2">Units</th>
@@ -569,6 +713,10 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       <td className="py-2 px-2">
                         <Badge variant="secondary" className="text-xs">{sku.type}</Badge>
                       </td>
+                      <td className="py-2 px-2">
+                        {sku.sku_role && <Badge variant="outline" className={`text-xs ${sku.sku_role === 'BESTSELLER_REINVENTION' ? 'border-amber-400 text-amber-700' : sku.sku_role === 'CARRYOVER' ? 'border-blue-400 text-blue-700' : sku.sku_role === 'CAPSULE' ? 'border-purple-400 text-purple-700' : ''}`}>{sku.sku_role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : sku.sku_role === 'CARRYOVER' ? 'Carry-over' : sku.sku_role || 'New'}</Badge>}
+                      </td>
+                      <td className="py-2 px-2 text-xs text-muted-foreground">{sku.origin || '—'}</td>
                       <td className="py-2 px-2 text-right">€{sku.cost}</td>
                       <td className="py-2 px-2 text-right">€{sku.pvp}</td>
                       <td className="py-2 px-2 text-right">{sku.buy_units}</td>
@@ -740,6 +888,14 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   <p className="font-semibold text-sm">{selectedSku.channel}</p>
                 </div>
                 <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Origin</Label>
+                  <p className="font-semibold text-sm">{selectedSku.origin || '—'}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Role</Label>
+                  <p className="font-semibold text-sm">{selectedSku.sku_role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : selectedSku.sku_role === 'CARRYOVER' ? 'Carry-over' : selectedSku.sku_role || 'New'}</p>
+                </div>
+                <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Category</Label>
                   <p className="font-semibold text-sm">{selectedSku.category}</p>
                 </div>
@@ -790,6 +946,46 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 </div>
               </div>
 
+              {/* Size Run */}
+              <div className="space-y-2">
+                <Label>Size Run (units per size)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {(() => {
+                    const category = selectedSku.category;
+                    const sizes = category === 'CALZADO'
+                      ? ['35','36','37','38','39','40','41','42','43','44','45']
+                      : category === 'ROPA'
+                      ? ['XXS','XS','S','M','L','XL','XXL']
+                      : ['ONE'];
+                    const currentRun = selectedSku.size_run || {};
+                    return sizes.map(size => (
+                      <div key={size} className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground">{size}</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          className="h-8 w-14 text-center text-xs"
+                          value={currentRun[size] || ''}
+                          placeholder="0"
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            const newRun = { ...currentRun, [size]: val };
+                            if (val === 0) delete newRun[size];
+                            updateSku(selectedSku.id, { size_run: newRun } as any);
+                            setSelectedSku(prev => prev ? { ...prev, size_run: newRun } : null);
+                          }}
+                        />
+                      </div>
+                    ));
+                  })()}
+                </div>
+                {selectedSku.size_run && Object.keys(selectedSku.size_run).length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Total: {Object.values(selectedSku.size_run).reduce((a: number, b: number) => a + b, 0)} units
+                  </p>
+                )}
+              </div>
+
               {/* Notes Section */}
               <div className="space-y-2">
                 <Label>Notes & Concept Description</Label>
@@ -827,6 +1023,121 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   Close
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Carry-Over Import Modal */}
+      {showCarryOver && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-3xl max-h-[85vh] overflow-y-auto">
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle>Import from Previous Collections</CardTitle>
+                <CardDescription>Select bestsellers or carry-over products to reinvent</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setShowCarryOver(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {carryOverLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : !carryOverData || carryOverData.skus.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No previous collections found. Create and populate another collection first.
+                </p>
+              ) : (
+                <>
+                  {carryOverData.collections.map(col => {
+                    const colSkus = carryOverData.skus.filter(s => s.collection_plan_id === col.id);
+                    if (colSkus.length === 0) return null;
+                    return (
+                      <div key={col.id} className="border rounded-lg overflow-hidden">
+                        <div className="bg-muted/50 px-4 py-3 flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-sm">{col.name}</p>
+                            <p className="text-xs text-muted-foreground">{col.season} · {col.skuCount} SKUs</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const allIds = colSkus.map(s => s.id);
+                              const allSelected = allIds.every(id => selectedImports.has(id));
+                              const next = new Set(selectedImports);
+                              allIds.forEach(id => allSelected ? next.delete(id) : next.add(id));
+                              setSelectedImports(next);
+                            }}
+                          >
+                            {colSkus.every(s => selectedImports.has(s.id)) ? 'Deselect all' : 'Select all'}
+                          </Button>
+                        </div>
+                        <div className="divide-y">
+                          {colSkus.slice(0, 20).map(sku => (
+                            <label
+                              key={sku.id}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedImports.has(sku.id)}
+                                onChange={() => {
+                                  const next = new Set(selectedImports);
+                                  next.has(sku.id) ? next.delete(sku.id) : next.add(sku.id);
+                                  setSelectedImports(next);
+                                }}
+                                className="rounded"
+                              />
+                              {sku.reference_image_url ? (
+                                <img src={sku.reference_image_url} alt="" className="w-10 h-10 object-cover rounded" />
+                              ) : (
+                                <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-[8px] text-muted-foreground">IMG</div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{sku.name}</p>
+                                <p className="text-xs text-muted-foreground">{sku.family} · €{sku.pvp}</p>
+                              </div>
+                              <div className="text-right">
+                                <Badge variant="secondary" className="text-xs">{sku.type}</Badge>
+                                <p className="text-xs text-muted-foreground mt-0.5">€{Math.round(sku.expected_sales).toLocaleString()}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {selectedImports.size > 0 && (
+                    <div className="flex items-center justify-between pt-4 border-t sticky bottom-0 bg-white pb-2">
+                      <p className="text-sm text-muted-foreground">{selectedImports.size} SKU{selectedImports.size > 1 ? 's' : ''} selected</p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={importingSkus}
+                          onClick={() => handleImportSkus('CARRYOVER')}
+                        >
+                          {importingSkus ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                          Import as Carry-over
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={importingSkus}
+                          onClick={() => handleImportSkus('BESTSELLER_REINVENTION')}
+                        >
+                          {importingSkus ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                          Import as Bestseller Reinvention
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

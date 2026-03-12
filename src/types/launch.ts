@@ -54,6 +54,8 @@ export interface SalesEntry {
   units: number;
   revenue: number;
   currency: string;
+  skuId?: string;
+  skuName?: string;
 }
 
 export interface LessonLearned {

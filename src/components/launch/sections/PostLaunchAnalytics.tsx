@@ -14,8 +14,18 @@ import {
 import type { SalesEntry, LessonLearned } from '@/types/launch';
 import { SALES_CHANNELS, CURRENCIES, LESSON_CATEGORIES, LESSON_TYPES } from '@/types/launch';
 
+interface SkuSummary {
+  id: string;
+  name: string;
+  buy_units?: number;
+  pvp?: number;
+  family?: string;
+  category?: string;
+}
+
 interface PostLaunchAnalyticsProps {
   collectionId: string;
+  skus?: SkuSummary[];
 }
 
 function useLocalStorage<T>(key: string, initial: T): [T, (val: T | ((prev: T) => T)) => void] {
@@ -36,7 +46,7 @@ function useLocalStorage<T>(key: string, initial: T): [T, (val: T | ((prev: T) =
   return [state, setState];
 }
 
-export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) {
+export function PostLaunchAnalytics({ collectionId, skus = [] }: PostLaunchAnalyticsProps) {
   const storageKey = (sub: string) => `aimily_launch_${collectionId}_${sub}`;
 
   const [sales, setSales] = useLocalStorage<SalesEntry[]>(storageKey('sales'), []);
@@ -51,9 +61,11 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
   const [saleUnits, setSaleUnits] = useState('');
   const [saleRevenue, setSaleRevenue] = useState('');
   const [saleCurrency, setSaleCurrency] = useState<string>(CURRENCIES[0]);
+  const [saleSkuId, setSaleSkuId] = useState('');
 
   const addSale = useCallback(() => {
     if (!saleUnits || !saleRevenue) return;
+    const selectedSku = skus.find(s => s.id === saleSkuId);
     const entry: SalesEntry = {
       id: crypto.randomUUID(),
       date: saleDate,
@@ -61,10 +73,12 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
       units: parseInt(saleUnits, 10) || 0,
       revenue: parseFloat(saleRevenue) || 0,
       currency: saleCurrency,
+      skuId: saleSkuId || undefined,
+      skuName: selectedSku?.name || undefined,
     };
     setSales((prev) => [entry, ...prev]);
-    setSaleUnits(''); setSaleRevenue(''); setShowSalesForm(false);
-  }, [saleDate, saleChannel, saleUnits, saleRevenue, saleCurrency, setSales]);
+    setSaleUnits(''); setSaleRevenue(''); setSaleSkuId(''); setShowSalesForm(false);
+  }, [saleDate, saleChannel, saleUnits, saleRevenue, saleCurrency, saleSkuId, skus, setSales]);
 
   const deleteSale = useCallback((id: string) => {
     setSales((prev) => prev.filter((s) => s.id !== id));
@@ -105,7 +119,18 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
       byChannel[s.channel].revenue += s.revenue;
     });
     const avgOrderValue = totalUnits > 0 ? totalRevenue / totalUnits : 0;
-    return { totalUnits, totalRevenue, mainCurrency, byChannel, avgOrderValue };
+
+    // Per-SKU sell-through
+    const bySku: Record<string, { name: string; unitsSold: number; revenue: number }> = {};
+    sales.forEach((s) => {
+      if (s.skuId) {
+        if (!bySku[s.skuId]) bySku[s.skuId] = { name: s.skuName || s.skuId, unitsSold: 0, revenue: 0 };
+        bySku[s.skuId].unitsSold += s.units;
+        bySku[s.skuId].revenue += s.revenue;
+      }
+    });
+
+    return { totalUnits, totalRevenue, mainCurrency, byChannel, avgOrderValue, bySku };
   }, [sales]);
 
   // ── Lesson Summary ──
@@ -172,6 +197,82 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
         </div>
       )}
 
+      {/* Sell-Through by SKU */}
+      {skus.length > 0 && (
+        <div className="bg-white border border-gray-100 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="h-4 w-4 text-blue-500" />
+            <h3 className="font-semibold text-gray-900">Sell-Through by SKU</h3>
+            <span className="text-xs text-gray-400">Ratio ventas / compra por SKU</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
+                  <th className="pb-2 font-medium">SKU</th>
+                  <th className="pb-2 font-medium">Family</th>
+                  <th className="pb-2 font-medium text-right">Buy Units</th>
+                  <th className="pb-2 font-medium text-right">Sold</th>
+                  <th className="pb-2 font-medium text-right">Sell-Through</th>
+                  <th className="pb-2 font-medium text-right">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {skus.map((sku) => {
+                  const skuSales = summary.bySku[sku.id];
+                  const unitsSold = skuSales?.unitsSold || 0;
+                  const revenue = skuSales?.revenue || 0;
+                  const buyUnits = sku.buy_units || 0;
+                  const sellThrough = buyUnits > 0 ? Math.round((unitsSold / buyUnits) * 100) : 0;
+                  const stColor = sellThrough >= 80 ? 'text-green-600' : sellThrough >= 50 ? 'text-yellow-600' : sellThrough > 0 ? 'text-red-500' : 'text-gray-400';
+                  return (
+                    <tr key={sku.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="py-2 text-gray-900 font-medium truncate max-w-[160px]">{sku.name}</td>
+                      <td className="py-2 text-gray-500 text-xs">{sku.family || '—'}</td>
+                      <td className="py-2 text-right text-gray-600">{buyUnits || '—'}</td>
+                      <td className="py-2 text-right text-gray-700">{unitsSold}</td>
+                      <td className="py-2 text-right">
+                        <span className={`font-medium ${stColor}`}>
+                          {buyUnits > 0 ? `${sellThrough}%` : '—'}
+                        </span>
+                        {buyUnits > 0 && (
+                          <div className="w-full h-1 bg-gray-100 mt-1 overflow-hidden">
+                            <div
+                              className={`h-full ${sellThrough >= 80 ? 'bg-green-500' : sellThrough >= 50 ? 'bg-yellow-500' : 'bg-red-400'}`}
+                              style={{ width: `${Math.min(sellThrough, 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2 text-right text-gray-700">{revenue > 0 ? formatCurrency(revenue, summary.mainCurrency) : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              {skus.length > 0 && (
+                <tfoot>
+                  <tr className="border-t border-gray-200 font-medium">
+                    <td className="py-2 text-gray-900">Total</td>
+                    <td></td>
+                    <td className="py-2 text-right text-gray-600">{skus.reduce((s, sk) => s + (sk.buy_units || 0), 0)}</td>
+                    <td className="py-2 text-right text-gray-700">{Object.values(summary.bySku).reduce((s, v) => s + v.unitsSold, 0)}</td>
+                    <td className="py-2 text-right">
+                      {(() => {
+                        const totalBuy = skus.reduce((s, sk) => s + (sk.buy_units || 0), 0);
+                        const totalSold = Object.values(summary.bySku).reduce((s, v) => s + v.unitsSold, 0);
+                        const pct = totalBuy > 0 ? Math.round((totalSold / totalBuy) * 100) : 0;
+                        return <span className={`font-medium ${pct >= 80 ? 'text-green-600' : pct >= 50 ? 'text-yellow-600' : 'text-gray-400'}`}>{totalBuy > 0 ? `${pct}%` : '—'}</span>;
+                      })()}
+                    </td>
+                    <td className="py-2 text-right text-gray-900">{formatCurrency(Object.values(summary.bySku).reduce((s, v) => s + v.revenue, 0), summary.mainCurrency)}</td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Sales Tracker */}
       <div className="bg-white border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
@@ -191,6 +292,12 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
         {/* Sales form */}
         {showSalesForm && (
           <div className="bg-green-50/50 p-4 mb-4 space-y-3 border border-green-100">
+            {skus.length > 0 && (
+              <select value={saleSkuId} onChange={(e) => setSaleSkuId(e.target.value)} className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200">
+                <option value="">-- All / General (no specific SKU) --</option>
+                {skus.map((sku) => <option key={sku.id} value={sku.id}>{sku.name}{sku.family ? ` (${sku.family})` : ''}</option>)}
+              </select>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               <input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200" />
               <select value={saleChannel} onChange={(e) => setSaleChannel(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-200">
@@ -218,6 +325,7 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
               <thead>
                 <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
                   <th className="pb-2 font-medium">Date</th>
+                  <th className="pb-2 font-medium">SKU</th>
                   <th className="pb-2 font-medium">Channel</th>
                   <th className="pb-2 font-medium text-right">Units</th>
                   <th className="pb-2 font-medium text-right">Revenue</th>
@@ -228,6 +336,7 @@ export function PostLaunchAnalytics({ collectionId }: PostLaunchAnalyticsProps) 
                 {sales.map((sale) => (
                   <tr key={sale.id} className="group border-b border-gray-50 hover:bg-gray-50">
                     <td className="py-2 text-gray-700">{new Date(sale.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</td>
+                    <td className="py-2 text-gray-600 text-xs truncate max-w-[120px]">{sale.skuName || '—'}</td>
                     <td className="py-2 text-gray-700">{sale.channel}</td>
                     <td className="py-2 text-right text-gray-700">{sale.units}</td>
                     <td className="py-2 text-right font-medium text-gray-900">{formatCurrency(sale.revenue, sale.currency)}</td>

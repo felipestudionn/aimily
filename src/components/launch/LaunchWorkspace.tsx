@@ -21,11 +21,21 @@ const TABS: { id: LaunchTab; label: string; labelEs: string; icon: React.Element
   { id: 'post_launch', label: 'Post-Launch Analytics', labelEs: 'Analitica Post-Lanzamiento', icon: BarChart3 },
 ];
 
-interface LaunchWorkspaceProps {
-  milestones: TimelineMilestone[];
+interface SkuSummary {
+  id: string;
+  name: string;
+  buy_units?: number;
+  pvp?: number;
+  family?: string;
+  category?: string;
 }
 
-export function LaunchWorkspace({ milestones }: LaunchWorkspaceProps) {
+interface LaunchWorkspaceProps {
+  milestones: TimelineMilestone[];
+  skus?: SkuSummary[];
+}
+
+export function LaunchWorkspace({ milestones, skus = [] }: LaunchWorkspaceProps) {
   const { id } = useParams();
   const collectionId = id as string;
   const [activeTab, setActiveTab] = useState<LaunchTab>('pre_launch');
@@ -102,7 +112,7 @@ export function LaunchWorkspace({ milestones }: LaunchWorkspaceProps) {
       )}
 
       {activeTab === 'post_launch' && (
-        <PostLaunchAnalytics collectionId={collectionId} />
+        <PostLaunchAnalytics collectionId={collectionId} skus={skus} />
       )}
 
       {/* Milestones Checklist */}

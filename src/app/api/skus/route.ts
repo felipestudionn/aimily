@@ -57,7 +57,11 @@ export async function POST(req: NextRequest) {
       margin,
       launch_date,
       notes,
-      reference_image_url
+      reference_image_url,
+      origin,
+      size_run,
+      sku_role,
+      source_sku_id,
     } = body;
 
     if (!collection_plan_id || !name) {
@@ -87,7 +91,11 @@ export async function POST(req: NextRequest) {
         margin,
         launch_date,
         notes,
-        reference_image_url
+        reference_image_url,
+        origin,
+        size_run,
+        sku_role,
+        source_sku_id,
       }])
       .select()
       .single();

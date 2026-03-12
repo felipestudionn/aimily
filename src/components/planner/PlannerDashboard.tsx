@@ -138,6 +138,83 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
           </TabsContent>
 
           <TabsContent value="strategic" className="space-y-6">
+            {/* Distribution Pyramid — IMAGEN / REVENUE / ENTRY */}
+            <div className="bg-white border border-carbon/[0.06] p-8">
+              <h2 className="text-lg font-light text-carbon mb-2">Distribution Pyramid</h2>
+              <p className="text-xs font-light text-carbon/40 mb-6">
+                Product type mix — Imagen (hero/aspirational), Revenue (core volume), Entry (accessible)
+              </p>
+              <div className="flex flex-col items-center gap-1 mb-6">
+                {(() => {
+                  const pyramidOrder: Array<{ type: 'IMAGEN' | 'REVENUE' | 'ENTRY'; label: string; desc: string; color: string }> = [
+                    { type: 'IMAGEN', label: 'Imagen', desc: 'Hero / Aspiracional', color: 'bg-carbon' },
+                    { type: 'REVENUE', label: 'Revenue', desc: 'Core / Volumen', color: 'bg-carbon/70' },
+                    { type: 'ENTRY', label: 'Entry', desc: 'Accesible / Captación', color: 'bg-carbon/40' },
+                  ];
+                  return pyramidOrder.map((tier, idx) => {
+                    const seg = setupData.productTypeSegments.find(s => s.type === tier.type);
+                    const pct = seg?.percentage || 0;
+                    // Pyramid widths: top=40%, mid=70%, bottom=100%
+                    const widths = ['40%', '70%', '100%'];
+                    return (
+                      <div key={tier.type} className="w-full flex flex-col items-center">
+                        <div
+                          className={`${tier.color} relative flex items-center justify-between px-4 py-3 text-crema transition-all`}
+                          style={{ width: widths[idx], clipPath: idx === 0 ? 'polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%)' : undefined }}
+                        >
+                          <span className="text-xs font-medium tracking-[0.1em] uppercase">{tier.label}</span>
+                          <span className="text-lg font-light">{pct}%</span>
+                        </div>
+                        <p className="text-[10px] text-carbon/30 mt-0.5">{tier.desc}</p>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+              {/* Pyramid per family breakdown */}
+              <div className="border-t border-carbon/[0.06] pt-6">
+                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/30 mb-4">Target by Family</p>
+                <div className="grid gap-3">
+                  {setupData.productFamilies.map((family) => {
+                    const totalPct = family.percentage;
+                    // Show proportional split based on global type segments
+                    const segments = setupData.productTypeSegments;
+                    return (
+                      <div key={family.name} className="space-y-1.5">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-light text-carbon">{family.name}</span>
+                          <span className="font-light text-carbon/60">{totalPct}% of collection</span>
+                        </div>
+                        <div className="flex h-2 w-full overflow-hidden">
+                          {segments.map((seg) => {
+                            const colors: Record<string, string> = {
+                              IMAGEN: 'bg-carbon',
+                              REVENUE: 'bg-carbon/60',
+                              ENTRY: 'bg-carbon/30',
+                            };
+                            return (
+                              <div
+                                key={seg.type}
+                                className={`${colors[seg.type] || 'bg-carbon/20'} h-full`}
+                                style={{ width: `${seg.percentage}%` }}
+                                title={`${seg.type}: ${seg.percentage}%`}
+                              />
+                            );
+                          })}
+                        </div>
+                        <div className="flex gap-3 text-[10px] text-carbon/40">
+                          {segments.map(seg => (
+                            <span key={seg.type}>{seg.type} {seg.percentage}%</span>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Product Families */}
             <div className="bg-white border border-carbon/[0.06] p-8">
               <h2 className="text-lg font-light text-carbon mb-4">Product Families</h2>
               <div className="space-y-3">
@@ -158,6 +235,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
               </div>
             </div>
 
+            {/* Price Segments */}
             <div className="bg-white border border-carbon/[0.06] p-8">
               <h2 className="text-lg font-light text-carbon mb-4">Price Segments</h2>
               <div className="space-y-3 text-sm">
@@ -175,6 +253,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
               </div>
             </div>
 
+            {/* Product Types */}
             <div className="bg-white border border-carbon/[0.06] p-8">
               <h2 className="text-lg font-light text-carbon mb-4">Product Types</h2>
               <div className="space-y-2 text-sm">

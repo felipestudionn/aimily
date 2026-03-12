@@ -9,7 +9,7 @@ interface PageProps { params: Promise<{ id: string }>; }
 export default async function LaunchPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [{ data: timeline }, { data: plan }] = await Promise.all([
+  const [{ data: timeline }, { data: plan }, { data: skus }] = await Promise.all([
     supabaseAdmin
       .from('collection_timelines')
       .select('milestones')
@@ -20,6 +20,11 @@ export default async function LaunchPage({ params }: PageProps) {
       .select('id, setup_data')
       .eq('id', id)
       .single(),
+    supabaseAdmin
+      .from('collection_skus')
+      .select('id, name, buy_units, pvp, family, category')
+      .eq('collection_plan_id', id)
+      .order('name'),
   ]);
 
   const milestones = migrateLegacyMilestones(timeline?.milestones || []);
@@ -32,7 +37,7 @@ export default async function LaunchPage({ params }: PageProps) {
       wizard={(onComplete) => (
         <LaunchMiniWizard planId={id} onComplete={onComplete} />
       )}
-      workspace={<LaunchWorkspace milestones={milestones} />}
+      workspace={<LaunchWorkspace milestones={milestones} skus={skus || []} />}
     />
   );
 }
