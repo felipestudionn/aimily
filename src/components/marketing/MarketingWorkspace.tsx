@@ -3,15 +3,11 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Megaphone,
   CalendarDays,
   Users,
   Mail,
   Target,
   Loader2,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
 } from 'lucide-react';
 import { useContentCalendar } from '@/hooks/useContentCalendar';
 import { usePrContacts } from '@/hooks/usePrContacts';
@@ -69,55 +65,44 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-carbon" />
-          <span className="text-sm text-gray-500">Loading Marketing Workspace...</span>
-        </div>
+      <div className="max-w-5xl mx-auto flex items-center justify-center py-32">
+        <Loader2 className="h-8 w-8 animate-spin text-carbon/30" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-5xl mx-auto px-4 pt-10 pb-16 space-y-10">
       {/* Phase Header */}
-      <div className="bg-white border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-crema flex items-center justify-center text-carbon">
-              <Megaphone className="h-5 w-5" fill="currentColor" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">Marketing & Content</h2>
-              <p className="text-xs text-gray-500">Marketing y Contenido</p>
-            </div>
-          </div>
-          <span className="text-2xl font-bold text-orange-600">{progress}%</span>
+      <div>
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+          Marketing y Contenido
+        </p>
+        <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+          Marketing &amp; Content
+        </h1>
+      </div>
+
+      {/* Progress Card */}
+      <div className="relative bg-white border border-carbon/[0.06] p-8 overflow-hidden">
+        <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
+          <div className="h-full bg-carbon transition-all duration-700" style={{ width: `${progress}%` }} />
         </div>
-        <div className="h-2 bg-white/60 rounded-full overflow-hidden mb-3">
-          <div
-            className="h-full rounded-full bg-carbon transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="flex gap-6 text-xs">
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-            <span className="text-gray-600">{completed} completed</span>
+        <div className="flex items-end justify-between">
+          <div>
+            <span className="text-5xl font-light text-carbon tracking-tight">{progress}</span>
+            <span className="text-lg font-light text-carbon/40 ml-1">%</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-texto/60" />
-            <span className="text-gray-600">{inProgress} in progress</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <AlertCircle className="h-3.5 w-3.5 text-gray-300" />
-            <span className="text-gray-600">{pending} pending</span>
+          <div className="flex gap-6 text-xs text-carbon/40">
+            <span>{completed} completed</span>
+            <span>{inProgress} in progress</span>
+            <span>{pending} pending</span>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1">
+      <div className="flex border border-carbon/[0.06]">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -125,14 +110,14 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
                 isActive
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-carbon text-crema'
+                  : 'bg-white text-carbon/40 hover:text-carbon/60'
               }`}
             >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <Icon className="h-3.5 w-3.5" />
+              {tab.label}
             </button>
           );
         })}
@@ -168,39 +153,35 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
       )}
 
       {/* Milestones Checklist */}
-      <div className="bg-white border border-gray-100 p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Marketing Milestones</h3>
-        <div className="space-y-2">
+      <div className="bg-white border border-carbon/[0.06] p-8">
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">Milestones</p>
+        <div className="space-y-4">
           {phaseMilestones.map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <div key={m.id} className="flex items-center gap-4">
               <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 ${
                   m.status === 'completed'
-                    ? 'bg-green-500 border-green-500'
+                    ? 'bg-carbon border-carbon'
                     : m.status === 'in-progress'
                     ? 'border-carbon'
-                    : 'border-gray-200'
+                    : 'border-carbon/20'
                 }`}
               >
                 {m.status === 'completed' && (
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <svg className="w-2.5 h-2.5 text-crema" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
                 {m.status === 'in-progress' && (
-                  <div className="w-2 h-2 rounded-full bg-carbon" />
+                  <div className="w-1.5 h-1.5 bg-carbon" />
                 )}
               </div>
               <div className="flex-1">
-                <p className={`text-sm font-medium ${m.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                <p className={`text-sm font-light ${m.status === 'completed' ? 'text-carbon/30 line-through' : 'text-carbon'}`}>
                   {m.name}
                 </p>
-                <p className="text-xs text-gray-400">{m.nameEs}</p>
               </div>
-              <span className="text-xs text-gray-400">{m.responsible}</span>
+              <span className="text-xs text-carbon/30">{m.responsible}</span>
             </div>
           ))}
         </div>

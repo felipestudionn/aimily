@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  Sparkles,
   Image,
   Users,
   Megaphone,
@@ -12,9 +11,6 @@ import {
   LayoutGrid,
   BookOpen,
   Loader2,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
 } from 'lucide-react';
 import { useSkus } from '@/hooks/useSkus';
 import { useAiGenerations } from '@/hooks/useAiGenerations';
@@ -67,8 +63,6 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
     (m) => ['gm-3', 'gm-4', 'gm-5'].includes(m.id)
   );
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
-  const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
-  const pending = phaseMilestones.length - completed - inProgress;
   const progress =
     phaseMilestones.length > 0
       ? Math.round((completed / phaseMilestones.length) * 100)
@@ -79,27 +73,26 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto flex items-center justify-center py-32">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-carbon/30" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto px-4 pt-10 pb-16 space-y-10">
       {/* Phase Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 flex items-center justify-center bg-crema text-carbon">
-            <Sparkles className="h-7 w-7" fill="currentColor" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">AI Creative Studio</h1>
-            <p className="text-sm text-gray-500">Estudio Creativo IA</p>
-          </div>
+        <div>
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+            Estudio Creativo IA
+          </p>
+          <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+            AI Creative Studio
+          </h1>
         </div>
         <Link
           href={`/collection/${collectionId}/studio/lookbook`}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-2 px-4 py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.08em] uppercase hover:bg-carbon/90 transition-colors"
         >
           <BookOpen className="h-4 w-4" />
           Lookbook Builder
@@ -107,82 +100,61 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 border border-gray-100">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Image className="h-4 w-4" />
+      <div className="grid grid-cols-4 gap-px bg-carbon/[0.06]">
+        <div className="bg-white p-6">
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
             Generations
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{generations.length}</p>
+          </p>
+          <p className="text-3xl font-light text-carbon tracking-tight">{generations.length}</p>
         </div>
-        <div className="bg-white p-4 border border-gray-100">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Users className="h-4 w-4" />
+        <div className="bg-white p-6">
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
             AI Models
-          </div>
-          <p className="text-2xl font-bold text-gray-900">{models.length}</p>
+          </p>
+          <p className="text-3xl font-light text-carbon tracking-tight">{models.length}</p>
         </div>
-        <div className="bg-white p-4 border border-gray-100">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Sparkles className="h-4 w-4" />
+        <div className="bg-white p-6">
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
             Favorites
-          </div>
-          <p className="text-2xl font-bold text-gray-900">
+          </p>
+          <p className="text-3xl font-light text-carbon tracking-tight">
             {generations.filter((g) => g.is_favorite).length}
           </p>
         </div>
-        <div className="bg-white p-4 border border-gray-100">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Clock className="h-4 w-4" />
+        <div className="bg-white p-6">
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
             Progress
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-2xl font-bold text-gray-900">{progress}%</p>
-            <div className="flex gap-1 text-xs">
-              {completed > 0 && (
-                <span className="flex items-center gap-0.5 text-green-600">
-                  <CheckCircle2 className="h-3 w-3" /> {completed}
-                </span>
-              )}
-              {inProgress > 0 && (
-                <span className="flex items-center gap-0.5 text-blue-600">
-                  <Clock className="h-3 w-3" /> {inProgress}
-                </span>
-              )}
-              {pending > 0 && (
-                <span className="flex items-center gap-0.5 text-gray-400">
-                  <AlertCircle className="h-3 w-3" /> {pending}
-                </span>
-              )}
-            </div>
+          </p>
+          <div className="flex items-baseline gap-1">
+            <p className="text-3xl font-light text-carbon tracking-tight">{progress}</p>
+            <span className="text-sm font-light text-carbon/40">%</span>
           </div>
         </div>
       </div>
 
       {/* Milestone Checklist */}
       {phaseMilestones.length > 0 && (
-        <div className="bg-white border border-gray-100 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Milestones</h3>
-          <div className="flex flex-wrap gap-3">
+        <div className="bg-white border border-carbon/[0.06] p-8">
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">Milestones</p>
+          <div className="space-y-4">
             {phaseMilestones.map((m) => (
-              <div
-                key={m.id}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                  m.status === 'completed'
-                    ? 'bg-green-50 text-green-700'
-                    : m.status === 'in-progress'
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'bg-gray-50 text-gray-500'
-                }`}
-              >
-                {m.status === 'completed' ? (
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                ) : m.status === 'in-progress' ? (
-                  <Clock className="h-3.5 w-3.5" />
-                ) : (
-                  <AlertCircle className="h-3.5 w-3.5" />
-                )}
-                {m.name}
+              <div key={m.id} className="flex items-center gap-4">
+                <div className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 ${
+                  m.status === 'completed' ? 'bg-carbon border-carbon' :
+                  m.status === 'in-progress' ? 'border-carbon' : 'border-carbon/20'
+                }`}>
+                  {m.status === 'completed' && (
+                    <svg className="w-2.5 h-2.5 text-crema" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                  {m.status === 'in-progress' && (
+                    <div className="w-1.5 h-1.5 bg-carbon" />
+                  )}
+                </div>
+                <p className={`text-sm font-light ${m.status === 'completed' ? 'text-carbon/30 line-through' : 'text-carbon'}`}>
+                  {m.name}
+                </p>
               </div>
             ))}
           </div>
@@ -190,7 +162,7 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1">
+      <div className="flex border border-carbon/[0.06]">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -198,14 +170,14 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 justify-center ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
                 isActive
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-carbon text-crema'
+                  : 'bg-white text-carbon/40 hover:text-carbon/60'
               }`}
             >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <Icon className="h-3.5 w-3.5" />
+              {tab.label}
             </button>
           );
         })}

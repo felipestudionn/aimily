@@ -238,39 +238,41 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
   };
 
   return (
-    <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-5xl mx-auto px-4 pt-10 pb-16 space-y-10">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <span>Step 4 of 4</span><span>•</span><span>Go to Market</span>
-          </div>
-          <h1 className="text-2xl font-bold">{plan.name} - GTM Planning</h1>
+          <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+            Go to Market
+          </p>
+          <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+            {plan.name}
+          </h1>
         </div>
         <div className="flex items-center gap-4">
           <a
             href={`/collection-calendar/${plan.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-3 bg-white border border-carbon/[0.06] text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/60 hover:text-carbon transition-colors"
           >
             <CalendarDays className="h-4 w-4" />
             Calendar
           </a>
           <div className="text-right">
-            <p className="text-sm text-muted-foreground">Total Sales Target</p>
-            <p className="text-2xl font-bold text-green-600">€{totalPlannedSales.toLocaleString()}</p>
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/30">Total Sales Target</p>
+            <p className="text-2xl font-light text-carbon tracking-tight mt-1">€{totalPlannedSales.toLocaleString()}</p>
           </div>
-          
+
           {/* Save & User Section */}
-          <div className="flex items-center gap-2 pl-4 border-l">
+          <div className="flex items-center gap-2 pl-4 border-l border-carbon/[0.06]">
             {saveMessage && (
-              <span className={`text-sm ${saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm font-light ${saveMessage.type === 'success' ? 'text-carbon/60' : 'text-carbon'}`}>
                 {saveMessage.text}
               </span>
             )}
-            <Button 
-              onClick={handleSavePlan} 
+            <Button
+              onClick={handleSavePlan}
               disabled={isSaving}
-              className="bg-carbon hover:bg-carbon/90"
+              className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase"
             >
               {isSaving ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
@@ -278,19 +280,19 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
                 <><Save className="h-4 w-4 mr-2" />Save Plan</>
               )}
             </Button>
-            
+
             {user ? (
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg">
-                  <User className="h-4 w-4 text-gray-600" />
-                  <span className="text-sm text-gray-700 max-w-[120px] truncate">{user.email}</span>
+                <div className="flex items-center gap-2 px-3 py-2 border border-carbon/[0.06]">
+                  <User className="h-4 w-4 text-carbon/40" />
+                  <span className="text-xs text-carbon/60 max-w-[120px] truncate">{user.email}</span>
                 </div>
                 <Button variant="ghost" size="sm" onClick={signOut} title="Sign out">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" onClick={() => setShowAuthModal(true)}>
+              <Button variant="outline" onClick={() => setShowAuthModal(true)} className="rounded-none">
                 <User className="h-4 w-4 mr-2" />
                 Sign In
               </Button>
@@ -310,9 +312,9 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       />
 
       {/* Channel Filter */}
-      <div className="flex items-center gap-4 mb-6">
-        <Filter className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Channel:</span>
+      <div className="flex items-center gap-4">
+        <Filter className="h-4 w-4 text-carbon/30" />
+        <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Channel:</span>
         {['ALL', 'DTC', 'WHOLESALE'].map(channel => (
           <Button key={channel} variant={channelFilter === channel ? 'default' : 'outline'} size="sm" onClick={() => setChannelFilter(channel)}>
             {channel === 'ALL' ? 'All Channels' : channel}
@@ -322,10 +324,10 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
 
       {/* Visual Timeline */}
       {drops.length > 0 && (
-        <Card className="mb-6">
+        <Card className="border-carbon/[0.06] rounded-none shadow-none">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Launch Timeline</CardTitle>
-            <CardDescription>Drops and commercial actions over time</CardDescription>
+            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">Launch Timeline</p>
+            <p className="text-sm font-light text-carbon/40">Drops and commercial actions over time</p>
           </CardHeader>
           <CardContent>
             <div className="relative">
@@ -427,10 +429,10 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       )}
 
       {/* Drops Section */}
-      <Card className="mb-6">
+      <Card className="border-carbon/[0.06] rounded-none shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div><CardTitle>Drops</CardTitle><CardDescription>Drag products between drops to reorganize</CardDescription></div>
+            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Drops</p><p className="text-sm font-light text-carbon/40">Drag products between drops to reorganize</p></div>
             <Button size="sm" onClick={() => setShowAddDrop(true)}><Plus className="h-4 w-4 mr-1" />Add Drop</Button>
           </div>
         </CardHeader>
@@ -481,10 +483,10 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       </Card>
 
       {/* Commercial Actions */}
-      <Card className="mb-6">
+      <Card className="border-carbon/[0.06] rounded-none shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div><CardTitle>Commercial Actions</CardTitle><CardDescription>Marketing events, collabs, and campaigns</CardDescription></div>
+            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Commercial Actions</p><p className="text-sm font-light text-carbon/40">Marketing events, collabs, and campaigns</p></div>
             <Button size="sm" onClick={() => setShowAddAction(true)}><Plus className="h-4 w-4 mr-1" />Add Action</Button>
           </div>
         </CardHeader>
@@ -512,10 +514,10 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       </Card>
 
       {/* AI Validation */}
-      <Card>
+      <Card className="border-carbon/[0.06] rounded-none shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div><CardTitle>AI Market Validation</CardTitle><CardDescription>Compare your plan with predicted market demand</CardDescription></div>
+            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">AI Market Validation</p><p className="text-sm font-light text-carbon/40">Compare your plan with predicted market demand</p></div>
             <Button onClick={handleGeneratePrediction} disabled={isGeneratingPrediction || drops.length === 0}>
               {isGeneratingPrediction ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analyzing...</> : <><Sparkles className="h-4 w-4 mr-2" />Validate with AI</>}
             </Button>

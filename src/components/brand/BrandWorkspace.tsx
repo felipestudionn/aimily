@@ -4,20 +4,12 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Sparkles,
-  Type,
   Palette,
-  Users,
-  Swords,
-  BookOpen,
   Package,
   Loader2,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
 } from 'lucide-react';
 import { useBrandProfile } from '@/hooks/useBrandProfile';
 import { PHASES } from '@/lib/timeline-template';
-import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelineMilestone } from '@/types/timeline';
 import type {
   BrandColor,
@@ -70,63 +62,50 @@ export function BrandWorkspace({ milestones }: BrandWorkspaceProps) {
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto flex items-center justify-center py-32">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-carbon/30" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto px-4 pt-10 pb-16 space-y-10">
       {/* Phase Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 flex items-center justify-center bg-crema text-carbon">
-            <PhaseIcon phase="brand" className="h-7 w-7" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{info.name}</h1>
-            <p className="text-sm text-gray-500">{info.nameEs}</p>
-          </div>
+      <div>
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+          {info.nameEs}
+        </p>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+            {info.name}
+          </h1>
+          {saving && (
+            <span className="flex items-center gap-2 text-sm text-carbon/30">
+              <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+            </span>
+          )}
         </div>
-        {saving && (
-          <span className="flex items-center gap-2 text-sm text-gray-400">
-            <Loader2 className="h-3 w-3 animate-spin" /> Saving…
-          </span>
-        )}
       </div>
 
-      {/* Progress Bar */}
-      <div className="bg-white border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-900 text-sm">Phase Progress</h2>
-          <span className="text-xl font-bold" style={{ color: info.color }}>
-            {progress}%
-          </span>
+      {/* Progress Card */}
+      <div className="relative bg-white border border-carbon/[0.06] p-8 overflow-hidden">
+        <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
+          <div className="h-full bg-carbon transition-all duration-700" style={{ width: `${progress}%` }} />
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progress}%`, backgroundColor: info.color }}
-          />
-        </div>
-        <div className="flex gap-6 text-xs">
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-            <span className="text-gray-500">{completed} completed</span>
+        <div className="flex items-end justify-between">
+          <div>
+            <span className="text-5xl font-light text-carbon tracking-tight">{progress}</span>
+            <span className="text-lg font-light text-carbon/40 ml-1">%</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 text-texto/60" />
-            <span className="text-gray-500">{inProgress} in progress</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <AlertCircle className="h-3.5 w-3.5 text-gray-300" />
-            <span className="text-gray-500">{pending} pending</span>
+          <div className="flex gap-6 text-xs text-carbon/40">
+            <span>{completed} completed</span>
+            <span>{inProgress} in progress</span>
+            <span>{pending} pending</span>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-white border border-gray-100 p-1">
+      <div className="flex border border-carbon/[0.06]">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -134,13 +113,13 @@ export function BrandWorkspace({ milestones }: BrandWorkspaceProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
                 isActive
-                  ? 'bg-gray-900 text-white'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  ? 'bg-carbon text-crema'
+                  : 'bg-white text-carbon/40 hover:text-carbon/60'
               }`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-3.5 w-3.5" />
               {tab.label}
             </button>
           );
@@ -197,39 +176,35 @@ export function BrandWorkspace({ milestones }: BrandWorkspaceProps) {
       )}
 
       {/* Milestones Checklist */}
-      <div className="bg-white border border-gray-100 p-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Milestones</h2>
-        <div className="space-y-3">
+      <div className="bg-white border border-carbon/[0.06] p-8">
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">Milestones</p>
+        <div className="space-y-4">
           {phaseMilestones.map((m) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <div key={m.id} className="flex items-center gap-4">
               <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 ${
                   m.status === 'completed'
-                    ? 'bg-green-500 border-green-500'
+                    ? 'bg-carbon border-carbon'
                     : m.status === 'in-progress'
                     ? 'border-carbon'
-                    : 'border-gray-200'
+                    : 'border-carbon/20'
                 }`}
               >
                 {m.status === 'completed' && (
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <svg className="w-2.5 h-2.5 text-crema" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
                 {m.status === 'in-progress' && (
-                  <div className="w-2 h-2 rounded-full bg-carbon" />
+                  <div className="w-1.5 h-1.5 bg-carbon" />
                 )}
               </div>
               <div className="flex-1">
-                <p className={`text-sm font-medium ${m.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                <p className={`text-sm font-light ${m.status === 'completed' ? 'text-carbon/30 line-through' : 'text-carbon'}`}>
                   {m.name}
                 </p>
-                <p className="text-xs text-gray-400">{m.nameEs}</p>
               </div>
-              <span className="text-xs text-gray-400">{m.responsible}</span>
+              <span className="text-xs text-carbon/30">{m.responsible}</span>
             </div>
           ))}
         </div>
