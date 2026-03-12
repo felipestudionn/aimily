@@ -54,12 +54,12 @@ function PhaseCard({
   return (
     <Link
       href={`/collection/${collectionId}/${path}`}
-      className="group relative bg-carbon p-8 hover:bg-carbon/90 transition-all duration-300 overflow-hidden"
+      className="group relative bg-white p-8 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06]"
     >
       {/* Progress bar top */}
-      <div className="absolute top-0 left-0 h-[2px] bg-crema/[0.06] w-full">
+      <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
         <div
-          className="h-full bg-crema transition-all duration-700"
+          className="h-full bg-carbon transition-all duration-700"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -67,34 +67,34 @@ function PhaseCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-3">
-          <PhaseIcon phase={phase} className="h-5 w-5 text-crema/60" filled={false} />
+          <PhaseIcon phase={phase} className="h-5 w-5 text-carbon/40" filled={false} />
           <div>
-            <h3 className="font-semibold text-crema text-base tracking-tight">
+            <h3 className="font-semibold text-carbon text-base tracking-tight">
               {info.name}
             </h3>
-            <p className="text-[11px] text-crema/35 uppercase tracking-[0.15em] mt-0.5 font-medium">
+            <p className="text-[11px] text-carbon/35 uppercase tracking-[0.15em] mt-0.5 font-medium">
               {info.nameEs}
             </p>
           </div>
         </div>
-        <ArrowRight className="h-4 w-4 text-crema/20 group-hover:text-crema/50 group-hover:translate-x-1 transition-all" />
+        <ArrowRight className="h-4 w-4 text-carbon/15 group-hover:text-carbon/50 group-hover:translate-x-1 transition-all" />
       </div>
 
       {/* Progress + counts */}
       <div className="flex items-end gap-5 mb-6">
         <div>
-          <span className="text-5xl leading-none font-semibold text-crema tracking-tight">
+          <span className="text-5xl leading-none font-semibold text-carbon tracking-tight">
             {progress}
           </span>
-          <span className="text-lg text-crema/30 ml-0.5">%</span>
+          <span className="text-lg text-carbon/25 ml-0.5">%</span>
         </div>
-        <div className="flex gap-3 pb-2 text-[12px] font-medium text-crema/40">
+        <div className="flex gap-3 pb-2 text-[12px] font-medium text-carbon/35">
           <span>{completed} done</span>
-          <span className="text-crema/15">/</span>
+          <span className="text-carbon/15">/</span>
           {inProgress > 0 && (
             <>
               <span>{inProgress} active</span>
-              <span className="text-crema/15">/</span>
+              <span className="text-carbon/15">/</span>
             </>
           )}
           <span>{pending} pending</span>
@@ -103,17 +103,17 @@ function PhaseCard({
 
       {/* Next milestones list */}
       {nextMilestones.length > 0 && (
-        <div className="pt-5 border-t border-crema/[0.08] space-y-3">
-          <p className="text-[10px] text-crema/30 uppercase tracking-[0.2em] font-semibold">
+        <div className="pt-5 border-t border-carbon/[0.06] space-y-3">
+          <p className="text-[10px] text-carbon/30 uppercase tracking-[0.2em] font-semibold">
             Next
           </p>
           {nextMilestones.map((m) => (
             <div key={m.id} className="flex items-center justify-between">
-              <p className="text-[14px] text-crema/70 truncate pr-4">
+              <p className="text-[14px] text-carbon/60 truncate pr-4">
                 {m.name}
               </p>
               {launchDate && (
-                <p className="text-[12px] text-crema/30 flex-shrink-0 tabular-nums font-medium">
+                <p className="text-[12px] text-carbon/30 flex-shrink-0 tabular-nums font-medium">
                   {getMilestoneDate(launchDate, m.startWeeksBefore).toLocaleDateString('es-ES', {
                     day: 'numeric',
                     month: 'short',
@@ -124,6 +124,11 @@ function PhaseCard({
           ))}
         </div>
       )}
+
+      {/* CTA bar */}
+      <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-2.5 px-4 text-[11px] font-semibold uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        Continue <ArrowRight className="h-3.5 w-3.5" />
+      </div>
     </Link>
   );
 }
