@@ -198,7 +198,9 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
       {view === 'calendar' && (
         <InlineTimeline
-          milestones={milestones}
+          collectionId={collectionId}
+          collectionName={plan.name}
+          season={plan.season || ''}
           launchDate={timeline?.launch_date}
         />
       )}
