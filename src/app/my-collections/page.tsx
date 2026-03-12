@@ -220,8 +220,8 @@ export default function MyCollectionsPage() {
     <div className="min-h-screen bg-crema">
       <Navbar />
 
-      <main className="pt-28 pb-16 px-4 md:px-6">
-        <div className="max-w-5xl mx-auto">
+      <main className="pt-20 pb-16 px-6 md:px-10">
+        <div className="max-w-7xl mx-auto">
 
           {loading ? (
             <div className="flex items-center justify-center py-20">

@@ -131,33 +131,33 @@ export function WizardSidebar({
           />
         </Link>
         {saving && !collapsed && (
-          <Loader2 className="h-3 w-3 text-crema/30 animate-spin ml-auto flex-shrink-0" />
+          <Loader2 className="h-3 w-3 text-white/40 animate-spin ml-auto flex-shrink-0" />
         )}
       </div>
 
       {/* Collection Info + Metrics */}
       {!collapsed && (
-        <div className="px-5 pb-4 border-b border-crema/[0.08]">
-          <h2 className="font-semibold text-crema text-[14px] tracking-tight lowercase truncate">
+        <div className="px-5 pb-4 border-b border-white/[0.08]">
+          <h2 className="font-semibold text-white text-[14px] tracking-tight lowercase truncate">
             {collectionName}
           </h2>
           {season && (
-            <p className="text-[11px] text-crema/50 mt-0.5 tracking-wide uppercase font-medium">{season}</p>
+            <p className="text-[11px] text-white/60 mt-0.5 tracking-wide uppercase font-medium">{season}</p>
           )}
 
           {/* Progress bar */}
           <div className="mt-4">
             <div className="flex items-center justify-between text-[10px] mb-2 tracking-wide uppercase font-semibold">
-              <span className="text-crema/40">Progress</span>
-              <span className="text-crema/80">{overallProgress}%</span>
+              <span className="text-white/50">Progress</span>
+              <span className="text-white/90">{overallProgress}%</span>
             </div>
-            <div className="h-[2px] bg-crema/[0.12] overflow-hidden">
+            <div className="h-[2px] bg-white/[0.12] overflow-hidden">
               <div
-                className="h-full bg-crema transition-all duration-500"
+                className="h-full bg-white transition-all duration-500"
                 style={{ width: `${overallProgress}%` }}
               />
             </div>
-            <p className="text-[10px] text-crema/35 mt-1.5 font-medium">
+            <p className="text-[10px] text-white/40 mt-1.5 font-medium">
               {completedMilestones} of {totalMilestones} milestones
             </p>
           </div>
@@ -165,23 +165,23 @@ export function WizardSidebar({
           {/* Metrics grid */}
           <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
             <div>
-              <p className="text-[9px] text-crema/35 uppercase tracking-wider font-semibold">Launch</p>
-              <p className="text-[12px] text-crema/80 font-medium mt-0.5">{launchDateStr}</p>
+              <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold">Launch</p>
+              <p className="text-[12px] text-white/90 font-medium mt-0.5">{launchDateStr}</p>
               {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
-                <p className="text-[10px] text-crema/35 font-medium">{daysUntilLaunch}d</p>
+                <p className="text-[10px] text-white/40 font-medium">{daysUntilLaunch}d</p>
               )}
             </div>
             <div>
-              <p className="text-[9px] text-crema/35 uppercase tracking-wider font-semibold">SKUs</p>
-              <p className="text-[12px] text-crema/80 font-medium mt-0.5">{skuCount}</p>
+              <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold">SKUs</p>
+              <p className="text-[12px] text-white/90 font-medium mt-0.5">{skuCount}</p>
             </div>
             <div>
-              <p className="text-[9px] text-crema/35 uppercase tracking-wider font-semibold">Active</p>
-              <p className="text-[12px] text-crema/80 font-medium mt-0.5">{inProgressCount}</p>
+              <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold">Active</p>
+              <p className="text-[12px] text-white/90 font-medium mt-0.5">{inProgressCount}</p>
             </div>
             <div>
-              <p className="text-[9px] text-crema/35 uppercase tracking-wider font-semibold">Target</p>
-              <p className="text-[12px] text-crema/80 font-medium mt-0.5">
+              <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold">Target</p>
+              <p className="text-[12px] text-white/90 font-medium mt-0.5">
                 {salesTarget ? `€${salesTarget.toLocaleString()}` : '—'}
               </p>
             </div>
@@ -206,10 +206,10 @@ export function WizardSidebar({
               <div
                 className={`group flex items-center gap-2.5 px-4 py-2.5 mx-1.5 transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-crema/[0.10] text-crema'
+                    ? 'bg-white/[0.10] text-white'
                     : isLocked
-                    ? 'text-crema/30 cursor-not-allowed'
-                    : 'text-crema/70 hover:bg-crema/[0.06] hover:text-crema/90'
+                    ? 'text-white/35 cursor-not-allowed'
+                    : 'text-white/75 hover:bg-white/[0.06] hover:text-white'
                 }`}
                 onClick={() => {
                   if (!isLocked && !collapsed) toggleExpand(ps.phase.id);
@@ -219,7 +219,7 @@ export function WizardSidebar({
                   {isLocked ? (
                     <Lock className="h-3.5 w-3.5" />
                   ) : isCompleted ? (
-                    <div className="h-3.5 w-3.5 bg-crema flex items-center justify-center">
+                    <div className="h-3.5 w-3.5 bg-white flex items-center justify-center">
                       <Check className="h-2.5 w-2.5 text-carbon" strokeWidth={3} />
                     </div>
                   ) : (
@@ -243,15 +243,15 @@ export function WizardSidebar({
                     </Link>
 
                     {isLocked ? (
-                      <span className="text-[9px] text-crema/25 flex-shrink-0 tracking-wider font-medium">LOCKED</span>
+                      <span className="text-[9px] text-white/30 flex-shrink-0 tracking-wider font-medium">LOCKED</span>
                     ) : ps.progress > 0 ? (
-                      <span className="text-[9px] text-crema/50 flex-shrink-0 tabular-nums font-medium">
+                      <span className="text-[9px] text-white/60 flex-shrink-0 tabular-nums font-medium">
                         {ps.progress}%
                       </span>
                     ) : null}
 
                     {!isLocked && (
-                      <div className="flex-shrink-0 text-crema/35">
+                      <div className="flex-shrink-0 text-white/40">
                         {isExpanded ? (
                           <ChevronDown className="h-3 w-3" />
                         ) : (
@@ -265,7 +265,7 @@ export function WizardSidebar({
 
               {/* Sub-milestones */}
               {!collapsed && isExpanded && !isLocked && phaseMilestones.length > 0 && (
-                <div className="ml-[38px] mr-3 mb-1.5 mt-0.5 border-l border-crema/[0.10] pl-3 space-y-px">
+                <div className="ml-[38px] mr-3 mb-1.5 mt-0.5 border-l border-white/[0.10] pl-3 space-y-px">
                   {phaseMilestones.map((m) => {
                     const isMilestoneCompleted = m.status === 'completed';
                     const isMilestoneInProgress = m.status === 'in-progress';
@@ -273,38 +273,38 @@ export function WizardSidebar({
                     return (
                       <div
                         key={m.id}
-                        className="flex items-center gap-2 py-1.5 px-2 text-[11px] group/ms cursor-pointer hover:bg-crema/[0.04] transition-colors"
+                        className="flex items-center gap-2 py-1.5 px-2 text-[11px] group/ms cursor-pointer hover:bg-white/[0.05] transition-colors"
                         onClick={() => cycleMilestoneStatus(m.id)}
                         title="Click to change status"
                       >
                         <div className="flex-shrink-0">
                           {isMilestoneCompleted ? (
-                            <div className="w-3 h-3 bg-crema flex items-center justify-center">
+                            <div className="w-3 h-3 bg-white flex items-center justify-center">
                               <Check className="h-2 w-2 text-carbon" strokeWidth={3} />
                             </div>
                           ) : isMilestoneInProgress ? (
-                            <div className="w-3 h-3 border border-crema/50 flex items-center justify-center">
-                              <div className="w-1.5 h-1.5 bg-crema/50" />
+                            <div className="w-3 h-3 border border-white/60 flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 bg-white/60" />
                             </div>
                           ) : (
-                            <div className="w-3 h-3 border border-crema/25 group-hover/ms:border-crema/50 transition-colors" />
+                            <div className="w-3 h-3 border border-white/30 group-hover/ms:border-white/60 transition-colors" />
                           )}
                         </div>
 
                         <span
                           className={`flex-1 truncate leading-tight ${
                             isMilestoneCompleted
-                              ? 'text-crema/30 line-through'
+                              ? 'text-white/35 line-through'
                               : isMilestoneInProgress
-                              ? 'text-crema/80'
-                              : 'text-crema/50 group-hover/ms:text-crema/70'
+                              ? 'text-white/90'
+                              : 'text-white/55 group-hover/ms:text-white/80'
                           }`}
                         >
                           {m.name}
                         </span>
 
                         {m.responsible && (
-                          <span className="text-[8px] text-crema/25 flex-shrink-0 uppercase tracking-wider font-medium">
+                          <span className="text-[8px] text-white/30 flex-shrink-0 uppercase tracking-wider font-medium">
                             {m.responsible}
                           </span>
                         )}
@@ -319,7 +319,7 @@ export function WizardSidebar({
       </nav>
 
       {/* Bottom: Calendar + Overview */}
-      <div className="border-t border-crema/[0.08] py-2 px-1.5">
+      <div className="border-t border-white/[0.08] py-2 px-1.5">
         {[
           { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
           { id: 'overview', path: '', label: 'Overview', Icon: LayoutDashboard },
@@ -336,8 +336,8 @@ export function WizardSidebar({
               href={fullPath}
               className={`flex items-center gap-2.5 px-4 py-2 transition-all text-[11px] font-medium tracking-[0.08em] uppercase ${
                 isActive
-                  ? 'text-crema bg-crema/[0.10]'
-                  : 'text-crema/50 hover:text-crema/70 hover:bg-crema/[0.06]'
+                  ? 'text-white bg-white/[0.10]'
+                  : 'text-white/55 hover:text-white/80 hover:bg-white/[0.06]'
               }`}
               title={collapsed ? item.label : undefined}
             >
@@ -351,7 +351,7 @@ export function WizardSidebar({
       {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-crema/10 flex items-center justify-center text-crema/30 hover:text-crema/60 hover:border-crema/20 transition-colors"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-white/15 flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/30 transition-colors"
       >
         {collapsed ? (
           <PanelLeftOpen className="h-2.5 w-2.5" />

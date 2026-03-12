@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, User, LogOut, FolderOpen, Zap } from "lucide-react";
+import { LogOut, Zap, User, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -72,9 +72,9 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 px-4 md:px-6 animate-fade-in">
-      <div className="container mx-auto">
-      <div className="flex h-24 items-center px-2 md:px-4">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-crema/80 backdrop-blur-sm animate-fade-in">
+      <div className="max-w-7xl mx-auto px-6 md:px-10">
+      <div className="flex h-14 items-center">
         <Link href="/" className="flex items-center">
           <Image
             src="/images/aimily-logo-black.png"
@@ -92,46 +92,27 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             {user ? (
               <>
                 <Link
-                  href="/my-collections"
-                  className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
-                >
-                  <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
-                  My Collections
-                </Link>
-                <Link
-                  href="/new-collection"
-                  className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
-                >
-                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                  New Collection
-                </Link>
-                <Link
                   href="/pricing"
-                  className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
+                  className="inline-flex items-center justify-center px-4 py-2 text-texto/40 text-[11px] font-medium tracking-[0.08em] uppercase transition-all hover:text-texto/70"
                 >
                   <Zap className="mr-1.5 h-3.5 w-3.5" />
                   Pricing
                 </Link>
                 <NotificationBell />
-                {/* User Profile */}
-                <div className="flex items-center gap-1 pl-3 border-l border-gris/40">
-                  <Link
-                    href="/account"
-                    className="flex items-center gap-2 px-2 py-1.5 hover:opacity-70 transition-opacity"
-                    title="Account settings"
-                  >
-                    <div className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-xs font-medium">
-                      {user.email?.charAt(0).toUpperCase()}
-                    </div>
-                  </Link>
-                  <button
-                    onClick={() => signOut()}
-                    className="p-2 text-texto/40 hover:text-texto transition-colors"
-                    title="Sign out"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </div>
+                <Link
+                  href="/account"
+                  className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:bg-carbon/80 transition-colors"
+                  title="Account"
+                >
+                  {user.email?.charAt(0).toUpperCase()}
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="p-1.5 text-texto/30 hover:text-texto/60 transition-colors"
+                  title="Sign out"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
               </>
             ) : (
               <>
