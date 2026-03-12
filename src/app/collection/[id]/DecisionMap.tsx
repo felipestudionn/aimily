@@ -60,39 +60,39 @@ const MINI_BLOCKS: MiniBlock[] = [
 
 const MINI_BLOCK_DEPS: MiniBlockDep[] = [
   // Creative → Planning
-  { from: 'research', to: 'market-analysis', label: 'Target informa análisis de mercado' },
-  { from: 'brand-identity', to: 'budget-range', label: 'Identidad define estrategia de colección' },
+  { from: 'research', to: 'market-analysis', label: 'Perfil de consumidor y target' },
+  { from: 'brand-identity', to: 'budget-range', label: 'Posicionamiento y nivel de precio' },
 
   // Planning → Development
-  { from: 'budget-range', to: 'design', label: 'Plan de SKUs activa diseño' },
+  { from: 'budget-range', to: 'design', label: 'Lista de SKUs y especificaciones' },
 
   // Creative → Marketing
-  { from: 'brand-identity', to: 'digital-presence', label: 'Identidad visual para web y contenido' },
-  { from: 'brand-identity', to: 'marketing-prelaunch', label: 'Brand assets para RRSS y campañas' },
+  { from: 'brand-identity', to: 'digital-presence', label: 'Logo, guidelines y assets visuales' },
+  { from: 'brand-identity', to: 'marketing-prelaunch', label: 'Tono de marca y lenguaje visual' },
 
   // Planning → Marketing
-  { from: 'gtm-strategy', to: 'marketing-prelaunch', label: 'Estrategia GTM dirige marketing' },
+  { from: 'gtm-strategy', to: 'marketing-prelaunch', label: 'Plan de canales, timing y presupuesto' },
 
   // Development → Marketing
-  { from: 'design', to: 'digital-presence', label: 'Diseños para lookbook y contenido' },
-  { from: 'sampling', to: 'digital-presence', label: 'Producto para fotografía' },
-  { from: 'production', to: 'launch', label: 'Producto entregado habilita lanzamiento' },
+  { from: 'design', to: 'digital-presence', label: 'Renders y colorways para lookbook' },
+  { from: 'sampling', to: 'digital-presence', label: 'Muestras físicas para fotografía' },
+  { from: 'production', to: 'launch', label: 'Inventario terminado y listo' },
 ];
 
 /* Within-block sequential deps */
 const INTRA_BLOCK_DEPS: MiniBlockDep[] = [
   // Creative
-  { from: 'research', to: 'brand-identity', label: 'Research informa branding' },
+  { from: 'research', to: 'brand-identity', label: 'Tendencias y target definido' },
   // Planning
-  { from: 'market-analysis', to: 'budget-range', label: 'Análisis informa presupuesto' },
-  { from: 'budget-range', to: 'gtm-strategy', label: 'Colección define GTM' },
+  { from: 'market-analysis', to: 'budget-range', label: 'Datos de mercado y canales' },
+  { from: 'budget-range', to: 'gtm-strategy', label: 'Mix de producto y presupuesto' },
   // Development
-  { from: 'design', to: 'prototyping', label: 'Diseño → prototipo' },
-  { from: 'prototyping', to: 'sampling', label: 'Prototipo → muestrario' },
-  { from: 'sampling', to: 'production', label: 'Muestrario → producción' },
+  { from: 'design', to: 'prototyping', label: 'Bocetos y patronaje técnico' },
+  { from: 'prototyping', to: 'sampling', label: 'Proto aprobado con fichas técnicas' },
+  { from: 'sampling', to: 'production', label: 'Muestras confirmadas' },
   // Marketing
-  { from: 'digital-presence', to: 'marketing-prelaunch', label: 'Presencia digital → marketing' },
-  { from: 'marketing-prelaunch', to: 'launch', label: 'Marketing → lanzamiento' },
+  { from: 'digital-presence', to: 'marketing-prelaunch', label: 'Web y e-commerce listos' },
+  { from: 'marketing-prelaunch', to: 'launch', label: 'Audiencia y campañas preparadas' },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -420,25 +420,39 @@ export default function DecisionMap({ milestones, launchDate, collectionId }: De
                       <p className={`text-xs font-medium ${col.colors.text}`}>{progress}%</p>
                     </div>
 
-                    {/* Tooltip on hover showing dependency label */}
-                    {isHovered && (
-                      <div className="absolute left-0 right-0 -bottom-1 translate-y-full z-30 pointer-events-none">
-                        <div className="mx-2 bg-carbon text-white text-[10px] leading-relaxed px-3 py-2 shadow-lg">
-                          <p className="font-medium mb-1">{mb.labelEs}</p>
-                          {[...MINI_BLOCK_DEPS, ...INTRA_BLOCK_DEPS]
-                            .filter((d) => d.from === mb.id || d.to === mb.id)
-                            .map((d, i) => (
-                              <p key={i} className="text-white/70">
-                                {d.from === mb.id ? '→ ' : '← '}
-                                {d.label}
-                              </p>
-                            ))}
-                          {mb.milestoneIds.length > 0 && (
-                            <p className="text-white/40 mt-1">{mb.milestoneIds.length} milestones</p>
-                          )}
+                    {/* Tooltip on hover */}
+                    {isHovered && (() => {
+                      const allDeps = [...MINI_BLOCK_DEPS, ...INTRA_BLOCK_DEPS];
+                      const outputs = allDeps.filter((d) => d.from === mb.id);
+                      const inputs = allDeps.filter((d) => d.to === mb.id);
+                      const getMbLabel = (id: string) => MINI_BLOCKS.find((m) => m.id === id)?.labelEs || id;
+                      return (
+                        <div className="absolute left-0 right-0 -bottom-1 translate-y-full z-30 pointer-events-none">
+                          <div className="mx-2 bg-carbon text-white text-[10px] leading-relaxed px-3 py-2.5 shadow-lg">
+                            {inputs.length > 0 && (
+                              <div className="mb-1.5">
+                                <p className="text-white/40 uppercase tracking-wider text-[9px] mb-0.5">Recibe de</p>
+                                {inputs.map((d, i) => (
+                                  <p key={i} className="text-white/80">
+                                    {getMbLabel(d.from)} → <span className="text-white">{d.label}</span>
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                            {outputs.length > 0 && (
+                              <div>
+                                <p className="text-white/40 uppercase tracking-wider text-[9px] mb-0.5">Envía a</p>
+                                {outputs.map((d, i) => (
+                                  <p key={i} className="text-white/80">
+                                    {getMbLabel(d.to)} ← <span className="text-white">{d.label}</span>
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 );
               })}

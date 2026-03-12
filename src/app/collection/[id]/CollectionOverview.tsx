@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { ArrowRight, LayoutGrid, CalendarDays, GitBranch } from 'lucide-react';
 import { PHASES, PHASE_ORDER, getMilestoneDate } from '@/lib/timeline-template';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 import DecisionMap from './DecisionMap';
+import InlineTimeline from './InlineTimeline';
 
 type ViewMode = 'blocks' | 'calendar' | 'map';
 
@@ -138,18 +139,9 @@ function PhaseCard({
 
 export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverviewProps) {
   const { id } = useParams();
-  const router = useRouter();
   const collectionId = id as string;
   const milestones = timeline?.milestones || [];
   const [view, setView] = useState<ViewMode>('blocks');
-
-  const handleViewChange = (v: ViewMode) => {
-    if (v === 'calendar') {
-      router.push(`/collection/${collectionId}/calendar`);
-      return;
-    }
-    setView(v);
-  };
 
   return (
     <div className="min-h-[80vh]">
@@ -173,7 +165,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               return (
                 <button
                   key={tab.id}
-                  onClick={() => handleViewChange(tab.id)}
+                  onClick={() => setView(tab.id)}
                   className={`flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
                     isActive
                       ? 'bg-carbon text-crema'
@@ -203,6 +195,13 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           </div>
         )}
       </div>
+
+      {view === 'calendar' && (
+        <InlineTimeline
+          milestones={milestones}
+          launchDate={timeline?.launch_date}
+        />
+      )}
 
       {view === 'map' && (
         <DecisionMap
