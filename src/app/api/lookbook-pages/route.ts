@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   try {
     const planId = req.nextUrl.searchParams.get('planId');
     const lookbookName = req.nextUrl.searchParams.get('lookbookName');
+    const storyId = req.nextUrl.searchParams.get('storyId');
 
     if (!planId) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
       .order('page_number', { ascending: true });
 
     if (lookbookName) query = query.eq('lookbook_name', lookbookName);
+    if (storyId) query = query.eq('story_id', storyId);
 
     const { data, error } = await query;
     if (error) throw error;

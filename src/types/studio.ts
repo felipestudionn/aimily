@@ -109,6 +109,7 @@ export interface LookbookPage {
   layout_type: LookbookLayout;
   content: LookbookContentItem[];
   background_color: string | null;
+  story_id: string | null;
   created_at: string;
   updated_at: string;
 }

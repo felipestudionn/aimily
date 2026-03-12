@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { LookbookPage } from '@/types/studio';
 
-export const useLookbookPages = (collectionPlanId: string, lookbookName?: string) => {
+export const useLookbookPages = (collectionPlanId: string, lookbookName?: string, storyId?: string | null) => {
   const [pages, setPages] = useState<LookbookPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +13,7 @@ export const useLookbookPages = (collectionPlanId: string, lookbookName?: string
       setError(null);
       let url = `/api/lookbook-pages?planId=${collectionPlanId}`;
       if (lookbookName) url += `&lookbookName=${encodeURIComponent(lookbookName)}`;
+      if (storyId) url += `&storyId=${storyId}`;
       const res = await fetch(url);
       if (!res.ok) {
         const err = await res.json();
@@ -26,7 +27,7 @@ export const useLookbookPages = (collectionPlanId: string, lookbookName?: string
     } finally {
       setLoading(false);
     }
-  }, [collectionPlanId, lookbookName]);
+  }, [collectionPlanId, lookbookName, storyId]);
 
   const addPage = async (page: Partial<LookbookPage>) => {
     try {

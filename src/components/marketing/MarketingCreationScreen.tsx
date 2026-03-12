@@ -1,24 +1,18 @@
 'use client';
 
-import { ArrowRight, Film, PenTool } from 'lucide-react';
+import { ArrowRight, PenTool } from 'lucide-react';
 import type { TimelineMilestone } from '@/types/timeline';
 import { StoriesCard } from './StoriesCard';
 import { ProductVisualsCard } from './ProductVisualsCard';
+import { CampaignVideoCard } from './CampaignVideoCard';
 
 interface Props {
   collectionPlanId: string;
   milestones: TimelineMilestone[];
 }
 
-/* ── Card config for the 2 remaining placeholder cards ── */
+/* ── Card config for the 1 remaining placeholder card ── */
 const PLACEHOLDER_CARDS = [
-  {
-    id: 'campaign',
-    title: 'Campaign & Video',
-    titleEs: 'Campaña y Video',
-    description: 'Lookbook layouts, editorial shoots, and video content for each story.',
-    Icon: Film,
-  },
   {
     id: 'content-strategy',
     title: 'Content Strategy',
@@ -52,7 +46,10 @@ export function MarketingCreationScreen({ collectionPlanId, milestones }: Props)
         {/* Product Visuals — live card */}
         <ProductVisualsCard collectionPlanId={collectionPlanId} />
 
-        {/* Remaining placeholders */}
+        {/* Campaign & Video — live card */}
+        <CampaignVideoCard collectionPlanId={collectionPlanId} />
+
+        {/* Remaining placeholder */}
         {PLACEHOLDER_CARDS.map((card) => {
           const Icon = card.Icon;
           return (
@@ -78,7 +75,7 @@ export function MarketingCreationScreen({ collectionPlanId, milestones }: Props)
               </p>
               <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
                 <p className="text-xs text-carbon/20 tracking-wide">
-                  Coming in Phase 4–5
+                  Coming in Phase 5
                 </p>
               </div>
               <div className="mt-6 flex items-center justify-center gap-2 bg-carbon/[0.04] text-carbon/30 py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em]">

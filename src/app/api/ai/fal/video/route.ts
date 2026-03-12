@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const { image_url, motion_type, prompt } = await req.json();
+    const { image_url, motion_type, prompt, story_context } = await req.json();
 
     if (!image_url) {
       return NextResponse.json({ error: 'image_url is required' }, { status: 400 });
@@ -27,10 +27,22 @@ export async function POST(req: NextRequest) {
 
     const motionDesc = motionPrompts[motion_type] || motion_type || 'Subtle elegant movement';
 
+    let fullPrompt = prompt || `Fashion video. ${motionDesc}. Professional quality, smooth motion.`;
+    if (story_context && !prompt) {
+      const parts = [
+        story_context.name ? `Fashion video for "${story_context.name}" story.` : 'Fashion video.',
+        motionDesc + '.',
+        story_context.mood?.length ? `Mood: ${story_context.mood.join(', ')}.` : '',
+        story_context.tone ? `Brand aesthetic: ${story_context.tone}.` : '',
+        'Professional quality, smooth motion, editorial feel.',
+      ].filter(Boolean);
+      fullPrompt = parts.join(' ');
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await fal.subscribe('fal-ai/kling-video/v3/standard', {
       input: {
-        prompt: prompt || `Fashion video. ${motionDesc}. Professional quality, smooth motion.`,
+        prompt: fullPrompt,
         image_url,
         duration: 5,
       },
