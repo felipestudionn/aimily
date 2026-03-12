@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   CalendarDays,
   LayoutDashboard,
@@ -62,53 +62,51 @@ export function WizardSidebar({
             alt="aimily"
             width={774}
             height={96}
-            className="object-contain h-5 w-auto opacity-90 hover:opacity-100 transition-opacity"
+            className="object-contain h-6 w-auto opacity-100 hover:opacity-80 transition-opacity"
             priority
             unoptimized
           />
         </Link>
         {saving && !collapsed && (
-          <Loader2 className="h-3 w-3 text-white/50 animate-spin ml-auto flex-shrink-0" />
+          <Loader2 className="h-3 w-3 text-white/60 animate-spin ml-auto flex-shrink-0" />
         )}
       </div>
 
-      {/* Collection Header — editorial */}
+      {/* Collection Header */}
       {!collapsed && (
-        <div className="px-6 pb-6 border-b border-white/[0.06]">
-          <h2 className="text-xl font-light text-white tracking-tight leading-tight lowercase">
+        <div className="px-6 pb-6 border-b border-white/[0.08]">
+          <h2 className="text-lg text-white tracking-tight leading-tight lowercase">
             {collectionName}
           </h2>
           {season && (
-            <p className="text-xs text-white/50 mt-1 tracking-[0.2em] uppercase font-medium">{season}</p>
+            <p className="text-[11px] text-white/60 mt-1.5 tracking-[0.2em] uppercase">{season}</p>
           )}
 
-          {/* Progress — clean single line */}
+          {/* Progress */}
           <div className="mt-5">
-            <div className="h-[2px] bg-white/[0.08] overflow-hidden">
+            <div className="h-[2px] bg-white/[0.10] overflow-hidden">
               <div
                 className="h-full bg-white transition-all duration-500"
                 style={{ width: `${overallProgress}%` }}
               />
             </div>
-            <p className="text-xs text-white/60 mt-2 font-light">
-              <span className="text-white font-medium">{overallProgress}%</span> complete
+            <p className="text-sm text-white/70 mt-2.5">
+              <span className="text-white">{overallProgress}%</span> complete
             </p>
           </div>
 
-          {/* Key metrics — minimal */}
-          <div className="mt-5 flex gap-6">
-            <div>
-              <p className="text-lg font-light text-white tracking-tight">{launchDateStr}</p>
-              {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
-                <p className="text-xs text-white/30 font-light">{daysUntilLaunch}d left</p>
-              )}
-            </div>
+          {/* Launch date */}
+          <div className="mt-4">
+            <p className="text-base text-white tracking-tight">{launchDateStr}</p>
+            {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
+              <p className="text-[11px] text-white/40 mt-0.5">{daysUntilLaunch}d left</p>
+            )}
           </div>
         </div>
       )}
 
-      {/* Phase Navigation — clean, generous spacing */}
-      <nav className="flex-1 overflow-y-auto py-4 scrollbar-thin">
+      {/* Phase Navigation */}
+      <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin">
         {phases.map((ps) => {
           const isLocked = ps.state === 'locked';
           const isCompleted = ps.state === 'completed';
@@ -120,12 +118,12 @@ export function WizardSidebar({
               key={ps.phase.id}
               href={isLocked ? '#' : phasePath}
               onClick={(e) => { if (isLocked) e.preventDefault(); }}
-              className={`group flex items-center gap-3 px-6 py-3 transition-all ${
+              className={`group flex items-center gap-3.5 px-6 py-3.5 transition-all ${
                 isActive
-                  ? 'bg-white/[0.10] text-white'
+                  ? 'bg-white/[0.12] text-white'
                   : isLocked
-                  ? 'text-white/20 cursor-not-allowed'
-                  : 'text-white hover:bg-white/[0.06]'
+                  ? 'text-white/30 cursor-not-allowed'
+                  : 'text-white/90 hover:bg-white/[0.06] hover:text-white'
               }`}
             >
               {/* Status indicator */}
@@ -137,12 +135,12 @@ export function WizardSidebar({
                     <Check className="h-3 w-3 text-carbon" strokeWidth={3} />
                   </div>
                 ) : (
-                  <div className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-white/70'}`} />
+                  <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-white' : 'bg-white/80'}`} />
                 )}
               </div>
 
               {!collapsed && (
-                <span className="text-[13px] font-light tracking-wide truncate">
+                <span className="text-sm tracking-wide truncate">
                   {ps.phase.name}
                 </span>
               )}
@@ -152,7 +150,7 @@ export function WizardSidebar({
       </nav>
 
       {/* Bottom: Calendar + Overview */}
-      <div className="border-t border-white/[0.06] py-3 px-2">
+      <div className="border-t border-white/[0.08] py-3 px-3">
         {[
           { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
           { id: 'overview', path: '', label: 'Overview', Icon: LayoutDashboard },
@@ -167,10 +165,10 @@ export function WizardSidebar({
             <Link
               key={item.id}
               href={fullPath}
-              className={`flex items-center gap-3 px-4 py-2.5 transition-all text-[13px] font-light tracking-wide ${
+              className={`flex items-center gap-3.5 px-4 py-3 transition-all text-sm tracking-wide ${
                 isActive
-                  ? 'text-white bg-white/[0.08]'
-                  : 'text-white/70 hover:text-white hover:bg-white/[0.06]'
+                  ? 'text-white bg-white/[0.10]'
+                  : 'text-white/80 hover:text-white hover:bg-white/[0.06]'
               }`}
               title={collapsed ? item.label : undefined}
             >
@@ -184,7 +182,7 @@ export function WizardSidebar({
       {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-white/15 flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/30 transition-colors"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-white/20 flex items-center justify-center text-white/50 hover:text-white hover:border-white/40 transition-colors"
       >
         {collapsed ? (
           <PanelLeftOpen className="h-2.5 w-2.5" />

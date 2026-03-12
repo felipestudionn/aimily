@@ -325,15 +325,10 @@ export function CollectionCalendarClient({
       {/* Phase legend */}
       <div className="flex flex-wrap gap-2 mb-4">
         {[
-          { label: 'Product & Merchandising', color: '#FF6B6B' },
-          { label: 'Marca e Identidad', color: '#4ECDC4' },
-          { label: 'Diseño y Desarrollo', color: '#F5A623' },
-          { label: 'Prototipado', color: '#7B68EE' },
-          { label: 'Muestrario', color: '#E91E63' },
-          { label: 'Presencia Digital', color: '#9C27B0' },
-          { label: 'Marketing', color: '#FF9800' },
-          { label: 'Producción', color: '#2196F3' },
-          { label: 'Lanzamiento', color: '#F44336' },
+          { label: 'Creativo y Marca', color: '#5A8A7A' },
+          { label: 'Planificación y Estrategia', color: '#9A7A60' },
+          { label: 'Diseño y Desarrollo', color: '#7A6A9A' },
+          { label: 'Marketing y Digital', color: '#9A6070' },
         ].map((p) => (
           <div
             key={p.label}
