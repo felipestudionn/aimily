@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import {
@@ -45,12 +46,18 @@ interface WizardSidebarProps {
   collectionId: string;
   collectionName: string;
   season?: string;
+  launchDate?: string | null;
+  skuCount?: number;
+  setupData?: Record<string, unknown> | null;
 }
 
 export function WizardSidebar({
   collectionId,
   collectionName,
   season,
+  launchDate,
+  skuCount = 0,
+  setupData,
 }: WizardSidebarProps) {
   const pathname = usePathname();
   const { milestones, cycleMilestoneStatus, saving } = useTimeline();
@@ -59,6 +66,20 @@ export function WizardSidebar({
   const [expandedPhases, setExpandedPhases] = useState<Set<WizardPhaseId>>(new Set());
 
   const basePath = `/collection/${collectionId}`;
+
+  // Compute metrics
+  const inProgressCount = milestones.filter((m) => m.status === 'in-progress').length;
+  const totalMilestones = milestones.length;
+  const completedMilestones = milestones.filter((m) => m.status === 'completed').length;
+
+  const launchDateStr = launchDate
+    ? new Date(launchDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '—';
+  const daysUntilLaunch = launchDate
+    ? Math.ceil((new Date(launchDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const salesTarget = (setupData as Record<string, number | undefined>)?.totalSalesTarget;
 
   useEffect(() => {
     if (activePhase) {
@@ -92,35 +113,77 @@ export function WizardSidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-14 bottom-0 bg-[#FAFAFA] border-r border-neutral-200 z-40 transition-all duration-300 flex flex-col ${
+      className={`fixed left-0 top-0 bottom-0 bg-carbon z-40 transition-all duration-300 flex flex-col ${
         collapsed ? 'w-[52px]' : 'w-64'
       }`}
     >
-      {/* Collection Header */}
+      {/* Logo */}
+      <div className="px-5 h-14 flex items-center">
+        <Link href="/my-collections" className="flex items-center">
+          <Image
+            src="/images/aimily-logo-white.png"
+            alt="aimily"
+            width={774}
+            height={96}
+            className="object-contain h-4 w-auto opacity-40 hover:opacity-70 transition-opacity"
+            priority
+            unoptimized
+          />
+        </Link>
+        {saving && !collapsed && (
+          <Loader2 className="h-3 w-3 text-crema/30 animate-spin ml-auto flex-shrink-0" />
+        )}
+      </div>
+
+      {/* Collection Info + Metrics */}
       {!collapsed && (
-        <div className="px-5 pt-5 pb-4 border-b border-neutral-200">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-texto text-[13px] tracking-wide uppercase truncate">
-              {collectionName}
-            </h2>
-            {saving && (
-              <Loader2 className="h-3 w-3 text-neutral-400 animate-spin flex-shrink-0" />
-            )}
-          </div>
+        <div className="px-5 pb-4 border-b border-crema/[0.06]">
+          <h2 className="font-semibold text-crema text-[14px] tracking-tight lowercase truncate">
+            {collectionName}
+          </h2>
           {season && (
-            <p className="text-[11px] text-neutral-400 mt-0.5 tracking-wide">{season}</p>
+            <p className="text-[11px] text-crema/30 mt-0.5 tracking-wide uppercase font-medium">{season}</p>
           )}
-          {/* Overall Progress */}
+
+          {/* Progress bar */}
           <div className="mt-4">
-            <div className="flex items-center justify-between text-[10px] mb-2 tracking-wide uppercase">
-              <span className="text-neutral-400">Progress</span>
-              <span className="text-texto font-semibold">{overallProgress}%</span>
+            <div className="flex items-center justify-between text-[10px] mb-2 tracking-wide uppercase font-semibold">
+              <span className="text-crema/25">Progress</span>
+              <span className="text-crema/60">{overallProgress}%</span>
             </div>
-            <div className="h-[2px] bg-neutral-200 overflow-hidden">
+            <div className="h-[2px] bg-crema/[0.08] overflow-hidden">
               <div
-                className="h-full bg-carbon transition-all duration-500"
+                className="h-full bg-crema transition-all duration-500"
                 style={{ width: `${overallProgress}%` }}
               />
+            </div>
+            <p className="text-[10px] text-crema/20 mt-1.5 font-medium">
+              {completedMilestones} of {totalMilestones} milestones
+            </p>
+          </div>
+
+          {/* Metrics grid */}
+          <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
+            <div>
+              <p className="text-[9px] text-crema/20 uppercase tracking-wider font-semibold">Launch</p>
+              <p className="text-[12px] text-crema/60 font-medium mt-0.5">{launchDateStr}</p>
+              {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
+                <p className="text-[10px] text-crema/20 font-medium">{daysUntilLaunch}d</p>
+              )}
+            </div>
+            <div>
+              <p className="text-[9px] text-crema/20 uppercase tracking-wider font-semibold">SKUs</p>
+              <p className="text-[12px] text-crema/60 font-medium mt-0.5">{skuCount}</p>
+            </div>
+            <div>
+              <p className="text-[9px] text-crema/20 uppercase tracking-wider font-semibold">Active</p>
+              <p className="text-[12px] text-crema/60 font-medium mt-0.5">{inProgressCount}</p>
+            </div>
+            <div>
+              <p className="text-[9px] text-crema/20 uppercase tracking-wider font-semibold">Target</p>
+              <p className="text-[12px] text-crema/60 font-medium mt-0.5">
+                {salesTarget ? `€${salesTarget.toLocaleString()}` : '—'}
+              </p>
             </div>
           </div>
         </div>
@@ -143,22 +206,21 @@ export function WizardSidebar({
               <div
                 className={`group flex items-center gap-2.5 px-4 py-2.5 mx-1.5 transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-white text-texto shadow-sm border border-neutral-200'
+                    ? 'bg-crema/[0.08] text-crema'
                     : isLocked
-                    ? 'text-neutral-300 cursor-not-allowed'
-                    : 'text-neutral-500 hover:bg-white/60 hover:text-texto'
+                    ? 'text-crema/20 cursor-not-allowed'
+                    : 'text-crema/50 hover:bg-crema/[0.04] hover:text-crema/70'
                 }`}
                 onClick={() => {
                   if (!isLocked && !collapsed) toggleExpand(ps.phase.id);
                 }}
               >
-                {/* Icon */}
                 <div className="flex-shrink-0">
                   {isLocked ? (
                     <Lock className="h-3.5 w-3.5" />
                   ) : isCompleted ? (
-                    <div className="h-3.5 w-3.5 bg-carbon flex items-center justify-center">
-                      <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+                    <div className="h-3.5 w-3.5 bg-crema flex items-center justify-center">
+                      <Check className="h-2.5 w-2.5 text-carbon" strokeWidth={3} />
                     </div>
                   ) : (
                     <Icon className="h-3.5 w-3.5" />
@@ -167,7 +229,6 @@ export function WizardSidebar({
 
                 {!collapsed && (
                   <>
-                    {/* Phase name */}
                     <Link
                       href={isLocked ? '#' : phasePath}
                       onClick={(e) => {
@@ -181,18 +242,16 @@ export function WizardSidebar({
                       </span>
                     </Link>
 
-                    {/* Progress or lock */}
                     {isLocked ? (
-                      <span className="text-[9px] text-neutral-300 flex-shrink-0 tracking-wider">LOCKED</span>
+                      <span className="text-[9px] text-crema/15 flex-shrink-0 tracking-wider font-medium">LOCKED</span>
                     ) : ps.progress > 0 ? (
-                      <span className="text-[9px] text-neutral-400 flex-shrink-0 tabular-nums">
+                      <span className="text-[9px] text-crema/30 flex-shrink-0 tabular-nums font-medium">
                         {ps.progress}%
                       </span>
                     ) : null}
 
-                    {/* Expand chevron */}
                     {!isLocked && (
-                      <div className="flex-shrink-0 text-neutral-300">
+                      <div className="flex-shrink-0 text-crema/20">
                         {isExpanded ? (
                           <ChevronDown className="h-3 w-3" />
                         ) : (
@@ -204,9 +263,9 @@ export function WizardSidebar({
                 )}
               </div>
 
-              {/* Sub-milestones (expanded) */}
+              {/* Sub-milestones */}
               {!collapsed && isExpanded && !isLocked && phaseMilestones.length > 0 && (
-                <div className="ml-[38px] mr-3 mb-1.5 mt-0.5 border-l border-neutral-200 pl-3 space-y-px">
+                <div className="ml-[38px] mr-3 mb-1.5 mt-0.5 border-l border-crema/[0.06] pl-3 space-y-px">
                   {phaseMilestones.map((m) => {
                     const isMilestoneCompleted = m.status === 'completed';
                     const isMilestoneInProgress = m.status === 'in-progress';
@@ -214,41 +273,38 @@ export function WizardSidebar({
                     return (
                       <div
                         key={m.id}
-                        className="flex items-center gap-2 py-1.5 px-2 text-[11px] group/ms cursor-pointer hover:bg-white/80 transition-colors"
+                        className="flex items-center gap-2 py-1.5 px-2 text-[11px] group/ms cursor-pointer hover:bg-crema/[0.04] transition-colors"
                         onClick={() => cycleMilestoneStatus(m.id)}
                         title="Click to change status"
                       >
-                        {/* Status indicator */}
                         <div className="flex-shrink-0">
                           {isMilestoneCompleted ? (
-                            <div className="w-3 h-3 bg-carbon flex items-center justify-center">
-                              <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                            <div className="w-3 h-3 bg-crema flex items-center justify-center">
+                              <Check className="h-2 w-2 text-carbon" strokeWidth={3} />
                             </div>
                           ) : isMilestoneInProgress ? (
-                            <div className="w-3 h-3 border border-carbon/40 flex items-center justify-center">
-                              <div className="w-1.5 h-1.5 bg-carbon/40" />
+                            <div className="w-3 h-3 border border-crema/30 flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 bg-crema/30" />
                             </div>
                           ) : (
-                            <div className="w-3 h-3 border border-neutral-300 group-hover/ms:border-neutral-400 transition-colors" />
+                            <div className="w-3 h-3 border border-crema/15 group-hover/ms:border-crema/30 transition-colors" />
                           )}
                         </div>
 
-                        {/* Milestone name */}
                         <span
                           className={`flex-1 truncate leading-tight ${
                             isMilestoneCompleted
-                              ? 'text-neutral-300 line-through'
+                              ? 'text-crema/20 line-through'
                               : isMilestoneInProgress
-                              ? 'text-texto/80'
-                              : 'text-neutral-400 group-hover/ms:text-neutral-600'
+                              ? 'text-crema/60'
+                              : 'text-crema/30 group-hover/ms:text-crema/50'
                           }`}
                         >
                           {m.name}
                         </span>
 
-                        {/* Responsible tag */}
                         {m.responsible && (
-                          <span className="text-[8px] text-neutral-300 flex-shrink-0 uppercase tracking-wider">
+                          <span className="text-[8px] text-crema/15 flex-shrink-0 uppercase tracking-wider font-medium">
                             {m.responsible}
                           </span>
                         )}
@@ -262,8 +318,8 @@ export function WizardSidebar({
         })}
       </nav>
 
-      {/* Bottom Section: Calendar + Overview */}
-      <div className="border-t border-neutral-200 py-2 px-1.5">
+      {/* Bottom: Calendar + Overview */}
+      <div className="border-t border-crema/[0.06] py-2 px-1.5">
         {[
           { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
           { id: 'overview', path: '', label: 'Overview', Icon: LayoutDashboard },
@@ -280,8 +336,8 @@ export function WizardSidebar({
               href={fullPath}
               className={`flex items-center gap-2.5 px-4 py-2 transition-all text-[11px] font-medium tracking-[0.08em] uppercase ${
                 isActive
-                  ? 'text-texto bg-white shadow-sm border border-neutral-200'
-                  : 'text-neutral-400 hover:text-neutral-600 hover:bg-white/60'
+                  ? 'text-crema bg-crema/[0.08]'
+                  : 'text-crema/30 hover:text-crema/50 hover:bg-crema/[0.04]'
               }`}
               title={collapsed ? item.label : undefined}
             >
@@ -295,7 +351,7 @@ export function WizardSidebar({
       {/* Collapse Toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-white border border-neutral-200 flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:border-neutral-300 transition-colors shadow-sm"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-crema/10 flex items-center justify-center text-crema/30 hover:text-crema/60 hover:border-crema/20 transition-colors"
       >
         {collapsed ? (
           <PanelLeftOpen className="h-2.5 w-2.5" />

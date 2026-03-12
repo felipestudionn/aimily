@@ -10,6 +10,9 @@ interface CollectionHubShellProps {
   collectionName: string;
   season?: string;
   milestones: TimelineMilestone[];
+  launchDate?: string | null;
+  skuCount?: number;
+  setupData?: Record<string, unknown> | null;
 }
 
 export function CollectionHubShell({
@@ -18,6 +21,9 @@ export function CollectionHubShell({
   collectionName,
   season,
   milestones,
+  launchDate,
+  skuCount,
+  setupData,
 }: CollectionHubShellProps) {
   return (
     <SubscriptionGate>
@@ -26,6 +32,9 @@ export function CollectionHubShell({
         collectionName={collectionName}
         season={season}
         milestones={milestones}
+        launchDate={launchDate}
+        skuCount={skuCount}
+        setupData={setupData}
       >
         {children}
       </WizardLayout>

@@ -10,6 +10,9 @@ interface WizardLayoutProps {
   collectionName: string;
   season?: string;
   milestones: TimelineMilestone[];
+  launchDate?: string | null;
+  skuCount?: number;
+  setupData?: Record<string, unknown> | null;
 }
 
 export function WizardLayout({
@@ -18,6 +21,9 @@ export function WizardLayout({
   collectionName,
   season,
   milestones,
+  launchDate,
+  skuCount,
+  setupData,
 }: WizardLayoutProps) {
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
@@ -25,8 +31,11 @@ export function WizardLayout({
         collectionId={collectionId}
         collectionName={collectionName}
         season={season}
+        launchDate={launchDate}
+        skuCount={skuCount}
+        setupData={setupData}
       />
-      <main className="ml-64 pt-14 min-h-screen transition-all duration-300">
+      <main className="ml-64 min-h-screen transition-all duration-300">
         {children}
       </main>
     </TimelineProvider>
