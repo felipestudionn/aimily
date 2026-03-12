@@ -74,34 +74,36 @@ function PhaseCard({
         />
       </div>
 
-      {/* Eyebrow label */}
-      <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-        {info.nameEs}
-      </p>
+      {/* Title + circular progress */}
+      <div className="flex items-start justify-between mb-8">
+        <h3 className="text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
+          {info.name}
+        </h3>
 
-      {/* Title — editorial style */}
-      <h3 className="text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15] mb-8">
-        {info.name}
-      </h3>
-
-      {/* Progress number */}
-      <div className="flex items-end gap-4 mb-8">
-        <div>
-          <span className="text-5xl md:text-6xl leading-none font-light text-carbon tracking-tight">
-            {progress}
+        {/* Circular progress */}
+        <div className="relative flex-shrink-0 w-14 h-14">
+          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+            <circle
+              cx="28" cy="28" r="24"
+              fill="none"
+              stroke="currentColor"
+              className="text-carbon/[0.06]"
+              strokeWidth="2.5"
+            />
+            <circle
+              cx="28" cy="28" r="24"
+              fill="none"
+              stroke="currentColor"
+              className="text-carbon transition-all duration-700"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 24}`}
+              strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-light text-carbon/50 rotate-0">
+            {progress}%
           </span>
-          <span className="text-xl text-carbon/20 ml-1">%</span>
-        </div>
-        <div className="flex gap-3 pb-2.5 text-xs font-light text-carbon/40">
-          <span>{completed} done</span>
-          <span className="text-carbon/15">/</span>
-          {inProgress > 0 && (
-            <>
-              <span>{inProgress} active</span>
-              <span className="text-carbon/15">/</span>
-            </>
-          )}
-          <span>{pending} pending</span>
         </div>
       </div>
 
