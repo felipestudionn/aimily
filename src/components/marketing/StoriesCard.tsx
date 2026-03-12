@@ -1,0 +1,730 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import {
+  BookOpen,
+  Plus,
+  Trash2,
+  ChevronLeft,
+  GripVertical,
+  Sparkles,
+  Loader2,
+  Check,
+  X,
+  Edit3,
+  Star,
+} from 'lucide-react';
+import { useStories, type Story } from '@/hooks/useStories';
+import { useSkus, type SKU } from '@/hooks/useSkus';
+
+/* ── Types ── */
+
+type TabMode = 'libre' | 'asistido' | 'propuesta';
+
+interface AiStoryDraft {
+  name: string;
+  narrative: string;
+  mood: string[];
+  tone: string;
+  color_palette: string[];
+  sku_ids: string[];
+  hero_sku_id: string;
+  content_direction: string;
+}
+
+interface AiResult {
+  stories: AiStoryDraft[];
+  rationale?: string;
+}
+
+/* ── Props ── */
+
+interface StoriesCardProps {
+  collectionPlanId: string;
+}
+
+/* ── Component ── */
+
+export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
+  const {
+    stories,
+    loading,
+    addStory,
+    updateStory,
+    deleteStory,
+    bulkSaveStories,
+    assignSku,
+  } = useStories(collectionPlanId);
+  const { skus, refetch: refetchSkus } = useSkus(collectionPlanId);
+
+  const [expanded, setExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabMode>('libre');
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // AI state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiDrafts, setAiDrafts] = useState<AiResult | null>(null);
+  const [userDirection, setUserDirection] = useState('');
+
+  // Drag state
+  const [dragSkuId, setDragSkuId] = useState<string | null>(null);
+
+  /* ── Card (collapsed) view ── */
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        className="group relative bg-white p-10 lg:p-12 border border-carbon/[0.06] flex flex-col min-h-[340px] hover:shadow-lg transition-all duration-300 text-left w-full"
+      >
+        <div className="flex items-start gap-4 mb-6">
+          <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
+            <BookOpen className="h-5 w-5 text-carbon/40 group-hover:text-carbon/70 transition-colors" />
+          </div>
+          <div>
+            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
+              Historias
+            </p>
+            <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
+              Collection Stories
+            </h3>
+          </div>
+        </div>
+        <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
+          Define narrative arcs that organize your collection into compelling stories for marketing.
+        </p>
+
+        {/* Story count / preview */}
+        <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
+          {loading ? (
+            <p className="text-xs text-carbon/30">Loading...</p>
+          ) : stories.length === 0 ? (
+            <p className="text-xs text-carbon/20 tracking-wide">No stories yet</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {stories.map((s) => (
+                <span
+                  key={s.id}
+                  className="text-[11px] tracking-[0.05em] uppercase bg-carbon/[0.04] text-carbon/50 px-3 py-1"
+                >
+                  {s.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+          Open
+        </div>
+      </button>
+    );
+  }
+
+  /* ── Helpers ── */
+
+  const unassignedSkus = skus.filter(
+    (sk) => !stories.some((st) => st.id === (sk as SKU & { story_id?: string }).story_id)
+  );
+
+  // For display: get SKUs per story by checking story_id
+  const skusForStory = (storyId: string) =>
+    skus.filter((sk) => (sk as SKU & { story_id?: string }).story_id === storyId);
+
+  /* ── AI handlers ── */
+
+  const generateStories = async (mode: 'generate' | 'assist') => {
+    setAiLoading(true);
+    setAiDrafts(null);
+    try {
+      const res = await fetch('/api/ai/stories/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          mode,
+          userDirection: mode === 'assist' ? userDirection : undefined,
+        }),
+      });
+      if (!res.ok) throw new Error('AI generation failed');
+      const data = (await res.json()) as AiResult;
+      setAiDrafts(data);
+    } catch (err) {
+      console.error('AI generation error:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const confirmAiDrafts = async () => {
+    if (!aiDrafts) return;
+    const newStories = aiDrafts.stories.map((d, i) => ({
+      collection_plan_id: collectionPlanId,
+      name: d.name,
+      narrative: d.narrative,
+      mood: d.mood,
+      tone: d.tone,
+      color_palette: d.color_palette,
+      hero_sku_id: null as string | null,
+      content_direction: d.content_direction,
+      sort_order: i,
+    }));
+    const skuAssignments: Record<string, string[]> = {};
+    for (const d of aiDrafts.stories) {
+      if (d.sku_ids?.length) skuAssignments[d.name] = d.sku_ids;
+    }
+    await bulkSaveStories(newStories, skuAssignments);
+    setAiDrafts(null);
+    refetchSkus();
+  };
+
+  /* ── Drag & Drop ── */
+
+  const handleDrop = async (storyId: string) => {
+    if (!dragSkuId) return;
+    await assignSku(dragSkuId, storyId);
+    setDragSkuId(null);
+    refetchSkus();
+  };
+
+  const handleUnassign = async (skuId: string) => {
+    await assignSku(skuId, null);
+    refetchSkus();
+  };
+
+  /* ── Add blank story ── */
+
+  const handleAddStory = async () => {
+    await addStory({
+      collection_plan_id: collectionPlanId,
+      name: `Story ${stories.length + 1}`,
+      narrative: null,
+      mood: null,
+      tone: null,
+      color_palette: null,
+      hero_sku_id: null,
+      content_direction: null,
+      sort_order: stories.length,
+    });
+  };
+
+  /* ── Inline edit ── */
+
+  const [editForm, setEditForm] = useState<Partial<Story>>({});
+
+  const startEdit = (story: Story) => {
+    setEditingId(story.id);
+    setEditForm({
+      name: story.name,
+      narrative: story.narrative,
+      mood: story.mood,
+      tone: story.tone,
+      color_palette: story.color_palette,
+      content_direction: story.content_direction,
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    await updateStory(editingId, editForm);
+    setEditingId(null);
+    setEditForm({});
+  };
+
+  /* ── TABS ── */
+
+  const TABS: { id: TabMode; label: string; labelEs: string }[] = [
+    { id: 'libre', label: 'Manual', labelEs: 'Libre' },
+    { id: 'asistido', label: 'Assisted', labelEs: 'Asistido' },
+    { id: 'propuesta', label: 'AI Proposal', labelEs: 'Propuesta IA' },
+  ];
+
+  /* ── Expanded view ── */
+
+  return (
+    <div className="fixed inset-0 z-50 bg-crema overflow-auto">
+      {/* Header bar */}
+      <div className="sticky top-0 z-10 bg-crema/95 backdrop-blur border-b border-carbon/[0.06]">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <button
+            onClick={() => setExpanded(false)}
+            className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back to Creation
+          </button>
+          <div className="text-center">
+            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
+              Historias
+            </p>
+            <h2 className="text-lg font-light text-carbon tracking-tight">
+              Collection Stories
+            </h2>
+          </div>
+          <div className="w-32" />
+        </div>
+
+        {/* Mode tabs */}
+        <div className="max-w-6xl mx-auto px-6 pb-3 flex gap-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setAiDrafts(null);
+              }}
+              className={`px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-carbon text-crema border-carbon'
+                  : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+              }`}
+            >
+              {tab.labelEs}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* ─── TAB: LIBRE ─── */}
+        {activeTab === 'libre' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-light text-carbon/50">
+                Create and manage stories manually. Drag SKUs to assign them.
+              </p>
+              <button
+                onClick={handleAddStory}
+                className="flex items-center gap-2 bg-carbon text-crema px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add Story
+              </button>
+            </div>
+
+            {stories.length === 0 && !loading && (
+              <div className="text-center py-20 text-carbon/30 text-sm font-light">
+                No stories yet. Add one manually or use the AI tabs.
+              </div>
+            )}
+
+            {/* Story cards */}
+            {stories.map((story) => (
+              <StoryRow
+                key={story.id}
+                story={story}
+                skus={skusForStory(story.id)}
+                editing={editingId === story.id}
+                editForm={editForm}
+                onStartEdit={() => startEdit(story)}
+                onCancelEdit={() => {
+                  setEditingId(null);
+                  setEditForm({});
+                }}
+                onSaveEdit={saveEdit}
+                onEditChange={setEditForm}
+                onDelete={() => deleteStory(story.id)}
+                onDrop={() => handleDrop(story.id)}
+                onUnassignSku={handleUnassign}
+                dragActive={!!dragSkuId}
+              />
+            ))}
+
+            {/* Unassigned SKUs pool */}
+            {skus.length > 0 && (
+              <div className="mt-10">
+                <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-3">
+                  Unassigned SKUs ({unassignedSkus.length})
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {unassignedSkus.map((sku) => (
+                    <div
+                      key={sku.id}
+                      draggable
+                      onDragStart={() => setDragSkuId(sku.id)}
+                      onDragEnd={() => setDragSkuId(null)}
+                      className="flex items-center gap-1.5 bg-white border border-carbon/[0.06] px-3 py-1.5 text-xs font-light text-carbon/70 cursor-grab active:cursor-grabbing hover:shadow-sm transition-shadow"
+                    >
+                      <GripVertical className="h-3 w-3 text-carbon/20" />
+                      {sku.name}
+                      <span className="text-[10px] text-carbon/30 ml-1">{sku.family}</span>
+                    </div>
+                  ))}
+                  {unassignedSkus.length === 0 && (
+                    <p className="text-xs text-carbon/20">All SKUs assigned</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── TAB: ASISTIDO ─── */}
+        {activeTab === 'asistido' && (
+          <div className="space-y-6">
+            <p className="text-sm font-light text-carbon/50">
+              Describe how you want the stories grouped. The AI will propose stories following your direction.
+            </p>
+            <textarea
+              value={userDirection}
+              onChange={(e) => setUserDirection(e.target.value)}
+              placeholder="E.g. I want 3 stories: one sporty, one elegant evening, one casual daily. Put the new sneakers in the sporty story..."
+              className="w-full h-32 bg-white border border-carbon/[0.06] px-4 py-3 text-sm font-light text-carbon placeholder:text-carbon/25 focus:outline-none focus:border-carbon/20 resize-none"
+            />
+            <button
+              onClick={() => generateStories('assist')}
+              disabled={aiLoading || !userDirection.trim()}
+              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {aiLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              Generate with Direction
+            </button>
+
+            {/* AI drafts preview (editable) */}
+            {aiDrafts && (
+              <AiDraftsPreview
+                drafts={aiDrafts}
+                skus={skus}
+                onUpdate={setAiDrafts}
+                onConfirm={confirmAiDrafts}
+                onDiscard={() => setAiDrafts(null)}
+              />
+            )}
+          </div>
+        )}
+
+        {/* ─── TAB: PROPUESTA IA ─── */}
+        {activeTab === 'propuesta' && (
+          <div className="space-y-6">
+            <p className="text-sm font-light text-carbon/50">
+              Let the AI analyze your SKUs, brand DNA, and creative vision to propose the optimal story grouping.
+            </p>
+            <button
+              onClick={() => generateStories('generate')}
+              disabled={aiLoading}
+              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {aiLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              Generate AI Proposal
+            </button>
+
+            {aiDrafts && (
+              <AiDraftsPreview
+                drafts={aiDrafts}
+                skus={skus}
+                onUpdate={setAiDrafts}
+                onConfirm={confirmAiDrafts}
+                onDiscard={() => setAiDrafts(null)}
+              />
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   Sub-components
+   ══════════════════════════════════════════════════════ */
+
+/* ── Story Row (manual mode) ── */
+
+function StoryRow({
+  story,
+  skus,
+  editing,
+  editForm,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onEditChange,
+  onDelete,
+  onDrop,
+  onUnassignSku,
+  dragActive,
+}: {
+  story: Story;
+  skus: SKU[];
+  editing: boolean;
+  editForm: Partial<Story>;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onSaveEdit: () => void;
+  onEditChange: (form: Partial<Story>) => void;
+  onDelete: () => void;
+  onDrop: () => void;
+  onUnassignSku: (skuId: string) => void;
+  dragActive: boolean;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        onDrop();
+      }}
+      className={`bg-white border p-6 transition-all ${
+        dragOver
+          ? 'border-carbon/40 shadow-md'
+          : dragActive
+          ? 'border-dashed border-carbon/20'
+          : 'border-carbon/[0.06]'
+      }`}
+    >
+      {editing ? (
+        /* Edit mode */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <input
+              value={editForm.name ?? ''}
+              onChange={(e) => onEditChange({ ...editForm, name: e.target.value })}
+              className="text-xl font-light text-carbon tracking-tight bg-transparent border-b border-carbon/10 focus:border-carbon/30 outline-none w-full mr-4"
+              placeholder="Story name"
+            />
+            <div className="flex gap-2 flex-shrink-0">
+              <button onClick={onSaveEdit} className="p-1.5 text-carbon/60 hover:text-carbon">
+                <Check className="h-4 w-4" />
+              </button>
+              <button onClick={onCancelEdit} className="p-1.5 text-carbon/30 hover:text-carbon/60">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <textarea
+            value={editForm.narrative ?? ''}
+            onChange={(e) => onEditChange({ ...editForm, narrative: e.target.value })}
+            className="w-full h-20 text-sm font-light text-carbon/70 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20 resize-none"
+            placeholder="Narrative..."
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              value={(editForm.mood ?? []).join(', ')}
+              onChange={(e) =>
+                onEditChange({
+                  ...editForm,
+                  mood: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                })
+              }
+              className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20"
+              placeholder="Mood keywords (comma separated)"
+            />
+            <input
+              value={editForm.tone ?? ''}
+              onChange={(e) => onEditChange({ ...editForm, tone: e.target.value })}
+              className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20"
+              placeholder="Tone"
+            />
+          </div>
+          <input
+            value={editForm.content_direction ?? ''}
+            onChange={(e) => onEditChange({ ...editForm, content_direction: e.target.value })}
+            className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20"
+            placeholder="Content direction (photography, video...)"
+          />
+        </div>
+      ) : (
+        /* View mode */
+        <div>
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h4 className="text-lg font-light text-carbon tracking-tight">{story.name}</h4>
+              {story.narrative && (
+                <p className="text-sm font-light text-carbon/50 mt-1 leading-relaxed max-w-3xl">
+                  {story.narrative}
+                </p>
+              )}
+            </div>
+            <div className="flex gap-1 flex-shrink-0 ml-4">
+              <button
+                onClick={onStartEdit}
+                className="p-1.5 text-carbon/25 hover:text-carbon/60 transition-colors"
+              >
+                <Edit3 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={onDelete}
+                className="p-1.5 text-carbon/25 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Mood / Tone / Direction chips */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {story.mood?.map((m) => (
+              <span key={m} className="text-[10px] tracking-[0.05em] uppercase bg-carbon/[0.04] text-carbon/40 px-2 py-0.5">
+                {m}
+              </span>
+            ))}
+            {story.tone && (
+              <span className="text-[10px] tracking-[0.05em] italic text-carbon/30">
+                {story.tone}
+              </span>
+            )}
+          </div>
+
+          {/* Assigned SKUs */}
+          <div className="flex flex-wrap gap-1.5">
+            {skus.map((sku) => (
+              <div
+                key={sku.id}
+                className="flex items-center gap-1 bg-carbon/[0.03] border border-carbon/[0.06] px-2 py-1 text-[11px] font-light text-carbon/60 group/sku"
+              >
+                {(sku as SKU & { story_id?: string }).story_id === story.hero_sku_id && (
+                  <Star className="h-3 w-3 text-carbon/30" />
+                )}
+                {sku.name}
+                <button
+                  onClick={() => onUnassignSku(sku.id)}
+                  className="ml-1 opacity-0 group-hover/sku:opacity-100 text-carbon/30 hover:text-red-400 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            {skus.length === 0 && (
+              <p className="text-[11px] text-carbon/20 italic">
+                Drag SKUs here to assign them
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── AI Drafts Preview (editable before confirming) ── */
+
+function AiDraftsPreview({
+  drafts,
+  skus,
+  onUpdate,
+  onConfirm,
+  onDiscard,
+}: {
+  drafts: AiResult;
+  skus: SKU[];
+  onUpdate: (d: AiResult) => void;
+  onConfirm: () => void;
+  onDiscard: () => void;
+}) {
+  const updateDraft = (index: number, field: keyof AiStoryDraft, value: unknown) => {
+    const updated = { ...drafts };
+    updated.stories = [...updated.stories];
+    updated.stories[index] = { ...updated.stories[index], [field]: value };
+    onUpdate(updated);
+  };
+
+  const skuName = useCallback(
+    (id: string) => skus.find((s) => s.id === id)?.name ?? id.slice(0, 8),
+    [skus]
+  );
+
+  return (
+    <div className="space-y-4 mt-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">
+          AI Proposal — Review & Edit
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={onDiscard}
+            className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon/80 transition-colors"
+          >
+            Discard
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90 transition-colors"
+          >
+            <Check className="h-3.5 w-3.5" /> Confirm & Save
+          </button>
+        </div>
+      </div>
+
+      {drafts.rationale && (
+        <div className="bg-carbon/[0.02] border border-carbon/[0.06] p-4">
+          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">
+            AI Rationale
+          </p>
+          <p className="text-sm font-light text-carbon/60 leading-relaxed">
+            {drafts.rationale}
+          </p>
+        </div>
+      )}
+
+      {drafts.stories.map((draft, i) => (
+        <div key={i} className="bg-white border border-carbon/[0.06] p-6 space-y-3">
+          <input
+            value={draft.name}
+            onChange={(e) => updateDraft(i, 'name', e.target.value)}
+            className="text-lg font-light text-carbon tracking-tight bg-transparent border-b border-carbon/10 focus:border-carbon/30 outline-none w-full"
+          />
+          <textarea
+            value={draft.narrative}
+            onChange={(e) => updateDraft(i, 'narrative', e.target.value)}
+            className="w-full h-16 text-sm font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20 resize-none"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              value={draft.mood.join(', ')}
+              onChange={(e) =>
+                updateDraft(
+                  i,
+                  'mood',
+                  e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
+                )
+              }
+              className="text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
+              placeholder="Mood (comma separated)"
+            />
+            <input
+              value={draft.tone}
+              onChange={(e) => updateDraft(i, 'tone', e.target.value)}
+              className="text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
+              placeholder="Tone"
+            />
+          </div>
+          <input
+            value={draft.content_direction}
+            onChange={(e) => updateDraft(i, 'content_direction', e.target.value)}
+            className="w-full text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
+            placeholder="Content direction"
+          />
+          {/* SKU assignments */}
+          <div>
+            <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1.5">
+              Assigned SKUs ({draft.sku_ids.length})
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {draft.sku_ids.map((id) => (
+                <span
+                  key={id}
+                  className="text-[10px] bg-carbon/[0.04] text-carbon/50 px-2 py-0.5"
+                >
+                  {skuName(id)}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
