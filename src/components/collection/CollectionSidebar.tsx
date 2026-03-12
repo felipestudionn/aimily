@@ -11,11 +11,9 @@ import {
   Pencil,
   Wrench,
   Scissors,
-  Monitor,
   Megaphone,
   Factory,
   Zap,
-  Sparkles,
   BarChart3,
   PenTool,
   ChevronLeft,
@@ -34,11 +32,8 @@ const WORKSPACE_ICONS: Record<string, React.ElementType> = {
   design: Pencil,
   prototyping: Wrench,
   sampling: Scissors,
-  studio: Sparkles,
-  digital: Monitor,
   marketing: Megaphone,
   production: Factory,
-  launch: Rocket,
 };
 
 const BLOCK_ICONS: Record<TimelinePhase, React.ElementType> = {
@@ -91,10 +86,8 @@ const BLOCK_GROUPS: BlockGroup[] = [
     label: 'Marketing & Digital',
     labelEs: 'Marketing y Digital',
     workspaces: [
-      { id: 'studio', path: '/studio', label: 'AI Creative Studio', labelEs: 'Estudio Creativo IA' },
-      { id: 'digital', path: '/digital', label: 'Digital Presence', labelEs: 'Presencia Digital' },
-      { id: 'marketing', path: '/marketing', label: 'Marketing', labelEs: 'Marketing' },
-      { id: 'launch', path: '/launch', label: 'Launch', labelEs: 'Lanzamiento' },
+      { id: 'marketing', path: '/marketing/creation', label: 'Marketing Creation', labelEs: 'Marketing Creación' },
+      { id: 'marketing', path: '/marketing/distribution', label: 'Marketing Distribution', labelEs: 'Marketing Distribución' },
     ],
   },
 ];
