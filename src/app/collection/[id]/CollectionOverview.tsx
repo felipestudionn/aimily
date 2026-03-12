@@ -147,7 +147,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
   return (
     <div className="min-h-[80vh]">
-      <div className="max-w-5xl mx-auto px-10 py-12">
+      <div className="px-8 md:px-12 lg:px-16 py-12">
         {/* Header + View Toggle */}
         <div className="flex items-end justify-between mb-10">
           <div>

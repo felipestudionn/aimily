@@ -281,7 +281,7 @@ export default function DecisionMap({ milestones, launchDate, collectionId }: De
   }));
 
   return (
-    <div className="max-w-6xl mx-auto px-10 py-12">
+    <div className="px-8 md:px-12 lg:px-16 py-12">
       {/* Header */}
       <div className="mb-10">
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">

@@ -60,7 +60,7 @@ export default function InlineTimeline({ collectionId, collectionName, season, l
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto px-10 py-20 flex items-center justify-center">
+      <div className="px-8 md:px-12 lg:px-16 py-20 flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-carbon/30" />
       </div>
     );
@@ -68,14 +68,14 @@ export default function InlineTimeline({ collectionId, collectionName, season, l
 
   if (!timeline) {
     return (
-      <div className="max-w-6xl mx-auto px-10 py-20 text-center text-carbon/30 text-sm">
+      <div className="px-8 md:px-12 lg:px-16 py-20 text-center text-carbon/30 text-sm">
         No hay timeline configurado
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-10 py-8">
+    <div className="px-8 md:px-12 lg:px-16 py-8">
       {/* Header */}
       <div className="mb-6">
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
