@@ -59,12 +59,12 @@ function PhaseCard({
   const nextMilestones = phaseMilestones
     .filter((m) => m.status !== 'completed')
     .sort((a, b) => b.startWeeksBefore - a.startWeeksBefore)
-    .slice(0, 3);
+    .slice(0, 5);
 
   return (
     <Link
       href={`/collection/${collectionId}/${path}`}
-      className="group relative bg-white p-10 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06]"
+      className="group relative bg-white p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col aspect-square md:aspect-auto md:min-h-[420px]"
     >
       {/* Progress bar top */}
       <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
@@ -109,7 +109,7 @@ function PhaseCard({
 
       {/* Next milestones list */}
       {nextMilestones.length > 0 && (
-        <div className="pt-6 border-t border-carbon/[0.06] space-y-3">
+        <div className="pt-6 border-t border-carbon/[0.06] space-y-3 flex-1">
           <p className="text-xs font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
             Next
           </p>
@@ -132,7 +132,7 @@ function PhaseCard({
       )}
 
       {/* CTA bar */}
-      <div className="mt-8 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+      <div className="mt-auto pt-8 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
         Continue <ArrowRight className="h-3.5 w-3.5" />
       </div>
     </Link>
