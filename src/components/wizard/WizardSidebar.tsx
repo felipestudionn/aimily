@@ -23,24 +23,46 @@ import type { TimelinePhase } from '@/types/timeline';
 interface SidebarBlock {
   id: TimelinePhase;
   label: string;
+  /** Route for the block landing page */
+  route: string;
+  /** Wizard phase IDs (for progress tracking) */
   phaseIds: WizardPhaseId[];
+  /**
+   * If true, show individual phase sub-items in the sidebar.
+   * When false, the block header link IS the navigation (for blocks
+   * whose landing page has its own in-page navigation).
+   */
+  showSubItems: boolean;
 }
 
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
     label: 'Creative & Brand',
+    route: 'creative',
     phaseIds: ['product', 'brand'],
+    showSubItems: false, // Creative page has 3-step in-page nav
+  },
+  {
+    id: 'planning',
+    label: 'Merchandising & Planning',
+    route: 'merchandising',
+    phaseIds: ['merchandising'],
+    showSubItems: false, // Merchandising page has 4-card in-page nav
   },
   {
     id: 'development',
     label: 'Design & Development',
+    route: 'development',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
+    showSubItems: true, // Each phase is a separate route/workspace
   },
   {
     id: 'go_to_market',
     label: 'Marketing & Digital',
+    route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
+    showSubItems: true, // Creation and Distribution are separate routes
   },
 ];
 
@@ -102,6 +124,9 @@ export function WizardSidebar({
   }
 
   function isBlockActive(block: SidebarBlock): boolean {
+    const blockPath = `${basePath}/${block.route}`;
+    if (pathname?.startsWith(blockPath)) return true;
+    // Also check sub-item routes
     return block.phaseIds.some((id) => {
       const ps = phaseMap.get(id);
       if (!ps) return false;
@@ -180,14 +205,15 @@ export function WizardSidebar({
           const allCompleted =
             blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
 
+          const blockHref = `${basePath}/${block.route}`;
+
           return (
             <div key={block.id}>
-              {/* Block header — clickable to expand/collapse */}
-              <button
-                onClick={() => toggleBlock(block.id)}
-                className={`w-full flex items-center gap-3 px-6 py-3 transition-all text-left ${
+              {/* Block header — clickable label navigates, chevron expands/collapses */}
+              <div
+                className={`w-full flex items-center gap-3 px-6 py-3 transition-all ${
                   blockActive
-                    ? 'text-white'
+                    ? 'text-white bg-white/[0.06]'
                     : allLocked
                     ? 'text-white/30'
                     : 'text-white/70 hover:text-white/90'
@@ -208,9 +234,14 @@ export function WizardSidebar({
                       )}
                     </div>
 
-                    <span className="text-[11px] font-medium tracking-[0.12em] uppercase flex-1 truncate">
+                    {/* Block label — links to block landing page */}
+                    <Link
+                      href={allLocked ? '#' : blockHref}
+                      onClick={(e) => { if (allLocked) e.preventDefault(); }}
+                      className="text-[11px] font-medium tracking-[0.12em] uppercase flex-1 truncate hover:text-white transition-colors"
+                    >
                       {block.label}
-                    </span>
+                    </Link>
 
                     {/* Progress + chevron */}
                     {!allLocked && blockProgress > 0 && (
@@ -218,17 +249,24 @@ export function WizardSidebar({
                         {blockProgress}%
                       </span>
                     )}
-                    <ChevronDown
-                      className={`h-3 w-3 text-white/30 transition-transform ${
-                        isExpanded ? '' : '-rotate-90'
-                      }`}
-                    />
+                    {block.showSubItems && (
+                      <button
+                        onClick={() => toggleBlock(block.id)}
+                        className="p-0.5 hover:bg-white/[0.08] transition-colors"
+                      >
+                        <ChevronDown
+                          className={`h-3 w-3 text-white/30 transition-transform ${
+                            isExpanded ? '' : '-rotate-90'
+                          }`}
+                        />
+                      </button>
+                    )}
                   </>
                 )}
-              </button>
+              </div>
 
-              {/* Sub-items (phases within this block) */}
-              {!collapsed && isExpanded && (
+              {/* Sub-items (only for blocks with separate route pages) */}
+              {!collapsed && block.showSubItems && isExpanded && (
                 <div className="pb-1">
                   {blockPhases.map((ps) => {
                     const isLocked = ps.state === 'locked';

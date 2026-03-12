@@ -3,8 +3,29 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowRight, LayoutGrid, CalendarDays, GitBranch } from 'lucide-react';
-import { PHASES, PHASE_ORDER, getMilestoneDate } from '@/lib/timeline-template';
+import {
+  ArrowRight,
+  LayoutGrid,
+  CalendarDays,
+  GitBranch,
+  User,
+  Sparkles,
+  Image,
+  Fingerprint,
+  ShoppingBag,
+  DollarSign,
+  Store,
+  Calculator,
+  Pencil,
+  Package,
+  CheckSquare,
+  Factory,
+  Palette,
+  Megaphone,
+  Target,
+  Rocket,
+} from 'lucide-react';
+import { PHASES, PHASE_ORDER } from '@/lib/timeline-template';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 import DecisionMap from './DecisionMap';
@@ -18,12 +39,80 @@ const VIEW_TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
   { id: 'map', label: 'Mapa', icon: GitBranch },
 ];
 
-const BLOCK_ROUTES: Record<TimelinePhase, string> = {
-  creative: 'product',
-  planning: 'product',
-  development: 'design',
-  go_to_market: 'marketing/creation',
-};
+/* ═══════════════════════════════════════════════════════════
+   Block definitions — internal structure for each of the 4 blocks
+   ═══════════════════════════════════════════════════════════ */
+
+interface BlockStep {
+  name: string;
+  icon: React.ElementType;
+}
+
+interface BlockDef {
+  phase: TimelinePhase;
+  title: string;
+  titleItalic: string;
+  subtitle: string;
+  route: string;
+  steps: BlockStep[];
+}
+
+const BLOCK_DEFS: BlockDef[] = [
+  {
+    phase: 'creative',
+    title: 'Creative &',
+    titleItalic: 'Brand',
+    subtitle: '3 screens — Vision, Research, Synthesis',
+    route: 'creative',
+    steps: [
+      { name: 'Consumer Definition', icon: User },
+      { name: 'Collection Vibe', icon: Sparkles },
+      { name: 'Moodboard', icon: Image },
+      { name: 'Brand DNA', icon: Fingerprint },
+    ],
+  },
+  {
+    phase: 'planning',
+    title: 'Merchandising &',
+    titleItalic: 'Planning',
+    subtitle: '4 cards — Families, Pricing, Channels, Budget',
+    route: 'merchandising',
+    steps: [
+      { name: 'Product Families', icon: ShoppingBag },
+      { name: 'Pricing', icon: DollarSign },
+      { name: 'Channels & Markets', icon: Store },
+      { name: 'Budget & Financials', icon: Calculator },
+    ],
+  },
+  {
+    phase: 'development',
+    title: 'Design &',
+    titleItalic: 'Development',
+    subtitle: '4 phases layered on Collection Builder',
+    route: 'development',
+    steps: [
+      { name: 'Sketch & Color', icon: Pencil },
+      { name: 'Prototyping', icon: Package },
+      { name: 'Selection & Catalog', icon: CheckSquare },
+      { name: 'Production', icon: Factory },
+    ],
+  },
+  {
+    phase: 'go_to_market',
+    title: 'Marketing &',
+    titleItalic: 'Digital',
+    subtitle: '2 screens — Creation + Distribution',
+    route: 'marketing/creation',
+    steps: [
+      { name: 'Collection Stories', icon: Palette },
+      { name: 'Content Strategy', icon: Megaphone },
+      { name: 'Go-To-Market', icon: Target },
+      { name: 'Launch & Growth', icon: Rocket },
+    ],
+  },
+];
+
+/* ═══════════════════════════════════════════════════════════ */
 
 interface CollectionOverviewProps {
   plan: CollectionPlan;
@@ -36,34 +125,23 @@ interface CollectionOverviewProps {
   skuCount: number;
 }
 
-function PhaseCard({
-  phase,
+function BlockCard({
+  block,
   milestones,
   collectionId,
-  launchDate,
 }: {
-  phase: TimelinePhase;
+  block: BlockDef;
   milestones: TimelineMilestone[];
   collectionId: string;
-  launchDate?: string;
 }) {
-  const info = PHASES[phase];
-  const phaseMilestones = milestones.filter((m) => m.phase === phase);
+  const phaseMilestones = milestones.filter((m) => m.phase === block.phase);
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
-  const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const total = phaseMilestones.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const pending = total - completed - inProgress;
-  const path = BLOCK_ROUTES[phase];
-
-  const nextMilestones = phaseMilestones
-    .filter((m) => m.status !== 'completed')
-    .sort((a, b) => b.startWeeksBefore - a.startWeeksBefore)
-    .slice(0, 5);
 
   return (
     <Link
-      href={`/collection/${collectionId}/${path}`}
+      href={`/collection/${collectionId}/${block.route}`}
       className="group relative bg-white p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col aspect-square md:aspect-auto md:min-h-[420px]"
     >
       {/* Progress bar top */}
@@ -75,9 +153,9 @@ function PhaseCard({
       </div>
 
       {/* Title + circular progress */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-4">
         <h3 className="text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
-          {info.name}
+          {block.title} <span className="italic">{block.titleItalic}</span>
         </h3>
 
         {/* Circular progress */}
@@ -101,35 +179,33 @@ function PhaseCard({
               strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-light text-carbon/50 rotate-0">
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-light text-carbon/50">
             {progress}%
           </span>
         </div>
       </div>
 
-      {/* Next milestones list */}
-      {nextMilestones.length > 0 && (
-        <div className="pt-6 border-t border-carbon/[0.06] space-y-3 flex-1">
-          <p className="text-xs font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-            Next
-          </p>
-          {nextMilestones.map((m) => (
-            <div key={m.id} className="flex items-center justify-between">
-              <p className="text-sm text-carbon/55 font-light truncate pr-4">
-                {m.name}
+      {/* Subtitle */}
+      <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/25 mb-6">
+        {block.subtitle}
+      </p>
+
+      {/* Internal steps */}
+      <div className="pt-6 border-t border-carbon/[0.06] space-y-3 flex-1">
+        {block.steps.map((step) => {
+          const Icon = step.icon;
+          return (
+            <div key={step.name} className="flex items-center gap-3">
+              <div className="w-7 h-7 bg-carbon/[0.03] flex items-center justify-center flex-shrink-0">
+                <Icon className="h-3.5 w-3.5 text-carbon/30" />
+              </div>
+              <p className="text-sm text-carbon/55 font-light truncate">
+                {step.name}
               </p>
-              {launchDate && (
-                <p className="text-xs text-carbon/25 flex-shrink-0 tabular-nums font-medium">
-                  {getMilestoneDate(launchDate, m.startWeeksBefore).toLocaleDateString('es-ES', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </p>
-              )}
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
 
       {/* CTA bar */}
       <div className="mt-auto pt-8 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
@@ -185,13 +261,12 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
         {/* View Content */}
         {view === 'blocks' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {PHASE_ORDER.map((phase) => (
-              <PhaseCard
-                key={phase}
-                phase={phase}
+            {BLOCK_DEFS.map((block) => (
+              <BlockCard
+                key={block.phase}
+                block={block}
                 milestones={milestones}
                 collectionId={collectionId}
-                launchDate={timeline?.launch_date}
               />
             ))}
           </div>

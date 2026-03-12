@@ -8,6 +8,7 @@ import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 export type WizardPhaseId =
   | 'product'
   | 'brand'
+  | 'merchandising'
   | 'design'
   | 'prototyping'
   | 'sampling'
@@ -70,16 +71,22 @@ export const WIZARD_PHASES: WizardPhase[] = [
     unlockWhen: [], // FREE
   },
 
-  // ── Block 2: Range Planning & Strategy ──
-  // Note: 'product' workspace also serves planning (Consumer & Market, Channel, Budget, SKUs, GTM)
-  // The planning milestones are tracked in the calendar under 'planning' block
-  // but the workspace UI lives in the Product workspace
+  // ── Block 2: Merchandising & Planning ──
+  {
+    id: 'merchandising',
+    name: 'Merchandising & Planning',
+    nameEs: 'Merchandising y Planificación',
+    path: 'merchandising',
+    block: 'planning',
+    milestoneIds: ['rp-1', 'rp-2', 'rp-3', 'rp-4', 'rp-5', 'rp-6'],
+    unlockWhen: [], // FREE — can start anytime
+  },
 
   // ── Block 3: Design & Development ──
   {
     id: 'design',
-    name: 'Design & Development',
-    nameEs: 'Diseño y Desarrollo',
+    name: 'Sketch, Color & Materials',
+    nameEs: 'Sketch, Color y Materiales',
     path: 'design',
     block: 'development',
     milestoneIds: ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'],
@@ -96,8 +103,8 @@ export const WIZARD_PHASES: WizardPhase[] = [
   },
   {
     id: 'sampling',
-    name: 'Sampling',
-    nameEs: 'Muestrario',
+    name: 'Selection & Catalog',
+    nameEs: 'Selección y Catálogo',
     path: 'sampling',
     block: 'development',
     milestoneIds: ['dd-11', 'dd-12', 'dd-13', 'dd-14'],
