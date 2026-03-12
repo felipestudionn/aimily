@@ -1,25 +1,18 @@
 'use client';
 
-import { ArrowRight, TrendingUp, Zap } from 'lucide-react';
+import { ArrowRight, Zap } from 'lucide-react';
 import type { TimelineMilestone } from '@/types/timeline';
 import { GoToMarketCard } from './GoToMarketCard';
 import { ContentCalendarCard } from './ContentCalendarCard';
+import { PaidGrowthCard } from './PaidGrowthCard';
 
 interface Props {
   collectionPlanId: string;
   milestones: TimelineMilestone[];
 }
 
-/* ── Placeholder cards for phases 8-9 ── */
+/* ── Placeholder cards for phase 9 ── */
 const PLACEHOLDER_CARDS = [
-  {
-    id: 'paid-growth',
-    title: 'Paid & Growth',
-    titleEs: 'Paid y Crecimiento',
-    description: 'Paid media campaigns, budget allocation, audience targeting, and performance tracking.',
-    Icon: TrendingUp,
-    phase: '8',
-  },
   {
     id: 'launch',
     title: 'Launch',
@@ -54,7 +47,10 @@ export function MarketingDistributionScreen({ collectionPlanId, milestones }: Pr
         {/* Content Calendar — live card */}
         <ContentCalendarCard collectionPlanId={collectionPlanId} />
 
-        {/* Placeholder cards for phases 8-9 */}
+        {/* Paid & Growth — live card */}
+        <PaidGrowthCard collectionPlanId={collectionPlanId} />
+
+        {/* Placeholder cards for phase 9 */}
         {PLACEHOLDER_CARDS.map((card) => {
           const Icon = card.Icon;
           return (
