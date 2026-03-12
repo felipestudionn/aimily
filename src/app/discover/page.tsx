@@ -116,6 +116,9 @@ export default function DiscoverPage() {
             <Link href="/discover" className="text-crema text-xs font-medium tracking-widest uppercase">
               Discover
             </Link>
+            <Link href="/meet-aimily" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+              Meet Aimily
+            </Link>
             <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
               Contact
             </Link>
@@ -408,6 +411,9 @@ export default function DiscoverPage() {
             />
           </div>
           <div className="flex items-center gap-6">
+            <Link href="/meet-aimily" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
+              Meet Aimily
+            </Link>
             <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
               Terms
             </Link>

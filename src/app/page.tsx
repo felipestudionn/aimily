@@ -106,6 +106,9 @@ export default function LandingPage() {
               <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 Discover
               </Link>
+              <Link href="/meet-aimily" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Meet Aimily
+              </Link>
               <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 Contact
               </Link>
@@ -156,6 +159,9 @@ export default function LandingPage() {
             <div className="md:hidden mt-4 bg-carbon/95 backdrop-blur-sm border border-gris/20 rounded-xl p-5 flex flex-col gap-4">
               <Link href="/discover" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 Discover
+              </Link>
+              <Link href="/meet-aimily" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                Meet Aimily
               </Link>
               <Link href="/contact" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 Contact
