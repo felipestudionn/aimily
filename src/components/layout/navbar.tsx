@@ -10,7 +10,7 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface NavbarProps {
   /** Slim mode for workspace context — logo in corner, minimal actions */
-  variant?: 'default' | 'workspace';
+  variant?: 'default' | 'workspace' | 'workspace-dark';
 }
 
 export function Navbar({ variant = 'default' }: NavbarProps) {
@@ -25,17 +25,24 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   };
 
   // Slim workspace navbar — just logo + user avatar
-  if (variant === 'workspace') {
+  if (variant === 'workspace' || variant === 'workspace-dark') {
+    const isDark = variant === 'workspace-dark';
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-sm border-b border-black/[0.04]">
+      <div className={`fixed top-0 left-0 right-0 z-50 transition-colors ${
+        isDark
+          ? 'bg-transparent'
+          : 'bg-white/80 backdrop-blur-sm border-b border-black/[0.04]'
+      }`}>
         <div className="flex h-14 items-center justify-between px-5">
           <Link href="/my-collections" className="flex items-center">
             <Image
-              src="/images/aimily-logo-black.png"
+              src={isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png'}
               alt="aimily"
               width={774}
               height={96}
-              className="object-contain h-5 w-auto opacity-40 hover:opacity-70 transition-opacity"
+              className={`object-contain h-5 w-auto transition-opacity ${
+                isDark ? 'opacity-50 hover:opacity-80' : 'opacity-40 hover:opacity-70'
+              }`}
               priority
               unoptimized
             />
@@ -45,7 +52,9 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             {user && (
               <Link
                 href="/account"
-                className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:opacity-80 transition-opacity"
+                className={`w-7 h-7 flex items-center justify-center text-[11px] font-medium hover:opacity-80 transition-opacity ${
+                  isDark ? 'bg-crema/20 text-crema' : 'bg-carbon text-crema'
+                }`}
                 title="Account"
               >
                 {user.email?.charAt(0).toUpperCase()}
