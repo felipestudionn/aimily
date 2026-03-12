@@ -62,7 +62,7 @@ export function WizardSidebar({
             alt="aimily"
             width={774}
             height={96}
-            className="object-contain h-5 w-auto opacity-70 hover:opacity-100 transition-opacity"
+            className="object-contain h-5 w-auto opacity-90 hover:opacity-100 transition-opacity"
             priority
             unoptimized
           />
@@ -79,7 +79,7 @@ export function WizardSidebar({
             {collectionName}
           </h2>
           {season && (
-            <p className="text-xs text-white/40 mt-1 tracking-[0.2em] uppercase font-medium">{season}</p>
+            <p className="text-xs text-white/50 mt-1 tracking-[0.2em] uppercase font-medium">{season}</p>
           )}
 
           {/* Progress — clean single line */}
@@ -90,7 +90,7 @@ export function WizardSidebar({
                 style={{ width: `${overallProgress}%` }}
               />
             </div>
-            <p className="text-xs text-white/50 mt-2 font-light">
+            <p className="text-xs text-white/60 mt-2 font-light">
               <span className="text-white font-medium">{overallProgress}%</span> complete
             </p>
           </div>
@@ -122,10 +122,10 @@ export function WizardSidebar({
               onClick={(e) => { if (isLocked) e.preventDefault(); }}
               className={`group flex items-center gap-3 px-6 py-3 transition-all ${
                 isActive
-                  ? 'bg-white/[0.08] text-white'
+                  ? 'bg-white/[0.10] text-white'
                   : isLocked
-                  ? 'text-white/25 cursor-not-allowed'
-                  : 'text-white/70 hover:bg-white/[0.04] hover:text-white'
+                  ? 'text-white/20 cursor-not-allowed'
+                  : 'text-white hover:bg-white/[0.06]'
               }`}
             >
               {/* Status indicator */}
@@ -137,7 +137,7 @@ export function WizardSidebar({
                     <Check className="h-3 w-3 text-carbon" strokeWidth={3} />
                   </div>
                 ) : (
-                  <div className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-white/40'}`} />
+                  <div className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-white/70'}`} />
                 )}
               </div>
 
@@ -170,7 +170,7 @@ export function WizardSidebar({
               className={`flex items-center gap-3 px-4 py-2.5 transition-all text-[13px] font-light tracking-wide ${
                 isActive
                   ? 'text-white bg-white/[0.08]'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                  : 'text-white/70 hover:text-white hover:bg-white/[0.06]'
               }`}
               title={collapsed ? item.label : undefined}
             >

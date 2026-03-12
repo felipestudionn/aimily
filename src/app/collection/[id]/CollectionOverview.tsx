@@ -1,12 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ArrowRight } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowRight, LayoutGrid, CalendarDays, GitBranch } from 'lucide-react';
 import { PHASES, PHASE_ORDER, getMilestoneDate } from '@/lib/timeline-template';
-import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
+import DecisionMap from './DecisionMap';
+
+type ViewMode = 'blocks' | 'calendar' | 'map';
+
+const VIEW_TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
+  { id: 'blocks', label: 'Bloques', icon: LayoutGrid },
+  { id: 'calendar', label: 'Calendario', icon: CalendarDays },
+  { id: 'map', label: 'Mapa', icon: GitBranch },
+];
 
 const BLOCK_ROUTES: Record<TimelinePhase, string> = {
   creative: 'product',
@@ -129,30 +138,79 @@ function PhaseCard({
 
 export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverviewProps) {
   const { id } = useParams();
+  const router = useRouter();
   const collectionId = id as string;
   const milestones = timeline?.milestones || [];
+  const [view, setView] = useState<ViewMode>('blocks');
+
+  const handleViewChange = (v: ViewMode) => {
+    if (v === 'calendar') {
+      router.push(`/collection/${collectionId}/calendar`);
+      return;
+    }
+    setView(v);
+  };
 
   return (
     <div className="min-h-[80vh]">
       <div className="max-w-5xl mx-auto px-10 py-12">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
-          Your workspace
-        </p>
-        <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15] mb-10">
-          Team <span className="italic">Blocks</span>
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {PHASE_ORDER.map((phase) => (
-            <PhaseCard
-              key={phase}
-              phase={phase}
-              milestones={milestones}
-              collectionId={collectionId}
-              launchDate={timeline?.launch_date}
-            />
-          ))}
+        {/* Header + View Toggle */}
+        <div className="flex items-end justify-between mb-10">
+          <div>
+            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
+              Your workspace
+            </p>
+            <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+              Team <span className="italic">Blocks</span>
+            </h2>
+          </div>
+
+          {/* View Toggle */}
+          <div className="flex border border-carbon/[0.06]">
+            {VIEW_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = view === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleViewChange(tab.id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
+                    isActive
+                      ? 'bg-carbon text-crema'
+                      : 'bg-white text-carbon/40 hover:text-carbon/60'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
+        {/* View Content */}
+        {view === 'blocks' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {PHASE_ORDER.map((phase) => (
+              <PhaseCard
+                key={phase}
+                phase={phase}
+                milestones={milestones}
+                collectionId={collectionId}
+                launchDate={timeline?.launch_date}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {view === 'map' && (
+        <DecisionMap
+          milestones={milestones}
+          launchDate={timeline?.launch_date}
+          collectionId={collectionId}
+        />
+      )}
     </div>
   );
 }
