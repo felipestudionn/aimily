@@ -48,8 +48,8 @@ export function SamplingWorkspace({ milestones }: SamplingWorkspaceProps) {
   } = useSampleReviews(collectionId);
   const [activeTab, setActiveTab] = useState<Tab>('color');
 
-  const info = PHASES.sampling;
-  const phaseMilestones = milestones.filter((m) => m.phase === 'sampling');
+  const info = PHASES.development;
+  const phaseMilestones = milestones.filter((m) => ['dd-11', 'dd-12', 'dd-13', 'dd-14'].includes(m.id));
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const pending = phaseMilestones.length - completed - inProgress;

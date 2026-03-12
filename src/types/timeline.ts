@@ -1,13 +1,9 @@
+/** The 4 calendar blocks (teams) that group milestones in the Gantt chart */
 export type TimelinePhase =
-  | 'aimily'
-  | 'brand'
-  | 'design'
-  | 'prototyping'
-  | 'sampling'
-  | 'digital'
-  | 'marketing'
-  | 'production'
-  | 'launch';
+  | 'creative'      // Creative & Brand — equipo creativo
+  | 'planning'      // Range Planning & Strategy — merchandising/planners
+  | 'development'   // Design & Development — equipo técnico (design, proto, sampling, production)
+  | 'go_to_market'; // Marketing & Digital — equipo marketing (digital, marketing, launch)
 
 export type MilestoneStatus = 'pending' | 'in-progress' | 'completed';
 export type Responsible = 'US' | 'FACTORY' | 'ALL' | 'AGENCY/US';

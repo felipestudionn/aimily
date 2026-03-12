@@ -50,7 +50,7 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
     await onAddReview({
       sku_id: sku.id,
       review_type: 'white_proto',
-      milestone_id: 'pt-3',
+      milestone_id: 'dd-9',
       status: 'pending',
       photos: [],
       issues: [],

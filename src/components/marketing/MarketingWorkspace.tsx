@@ -55,8 +55,8 @@ export function MarketingWorkspace({ milestones }: MarketingWorkspaceProps) {
     deleteContact,
   } = usePrContacts(collectionId);
 
-  // Marketing phase milestones (mk-1 to mk-6)
-  const phaseMilestones = milestones.filter((m) => m.phase === 'marketing');
+  // Marketing workspace milestones (gm-6 to gm-11)
+  const phaseMilestones = milestones.filter((m) => ['gm-6', 'gm-7', 'gm-8', 'gm-9', 'gm-10', 'gm-11'].includes(m.id));
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const pending = phaseMilestones.length - completed - inProgress;

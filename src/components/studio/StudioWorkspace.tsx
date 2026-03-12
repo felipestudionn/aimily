@@ -62,9 +62,9 @@ export function StudioWorkspace({ milestones }: StudioWorkspaceProps) {
   } = useBrandModels(collectionId);
   const [activeTab, setActiveTab] = useState<StudioTab>('renders');
 
-  // Digital phase milestones (dg-3, dg-4, dg-5 are relevant to studio)
+  // Studio workspace milestones (gm-3 Photography, gm-4 Copywriting, gm-5 Lookbook)
   const phaseMilestones = milestones.filter(
-    (m) => m.phase === 'digital' && ['dg-3', 'dg-4', 'dg-5'].includes(m.id)
+    (m) => ['gm-3', 'gm-4', 'gm-5'].includes(m.id)
   );
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;

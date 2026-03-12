@@ -17,6 +17,14 @@ import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 
+/** Map each calendar block to its primary workspace route */
+const BLOCK_ROUTES: Record<TimelinePhase, string> = {
+  creative: 'product',
+  planning: 'product',
+  development: 'design',
+  go_to_market: 'digital',
+};
+
 interface CollectionOverviewProps {
   plan: CollectionPlan;
   timeline: {
@@ -44,7 +52,7 @@ function PhaseCard({
   const total = phaseMilestones.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const path = phase === 'aimily' ? 'product' : phase;
+  const path = BLOCK_ROUTES[phase];
 
   return (
     <Link
@@ -187,10 +195,10 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
         </div>
       </div>
 
-      {/* Phase Grid */}
+      {/* Phase Grid — 4 blocks */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Phases</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {PHASE_ORDER.map((phase) => (
             <PhaseCard
               key={phase}
@@ -212,7 +220,8 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               return (
                 <div key={m.id} className="flex items-center gap-4 px-5 py-3">
                   <div
-                    className="w-2 h-2 flex-shrink-0 bg-carbon"
+                    className="w-2 h-2 flex-shrink-0"
+                    style={{ backgroundColor: phaseInfo.color }}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{m.name}</p>

@@ -46,8 +46,8 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
 
   const { skus, loading: skusLoading } = useSkus(collectionId);
 
-  // Production phase milestones (pd-1 to pd-4)
-  const phaseMilestones = milestones.filter((m) => m.phase === 'production');
+  // Production workspace milestones (dd-15 to dd-18)
+  const phaseMilestones = milestones.filter((m) => ['dd-15', 'dd-16', 'dd-17', 'dd-18'].includes(m.id));
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const pending = phaseMilestones.length - completed - inProgress;

@@ -56,7 +56,7 @@ export function FittingReview({
     await onAddReview({
       sku_id: skuId,
       review_type: 'fitting_sample',
-      milestone_id: 'sm-3',
+      milestone_id: 'dd-13',
       status: 'pending',
       photos: [],
       issues: [],

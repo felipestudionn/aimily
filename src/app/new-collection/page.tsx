@@ -100,44 +100,39 @@ interface PhaseQuestion {
 }
 
 const PHASE_QUESTIONS: PhaseQuestion[] = [
-  // ── Product & Merchandising ──
-  { id: 'q-ow-range', phase: 'aimily', getTitle: () => 'Do you have a product range plan?', subtitle: 'Trend research, moodboarding, and range strategy', milestones: ['ow-1', 'ow-2'] },
-  { id: 'q-ow-skus', phase: 'aimily', getTitle: () => 'Do you have SKU definitions?', subtitle: 'Collection planning with specific SKUs defined', milestones: ['ow-3'] },
-  { id: 'q-ow-sketches', phase: 'aimily', getTitle: () => 'Do you have technical sketches?', milestones: ['ow-5'] },
-  { id: 'q-ow-gtm', phase: 'aimily', getTitle: () => 'Do you have a go-to-market strategy?', milestones: ['ow-4'] },
+  // ── Creative & Brand ──
+  { id: 'q-cr-consumer', phase: 'creative', getTitle: () => 'Do you know your target consumer?', subtitle: 'Consumer definition, trends, and creative direction', milestones: ['cr-1', 'cr-2'] },
+  { id: 'q-cr-brand', phase: 'creative', getTitle: () => 'Do you already have a brand?', subtitle: 'Brand naming, logo, visual identity, and guidelines', milestones: ['br-1', 'br-2', 'br-3'] },
+  { id: 'q-cr-packaging', phase: 'creative', getTitle: () => 'Do you have packaging design?', milestones: ['br-4'] },
 
-  // ── Brand & Identity ──
-  { id: 'q-br-brand', phase: 'brand', getTitle: () => 'Do you already have a brand?', subtitle: 'Brand naming, logo, visual identity, and guidelines', milestones: ['br-1', 'br-2', 'br-3'] },
-  { id: 'q-br-packaging', phase: 'brand', getTitle: () => 'Do you have packaging design?', milestones: ['br-4'] },
+  // ── Range Planning & Strategy ──
+  { id: 'q-rp-market', phase: 'planning', getTitle: () => 'Do you have a market analysis?', subtitle: 'Consumer, market, and channel strategy', milestones: ['rp-1', 'rp-2'] },
+  { id: 'q-rp-budget', phase: 'planning', getTitle: () => 'Do you have a sales budget?', subtitle: 'Financial framework and sales targets', milestones: ['rp-3'] },
+  { id: 'q-rp-range', phase: 'planning', getTitle: () => 'Do you have a product range plan?', subtitle: 'Range strategy and collection framework', milestones: ['rp-4'] },
+  { id: 'q-rp-skus', phase: 'planning', getTitle: () => 'Do you have SKU definitions?', subtitle: 'Collection planning with specific SKUs defined', milestones: ['rp-5'] },
+  { id: 'q-rp-gtm', phase: 'planning', getTitle: () => 'Do you have a go-to-market strategy?', milestones: ['rp-6'] },
 
   // ── Design & Development ──
-  { id: 'q-ds-lasts', phase: 'design', getTitle: (cat) => cat === 'footwear' ? 'Do you have lasts/forms defined?' : 'Do you have base patterns/blocks defined?', skipFor: ['accessories'], milestones: ['ds-1'] },
-  { id: 'q-ds-rounds', phase: 'design', getTitle: () => 'Have you completed design rounds?', subtitle: 'Design shots, paper patterns, and iterations', milestones: ['ds-2', 'ds-3', 'ds-4'] },
-  { id: 'q-ds-colorways', phase: 'design', getTitle: () => 'Are colorways developed?', milestones: ['ds-5'] },
+  { id: 'q-dd-sketches', phase: 'development', getTitle: () => 'Do you have technical sketches?', milestones: ['dd-1'] },
+  { id: 'q-dd-lasts', phase: 'development', getTitle: (cat) => cat === 'footwear' ? 'Do you have lasts/forms defined?' : 'Do you have base patterns/blocks defined?', skipFor: ['accessories'], milestones: ['dd-2'] },
+  { id: 'q-dd-rounds', phase: 'development', getTitle: () => 'Have you completed design rounds?', subtitle: 'Design shots, paper patterns, and iterations', milestones: ['dd-3', 'dd-4', 'dd-5'] },
+  { id: 'q-dd-colorways', phase: 'development', getTitle: () => 'Are colorways developed?', milestones: ['dd-6'] },
+  { id: 'q-dd-protos', phase: 'development', getTitle: (cat) => cat === 'footwear' ? 'Have white protos been developed?' : 'Have first samples/toiles been made?', milestones: ['dd-7', 'dd-8'] },
+  { id: 'q-dd-techsheets', phase: 'development', getTitle: () => 'Are tech sheets complete?', subtitle: 'Rectification and technical sheets finalized', milestones: ['dd-9', 'dd-10'] },
+  { id: 'q-dd-color-samples', phase: 'development', getTitle: () => 'Do you have approved color samples?', milestones: ['dd-11'] },
+  { id: 'q-dd-fitting', phase: 'development', getTitle: () => 'Do you have approved fitting samples?', subtitle: 'Fitting development, confirmation, and collection completion', milestones: ['dd-12', 'dd-13', 'dd-14'] },
+  { id: 'q-dd-production', phase: 'development', getTitle: () => 'Have production orders been placed?', milestones: ['dd-15'] },
+  { id: 'q-dd-prod-underway', phase: 'development', getTitle: () => 'Is production underway?', milestones: ['dd-16'] },
 
-  // ── Prototyping ──
-  { id: 'q-pt-protos', phase: 'prototyping', getTitle: (cat) => cat === 'footwear' ? 'Have white protos been developed?' : 'Have first samples/toiles been made?', milestones: ['pt-1', 'pt-2'] },
-  { id: 'q-pt-techsheets', phase: 'prototyping', getTitle: () => 'Are tech sheets complete?', subtitle: 'Rectification and technical sheets finalized', milestones: ['pt-3', 'pt-4'] },
-
-  // ── Sampling ──
-  { id: 'q-sm-color', phase: 'sampling', getTitle: () => 'Do you have approved color samples?', milestones: ['sm-1'] },
-  { id: 'q-sm-fitting', phase: 'sampling', getTitle: () => 'Do you have approved fitting samples?', subtitle: 'Fitting development, confirmation, and collection completion', milestones: ['sm-2', 'sm-3', 'sm-4'] },
-
-  // ── Digital Presence ──
-  { id: 'q-dg-website', phase: 'digital', getTitle: () => 'Do you have a website?', subtitle: 'Website design, development, and e-commerce setup', milestones: ['dg-1', 'dg-2'] },
-  { id: 'q-dg-photography', phase: 'digital', getTitle: () => 'Do you have product photography?', milestones: ['dg-3'] },
-  { id: 'q-dg-copy', phase: 'digital', getTitle: () => 'Do you have your brand copy written?', subtitle: 'Copywriting and brand story', milestones: ['dg-5'] },
-  { id: 'q-dg-lookbook', phase: 'digital', getTitle: () => 'Do you have a lookbook?', milestones: ['dg-4'] },
-
-  // ── Marketing ──
-  { id: 'q-mk-social', phase: 'marketing', getTitle: () => 'Do you have social media set up?', milestones: ['mk-1'] },
-  { id: 'q-mk-calendar', phase: 'marketing', getTitle: () => 'Do you have a content calendar?', milestones: ['mk-2'] },
-  { id: 'q-mk-pr', phase: 'marketing', getTitle: () => 'Do you have influencer/PR relationships?', milestones: ['mk-3', 'mk-6'] },
-  { id: 'q-mk-email', phase: 'marketing', getTitle: () => 'Do you have email marketing set up?', milestones: ['mk-4'] },
-
-  // ── Production ──
-  { id: 'q-pd-orders', phase: 'production', getTitle: () => 'Have production orders been placed?', milestones: ['pd-1'] },
-  { id: 'q-pd-underway', phase: 'production', getTitle: () => 'Is production underway?', milestones: ['pd-2'] },
+  // ── Marketing & Digital ──
+  { id: 'q-gm-website', phase: 'go_to_market', getTitle: () => 'Do you have a website?', subtitle: 'Website design, development, and e-commerce setup', milestones: ['gm-1', 'gm-2'] },
+  { id: 'q-gm-photography', phase: 'go_to_market', getTitle: () => 'Do you have product photography?', milestones: ['gm-3'] },
+  { id: 'q-gm-copy', phase: 'go_to_market', getTitle: () => 'Do you have your brand copy written?', subtitle: 'Copywriting and brand story', milestones: ['gm-4'] },
+  { id: 'q-gm-lookbook', phase: 'go_to_market', getTitle: () => 'Do you have a lookbook?', milestones: ['gm-5'] },
+  { id: 'q-gm-social', phase: 'go_to_market', getTitle: () => 'Do you have social media set up?', milestones: ['gm-6'] },
+  { id: 'q-gm-calendar', phase: 'go_to_market', getTitle: () => 'Do you have a content calendar?', milestones: ['gm-7'] },
+  { id: 'q-gm-pr', phase: 'go_to_market', getTitle: () => 'Do you have influencer/PR relationships?', milestones: ['gm-8', 'gm-11'] },
+  { id: 'q-gm-email', phase: 'go_to_market', getTitle: () => 'Do you have email marketing set up?', milestones: ['gm-9'] },
 
   // ── Launch — no questions (always pending) ──
 ];

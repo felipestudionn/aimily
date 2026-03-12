@@ -34,8 +34,8 @@ export function LaunchWorkspace({ milestones }: LaunchWorkspaceProps) {
   const collectionId = id as string;
   const [activeTab, setActiveTab] = useState<LaunchTab>('pre_launch');
 
-  // Launch phase milestones (ln-1 to ln-4)
-  const phaseMilestones = milestones.filter((m) => m.phase === 'launch');
+  // Launch workspace milestones (gm-12 to gm-15)
+  const phaseMilestones = milestones.filter((m) => ['gm-12', 'gm-13', 'gm-14', 'gm-15'].includes(m.id));
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const pending = phaseMilestones.length - completed - inProgress;

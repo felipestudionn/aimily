@@ -57,8 +57,8 @@ export function BrandWorkspace({ milestones }: BrandWorkspaceProps) {
     useBrandProfile(collectionId);
   const [activeTab, setActiveTab] = useState<Tab>('profile');
 
-  const info = PHASES.brand;
-  const phaseMilestones = milestones.filter((m) => m.phase === 'brand');
+  const info = PHASES.creative;
+  const phaseMilestones = milestones.filter((m) => ['br-1', 'br-2', 'br-3', 'br-4'].includes(m.id));
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const pending = phaseMilestones.length - completed - inProgress;

@@ -1,11 +1,12 @@
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 
 /**
- * Wizard step IDs — the 10 phases of collection creation.
- * "studio" is a virtual phase (not in the timeline type) mapped to digital milestones dg-3/dg-4/dg-5.
+ * Workspace IDs — the 10 individual workspaces in a collection.
+ * These map to routes under /collection/[id]/.
+ * NOT the same as TimelinePhase (which has only 4 calendar blocks).
  */
 export type WizardPhaseId =
-  | 'aimily'
+  | 'product'
   | 'brand'
   | 'design'
   | 'prototyping'
@@ -22,6 +23,8 @@ export interface WizardPhase {
   nameEs: string;
   /** Route segment under /collection/[id]/ */
   path: string;
+  /** Which of the 4 calendar blocks this workspace belongs to */
+  block: TimelinePhase;
   /** Milestone IDs that belong to this wizard step */
   milestoneIds: string[];
   /** Which milestone IDs must be completed before this phase unlocks */
@@ -29,23 +32,34 @@ export interface WizardPhase {
 }
 
 /**
- * The 10 wizard phases in order, with their milestone mappings
- * and dependency-based unlock conditions.
+ * The 10 wizard phases (workspaces) grouped under 4 blocks.
  *
- * Dependency graph:
- *   [Product] ──→ [Design] ──→ [Prototyping] ──→ [Sampling] ──→ [Production] ──→ [Launch]
- *   [Brand]   ──→ [Digital] ──→ [Marketing] ────────────────────────────────────↗
- *                  [Studio] ──↗
+ * Block dependency graph:
+ *   [Creative & Brand] ──→ [Design & Development] ──→ (Production included)
+ *   [Range Planning]   ──→ [Design & Development]
+ *   [Range Planning]   ──→ [Marketing & Digital] (with placeholders OK)
+ *   [Design & Dev]     ──→ [Marketing & Digital] (product for photos/lookbook)
  *
- * Product & Brand are FREE (no dependencies).
+ * Workspace dependencies within blocks:
+ *   Product & Brand are FREE (no dependencies).
+ *   Design requires Range Planning done.
+ *   Prototyping requires Design done.
+ *   Sampling requires Prototyping done.
+ *   Studio requires Sampling done (for renders).
+ *   Digital requires Brand + Studio.
+ *   Marketing requires Digital + Brand.
+ *   Production requires Sampling done.
+ *   Launch requires Production + Marketing + Digital.
  */
 export const WIZARD_PHASES: WizardPhase[] = [
+  // ── Block 1: Creative & Brand ──
   {
-    id: 'aimily',
-    name: 'Product & Merchandising',
-    nameEs: 'Producto y Merchandising',
+    id: 'product',
+    name: 'Product & Creative',
+    nameEs: 'Producto y Creativo',
     path: 'product',
-    milestoneIds: ['ow-1', 'ow-2', 'ow-3', 'ow-4', 'ow-5'],
+    block: 'creative',
+    milestoneIds: ['cr-1', 'cr-2'],
     unlockWhen: [], // FREE
   },
   {
@@ -53,72 +67,90 @@ export const WIZARD_PHASES: WizardPhase[] = [
     name: 'Brand & Identity',
     nameEs: 'Marca e Identidad',
     path: 'brand',
+    block: 'creative',
     milestoneIds: ['br-1', 'br-2', 'br-3', 'br-4'],
     unlockWhen: [], // FREE
   },
+
+  // ── Block 2: Range Planning & Strategy ──
+  // Note: 'product' workspace also serves planning (Consumer & Market, Channel, Budget, SKUs, GTM)
+  // The planning milestones are tracked in the calendar under 'planning' block
+  // but the workspace UI lives in the Product workspace
+
+  // ── Block 3: Design & Development ──
   {
     id: 'design',
     name: 'Design & Development',
     nameEs: 'Diseño y Desarrollo',
     path: 'design',
-    milestoneIds: ['ds-1', 'ds-2', 'ds-3', 'ds-4', 'ds-5'],
-    unlockWhen: ['ow-4'], // Requires: Product finalized
+    block: 'development',
+    milestoneIds: ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'],
+    unlockWhen: ['rp-6'], // Requires: Range planning + GTM done
   },
   {
     id: 'prototyping',
     name: 'Prototyping',
     nameEs: 'Prototipado',
     path: 'prototyping',
-    milestoneIds: ['pt-1', 'pt-2', 'pt-3', 'pt-4'],
-    unlockWhen: ['ds-5'], // Requires: Design approved
+    block: 'development',
+    milestoneIds: ['dd-7', 'dd-8', 'dd-9', 'dd-10'],
+    unlockWhen: ['dd-6'], // Requires: Design approved (colorways done)
   },
   {
     id: 'sampling',
     name: 'Sampling',
     nameEs: 'Muestrario',
     path: 'sampling',
-    milestoneIds: ['sm-1', 'sm-2', 'sm-3', 'sm-4'],
-    unlockWhen: ['pt-4'], // Requires: Proto approved
-  },
-  {
-    id: 'studio',
-    name: 'AI Creative Studio',
-    nameEs: 'Estudio Creativo IA',
-    path: 'studio',
-    milestoneIds: ['dg-3', 'dg-4', 'dg-5'],
-    unlockWhen: ['sm-4'], // Requires: Sampling done (partial after Design)
-  },
-  {
-    id: 'digital',
-    name: 'Digital Presence',
-    nameEs: 'Presencia Digital',
-    path: 'digital',
-    milestoneIds: ['dg-1', 'dg-2'],
-    unlockWhen: ['br-4', 'dg-3'], // Requires: Brand done + Studio renders
-  },
-  {
-    id: 'marketing',
-    name: 'Marketing',
-    nameEs: 'Marketing',
-    path: 'marketing',
-    milestoneIds: ['mk-1', 'mk-2', 'mk-3', 'mk-4', 'mk-5', 'mk-6'],
-    unlockWhen: ['dg-1', 'br-4'], // Requires: Digital + Brand
+    block: 'development',
+    milestoneIds: ['dd-11', 'dd-12', 'dd-13', 'dd-14'],
+    unlockWhen: ['dd-10'], // Requires: Proto approved (tech sheets done)
   },
   {
     id: 'production',
     name: 'Production & Logistics',
     nameEs: 'Producción y Logística',
     path: 'production',
-    milestoneIds: ['pd-1', 'pd-2', 'pd-3', 'pd-4'],
-    unlockWhen: ['sm-4'], // Requires: Sampling approved
+    block: 'development',
+    milestoneIds: ['dd-15', 'dd-16', 'dd-17', 'dd-18'],
+    unlockWhen: ['dd-14'], // Requires: Collection completed (sampling done)
+  },
+
+  // ── Block 4: Marketing & Digital ──
+  {
+    id: 'studio',
+    name: 'AI Creative Studio',
+    nameEs: 'Estudio Creativo IA',
+    path: 'studio',
+    block: 'go_to_market',
+    milestoneIds: ['gm-3', 'gm-4', 'gm-5'],
+    unlockWhen: ['dd-14'], // Requires: Sampling done (for renders)
+  },
+  {
+    id: 'digital',
+    name: 'Digital Presence',
+    nameEs: 'Presencia Digital',
+    path: 'digital',
+    block: 'go_to_market',
+    milestoneIds: ['gm-1', 'gm-2'],
+    unlockWhen: ['br-4', 'gm-3'], // Requires: Brand done + Studio renders
+  },
+  {
+    id: 'marketing',
+    name: 'Marketing',
+    nameEs: 'Marketing',
+    path: 'marketing',
+    block: 'go_to_market',
+    milestoneIds: ['gm-6', 'gm-7', 'gm-8', 'gm-9', 'gm-10', 'gm-11'],
+    unlockWhen: ['gm-1', 'br-4'], // Requires: Digital + Brand
   },
   {
     id: 'launch',
     name: 'Launch',
     nameEs: 'Lanzamiento',
     path: 'launch',
-    milestoneIds: ['ln-1', 'ln-2', 'ln-3', 'ln-4'],
-    unlockWhen: ['pd-4', 'mk-6', 'dg-2'], // Requires: Production + Marketing + Digital
+    block: 'go_to_market',
+    milestoneIds: ['gm-12', 'gm-13', 'gm-14', 'gm-15'],
+    unlockWhen: ['dd-18', 'gm-11', 'gm-2'], // Requires: Production + Marketing + Digital
   },
 ];
 

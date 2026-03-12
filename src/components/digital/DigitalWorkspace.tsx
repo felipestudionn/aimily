@@ -42,9 +42,9 @@ export function DigitalWorkspace({ milestones }: DigitalWorkspaceProps) {
   const { generations, loading: gensLoading } = useAiGenerations(collectionId);
   const [activeTab, setActiveTab] = useState<DigitalTab>('catalog');
 
-  // Digital phase milestones (dg-1, dg-2, dg-4, dg-5)
+  // Digital workspace milestones (gm-1 Website, gm-2 E-commerce)
   const phaseMilestones = milestones.filter(
-    (m) => m.phase === 'digital' && ['dg-1', 'dg-2', 'dg-4', 'dg-5'].includes(m.id)
+    (m) => ['gm-1', 'gm-2'].includes(m.id)
   );
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;

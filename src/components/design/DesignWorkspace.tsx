@@ -103,8 +103,8 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
     };
   }, []);
 
-  const info = PHASES.design;
-  const phaseMilestones = milestones.filter((m) => m.phase === 'design');
+  const info = PHASES.development;
+  const phaseMilestones = milestones.filter((m) => ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'].includes(m.id));
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const pending = phaseMilestones.length - completed - inProgress;

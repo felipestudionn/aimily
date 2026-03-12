@@ -43,8 +43,8 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
   } = useSampleReviews(collectionId, 'white_proto');
   const [activeTab, setActiveTab] = useState<Tab>('tracker');
 
-  const info = PHASES.prototyping;
-  const phaseMilestones = milestones.filter((m) => m.phase === 'prototyping');
+  const info = PHASES.development;
+  const phaseMilestones = milestones.filter((m) => ['dd-7', 'dd-8', 'dd-9', 'dd-10'].includes(m.id));
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const inProgress = phaseMilestones.filter((m) => m.status === 'in-progress').length;
   const pending = phaseMilestones.length - completed - inProgress;

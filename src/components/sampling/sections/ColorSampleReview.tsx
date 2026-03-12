@@ -54,7 +54,7 @@ export function ColorSampleReview({
     await onAddReview({
       sku_id: skuId,
       review_type: 'color_sample',
-      milestone_id: 'sm-1',
+      milestone_id: 'dd-11',
       status: 'pending',
       photos: [],
       issues: [],
