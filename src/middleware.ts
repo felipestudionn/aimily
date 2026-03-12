@@ -14,6 +14,8 @@ const publicRoutes = [
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/confirm',
+  '/meet-aimily',
+  '/video-reel',
 ];
 
 // Routes that should be completely skipped by middleware
