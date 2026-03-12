@@ -22,7 +22,7 @@ const BLOCK_ROUTES: Record<TimelinePhase, string> = {
   creative: 'product',
   planning: 'product',
   development: 'design',
-  go_to_market: 'go-to-market',
+  go_to_market: 'marketing/creation',
 };
 
 interface CollectionOverviewProps {

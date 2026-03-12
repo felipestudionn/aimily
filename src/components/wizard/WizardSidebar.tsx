@@ -9,13 +9,40 @@ import {
   LayoutDashboard,
   Lock,
   Check,
+  ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
   Loader2,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
-import type { WizardPhaseId } from '@/lib/wizard-phases';
+import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
+import type { TimelinePhase } from '@/types/timeline';
+
+/* ── Block definitions for sidebar grouping ── */
+interface SidebarBlock {
+  id: TimelinePhase;
+  label: string;
+  phaseIds: WizardPhaseId[];
+}
+
+const SIDEBAR_BLOCKS: SidebarBlock[] = [
+  {
+    id: 'creative',
+    label: 'Creative & Brand',
+    phaseIds: ['product', 'brand'],
+  },
+  {
+    id: 'development',
+    label: 'Design & Development',
+    phaseIds: ['design', 'prototyping', 'sampling', 'production'],
+  },
+  {
+    id: 'go_to_market',
+    label: 'Marketing & Digital',
+    phaseIds: ['marketing-creation', 'marketing-distribution'],
+  },
+];
 
 interface WizardSidebarProps {
   collectionId: string;
@@ -39,6 +66,11 @@ export function WizardSidebar({
   const { phases, overallProgress } = useWizardState(milestones);
   const [collapsed, setCollapsed] = useState(false);
 
+  // Track which blocks are expanded — default all open
+  const [expandedBlocks, setExpandedBlocks] = useState<Set<TimelinePhase>>(
+    new Set(SIDEBAR_BLOCKS.map((b) => b.id))
+  );
+
   const basePath = `/collection/${collectionId}`;
 
   const launchDateStr = launchDate
@@ -47,6 +79,36 @@ export function WizardSidebar({
   const daysUntilLaunch = launchDate
     ? Math.ceil((new Date(launchDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
+
+  const phaseMap = new Map(phases.map((ps) => [ps.phase.id, ps]));
+
+  function toggleBlock(blockId: TimelinePhase) {
+    setExpandedBlocks((prev) => {
+      const next = new Set(prev);
+      if (next.has(blockId)) next.delete(blockId);
+      else next.add(blockId);
+      return next;
+    });
+  }
+
+  function getBlockProgress(block: SidebarBlock): number {
+    const blockPhases = block.phaseIds
+      .map((id) => phaseMap.get(id))
+      .filter(Boolean) as WizardPhaseStatus[];
+    if (blockPhases.length === 0) return 0;
+    const total = blockPhases.reduce((s, p) => s + p.totalCount, 0);
+    const completed = blockPhases.reduce((s, p) => s + p.completedCount, 0);
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
+  }
+
+  function isBlockActive(block: SidebarBlock): boolean {
+    return block.phaseIds.some((id) => {
+      const ps = phaseMap.get(id);
+      if (!ps) return false;
+      const phasePath = `${basePath}/${ps.phase.path}`;
+      return pathname?.startsWith(phasePath);
+    });
+  }
 
   return (
     <aside
@@ -105,46 +167,110 @@ export function WizardSidebar({
         </div>
       )}
 
-      {/* Phase Navigation */}
+      {/* Block Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin">
-        {phases.map((ps) => {
-          const isLocked = ps.state === 'locked';
-          const isCompleted = ps.state === 'completed';
-          const phasePath = `${basePath}/${ps.phase.path}`;
-          const isActive = pathname?.startsWith(phasePath);
+        {SIDEBAR_BLOCKS.map((block) => {
+          const isExpanded = expandedBlocks.has(block.id);
+          const blockActive = isBlockActive(block);
+          const blockProgress = getBlockProgress(block);
+          const blockPhases = block.phaseIds
+            .map((id) => phaseMap.get(id))
+            .filter(Boolean) as WizardPhaseStatus[];
+          const allLocked = blockPhases.every((p) => p.state === 'locked');
+          const allCompleted =
+            blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
 
           return (
-            <Link
-              key={ps.phase.id}
-              href={isLocked ? '#' : phasePath}
-              onClick={(e) => { if (isLocked) e.preventDefault(); }}
-              className={`group flex items-center gap-3.5 px-6 py-3.5 transition-all ${
-                isActive
-                  ? 'bg-white/[0.12] text-white'
-                  : isLocked
-                  ? 'text-white/30 cursor-not-allowed'
-                  : 'text-white/90 hover:bg-white/[0.06] hover:text-white'
-              }`}
-            >
-              {/* Status indicator */}
-              <div className="flex-shrink-0 w-5 flex justify-center">
-                {isLocked ? (
-                  <Lock className="h-3.5 w-3.5" />
-                ) : isCompleted ? (
-                  <div className="h-4 w-4 bg-white flex items-center justify-center">
-                    <Check className="h-3 w-3 text-carbon" strokeWidth={3} />
-                  </div>
-                ) : (
-                  <div className={`h-2 w-2 rounded-full ${isActive ? 'bg-white' : 'bg-white/80'}`} />
-                )}
-              </div>
+            <div key={block.id}>
+              {/* Block header — clickable to expand/collapse */}
+              <button
+                onClick={() => toggleBlock(block.id)}
+                className={`w-full flex items-center gap-3 px-6 py-3 transition-all text-left ${
+                  blockActive
+                    ? 'text-white'
+                    : allLocked
+                    ? 'text-white/30'
+                    : 'text-white/70 hover:text-white/90'
+                }`}
+              >
+                {!collapsed && (
+                  <>
+                    {/* Block status indicator */}
+                    <div className="flex-shrink-0 w-5 flex justify-center">
+                      {allLocked ? (
+                        <Lock className="h-3 w-3" />
+                      ) : allCompleted ? (
+                        <div className="h-3.5 w-3.5 bg-white flex items-center justify-center">
+                          <Check className="h-2.5 w-2.5 text-carbon" strokeWidth={3} />
+                        </div>
+                      ) : (
+                        <div className="h-[6px] w-[6px] rounded-full bg-current" />
+                      )}
+                    </div>
 
-              {!collapsed && (
-                <span className="text-sm tracking-wide truncate">
-                  {ps.phase.name}
-                </span>
+                    <span className="text-[11px] font-medium tracking-[0.12em] uppercase flex-1 truncate">
+                      {block.label}
+                    </span>
+
+                    {/* Progress + chevron */}
+                    {!allLocked && blockProgress > 0 && (
+                      <span className="text-[10px] text-white/30 tabular-nums mr-1">
+                        {blockProgress}%
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={`h-3 w-3 text-white/30 transition-transform ${
+                        isExpanded ? '' : '-rotate-90'
+                      }`}
+                    />
+                  </>
+                )}
+              </button>
+
+              {/* Sub-items (phases within this block) */}
+              {!collapsed && isExpanded && (
+                <div className="pb-1">
+                  {blockPhases.map((ps) => {
+                    const isLocked = ps.state === 'locked';
+                    const isCompleted = ps.state === 'completed';
+                    const phasePath = `${basePath}/${ps.phase.path}`;
+                    const isActive = pathname?.startsWith(phasePath);
+
+                    return (
+                      <Link
+                        key={ps.phase.id}
+                        href={isLocked ? '#' : phasePath}
+                        onClick={(e) => { if (isLocked) e.preventDefault(); }}
+                        className={`group flex items-center gap-3 pl-14 pr-6 py-2.5 transition-all ${
+                          isActive
+                            ? 'bg-white/[0.12] text-white'
+                            : isLocked
+                            ? 'text-white/25 cursor-not-allowed'
+                            : 'text-white/60 hover:bg-white/[0.06] hover:text-white/90'
+                        }`}
+                      >
+                        {/* Status indicator */}
+                        <div className="flex-shrink-0 w-4 flex justify-center">
+                          {isLocked ? (
+                            <Lock className="h-2.5 w-2.5" />
+                          ) : isCompleted ? (
+                            <div className="h-3 w-3 bg-white flex items-center justify-center">
+                              <Check className="h-2 w-2 text-carbon" strokeWidth={3} />
+                            </div>
+                          ) : (
+                            <div className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-white/50'}`} />
+                          )}
+                        </div>
+
+                        <span className="text-[13px] tracking-wide truncate">
+                          {ps.phase.name}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-            </Link>
+            </div>
           );
         })}
       </nav>
