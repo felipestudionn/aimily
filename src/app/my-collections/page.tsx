@@ -260,16 +260,21 @@ export default function MyCollectionsPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-10">
 
-              {/* Hub Header */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <h1 className="text-3xl font-light text-texto tracking-tight">
-                  Collections
-                </h1>
+              {/* Hub Header — editorial style */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
+                <div>
+                  <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
+                    Your workspace
+                  </p>
+                  <h1 className="text-4xl md:text-5xl font-light text-carbon tracking-tight leading-[1.15]">
+                    <span className="italic">Collections</span>
+                  </h1>
+                </div>
                 <Link
                   href="/new-collection"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-sm font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   New Collection
@@ -277,26 +282,26 @@ export default function MyCollectionsPage() {
               </div>
 
               {/* Aggregate Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gris/30">
-                <div className="bg-crema p-5 text-center">
-                  <p className="text-2xl font-light text-texto">{collections.length}</p>
-                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Collections</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gris/20">
+                <div className="bg-crema p-6 text-center">
+                  <p className="text-3xl font-light text-carbon tracking-tight">{collections.length}</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Collections</p>
                 </div>
-                <div className="bg-crema p-5 text-center">
-                  <p className="text-2xl font-light text-texto">{stats.avgProgress}%</p>
-                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Avg Progress</p>
+                <div className="bg-crema p-6 text-center">
+                  <p className="text-3xl font-light text-carbon tracking-tight">{stats.avgProgress}%</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Avg Progress</p>
                 </div>
-                <div className="bg-crema p-5 text-center">
-                  <p className={`text-2xl font-light ${stats.totalOverdue > 0 ? 'text-error' : 'text-texto'}`}>
+                <div className="bg-crema p-6 text-center">
+                  <p className={`text-3xl font-light tracking-tight ${stats.totalOverdue > 0 ? 'text-error' : 'text-carbon'}`}>
                     {stats.totalOverdue}
                   </p>
-                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Overdue</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Overdue</p>
                 </div>
-                <div className="bg-crema p-5 text-center">
-                  <p className="text-2xl font-light text-texto">
+                <div className="bg-crema p-6 text-center">
+                  <p className="text-3xl font-light text-carbon tracking-tight">
                     {stats.nextLaunch ? `${stats.nextLaunch.daysUntilLaunch}d` : '--'}
                   </p>
-                  <p className="text-xs text-texto/50 uppercase tracking-widest mt-1">Next Launch</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Next Launch</p>
                 </div>
               </div>
 
@@ -345,49 +350,46 @@ export default function MyCollectionsPage() {
               )}
 
               {/* Collections Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gris/30">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gris/20">
                 {enrichedCollections.map((collection) => (
-                  <div key={collection.id} className="bg-white p-6 flex flex-col">
+                  <div key={collection.id} className="bg-white p-8 flex flex-col">
                     {/* Header row */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-medium text-texto truncate">
-                          {collection.name}
-                        </h3>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-texto/40">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(collection.updated_at).toLocaleDateString('es-ES')}
-                          </span>
-                          {collection.setup_data?.totalSalesTarget && (
-                            <span className="flex items-center gap-1">
-                              <Euro className="h-3 w-3" />
-                              {collection.setup_data.totalSalesTarget.toLocaleString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-xl font-light text-carbon tracking-tight truncate flex-1 min-w-0 pr-3">
+                        {collection.name}
+                      </h3>
                       <button
                         onClick={() => handleDelete(collection.id)}
-                        className="p-1.5 text-gris hover:text-error transition-colors"
+                        className="p-1.5 text-gris/40 hover:text-error transition-colors flex-shrink-0"
                         title="Delete collection"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
 
+                    <div className="flex items-center gap-3 mb-6 text-xs font-medium text-carbon/30">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(collection.updated_at).toLocaleDateString('es-ES')}
+                      </span>
+                      {collection.setup_data?.totalSalesTarget && (
+                        <span className="flex items-center gap-1">
+                          <Euro className="h-3 w-3" />
+                          {collection.setup_data.totalSalesTarget.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+
                     {/* Progress */}
                     {collection.timeline && (
-                      <div className="mb-4">
-                        <div className="flex items-center justify-between text-xs text-texto/40 mb-1.5">
-                          <span>Progress</span>
-                          <span className="font-medium text-texto">{collection.progress}%</span>
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between text-xs mb-2">
+                          <span className="font-medium text-carbon/30 tracking-wide">Progress</span>
+                          <span className="font-light text-carbon text-lg tracking-tight">{collection.progress}%</span>
                         </div>
-                        <div className="h-1 bg-gris/30 overflow-hidden">
+                        <div className="h-[2px] bg-gris/20 overflow-hidden">
                           <div
-                            className={`h-full transition-all duration-500 ${
-                              collection.progress === 100 ? 'bg-carbon' : 'bg-carbon/60'
-                            }`}
+                            className="h-full bg-carbon transition-all duration-500"
                             style={{ width: `${collection.progress}%` }}
                           />
                         </div>
@@ -395,26 +397,26 @@ export default function MyCollectionsPage() {
                     )}
 
                     {/* Status badges */}
-                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                    <div className="flex items-center gap-2 mb-6 flex-wrap">
                       {collection.setup_data?.productCategory && (
-                        <span className="text-xs text-texto/50 border border-gris/40 px-2 py-0.5">
+                        <span className="text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
                           {collection.setup_data.productCategory}
                         </span>
                       )}
                       {collection.overdue > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-error border border-error/20 px-2 py-0.5">
+                        <span className="flex items-center gap-1 text-xs font-medium text-error border border-error/20 px-2.5 py-1">
                           <AlertTriangle className="h-3 w-3" />
                           {collection.overdue} overdue
                         </span>
                       )}
                       {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-texto/50 border border-gris/40 px-2 py-0.5">
+                        <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
                           <Rocket className="h-3 w-3" />
                           {collection.daysUntilLaunch}d to launch
                         </span>
                       )}
                       {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch <= 0 && (
-                        <span className="flex items-center gap-1 text-xs text-texto/50 border border-gris/40 px-2 py-0.5">
+                        <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Launched
                         </span>
@@ -424,7 +426,7 @@ export default function MyCollectionsPage() {
                     {/* CTA */}
                     <Link
                       href={`/collection/${collection.id}`}
-                      className="mt-auto flex items-center justify-center gap-2 w-full py-2.5 bg-carbon text-crema text-xs font-medium tracking-wide uppercase hover:bg-carbon/90 transition-colors"
+                      className="mt-auto flex items-center justify-center gap-2 w-full py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
                     >
                       Continue
                       <ArrowRight className="h-3.5 w-3.5" />
