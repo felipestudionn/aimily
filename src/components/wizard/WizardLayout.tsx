@@ -35,7 +35,7 @@ export function WizardLayout({
         skuCount={skuCount}
         setupData={setupData}
       />
-      <main className="ml-64 min-h-screen transition-all duration-300">
+      <main className="ml-72 min-h-screen transition-all duration-300">
         {children}
       </main>
     </TimelineProvider>
