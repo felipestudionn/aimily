@@ -15,20 +15,31 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { MoodImage, PinterestPin, PinterestBoard } from '@/types/creative';
 
-/** Single pin thumbnail — hidden until fully loaded to prevent progressive JPEG artifacts */
+/**
+ * Pin thumbnail that only renders AFTER the image is fully downloaded.
+ * Preloads via JS Image() constructor — the <img> tag never appears in the DOM
+ * with a src until the file is 100% downloaded and decoded.
+ * This prevents progressive JPEG artifacts (horizontal bands).
+ */
 function PinImage({ src, alt }: { src: string; alt: string }) {
-  const [loaded, setLoaded] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(false);
+    const img = new Image();
+    img.onload = () => setReady(true);
+    img.onerror = () => setReady(true); // show broken rather than infinite skeleton
+    img.src = src;
+    return () => { img.onload = null; img.onerror = null; };
+  }, [src]);
+
   return (
-    <div className="aspect-[3/4] bg-gray-100 relative">
-      {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-gray-200 rounded" />
+    <div className="aspect-[3/4] bg-gray-100">
+      {ready ? (
+        <img src={src} alt={alt} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full animate-pulse bg-gray-200" />
       )}
-      <img
-        src={src}
-        alt={alt}
-        className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-        onLoad={() => setLoaded(true)}
-      />
     </div>
   );
 }
