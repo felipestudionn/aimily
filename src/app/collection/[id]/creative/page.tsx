@@ -826,16 +826,119 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
   );
 }
 
-function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProfile, vibeText }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string; vibeText?: string }) {
+/* ─── Shared editable brand result ─── */
+function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+  const colors = (data.colors as string[]) || [];
+
+  // Parse hex from "hex (role)" format
+  const parseHex = (c: string) => c.replace(/\s*\(.*\)/, '').trim();
+
+  const updateColor = (idx: number, hex: string) => {
+    const updated = [...colors];
+    updated[idx] = hex;
+    onChange({ ...data, colors: updated });
+  };
+
+  const addColor = () => onChange({ ...data, colors: [...colors, '#cccccc'] });
+  const removeColor = (idx: number) => onChange({ ...data, colors: colors.filter((_, i) => i !== idx) });
+
+  return (
+    <div className="space-y-5 border border-carbon/20 p-5 sm:p-6 bg-carbon/[0.02]">
+      <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
+        Brand Identity <span className="text-carbon/40">(editable)</span>
+      </p>
+
+      {/* Brand Name */}
+      <div>
+        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Brand Name</label>
+        <input
+          type="text"
+          value={(data.brandName as string) || ''}
+          onChange={(e) => onChange({ ...data, brandName: e.target.value })}
+          className="w-full px-3 py-2 text-sm font-medium text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
+        />
+      </div>
+
+      {/* Colors */}
+      <div>
+        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Colors</label>
+        <div className="flex flex-wrap items-center gap-3">
+          {colors.map((c, i) => {
+            const hex = parseHex(c);
+            return (
+              <div key={i} className="flex items-center gap-1.5 group">
+                <input
+                  type="color"
+                  value={hex.startsWith('#') ? hex : '#cccccc'}
+                  onChange={(e) => updateColor(i, e.target.value)}
+                  className="w-9 h-9 border border-carbon/[0.12] cursor-pointer p-0"
+                />
+                <input
+                  type="text"
+                  value={c}
+                  onChange={(e) => updateColor(i, e.target.value)}
+                  className="w-28 px-2 py-1.5 text-[11px] text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none"
+                />
+                <button onClick={() => removeColor(i)} className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            );
+          })}
+          <button onClick={addColor} className="w-9 h-9 border border-dashed border-carbon/[0.15] flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:border-carbon/30 transition-colors">
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Tone */}
+      <div>
+        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Voice & Tone</label>
+        <textarea
+          value={(data.tone as string) || ''}
+          onChange={(e) => onChange({ ...data, tone: e.target.value })}
+          placeholder="How does the brand speak? Intimate or authoritative? Playful or serious?..."
+          className="w-full h-20 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+        />
+      </div>
+
+      {/* Typography */}
+      <div>
+        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Typography</label>
+        <input
+          type="text"
+          value={(data.typography as string) || ''}
+          onChange={(e) => onChange({ ...data, typography: e.target.value })}
+          placeholder="e.g. Clean sans-serif headlines, humanist body text..."
+          className="w-full px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors placeholder:text-carbon/40"
+        />
+      </div>
+
+      {/* Style */}
+      <div>
+        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Visual Identity</label>
+        <textarea
+          value={(data.style as string) || ''}
+          onChange={(e) => onChange({ ...data, style: e.target.value })}
+          placeholder="What makes this brand recognizable? Spacing, image treatment, composition..."
+          className="w-full h-20 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+        />
+      </div>
+    </div>
+  );
+}
+
+function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, vibeText }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string; vibeText?: string }) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasBrand = data.hasBrand as boolean | undefined;
+  const hasResult = (data.extracted as boolean) || (data.generated as boolean);
 
   if (hasBrand === undefined) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-6">
         <p className="text-sm text-carbon text-center max-w-sm">
-          Do you already have a brand, or would you like to start from scratch?
+          Do you already have a brand, or would you like to create one from scratch?
         </p>
         <div className="flex gap-4">
           <button
@@ -848,7 +951,7 @@ function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProf
             onClick={() => onChange({ ...data, hasBrand: false })}
             className="px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-colors"
           >
-            Start from scratch
+            Create from scratch
           </button>
         </div>
       </div>
@@ -858,13 +961,11 @@ function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProf
   return (
     <div className="space-y-6">
       {hasBrand ? (
-        /* Existing Brand */
+        /* ═══ PATH A: Existing Brand — extract with AI ═══ */
         <div className="space-y-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-                Instagram
-              </label>
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Instagram</label>
               <input
                 type="text"
                 value={(data.instagram as string) || ''}
@@ -874,9 +975,7 @@ function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProf
               />
             </div>
             <div className="flex-1">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-                Website
-              </label>
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Website</label>
               <input
                 type="text"
                 value={(data.website as string) || ''}
@@ -896,7 +995,7 @@ function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProf
               });
               if (err) { setError(err); setGenerating(false); return; }
               const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
-              onChange({ ...data, extracted: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography });
+              onChange({ ...data, extracted: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '' });
               setGenerating(false);
             }}
             disabled={generating || (!(data.instagram as string)?.trim() && !(data.website as string)?.trim())}
@@ -907,60 +1006,30 @@ function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProf
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
 
-          {(data.extracted as boolean) && (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-3">
-                <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 w-20">Colors</label>
-                <div className="flex gap-2">
-                  {(data.colors as string[])?.map((c, i) => (
-                    <div key={i} className="w-8 h-8 border border-carbon/[0.08]" style={{ backgroundColor: c }} />
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 w-20 pt-0.5">Tone</label>
-                <input
-                  value={(data.tone as string) || ''}
-                  onChange={(e) => onChange({ ...data, tone: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
-                />
-              </div>
-              <div className="flex items-start gap-3">
-                <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 w-20 pt-0.5">Type</label>
-                <input
-                  value={(data.typography as string) || ''}
-                  onChange={(e) => onChange({ ...data, typography: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-          )}
+          {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
+
           <button
-            onClick={() => onChange({ ...data, hasBrand: undefined })}
+            onClick={() => onChange({ ...data, hasBrand: undefined, extracted: false })}
             className="text-[10px] text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
           >
             ← Change option
           </button>
         </div>
       ) : (
-        /* New Brand */
+        /* ═══ PATH B: New Brand — manual or AI-generated ═══ */
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Brand Name Ideas
-            </label>
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Brand Name</label>
             <input
               type="text"
               value={(data.brandName as string) || ''}
               onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-              placeholder="Your brand name or let AI suggest options..."
+              placeholder="Your brand name or leave blank for AI to suggest..."
               className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Brand Direction
-            </label>
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Brand Direction</label>
             <textarea
               value={(data.direction as string) || ''}
               onChange={(e) => onChange({ ...data, direction: e.target.value })}
@@ -968,60 +1037,45 @@ function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProf
               className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
-          <button
-            onClick={async () => {
-              setGenerating(true);
-              setError(null);
-              const { result, error: err } = await generateCreative('brand-generate', {
-                brandName: (data.brandName as string) || '',
-                direction: (data.direction as string) || '',
-                consumer: consumerProfile || '',
-                vibe: vibeText || '',
-                ...collectionContext,
-              });
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string };
-              onChange({ ...data, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, generated: true });
-              setGenerating(false);
-            }}
-            disabled={generating}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Generate Brand Identity
-          </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={async () => {
+                setGenerating(true);
+                setError(null);
+                const { result, error: err } = await generateCreative('brand-generate', {
+                  brandName: (data.brandName as string) || '',
+                  direction: (data.direction as string) || '',
+                  consumer: consumerProfile || '',
+                  vibe: vibeText || '',
+                  ...collectionContext,
+                });
+                if (err) { setError(err); setGenerating(false); return; }
+                const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
+                onChange({ ...data, brandName: parsed.brandName || (data.brandName as string), colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '', generated: true });
+                setGenerating(false);
+              }}
+              disabled={generating}
+              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              Generate with AI
+            </button>
+            {!hasResult && (
+              <button
+                onClick={() => onChange({ ...data, generated: true, colors: ['#1a1a1a', '#6b7280', '#d4a574', '#f5f0eb'], tone: '', typography: '', style: '' })}
+                className="px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-colors"
+              >
+                Fill manually
+              </button>
+            )}
+          </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
 
-          {(data.generated as boolean) && (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center gap-3">
-                <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 w-20">Colors</label>
-                <div className="flex gap-2">
-                  {(data.colors as string[])?.map((c, i) => (
-                    <div key={i} className="w-8 h-8 border border-carbon/[0.08]" style={{ backgroundColor: c }} />
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 w-20 pt-0.5">Tone</label>
-                <input
-                  value={(data.tone as string) || ''}
-                  onChange={(e) => onChange({ ...data, tone: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
-                />
-              </div>
-              <div className="flex items-start gap-3">
-                <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 w-20 pt-0.5">Type</label>
-                <input
-                  value={(data.typography as string) || ''}
-                  onChange={(e) => onChange({ ...data, typography: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-          )}
+          {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
+
           <button
-            onClick={() => onChange({ ...data, hasBrand: undefined })}
+            onClick={() => onChange({ ...data, hasBrand: undefined, generated: false })}
             className="text-[10px] text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
           >
             ← Change option
@@ -1225,7 +1279,7 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
       case 'consumer': return <ConsumerContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} />;
       case 'vibe': return <VibeContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} />;
       case 'moodboard': return <MoodboardContent data={data} onChange={onChange} />;
-      case 'brand-dna': return <BrandDNAContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} vibeText={vibeText} />;
+      case 'brand-dna': return <BrandDNAContent data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} vibeText={vibeText} />;
     }
   }
   if (stepId === 'research') {
@@ -1310,7 +1364,7 @@ export default function CreativeBrandPage() {
     handleCollapse();
   }, [updateBlockData, handleCollapse]);
 
-  const isMoodboard = expandedBlock === 'moodboard';
+  const hideModePills = expandedBlock === 'moodboard' || expandedBlock === 'brand-dna';
 
   if (persistLoading) {
     return (
@@ -1440,7 +1494,7 @@ export default function CreativeBrandPage() {
                         </div>
 
                         {/* Mode Pills (not for moodboard) */}
-                        {!isMoodboard && (
+                        {!hideModePills && (
                           <div className="flex items-center gap-2 mb-8">
                             {INPUT_MODES.map((m) => (
                               <button
@@ -1541,7 +1595,7 @@ export default function CreativeBrandPage() {
                       </p>
 
                       {/* Input Mode Pills (preview) */}
-                      {block.id !== 'moodboard' && (
+                      {block.id !== 'moodboard' && block.id !== 'brand-dna' && (
                         <div className="mt-6 flex items-center gap-2">
                           {INPUT_MODES.map((mode) => (
                             <span
