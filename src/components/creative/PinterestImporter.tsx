@@ -159,6 +159,11 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
     });
   };
 
+  // Mark a pin as added (after single import)
+  const markAdded = (pinId: string) => {
+    setSelectedPins((prev) => new Set(prev).add(pinId));
+  };
+
   const importSelected = () => {
     const images: MoodImage[] = boardPins
       .filter((pin) => selectedPins.has(pin.id))
@@ -252,25 +257,67 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
             <span className="ml-2 text-sm">Loading pins...</span>
           </div>
         ) : boardPins.length > 0 ? (
-          <div className="grid gap-2 grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {boardPins.map((pin) => (
-              <button
-                key={pin.id}
-                onClick={() => togglePin(pin.id)}
-                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:shadow-md ${
-                  selectedPins.has(pin.id)
-                    ? 'border-primary ring-2 ring-primary/30'
-                    : 'border-transparent hover:border-gray-300'
-                }`}
-              >
-                {selectedPins.has(pin.id) && (
-                  <div className="absolute top-1.5 right-1.5 z-10 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow">
-                    <Check className="h-3 w-3 text-white" />
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg pr-1">
+            <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3 space-y-3">
+              {boardPins.map((pin) => {
+                const isSelected = selectedPins.has(pin.id);
+                return (
+                  <div
+                    key={pin.id}
+                    className={`relative group break-inside-avoid rounded-lg overflow-hidden border-2 transition-all ${
+                      isSelected
+                        ? 'border-primary ring-2 ring-primary/30'
+                        : 'border-transparent hover:border-gray-300'
+                    }`}
+                  >
+                    <img
+                      src={pin.imageUrl}
+                      alt={pin.title || 'Pin'}
+                      className="w-full h-auto block"
+                    />
+                    {/* Overlay with add/remove button */}
+                    <div className={`absolute inset-0 flex items-end justify-center transition-opacity ${
+                      isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <button
+                        onClick={() => {
+                          if (isSelected) {
+                            togglePin(pin.id);
+                          } else {
+                            // Add single pin directly to moodboard and mark as added
+                            onImportImages([{
+                              id: `pinterest-${pin.id}`,
+                              src: pin.imageUrl,
+                              name: pin.title || 'Pinterest Pin',
+                              source: 'pinterest' as const,
+                            }]);
+                            markAdded(pin.id);
+                          }
+                        }}
+                        className={`relative z-10 mb-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'bg-primary text-white'
+                            : 'bg-white/90 text-gray-800 hover:bg-white'
+                        }`}
+                      >
+                        {isSelected ? (
+                          <span className="flex items-center gap-1"><Check className="h-3 w-3" /> Added</span>
+                        ) : (
+                          <span className="flex items-center gap-1"><Download className="h-3 w-3" /> Add</span>
+                        )}
+                      </button>
+                    </div>
+                    {/* Selected checkmark */}
+                    {isSelected && (
+                      <div className="absolute top-1.5 right-1.5 z-10 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    )}
                   </div>
-                )}
-                <img src={pin.imageUrl} alt={pin.title || 'Pin'} className="w-full h-full object-cover" />
-              </button>
-            ))}
+                );
+              })}
+            </div>
           </div>
         ) : (
           <p className="text-center py-6 text-sm text-muted-foreground">No pins found</p>
