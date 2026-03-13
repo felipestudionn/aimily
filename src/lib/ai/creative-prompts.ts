@@ -188,44 +188,55 @@ Return:
 
     case 'brand-extract':
       return {
-        temperature: 0.6,
+        temperature: 0.5,
         maxTokens: 8192,
         system: `${PERSONAS.brandArchitect}
 
-CRITICAL INSTRUCTION: You CANNOT and MUST NOT attempt to visit, browse, or access any URL, website, or Instagram page. You DO NOT have internet access. Instead, you MUST use your existing knowledge of the brand to infer its visual identity. If you recognize the brand name from the handle or URL, use what you know about it. If you don't recognize it, make educated inferences based on the name, handle style, and any context clues — and produce a plausible, professional brand identity system. NEVER refuse the task. NEVER say you cannot access URLs. ALWAYS return the requested JSON.`,
+You are analyzing REAL scraped data from the brand's website and/or Instagram profile. This data was fetched by our server — you have actual content to work with. Your job is to analyze this real data and extract the brand's visual identity system.
+
+RULES:
+- Base your analysis PRIMARILY on the scraped data provided (colors, fonts, copy, headings, descriptions).
+- If CSS colors were found, USE THEM as-is for the color palette — these are the brand's actual colors.
+- If fonts were found, reference them in your typography analysis.
+- Analyze the tone of the actual copy/headings to determine voice and tone.
+- If no data could be scraped, fall back to your knowledge of the brand name.
+- NEVER refuse. ALWAYS return valid JSON.`,
         user: `The user has an existing brand and wants to extract its visual DNA for use in their collection planning.
 
-Brand references provided:
-${input.instagram ? `- Instagram handle: ${input.instagram}` : ''}
+Brand references:
+${input.instagram ? `- Instagram: ${input.instagram}` : ''}
 ${input.website ? `- Website: ${input.website}` : ''}
 
-IMPORTANT: Do NOT try to visit these URLs. Use the brand name you can infer from the handle/domain to work from your existing knowledge. If the brand is not well-known, create a plausible, professional identity system based on the name and any contextual clues.
+───── SCRAPED DATA FROM THE BRAND'S ACTUAL PRESENCE ─────
+${input._scrapedContent || 'No data could be scraped.'}
+──────────────────────────────────────────────────────────
 
-Extract the brand identity system:
+Scraping results: Website ${input._hadWebsite === 'true' ? 'SUCCESS' : 'FAILED'} | Instagram ${input._hadInstagram === 'true' ? 'SUCCESS' : 'FAILED'}
 
-ANALYSIS FRAMEWORK:
-1. COLOR SYSTEM — Identify the 4 strategic color roles:
-   - Primary: The dominant brand color (appears in logo, headers, key touchpoints)
-   - Secondary: The supporting color (used for depth and variety)
-   - Accent: The energy color (used sparingly for CTAs, highlights, seasonal pops)
-   - Neutral: The base color (backgrounds, body text, breathing space)
+ANALYSIS INSTRUCTIONS:
+1. COLOR SYSTEM — Extract 4 strategic colors from the REAL CSS colors found above. Map them to roles:
+   - Primary: The dominant brand color (most frequent or prominent in the scraped palette)
+   - Secondary: A supporting color from the palette
+   - Accent: An energy/highlight color from the palette
+   - Neutral: A background/base color from the palette
+   If fewer than 4 colors were scraped, infer the missing ones to complement the real ones.
 
-2. TYPOGRAPHIC CHARACTER — Not just font names, but the rhythm: is the brand typographically loud or quiet? Dense or airy? Serif heritage or sans-serif modernity?
+2. TYPOGRAPHIC CHARACTER — If real fonts were scraped, describe the typographic system using those actual font names. If not, infer from the brand's visual language in the copy.
 
-3. TONAL REGISTER — How does the brand speak? Is it intimate or authoritative? Playful or serious? First-person or observational?
+3. TONAL REGISTER — Analyze the ACTUAL headings, descriptions, and page copy above. How does this brand speak? Quote specific phrases if possible.
 
-4. VISUAL GRAMMAR — What makes this brand recognizable without seeing the logo? (Spacing, image treatment, composition patterns)
+4. VISUAL GRAMMAR — Based on the content structure, word choices, and overall presentation, describe what makes this brand recognizable.
 
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
-  "brandName": "The brand name",
+  "brandName": "The brand name (extracted from the real data)",
   "colors": ["#hex1 (primary)", "#hex2 (secondary)", "#hex3 (accent)", "#hex4 (neutral)"],
-  "tone": "20-40 word description of brand voice — specific enough to write copy from",
-  "typography": "20-30 word description of typographic character",
-  "style": "25-40 word description of overall visual identity system"
+  "tone": "20-40 word description of brand voice — reference actual copy patterns you observed",
+  "typography": "20-30 word description of typographic character — mention actual fonts if scraped",
+  "style": "25-40 word description of overall visual identity system — grounded in the real data"
 }`,
       };
 

@@ -771,56 +771,300 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
   );
 }
 
+interface PinterestBoard { id: string; name: string; pin_count: number; image_thumbnail_url?: string; }
+interface PinterestPin { id: string; title?: string; imageUrl: string; dominantColor?: string; }
+
 function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+  const { id: collectionId } = useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const images = (data.images as string[]) || [];
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+
+  // Pinterest state
+  const [pinterestStep, setPinterestStep] = useState<'idle' | 'boards' | 'pins'>('idle');
+  const [boards, setBoards] = useState<PinterestBoard[]>([]);
+  const [pins, setPins] = useState<PinterestPin[]>([]);
+  const [selectedPins, setSelectedPins] = useState<Set<string>>(new Set());
+  const [selectedBoard, setSelectedBoard] = useState<PinterestBoard | null>(null);
+  const [pinterestLoading, setPinterestLoading] = useState(false);
+  const [pinterestError, setPinterestError] = useState('');
+  const [importingPins, setImportingPins] = useState(false);
+
+  // Upload files to Supabase Storage
+  const handleUpload = async (files: FileList) => {
+    setUploading(true);
+    const newUrls: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      setUploadProgress(`Uploading ${i + 1}/${files.length}...`);
+      const file = files[i];
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      try {
+        const res = await fetch('/api/storage/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            collectionPlanId: collectionId,
+            assetType: 'moodboard',
+            name: file.name,
+            base64: base64.split(',')[1],
+            mimeType: file.type,
+          }),
+        });
+        if (res.ok) {
+          const { publicUrl } = await res.json();
+          newUrls.push(publicUrl);
+        }
+      } catch { /* skip failed uploads */ }
+    }
+    if (newUrls.length > 0) {
+      onChange({ ...data, images: [...images, ...newUrls] });
+    }
+    setUploading(false);
+    setUploadProgress('');
+  };
+
+  // Pinterest: connect or load boards
+  const handlePinterestConnect = async () => {
+    setPinterestLoading(true);
+    setPinterestError('');
+    try {
+      // Check if already connected (has token cookie)
+      const res = await fetch('/api/pinterest/boards');
+      if (res.status === 401) {
+        // Not connected — redirect to Pinterest OAuth
+        const clientId = process.env.NEXT_PUBLIC_PINTEREST_CLIENT_ID || '';
+        const redirectUri = process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI || `${window.location.origin}/api/auth/pinterest/callback`;
+        const scope = 'boards:read,pins:read';
+        const state = Math.random().toString(36).substring(2, 15);
+        const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
+        window.open(url, '_blank', 'width=600,height=700');
+        setPinterestLoading(false);
+        return;
+      }
+      const boardsData = await res.json();
+      setBoards(boardsData.items || []);
+      setPinterestStep('boards');
+    } catch (e) {
+      setPinterestError('Failed to connect to Pinterest');
+    }
+    setPinterestLoading(false);
+  };
+
+  // Pinterest: load pins from a board
+  const handleSelectBoard = async (board: PinterestBoard) => {
+    setSelectedBoard(board);
+    setPinterestLoading(true);
+    setPinterestError('');
+    try {
+      const res = await fetch(`/api/pinterest/boards/${board.id}/pins`);
+      if (!res.ok) throw new Error('Failed to load pins');
+      const data = await res.json();
+      setPins(data.items || []);
+      setSelectedPins(new Set());
+      setPinterestStep('pins');
+    } catch {
+      setPinterestError('Failed to load pins from this board');
+    }
+    setPinterestLoading(false);
+  };
+
+  // Pinterest: toggle pin selection
+  const togglePin = (pinId: string) => {
+    setSelectedPins(prev => {
+      const next = new Set(prev);
+      if (next.has(pinId)) next.delete(pinId);
+      else next.add(pinId);
+      return next;
+    });
+  };
+
+  // Pinterest: import selected pins to moodboard
+  const handleImportPins = async () => {
+    const selected = pins.filter(p => selectedPins.has(p.id));
+    if (selected.length === 0) return;
+    setImportingPins(true);
+    const newUrls: string[] = [];
+    for (let i = 0; i < selected.length; i++) {
+      setUploadProgress(`Importing ${i + 1}/${selected.length}...`);
+      try {
+        const res = await fetch('/api/storage/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            collectionPlanId: collectionId,
+            assetType: 'moodboard',
+            name: `pinterest-${selected[i].id}.jpg`,
+            sourceUrl: selected[i].imageUrl,
+            description: selected[i].title || 'Pinterest pin',
+            metadata: { source: 'pinterest', pinId: selected[i].id, dominantColor: selected[i].dominantColor },
+          }),
+        });
+        if (res.ok) {
+          const { publicUrl } = await res.json();
+          newUrls.push(publicUrl);
+        }
+      } catch { /* skip failed */ }
+    }
+    if (newUrls.length > 0) {
+      onChange({ ...data, images: [...images, ...newUrls] });
+    }
+    setImportingPins(false);
+    setUploadProgress('');
+    setPinterestStep('idle');
+    setSelectedPins(new Set());
+  };
+
+  // Pinterest: close modal
+  const closePinterest = () => {
+    setPinterestStep('idle');
+    setBoards([]);
+    setPins([]);
+    setSelectedPins(new Set());
+    setSelectedBoard(null);
+    setPinterestError('');
+  };
 
   return (
     <div className="space-y-6">
+      {/* Upload + Pinterest buttons */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Upload */}
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[180px]"
+          disabled={uploading}
+          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[180px] disabled:opacity-50"
         >
-          <Upload className="h-6 w-6 text-carbon/30" />
-          <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">Upload Photos</span>
-          <span className="text-[10px] text-carbon/50">Drag & drop or click</span>
+          {uploading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <Upload className="h-6 w-6 text-carbon/30" />}
+          <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
+            {uploading ? uploadProgress : 'Upload Photos'}
+          </span>
+          <span className="text-[10px] text-carbon/50">JPG, PNG, WEBP</span>
         </button>
         <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
-          const files = e.target.files;
-          if (!files) return;
-          const newImages = Array.from(files).map((f) => URL.createObjectURL(f));
-          onChange({ ...data, images: [...images, ...newImages] });
+          if (e.target.files && e.target.files.length > 0) handleUpload(e.target.files);
         }} />
 
-        {/* Pinterest */}
-        <button className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[180px]">
-          <ExternalLink className="h-6 w-6 text-carbon/30" />
-          <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">Connect Pinterest</span>
+        <button
+          onClick={handlePinterestConnect}
+          disabled={pinterestLoading}
+          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[180px] disabled:opacity-50"
+        >
+          {pinterestLoading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <ExternalLink className="h-6 w-6 text-carbon/30" />}
+          <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
+            {pinterestLoading ? 'Connecting...' : 'Pinterest'}
+          </span>
           <span className="text-[10px] text-carbon/50">Select from boards</span>
         </button>
       </div>
 
-      {/* Image Grid */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-4 gap-2">
-          {images.map((img, i) => (
-            <div key={i} className="relative aspect-square bg-carbon/[0.04] overflow-hidden group">
-              <img src={img} alt="" className="w-full h-full object-cover" />
+      {/* Pinterest Modal — Boards */}
+      {pinterestStep === 'boards' && (
+        <div className="border border-carbon/20 bg-white p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">Select a Board</p>
+            <button onClick={closePinterest} className="text-carbon/40 hover:text-carbon/70"><X className="h-4 w-4" /></button>
+          </div>
+          {pinterestError && <p className="text-xs text-red-600">{pinterestError}</p>}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
+            {boards.map(board => (
               <button
-                onClick={() => onChange({ ...data, images: images.filter((_, j) => j !== i) })}
-                className="absolute top-1 right-1 w-5 h-5 bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                key={board.id}
+                onClick={() => handleSelectBoard(board)}
+                className="flex flex-col items-center gap-2 p-4 border border-carbon/10 hover:border-carbon/30 transition-colors text-left"
               >
-                <X className="h-3 w-3" />
+                {board.image_thumbnail_url && (
+                  <img src={board.image_thumbnail_url} alt="" className="w-full aspect-square object-cover" />
+                )}
+                <span className="text-xs font-medium text-carbon/80 truncate w-full">{board.name}</span>
+                <span className="text-[10px] text-carbon/50">{board.pin_count} pins</span>
               </button>
-            </div>
-          ))}
+            ))}
+          </div>
+          {boards.length === 0 && !pinterestLoading && (
+            <p className="text-xs text-carbon/50 text-center py-4">No boards found</p>
+          )}
         </div>
       )}
 
-      {images.length === 0 && (
-        <p className="text-xs text-carbon/60 text-center py-4">No images yet. Upload photos or connect Pinterest to build your moodboard.</p>
+      {/* Pinterest Modal — Pins */}
+      {pinterestStep === 'pins' && (
+        <div className="border border-carbon/20 bg-white p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setPinterestStep('boards')} className="text-[10px] text-carbon/50 hover:text-carbon/80">
+                <ArrowLeft className="h-3.5 w-3.5 inline mr-1" />Boards
+              </button>
+              <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{selectedBoard?.name}</p>
+            </div>
+            <button onClick={closePinterest} className="text-carbon/40 hover:text-carbon/70"><X className="h-4 w-4" /></button>
+          </div>
+          {pinterestError && <p className="text-xs text-red-600">{pinterestError}</p>}
+
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
+            {pins.map(pin => (
+              <button
+                key={pin.id}
+                onClick={() => togglePin(pin.id)}
+                className={`relative aspect-square overflow-hidden border-2 transition-all ${
+                  selectedPins.has(pin.id) ? 'border-carbon ring-1 ring-carbon/30' : 'border-transparent hover:border-carbon/20'
+                }`}
+              >
+                <img src={pin.imageUrl} alt={pin.title || ''} className="w-full h-full object-cover" />
+                {selectedPins.has(pin.id) && (
+                  <div className="absolute top-1 right-1 w-5 h-5 bg-carbon text-white flex items-center justify-center">
+                    <Check className="h-3 w-3" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {selectedPins.size > 0 && (
+            <div className="flex items-center justify-between pt-2 border-t border-carbon/10">
+              <span className="text-xs text-carbon/60">{selectedPins.size} selected</span>
+              <button
+                onClick={handleImportPins}
+                disabled={importingPins}
+                className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-50"
+              >
+                {importingPins ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                {importingPins ? uploadProgress : 'Import Selected'}
+              </button>
+            </div>
+          )}
+
+          {pins.length === 0 && !pinterestLoading && (
+            <p className="text-xs text-carbon/50 text-center py-4">No pins found in this board</p>
+          )}
+        </div>
+      )}
+
+      {/* Image Grid */}
+      {images.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-3">{images.length} images</p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+            {images.map((img, i) => (
+              <div key={i} className="relative aspect-square bg-carbon/[0.04] overflow-hidden group">
+                <img src={img} alt="" className="w-full h-full object-cover" />
+                <button
+                  onClick={() => onChange({ ...data, images: images.filter((_, j) => j !== i) })}
+                  className="absolute top-1 right-1 w-5 h-5 bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {images.length === 0 && pinterestStep === 'idle' && (
+        <p className="text-xs text-carbon/60 text-center py-4">No images yet. Upload photos or import from Pinterest.</p>
       )}
     </div>
   );
