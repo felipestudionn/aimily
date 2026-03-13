@@ -143,7 +143,7 @@ function BlockCard({
   return (
     <Link
       href={`/collection/${collectionId}/${block.route}`}
-      className="group relative bg-white p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col aspect-square md:aspect-auto md:min-h-[420px]"
+      className="group relative bg-white p-6 md:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col md:min-h-[420px]"
     >
       {/* Progress bar top */}
       <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
@@ -232,9 +232,9 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
   return (
     <div className="min-h-[80vh]">
-      <div className="px-8 md:px-12 lg:px-16 py-12">
+      <div className="px-5 md:px-12 lg:px-16 pt-16 md:pt-12 pb-12">
         {/* Header + View Toggle */}
-        <div className="flex items-end justify-between mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
           <div>
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
               Your workspace
@@ -245,7 +245,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           </div>
 
           {/* View Toggle */}
-          <div className="flex border border-carbon/[0.06]">
+          <div className="flex border border-carbon/[0.06] overflow-x-auto">
             {VIEW_TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = view === tab.id;
@@ -253,7 +253,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                 <button
                   key={tab.id}
                   onClick={() => setView(tab.id)}
-                  className={`flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
+                  className={`flex items-center gap-2 px-4 md:px-5 py-2.5 text-[11px] font-medium tracking-[0.08em] uppercase transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-carbon text-crema'
                       : 'bg-white text-carbon/40 hover:text-carbon/60'

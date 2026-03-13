@@ -73,6 +73,8 @@ interface WizardSidebarProps {
   launchDate?: string | null;
   skuCount?: number;
   setupData?: Record<string, unknown> | null;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 export function WizardSidebar({
@@ -82,6 +84,8 @@ export function WizardSidebar({
   launchDate,
   skuCount = 0,
   setupData,
+  mobileOpen = false,
+  onMobileClose,
 }: WizardSidebarProps) {
   const pathname = usePathname();
   const { milestones, saving } = useTimeline();
@@ -136,12 +140,21 @@ export function WizardSidebar({
   }
 
   return (
-    <aside
-      className={`fixed left-0 top-0 bottom-0 bg-carbon z-40 transition-all duration-300 flex flex-col ${
-        collapsed ? 'w-[52px]' : 'w-72'
-      }`}
-    >
-      {/* Logo */}
+    <>
+      {/* Mobile backdrop overlay */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={onMobileClose}
+        />
+      )}
+
+      <aside
+        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-all duration-300 flex flex-col ${
+          collapsed ? 'w-[52px]' : 'w-72'
+        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+      >
+      {/* Logo + mobile close */}
       <div className="px-6 h-16 flex items-center">
         <Link href="/my-collections" className="flex items-center">
           <Image
@@ -157,6 +170,16 @@ export function WizardSidebar({
         {saving && !collapsed && (
           <Loader2 className="h-3 w-3 text-white/60 animate-spin ml-auto flex-shrink-0" />
         )}
+        {/* Mobile close button */}
+        <button
+          onClick={onMobileClose}
+          className="md:hidden ml-auto w-8 h-8 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+          aria-label="Close menu"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
 
       {/* Collection Header */}
@@ -343,10 +366,10 @@ export function WizardSidebar({
         })}
       </div>
 
-      {/* Collapse Toggle */}
+      {/* Collapse Toggle (desktop only) */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-white/20 flex items-center justify-center text-white/50 hover:text-white hover:border-white/40 transition-colors"
+        className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-white/20 items-center justify-center text-white/50 hover:text-white hover:border-white/40 transition-colors"
       >
         {collapsed ? (
           <PanelLeftOpen className="h-2.5 w-2.5" />
@@ -354,6 +377,7 @@ export function WizardSidebar({
           <PanelLeftClose className="h-2.5 w-2.5" />
         )}
       </button>
-    </aside>
+      </aside>
+    </>
   );
 }

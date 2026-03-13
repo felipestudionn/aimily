@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { Menu } from 'lucide-react';
 import { WizardSidebar } from '@/components/wizard/WizardSidebar';
 import { TimelineProvider } from '@/contexts/TimelineContext';
 import type { TimelineMilestone } from '@/types/timeline';
@@ -25,6 +27,8 @@ export function WizardLayout({
   skuCount,
   setupData,
 }: WizardLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
       <WizardSidebar
@@ -34,8 +38,20 @@ export function WizardLayout({
         launchDate={launchDate}
         skuCount={skuCount}
         setupData={setupData}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
-      <main className="ml-72 min-h-screen transition-all duration-300">
+
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className="md:hidden fixed top-4 left-4 z-30 w-10 h-10 bg-carbon text-crema flex items-center justify-center shadow-lg"
+        aria-label="Open menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      <main className="ml-0 md:ml-72 min-h-screen transition-all duration-300">
         {children}
       </main>
     </TimelineProvider>
