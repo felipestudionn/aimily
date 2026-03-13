@@ -98,6 +98,152 @@ interface ConsumerProfile {
   editing?: boolean;
 }
 
+interface VibeProposal {
+  title: string;
+  vibe: string;
+  keywords: string;
+}
+
+function VibeProposalFlow({
+  data, onChange, collectionContext, consumerProfile, generating, setGenerating, error, setError,
+}: {
+  data: Record<string, unknown>;
+  onChange: (d: Record<string, unknown>) => void;
+  collectionContext: { season: string; collectionName: string };
+  consumerProfile?: string;
+  generating: boolean;
+  setGenerating: (v: boolean) => void;
+  error: string | null;
+  setError: (v: string | null) => void;
+}) {
+  const proposals = (data.vibeProposals as VibeProposal[]) || [];
+  const selectedIdx = data.selectedVibe as number | null;
+  const isEditing = data.editingVibe as boolean;
+
+  const generateVibes = async () => {
+    setGenerating(true);
+    setError(null);
+    const { result, error: err } = await generateCreative('vibe-proposals', {
+      reference: (data.reference as string) || '',
+      consumer: consumerProfile || '',
+      ...collectionContext,
+    });
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { proposals: VibeProposal[] };
+    onChange({ ...data, vibeProposals: parsed.proposals || [], selectedVibe: null, editingVibe: false });
+    setGenerating(false);
+  };
+
+  const selectVibe = (idx: number) => {
+    const p = proposals[idx];
+    onChange({ ...data, selectedVibe: idx, editingVibe: true, vibe: p.vibe, keywords: p.keywords, vibeTitle: p.title });
+  };
+
+  const deselectVibe = () => {
+    onChange({ ...data, selectedVibe: null, editingVibe: false, vibe: '', keywords: '', vibeTitle: '' });
+  };
+
+  const selected = selectedIdx !== null && selectedIdx !== undefined;
+
+  return (
+    <div className="space-y-4">
+      {/* Reference input */}
+      <div>
+        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
+          Minimal Reference
+        </label>
+        <input
+          type="text"
+          value={(data.reference as string) || ''}
+          onChange={(e) => onChange({ ...data, reference: e.target.value })}
+          placeholder="e.g. 'sporty elegance' or 'coastal Italian summer'..."
+          className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+        />
+      </div>
+
+      {/* Generate button */}
+      <button
+        onClick={generateVibes}
+        disabled={generating || !(data.reference as string)?.trim()}
+        className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+        Generate Vibes
+      </button>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      {/* Proposals — pick one */}
+      {proposals.length > 0 && !selected && (
+        <div className="space-y-3">
+          <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
+            Select one direction
+          </p>
+          {proposals.map((p, i) => (
+            <button
+              key={i}
+              onClick={() => selectVibe(i)}
+              className="w-full text-left p-5 border border-carbon/[0.08] hover:border-carbon/30 transition-all group"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-carbon">{p.title}</span>
+                <span className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+              </div>
+              <div className="text-xs text-carbon/80 leading-relaxed">{p.vibe}</div>
+              <div className="text-[10px] text-carbon/50 mt-2 tracking-wide">{p.keywords}</div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Selected — editable */}
+      {selected && isEditing && (
+        <div className="space-y-4 border border-carbon/20 p-5 bg-carbon/[0.02]">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
+              Edit your vibe
+            </p>
+            <button
+              onClick={deselectVibe}
+              className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+            >
+              ← Choose another
+            </button>
+          </div>
+          {/* Title */}
+          <div>
+            <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Title</label>
+            <input
+              type="text"
+              value={(data.vibeTitle as string) || ''}
+              onChange={(e) => onChange({ ...data, vibeTitle: e.target.value })}
+              className="w-full px-3 py-2 text-sm font-medium text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
+            />
+          </div>
+          {/* Narrative */}
+          <div>
+            <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Creative Narrative</label>
+            <textarea
+              value={(data.vibe as string) || ''}
+              onChange={(e) => onChange({ ...data, vibe: e.target.value })}
+              className="w-full h-36 px-4 py-3 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed"
+            />
+          </div>
+          {/* Keywords */}
+          <div>
+            <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Keywords</label>
+            <input
+              type="text"
+              value={(data.keywords as string) || ''}
+              onChange={(e) => onChange({ ...data, keywords: e.target.value })}
+              className="w-full px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ConsumerProposalFlow({
   data, onChange, collectionContext, generating, setGenerating, error, setError,
 }: {
@@ -582,71 +728,44 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.vibe as string) && (
-            <div>
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-                AI-Generated Narrative <span className="text-carbon/40">(editable)</span>
-              </label>
-              <textarea
-                value={(data.vibe as string) || ''}
-                onChange={(e) => onChange({ ...data, vibe: e.target.value })}
-                className="w-full h-32 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
+                  AI-Generated Narrative <span className="text-carbon/40">(editable)</span>
+                </label>
+                <textarea
+                  value={(data.vibe as string) || ''}
+                  onChange={(e) => onChange({ ...data, vibe: e.target.value })}
+                  className="w-full h-32 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
+                  Keywords <span className="text-carbon/40">(editable)</span>
+                </label>
+                <input
+                  type="text"
+                  value={(data.keywords as string) || ''}
+                  onChange={(e) => onChange({ ...data, keywords: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
+                />
+              </div>
             </div>
           )}
         </div>
       )}
 
       {mode === 'ai' && (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Minimal Reference
-            </label>
-            <input
-              type="text"
-              value={(data.reference as string) || ''}
-              onChange={(e) => onChange({ ...data, reference: e.target.value })}
-              placeholder="e.g. 'sporty elegance' or 'coastal Italian summer'..."
-              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-            />
-          </div>
-          <button
-            onClick={async () => {
-              setGenerating(true);
-              setError(null);
-              const { result, error: err } = await generateCreative('vibe-proposals', {
-                reference: (data.reference as string) || '',
-                consumer: consumerProfile || '',
-                ...collectionContext,
-              });
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { proposals: Array<{ title: string; vibe: string; keywords: string }> };
-              onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null });
-              setGenerating(false);
-            }}
-            disabled={generating || !(data.reference as string)?.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Generate Vibes
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          {(data.proposals as Array<{ title: string; vibe: string; keywords: string }>)?.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => onChange({ ...data, selectedProposal: i, vibe: p.vibe, keywords: p.keywords })}
-              className={`w-full text-left p-5 border transition-all ${
-                (data.selectedProposal as number) === i
-                  ? 'border-carbon bg-carbon/[0.03]'
-                  : 'border-carbon/[0.08] hover:border-carbon/20'
-              }`}
-            >
-              <div className="text-sm font-medium text-carbon mb-1">{p.title}</div>
-              <div className="text-xs text-carbon/80 leading-relaxed">{p.vibe}</div>
-              <div className="text-[10px] text-carbon/50 mt-2 tracking-wide">{p.keywords}</div>
-            </button>
-          ))}
-        </div>
+        <VibeProposalFlow
+          data={data}
+          onChange={onChange}
+          collectionContext={collectionContext}
+          consumerProfile={consumerProfile}
+          generating={generating}
+          setGenerating={setGenerating}
+          error={error}
+          setError={setError}
+        />
       )}
     </div>
   );
