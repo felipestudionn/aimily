@@ -207,7 +207,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               const { result, error: err } = await generateMerch('families-proposals', { reference: (data.reference as string) || '', ...collectionContext });
               if (err) { setError(err); setGenerating(false); return; }
               const parsed = result as { proposals: Array<{ title: string; description: string; families: Family[] }> };
-              onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null });
+              onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null, editingProposal: false });
               setGenerating(false);
             }}
             disabled={generating || !(data.reference as string)?.trim()}
@@ -217,21 +217,75 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
             Generate Family Structures
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
-          {(data.proposals as Array<{ title: string; description: string; families: Family[] }>)?.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => onChange({ ...data, selectedProposal: i, families: p.families })}
-              className={`w-full text-left p-5 border transition-all ${(data.selectedProposal as number) === i ? 'border-carbon bg-carbon/[0.03]' : 'border-carbon/[0.08] hover:border-carbon/20'}`}
-            >
-              <div className="text-sm font-medium text-carbon mb-1">{p.title}</div>
-              <div className="text-xs text-carbon/70 mb-2">{p.description}</div>
-              <div className="flex flex-wrap gap-1.5">
-                {p.families.map((f, j) => (
-                  <span key={j} className="px-2 py-0.5 text-[10px] bg-carbon/[0.04] text-carbon/60">{f.name} ({f.subcategories.length})</span>
-                ))}
+
+          {/* Proposals — pick one */}
+          {(data.proposals as Array<{ title: string; description: string; families: Family[] }>)?.length > 0 && (data.selectedProposal as number | null) === null && (
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">Select one structure</p>
+              {(data.proposals as Array<{ title: string; description: string; families: Family[] }>).map((p, i) => (
+                <button
+                  key={i}
+                  onClick={() => onChange({ ...data, selectedProposal: i, families: p.families, editingProposal: true })}
+                  className="w-full text-left p-5 border border-carbon/[0.08] hover:border-carbon/30 transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-carbon">{p.title}</span>
+                    <span className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                  </div>
+                  <div className="text-xs text-carbon/70 mb-2">{p.description}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {p.families.map((f, j) => (
+                      <span key={j} className="px-2 py-0.5 text-[10px] bg-carbon/[0.04] text-carbon/60">{f.name} ({f.subcategories.length})</span>
+                    ))}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Selected — editable families */}
+          {(data.selectedProposal as number | null) !== null && (data.editingProposal as boolean) && (
+            <div className="space-y-4 border border-carbon/20 p-5 bg-carbon/[0.02]">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
+                  Edit families
+                </p>
+                <button
+                  onClick={() => onChange({ ...data, selectedProposal: null, editingProposal: false, families: [] })}
+                  className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+                >
+                  ← Choose another
+                </button>
               </div>
-            </button>
-          ))}
+              {families.map((fam, fi) => (
+                <div key={fi} className="border border-carbon/[0.08] p-4 space-y-2 bg-white">
+                  <div className="flex items-center gap-3">
+                    <input
+                      value={fam.name}
+                      onChange={(e) => updateFamilyName(fi, e.target.value)}
+                      className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
+                    />
+                    <button onClick={() => removeFamily(fi)} className="text-carbon/30 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                  {fam.subcategories.map((sub, si) => (
+                    <div key={si} className="flex items-center gap-2 ml-4">
+                      <span className="text-carbon/20 text-xs">└</span>
+                      <input
+                        value={sub}
+                        onChange={(e) => updateSubcategory(fi, si, e.target.value)}
+                        className="flex-1 px-3 py-1.5 text-sm text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
+                      />
+                      <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
+                    </div>
+                  ))}
+                  <button onClick={() => addSubcategory(fi)} className="ml-4 text-[10px] text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> Add subcategory</button>
+                </div>
+              ))}
+              <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
+                <Plus className="h-3.5 w-3.5" /> Add Family
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

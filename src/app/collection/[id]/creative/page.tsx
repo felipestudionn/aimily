@@ -1033,6 +1033,14 @@ function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProf
 }
 
 /* Placeholder content for Step 2 blocks */
+interface ResearchResult {
+  title: string;
+  desc: string;
+  relevance?: string;
+  selected: boolean;
+  editing?: boolean;
+}
+
 function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1061,6 +1069,19 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
   };
 
   const c = config[blockId] || { label: 'Input', placeholder: '', generateLabel: 'Generate' };
+  const results = (data.results as ResearchResult[]) || [];
+
+  const updateResult = (idx: number, updates: Partial<ResearchResult>) => {
+    const updated = [...results];
+    updated[idx] = { ...updated[idx], ...updates };
+    onChange({ ...data, results: updated });
+  };
+
+  const removeResult = (idx: number) => {
+    onChange({ ...data, results: results.filter((_, i) => i !== idx) });
+  };
+
+  const selectedCount = results.filter(r => r.selected).length;
 
   return (
     <div className="space-y-6">
@@ -1092,8 +1113,8 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
           });
           if (err) { setError(err); setGenerating(false); return; }
           const parsed = result as { results: Array<{ title: string; desc: string; relevance?: string }> };
-          const results = (parsed.results || []).map((r) => ({ ...r, selected: false }));
-          onChange({ ...data, results });
+          const newResults = (parsed.results || []).map((r) => ({ ...r, selected: false, editing: false }));
+          onChange({ ...data, results: newResults });
           setGenerating(false);
         }}
         disabled={generating || !(data.input as string)?.trim()}
@@ -1104,31 +1125,85 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      {/* Results with selection */}
-      {(data.results as Array<{ title: string; desc: string; selected: boolean }>)?.map((r, i) => (
-        <button
+      {/* Status counter */}
+      {results.length > 0 && (
+        <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/50">
+          {selectedCount} selected · {results.length - selectedCount} unselected · {results.length} total
+        </div>
+      )}
+
+      {/* Results with selection + inline editing */}
+      {results.map((r, i) => (
+        <div
           key={i}
-          onClick={() => {
-            const results = [...(data.results as Array<{ title: string; desc: string; selected: boolean }>)];
-            results[i] = { ...results[i], selected: !results[i].selected };
-            onChange({ ...data, results });
-          }}
           className={`w-full text-left p-5 border transition-all ${
             r.selected
               ? 'border-carbon bg-carbon/[0.03]'
-              : 'border-carbon/[0.08] hover:border-carbon/20'
+              : 'border-carbon/[0.08]'
           }`}
         >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-carbon">{r.title}</span>
-            <div className={`w-4 h-4 border flex items-center justify-center transition-colors ${
-              r.selected ? 'bg-carbon border-carbon' : 'border-carbon/20'
-            }`}>
-              {r.selected && <Check className="h-2.5 w-2.5 text-crema" />}
+          {r.editing ? (
+            /* ── Editing mode ── */
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={r.title}
+                onChange={(e) => updateResult(i, { title: e.target.value })}
+                className="w-full px-3 py-2 text-sm font-medium text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
+              />
+              <textarea
+                value={r.desc}
+                onChange={(e) => updateResult(i, { desc: e.target.value })}
+                className="w-full h-24 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed"
+              />
+              <button
+                onClick={() => updateResult(i, { editing: false })}
+                className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+              >
+                Done editing
+              </button>
             </div>
-          </div>
-          <div className="text-xs text-carbon/80 leading-relaxed">{r.desc}</div>
-        </button>
+          ) : (
+            /* ── Display mode ── */
+            <>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-carbon">{r.title}</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => updateResult(i, { editing: true })}
+                    className="p-1 text-carbon/30 hover:text-carbon/70 transition-colors"
+                    title="Edit"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => removeResult(i)}
+                    className="p-1 text-carbon/30 hover:text-red-500 transition-colors"
+                    title="Remove"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => updateResult(i, { selected: !r.selected })}
+                    className={`w-5 h-5 border flex items-center justify-center transition-colors ${
+                      r.selected ? 'bg-carbon border-carbon' : 'border-carbon/20 hover:border-carbon/40'
+                    }`}
+                  >
+                    {r.selected && <Check className="h-3 w-3 text-crema" />}
+                  </button>
+                </div>
+              </div>
+              <div className="text-xs text-carbon/80 leading-relaxed">{r.desc}</div>
+              {r.relevance && (
+                <div className={`inline-block mt-2 px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                  r.relevance === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'
+                }`}>
+                  {r.relevance}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       ))}
     </div>
   );
