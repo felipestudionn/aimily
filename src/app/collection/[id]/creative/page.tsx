@@ -3,6 +3,25 @@
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowRight, ArrowLeft, Check, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useWorkspaceData } from '@/hooks/useWorkspaceData';
+
+/* ─── AI generation helper ─── */
+async function generateCreative(
+  type: string,
+  input: Record<string, string>,
+): Promise<{ result: unknown; error?: string }> {
+  const res = await fetch('/api/ai/creative-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, input }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Network error' }));
+    return { result: null, error: err.error || 'AI generation failed' };
+  }
+  return res.json();
+}
 
 /* ═══════════════════════════════════════════════════════════
    Creative & Brand Block — 3-Step Flow
@@ -72,8 +91,9 @@ const INPUT_MODES: { id: InputMode; label: string; description: string }[] = [
 
 /* ─── Expanded Block Content Components ─── */
 
-function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -142,15 +162,16 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               setGenerating(true);
-              setTimeout(() => {
-                onChange({
-                  ...data,
-                  profile: `Based on your direction "${(data.keywords as string) || '...'}", your target consumer is a 28-38 year old urban professional who values quality over quantity. They shop consciously, prefer brands with a clear identity, and are willing to invest in pieces that last. Active on Instagram, follows fashion micro-influencers, and discovers brands through curated content rather than mass advertising.`,
-                });
-                setGenerating(false);
-              }, 1500);
+              setError(null);
+              const { result, error: err } = await generateCreative('consumer-assisted', {
+                keywords: (data.keywords as string) || '',
+                ...collectionContext,
+              });
+              if (err) { setError(err); setGenerating(false); return; }
+              onChange({ ...data, profile: result as string });
+              setGenerating(false);
             }}
             disabled={generating || !(data.keywords as string)?.trim()}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -158,6 +179,7 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Expand with AI
           </button>
+          {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.profile as string) && (
             <div className="mt-4">
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
@@ -188,21 +210,17 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               setGenerating(true);
-              setTimeout(() => {
-                onChange({
-                  ...data,
-                  proposals: [
-                    { title: 'The Urban Creative', desc: 'Ages 25-35, urban professionals in creative industries. Values unique design and sustainable production. Shops online and in curated boutiques. €150-400 average basket.' },
-                    { title: 'The Conscious Minimalist', desc: 'Ages 28-40, values quality over quantity. Capsule wardrobe approach, earth tones, natural materials. Willing to pay premium for ethical brands. €200-500 average basket.' },
-                    { title: 'The Trend-Aware Professional', desc: 'Ages 22-32, follows fashion closely but adapts trends to their lifestyle. Active on social media, influenced by micro-influencers. €100-300 average basket.' },
-                    { title: 'The Heritage Seeker', desc: 'Ages 30-45, appreciates craftsmanship and brand story. Loyal to brands, buys seasonally. Prefers physical stores and personal attention. €250-600 average basket.' },
-                  ],
-                  selectedProposal: null,
-                });
-                setGenerating(false);
-              }, 2000);
+              setError(null);
+              const { result, error: err } = await generateCreative('consumer-proposals', {
+                reference: (data.reference as string) || '',
+                ...collectionContext,
+              });
+              if (err) { setError(err); setGenerating(false); return; }
+              const parsed = result as { proposals: Array<{ title: string; desc: string }> };
+              onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null });
+              setGenerating(false);
             }}
             disabled={generating || !(data.reference as string)?.trim()}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -210,6 +228,7 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Generate Consumer Profiles
           </button>
+          {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.proposals as Array<{ title: string; desc: string }>)?.map((p, i) => (
             <button
               key={i}
@@ -230,8 +249,9 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
   );
 }
 
-function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+function VibeContent({ mode, data, onChange, collectionContext, consumerProfile }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
@@ -277,16 +297,18 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
             />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               setGenerating(true);
-              setTimeout(() => {
-                onChange({
-                  ...data,
-                  vibe: `Rooted in ${(data.direction as string) || '...'} — the collection channels a quiet confidence. Think sun-bleached linen against terracotta, the effortless elegance of a late afternoon on the coast. Each piece tells a story of understated luxury, where craftsmanship speaks louder than logos. The palette is muted but warm, the silhouettes relaxed but intentional.`,
-                  keywords: 'Mediterranean, understated luxury, sun-bleached, linen, warmth, craftsmanship, effortless',
-                });
-                setGenerating(false);
-              }, 1500);
+              setError(null);
+              const { result, error: err } = await generateCreative('vibe-assisted', {
+                direction: (data.direction as string) || '',
+                consumer: consumerProfile || '',
+                ...collectionContext,
+              });
+              if (err) { setError(err); setGenerating(false); return; }
+              const parsed = result as { vibe: string; keywords: string };
+              onChange({ ...data, vibe: parsed.vibe, keywords: parsed.keywords });
+              setGenerating(false);
             }}
             disabled={generating || !(data.direction as string)?.trim()}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -294,6 +316,7 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Build Narrative
           </button>
+          {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.vibe as string) && (
             <div>
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
@@ -324,20 +347,18 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
             />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               setGenerating(true);
-              setTimeout(() => {
-                onChange({
-                  ...data,
-                  proposals: [
-                    { title: 'Coastal Serenity', vibe: 'A sun-drenched palette of sand, sky, and sea salt. Relaxed silhouettes in natural fabrics. The feeling of bare feet on warm stone.', keywords: 'coastal, serene, natural, Mediterranean, warm neutrals' },
-                    { title: 'Urban Poetry', vibe: 'The rhythm of the city captured in fabric. Structured yet fluid, dark yet luminous. For the person who finds beauty in concrete and rain.', keywords: 'urban, poetic, structured, dark palette, contemporary' },
-                    { title: 'Botanical Luxe', vibe: 'Where garden party meets art gallery. Rich botanical prints on luxurious fabrics. A celebration of nature through sophisticated lenses.', keywords: 'botanical, luxe, prints, rich colors, sophisticated' },
-                  ],
-                  selectedProposal: null,
-                });
-                setGenerating(false);
-              }, 2000);
+              setError(null);
+              const { result, error: err } = await generateCreative('vibe-proposals', {
+                reference: (data.reference as string) || '',
+                consumer: consumerProfile || '',
+                ...collectionContext,
+              });
+              if (err) { setError(err); setGenerating(false); return; }
+              const parsed = result as { proposals: Array<{ title: string; vibe: string; keywords: string }> };
+              onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null });
+              setGenerating(false);
             }}
             disabled={generating || !(data.reference as string)?.trim()}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -345,6 +366,7 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Generate Vibes
           </button>
+          {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.proposals as Array<{ title: string; vibe: string; keywords: string }>)?.map((p, i) => (
             <button
               key={i}
@@ -421,8 +443,9 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
   );
 }
 
-function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+function BrandDNAContent({ mode, data, onChange, collectionContext, consumerProfile, vibeText }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string; vibeText?: string }) {
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const hasBrand = data.hasBrand as boolean | undefined;
 
   if (hasBrand === undefined) {
@@ -481,19 +504,17 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             </div>
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               setGenerating(true);
-              setTimeout(() => {
-                onChange({
-                  ...data,
-                  extracted: true,
-                  brandName: 'Your Brand',
-                  colors: ['#2C2C2C', '#F5E6D3', '#8B7355', '#D4C5B2'],
-                  tone: 'Sophisticated, warm, understated luxury',
-                  typography: 'Serif headlines, sans-serif body — classic editorial',
-                });
-                setGenerating(false);
-              }, 2000);
+              setError(null);
+              const { result, error: err } = await generateCreative('brand-extract', {
+                instagram: (data.instagram as string) || '',
+                website: (data.website as string) || '',
+              });
+              if (err) { setError(err); setGenerating(false); return; }
+              const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
+              onChange({ ...data, extracted: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography });
+              setGenerating(false);
             }}
             disabled={generating || (!(data.instagram as string)?.trim() && !(data.website as string)?.trim())}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -501,6 +522,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Extract Brand DNA
           </button>
+          {error && <p className="text-xs text-red-600">{error}</p>}
 
           {(data.extracted as boolean) && (
             <div className="space-y-4 pt-2">
@@ -564,18 +586,20 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             />
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
               setGenerating(true);
-              setTimeout(() => {
-                onChange({
-                  ...data,
-                  colors: ['#1A1A2E', '#E8DDD3', '#C9A96E', '#F0EBE3'],
-                  tone: 'Bold yet refined, contemporary with heritage nods',
-                  typography: 'Geometric sans-serif, high contrast weights',
-                  generated: true,
-                });
-                setGenerating(false);
-              }, 2000);
+              setError(null);
+              const { result, error: err } = await generateCreative('brand-generate', {
+                brandName: (data.brandName as string) || '',
+                direction: (data.direction as string) || '',
+                consumer: consumerProfile || '',
+                vibe: vibeText || '',
+                ...collectionContext,
+              });
+              if (err) { setError(err); setGenerating(false); return; }
+              const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string };
+              onChange({ ...data, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, generated: true });
+              setGenerating(false);
             }}
             disabled={generating}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -583,6 +607,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             Generate Brand Identity
           </button>
+          {error && <p className="text-xs text-red-600">{error}</p>}
 
           {(data.generated as boolean) && (
             <div className="space-y-4 pt-2">
@@ -625,8 +650,9 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
 }
 
 /* Placeholder content for Step 2 blocks */
-function ResearchBlockContent({ blockId, mode, data, onChange }: { blockId: string; mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const config: Record<string, { label: string; placeholder: string; generateLabel: string }> = {
     'global-trends': {
@@ -667,19 +693,25 @@ function ResearchBlockContent({ blockId, mode, data, onChange }: { blockId: stri
         />
       </div>
       <button
-        onClick={() => {
+        onClick={async () => {
           setGenerating(true);
-          setTimeout(() => {
-            onChange({
-              ...data,
-              results: [
-                { title: 'Trend Insight 1', desc: 'AI-generated insight based on your input. Select the trends you want to incorporate into your collection.', selected: false },
-                { title: 'Trend Insight 2', desc: 'Another relevant insight. Toggle to include or exclude from your Creative Input.', selected: false },
-                { title: 'Trend Insight 3', desc: 'A third insight with specific relevance to your product category and target market.', selected: false },
-              ],
-            });
-            setGenerating(false);
-          }, 1800);
+          setError(null);
+          const typeMap: Record<string, string> = {
+            'global-trends': 'trends-global',
+            'deep-dive': 'trends-deep-dive',
+            'live-signals': 'trends-live-signals',
+            'competitors': 'trends-competitors',
+          };
+          const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', {
+            input: (data.input as string) || '',
+            consumer: consumerProfile || '',
+            ...collectionContext,
+          });
+          if (err) { setError(err); setGenerating(false); return; }
+          const parsed = result as { results: Array<{ title: string; desc: string; relevance?: string }> };
+          const results = (parsed.results || []).map((r) => ({ ...r, selected: false }));
+          onChange({ ...data, results });
+          setGenerating(false);
         }}
         disabled={generating || !(data.input as string)?.trim()}
         className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
@@ -687,6 +719,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange }: { blockId: stri
         {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
         {c.generateLabel}
       </button>
+      {error && <p className="text-xs text-red-600">{error}</p>}
 
       {/* Results with selection */}
       {(data.results as Array<{ title: string; desc: string; selected: boolean }>)?.map((r, i) => (
@@ -719,23 +752,26 @@ function ResearchBlockContent({ blockId, mode, data, onChange }: { blockId: stri
 }
 
 /* ─── Expanded Block Content Router ─── */
-function ExpandedBlockContent({ blockId, stepId, mode, data, onChange }: {
+function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectionContext, consumerProfile, vibeText }: {
   blockId: string;
   stepId: string;
   mode: InputMode;
   data: Record<string, unknown>;
   onChange: (d: Record<string, unknown>) => void;
+  collectionContext: { season: string; collectionName: string };
+  consumerProfile?: string;
+  vibeText?: string;
 }) {
   if (stepId === 'vision') {
     switch (blockId) {
-      case 'consumer': return <ConsumerContent mode={mode} data={data} onChange={onChange} />;
-      case 'vibe': return <VibeContent mode={mode} data={data} onChange={onChange} />;
+      case 'consumer': return <ConsumerContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} />;
+      case 'vibe': return <VibeContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} />;
       case 'moodboard': return <MoodboardContent data={data} onChange={onChange} />;
-      case 'brand-dna': return <BrandDNAContent mode={mode} data={data} onChange={onChange} />;
+      case 'brand-dna': return <BrandDNAContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} vibeText={vibeText} />;
     }
   }
   if (stepId === 'research') {
-    return <ResearchBlockContent blockId={blockId} mode={mode} data={data} onChange={onChange} />;
+    return <ResearchBlockContent blockId={blockId} mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} />;
   }
   return null;
 }
@@ -746,24 +782,58 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange }: {
 
 export default function CreativeBrandPage() {
   const { id } = useParams();
+  const collectionId = id as string;
   const router = useRouter();
-  const [activeStep, setActiveStep] = useState(0);
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null);
-  const [blockData, setBlockData] = useState<BlockData>({});
   const [isAnimating, setIsAnimating] = useState(false);
+  const [collectionContext, setCollectionContext] = useState({ season: '', collectionName: '' });
+
+  // Persist block data + active step to Supabase (auto-save with 1s debounce)
+  const { data: persisted, save: persistData, loading: persistLoading } =
+    useWorkspaceData<{ blockData: BlockData; activeStep: number }>(
+      collectionId,
+      'creative',
+      { blockData: {}, activeStep: 0 }
+    );
+
+  const blockData = persisted.blockData;
+  const activeStep = persisted.activeStep;
+
+  const setBlockData = useCallback((updater: BlockData | ((prev: BlockData) => BlockData)) => {
+    persistData((prev) => {
+      const newBlockData = typeof updater === 'function' ? updater(prev.blockData) : updater;
+      return { ...prev, blockData: newBlockData };
+    });
+  }, [persistData]);
+
+  const setActiveStep = useCallback((step: number) => {
+    persistData((prev) => ({ ...prev, activeStep: step }));
+  }, [persistData]);
+
+  // Fetch collection name + season for AI prompts
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.from('collection_plans').select('name, season').eq('id', collectionId).single().then(({ data }) => {
+      if (data) setCollectionContext({ collectionName: data.name || '', season: data.season || '' });
+    });
+  }, [collectionId]);
 
   const step = STEPS[activeStep];
+
+  // Accumulated context from confirmed blocks — flows into subsequent AI prompts
+  const consumerProfile = (blockData.consumer?.data?.profile as string) || '';
+  const vibeText = (blockData.vibe?.data?.vibe as string) || '';
 
   const getBlockState = useCallback((blockId: string) => {
     return blockData[blockId] || { mode: 'free' as InputMode, confirmed: false, data: {} };
   }, [blockData]);
 
   const updateBlockData = useCallback((blockId: string, updates: Partial<BlockData[string]>) => {
-    setBlockData((prev) => ({
-      ...prev,
-      [blockId]: { ...getBlockState(blockId), ...updates },
-    }));
-  }, [getBlockState]);
+    setBlockData((prev) => {
+      const current = prev[blockId] || { mode: 'free' as InputMode, confirmed: false, data: {} };
+      return { ...prev, [blockId]: { ...current, ...updates } };
+    });
+  }, [setBlockData]);
 
   const handleExpand = useCallback((blockId: string) => {
     setIsAnimating(true);
@@ -783,6 +853,14 @@ export default function CreativeBrandPage() {
   }, [updateBlockData, handleCollapse]);
 
   const isMoodboard = expandedBlock === 'moodboard';
+
+  if (persistLoading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-carbon/30" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh]">
@@ -933,6 +1011,9 @@ export default function CreativeBrandPage() {
                             mode={state.mode}
                             data={state.data}
                             onChange={(newData) => updateBlockData(block.id, { data: newData })}
+                            collectionContext={collectionContext}
+                            consumerProfile={consumerProfile}
+                            vibeText={vibeText}
                           />
                         </div>
 

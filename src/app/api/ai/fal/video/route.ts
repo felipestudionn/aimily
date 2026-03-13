@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { persistAsset } from '@/lib/storage';
 
 fal.config({ credentials: process.env.FAL_KEY || '' });
 
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const { image_url, motion_type, prompt, story_context } = await req.json();
+    const { image_url, motion_type, prompt, story_context, collectionPlanId } = await req.json();
 
     if (!image_url) {
       return NextResponse.json({ error: 'image_url is required' }, { status: 400 });
@@ -48,8 +49,34 @@ export async function POST(req: NextRequest) {
       },
     } as any);
 
+    const videoUrl = result.data?.video?.url || result.data?.video_url || null;
+
+    // Auto-persist to Supabase Storage if collectionPlanId provided
+    if (collectionPlanId && videoUrl) {
+      try {
+        const { publicUrl, assetId } = await persistAsset({
+          collectionPlanId,
+          assetType: 'video',
+          name: `Fashion Video — ${motion_type || 'editorial'}`,
+          sourceUrl: videoUrl,
+          phase: 'design',
+          metadata: { prompt: fullPrompt, motion_type, fal_request_id: result.requestId },
+          uploadedBy: user.id,
+        });
+        return NextResponse.json({
+          video_url: publicUrl,
+          assetId,
+          originalUrl: videoUrl,
+          requestId: result.requestId,
+          persisted: true,
+        });
+      } catch (err) {
+        console.error('[Video] Persist failed:', err);
+      }
+    }
+
     return NextResponse.json({
-      video_url: result.data?.video?.url || result.data?.video_url || null,
+      video_url: videoUrl,
       requestId: result.requestId,
     });
   } catch (error) {

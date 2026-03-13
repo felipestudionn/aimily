@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'models/gemini-2.5-flash-lite';
+import { generateJSON } from '@/lib/ai/llm-client';
 
 /**
  * AI GTM Plan Generation
@@ -11,10 +9,6 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'models/gemini-2.5-flash-lite';
  *        'propuesta' (AI generates full plan from launch date)
  */
 export async function POST(req: NextRequest) {
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 500 });
-  }
-
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
@@ -24,28 +18,26 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      mode, // 'asistido' | 'propuesta'
+      mode,
       stories,
       skus,
       totalSalesTarget,
-      // Asistido
       desiredDrops,
       specificDates,
-      // Propuesta
       launchDate,
       channels,
     } = body;
 
-    const priceValues = skus.map((s: any) => s.pvp || 0);
+    const priceValues = skus.map((s: { pvp?: number }) => s.pvp || 0);
     const priceMin = Math.min(...priceValues);
     const priceMax = Math.max(...priceValues);
     const priceAvg = Math.round(priceValues.reduce((a: number, b: number) => a + b, 0) / priceValues.length);
 
-    const storiesBlock = (stories || []).map((s: any) =>
+    const storiesBlock = (stories || []).map((s: { name: string; narrative?: string; mood?: string[]; hero_sku_id?: string; sku_ids?: string[] }) =>
       `Story "${s.name}": ${s.narrative || 'No narrative'} — Mood: ${(s.mood || []).join(', ')}, Hero: ${s.hero_sku_id || 'N/A'}\n  SKUs: ${(s.sku_ids || []).join(', ')}`
     ).join('\n');
 
-    const skusBlock = skus.map((s: any) =>
+    const skusBlock = skus.map((s: { name: string; family?: string; pvp?: number; type?: string; drop_number?: number; expected_sales?: number }) =>
       `- ${s.name} (${s.family || 'N/A'}): €${s.pvp}, type=${s.type || 'REVENUE'}, drop=${s.drop_number || '?'}, sales=€${s.expected_sales || 0}`
     ).join('\n');
 
@@ -62,9 +54,7 @@ Channels: ${channels || 'DTC, WHOLESALE'}
 Create drops, assign ALL ${skus.length} SKUs, and suggest commercial actions.`;
     }
 
-    const prompt = `${MARKETING_PROMPTS.gtm_plan.system}
-
-COLLECTION CONTEXT:
+    const userPrompt = `COLLECTION CONTEXT:
 - Total sales target: €${totalSalesTarget}
 - SKU count: ${skus.length}
 
@@ -78,80 +68,18 @@ ${storiesBlock}
 ALL SKUS:
 ${skusBlock}
 
-${userInput}
+${userInput}`;
 
-RULES:
-1. Each drop should tell a story — ideally align drops with stories
-2. First drop = strongest commercial story (REVENUE-heavy)
-3. IMAGE pieces can launch earlier for press/editorial
-4. Spread drops to maintain commercial momentum
-5. Each drop needs enough SKUs to feel substantial (min 5-8)
-6. Assign a drop_number to each drop (starting from 1)
-7. Every SKU must be assigned to exactly one drop
-
-OUTPUT (JSON only):
-{
-  "drops": [
-    {
-      "drop_number": 1,
-      "name": "Drop name (evocative)",
-      "launch_date": "YYYY-MM-DD",
-      "weeks_active": 8,
-      "story_alignment": "Story name this drop represents",
-      "sku_ids": ["sku-id-1", "sku-id-2"],
-      "channels": ["DTC", "WHOLESALE"],
-      "rationale": "Why this timing and these SKUs"
-    }
-  ],
-  "commercial_actions": [
-    {
-      "name": "Action name",
-      "type": "SALE | COLLAB | CAMPAIGN | SEEDING | EVENT",
-      "date": "YYYY-MM-DD",
-      "category": "VISIBILIDAD | POSICIONAMIENTO | VENTAS | NOTORIEDAD",
-      "description": "What this action involves"
-    }
-  ],
-  "rationale": "Overall strategy explanation"
-}`;
-
-    const url = new URL(`https://generativelanguage.googleapis.com/v1beta/${GEMINI_MODEL}:generateContent`);
-    url.searchParams.set('key', GEMINI_API_KEY);
-
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      }),
+    const { data, model, fallback } = await generateJSON({
+      system: MARKETING_PROMPTS.gtm_plan.system,
+      user: userPrompt,
+      temperature: 0.7,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error', response.status, errorText);
-      return NextResponse.json({ error: 'Gemini API error', details: errorText }, { status: 500 });
-    }
-
-    const data = await response.json();
-    const textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    let result;
-    try {
-      const firstBrace = textResponse.indexOf('{');
-      const lastBrace = textResponse.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace !== -1) {
-        result = JSON.parse(textResponse.slice(firstBrace, lastBrace + 1));
-      } else {
-        result = JSON.parse(textResponse);
-      }
-    } catch {
-      console.error('Failed to parse GTM plan', textResponse);
-      return NextResponse.json({ error: 'Failed to parse AI response', raw: textResponse }, { status: 500 });
-    }
-
-    return NextResponse.json(result);
+    return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });
   } catch (error) {
     console.error('GTM generation error', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

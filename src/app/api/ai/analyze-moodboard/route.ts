@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import Anthropic from '@anthropic-ai/sdk';
+import { generateJSON, extractJSON } from '@/lib/ai/llm-client';
 
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-// Use stable Gemini 2.5 Flash for vision (supports images, video, audio)
-const GEMINI_MODEL = 'models/gemini-2.5-flash';
+// Gemini 2.5 Flash (full, not Lite) for vision fallback
+const GEMINI_VISION_MODEL = 'models/gemini-2.5-flash';
+const SONNET_MODEL = 'claude-sonnet-4-20250514';
 
-// Max images per batch (Gemini handles up to ~16 well)
+// Max images per batch
 const BATCH_SIZE = 8;
 
 interface ImageData {
@@ -14,6 +18,7 @@ interface ImageData {
 }
 
 interface AnalysisResult {
+  collectionName?: string;
   keyColors: string[];
   keyTrends: string[];
   keyBrands: string[];
@@ -25,85 +30,84 @@ interface AnalysisResult {
   targetAudience: string;
 }
 
-const ANALYSIS_PROMPT = `You are a senior fashion trend analyst and creative director working for a major fashion retailer like Zara, Mango, or COS.
+const ANALYSIS_SYSTEM = `You are a senior creative director and trend analyst who has led collection development at Balenciaga, Celine, and The Row. You combine WGSN-level forecasting rigor with the editorial eye of a Vogue creative team.
 
-TASK: Analyze these moodboard images as a professional trend report for a collection development meeting.
+TODAY'S DATE: March 2026
+CURRENT RUNWAY CONTEXT:
+- FW26 RTW — shown Feb-Mar 2026 (New York, London, Milan, Paris)
+- SS26 — currently in stores
+- PF26 — shipping to wholesale
 
-Look at EACH IMAGE carefully and identify:
+ANALYSIS METHODOLOGY:
+You don't describe images generically. You decode visual signals into actionable collection intelligence — the kind that would survive a buying committee at Net-a-Porter or a trend board at Inditex.
 
-1. **KEY COLORS** (5-7 colors)
-   - Identify the ACTUAL dominant and accent colors you see in these specific images
-   - Use professional fashion/Pantone-style names: "Dusty Rose", "Sage Green", "Burnt Sienna", "Ecru", "Cobalt Blue"
-   - Include both neutrals and accent colors visible
+QUALITY RULES:
+- Use Pantone-style color names with hex codes when possible (e.g., "Dusty Rose (#DCAE96)")
+- Name real brands, real designers, real runway references — never generic
+- Cite specific garment constructions, not vague descriptions ("raglan-sleeve oversized wool coat" not "nice coat")
+- Materials must be specific: "bouclé wool 320gsm" not just "wool"
+- Every trend must connect to verifiable runway/street/social signals
+- FORBIDDEN generic words: "elevate", "curate", "versatile", "timeless", "effortless", "essential"
 
-2. **KEY TRENDS** (3-5 trends)
-   - What current fashion movements do these images represent?
-   - Reference trends from SS26 and Pre-Fall 2026 runways (shown September-November 2025)
-   - Include current aesthetics: Quiet Luxury evolution, Boho Redux, Sheer layering, Romantic Minimalism, etc.
-   - Be specific about silhouettes, proportions, styling approaches
+Return ONLY valid JSON, no markdown wrapping.`;
 
-3. **KEY BRANDS** (4-6 brands)
-   - Which luxury, contemporary, or streetwear brands have similar aesthetics RIGHT NOW?
-   - Include a mix: 1-2 luxury (The Row, Loro Piana, Bottega Veneta), 2-3 contemporary (COS, Arket, Totême, Jacquemus), 1-2 accessible (Zara, Mango, & Other Stories)
-   - Only mention brands whose current collections match this moodboard aesthetic
+const ANALYSIS_USER = `Analyze these moodboard images as a professional trend report for collection development.
 
-4. **KEY ITEMS** (5-8 items)
-   - List specific garments and accessories you SEE in these images
-   - Be precise: "Oversized wool coat", "Pleated midi skirt", "Chunky loafers", "Structured leather tote"
+Look at EACH IMAGE carefully and extract:
 
-5. **KEY STYLES** (2-3 styles)
-   - Broader aesthetic categories: "Quiet Luxury", "Scandi Minimalism", "Parisian Chic", "Urban Streetwear", "Coastal Elegance"
+1. **KEY COLORS** (5-7): Actual dominant + accent colors. Use Pantone-style names with hex when identifiable. Include the visual context where each color appears.
 
-6. **KEY MATERIALS** (3-5 materials)
-   - Fabrics and textures visible: "Bouclé wool", "Soft leather", "Organic cotton", "Cashmere blend", "Raw denim"
+2. **KEY TRENDS** (3-5): Current fashion movements these images represent. Reference specific FW26/SS26 runway shows, designers, or social aesthetics. Be specific about silhouettes, proportions, styling.
 
-7. **SEASONAL FIT**
-   - Which season does this moodboard best suit? SS26, Pre-Fall 2026, Resort 2026, or FW26
+3. **KEY BRANDS** (4-6): Brands with similar aesthetics RIGHT NOW. Mix: 1-2 luxury (The Row, Loro Piana, Bottega Veneta), 2-3 contemporary (COS, Totême, Jacquemus), 1-2 accessible (Zara, Mango). Only brands whose current collections match.
 
-8. **MOOD DESCRIPTION**
-   - 2-3 sentences capturing the overall aesthetic, feeling, and lifestyle this represents
+4. **KEY ITEMS** (5-8): Specific garments/accessories you SEE. Be precise with construction: "raglan-sleeve oversized double-faced wool coat" not "wool coat".
 
-9. **TARGET AUDIENCE**
-   - Demographics, psychographics, lifestyle of the ideal customer
+5. **KEY STYLES** (2-3): Broader aesthetic categories with specificity: "Post-Quiet Luxury: structured softness with visible craft" not just "Minimalism".
 
-10. **COLLECTION NAME**
-   - Propose a creative, evocative name for this collection
-   - Should capture the essence and mood of the moodboard
-   - Examples: "Urban Nomad", "Coastal Reverie", "New Minimalism", "Quiet Elegance"
+6. **KEY MATERIALS** (3-5): Fabrics and textures visible with weight/hand descriptions: "brushed cashmere blend 280gsm", "vegetable-tanned smooth calf leather".
 
-Return ONLY valid JSON with this exact structure:
+7. **SEASONAL FIT**: Which season + why (SS26, Pre-Fall 2026, Resort 2026, or FW26).
+
+8. **MOOD DESCRIPTION**: 3-4 sentences — the world this collection lives in. Who is she? Where does she go? What does she care about? Make it cinematic, not generic.
+
+9. **TARGET AUDIENCE**: Demographics + psychographics + shopping behavior. Name real stores she shops at, real neighborhoods she lives in.
+
+10. **COLLECTION NAME**: Evocative, original, not cliché. Think editorial headline, not marketing slogan.
+
+Return JSON:
 {
-  "collectionName": "Creative collection name",
-  "keyColors": ["Color 1", "Color 2", "Color 3", "Color 4", "Color 5"],
-  "keyTrends": ["Trend 1", "Trend 2", "Trend 3"],
-  "keyBrands": ["Brand 1", "Brand 2", "Brand 3", "Brand 4"],
-  "keyItems": ["Item 1", "Item 2", "Item 3", "Item 4", "Item 5"],
-  "keyStyles": ["Style 1", "Style 2"],
-  "keyMaterials": ["Material 1", "Material 2", "Material 3"],
-  "seasonalFit": "SS26 or Pre-Fall 2026 or Resort 2026 or FW26",
-  "moodDescription": "Descriptive paragraph about the mood and aesthetic...",
-  "targetAudience": "Description of target customer..."
+  "collectionName": "string",
+  "keyColors": ["Color Name (#hex) — where seen in images"],
+  "keyTrends": ["Trend: specific analysis with runway/cultural references"],
+  "keyBrands": ["Brand — why it connects to this aesthetic"],
+  "keyItems": ["Item — precise construction + material + styling detail"],
+  "keyStyles": ["Style category: specific sub-description"],
+  "keyMaterials": ["Material — weight/hand/origin if identifiable"],
+  "seasonalFit": "Season — reasoning",
+  "moodDescription": "Cinematic mood paragraph",
+  "targetAudience": "Detailed audience profile"
 }
 
-IMPORTANT: Base your analysis on what you ACTUALLY SEE in these images, not generic fashion advice.`;
+CRITICAL: Base analysis on what you ACTUALLY SEE. Generic fashion advice = failure.`;
 
 /**
- * Analyze moodboard images using Gemini Vision
+ * Analyze moodboard images — Claude Sonnet (vision) primary, Gemini Flash fallback
  * Supports unlimited images by batching and merging results
  */
 export async function POST(req: NextRequest) {
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json(
-      { error: 'GEMINI_API_KEY is not configured' },
-      { status: 500 }
-    );
-  }
-
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
   const usage = await checkAIUsage(user.id, user.email!);
   if (!usage.allowed) return usageDeniedResponse(usage);
+
+  if (!ANTHROPIC_API_KEY && !GEMINI_API_KEY) {
+    return NextResponse.json(
+      { error: 'No AI provider configured for vision analysis' },
+      { status: 500 }
+    );
+  }
 
   try {
     const body = await req.json();
@@ -116,7 +120,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`Received ${images.length} images for analysis`);
+    console.log(`[Moodboard] Received ${images.length} images for analysis`);
 
     // Split images into batches
     const batches: ImageData[][] = [];
@@ -124,12 +128,12 @@ export async function POST(req: NextRequest) {
       batches.push(images.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`Split into ${batches.length} batches of max ${BATCH_SIZE} images`);
+    console.log(`[Moodboard] Split into ${batches.length} batches of max ${BATCH_SIZE} images`);
 
     // Analyze each batch
     const batchResults: AnalysisResult[] = [];
     for (let i = 0; i < batches.length; i++) {
-      console.log(`Analyzing batch ${i + 1}/${batches.length}...`);
+      console.log(`[Moodboard] Analyzing batch ${i + 1}/${batches.length}...`);
       const result = await analyzeBatch(batches[i]);
       if (result) {
         batchResults.push(result);
@@ -149,12 +153,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Merge results from multiple batches using AI
-    console.log(`Merging ${batchResults.length} batch results...`);
+    console.log(`[Moodboard] Merging ${batchResults.length} batch results...`);
     const mergedResult = await mergeAnalysisResults(batchResults);
     return NextResponse.json(mergedResult);
 
   } catch (error) {
-    console.error('Moodboard analysis error', error);
+    console.error('[Moodboard] Analysis error:', error);
     return NextResponse.json(
       { error: 'Internal server error', message: error instanceof Error ? error.message : 'Unknown' },
       { status: 500 }
@@ -162,97 +166,130 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * Analyze a single batch of images
- */
+// ─── Vision: Sonnet primary, Gemini Flash fallback ───
+
 async function analyzeBatch(imageBatch: ImageData[]): Promise<AnalysisResult | null> {
-  try {
-    // Build parts array with images and prompt
-    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
-    
-    // Add each image
-    for (const img of imageBatch) {
-      parts.push({
-        inlineData: {
-          mimeType: img.mimeType || 'image/jpeg',
-          data: img.base64
-        }
-      });
+  // Try Sonnet first
+  if (ANTHROPIC_API_KEY) {
+    try {
+      const result = await analyzeBatchSonnet(imageBatch);
+      if (result) {
+        console.log('[Moodboard] Batch analyzed with Sonnet');
+        return result;
+      }
+    } catch (err) {
+      console.warn('[Moodboard] Sonnet vision failed, trying Gemini:', (err as Error).message);
     }
-    
-    // Add the analysis prompt
-    parts.push({ text: ANALYSIS_PROMPT });
-
-    const url = new URL(
-      `https://generativelanguage.googleapis.com/v1beta/${GEMINI_MODEL}:generateContent`
-    );
-    url.searchParams.set('key', GEMINI_API_KEY!);
-
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 8192,
-          // Disable thinking to get direct response
-          thinkingConfig: {
-            thinkingBudget: 0
-          }
-        }
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error', response.status, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    
-    // Log full response for debugging
-    console.log('Full Gemini response:', JSON.stringify(data, null, 2).substring(0, 1000));
-    
-    // Check for blocked content or other issues
-    if (data?.candidates?.[0]?.finishReason === 'SAFETY') {
-      console.error('Content blocked by safety filters');
-      return null;
-    }
-    
-    if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-      console.error('No text in response. Candidates:', JSON.stringify(data?.candidates));
-      return null;
-    }
-    
-    let textResponse = data.candidates[0].content.parts[0].text;
-    
-    console.log('Raw Gemini response:', textResponse.substring(0, 500));
-
-    // Remove markdown code blocks if present (```json ... ```)
-    textResponse = textResponse.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-
-    // Extract JSON from response
-    const firstBrace = textResponse.indexOf('{');
-    const lastBrace = textResponse.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      const jsonStr = textResponse.slice(firstBrace, lastBrace + 1);
-      return JSON.parse(jsonStr);
-    }
-    
-    return JSON.parse(textResponse);
-  } catch (error) {
-    console.error('Batch analysis error:', error);
-    return null;
   }
+
+  // Fallback to Gemini Flash (vision)
+  if (GEMINI_API_KEY) {
+    try {
+      const result = await analyzeBatchGemini(imageBatch);
+      if (result) {
+        console.log('[Moodboard] Batch analyzed with Gemini Flash (fallback)');
+        return result;
+      }
+    } catch (err) {
+      console.error('[Moodboard] Gemini vision fallback also failed:', (err as Error).message);
+    }
+  }
+
+  return null;
 }
 
-/**
- * Merge multiple analysis results using AI to synthesize insights
- */
+async function analyzeBatchSonnet(imageBatch: ImageData[]): Promise<AnalysisResult | null> {
+  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+  // Build content array with images + text
+  const content: Anthropic.MessageCreateParams['messages'][0]['content'] = [];
+
+  for (const img of imageBatch) {
+    (content as Anthropic.ContentBlockParam[]).push({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: (img.mimeType || 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+        data: img.base64,
+      },
+    });
+  }
+
+  (content as Anthropic.ContentBlockParam[]).push({
+    type: 'text',
+    text: ANALYSIS_USER,
+  });
+
+  const response = await client.messages.create({
+    model: SONNET_MODEL,
+    max_tokens: 8192,
+    system: ANALYSIS_SYSTEM,
+    messages: [{ role: 'user', content }],
+    temperature: 0.7,
+  });
+
+  const block = response.content[0];
+  if (block.type !== 'text' || !block.text) {
+    throw new Error('Empty response from Sonnet');
+  }
+
+  return extractJSON<AnalysisResult>(block.text);
+}
+
+async function analyzeBatchGemini(imageBatch: ImageData[]): Promise<AnalysisResult | null> {
+  const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
+
+  for (const img of imageBatch) {
+    parts.push({
+      inlineData: {
+        mimeType: img.mimeType || 'image/jpeg',
+        data: img.base64,
+      },
+    });
+  }
+
+  parts.push({ text: `${ANALYSIS_SYSTEM}\n\n${ANALYSIS_USER}` });
+
+  const url = new URL(
+    `https://generativelanguage.googleapis.com/v1beta/${GEMINI_VISION_MODEL}:generateContent`
+  );
+  url.searchParams.set('key', GEMINI_API_KEY!);
+
+  const response = await fetch(url.toString(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8192,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini Vision ${response.status}: ${errorText.slice(0, 200)}`);
+  }
+
+  const data = await response.json();
+
+  if (data?.candidates?.[0]?.finishReason === 'SAFETY') {
+    throw new Error('Content blocked by safety filters');
+  }
+
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error('Empty response from Gemini Vision');
+  }
+
+  return extractJSON<AnalysisResult>(text);
+}
+
+// ─── Merge multiple batch results using unified LLM client ───
+
 async function mergeAnalysisResults(results: AnalysisResult[]): Promise<AnalysisResult> {
-  // Collect all unique values from each category
   const allColors = Array.from(new Set(results.flatMap(r => r.keyColors || [])));
   const allTrends = Array.from(new Set(results.flatMap(r => r.keyTrends || [])));
   const allBrands = Array.from(new Set(results.flatMap(r => r.keyBrands || [])));
@@ -262,77 +299,54 @@ async function mergeAnalysisResults(results: AnalysisResult[]): Promise<Analysis
   const allMoods = results.map(r => r.moodDescription).filter(Boolean);
   const allAudiences = results.map(r => r.targetAudience).filter(Boolean);
   const allSeasons = results.map(r => r.seasonalFit).filter(Boolean);
+  const allNames = results.map(r => r.collectionName).filter(Boolean);
 
-  // Use AI to synthesize the merged results
-  const MERGE_PROMPT = `You are a fashion trend analyst. I have analyzed multiple batches of moodboard images and need you to synthesize the results into a cohesive analysis.
+  const system = `You are a senior creative director synthesizing multiple trend analysis reports into one cohesive collection direction. Your synthesis should feel like a single, decisive creative brief — not a committee average.`;
 
-Here are the combined findings from all batches:
+  const user = `Synthesize these batch analyses into ONE unified collection direction.
 
-COLORS FOUND: ${allColors.join(', ')}
-TRENDS FOUND: ${allTrends.join(', ')}
-BRANDS FOUND: ${allBrands.join(', ')}
-ITEMS FOUND: ${allItems.join(', ')}
-STYLES FOUND: ${allStyles.join(', ')}
-MATERIALS FOUND: ${allMaterials.join(', ')}
-MOOD DESCRIPTIONS: ${allMoods.join(' | ')}
-TARGET AUDIENCES: ${allAudiences.join(' | ')}
+COLORS: ${allColors.join(' | ')}
+TRENDS: ${allTrends.join(' | ')}
+BRANDS: ${allBrands.join(' | ')}
+ITEMS: ${allItems.join(' | ')}
+STYLES: ${allStyles.join(' | ')}
+MATERIALS: ${allMaterials.join(' | ')}
+MOODS: ${allMoods.join(' | ')}
+AUDIENCES: ${allAudiences.join(' | ')}
 SEASONS: ${allSeasons.join(', ')}
+COLLECTION NAMES: ${allNames.join(', ')}
 
-Please synthesize these into a unified analysis. Select the most relevant and cohesive elements that work together as a collection direction.
+Select the most cohesive elements. The result should feel like a single creative vision, not a mashup.
 
-Return ONLY valid JSON:
+Return JSON:
 {
-  "keyColors": [select 5-7 most cohesive colors],
-  "keyTrends": [select 3-5 most relevant trends],
-  "keyBrands": [select 4-6 most aligned brands],
-  "keyItems": [select 6-8 key items],
-  "keyStyles": [select 2-3 defining styles],
-  "keyMaterials": [select 3-5 key materials],
+  "collectionName": "one evocative name",
+  "keyColors": [5-7 most cohesive],
+  "keyTrends": [3-5 most relevant],
+  "keyBrands": [4-6 most aligned],
+  "keyItems": [6-8 key items],
+  "keyStyles": [2-3 defining styles],
+  "keyMaterials": [3-5 key materials],
   "seasonalFit": "most appropriate season",
-  "moodDescription": "synthesized mood description in 2-3 sentences",
-  "targetAudience": "unified target audience description"
+  "moodDescription": "synthesized 3-4 sentence mood",
+  "targetAudience": "unified audience profile"
 }`;
 
   try {
-    const url = new URL(
-      `https://generativelanguage.googleapis.com/v1beta/${GEMINI_MODEL}:generateContent`
-    );
-    url.searchParams.set('key', GEMINI_API_KEY!);
-
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: MERGE_PROMPT }] }],
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 4096,
-          thinkingConfig: {
-            thinkingBudget: 0
-          }
-        }
-      }),
+    const { data } = await generateJSON<AnalysisResult>({
+      system,
+      user,
+      temperature: 0.5,
+      maxTokens: 4096,
     });
-
-    if (response.ok) {
-      const data = await response.json();
-      let textResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      
-      // Remove markdown code blocks if present
-      textResponse = textResponse.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-      
-      const firstBrace = textResponse.indexOf('{');
-      const lastBrace = textResponse.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace !== -1) {
-        return JSON.parse(textResponse.slice(firstBrace, lastBrace + 1));
-      }
-    }
+    return data;
   } catch (error) {
-    console.error('Merge analysis error:', error);
+    console.error('[Moodboard] Merge synthesis failed:', error);
   }
 
-  // Fallback: return simple merged results without AI synthesis
+  // Fallback: simple merge without AI
   return {
+    collectionName: allNames[0] || 'Untitled Collection',
     keyColors: allColors.slice(0, 7),
     keyTrends: allTrends.slice(0, 5),
     keyBrands: allBrands.slice(0, 6),
@@ -341,6 +355,6 @@ Return ONLY valid JSON:
     keyMaterials: allMaterials.slice(0, 5),
     seasonalFit: allSeasons[0] || 'SS26',
     moodDescription: allMoods[0] || 'A cohesive collection direction based on the moodboard analysis.',
-    targetAudience: allAudiences[0] || 'Style-conscious consumers seeking contemporary fashion.'
+    targetAudience: allAudiences[0] || 'Style-conscious consumers seeking contemporary fashion.',
   };
 }

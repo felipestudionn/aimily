@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   Footprints,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useSkus } from '@/hooks/useSkus';
 import { useColorways } from '@/hooks/useColorways';
+import { useWorkspaceData } from '@/hooks/useWorkspaceData';
 import { PHASES } from '@/lib/timeline-template';
 import type { TimelineMilestone } from '@/types/timeline';
 
@@ -32,9 +33,6 @@ interface DesignWorkspaceProps {
   milestones: TimelineMilestone[];
 }
 
-// Local design data stored in the collection's design workspace
-// (form specs, design files, and patterns are stored as JSON in a future design_profiles table,
-//  for now they're managed locally with auto-save to localStorage)
 interface DesignLocalData {
   formSpecs: Record<string, { lastType: string; lastCode: string; factoryLink: string; notes: string }>;
   designFiles: Record<string, { name: string; url: string; status: 'draft' | 'review' | 'approved' | 'rejected' }[]>;
@@ -54,50 +52,10 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
   const { colorways, loading: colorwaysLoading, addColorway, updateColorway, deleteColorway } =
     useColorways(collectionId);
   const [activeTab, setActiveTab] = useState<Tab>('forms');
-  const [saving, setSaving] = useState(false);
 
-  // Local design data (persisted in localStorage)
-  const storageKey = `design-workspace-${collectionId}`;
-  const [localData, setLocalData] = useState<DesignLocalData>(EMPTY_LOCAL);
-  const [localLoaded, setLocalLoaded] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        setLocalData(JSON.parse(stored));
-      }
-    } catch {
-      // ignore
-    }
-    setLocalLoaded(true);
-  }, [storageKey]);
-
-  // Auto-save to localStorage with debounce
-  const saveLocal = useCallback(
-    (data: DesignLocalData) => {
-      setLocalData(data);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        setSaving(true);
-        try {
-          localStorage.setItem(storageKey, JSON.stringify(data));
-        } catch {
-          // ignore
-        }
-        setSaving(false);
-      }, 500);
-    },
-    [storageKey]
-  );
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
+  // Design data persisted to Supabase (replaces localStorage)
+  const { data: localData, save: saveLocal, loading: dataLoading, saving } =
+    useWorkspaceData<DesignLocalData>(collectionId, 'design', EMPTY_LOCAL);
 
   const info = PHASES.development;
   const phaseMilestones = milestones.filter((m) => ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'].includes(m.id));
@@ -109,7 +67,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
       ? Math.round((completed / phaseMilestones.length) * 100)
       : 0;
 
-  const loading = skusLoading || colorwaysLoading || !localLoaded;
+  const loading = skusLoading || colorwaysLoading || dataLoading;
 
   if (loading) {
     return (

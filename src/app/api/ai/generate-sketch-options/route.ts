@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { persistAsset } from '@/lib/storage';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const body: RequestBody = await req.json();
+    const body: RequestBody & { collectionPlanId?: string } = await req.json();
 
     // Validation
     if (!body.images || body.images.length === 0) {
@@ -125,12 +126,36 @@ export async function POST(req: NextRequest) {
     );
     console.log('Sketch generated successfully');
 
+    // Auto-persist to Supabase Storage if collectionPlanId provided
+    let persistedUrl: string | null = null;
+    let assetId: string | null = null;
+    if (body.collectionPlanId) {
+      try {
+        const result = await persistAsset({
+          collectionPlanId: body.collectionPlanId,
+          assetType: 'sketch',
+          name: `Sketch — ${body.garmentType}`,
+          base64: sketchImage,
+          mimeType: 'image/png',
+          phase: 'design',
+          metadata: { garmentType: body.garmentType, fabric: body.fabric },
+          uploadedBy: user.id,
+        });
+        persistedUrl = result.publicUrl;
+        assetId = result.assetId;
+      } catch (err) {
+        console.error('[Sketch] Persist failed:', err);
+      }
+    }
+
     return NextResponse.json({
       sketchOptions: [{
         id: '1',
         description: `Fiel al original: ${body.garmentType}`,
         frontImageBase64: sketchImage,
+        ...(persistedUrl && { url: persistedUrl, assetId }),
       }],
+      persisted: !!persistedUrl,
     });
   } catch (error) {
     console.error('Sketch generation error:', error);

@@ -2,19 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { buildPromptContext, renderPrompt } from '@/lib/prompts/prompt-context';
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'models/gemini-2.5-flash-lite';
+import { generateJSON } from '@/lib/ai/llm-client';
 
 /**
  * POST /api/ai/stories/generate
  * Body: { collectionPlanId, mode: 'generate' | 'assist', userDirection?: string }
  */
 export async function POST(req: NextRequest) {
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY is not configured' }, { status: 500 });
-  }
-
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
@@ -72,58 +66,22 @@ export async function POST(req: NextRequest) {
     const systemPrompt = template.system;
     const userPrompt = renderPrompt(template.user, flatCtx);
 
-    // Call Gemini
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 4096,
-            responseMimeType: 'application/json',
-          },
-        }),
-      }
-    );
-
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error('Gemini API error:', errText);
-      return NextResponse.json({ error: 'AI generation failed' }, { status: 502 });
-    }
-
-    const geminiData = await geminiRes.json();
-    const rawText =
-      geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-
-    // Parse JSON from response
-    let parsed: { stories: Array<Record<string, unknown>>; rationale?: string };
-    try {
-      parsed = JSON.parse(rawText);
-    } catch {
-      // Try extracting JSON from markdown code block
-      const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[1]);
-      } else {
-        return NextResponse.json(
-          { error: 'Failed to parse AI response', raw: rawText },
-          { status: 502 }
-        );
-      }
-    }
+    const { data, model, fallback } = await generateJSON<{ stories: Array<Record<string, unknown>>; rationale?: string }>({
+      system: systemPrompt,
+      user: userPrompt,
+      temperature: 0.8,
+    });
 
     return NextResponse.json({
-      stories: parsed.stories,
-      rationale: parsed.rationale,
+      stories: data.stories,
+      rationale: data.rationale,
       sku_count: ctx.sku_count,
+      model,
+      fallback,
     });
   } catch (error) {
     console.error('AI stories generate error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

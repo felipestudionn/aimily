@@ -7,6 +7,10 @@ export interface MoodImage {
   src: string;
   name: string;
   source?: 'upload' | 'pinterest';
+  /** Supabase asset record ID (set after persisting to Storage) */
+  assetId?: string;
+  /** Whether this image has been persisted to Supabase Storage */
+  persisted?: boolean;
 }
 
 export interface PinterestPin {

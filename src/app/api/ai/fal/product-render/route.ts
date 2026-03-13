@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { persistAsset } from '@/lib/storage';
 
 fal.config({ credentials: process.env.FAL_KEY || '' });
 
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const { image_url, prompt, background, width, height, story_context } = await req.json();
+    const { image_url, prompt, background, width, height, story_context, collectionPlanId } = await req.json();
 
     if (!image_url && !prompt) {
       return NextResponse.json({ error: 'image_url or prompt is required' }, { status: 400 });
@@ -44,9 +45,34 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await fal.subscribe('fal-ai/flux-2-pro', { input } as any);
+    const falImages = result.data?.images || [];
+
+    // Auto-persist to Supabase Storage if collectionPlanId provided
+    if (collectionPlanId && falImages.length > 0) {
+      const persisted = await Promise.all(
+        falImages.map(async (img: { url: string }, i: number) => {
+          try {
+            const { publicUrl, assetId } = await persistAsset({
+              collectionPlanId,
+              assetType: 'render',
+              name: `Product Render ${i + 1}`,
+              sourceUrl: img.url,
+              phase: 'design',
+              metadata: { prompt: fullPrompt, fal_request_id: result.requestId },
+              uploadedBy: user.id,
+            });
+            return { url: publicUrl, assetId, originalUrl: img.url };
+          } catch (err) {
+            console.error('[Product Render] Persist failed:', err);
+            return { url: img.url, assetId: null, originalUrl: img.url };
+          }
+        })
+      );
+      return NextResponse.json({ images: persisted, requestId: result.requestId, persisted: true });
+    }
 
     return NextResponse.json({
-      images: result.data?.images || [],
+      images: falImages,
       requestId: result.requestId,
     });
   } catch (error) {

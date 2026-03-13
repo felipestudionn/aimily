@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { persistAsset } from '@/lib/storage';
 
 fal.config({ credentials: process.env.FAL_KEY || '' });
 
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const { reference_image_url, gender, age_range, ethnicity, body_type, style_vibe } = await req.json();
+    const { reference_image_url, gender, age_range, ethnicity, body_type, style_vibe, collectionPlanId } = await req.json();
 
     if (!reference_image_url) {
       return NextResponse.json({ error: 'reference_image_url is required' }, { status: 400 });
@@ -38,8 +39,34 @@ export async function POST(req: NextRequest) {
       },
     } as any);
 
+    const falImages = result.data?.images || [];
+
+    // Auto-persist to Supabase Storage if collectionPlanId provided
+    if (collectionPlanId && falImages.length > 0) {
+      const persisted = await Promise.all(
+        falImages.map(async (img: { url: string }, i: number) => {
+          try {
+            const { publicUrl, assetId } = await persistAsset({
+              collectionPlanId,
+              assetType: 'model',
+              name: `Brand Model ${gender || ''} ${i + 1}`.trim(),
+              sourceUrl: img.url,
+              phase: 'creative',
+              metadata: { prompt, gender, age_range, ethnicity, body_type, style_vibe, fal_request_id: result.requestId },
+              uploadedBy: user.id,
+            });
+            return { url: publicUrl, assetId, originalUrl: img.url };
+          } catch (err) {
+            console.error('[Model Create] Persist failed:', err);
+            return { url: img.url, assetId: null, originalUrl: img.url };
+          }
+        })
+      );
+      return NextResponse.json({ images: persisted, requestId: result.requestId, persisted: true });
+    }
+
     return NextResponse.json({
-      images: result.data?.images || [],
+      images: falImages,
       requestId: result.requestId,
     });
   } catch (error) {

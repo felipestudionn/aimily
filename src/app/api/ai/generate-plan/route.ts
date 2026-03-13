@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL =
-  process.env.GEMINI_MODEL || 'models/gemini-2.5-flash-lite';
+import { generateJSON } from '@/lib/ai/llm-client';
 
 export async function POST(req: NextRequest) {
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json(
-      { error: 'GEMINI_API_KEY is not configured' },
-      { status: 500 },
-    );
-  }
-
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
@@ -27,116 +17,74 @@ export async function POST(req: NextRequest) {
       skuCount,
       priceMin,
       priceMax,
-      categories, // Array of strings
+      categories,
       location,
-      signals, // Optional: array of signals to inform the plan
+      signals,
       userMoodboardContext,
     } = body;
 
     const categoryContext = categories.join(', ');
     const signalsContext = signals
       ? JSON.stringify(signals.slice(0, 5))
-      : 'No specific trend signals provided, rely on general fashion knowledge.';
+      : 'No specific trend signals provided — use current fashion industry knowledge.';
     const moodboardContext =
       userMoodboardContext && typeof userMoodboardContext === 'string'
         ? userMoodboardContext
-        : 'No explicit user moodboard provided; infer creative direction from consumer, season and trends.';
+        : 'No moodboard provided — infer creative direction from consumer, season, and trends.';
 
-    const SYSTEM_PROMPT = `You are an expert Fashion Merchandiser and Planner.
-Your goal is to create a strategic "SetupData" JSON object for a new fashion collection.
-This data will configure a merchandising planning tool.
+    const system = `You are a senior fashion merchandiser and collection planner with 15+ years experience at brands like Inditex, LVMH, and PVH.
 
-Input Context:
-- Target Consumer: ${targetConsumer}
-- Season: ${season}
-- Location/Market: ${location || 'Global'}
-- Product Categories: ${categoryContext}
-- Approximate SKU Count: ${skuCount}
-- Price Range: ${priceMin} - ${priceMax}
-- Trend Signals (Context): ${signalsContext}
- - User Moodboard (Creative Context): ${moodboardContext}
+You build strategic collection frameworks that balance commercial viability with creative direction. Your plans are grounded in industry benchmarks: you know that premium fashion DTC typically operates at 60-70% gross margin, that a healthy collection needs 55-65% core/carry-over and 35-45% newness, and that price architecture follows the Good-Better-Best ladder.
 
-Output Requirement:
-Return ONLY a valid JSON object matching the following TypeScript interface EXACTLY:
+QUALITY RULES:
+- Monthly distribution must reflect real retail seasonality for ${season} — not flat percentages
+- Product families must be specific to the category, not generic (e.g., for footwear: "Sneakers," "Boots," "Sandals" — not "Category A")
+- Price segments must create a coherent ladder with no gaps
+- Product type mix must balance commercial drivers (REVENUE 55-65%) with brand-building pieces (IMAGEN 10-20%) and acquisition hooks (ENTRY 20-30%)
+- Return ONLY raw JSON, no markdown`;
 
-interface SetupData {
-  totalSalesTarget: number; // Estimate a realistic revenue target (e.g. 100000 to 1000000) based on SKU count * avg price * depth
-  monthlyDistribution: number[]; // Array of 12 integers summing to 100 (Jan-Dec seasonality for ${season})
-  expectedSkus: number; // Close to ${skuCount}
-  families: string[]; // List of product families derived from ${categoryContext}
-  dropsCount: number; // Suggest 1-6 drops
-  avgPriceTarget: number; // Calculated from price range
-  targetMargin: number; // Suggest realistic margin (e.g. 60-75%)
-  plannedDiscounts: number; // Suggest discount buffer (e.g. 10-20%)
-  hasHistoricalData: boolean; // Always false for new AI plan
-  productCategory: string; // Main category (e.g. "ROPA", "CALZADO" or "MIXED")
-  productFamilies: { name: string; percentage: number }[]; // Breakdown of families summing to 100%
-  priceSegments: { name: string; minPrice: number; maxPrice: number; percentage: number }[]; // 3 segments (Entry, Core, Premium) summing to 100%
-  productTypeSegments: { type: 'REVENUE' | 'IMAGEN' | 'ENTRY'; percentage: number }[]; // Strategic mix summing to 100%
-  minPrice: number; // From input
-  maxPrice: number; // From input
+    const userPrompt = `Build a strategic collection plan (SetupData) for:
+
+TARGET CONSUMER: ${targetConsumer}
+SEASON: ${season}
+MARKET: ${location || 'Global'}
+PRODUCT CATEGORIES: ${categoryContext}
+SKU COUNT TARGET: ~${skuCount}
+PRICE RANGE: €${priceMin} - €${priceMax}
+TREND SIGNALS: ${signalsContext}
+CREATIVE DIRECTION: ${moodboardContext}
+
+Return JSON matching this exact TypeScript interface:
+{
+  "totalSalesTarget": number,        // realistic revenue based on SKU count × avg price × depth
+  "monthlyDistribution": number[],   // 12 integers summing to exactly 100 (Jan-Dec seasonality)
+  "expectedSkus": number,            // close to ${skuCount}
+  "families": string[],              // product families derived from "${categoryContext}"
+  "dropsCount": number,              // 1-6 drops
+  "avgPriceTarget": number,          // from price range
+  "targetMargin": number,            // realistic % (60-75)
+  "plannedDiscounts": number,        // discount buffer % (10-20)
+  "hasHistoricalData": false,
+  "productCategory": string,         // "ROPA", "CALZADO", or "MIXED"
+  "productFamilies": [{ "name": string, "percentage": number }],    // sum to 100
+  "priceSegments": [{ "name": string, "minPrice": number, "maxPrice": number, "percentage": number }], // 3 segments sum to 100
+  "productTypeSegments": [{ "type": "REVENUE"|"IMAGEN"|"ENTRY", "percentage": number }], // sum to 100
+  "minPrice": ${priceMin},
+  "maxPrice": ${priceMax}
 }
 
-IMPORTANT Rules:
-1. monthlyDistribution MUST sum to exactly 100.
-2. productFamilies percentages MUST sum to exactly 100.
-3. priceSegments percentages MUST sum to exactly 100.
-4. productTypeSegments percentages MUST sum to exactly 100.
-5. Use realistic fashion merchandising logic (e.g., Revenue drivers have highest %, Image pieces have low volume but high price).
-6. Names should be in English or Spanish (consistent with input).
-7. Return ONLY JSON. No markdown.
-`;
+CRITICAL: All percentage arrays must sum to exactly 100.`;
 
-    const url = new URL(
-      `https://generativelanguage.googleapis.com/v1beta/${GEMINI_MODEL}:generateContent`,
-    );
-    url.searchParams.set('key', GEMINI_API_KEY);
-
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: SYSTEM_PROMPT }] }],
-      }),
+    const { data } = await generateJSON({
+      system,
+      user: userPrompt,
+      temperature: 0.6,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error', response.status, errorText);
-      return NextResponse.json(
-        { error: 'Gemini API error', details: errorText },
-        { status: 500 },
-      );
-    }
-
-    const data = await response.json();
-    const textResponse =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    let parsedPlan;
-    try {
-      // Robust JSON parsing
-      const firstBrace = textResponse.indexOf('{');
-      const lastBrace = textResponse.lastIndexOf('}');
-      if (firstBrace !== -1 && lastBrace !== -1) {
-        parsedPlan = JSON.parse(textResponse.slice(firstBrace, lastBrace + 1));
-      } else {
-        parsedPlan = JSON.parse(textResponse);
-      }
-    } catch (e) {
-      console.error('Failed to parse Gemini plan', textResponse);
-      return NextResponse.json(
-        { error: 'Failed to parse generated plan', raw: textResponse },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json(parsedPlan);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Plan generation error', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
