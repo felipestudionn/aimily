@@ -280,7 +280,7 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
                 return (
                   <div
                     key={pin.id}
-                    className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative group rounded-lg overflow-hidden border-2 transition-colors ${
                       isSelected
                         ? 'border-primary ring-2 ring-primary/30'
                         : 'border-transparent hover:border-gray-300'
@@ -307,7 +307,7 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
                             markAdded(pin.id);
                           }
                         }}
-                        className={`relative z-10 mb-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        className={`relative z-10 mb-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                           isSelected
                             ? 'bg-primary text-white'
                             : 'bg-white/90 text-gray-800 hover:bg-white'
