@@ -85,13 +85,18 @@ The user needs to define their target consumer and has provided this minimal ref
 
 "${input.reference}"
 
-Generate exactly 4 distinct consumer profiles that could be the target for this collection. These must be genuinely different segments — not variations of the same person.
+${input.existingProfiles && input.count
+  ? `The user has already selected these consumer profiles and wants to KEEP them:
+${input.existingProfiles}
+
+Generate exactly ${input.count} NEW and DIFFERENT consumer profiles to replace the ones the user rejected. The new profiles must NOT overlap with the existing ones listed above — they must represent genuinely different market segments.`
+  : `Generate exactly 4 distinct consumer profiles that could be the target for this collection. These must be genuinely different segments — not variations of the same person.
 
 DIFFERENTIATION STRATEGY:
 - Profile 1: The most commercially obvious choice (highest market size)
 - Profile 2: A more aspirational/niche choice (cultural influence > market size)
 - Profile 3: An emerging segment (growing fast, underserved by current market)
-- Profile 4: A counterintuitive choice (unexpected but strategically defensible)
+- Profile 4: A counterintuitive choice (unexpected but strategically defensible)`}
 
 ${QUALITY_GATES.consumerSpecificity}
 ${QUALITY_GATES.antiGeneric}

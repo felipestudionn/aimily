@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowRight, ArrowLeft, Check, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic, ThumbsUp, ThumbsDown, RefreshCw, Plus, Pencil } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
@@ -90,6 +90,273 @@ const INPUT_MODES: { id: InputMode; label: string; description: string }[] = [
 ];
 
 /* ─── Expanded Block Content Components ─── */
+
+interface ConsumerProfile {
+  title: string;
+  desc: string;
+  status: 'pending' | 'liked' | 'rejected';
+  editing?: boolean;
+}
+
+function ConsumerProposalFlow({
+  data, onChange, collectionContext, generating, setGenerating, error, setError,
+}: {
+  data: Record<string, unknown>;
+  onChange: (d: Record<string, unknown>) => void;
+  collectionContext: { season: string; collectionName: string };
+  generating: boolean;
+  setGenerating: (v: boolean) => void;
+  error: string | null;
+  setError: (v: string | null) => void;
+}) {
+  const proposals = (data.proposals as ConsumerProfile[]) || [];
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [addingManual, setAddingManual] = useState(false);
+  const [manualTitle, setManualTitle] = useState('');
+  const [manualDesc, setManualDesc] = useState('');
+
+  const updateProposal = (idx: number, updates: Partial<ConsumerProfile>) => {
+    const updated = [...proposals];
+    updated[idx] = { ...updated[idx], ...updates };
+    onChange({ ...data, proposals: updated });
+  };
+
+  const removeProposal = (idx: number) => {
+    onChange({ ...data, proposals: proposals.filter((_, i) => i !== idx) });
+  };
+
+  const likedProfiles = proposals.filter(p => p.status === 'liked');
+  const rejectedProfiles = proposals.filter(p => p.status === 'rejected');
+  const hasProposals = proposals.length > 0;
+
+  // Generate initial 4 proposals
+  const generateProposals = async () => {
+    setGenerating(true);
+    setError(null);
+    const { result, error: err } = await generateCreative('consumer-proposals', {
+      reference: (data.reference as string) || '',
+      gender: (data.gender as string) || '',
+      ...collectionContext,
+    });
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { proposals: Array<{ title: string; desc: string }> };
+    const withStatus = (parsed.proposals || []).map(p => ({ ...p, status: 'pending' as const }));
+    onChange({ ...data, proposals: withStatus });
+    setGenerating(false);
+  };
+
+  // Regenerate only rejected profiles (replace them with new ones)
+  const regenerateRejected = async () => {
+    setGenerating(true);
+    setError(null);
+    const existingLiked = likedProfiles.map(p => p.title).join(', ');
+    const count = rejectedProfiles.length;
+    const { result, error: err } = await generateCreative('consumer-proposals', {
+      reference: (data.reference as string) || '',
+      gender: (data.gender as string) || '',
+      existingProfiles: existingLiked,
+      count: String(count),
+      ...collectionContext,
+    });
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { proposals: Array<{ title: string; desc: string }> };
+    const newProposals = (parsed.proposals || []).map(p => ({ ...p, status: 'pending' as const }));
+    // Keep liked + pending, replace rejected with new
+    const kept = proposals.filter(p => p.status !== 'rejected');
+    onChange({ ...data, proposals: [...kept, ...newProposals] });
+    setGenerating(false);
+  };
+
+  // Add a manually written profile
+  const addManualProfile = () => {
+    if (!manualTitle.trim() || !manualDesc.trim()) return;
+    const newProfile: ConsumerProfile = { title: manualTitle, desc: manualDesc, status: 'liked' };
+    onChange({ ...data, proposals: [...proposals, newProfile] });
+    setManualTitle('');
+    setManualDesc('');
+    setAddingManual(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Reference input */}
+      <div>
+        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
+          Minimal Reference
+        </label>
+        <input
+          type="text"
+          value={(data.reference as string) || ''}
+          onChange={(e) => onChange({ ...data, reference: e.target.value })}
+          placeholder="e.g. 'preppy 90s JFK' or 'streetwear enthusiasts'..."
+          className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+        />
+      </div>
+
+      {/* Generate button */}
+      <button
+        onClick={generateProposals}
+        disabled={generating || !(data.reference as string)?.trim() || !(data.gender as string)}
+        className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+        {hasProposals ? 'Generate New Set' : 'Generate Consumer Profiles'}
+      </button>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      {/* Proposal cards */}
+      {hasProposals && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/50">
+              {likedProfiles.length} selected · {rejectedProfiles.length} rejected · {proposals.filter(p => p.status === 'pending').length} pending
+            </p>
+          </div>
+
+          {proposals.map((p, i) => (
+            <div
+              key={`${p.title}-${i}`}
+              className={`relative border transition-all ${
+                p.status === 'liked'
+                  ? 'border-carbon bg-carbon/[0.03]'
+                  : p.status === 'rejected'
+                  ? 'border-carbon/[0.06] bg-carbon/[0.01] opacity-50'
+                  : 'border-carbon/[0.08]'
+              }`}
+            >
+              <div className="p-5">
+                {/* Title — editable */}
+                {editingIdx === i ? (
+                  <input
+                    type="text"
+                    value={p.title}
+                    onChange={(e) => updateProposal(i, { title: e.target.value })}
+                    className="w-full text-sm font-medium text-carbon bg-transparent border-b border-carbon/20 focus:border-carbon focus:outline-none mb-2 pb-1"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="text-sm font-medium text-carbon mb-2">{p.title}</div>
+                )}
+
+                {/* Description — editable */}
+                {editingIdx === i ? (
+                  <textarea
+                    value={p.desc}
+                    onChange={(e) => updateProposal(i, { desc: e.target.value })}
+                    className="w-full text-xs text-carbon/80 leading-relaxed bg-transparent border border-carbon/10 focus:border-carbon/20 focus:outline-none p-2 resize-none"
+                    rows={5}
+                  />
+                ) : (
+                  <div className="text-xs text-carbon/80 leading-relaxed">{p.desc}</div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-carbon/[0.06]">
+                  <button
+                    onClick={() => updateProposal(i, { status: p.status === 'liked' ? 'pending' : 'liked' })}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-wide border transition-all ${
+                      p.status === 'liked'
+                        ? 'bg-carbon text-crema border-carbon'
+                        : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
+                    }`}
+                  >
+                    <ThumbsUp className="h-3 w-3" />
+                    {p.status === 'liked' ? 'Selected' : 'Select'}
+                  </button>
+                  <button
+                    onClick={() => updateProposal(i, { status: p.status === 'rejected' ? 'pending' : 'rejected' })}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-wide border transition-all ${
+                      p.status === 'rejected'
+                        ? 'bg-red-50 text-red-600 border-red-200'
+                        : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
+                    }`}
+                  >
+                    <ThumbsDown className="h-3 w-3" />
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => setEditingIdx(editingIdx === i ? null : i)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-wide border transition-all ${
+                      editingIdx === i
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
+                    }`}
+                  >
+                    <Pencil className="h-3 w-3" />
+                    {editingIdx === i ? 'Done' : 'Edit'}
+                  </button>
+                  <button
+                    onClick={() => removeProposal(i)}
+                    className="ml-auto flex items-center gap-1 px-2 py-1.5 text-[10px] text-carbon/30 hover:text-red-500 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Regenerate rejected + Add manual */}
+          <div className="flex flex-wrap gap-2 pt-2">
+            {rejectedProfiles.length > 0 && (
+              <button
+                onClick={regenerateRejected}
+                disabled={generating}
+                className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.12] text-carbon/70 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
+              >
+                {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Regenerate {rejectedProfiles.length} rejected
+              </button>
+            )}
+            <button
+              onClick={() => setAddingManual(true)}
+              className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase border border-dashed border-carbon/[0.15] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-all"
+            >
+              <Plus className="h-3 w-3" />
+              Add Profile Manually
+            </button>
+          </div>
+
+          {/* Manual profile form */}
+          {addingManual && (
+            <div className="border border-carbon/[0.1] p-5 space-y-3">
+              <input
+                type="text"
+                value={manualTitle}
+                onChange={(e) => setManualTitle(e.target.value)}
+                placeholder="Profile name — e.g. 'Urban Creative Professional'"
+                className="w-full px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+                autoFocus
+              />
+              <textarea
+                value={manualDesc}
+                onChange={(e) => setManualDesc(e.target.value)}
+                placeholder="Describe this consumer segment — demographics, lifestyle, shopping behavior..."
+                className="w-full h-28 px-3 py-2 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={addManualProfile}
+                  disabled={!manualTitle.trim() || !manualDesc.trim()}
+                  className="px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30"
+                >
+                  Add Profile
+                </button>
+                <button
+                  onClick={() => { setAddingManual(false); setManualTitle(''); setManualDesc(''); }}
+                  className="px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/50 border border-carbon/[0.1] hover:border-carbon/20 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const [generating, setGenerating] = useState(false);
@@ -232,55 +499,15 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
       )}
 
       {mode === 'ai' && (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Minimal Reference
-            </label>
-            <input
-              type="text"
-              value={(data.reference as string) || ''}
-              onChange={(e) => onChange({ ...data, reference: e.target.value })}
-              placeholder="e.g. 'young professionals in Spain' or 'streetwear enthusiasts'..."
-              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-            />
-          </div>
-          <button
-            onClick={async () => {
-              setGenerating(true);
-              setError(null);
-              const { result, error: err } = await generateCreative('consumer-proposals', {
-                reference: (data.reference as string) || '',
-                gender: (data.gender as string) || '',
-                ...collectionContext,
-              });
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { proposals: Array<{ title: string; desc: string }> };
-              onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null });
-              setGenerating(false);
-            }}
-            disabled={generating || !(data.reference as string)?.trim() || !(data.gender as string)}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Generate Consumer Profiles
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          {(data.proposals as Array<{ title: string; desc: string }>)?.map((p, i) => (
-            <button
-              key={i}
-              onClick={() => onChange({ ...data, selectedProposal: i, profile: p.desc })}
-              className={`w-full text-left p-5 border transition-all ${
-                (data.selectedProposal as number) === i
-                  ? 'border-carbon bg-carbon/[0.03]'
-                  : 'border-carbon/[0.08] hover:border-carbon/20'
-              }`}
-            >
-              <div className="text-sm font-medium text-carbon mb-1">{p.title}</div>
-              <div className="text-xs text-carbon/80 leading-relaxed">{p.desc}</div>
-            </button>
-          ))}
-        </div>
+        <ConsumerProposalFlow
+          data={data}
+          onChange={onChange}
+          collectionContext={collectionContext}
+          generating={generating}
+          setGenerating={setGenerating}
+          error={error}
+          setError={setError}
+        />
       )}
     </div>
   );
