@@ -258,13 +258,13 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
           </div>
         ) : boardPins.length > 0 ? (
           <div className="max-h-[70vh] overflow-y-auto rounded-lg pr-1">
-            <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3 space-y-3">
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {boardPins.map((pin) => {
                 const isSelected = selectedPins.has(pin.id);
                 return (
                   <div
                     key={pin.id}
-                    className={`relative group break-inside-avoid rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative group rounded-lg overflow-hidden border-2 transition-all bg-gray-50 ${
                       isSelected
                         ? 'border-primary ring-2 ring-primary/30'
                         : 'border-transparent hover:border-gray-300'
@@ -274,6 +274,7 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
                       src={pin.imageUrl}
                       alt={pin.title || 'Pin'}
                       className="w-full h-auto block"
+                      loading="lazy"
                     />
                     {/* Overlay with add/remove button */}
                     <div className={`absolute inset-0 flex items-end justify-center transition-opacity ${

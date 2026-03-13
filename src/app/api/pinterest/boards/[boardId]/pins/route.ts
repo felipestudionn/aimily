@@ -62,10 +62,10 @@ export async function GET(
       title: pin.title || '',
       description: pin.description || '',
       link: pin.link || '',
-      // Get the best available image
-      imageUrl: pin.media?.images?.['600x']?.url 
+      // Get the best available image — prefer originals for correct aspect ratio
+      imageUrl: pin.media?.images?.originals?.url
+        || pin.media?.images?.['600x']?.url
         || pin.media?.images?.['400x300']?.url
-        || pin.media?.images?.originals?.url
         || pin.image_cover_url
         || null,
       dominantColor: pin.dominant_color || null,
