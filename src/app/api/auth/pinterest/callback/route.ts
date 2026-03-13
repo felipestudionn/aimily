@@ -61,12 +61,26 @@ export async function GET(req: NextRequest) {
     }
 
     const tokenData = JSON.parse(responseText);
-    
-    // Store token in session/cookie
-    const response = NextResponse.redirect(
-      new URL('/creative-space?pinterest_connected=true', req.url)
-    );
-    
+
+    // Return an HTML page that notifies the opener window and closes itself
+    // This supports popup-based OAuth without leaving the parent page
+    const html = `<!DOCTYPE html><html><head><title>Pinterest Connected</title></head><body>
+<script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'pinterest_connected' }, window.location.origin);
+    window.close();
+  } else {
+    window.location.href = '/creative-space?pinterest_connected=true';
+  }
+</script>
+<p>Connecting Pinterest... You can close this window.</p>
+</body></html>`;
+
+    const response = new NextResponse(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' },
+    });
+
     // Set secure cookie with token
     response.cookies.set('pinterest_access_token', tokenData.access_token, {
       httpOnly: true,
@@ -78,9 +92,20 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (error) {
     console.error('Pinterest OAuth error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.redirect(
-      new URL(`/creative-space?error=auth_failed&message=${encodeURIComponent(errorMessage)}`, req.url)
-    );
+    const html = `<!DOCTYPE html><html><head><title>Pinterest Error</title></head><body>
+<script>
+  if (window.opener) {
+    window.opener.postMessage({ type: 'pinterest_error' }, window.location.origin);
+    window.close();
+  } else {
+    window.location.href = '/creative-space?error=auth_failed';
+  }
+</script>
+<p>Authentication failed. You can close this window.</p>
+</body></html>`;
+    return new NextResponse(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' },
+    });
   }
 }
