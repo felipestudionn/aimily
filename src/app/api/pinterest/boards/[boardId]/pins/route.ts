@@ -62,9 +62,8 @@ export async function GET(
       title: pin.title || '',
       description: pin.description || '',
       link: pin.link || '',
-      // Get the best available image — prefer originals for correct aspect ratio
-      imageUrl: pin.media?.images?.originals?.url
-        || pin.media?.images?.['600x']?.url
+      // 600x keeps original aspect ratio at ~564px wide — fast to load
+      imageUrl: pin.media?.images?.['600x']?.url
         || pin.media?.images?.['400x300']?.url
         || pin.image_cover_url
         || null,
