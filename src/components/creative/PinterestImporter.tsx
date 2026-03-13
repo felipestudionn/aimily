@@ -264,18 +264,20 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
                 return (
                   <div
                     key={pin.id}
-                    className={`relative group rounded-lg overflow-hidden border-2 transition-all bg-gray-50 ${
+                    className={`relative group rounded-lg overflow-hidden border-2 transition-all bg-gray-100 ${
                       isSelected
                         ? 'border-primary ring-2 ring-primary/30'
                         : 'border-transparent hover:border-gray-300'
                     }`}
                   >
-                    <img
-                      src={pin.imageUrl}
-                      alt={pin.title || 'Pin'}
-                      className="w-full h-auto block"
-                      loading="lazy"
-                    />
+                    <div className="aspect-[3/4]">
+                      <img
+                        src={pin.imageUrl}
+                        alt={pin.title || 'Pin'}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
                     {/* Overlay with add/remove button */}
                     <div className={`absolute inset-0 flex items-end justify-center transition-opacity ${
                       isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
