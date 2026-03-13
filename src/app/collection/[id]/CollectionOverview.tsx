@@ -138,6 +138,7 @@ function BlockCard({
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const total = phaseMilestones.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const isStarted = progress > 0;
 
   return (
     <Link
@@ -153,7 +154,7 @@ function BlockCard({
       </div>
 
       {/* Title + circular progress */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-2">
         <h3 className="text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
           {block.title} <span className="italic">{block.titleItalic}</span>
         </h3>
@@ -179,27 +180,27 @@ function BlockCard({
               strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-light text-carbon/50">
+          <span className="absolute inset-0 flex items-center justify-center text-xs text-carbon/50">
             {progress}%
           </span>
         </div>
       </div>
 
       {/* Subtitle */}
-      <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/25 mb-6">
+      <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-carbon/50 mb-8">
         {block.subtitle}
       </p>
 
       {/* Internal steps */}
-      <div className="pt-6 border-t border-carbon/[0.06] space-y-3 flex-1">
+      <div className="pt-6 border-t border-carbon/[0.06] space-y-4 flex-1">
         {block.steps.map((step) => {
           const Icon = step.icon;
           return (
             <div key={step.name} className="flex items-center gap-3">
-              <div className="w-7 h-7 bg-carbon/[0.03] flex items-center justify-center flex-shrink-0">
-                <Icon className="h-3.5 w-3.5 text-carbon/30" />
+              <div className="w-7 h-7 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
+                <Icon className="h-3.5 w-3.5 text-carbon/40" />
               </div>
-              <p className="text-sm text-carbon/55 font-light truncate">
+              <p className="text-sm text-carbon/70 truncate">
                 {step.name}
               </p>
             </div>
@@ -208,8 +209,16 @@ function BlockCard({
       </div>
 
       {/* CTA bar */}
-      <div className="mt-auto pt-8 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-        Continue <ArrowRight className="h-3.5 w-3.5" />
+      <div className={`relative mt-auto pt-8`}>
+        <div className="flex items-center justify-center gap-3 bg-carbon text-crema py-3.5 px-6 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors overflow-hidden">
+          {isStarted ? 'Continue' : 'Start'}
+          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+
+          {/* Shimmer effect for unstarted blocks */}
+          {!isStarted && (
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          )}
+        </div>
       </div>
     </Link>
   );
