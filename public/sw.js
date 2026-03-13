@@ -1,49 +1,33 @@
-const CACHE_NAME = 'aimily-v2';
+// Network-only PWA service worker
+// Never serves cached content — always fetches from network.
+// Only caches PWA shell icons so the app can install/launch.
 
-// Install — cache shell assets
+const SHELL_CACHE = 'aimily-shell';
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll([
-        '/',
-        '/images/aimily-pwa-512.png',
-        '/images/aimily-pwa-192.png',
-        '/images/aimily-logo-black.png',
-      ])
+    // Clean ALL old caches from previous versions
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => caches.delete(k)))
+    ).then(() =>
+      // Only cache the bare minimum for PWA install
+      caches.open(SHELL_CACHE).then((cache) =>
+        cache.addAll([
+          '/images/aimily-pwa-512.png',
+          '/images/aimily-pwa-192.png',
+        ])
+      )
     )
   );
   self.skipWaiting();
 });
 
-// Activate — clean old caches
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
+  event.waitUntil(self.clients.claim());
 });
 
-// Fetch — network first, fall back to cache
-self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
-  if (event.request.method !== 'GET') return;
-
-  // Skip API routes and auth
-  const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/')) return;
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Cache successful responses
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
+// Every request goes to the network. No cache, no stale content.
+self.addEventListener('fetch', () => {
+  // Do nothing — let the browser handle all requests normally.
+  // This means the PWA always shows the latest deployed version.
 });
