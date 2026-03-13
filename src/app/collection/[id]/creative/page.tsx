@@ -869,7 +869,7 @@ export default function CreativeBrandPage() {
 
                 {/* Expanded content */}
                 <div
-                  className="flex-1 bg-white border border-carbon/[0.06] overflow-hidden"
+                  className="flex-1 bg-white border border-carbon/[0.06] overflow-hidden flex flex-col"
                   style={{
                     animation: 'expandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                     minHeight: 'calc(100vh - 260px)',
@@ -881,7 +881,7 @@ export default function CreativeBrandPage() {
                     const Icon = block.icon;
                     const state = getBlockState(block.id);
                     return (
-                      <div className="p-10 lg:p-12">
+                      <div className="p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
                         {/* Header row */}
                         <div className="flex items-start justify-between mb-8">
                           <div className="flex items-center gap-4">
@@ -926,16 +926,18 @@ export default function CreativeBrandPage() {
                         )}
 
                         {/* Dynamic Content */}
-                        <ExpandedBlockContent
-                          blockId={block.id}
-                          stepId={step.id}
-                          mode={state.mode}
-                          data={state.data}
-                          onChange={(newData) => updateBlockData(block.id, { data: newData })}
-                        />
+                        <div className="flex-1">
+                          <ExpandedBlockContent
+                            blockId={block.id}
+                            stepId={step.id}
+                            mode={state.mode}
+                            data={state.data}
+                            onChange={(newData) => updateBlockData(block.id, { data: newData })}
+                          />
+                        </div>
 
-                        {/* Confirm */}
-                        <div className="mt-10 flex items-center justify-between pt-6 border-t border-carbon/[0.06]">
+                        {/* Confirm — pinned to bottom */}
+                        <div className="mt-auto flex items-center justify-between pt-6 border-t border-carbon/[0.06]">
                           <button
                             onClick={handleCollapse}
                             className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/50 hover:text-carbon transition-colors"
