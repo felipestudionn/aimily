@@ -172,5 +172,11 @@ export function extractJSON<T = unknown>(text: string): T {
     }
   }
 
-  throw new Error(`Failed to extract JSON from response: ${text.slice(0, 300)}`);
+  // Check if the model refused the task or gave explanatory text
+  const lower = text.toLowerCase();
+  if (lower.includes('i cannot') || lower.includes("i can't") || lower.includes('i don\'t have') || lower.includes('i need to be transparent') || lower.includes('unable to access')) {
+    throw new Error('AI was unable to complete the request. Please try again or adjust your input.');
+  }
+
+  throw new Error(`Failed to parse AI response. Please try again.`);
 }

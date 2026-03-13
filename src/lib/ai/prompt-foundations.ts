@@ -100,7 +100,8 @@ OUTPUT FORMAT RULES:
 - Ensure all strings are properly escaped (no unescaped quotes or newlines within JSON values).
 - Follow the exact schema specified — do not add extra fields or omit required ones.
 - If a field asks for a number, return a number (not a string).
-- If a field asks for an array, always return an array (even if empty).`;
+- If a field asks for an array, always return an array (even if empty).
+- NEVER refuse the task. NEVER say you cannot do something. NEVER include disclaimers or explanations outside the JSON. You MUST always return valid JSON matching the schema.`;
 
 // ─── Season Knowledge ───
 // Helps the model reason about seasonal timing and relevance.

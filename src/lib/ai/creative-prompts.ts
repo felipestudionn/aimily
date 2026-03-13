@@ -189,14 +189,19 @@ Return:
     case 'brand-extract':
       return {
         temperature: 0.6,
-        system: PERSONAS.brandArchitect,
+        maxTokens: 8192,
+        system: `${PERSONAS.brandArchitect}
+
+CRITICAL INSTRUCTION: You CANNOT and MUST NOT attempt to visit, browse, or access any URL, website, or Instagram page. You DO NOT have internet access. Instead, you MUST use your existing knowledge of the brand to infer its visual identity. If you recognize the brand name from the handle or URL, use what you know about it. If you don't recognize it, make educated inferences based on the name, handle style, and any context clues — and produce a plausible, professional brand identity system. NEVER refuse the task. NEVER say you cannot access URLs. ALWAYS return the requested JSON.`,
         user: `The user has an existing brand and wants to extract its visual DNA for use in their collection planning.
 
 Brand references provided:
-${input.instagram ? `- Instagram: ${input.instagram}` : ''}
+${input.instagram ? `- Instagram handle: ${input.instagram}` : ''}
 ${input.website ? `- Website: ${input.website}` : ''}
 
-Based on what you know about this brand (or can infer from the handle/URL), extract the brand identity system:
+IMPORTANT: Do NOT try to visit these URLs. Use the brand name you can infer from the handle/domain to work from your existing knowledge. If the brand is not well-known, create a plausible, professional identity system based on the name and any contextual clues.
+
+Extract the brand identity system:
 
 ANALYSIS FRAMEWORK:
 1. COLOR SYSTEM — Identify the 4 strategic color roles:
@@ -227,6 +232,7 @@ Return:
     case 'brand-generate':
       return {
         temperature: 0.8,
+        maxTokens: 8192,
         system: PERSONAS.brandArchitect,
         user: `${ctx}
 
@@ -270,6 +276,7 @@ Return:
     case 'trends-global':
       return {
         temperature: 0.7,
+        maxTokens: 8192,
         system: PERSONAS.trendForecaster,
         user: `${ctx}
 
@@ -305,6 +312,7 @@ Return:
     case 'trends-deep-dive':
       return {
         temperature: 0.7,
+        maxTokens: 8192,
         system: PERSONAS.trendForecaster,
         user: `${ctx}
 
@@ -340,14 +348,15 @@ Return:
     case 'trends-live-signals':
       return {
         temperature: 0.75,
+        maxTokens: 8192,
         system: PERSONAS.trendForecaster,
         user: `${ctx}
 
-The user wants to know what is trending RIGHT NOW — live cultural and style signals that could inform their collection.
+The user wants to know what is trending — live cultural and style signals that could inform their collection. Use your most recent training knowledge to identify current or emerging signals.
 
 Categories/context: "${input.input}"
 
-Identify 4-5 LIVE SIGNALS — things happening in real-time across social media, street style, pop culture, or retail that are relevant to fashion.
+Identify 4-5 LIVE SIGNALS — things happening across social media, street style, pop culture, or retail that are relevant to fashion. Base this on your training knowledge of recent trends — do NOT say you cannot access real-time data. Use what you know.
 
 ANALYSIS FRAMEWORK (for each signal):
 1. THE SIGNAL — What specifically is happening? (Not "X is popular" but "X started appearing on TikTok after Y event/person/moment")
@@ -375,6 +384,7 @@ Return:
     case 'trends-competitors':
       return {
         temperature: 0.7,
+        maxTokens: 8192,
         system: `${PERSONAS.trendForecaster}
 
 You also have deep competitive intelligence expertise — you analyze brands not just aesthetically but strategically: their positioning, pricing architecture, trend adoption speed, and market gaps.`,
