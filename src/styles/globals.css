@@ -49,12 +49,18 @@
 
 }
 
-/* ── Global minimum font size ──
-   text-[10px] → 12px, text-[11px] → 13px across all 46 files.
-   Single place to adjust minimum readability. */
-.text-\[10px\] { font-size: 0.75rem !important; }
-.text-\[11px\] { font-size: 0.8125rem !important; }
-.text-\[9px\]  { font-size: 0.75rem !important; }
+/* ── Global font size boost ──
+   Bump everything up ~1px for better readability.
+   Single place to tune all text sizes across the app. */
+.text-\[9px\]  { font-size: 0.8125rem !important; } /* 9→13px */
+.text-\[10px\] { font-size: 0.8125rem !important; } /* 10→13px */
+.text-\[11px\] { font-size: 0.875rem !important; }  /* 11→14px */
+.text-xs       { font-size: 0.8125rem !important; } /* 12→13px */
+.text-sm       { font-size: 0.9375rem !important; } /* 14→15px */
+.text-base     { font-size: 1.0625rem !important; } /* 16→17px */
+.text-lg       { font-size: 1.1875rem !important; } /* 18→19px */
+.text-xl       { font-size: 1.3125rem !important; } /* 20→21px */
+.text-2xl      { font-size: 1.5625rem !important; } /* 24→25px */
 
 /* Alfred Button Styles */
 .btn-primary {
