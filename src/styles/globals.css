@@ -46,7 +46,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
 }
+
+/* ── Global minimum font size ──
+   text-[10px] → 12px, text-[11px] → 13px across all 46 files.
+   Single place to adjust minimum readability. */
+.text-\[10px\] { font-size: 0.75rem !important; }
+.text-\[11px\] { font-size: 0.8125rem !important; }
+.text-\[9px\]  { font-size: 0.75rem !important; }
 
 /* Alfred Button Styles */
 .btn-primary {

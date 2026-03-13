@@ -186,10 +186,10 @@ function VibeProposalFlow({
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-carbon">{p.title}</span>
-                <span className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
               </div>
               <div className="text-xs text-carbon/80 leading-relaxed">{p.vibe}</div>
-              <div className="text-[10px] text-carbon/50 mt-2 tracking-wide">{p.keywords}</div>
+              <div className="text-xs text-carbon/50 mt-2 tracking-wide">{p.keywords}</div>
             </button>
           ))}
         </div>
@@ -204,14 +204,14 @@ function VibeProposalFlow({
             </p>
             <button
               onClick={deselectVibe}
-              className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+              className="text-xs tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
             >
               ← Choose another
             </button>
           </div>
           {/* Title */}
           <div>
-            <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Title</label>
+            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Title</label>
             <input
               type="text"
               value={(data.vibeTitle as string) || ''}
@@ -221,7 +221,7 @@ function VibeProposalFlow({
           </div>
           {/* Narrative */}
           <div>
-            <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Creative Narrative</label>
+            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Creative Narrative</label>
             <textarea
               value={(data.vibe as string) || ''}
               onChange={(e) => onChange({ ...data, vibe: e.target.value })}
@@ -230,7 +230,7 @@ function VibeProposalFlow({
           </div>
           {/* Keywords */}
           <div>
-            <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Keywords</label>
+            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Keywords</label>
             <input
               type="text"
               value={(data.keywords as string) || ''}
@@ -355,7 +355,7 @@ function ConsumerProposalFlow({
       {hasProposals && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/50">
+            <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/50">
               {likedProfiles.length} selected · {rejectedProfiles.length} rejected · {proposals.filter(p => p.status === 'pending').length} pending
             </p>
           </div>
@@ -401,7 +401,7 @@ function ConsumerProposalFlow({
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-carbon/[0.06]">
                   <button
                     onClick={() => updateProposal(i, { status: p.status === 'liked' ? 'pending' : 'liked' })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-wide border transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium tracking-wide border transition-all ${
                       p.status === 'liked'
                         ? 'bg-carbon text-crema border-carbon'
                         : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
@@ -412,7 +412,7 @@ function ConsumerProposalFlow({
                   </button>
                   <button
                     onClick={() => updateProposal(i, { status: p.status === 'rejected' ? 'pending' : 'rejected' })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-wide border transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium tracking-wide border transition-all ${
                       p.status === 'rejected'
                         ? 'bg-red-50 text-red-600 border-red-200'
                         : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
@@ -423,7 +423,7 @@ function ConsumerProposalFlow({
                   </button>
                   <button
                     onClick={() => setEditingIdx(editingIdx === i ? null : i)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-wide border transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium tracking-wide border transition-all ${
                       editingIdx === i
                         ? 'bg-amber-50 text-amber-700 border-amber-200'
                         : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
@@ -434,7 +434,7 @@ function ConsumerProposalFlow({
                   </button>
                   <button
                     onClick={() => removeProposal(i)}
-                    className="ml-auto flex items-center gap-1 px-2 py-1.5 text-[10px] text-carbon/30 hover:text-red-500 transition-colors"
+                    className="ml-auto flex items-center gap-1 px-2 py-1.5 text-xs text-carbon/30 hover:text-red-500 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -449,7 +449,7 @@ function ConsumerProposalFlow({
               <button
                 onClick={regenerateRejected}
                 disabled={generating}
-                className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.12] text-carbon/70 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase border border-carbon/[0.12] text-carbon/70 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
               >
                 {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                 Regenerate {rejectedProfiles.length} rejected
@@ -457,7 +457,7 @@ function ConsumerProposalFlow({
             )}
             <button
               onClick={() => setAddingManual(true)}
-              className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase border border-dashed border-carbon/[0.15] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase border border-dashed border-carbon/[0.15] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-all"
             >
               <Plus className="h-3 w-3" />
               Add Profile Manually
@@ -485,13 +485,13 @@ function ConsumerProposalFlow({
                 <button
                   onClick={addManualProfile}
                   disabled={!manualTitle.trim() || !manualDesc.trim()}
-                  className="px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30"
+                  className="px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30"
                 >
                   Add Profile
                 </button>
                 <button
                   onClick={() => { setAddingManual(false); setManualTitle(''); setManualDesc(''); }}
-                  className="px-4 py-2 text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/50 border border-carbon/[0.1] hover:border-carbon/20 transition-colors"
+                  className="px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase text-carbon/50 border border-carbon/[0.1] hover:border-carbon/20 transition-colors"
                 >
                   Cancel
                 </button>
@@ -538,10 +538,10 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
           ))}
         </div>
         {(data.gender as string) === 'mixed' && (
-          <p className="mt-1.5 text-[10px] text-carbon/50">Separate lines for men & women within the same collection</p>
+          <p className="mt-1.5 text-xs text-carbon/50">Separate lines for men & women within the same collection</p>
         )}
         {(data.gender as string) === 'unisex' && (
-          <p className="mt-1.5 text-[10px] text-carbon/50">Same designs for all genders — no differentiation</p>
+          <p className="mt-1.5 text-xs text-carbon/50">Same designs for all genders — no differentiation</p>
         )}
       </div>
 
@@ -942,7 +942,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
           <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
             {uploading ? uploadProgress : 'Upload Photos'}
           </span>
-          <span className="text-[10px] text-carbon/50">JPG, PNG, WEBP</span>
+          <span className="text-xs text-carbon/50">JPG, PNG, WEBP</span>
         </button>
         <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
           if (e.target.files && e.target.files.length > 0) handleUpload(e.target.files);
@@ -957,7 +957,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
           <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
             {pinterestLoading ? 'Connecting...' : 'Pinterest'}
           </span>
-          <span className="text-[10px] text-carbon/50">Select from boards</span>
+          <span className="text-xs text-carbon/50">Select from boards</span>
         </button>
       </div>
 
@@ -980,7 +980,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
                   <img src={board.image_thumbnail_url} alt="" className="w-full aspect-square object-cover" />
                 )}
                 <span className="text-xs font-medium text-carbon/80 truncate w-full">{board.name}</span>
-                <span className="text-[10px] text-carbon/50">{board.pin_count} pins</span>
+                <span className="text-xs text-carbon/50">{board.pin_count} pins</span>
               </button>
             ))}
           </div>
@@ -995,7 +995,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         <div className="border border-carbon/20 bg-white p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button onClick={() => setPinterestStep('boards')} className="text-[10px] text-carbon/50 hover:text-carbon/80">
+              <button onClick={() => setPinterestStep('boards')} className="text-xs text-carbon/50 hover:text-carbon/80">
                 <ArrowLeft className="h-3.5 w-3.5 inline mr-1" />Boards
               </button>
               <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{selectedBoard?.name}</p>
@@ -1046,7 +1046,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
       {/* Image Grid */}
       {images.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-3">{images.length} images</p>
+          <p className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-3">{images.length} images</p>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
             {images.map((img, i) => (
               <div key={i} className="relative aspect-square bg-carbon/[0.04] overflow-hidden group">
@@ -1094,7 +1094,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
       {/* Brand Name */}
       <div>
-        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Brand Name</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Brand Name</label>
         <input
           type="text"
           value={(data.brandName as string) || ''}
@@ -1105,7 +1105,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
       {/* Colors */}
       <div>
-        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Colors</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Colors</label>
         <div className="flex flex-wrap items-center gap-3">
           {colors.map((c, i) => {
             const hex = parseHex(c);
@@ -1137,7 +1137,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
       {/* Tone */}
       <div>
-        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Voice & Tone</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Voice & Tone</label>
         <textarea
           value={(data.tone as string) || ''}
           onChange={(e) => onChange({ ...data, tone: e.target.value })}
@@ -1148,7 +1148,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
       {/* Typography */}
       <div>
-        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Typography</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Typography</label>
         <input
           type="text"
           value={(data.typography as string) || ''}
@@ -1160,7 +1160,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
       {/* Style */}
       <div>
-        <label className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Visual Identity</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Visual Identity</label>
         <textarea
           value={(data.style as string) || ''}
           onChange={(e) => onChange({ ...data, style: e.target.value })}
@@ -1254,7 +1254,7 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
 
           <button
             onClick={() => onChange({ ...data, hasBrand: undefined, extracted: false })}
-            className="text-[10px] text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
+            className="text-xs text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
           >
             ← Change option
           </button>
@@ -1320,7 +1320,7 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
 
           <button
             onClick={() => onChange({ ...data, hasBrand: undefined, generated: false })}
-            className="text-[10px] text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
+            className="text-xs text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
           >
             ← Change option
           </button>
@@ -1425,7 +1425,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
 
       {/* Status counter */}
       {results.length > 0 && (
-        <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/50">
+        <div className="text-xs tracking-[0.1em] uppercase text-carbon/50">
           {selectedCount} selected · {results.length - selectedCount} unselected · {results.length} total
         </div>
       )}
@@ -1456,7 +1456,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
               />
               <button
                 onClick={() => updateResult(i, { editing: false })}
-                className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+                className="text-xs tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
               >
                 Done editing
               </button>
@@ -1493,7 +1493,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
               </div>
               <div className="text-xs text-carbon/80 leading-relaxed">{r.desc}</div>
               {r.relevance && (
-                <div className={`inline-block mt-2 px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                <div className={`inline-block mt-2 px-2 py-0.5 text-xs uppercase tracking-wide ${
                   r.relevance === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'
                 }`}>
                   {r.relevance}
@@ -1651,7 +1651,7 @@ export default function CreativeBrandPage() {
                     : 'bg-white text-carbon/40 hover:text-carbon/60'
               }`}
             >
-              <span className={`w-5 h-5 flex items-center justify-center text-[10px] shrink-0 ${
+              <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 ${
                 activeStep === i ? 'bg-white/20' : 'bg-carbon/[0.06]'
               }`}>
                 {i + 1}
@@ -1693,7 +1693,7 @@ export default function CreativeBrandPage() {
                           <Icon className="h-4.5 w-4.5 text-carbon/35 group-hover/icon:text-carbon/60 transition-colors" />
                         )}
                         {/* Tooltip */}
-                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-[10px] tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">
+                        <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">
                           {block.name}
                         </div>
                       </button>
@@ -1744,7 +1744,7 @@ export default function CreativeBrandPage() {
                               <button
                                 key={m.id}
                                 onClick={() => updateBlockData(block.id, { mode: m.id })}
-                                className={`px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border transition-all ${
+                                className={`px-4 py-2 text-xs font-medium tracking-[0.1em] uppercase border transition-all ${
                                   state.mode === m.id
                                     ? 'border-carbon bg-carbon text-crema'
                                     : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'
@@ -1753,7 +1753,7 @@ export default function CreativeBrandPage() {
                                 {m.label}
                               </button>
                             ))}
-                            <span className="hidden sm:inline text-[10px] text-carbon/60 ml-2">
+                            <span className="hidden sm:inline text-xs text-carbon/60 ml-2">
                               {INPUT_MODES.find((m) => m.id === state.mode)?.description}
                             </span>
                           </div>
@@ -1844,7 +1844,7 @@ export default function CreativeBrandPage() {
                           {INPUT_MODES.map((mode) => (
                             <span
                               key={mode.id}
-                              className="px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50"
+                              className="px-3 py-1.5 text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50"
                             >
                               {mode.label}
                             </span>
@@ -1885,13 +1885,13 @@ export default function CreativeBrandPage() {
               Once you complete Vision and Research, this step consolidates everything into a unified Creative Input that feeds the next block.
             </p>
             <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/25">
-              <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-[10px]">1</span>
+              <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-xs">1</span>
               Vision
               <ArrowRight className="h-3 w-3 text-carbon/15" />
-              <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-[10px]">2</span>
+              <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-xs">2</span>
               Research
               <ArrowRight className="h-3 w-3 text-carbon/15" />
-              <span className="w-5 h-5 bg-carbon text-crema flex items-center justify-center text-[10px]">3</span>
+              <span className="w-5 h-5 bg-carbon text-crema flex items-center justify-center text-xs">3</span>
               Synthesis
             </div>
           </div>

@@ -129,7 +129,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
                   <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
                 </div>
               ))}
-              <button onClick={() => addSubcategory(fi)} className="ml-6 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/40 hover:text-carbon/60 flex items-center gap-1">
+              <button onClick={() => addSubcategory(fi)} className="ml-6 text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 hover:text-carbon/60 flex items-center gap-1">
                 <Plus className="h-3 w-3" /> Add subcategory
               </button>
             </div>
@@ -181,7 +181,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
                       <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
                     </div>
                   ))}
-                  <button onClick={() => addSubcategory(fi)} className="ml-4 text-[10px] text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> Add</button>
+                  <button onClick={() => addSubcategory(fi)} className="ml-4 text-xs text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> Add</button>
                 </div>
               ))}
             </div>
@@ -230,12 +230,12 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-carbon">{p.title}</span>
-                    <span className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                    <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
                   </div>
                   <div className="text-xs text-carbon/70 mb-2">{p.description}</div>
                   <div className="flex flex-wrap gap-1.5">
                     {p.families.map((f, j) => (
-                      <span key={j} className="px-2 py-0.5 text-[10px] bg-carbon/[0.04] text-carbon/60">{f.name} ({f.subcategories.length})</span>
+                      <span key={j} className="px-2 py-0.5 text-xs bg-carbon/[0.04] text-carbon/60">{f.name} ({f.subcategories.length})</span>
                     ))}
                   </div>
                 </button>
@@ -252,7 +252,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
                 </p>
                 <button
                   onClick={() => onChange({ ...data, selectedProposal: null, editingProposal: false, families: [] })}
-                  className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+                  className="text-xs tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
                 >
                   ← Choose another
                 </button>
@@ -278,7 +278,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
                       <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
                     </div>
                   ))}
-                  <button onClick={() => addSubcategory(fi)} className="ml-4 text-[10px] text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> Add subcategory</button>
+                  <button onClick={() => addSubcategory(fi)} className="ml-4 text-xs text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> Add subcategory</button>
                 </div>
               ))}
               <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
@@ -330,9 +330,9 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
               {fam.subcategories.map((sub, si) => (
                 <div key={si} className="flex items-center gap-3 ml-4">
                   <span className="text-sm text-carbon/60 w-40 truncate">{sub.name}</span>
-                  <span className="text-[10px] text-carbon/30">Min €</span>
+                  <span className="text-xs text-carbon/30">Min €</span>
                   <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
-                  <span className="text-[10px] text-carbon/30">Max €</span>
+                  <span className="text-xs text-carbon/30">Max €</span>
                   <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
                 </div>
               ))}
@@ -386,9 +386,9 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                   {fam.subcategories.map((sub, si) => (
                     <div key={si} className="flex items-center gap-3 ml-4">
                       <span className="text-sm text-carbon/60 w-40 truncate">{sub.name}</span>
-                      <span className="text-[10px] text-carbon/30">Min €</span>
+                      <span className="text-xs text-carbon/30">Min €</span>
                       <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
-                      <span className="text-[10px] text-carbon/30">Max €</span>
+                      <span className="text-xs text-carbon/30">Max €</span>
                       <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
                     </div>
                   ))}
@@ -458,7 +458,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
             </div>
           ))}
           <button onClick={() => onChange({ ...data, markets: [...markets, { name: '', region: '', opportunity: 'medium', rationale: '' }] })}
-            className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/40 hover:text-carbon/60 flex items-center gap-1 mt-1"><Plus className="h-3 w-3" /> Add market</button>
+            className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 hover:text-carbon/60 flex items-center gap-1 mt-1"><Plus className="h-3 w-3" /> Add market</button>
         </div>
       )}
 
@@ -496,7 +496,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
             <div className="space-y-2 pt-2">
               {markets.map((m, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 border border-carbon/[0.08]">
-                  <div className={`px-2 py-0.5 text-[10px] font-medium uppercase ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
+                  <div className={`px-2 py-0.5 text-xs font-medium uppercase ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-carbon">{m.name} <span className="text-carbon/40 font-normal">· {m.region}</span></div>
                     <div className="text-xs text-carbon/60 mt-0.5">{m.rationale}</div>
@@ -619,7 +619,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
               <div className="grid grid-cols-2 gap-4">
                 {fields.map(f => (
                   <div key={f.key}>
-                    <label className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">{f.label}</label>
+                    <label className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">{f.label}</label>
                     <input type={f.type} value={(data[f.key] as number) || ''} onChange={(e) => onChange({ ...data, [f.key]: Number(e.target.value) })}
                       className="w-full px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
                   </div>
@@ -627,7 +627,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
               </div>
               <div className="flex gap-6">
                 <div>
-                  <label className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">Product Type</label>
+                  <label className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">Product Type</label>
                   <div className="flex gap-3">
                     {((data.typeSegmentation as Seg[]) || typeSeg).map((s, i) => (
                       <span key={s.name} className="text-xs text-carbon/60">{s.name}: <input type="number" value={s.percentage} onChange={(e) => {
@@ -638,7 +638,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">Newness</label>
+                  <label className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">Newness</label>
                   <div className="flex gap-3">
                     {((data.newnessSegmentation as Seg[]) || newnessSeg).map((s, i) => (
                       <span key={s.name} className="text-xs text-carbon/60">{s.name}: <input type="number" value={s.percentage} onChange={(e) => {
@@ -779,7 +779,7 @@ export default function MerchandisingPage() {
             const state = getCardState(card.id);
             return (
               <div key={card.id} className="flex items-center gap-2">
-                <div className={`w-6 h-6 flex items-center justify-center text-[10px] font-medium transition-all ${
+                <div className={`w-6 h-6 flex items-center justify-center text-xs font-medium transition-all ${
                   state.confirmed ? 'bg-carbon text-crema' : isLocked(card) ? 'bg-carbon/[0.04] text-carbon/20' : 'bg-carbon/[0.06] text-carbon/40'
                 }`}>
                   {state.confirmed ? '✓' : isLocked(card) ? <Lock className="h-2.5 w-2.5" /> : idx + 1}
@@ -815,7 +815,7 @@ export default function MerchandisingPage() {
                       title={card.name}
                     >
                       {locked ? <Lock className="h-3.5 w-3.5 text-carbon/15" /> : state.confirmed ? <Check className="h-4 w-4 text-carbon/60" /> : <Icon className="h-4 w-4 text-carbon/35 group-hover/icon:text-carbon/60 transition-colors" />}
-                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-[10px] tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">{card.name}</div>
+                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">{card.name}</div>
                     </button>
                   );
                 })}
@@ -845,11 +845,11 @@ export default function MerchandisingPage() {
                       <div className="flex items-center gap-2 mb-8">
                         {INPUT_MODES.map((m) => (
                           <button key={m.id} onClick={() => updateCardData(card.id, { mode: m.id })}
-                            className={`px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border transition-all ${state.mode === m.id ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'}`}>
+                            className={`px-4 py-2 text-xs font-medium tracking-[0.1em] uppercase border transition-all ${state.mode === m.id ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'}`}>
                             {m.label}
                           </button>
                         ))}
-                        <span className="hidden sm:inline text-[10px] text-carbon/60 ml-2">{INPUT_MODES.find((m) => m.id === state.mode)?.description}</span>
+                        <span className="hidden sm:inline text-xs text-carbon/60 ml-2">{INPUT_MODES.find((m) => m.id === state.mode)?.description}</span>
                       </div>
 
                       <div className="flex-1">
@@ -903,7 +903,7 @@ export default function MerchandisingPage() {
                     {!locked && (
                       <div className="mt-6 flex items-center gap-2">
                         {INPUT_MODES.map((m) => (
-                          <span key={m.id} className="px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50">{m.label}</span>
+                          <span key={m.id} className="px-3 py-1.5 text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50">{m.label}</span>
                         ))}
                       </div>
                     )}
