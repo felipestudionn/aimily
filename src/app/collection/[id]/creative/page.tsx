@@ -1322,9 +1322,9 @@ export default function CreativeBrandPage() {
 
   return (
     <div className="min-h-[80vh]">
-      <div className="px-8 md:px-12 lg:px-16 py-12">
+      <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-8 sm:mb-10">
           <button
             onClick={() => router.push(`/collection/${id}`)}
             className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
@@ -1340,7 +1340,7 @@ export default function CreativeBrandPage() {
         </div>
 
         {/* Step Navigation */}
-        <div className="flex items-center gap-0 mb-10 border border-carbon/[0.06] w-fit">
+        <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] w-fit overflow-x-auto max-w-full">
           {STEPS.map((s, i) => (
             <button
               key={s.id}
@@ -1353,12 +1353,12 @@ export default function CreativeBrandPage() {
                     : 'bg-white text-carbon/40 hover:text-carbon/60'
               }`}
             >
-              <span className={`w-5 h-5 flex items-center justify-center text-[10px] ${
+              <span className={`w-5 h-5 flex items-center justify-center text-[10px] shrink-0 ${
                 activeStep === i ? 'bg-white/20' : 'bg-carbon/[0.06]'
               }`}>
                 {i + 1}
               </span>
-              {s.name}
+              <span className="whitespace-nowrap">{s.name}</span>
             </button>
           ))}
         </div>
@@ -1369,8 +1369,8 @@ export default function CreativeBrandPage() {
             {/* ─── EXPANDED VIEW ─── */}
             {expandedBlock && (
               <div className="flex gap-4">
-                {/* Collapsed sidebar icons */}
-                <div className="flex flex-col gap-3 pt-1 w-14 shrink-0">
+                {/* Collapsed sidebar icons — hidden on mobile */}
+                <div className="hidden sm:flex flex-col gap-3 pt-1 w-14 shrink-0">
                   {step.blocks.map((block) => {
                     if (block.id === expandedBlock) return null;
                     const Icon = block.icon;
@@ -1417,7 +1417,7 @@ export default function CreativeBrandPage() {
                     const Icon = block.icon;
                     const state = getBlockState(block.id);
                     return (
-                      <div className="p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
+                      <div className="p-5 sm:p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
                         {/* Header row */}
                         <div className="flex items-start justify-between mb-8">
                           <div className="flex items-center gap-4">
@@ -1455,7 +1455,7 @@ export default function CreativeBrandPage() {
                                 {m.label}
                               </button>
                             ))}
-                            <span className="text-[10px] text-carbon/60 ml-2">
+                            <span className="hidden sm:inline text-[10px] text-carbon/60 ml-2">
                               {INPUT_MODES.find((m) => m.id === state.mode)?.description}
                             </span>
                           </div>
@@ -1511,7 +1511,7 @@ export default function CreativeBrandPage() {
                     <div
                       key={block.id}
                       onClick={() => handleExpand(block.id)}
-                      className={`group relative bg-white p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border flex flex-col min-h-[320px] cursor-pointer ${
+                      className={`group relative bg-white p-6 sm:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border flex flex-col min-h-[240px] sm:min-h-[320px] cursor-pointer ${
                         state.confirmed
                           ? 'border-carbon/[0.12] bg-carbon/[0.01]'
                           : 'border-carbon/[0.06]'
@@ -1555,17 +1555,19 @@ export default function CreativeBrandPage() {
                       )}
 
                       {/* CTA */}
-                      <div className={`mt-6 flex items-center justify-center gap-2 py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors ${
-                        state.confirmed
-                          ? 'bg-carbon/[0.06] text-carbon/40 group-hover:bg-carbon/[0.1]'
-                          : 'bg-carbon text-crema group-hover:bg-carbon/90'
-                      }`}>
-                        {state.confirmed ? (
-                          <>Edit <ArrowRight className="h-3.5 w-3.5" /></>
-                        ) : (
-                          <>Start <ArrowRight className="h-3.5 w-3.5" /></>
-                        )}
-                      </div>
+                      {(() => {
+                        const hasData = Object.keys(state.data || {}).length > 0;
+                        const label = state.confirmed ? 'Edit' : hasData ? 'Continue' : 'Start';
+                        return (
+                          <div className={`mt-6 flex items-center justify-center gap-2 py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors ${
+                            state.confirmed
+                              ? 'bg-carbon/[0.06] text-carbon/40 group-hover:bg-carbon/[0.1]'
+                              : 'bg-carbon text-crema group-hover:bg-carbon/90'
+                          }`}>
+                            {label} <ArrowRight className="h-3.5 w-3.5" />
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
