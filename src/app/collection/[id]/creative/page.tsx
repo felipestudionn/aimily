@@ -81,18 +81,18 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
       {mode === 'free' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Target Consumer Profile
             </label>
             <textarea
               value={(data.profile as string) || ''}
               onChange={(e) => onChange({ ...data, profile: e.target.value })}
               placeholder="Describe your target consumer — demographics, lifestyle, preferences, buying behavior..."
-              className="w-full h-40 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/35"
+              className="w-full h-40 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Age Range
             </label>
             <div className="flex gap-3">
@@ -101,7 +101,7 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 value={(data.ageMin as string) || ''}
                 onChange={(e) => onChange({ ...data, ageMin: e.target.value })}
                 placeholder="Min"
-                className="w-24 px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+                className="w-24 px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
               />
               <span className="text-carbon/20 self-center">—</span>
               <input
@@ -109,12 +109,12 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 value={(data.ageMax as string) || ''}
                 onChange={(e) => onChange({ ...data, ageMax: e.target.value })}
                 placeholder="Max"
-                className="w-24 px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+                className="w-24 px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
               />
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Key Markets
             </label>
             <input
@@ -122,7 +122,7 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
               value={(data.markets as string) || ''}
               onChange={(e) => onChange({ ...data, markets: e.target.value })}
               placeholder="e.g. Southern Europe, Urban professionals, Gen Z..."
-              className="w-full px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
         </div>
@@ -131,14 +131,14 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
       {mode === 'assisted' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Direction & Keywords
             </label>
             <textarea
               value={(data.keywords as string) || ''}
               onChange={(e) => onChange({ ...data, keywords: e.target.value })}
               placeholder="Give direction — e.g. 'urban millennials, sustainability-conscious, mid-range luxury, European market'..."
-              className="w-full h-28 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/35"
+              className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
           <button
@@ -160,13 +160,13 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
           </button>
           {(data.profile as string) && (
             <div className="mt-4">
-              <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
                 AI-Generated Profile <span className="text-carbon/40">(editable)</span>
               </label>
               <textarea
                 value={(data.profile as string) || ''}
                 onChange={(e) => onChange({ ...data, profile: e.target.value })}
-                className="w-full h-32 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
+                className="w-full h-32 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
               />
             </div>
           )}
@@ -176,7 +176,7 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
       {mode === 'ai' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Minimal Reference
             </label>
             <input
@@ -184,7 +184,7 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
               value={(data.reference as string) || ''}
               onChange={(e) => onChange({ ...data, reference: e.target.value })}
               placeholder="e.g. 'young professionals in Spain' or 'streetwear enthusiasts'..."
-              className="w-full px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
           <button
@@ -221,7 +221,7 @@ function ConsumerContent({ mode, data, onChange }: { mode: InputMode; data: Reco
               }`}
             >
               <div className="text-sm font-medium text-carbon mb-1">{p.title}</div>
-              <div className="text-xs font-light text-carbon/70 leading-relaxed">{p.desc}</div>
+              <div className="text-xs text-carbon/80 leading-relaxed">{p.desc}</div>
             </button>
           ))}
         </div>
@@ -238,18 +238,18 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
       {mode === 'free' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Collection Spirit & Direction
             </label>
             <textarea
               value={(data.vibe as string) || ''}
               onChange={(e) => onChange({ ...data, vibe: e.target.value })}
               placeholder="Describe the spirit of your collection — what feeling should it evoke? What world does it live in?..."
-              className="w-full h-40 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/35"
+              className="w-full h-40 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Keywords
             </label>
             <input
@@ -257,7 +257,7 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
               value={(data.keywords as string) || ''}
               onChange={(e) => onChange({ ...data, keywords: e.target.value })}
               placeholder="e.g. raw, industrial, feminine, deconstructed, nostalgic..."
-              className="w-full px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
         </div>
@@ -266,14 +266,14 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
       {mode === 'assisted' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Direction & Keywords
             </label>
             <textarea
               value={(data.direction as string) || ''}
               onChange={(e) => onChange({ ...data, direction: e.target.value })}
               placeholder="Give a few keywords or a brief direction — e.g. '90s minimalism meets Mediterranean warmth'..."
-              className="w-full h-24 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/35"
+              className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
           <button
@@ -296,13 +296,13 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
           </button>
           {(data.vibe as string) && (
             <div>
-              <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
                 AI-Generated Narrative <span className="text-carbon/40">(editable)</span>
               </label>
               <textarea
                 value={(data.vibe as string) || ''}
                 onChange={(e) => onChange({ ...data, vibe: e.target.value })}
-                className="w-full h-32 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
+                className="w-full h-32 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
               />
             </div>
           )}
@@ -312,7 +312,7 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
       {mode === 'ai' && (
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Minimal Reference
             </label>
             <input
@@ -320,7 +320,7 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
               value={(data.reference as string) || ''}
               onChange={(e) => onChange({ ...data, reference: e.target.value })}
               placeholder="e.g. 'sporty elegance' or 'coastal Italian summer'..."
-              className="w-full px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
           <button
@@ -356,7 +356,7 @@ function VibeContent({ mode, data, onChange }: { mode: InputMode; data: Record<s
               }`}
             >
               <div className="text-sm font-medium text-carbon mb-1">{p.title}</div>
-              <div className="text-xs font-light text-carbon/70 leading-relaxed">{p.vibe}</div>
+              <div className="text-xs text-carbon/80 leading-relaxed">{p.vibe}</div>
               <div className="text-[10px] text-carbon/50 mt-2 tracking-wide">{p.keywords}</div>
             </button>
           ))}
@@ -415,7 +415,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
       )}
 
       {images.length === 0 && (
-        <p className="text-xs text-carbon/50 text-center py-4">No images yet. Upload photos or connect Pinterest to build your moodboard.</p>
+        <p className="text-xs text-carbon/60 text-center py-4">No images yet. Upload photos or connect Pinterest to build your moodboard.</p>
       )}
     </div>
   );
@@ -428,7 +428,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
   if (hasBrand === undefined) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-6">
-        <p className="text-sm font-light text-carbon text-center max-w-sm">
+        <p className="text-sm text-carbon text-center max-w-sm">
           Do you already have a brand, or would you like to start from scratch?
         </p>
         <div className="flex gap-4">
@@ -456,7 +456,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
         <div className="space-y-4">
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
                 Instagram
               </label>
               <input
@@ -464,11 +464,11 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 value={(data.instagram as string) || ''}
                 onChange={(e) => onChange({ ...data, instagram: e.target.value })}
                 placeholder="@yourbrand"
-                className="w-full px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+                className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
               />
             </div>
             <div className="flex-1">
-              <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
                 Website
               </label>
               <input
@@ -476,7 +476,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 value={(data.website as string) || ''}
                 onChange={(e) => onChange({ ...data, website: e.target.value })}
                 placeholder="https://..."
-                className="w-full px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+                className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
               />
             </div>
           </div>
@@ -517,7 +517,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 <input
                   value={(data.tone as string) || ''}
                   onChange={(e) => onChange({ ...data, tone: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
+                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
                 />
               </div>
               <div className="flex items-start gap-3">
@@ -525,7 +525,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 <input
                   value={(data.typography as string) || ''}
                   onChange={(e) => onChange({ ...data, typography: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
+                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -541,7 +541,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
         /* New Brand */
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Brand Name Ideas
             </label>
             <input
@@ -549,18 +549,18 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
               value={(data.brandName as string) || ''}
               onChange={(e) => onChange({ ...data, brandName: e.target.value })}
               placeholder="Your brand name or let AI suggest options..."
-              className="w-full px-3 py-2.5 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/35"
+              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
           <div>
-            <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
               Brand Direction
             </label>
             <textarea
               value={(data.direction as string) || ''}
               onChange={(e) => onChange({ ...data, direction: e.target.value })}
               placeholder="Describe the personality of your brand — what does it stand for, who is it for?..."
-              className="w-full h-28 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/35"
+              className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
           <button
@@ -599,7 +599,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 <input
                   value={(data.tone as string) || ''}
                   onChange={(e) => onChange({ ...data, tone: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
+                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
                 />
               </div>
               <div className="flex items-start gap-3">
@@ -607,7 +607,7 @@ function BrandDNAContent({ mode, data, onChange }: { mode: InputMode; data: Reco
                 <input
                   value={(data.typography as string) || ''}
                   onChange={(e) => onChange({ ...data, typography: e.target.value })}
-                  className="flex-1 px-3 py-2 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
+                  className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -656,14 +656,14 @@ function ResearchBlockContent({ blockId, mode, data, onChange }: { blockId: stri
   return (
     <div className="space-y-6">
       <div>
-        <label className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70 mb-2 block">
+        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
           {c.label}
         </label>
         <textarea
           value={(data.input as string) || ''}
           onChange={(e) => onChange({ ...data, input: e.target.value })}
           placeholder={c.placeholder}
-          className="w-full h-24 px-4 py-3 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/35"
+          className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
         />
       </div>
       <button
@@ -711,7 +711,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange }: { blockId: stri
               {r.selected && <Check className="h-2.5 w-2.5 text-crema" />}
             </div>
           </div>
-          <div className="text-xs font-light text-carbon/70 leading-relaxed">{r.desc}</div>
+          <div className="text-xs text-carbon/80 leading-relaxed">{r.desc}</div>
         </button>
       ))}
     </div>
@@ -798,7 +798,7 @@ export default function CreativeBrandPage() {
           <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
             Creative & <span className="italic">Brand</span>
           </h2>
-          <p className="text-sm text-carbon/40 mt-2 max-w-lg">
+          <p className="text-sm text-carbon/60 mt-2 max-w-lg">
             Define your creative vision, research the market, and synthesize everything into a unified creative input.
           </p>
         </div>
@@ -892,7 +892,7 @@ export default function CreativeBrandPage() {
                               <h3 className="text-xl font-light text-carbon tracking-tight">
                                 {block.name}
                               </h3>
-                              <p className="text-xs text-carbon/60 font-light mt-0.5">{block.description}</p>
+                              <p className="text-xs text-carbon/70 mt-0.5">{block.description}</p>
                             </div>
                           </div>
                           <button
@@ -919,7 +919,7 @@ export default function CreativeBrandPage() {
                                 {m.label}
                               </button>
                             ))}
-                            <span className="text-[10px] text-carbon/50 ml-2 font-light">
+                            <span className="text-[10px] text-carbon/60 ml-2">
                               {INPUT_MODES.find((m) => m.id === state.mode)?.description}
                             </span>
                           </div>
@@ -997,7 +997,7 @@ export default function CreativeBrandPage() {
                         </div>
                       </div>
 
-                      <p className="text-sm text-carbon/60 font-light leading-relaxed flex-1">
+                      <p className="text-sm text-carbon/70 leading-relaxed flex-1">
                         {block.description}
                       </p>
 
@@ -1042,7 +1042,7 @@ export default function CreativeBrandPage() {
             <h3 className="text-2xl font-light text-carbon tracking-tight mb-3">
               Creative Synthesis
             </h3>
-            <p className="text-sm text-carbon/40 font-light max-w-md leading-relaxed mb-8">
+            <p className="text-sm text-carbon/60 max-w-md leading-relaxed mb-8">
               Once you complete Vision and Research, this step consolidates everything into a unified Creative Input that feeds the next block.
             </p>
             <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/25">
