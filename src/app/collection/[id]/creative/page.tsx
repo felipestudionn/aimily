@@ -95,8 +95,43 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const genderOptions = [
+    { id: 'women', label: 'Women' },
+    { id: 'men', label: 'Men' },
+    { id: 'unisex', label: 'Unisex' },
+    { id: 'mixed', label: 'Mixed' },
+  ] as const;
+
   return (
     <div className="space-y-6">
+      {/* Gender selector — shared across all modes */}
+      <div>
+        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
+          Collection Target
+        </label>
+        <div className="flex gap-2">
+          {genderOptions.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => onChange({ ...data, gender: opt.id })}
+              className={`px-4 py-2 text-xs font-medium tracking-wide border transition-all ${
+                (data.gender as string) === opt.id
+                  ? 'bg-carbon text-crema border-carbon'
+                  : 'bg-transparent text-carbon/70 border-carbon/[0.12] hover:border-carbon/30'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {(data.gender as string) === 'mixed' && (
+          <p className="mt-1.5 text-[10px] text-carbon/50">Separate lines for men & women within the same collection</p>
+        )}
+        {(data.gender as string) === 'unisex' && (
+          <p className="mt-1.5 text-[10px] text-carbon/50">Same designs for all genders — no differentiation</p>
+        )}
+      </div>
+
       {/* Mode-specific UI */}
       {mode === 'free' && (
         <div className="space-y-4">
@@ -167,13 +202,14 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
               setError(null);
               const { result, error: err } = await generateCreative('consumer-assisted', {
                 keywords: (data.keywords as string) || '',
+                gender: (data.gender as string) || '',
                 ...collectionContext,
               });
               if (err) { setError(err); setGenerating(false); return; }
               onChange({ ...data, profile: result as string });
               setGenerating(false);
             }}
-            disabled={generating || !(data.keywords as string)?.trim()}
+            disabled={generating || !(data.keywords as string)?.trim() || !(data.gender as string)}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -215,6 +251,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
               setError(null);
               const { result, error: err } = await generateCreative('consumer-proposals', {
                 reference: (data.reference as string) || '',
+                gender: (data.gender as string) || '',
                 ...collectionContext,
               });
               if (err) { setError(err); setGenerating(false); return; }
@@ -222,7 +259,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
               onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null });
               setGenerating(false);
             }}
-            disabled={generating || !(data.reference as string)?.trim()}
+            disabled={generating || !(data.reference as string)?.trim() || !(data.gender as string)}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}

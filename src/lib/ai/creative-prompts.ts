@@ -22,6 +22,7 @@ export interface CreativePrompt {
   system: string;
   user: string;
   temperature: number;
+  maxTokens?: number;
 }
 
 type CreativePromptType =
@@ -50,9 +51,10 @@ export function buildCreativePrompt(
     case 'consumer-assisted':
       return {
         temperature: 0.7,
+        maxTokens: 8192,
         system: PERSONAS.consumerStrategist,
         user: `${ctx}
-
+${input.gender ? `\nCOLLECTION GENDER TARGET: ${input.gender}\n` : ''}
 The user is defining the target consumer for their collection and has provided this direction:
 
 "${input.keywords}"
@@ -75,9 +77,10 @@ Return ONLY the profile text as a continuous narrative. No JSON, no markdown hea
     case 'consumer-proposals':
       return {
         temperature: 0.85,
+        maxTokens: 8192,
         system: PERSONAS.consumerStrategist,
         user: `${ctx}
-
+${input.gender ? `\nCOLLECTION GENDER TARGET: ${input.gender}\n` : ''}
 The user needs to define their target consumer and has provided this minimal reference:
 
 "${input.reference}"

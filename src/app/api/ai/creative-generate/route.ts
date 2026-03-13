@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
         system: prompt.system,
         user: prompt.user,
         temperature: prompt.temperature,
+        maxTokens: prompt.maxTokens,
       });
       return NextResponse.json({ result: text.trim(), model, fallback });
     }
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest) {
       system: prompt.system,
       user: prompt.user,
       temperature: prompt.temperature,
+      maxTokens: prompt.maxTokens,
     });
     return NextResponse.json({ result: data, model, fallback });
   } catch (error) {
