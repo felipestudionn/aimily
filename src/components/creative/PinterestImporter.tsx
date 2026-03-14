@@ -273,7 +273,7 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
             <span className="ml-2 text-sm">Loading pins...</span>
           </div>
         ) : boardPins.length > 0 ? (
-          <div className="max-h-[70vh] overflow-y-scroll rounded-lg" style={{ scrollbarGutter: 'stable' }}>
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg scrollbar-subtle" style={{ scrollbarGutter: 'stable' }}>
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {boardPins.map((pin) => {
                 const isSelected = selectedPins.has(pin.id);

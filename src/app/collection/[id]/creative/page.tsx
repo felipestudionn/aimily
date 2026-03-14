@@ -969,20 +969,22 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
             <button onClick={closePinterest} className="text-carbon/40 hover:text-carbon/70"><X className="h-4 w-4" /></button>
           </div>
           {pinterestError && <p className="text-xs text-red-600">{pinterestError}</p>}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
-            {boards.map(board => (
-              <button
-                key={board.id}
-                onClick={() => handleSelectBoard(board)}
-                className="flex flex-col items-center gap-2 p-4 border border-carbon/10 hover:border-carbon/30 transition-colors text-left"
-              >
-                {board.image_thumbnail_url && (
-                  <img src={board.image_thumbnail_url} alt="" className="w-full aspect-square object-cover" />
-                )}
-                <span className="text-xs font-medium text-carbon/80 truncate w-full">{board.name}</span>
-                <span className="text-xs text-carbon/50">{board.pin_count} pins</span>
-              </button>
-            ))}
+          <div className="max-h-[60vh] overflow-y-auto scrollbar-subtle">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {boards.map(board => (
+                <button
+                  key={board.id}
+                  onClick={() => handleSelectBoard(board)}
+                  className="flex flex-col items-center gap-2 p-4 border border-carbon/10 hover:border-carbon/30 transition-colors text-left"
+                >
+                  {board.image_thumbnail_url && (
+                    <img src={board.image_thumbnail_url} alt="" className="w-full aspect-square object-cover" />
+                  )}
+                  <span className="text-xs font-medium text-carbon/80 truncate w-full">{board.name}</span>
+                  <span className="text-xs text-carbon/50">{board.pin_count} pins</span>
+                </button>
+              ))}
+            </div>
           </div>
           {boards.length === 0 && !pinterestLoading && (
             <p className="text-xs text-carbon/50 text-center py-4">No boards found</p>
@@ -1004,23 +1006,25 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
           </div>
           {pinterestError && <p className="text-xs text-red-600">{pinterestError}</p>}
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
-            {pins.map(pin => (
-              <button
-                key={pin.id}
-                onClick={() => togglePin(pin.id)}
-                className={`relative aspect-square overflow-hidden border-2 transition-all ${
-                  selectedPins.has(pin.id) ? 'border-carbon ring-1 ring-carbon/30' : 'border-transparent hover:border-carbon/20'
-                }`}
-              >
-                <img src={pin.imageUrl} alt={pin.title || ''} className="w-full h-full object-cover" />
-                {selectedPins.has(pin.id) && (
-                  <div className="absolute top-1 right-1 w-5 h-5 bg-carbon text-white flex items-center justify-center">
-                    <Check className="h-3 w-3" />
-                  </div>
-                )}
-              </button>
-            ))}
+          <div className="max-h-[60vh] overflow-y-auto scrollbar-subtle">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {pins.map(pin => (
+                <button
+                  key={pin.id}
+                  onClick={() => togglePin(pin.id)}
+                  className={`relative aspect-square overflow-hidden border-2 transition-colors ${
+                    selectedPins.has(pin.id) ? 'border-carbon ring-1 ring-carbon/30' : 'border-transparent hover:border-carbon/20'
+                  }`}
+                >
+                  <img src={pin.imageUrl} alt={pin.title || ''} className="w-full h-full object-cover" />
+                  {selectedPins.has(pin.id) && (
+                    <div className="absolute top-1 right-1 w-5 h-5 bg-carbon text-white flex items-center justify-center">
+                      <Check className="h-3 w-3" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
 
           {selectedPins.size > 0 && (
