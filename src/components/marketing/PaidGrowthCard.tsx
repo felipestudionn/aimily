@@ -50,11 +50,10 @@ const CAMPAIGN_STATUSES = [
 
 type AiPill = 'libre' | 'asistido' | 'propuesta';
 
-const AI_PILLS: { id: AiPill; label: string; labelEs: string; desc: string }[] = [
-  { id: 'libre', label: 'Manual', labelEs: 'Libre', desc: 'Create campaigns manually' },
-  { id: 'asistido', label: 'Assisted', labelEs: 'Asistido', desc: 'Set budget + objective, AI suggests campaigns' },
-  { id: 'propuesta', label: 'AI Proposal', labelEs: 'Propuesta IA', desc: 'AI generates full paid media plan' },
-];
+const AI_PILL_IDS: AiPill[] = ['libre', 'asistido', 'propuesta'];
+const AI_PILL_LABEL_KEYS: Record<AiPill, 'pillManual' | 'pillAssisted' | 'pillAiProposal'> = {
+  libre: 'pillManual', asistido: 'pillAssisted', propuesta: 'pillAiProposal',
+};
 
 /* ── Props ── */
 
@@ -336,7 +335,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               </div>
             )}
             <div className="text-right">
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">Campaigns</p>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.campaigns}</p>
               <p className="text-xl font-light text-carbon tracking-tight">{campaigns.length}</p>
             </div>
           </div>
@@ -348,19 +347,19 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
 
         {/* ── AI Pills ── */}
         <div className="flex items-center gap-3">
-          {AI_PILLS.map(pill => (
+          {AI_PILL_IDS.map(pillId => (
             <button
-              key={pill.id}
-              onClick={() => setActivePill(pill.id)}
+              key={pillId}
+              onClick={() => setActivePill(pillId)}
               className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
-                activePill === pill.id
+                activePill === pillId
                   ? 'bg-carbon text-crema border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
               }`}
             >
               <span className="flex items-center gap-1.5">
-                {pill.id !== 'libre' && <Sparkles className="h-3 w-3" />}
-                {pill.label}
+                {pillId !== 'libre' && <Sparkles className="h-3 w-3" />}
+                {t.marketingPage[AI_PILL_LABEL_KEYS[pillId]]}
               </span>
             </button>
           ))}
@@ -370,16 +369,16 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         {activePill === 'asistido' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">Assisted Mode</p>
-              <p className="text-sm font-light text-carbon/50">Set your budget and objective, AI suggests campaigns.</p>
+              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
+              <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <Label className="text-xs">Budget (€)</Label>
+                <Label className="text-xs">{t.marketingPage.budgetLabel} (€)</Label>
                 <Input type="number" min={0} value={assistedBudget} onChange={e => setAssistedBudget(Number(e.target.value))} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Primary Objective</Label>
+                <Label className="text-xs">{t.marketingPage.primaryObjective}</Label>
                 <Select value={assistedObjective} onValueChange={setAssistedObjective}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -390,12 +389,12 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Direction (optional)</Label>
+                <Label className="text-xs">{t.marketingPage.directionOptional}</Label>
                 <Input value={assistedDirection} onChange={e => setAssistedDirection(e.target.value)} placeholder="e.g. Focus on Meta retargeting" className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Generate</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
                 </Button>
               </div>
             </div>
@@ -406,25 +405,25 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         {activePill === 'propuesta' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">AI Proposal</p>
-              <p className="text-sm font-light text-carbon/50">AI generates a complete paid media plan with campaigns, budget split, and expected metrics.</p>
+              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
+              <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <Label className="text-xs">Total Budget (€)</Label>
+                <Label className="text-xs">{t.marketingPage.totalBudgetLabel} (€)</Label>
                 <Input type="number" min={0} value={propuestaBudget} onChange={e => setPropuestaBudget(Number(e.target.value))} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Target ROAS</Label>
+                <Label className="text-xs">{t.marketingPage.targetRoas}</Label>
                 <Input type="number" min={1} step={0.5} value={propuestaRoas} onChange={e => setPropuestaRoas(Number(e.target.value))} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Platforms</Label>
+                <Label className="text-xs">{t.marketingPage.platforms}</Label>
                 <Input value={propuestaPlatforms} onChange={e => setPropuestaPlatforms(e.target.value)} placeholder="Meta, Google, TikTok" className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Full Plan</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
                 </Button>
               </div>
             </div>
@@ -435,12 +434,12 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-carbon/30" />
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Platform:</span>
+            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.platform}:</span>
             <button
               onClick={() => setPlatformFilter('ALL')}
               className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
-              All
+              {t.marketingPage.all}
             </button>
             {PAID_PLATFORMS.map(p => (
               <button
@@ -457,12 +456,12 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
             <>
               <div className="h-5 w-px bg-carbon/10" />
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Drop:</span>
+                <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.drop}:</span>
                 <button
                   onClick={() => setDropFilter('ALL')}
                   className={`px-3 py-1.5 text-xs border transition-colors ${dropFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
-                  All
+                  {t.marketingPage.all}
                 </button>
                 {drops.map(d => (
                   <button
@@ -483,7 +482,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
           <div className="grid grid-cols-2 gap-5">
             {/* By Platform */}
             <div className="bg-white border border-carbon/[0.06] p-6">
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Budget by Platform</p>
+              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.budgetByPlatform}</p>
               <div className="space-y-3 mt-4">
                 {budgetByPlatform.map(([platform, amount]) => {
                   const pct = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
@@ -507,7 +506,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
 
             {/* By Drop */}
             <div className="bg-white border border-carbon/[0.06] p-6">
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Budget by Drop</p>
+              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.budgetByDrop}</p>
               <div className="space-y-3 mt-4">
                 {budgetByDrop.map(([drop, amount]) => {
                   const pct = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
@@ -535,14 +534,14 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">
-              Campaigns ({filteredCampaigns.length})
+              {t.marketingPage.campaigns} ({filteredCampaigns.length})
             </p>
             <Button
               onClick={() => setShowAddCampaign(true)}
               className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase h-9"
             >
               <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Add Campaign
+              {t.marketingPage.addCampaign}
             </Button>
           </div>
 
@@ -550,7 +549,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
           {showAddCampaign && (
             <div className="bg-white border border-carbon/[0.06] p-6 mb-4 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">New Campaign</p>
+                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newCampaign}</p>
                 <button onClick={() => setShowAddCampaign(false)} className="text-carbon/30 hover:text-carbon">
                   <X className="h-4 w-4" />
                 </button>

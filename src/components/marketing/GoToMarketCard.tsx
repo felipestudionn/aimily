@@ -852,7 +852,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           ) : (
             <div className="text-center py-8 text-carbon/30">
               <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="text-sm font-light">Click &quot;Validate with AI&quot; to analyze your commercial plan against market demand trends</p>
+              <p className="text-sm font-light">{t.marketingPage.clickValidate}</p>
             </div>
           )}
         </div>
