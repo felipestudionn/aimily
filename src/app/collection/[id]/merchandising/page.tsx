@@ -775,20 +775,20 @@ export default function MerchandisingPage() {
     <div className="min-h-[80vh]">
       <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-8 sm:mb-10">
+        <div className="mb-8 sm:mb-10 pl-12 md:pl-0">
           <button onClick={() => router.push(`/collection/${id}`)} className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2">
             <ArrowLeft className="h-3 w-3" /> {t.merchandising.overview}
           </button>
-          <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
             {t.merchandising.title} <span className="italic">{t.merchandising.titleItalic}</span>
           </h2>
-          <p className="text-sm text-carbon/60 mt-2 max-w-lg">
+          <p className="text-xs sm:text-sm text-carbon/60 mt-2 max-w-lg">
             {t.merchandising.subtitle}
           </p>
         </div>
 
         {/* Validation Progress */}
-        <div className="flex items-center gap-3 sm:gap-4 mb-8 sm:mb-10 overflow-x-auto max-w-full">
+        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-8 sm:mb-10 overflow-x-auto max-w-full">
           {MERCH_CARDS.map((card, idx) => {
             const state = getCardState(card.id);
             return (
@@ -798,7 +798,7 @@ export default function MerchandisingPage() {
                 }`}>
                   {state.confirmed ? '✓' : isLocked(card) ? <Lock className="h-2.5 w-2.5" /> : idx + 1}
                 </div>
-                <span className={`text-[11px] font-medium tracking-[0.05em] uppercase ${state.confirmed ? 'text-carbon' : 'text-carbon/30'}`}>{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</span>
+                <span className={`text-[10px] sm:text-[11px] font-medium tracking-[0.05em] uppercase ${state.confirmed ? 'text-carbon' : 'text-carbon/30'}`}>{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</span>
                 {idx < MERCH_CARDS.length - 1 && <ArrowRight className="h-3 w-3 text-carbon/15 ml-2" />}
               </div>
             );
@@ -843,23 +843,23 @@ export default function MerchandisingPage() {
                   const Icon = card.icon;
                   const state = getCardState(card.id);
                   return (
-                    <div className="p-5 sm:p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
-                      <div className="flex items-start justify-between mb-8">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center"><Icon className="h-5 w-5 text-carbon/50" /></div>
+                    <div className="p-4 sm:p-5 md:p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
+                      <div className="flex items-start justify-between mb-6 sm:mb-8">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-carbon/[0.04] flex items-center justify-center"><Icon className="h-4 w-4 sm:h-5 sm:w-5 text-carbon/50" /></div>
                           <div>
-                            <h3 className="text-xl font-light text-carbon tracking-tight">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</h3>
-                            <p className="text-xs text-carbon/70 mt-0.5">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
+                            <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</h3>
+                            <p className="text-[11px] sm:text-xs text-carbon/70 mt-0.5">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
                           </div>
                         </div>
                         <button onClick={handleCollapse} className="w-9 h-9 flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:bg-carbon/[0.04] transition-all"><X className="h-4 w-4" /></button>
                       </div>
 
                       {/* Mode Pills */}
-                      <div className="flex items-center gap-2 mb-8">
+                      <div className="flex flex-wrap items-center gap-2 mb-6 sm:mb-8">
                         {INPUT_MODE_IDS.map((modeId) => (
                           <button key={modeId} onClick={() => updateCardData(card.id, { mode: modeId })}
-                            className={`px-4 py-2 text-xs font-medium tracking-[0.1em] uppercase border transition-all ${state.mode === modeId ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'}`}>
+                            className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border transition-all ${state.mode === modeId ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'}`}>
                             {t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}
                           </button>
                         ))}
@@ -875,9 +875,9 @@ export default function MerchandisingPage() {
                         />
                       </div>
 
-                      <div className="mt-auto flex items-center justify-between pt-6 border-t border-carbon/[0.06]">
+                      <div className="mt-auto flex items-center justify-between gap-3 pt-6 border-t border-carbon/[0.06]">
                         <button onClick={handleCollapse} className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/50 hover:text-carbon transition-colors">{t.merchandising.backToGrid}</button>
-                        <button onClick={() => handleConfirm(card.id)} className="flex items-center gap-2 px-8 py-3 text-[11px] font-medium tracking-[0.15em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors">
+                        <button onClick={() => handleConfirm(card.id)} className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.1em] sm:tracking-[0.15em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors">
                           <Check className="h-3.5 w-3.5" /> {t.merchandising.validateContinue}
                         </button>
                       </div>
@@ -899,29 +899,29 @@ export default function MerchandisingPage() {
                   <div
                     key={card.id}
                     onClick={() => { if (!locked) handleExpand(card.id); }}
-                    className={`group relative bg-white p-6 sm:p-10 lg:p-12 transition-all duration-300 overflow-hidden border flex flex-col min-h-[240px] sm:min-h-[320px] ${
+                    className={`group relative bg-white p-5 sm:p-10 lg:p-12 transition-all duration-300 overflow-hidden border flex flex-col min-h-[180px] sm:min-h-[240px] md:min-h-[320px] ${
                       locked ? 'border-carbon/[0.04] opacity-50 cursor-not-allowed' : state.confirmed ? 'border-carbon/[0.12] bg-carbon/[0.01] cursor-pointer hover:shadow-lg' : 'border-carbon/[0.06] cursor-pointer hover:shadow-lg'
                     }`}
                   >
                     {state.confirmed && <div className="absolute top-0 left-0 right-0 h-[3px] bg-carbon" />}
                     {state.confirmed && <div className="absolute top-5 right-5 w-7 h-7 bg-carbon flex items-center justify-center"><Check className="h-3.5 w-3.5 text-crema" /></div>}
-                    <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-start justify-between mb-4 sm:mb-6">
                       <div>
-                        <div className={`w-10 h-10 flex items-center justify-center mb-4 ${locked ? 'bg-carbon/[0.02]' : 'bg-carbon/[0.04]'}`}>
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mb-3 sm:mb-4 ${locked ? 'bg-carbon/[0.02]' : 'bg-carbon/[0.04]'}`}>
                           {locked ? <Lock className="h-5 w-5 text-carbon/20" /> : <Icon className="h-5 w-5 text-carbon/50" />}
                         </div>
-                        <h3 className="text-xl font-light text-carbon tracking-tight">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</h3>
+                        <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</h3>
                       </div>
                     </div>
                     <p className="text-sm text-carbon/70 leading-relaxed flex-1">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
                     {!locked && (
-                      <div className="mt-6 flex items-center gap-2">
+                      <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-2">
                         {INPUT_MODE_IDS.map((modeId) => (
-                          <span key={modeId} className="px-3 py-1.5 text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50">{t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}</span>
+                          <span key={modeId} className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50">{t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}</span>
                         ))}
                       </div>
                     )}
-                    <div className={`mt-6 flex items-center justify-center gap-2 py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors ${
+                    <div className={`mt-4 sm:mt-6 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] transition-colors ${
                       locked ? 'bg-carbon/[0.04] text-carbon/20' : state.confirmed ? 'bg-carbon/[0.06] text-carbon/40 group-hover:bg-carbon/[0.1]' : 'bg-carbon text-crema group-hover:bg-carbon/90'
                     }`}>
                       {locked ? (<><Lock className="h-3 w-3" /> {t.merchandising.requires} {card.lockedBy ? t.merchandising[(language === 'es' ? CARD_KEYS[card.lockedBy].nameEs : CARD_KEYS[card.lockedBy].name) as keyof typeof t.merchandising] as string : ''}</>) :
@@ -936,21 +936,21 @@ export default function MerchandisingPage() {
 
         {/* Collection Builder CTA */}
         {!expandedCard && (
-          <div className={`mt-8 p-8 border transition-all ${allValidated ? 'bg-white border-carbon/[0.06] hover:shadow-lg cursor-pointer' : 'bg-carbon/[0.02] border-carbon/[0.04] cursor-not-allowed'}`}>
+          <div className={`mt-6 sm:mt-8 p-4 sm:p-8 border transition-all ${allValidated ? 'bg-white border-carbon/[0.06] hover:shadow-lg cursor-pointer' : 'bg-carbon/[0.02] border-carbon/[0.04] cursor-not-allowed'}`}>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-3 sm:gap-5">
                 <div className={`w-12 h-12 flex items-center justify-center ${allValidated ? 'bg-carbon/[0.04]' : 'bg-carbon/[0.02]'}`}>
                   {allValidated ? <LayoutGrid className="h-6 w-6 text-carbon/50" /> : <Lock className="h-5 w-5 text-carbon/15" />}
                 </div>
                 <div>
-                  <h3 className={`text-xl font-light tracking-tight ${allValidated ? 'text-carbon' : 'text-carbon/25'}`}>{t.merchandising.collectionBuilder}</h3>
+                  <h3 className={`text-lg sm:text-xl font-light tracking-tight ${allValidated ? 'text-carbon' : 'text-carbon/25'}`}>{t.merchandising.collectionBuilder}</h3>
                   <p className={`text-sm mt-1 ${allValidated ? 'text-carbon/60' : 'text-carbon/15'}`}>
                     {allValidated ? t.merchandising.allCardsValidated : t.merchandising.validateAllCards}
                   </p>
                 </div>
               </div>
               {allValidated && (
-                <button onClick={() => router.push(`/collection/${id}/product`)} className="flex items-center gap-2 bg-carbon text-crema py-3 px-6 text-[11px] font-medium uppercase tracking-[0.15em] hover:bg-carbon/90 transition-colors">
+                <button onClick={() => router.push(`/collection/${id}/product`)} className="flex items-center gap-2 bg-carbon text-crema py-2.5 sm:py-3 px-4 sm:px-6 text-[11px] font-medium uppercase tracking-[0.15em] hover:bg-carbon/90 transition-colors">
                   {t.merchandising.openBuilder} <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               )}

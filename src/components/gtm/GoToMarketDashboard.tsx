@@ -242,12 +242,12 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
   return (
     <div className="max-w-5xl mx-auto px-4 pt-10 pb-16 space-y-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
             {t.marketingPage.goToMarket}
           </p>
-          <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
             {plan.name}
           </h1>
         </div>
@@ -261,7 +261,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
           </a>
           <div className="text-right">
             <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.totalSalesTarget}</p>
-            <p className="text-2xl font-light text-carbon tracking-tight mt-1">€{totalPlannedSales.toLocaleString()}</p>
+            <p className="text-lg sm:text-xl md:text-2xl font-light text-carbon tracking-tight mt-1">€{totalPlannedSales.toLocaleString()}</p>
           </div>
 
           {/* Save & User Section */}
@@ -314,7 +314,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       />
 
       {/* Channel Filter */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
         <Filter className="h-4 w-4 text-carbon/30" />
         <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.channel}:</span>
         {['ALL', 'DTC', 'WHOLESALE'].map(channel => (
@@ -344,7 +344,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
               </div>
               
               {/* Timeline track */}
-              <div className="relative h-24 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
+              <div className="relative h-16 sm:h-20 md:h-24 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
                 {/* Grid lines for months */}
                 <div className="absolute inset-0 flex">
                   {timelineData.months.map((_, i) => (
@@ -411,7 +411,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
               </div>
               
               {/* Legend */}
-              <div className="flex items-center gap-6 mt-4 text-xs">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-6 mt-4 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold">D</div>
                   <span className="text-gray-600">{t.marketingPage.drops}</span>
@@ -440,7 +440,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
         </CardHeader>
         <CardContent>
           {showAddDrop && (
-            <div className="mb-4 p-4 border rounded-lg bg-muted/50 grid grid-cols-4 gap-4">
+            <div className="mb-4 p-4 border rounded-lg bg-muted/50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <div><Label className="text-xs">{t.marketingPage.dropName}</Label><Input value={newDrop.name} onChange={(e) => setNewDrop({ ...newDrop, name: e.target.value })} placeholder="e.g., Season Launch" className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.launchDate}</Label><Input type="date" value={newDrop.launch_date} onChange={(e) => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.weeksActive}</Label><Input type="number" value={newDrop.weeks_active} onChange={(e) => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
@@ -449,7 +449,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
           )}
           <div className="flex gap-4 overflow-x-auto pb-4">
             {drops.map((drop) => (
-              <div key={drop.id} className="flex-shrink-0 w-64 border rounded-lg bg-white">
+              <div key={drop.id} className="flex-shrink-0 w-56 sm:w-64 border rounded-lg bg-white">
                 <div className="p-3 border-b bg-crema">
                   <div className="flex items-center justify-between mb-1">
                     <Input value={drop.name} onChange={(e) => updateDrop(drop.id, { name: e.target.value })} className="h-7 text-sm font-semibold bg-transparent border-none p-0 focus-visible:ring-0" />
@@ -494,7 +494,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
         </CardHeader>
         <CardContent>
           {showAddAction && (
-            <div className="mb-4 p-4 border rounded-lg bg-muted/50 grid grid-cols-5 gap-4">
+            <div className="mb-4 p-4 border rounded-lg bg-muted/50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
               <div><Label className="text-xs">{t.marketingPage.name}</Label><Input value={newAction.name} onChange={(e) => setNewAction({ ...newAction, name: e.target.value })} placeholder="e.g., Black Friday" className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.type}</Label><Select value={newAction.action_type} onValueChange={(v) => setNewAction({ ...newAction, action_type: v as any })}><SelectTrigger className="h-9"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="SALE">Sale</SelectItem><SelectItem value="COLLAB">Collab</SelectItem><SelectItem value="CAMPAIGN">Campaign</SelectItem><SelectItem value="SEEDING">Seeding</SelectItem><SelectItem value="EVENT">Event</SelectItem></SelectContent></Select></div>
               <div><Label className="text-xs">{t.marketingPage.date}</Label><Input type="date" value={newAction.start_date} onChange={(e) => setNewAction({ ...newAction, start_date: e.target.value })} className="h-9" /></div>

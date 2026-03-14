@@ -16,16 +16,16 @@ export function MarketingCreationScreen({ collectionPlanId }: Props) {
   const t = useTranslation();
 
   return (
-    <div className="px-8 md:px-12 lg:px-16 py-12">
+    <div className="px-4 sm:px-6 md:px-12 lg:px-16 py-12">
       {/* Header */}
       <div className="mb-10">
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
           {t.marketingPage.sectionLabel}
         </p>
-        <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
           {t.marketingPage.creationTitle} <span className="italic">{t.marketingPage.creationTitleItalic}</span>
         </h2>
-        <p className="text-base font-light text-carbon/50 mt-3 max-w-2xl leading-relaxed">
+        <p className="text-sm sm:text-base font-light text-carbon/50 mt-3 max-w-2xl leading-relaxed">
           {t.marketingPage.creationDesc}
         </p>
       </div>

@@ -73,22 +73,22 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
           {t.productionPage.headerLabel}
         </p>
-        <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
           {t.productionPage.title}
         </h1>
       </div>
 
       {/* Progress Card */}
-      <div className="relative bg-white border border-carbon/[0.06] p-8 overflow-hidden">
+      <div className="relative bg-white border border-carbon/[0.06] p-4 sm:p-6 md:p-8 overflow-hidden">
         <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
           <div className="h-full bg-carbon transition-all duration-700" style={{ width: `${progress}%` }} />
         </div>
         <div className="flex items-end justify-between">
           <div>
-            <span className="text-5xl font-light text-carbon tracking-tight">{progress}</span>
+            <span className="text-3xl sm:text-4xl md:text-5xl font-light text-carbon tracking-tight">{progress}</span>
             <span className="text-lg font-light text-carbon/40 ml-1">%</span>
           </div>
-          <div className="flex gap-6 text-xs text-carbon/40">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-[10px] sm:text-xs text-carbon/40">
             <span>{completed} {t.workspace.completed}</span>
             <span>{inProgress} {t.workspace.inProgress}</span>
             <span>{pending} {t.workspace.pending}</span>
@@ -105,13 +105,13 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 text-[9px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
                 isActive
                   ? 'bg-carbon text-crema'
                   : 'bg-white text-carbon/40 hover:text-carbon/60'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
+              <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {t.productionPage[tab.tKey]}
             </button>
           );
@@ -139,11 +139,11 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
       )}
 
       {/* Milestones Checklist */}
-      <div className="bg-white border border-carbon/[0.06] p-8">
+      <div className="bg-white border border-carbon/[0.06] p-4 sm:p-6 md:p-8">
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">{t.workspace.milestones}</p>
         <div className="space-y-4">
           {phaseMilestones.map((m) => (
-            <div key={m.id} className="flex items-center gap-4">
+            <div key={m.id} className="flex items-center gap-2 sm:gap-4">
               <div
                 className={`w-4 h-4 border flex items-center justify-center flex-shrink-0 ${
                   m.status === 'completed'

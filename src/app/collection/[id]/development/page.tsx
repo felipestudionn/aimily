@@ -73,19 +73,19 @@ export default function DevelopmentPage() {
 
   return (
     <div className="min-h-[80vh]">
-      <div className="px-8 md:px-12 lg:px-16 py-12">
+      <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">
         {/* Header */}
-        <div className="mb-10">
+        <div className="mb-10 pl-12 md:pl-0">
           <button
             onClick={() => router.push(`/collection/${collectionId}`)}
-            className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
+            className="text-[10px] sm:text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
           >
             <ArrowLeft className="h-3 w-3" /> {t.developmentPage.backToOverview}
           </button>
-          <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
             {t.developmentPage.title} <span className="italic">{t.developmentPage.titleItalic}</span>
           </h2>
-          <p className="text-sm text-carbon/40 mt-2 max-w-lg">
+          <p className="text-xs sm:text-sm text-carbon/40 mt-2 max-w-lg">
             {t.developmentPage.description}
           </p>
         </div>
@@ -112,18 +112,18 @@ export default function DevelopmentPage() {
               <Link
                 key={phase.id}
                 href={`/collection/${collectionId}/${phase.route}`}
-                className="group relative bg-white p-8 lg:p-10 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex items-start gap-8 cursor-pointer block"
+                className="group relative bg-white p-4 sm:p-6 md:p-8 lg:p-10 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex items-start gap-4 sm:gap-6 md:gap-8 cursor-pointer block"
               >
                 {/* Phase Number */}
-                <div className="flex-shrink-0 w-14 h-14 bg-carbon/[0.04] flex items-center justify-center">
-                  <span className="text-lg font-light text-carbon/30">{phase.number}</span>
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-carbon/[0.04] flex items-center justify-center">
+                  <span className="text-base sm:text-lg font-light text-carbon/30">{phase.number}</span>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
                     <Icon className="h-4 w-4 text-carbon/40" />
-                    <h3 className="text-xl font-light text-carbon tracking-tight">
+                    <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">
                       {t.developmentPage[phase.nameKey]}
                     </h3>
                     {phase.requiresPrevious && (
@@ -137,11 +137,11 @@ export default function DevelopmentPage() {
                   </p>
 
                   {/* Dimensions added */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {phase.dimensionKeys.map((dimKey) => (
                       <span
                         key={dimKey}
-                        className="px-3 py-1 text-[10px] font-medium tracking-[0.08em] uppercase bg-carbon/[0.03] text-carbon/35 border border-carbon/[0.06]"
+                        className="px-2 sm:px-3 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-medium tracking-[0.08em] uppercase bg-carbon/[0.03] text-carbon/35 border border-carbon/[0.06]"
                       >
                         + {t.developmentPage[dimKey]}
                       </span>

@@ -137,7 +137,7 @@ function BlockCard({
   return (
     <Link
       href={`/collection/${collectionId}/${block.route}`}
-      className="group relative bg-white p-6 md:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col md:min-h-[420px]"
+      className="group relative bg-white p-4 sm:p-6 md:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col min-h-[180px] sm:min-h-[280px] md:min-h-[420px]"
     >
       {/* Progress bar top */}
       <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
@@ -149,13 +149,13 @@ function BlockCard({
 
       {/* Title + circular progress */}
       <div className="flex items-start justify-between mb-2">
-        <h3 className="text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
+        <h3 className="text-xl sm:text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
           {t.overview[block.titleKey as keyof typeof t.overview]} <span className="italic">{t.overview[block.titleItalicKey as keyof typeof t.overview]}</span>
         </h3>
 
         {/* Circular progress */}
-        <div className="relative flex-shrink-0 w-14 h-14">
-          <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+        <div className="relative flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14">
+          <svg className="w-10 h-10 sm:w-14 sm:h-14 -rotate-90" viewBox="0 0 56 56">
             <circle
               cx="28" cy="28" r="24"
               fill="none"
@@ -227,14 +227,14 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
   return (
     <div className="min-h-[80vh]">
-      <div className="px-5 md:px-12 lg:px-16 pt-16 md:pt-12 pb-12">
+      <div className="px-4 sm:px-5 md:px-12 lg:px-16 pt-16 md:pt-12 pb-12">
         {/* Header + View Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 pl-12 md:pl-0">
           <div>
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
+            <p className="text-[10px] sm:text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
               {t.overview.yourWorkspace}
             </p>
-            <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
               {t.overview.teamBlocks} <span className="italic">{t.overview.teamBlocksItalic}</span>
             </h2>
           </div>
@@ -251,7 +251,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                 <button
                   key={tab.id}
                   onClick={() => setView(tab.id)}
-                  className={`flex items-center gap-2 px-4 md:px-5 py-2.5 text-[11px] font-medium tracking-[0.08em] uppercase transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-2.5 sm:px-4 md:px-5 py-2 sm:py-2.5 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-carbon text-crema'
                       : 'bg-white text-carbon/40 hover:text-carbon/60'
