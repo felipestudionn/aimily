@@ -55,11 +55,10 @@ const PRIORITIES = [
 
 type AiPill = 'libre' | 'asistido' | 'propuesta';
 
-const AI_PILLS: { id: AiPill; label: string; labelEs: string; desc: string }[] = [
-  { id: 'libre', label: 'Manual', labelEs: 'Libre', desc: 'Create tasks manually' },
-  { id: 'asistido', label: 'Assisted', labelEs: 'Asistido', desc: 'Set launch date + channels, AI suggests tasks' },
-  { id: 'propuesta', label: 'AI Proposal', labelEs: 'Propuesta IA', desc: 'AI generates full launch checklist' },
-];
+const AI_PILL_IDS: AiPill[] = ['libre', 'asistido', 'propuesta'];
+const AI_PILL_LABEL_KEYS: Record<AiPill, 'pillManual' | 'pillAssisted' | 'pillAiProposal'> = {
+  libre: 'pillManual', asistido: 'pillAssisted', propuesta: 'pillAiProposal',
+};
 
 /* ── Props ── */
 
@@ -350,7 +349,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               <p className="text-xl font-light text-carbon tracking-tight">{completedPct}%</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">Tasks</p>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.tasks}</p>
               <p className="text-xl font-light text-carbon tracking-tight">{completedCount}/{tasks.length}</p>
             </div>
           </div>
@@ -362,19 +361,19 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
 
         {/* ── AI Pills ── */}
         <div className="flex items-center gap-3">
-          {AI_PILLS.map(pill => (
+          {AI_PILL_IDS.map(pillId => (
             <button
-              key={pill.id}
-              onClick={() => setActivePill(pill.id)}
+              key={pillId}
+              onClick={() => setActivePill(pillId)}
               className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
-                activePill === pill.id
+                activePill === pillId
                   ? 'bg-carbon text-crema border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
               }`}
             >
               <span className="flex items-center gap-1.5">
-                {pill.id !== 'libre' && <Sparkles className="h-3 w-3" />}
-                {pill.label}
+                {pillId !== 'libre' && <Sparkles className="h-3 w-3" />}
+                {t.marketingPage[AI_PILL_LABEL_KEYS[pillId]]}
               </span>
             </button>
           ))}
@@ -384,25 +383,25 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         {activePill === 'asistido' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">Assisted Mode</p>
-              <p className="text-sm font-light text-carbon/50">Set your launch date and channels, AI suggests a checklist.</p>
+              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
+              <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <Label className="text-xs">Launch Date</Label>
+                <Label className="text-xs">{t.marketingPage.launchDate}</Label>
                 <Input type="date" value={assistedLaunchDate} onChange={e => setAssistedLaunchDate(e.target.value)} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Channels</Label>
+                <Label className="text-xs">{t.marketingPage.channels}</Label>
                 <Input value={assistedChannels} onChange={e => setAssistedChannels(e.target.value)} placeholder="Instagram, TikTok, Email" className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Direction (optional)</Label>
+                <Label className="text-xs">{t.marketingPage.directionOptional}</Label>
                 <Input value={assistedDirection} onChange={e => setAssistedDirection(e.target.value)} placeholder="e.g. Focus on hype pre-launch" className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Generate</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
                 </Button>
               </div>
             </div>
@@ -413,21 +412,21 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         {activePill === 'propuesta' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">AI Proposal</p>
-              <p className="text-sm font-light text-carbon/50">AI generates a comprehensive launch checklist with pre-launch, launch day, and post-launch tasks.</p>
+              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
+              <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-xs">Launch Date</Label>
+                <Label className="text-xs">{t.marketingPage.launchDate}</Label>
                 <Input type="date" value={propuestaLaunchDate} onChange={e => setPropuestaLaunchDate(e.target.value)} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Channels</Label>
+                <Label className="text-xs">{t.marketingPage.channels}</Label>
                 <Input value={propuestaChannels} onChange={e => setPropuestaChannels(e.target.value)} placeholder="Instagram, TikTok, Email, Website" className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Full Plan</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
                 </Button>
               </div>
             </div>
@@ -438,12 +437,12 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-carbon/30" />
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Category:</span>
+            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.categoryLabel}:</span>
             <button
               onClick={() => setCategoryFilter('ALL')}
               className={`px-3 py-1.5 text-xs border transition-colors ${categoryFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
-              All
+              {t.marketingPage.all}
             </button>
             {CATEGORIES.map(c => (
               <button
@@ -459,12 +458,12 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           <div className="h-5 w-px bg-carbon/10" />
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Status:</span>
+            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.status}:</span>
             <button
               onClick={() => setStatusFilter('ALL')}
               className={`px-3 py-1.5 text-xs border transition-colors ${statusFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
-              All
+              {t.marketingPage.all}
             </button>
             {STATUSES.map(s => (
               <button
@@ -480,12 +479,12 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           <div className="h-5 w-px bg-carbon/10" />
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Priority:</span>
+            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.priority}:</span>
             <button
               onClick={() => setPriorityFilter('ALL')}
               className={`px-3 py-1.5 text-xs border transition-colors ${priorityFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
-              All
+              {t.marketingPage.all}
             </button>
             {PRIORITIES.map(p => (
               <button
@@ -524,14 +523,14 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">
-              Tasks ({filteredTasks.length})
+              {t.marketingPage.tasks} ({filteredTasks.length})
             </p>
             <Button
               onClick={() => setShowAddTask(true)}
               className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase h-9"
             >
               <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Add Task
+              {t.marketingPage.addTask}
             </Button>
           </div>
 
@@ -539,18 +538,18 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           {showAddTask && (
             <div className="bg-white border border-carbon/[0.06] p-6 mb-4 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">New Task</p>
+                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newTask}</p>
                 <button onClick={() => setShowAddTask(false)} className="text-carbon/30 hover:text-carbon">
                   <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <div className="col-span-2">
-                  <Label className="text-xs">Title</Label>
-                  <Input value={newTask.title} onChange={e => setNewTask(prev => ({ ...prev, title: e.target.value }))} placeholder="Task description" className="h-9" />
+                  <Label className="text-xs">{t.marketingPage.title}</Label>
+                  <Input value={newTask.title} onChange={e => setNewTask(prev => ({ ...prev, title: e.target.value }))} placeholder={t.marketingPage.taskDescription} className="h-9" />
                 </div>
                 <div>
-                  <Label className="text-xs">Category</Label>
+                  <Label className="text-xs">{t.marketingPage.categoryLabel}</Label>
                   <Select value={newTask.category} onValueChange={v => setNewTask(prev => ({ ...prev, category: v }))}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -561,7 +560,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Priority</Label>
+                  <Label className="text-xs">{t.marketingPage.priority}</Label>
                   <Select value={newTask.priority} onValueChange={v => setNewTask(prev => ({ ...prev, priority: v }))}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -574,20 +573,20 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-xs">Due Date</Label>
+                  <Label className="text-xs">{t.marketingPage.dueDate}</Label>
                   <Input type="date" value={newTask.due_date} onChange={e => setNewTask(prev => ({ ...prev, due_date: e.target.value }))} className="h-9" />
                 </div>
                 <div>
-                  <Label className="text-xs">Assigned To</Label>
+                  <Label className="text-xs">{t.marketingPage.assignedTo}</Label>
                   <Input value={newTask.assigned_to} onChange={e => setNewTask(prev => ({ ...prev, assigned_to: e.target.value }))} placeholder="Name" className="h-9" />
                 </div>
                 <div>
-                  <Label className="text-xs">Notes</Label>
-                  <Input value={newTask.notes} onChange={e => setNewTask(prev => ({ ...prev, notes: e.target.value }))} placeholder="Optional notes" className="h-9" />
+                  <Label className="text-xs">{t.marketingPage.notes}</Label>
+                  <Input value={newTask.notes} onChange={e => setNewTask(prev => ({ ...prev, notes: e.target.value }))} placeholder={t.marketingPage.optionalNotes} className="h-9" />
                 </div>
                 <div className="flex items-end">
                   <Button onClick={handleAddTask} disabled={!newTask.title} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                    Create
+                    {t.common.create}
                   </Button>
                 </div>
               </div>
@@ -598,7 +597,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           {filteredTasks.length === 0 && !loading && (
             <div className="bg-white border border-carbon/[0.06] p-12 text-center">
               <Zap className="h-8 w-8 text-carbon/15 mx-auto mb-3" />
-              <p className="text-sm font-light text-carbon/30">No launch tasks yet. Add tasks manually or use AI to generate a checklist.</p>
+              <p className="text-sm font-light text-carbon/30">{t.marketingPage.noLaunchTasksYet}</p>
             </div>
           )}
 

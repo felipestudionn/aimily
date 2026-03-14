@@ -56,11 +56,10 @@ import { useTranslation } from '@/i18n';
 
 type AiPill = 'libre' | 'asistido' | 'propuesta';
 
-const AI_PILLS: { id: AiPill; label: string; labelEs: string; desc: string }[] = [
-  { id: 'libre', label: 'Manual', labelEs: 'Libre', desc: 'Create calendar entries manually' },
-  { id: 'asistido', label: 'Assisted', labelEs: 'Asistido', desc: 'Mark drops/actions, AI suggests editorial calendar aligned' },
-  { id: 'propuesta', label: 'AI Proposal', labelEs: 'Propuesta IA', desc: 'AI generates full calendar: what, when, where, captions' },
-];
+const AI_PILL_IDS: AiPill[] = ['libre', 'asistido', 'propuesta'];
+const AI_PILL_LABEL_KEYS: Record<AiPill, 'pillManual' | 'pillAssisted' | 'pillAiProposal'> = {
+  libre: 'pillManual', asistido: 'pillAssisted', propuesta: 'pillAiProposal',
+};
 
 type SubTab = 'calendar' | 'influencer';
 
@@ -368,11 +367,11 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-light text-carbon">{entries.length}</span>
-                <span className="text-xs text-carbon/40">entries</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.entries}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-light text-carbon">{contacts.length}</span>
-                <span className="text-xs text-carbon/40">contacts</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.prContacts}</span>
               </div>
               {Object.keys(platformCounts).length > 0 && (
                 <div className="flex items-center gap-1.5">
@@ -424,7 +423,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   subTab === 'calendar' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'
                 }`}
               >
-                <Calendar className="h-3.5 w-3.5" /> Calendar
+                <Calendar className="h-3.5 w-3.5" /> {t.marketingPage.contentCalendarLabel}
               </button>
               <button
                 onClick={() => setSubTab('influencer')}
@@ -432,12 +431,12 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   subTab === 'influencer' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'
                 }`}
               >
-                <Users className="h-3.5 w-3.5" /> Influencer & PR
+                <Users className="h-3.5 w-3.5" /> {t.marketingPage.prContacts}
               </button>
             </div>
             {/* Stats */}
             <div className="text-right">
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">Entries</p>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.entries}</p>
               <p className="text-xl font-light text-carbon tracking-tight">{entries.length}</p>
             </div>
           </div>
@@ -451,19 +450,19 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
           <>
             {/* ── AI Pills ── */}
             <div className="flex items-center gap-3">
-              {AI_PILLS.map(pill => (
+              {AI_PILL_IDS.map(pillId => (
                 <button
-                  key={pill.id}
-                  onClick={() => setActivePill(pill.id)}
+                  key={pillId}
+                  onClick={() => setActivePill(pillId)}
                   className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
-                    activePill === pill.id
+                    activePill === pillId
                       ? 'bg-carbon text-crema border-carbon'
                       : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
                   }`}
                 >
                   <span className="flex items-center gap-1.5">
-                    {pill.id !== 'libre' && <Sparkles className="h-3 w-3" />}
-                    {pill.label}
+                    {pillId !== 'libre' && <Sparkles className="h-3 w-3" />}
+                    {t.marketingPage[AI_PILL_LABEL_KEYS[pillId]]}
                   </span>
                 </button>
               ))}
@@ -473,12 +472,12 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             {activePill === 'asistido' && (
               <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
                 <div>
-                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">Assisted Mode</p>
-                  <p className="text-sm font-light text-carbon/50">Mark your GTM drops and the AI will generate an editorial calendar aligned with your launch schedule.</p>
+                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
+                  <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
-                    <Label className="text-xs">Direction / focus (optional)</Label>
+                    <Label className="text-xs">{t.marketingPage.directionOptional}</Label>
                     <Input
                       value={assistedDirection}
                       onChange={e => setAssistedDirection(e.target.value)}
@@ -492,7 +491,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                       disabled={isGenerating || drops.length === 0}
                       className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase"
                     >
-                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Generate Calendar</>}
+                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
                     </Button>
                   </div>
                 </div>
@@ -506,20 +505,20 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             {activePill === 'propuesta' && (
               <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
                 <div>
-                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">AI Proposal</p>
-                  <p className="text-sm font-light text-carbon/50">Provide a date range and platforms, and AI generates the complete editorial calendar.</p>
+                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
+                  <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <Label className="text-xs">Start date</Label>
+                    <Label className="text-xs">{t.marketingPage.startDate}</Label>
                     <Input type="date" value={propuestaStartDate} onChange={e => setPropuestaStartDate(e.target.value)} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">End date</Label>
+                    <Label className="text-xs">{t.marketingPage.endDate}</Label>
                     <Input type="date" value={propuestaEndDate} onChange={e => setPropuestaEndDate(e.target.value)} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Platforms</Label>
+                    <Label className="text-xs">{t.marketingPage.platforms}</Label>
                     <Input value={propuestaPlatforms} onChange={e => setPropuestaPlatforms(e.target.value)} placeholder="instagram,tiktok,email" className="h-9" />
                   </div>
                   <div className="flex items-end">
@@ -528,7 +527,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                       disabled={isGenerating || !propuestaStartDate || !propuestaEndDate}
                       className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase"
                     >
-                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Generate Full Calendar</>}
+                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
                     </Button>
                   </div>
                 </div>
@@ -540,12 +539,12 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
               {/* Platform filter */}
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4 text-carbon/30" />
-                <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Platform:</span>
+                <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.platform}:</span>
                 <button
                   onClick={() => setPlatformFilter('ALL')}
                   className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
-                  All
+                  {t.marketingPage.all}
                 </button>
                 {PLATFORMS.map(p => (
                   <button
@@ -563,12 +562,12 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
               {/* Story filter */}
               {stories.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Story:</span>
+                  <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.story}:</span>
                   <button
                     onClick={() => setStoryFilter(null)}
                     className={`px-3 py-1.5 text-xs border transition-colors ${!storyFilter ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                   >
-                    All
+                    {t.marketingPage.all}
                   </button>
                   {stories.map(story => (
                     <button
@@ -586,12 +585,12 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
 
               {/* Type filter */}
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Type:</span>
+                <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.contentType}:</span>
                 <button
                   onClick={() => setTypeFilter('ALL')}
                   className={`px-3 py-1.5 text-xs border transition-colors ${typeFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
-                  All
+                  {t.marketingPage.all}
                 </button>
                 {CONTENT_TYPES.map(ct => (
                   <button
@@ -637,7 +636,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 className="flex items-center gap-2 px-4 py-2.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.08em] uppercase hover:bg-carbon/90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
-                Add Entry
+                {t.marketingPage.addEntry}
               </button>
             </div>
 
@@ -645,16 +644,16 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             {showAddEntry && (
               <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">New Calendar Entry</p>
+                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newEntry}</p>
                   <button onClick={() => setShowAddEntry(false)} className="text-carbon/30 hover:text-carbon"><X className="h-4 w-4" /></button>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div className="col-span-2">
-                    <Label className="text-xs">Title</Label>
-                    <Input value={newEntry.title} onChange={e => setNewEntry(p => ({ ...p, title: e.target.value }))} placeholder="Post title" className="h-9" />
+                    <Label className="text-xs">{t.marketingPage.title}</Label>
+                    <Input value={newEntry.title} onChange={e => setNewEntry(p => ({ ...p, title: e.target.value }))} placeholder={t.marketingPage.title} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Type</Label>
+                    <Label className="text-xs">{t.marketingPage.contentType}</Label>
                     <Select value={newEntry.content_type} onValueChange={(v: ContentType) => setNewEntry(p => ({ ...p, content_type: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -663,7 +662,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">Platform</Label>
+                    <Label className="text-xs">{t.marketingPage.platform}</Label>
                     <Select value={newEntry.platform} onValueChange={(v: ContentPlatform) => setNewEntry(p => ({ ...p, platform: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -674,19 +673,19 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <Label className="text-xs">Date</Label>
+                    <Label className="text-xs">{t.marketingPage.scheduledDate}</Label>
                     <Input type="date" value={newEntry.scheduled_date} onChange={e => setNewEntry(p => ({ ...p, scheduled_date: e.target.value }))} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Time</Label>
+                    <Label className="text-xs">{t.marketingPage.date}</Label>
                     <Input type="time" value={newEntry.scheduled_time} onChange={e => setNewEntry(p => ({ ...p, scheduled_time: e.target.value }))} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Campaign / Story</Label>
+                    <Label className="text-xs">{t.marketingPage.story}</Label>
                     <Input value={newEntry.campaign} onChange={e => setNewEntry(p => ({ ...p, campaign: e.target.value }))} placeholder="e.g. drop-1-teasing" className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Status</Label>
+                    <Label className="text-xs">{t.marketingPage.status}</Label>
                     <Select value={newEntry.status} onValueChange={(v: ContentStatus) => setNewEntry(p => ({ ...p, status: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -696,7 +695,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs">Caption</Label>
+                  <Label className="text-xs">{t.marketingPage.caption}</Label>
                   <textarea
                     value={newEntry.caption}
                     onChange={e => setNewEntry(p => ({ ...p, caption: e.target.value }))}
@@ -705,7 +704,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   />
                 </div>
                 <Button onClick={handleAddEntry} disabled={!newEntry.title || !newEntry.scheduled_date} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  <Plus className="h-4 w-4 mr-2" /> Create Entry
+                  <Plus className="h-4 w-4 mr-2" /> {t.common.create}
                 </Button>
               </div>
             )}
@@ -789,7 +788,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 {filteredEntries.length === 0 ? (
                   <div className="bg-white border border-carbon/[0.06] p-12 text-center">
                     <Calendar className="h-8 w-8 text-carbon/20 mx-auto mb-3" />
-                    <p className="text-sm font-light text-carbon/40">No entries yet. Add one manually or let AI generate your calendar.</p>
+                    <p className="text-sm font-light text-carbon/40">{t.marketingPage.noEntriesYet}</p>
                   </div>
                 ) : (
                   filteredEntries.map(entry => {
@@ -893,7 +892,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
 
                   {selectedEntry.caption && (
                     <div className="mb-4">
-                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">Caption</p>
+                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">{t.marketingPage.caption}</p>
                       <p className="text-sm font-light text-carbon/70 whitespace-pre-wrap">{selectedEntry.caption}</p>
                     </div>
                   )}
@@ -933,7 +932,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                       onClick={() => { deleteEntry(selectedEntry.id); setSelectedEntry(null); }}
                       className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase text-red-500 border-red-200 hover:bg-red-50"
                     >
-                      <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Delete
+                      <Trash2 className="h-3.5 w-3.5 mr-1.5" /> {t.common.delete}
                     </Button>
                   </div>
                 </div>
@@ -949,25 +948,25 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 className="flex items-center gap-2 px-4 py-2.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.08em] uppercase hover:bg-carbon/90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
-                Add Contact
+                {t.marketingPage.addContact}
               </button>
-              <span className="text-xs text-carbon/30">{contacts.length} contacts</span>
+              <span className="text-xs text-carbon/30">{contacts.length} {t.marketingPage.prContacts}</span>
             </div>
 
             {/* Add contact form */}
             {showAddContact && (
               <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">New Contact</p>
+                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newContact}</p>
                   <button onClick={() => setShowAddContact(false)} className="text-carbon/30 hover:text-carbon"><X className="h-4 w-4" /></button>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <Label className="text-xs">Name</Label>
+                    <Label className="text-xs">{t.marketingPage.name}</Label>
                     <Input value={newContact.name} onChange={e => setNewContact(p => ({ ...p, name: e.target.value }))} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Type</Label>
+                    <Label className="text-xs">{t.marketingPage.contactType}</Label>
                     <Select value={newContact.type} onValueChange={(v: ContactType) => setNewContact(p => ({ ...p, type: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -976,7 +975,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">Platform</Label>
+                    <Label className="text-xs">{t.marketingPage.platform}</Label>
                     <Input value={newContact.platform} onChange={e => setNewContact(p => ({ ...p, platform: e.target.value }))} placeholder="Instagram" className="h-9" />
                   </div>
                   <div>
@@ -999,7 +998,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </div>
                 </div>
                 <Button onClick={handleAddContact} disabled={!newContact.name} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  <Plus className="h-4 w-4 mr-2" /> Create Contact
+                  <Plus className="h-4 w-4 mr-2" /> {t.common.create}
                 </Button>
               </div>
             )}
@@ -1008,19 +1007,19 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             {contacts.length === 0 ? (
               <div className="bg-white border border-carbon/[0.06] p-12 text-center">
                 <Users className="h-8 w-8 text-carbon/20 mx-auto mb-3" />
-                <p className="text-sm font-light text-carbon/40">No influencer or PR contacts yet. Add your first one above.</p>
+                <p className="text-sm font-light text-carbon/40">{t.marketingPage.noContactsYet}</p>
               </div>
             ) : (
               <div className="bg-white border border-carbon/[0.06] overflow-hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-carbon/[0.06]">
-                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">Name</th>
-                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">Type</th>
-                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">Platform</th>
+                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.name}</th>
+                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.type}</th>
+                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.platform}</th>
                       <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">Followers</th>
-                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">Status</th>
-                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">Dates</th>
+                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.status}</th>
+                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.date}</th>
                       <th className="p-3 w-16" />
                     </tr>
                   </thead>

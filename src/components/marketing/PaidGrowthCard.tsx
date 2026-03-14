@@ -556,11 +556,11 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-xs">Name</Label>
-                  <Input value={newCampaign.name} onChange={e => setNewCampaign(prev => ({ ...prev, name: e.target.value }))} placeholder="Campaign name" className="h-9" />
+                  <Label className="text-xs">{t.marketingPage.name}</Label>
+                  <Input value={newCampaign.name} onChange={e => setNewCampaign(prev => ({ ...prev, name: e.target.value }))} placeholder={t.marketingPage.campaignName} className="h-9" />
                 </div>
                 <div>
-                  <Label className="text-xs">Platform</Label>
+                  <Label className="text-xs">{t.marketingPage.platform}</Label>
                   <Select value={newCampaign.platform} onValueChange={v => setNewCampaign(prev => ({ ...prev, platform: v }))}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -571,7 +571,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Objective</Label>
+                  <Label className="text-xs">{t.marketingPage.objective}</Label>
                   <Select value={newCampaign.objective} onValueChange={v => setNewCampaign(prev => ({ ...prev, objective: v }))}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -582,25 +582,25 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Budget (€)</Label>
+                  <Label className="text-xs">{t.marketingPage.budgetLabel} (€)</Label>
                   <Input type="number" min={0} value={newCampaign.budget} onChange={e => setNewCampaign(prev => ({ ...prev, budget: Number(e.target.value) }))} className="h-9" />
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-xs">Start Date</Label>
+                  <Label className="text-xs">{t.marketingPage.startDate}</Label>
                   <Input type="date" value={newCampaign.start_date} onChange={e => setNewCampaign(prev => ({ ...prev, start_date: e.target.value }))} className="h-9" />
                 </div>
                 <div>
-                  <Label className="text-xs">End Date</Label>
+                  <Label className="text-xs">{t.marketingPage.endDate}</Label>
                   <Input type="date" value={newCampaign.end_date} onChange={e => setNewCampaign(prev => ({ ...prev, end_date: e.target.value }))} className="h-9" />
                 </div>
                 <div>
-                  <Label className="text-xs">Drop</Label>
+                  <Label className="text-xs">{t.marketingPage.drop}</Label>
                   <Select value={newCampaign.drop_name || '_none'} onValueChange={v => setNewCampaign(prev => ({ ...prev, drop_name: v === '_none' ? '' : v }))}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="None" /></SelectTrigger>
+                    <SelectTrigger className="h-9"><SelectValue placeholder={t.marketingPage.none} /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_none">None</SelectItem>
+                      <SelectItem value="_none">{t.marketingPage.none}</SelectItem>
                       {drops.map(d => (
                         <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
                       ))}
@@ -609,7 +609,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                 </div>
                 <div className="flex items-end">
                   <Button onClick={handleAddCampaign} disabled={!newCampaign.name} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                    Create
+                    {t.common.create}
                   </Button>
                 </div>
               </div>
@@ -621,7 +621,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
             {filteredCampaigns.length === 0 && !loading && (
               <div className="bg-white border border-carbon/[0.06] p-12 text-center">
                 <DollarSign className="h-8 w-8 text-carbon/15 mx-auto mb-3" />
-                <p className="text-sm font-light text-carbon/30">No campaigns yet. Add one manually or use AI to generate a plan.</p>
+                <p className="text-sm font-light text-carbon/30">{t.marketingPage.noCampaignsEmptyPaid}</p>
               </div>
             )}
 
@@ -724,14 +724,14 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                         className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/30 hover:text-carbon/50 transition-colors flex items-center gap-1"
                       >
                         <BarChart3 className="h-3 w-3" />
-                        Ad Sets ({adSets.length})
+                        {t.marketingPage.adSetsLabel} ({adSets.length})
                       </button>
                       <button
                         onClick={() => handleAddAdSet(campaign.id)}
                         className="text-xs text-carbon/30 hover:text-carbon/60 transition-colors flex items-center gap-1"
                       >
                         <Plus className="h-3 w-3" />
-                        Add
+                        {t.common.add}
                       </button>
                     </div>
 
@@ -772,7 +772,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                             ) : (
                               <>
                                 <span className="text-xs font-medium text-carbon/60 flex-1">{adSet.name}</span>
-                                <span className="text-xs text-carbon/40 flex-[2] truncate">{adSet.audience || 'No audience defined'}</span>
+                                <span className="text-xs text-carbon/40 flex-[2] truncate">{adSet.audience || t.marketingPage.noAudienceDefined}</span>
                                 <span className="text-xs text-carbon/30 w-16 text-right">{adSet.budget_pct}%</span>
                                 <span className="text-xs text-carbon/20 w-20 text-right">
                                   €{Math.round((campaign.budget || 0) * adSet.budget_pct / 100).toLocaleString()}
