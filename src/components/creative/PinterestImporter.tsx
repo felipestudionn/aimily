@@ -117,10 +117,23 @@ export function PinterestImporter({ onImportImages }: PinterestImporterProps) {
       process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI ||
       'https://aimily.app/api/auth/pinterest/callback';
     const scope = 'boards:read,pins:read';
-    const state = Math.random().toString(36).substring(7);
+    // Encode the current page path so the callback can redirect back here
+    const returnPath = encodeURIComponent(window.location.pathname);
+    const state = `${Math.random().toString(36).substring(7)}_return_${returnPath}`;
     const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
 
-    // Open in popup — stays on the same page
+    // Detect PWA standalone mode (iOS/Android) — popups don't work reliably
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as unknown as { standalone?: boolean }).standalone === true;
+
+    if (isStandalone) {
+      // PWA: use full-page redirect (callback will redirect back)
+      window.location.href = url;
+      return;
+    }
+
+    // Browser: open in popup — stays on the same page
     const w = 500, h = 700;
     const left = window.screenX + (window.innerWidth - w) / 2;
     const top = window.screenY + (window.innerHeight - h) / 2;

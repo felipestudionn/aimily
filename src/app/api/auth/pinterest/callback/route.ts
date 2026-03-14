@@ -9,16 +9,21 @@ export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get('code');
   const error = searchParams.get('error');
+  const state = searchParams.get('state') || '';
+
+  // Extract return path from state (format: "random_return_/path/to/page")
+  const returnMatch = state.match(/_return_(.+)$/);
+  const returnPath = returnMatch ? decodeURIComponent(returnMatch[1]) : '/creative-space';
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/creative-space?error=${error}`, req.url)
+      new URL(`${returnPath}?error=${error}`, req.url)
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      new URL('/creative-space?error=no_code', req.url)
+      new URL(`${returnPath}?error=no_code`, req.url)
     );
   }
 
@@ -56,7 +61,7 @@ export async function GET(req: NextRequest) {
     if (!tokenResponse.ok) {
       console.error('Pinterest token exchange failed:', responseText);
       return NextResponse.redirect(
-        new URL(`/creative-space?error=token_exchange_failed&details=${encodeURIComponent(responseText.substring(0, 100))}`, req.url)
+        new URL(`${returnPath}?error=token_exchange_failed&details=${encodeURIComponent(responseText.substring(0, 100))}`, req.url)
       );
     }
 
@@ -64,13 +69,14 @@ export async function GET(req: NextRequest) {
 
     // Return an HTML page that notifies the opener window and closes itself
     // This supports popup-based OAuth without leaving the parent page
+    // In PWA standalone mode, window.opener is null, so we redirect directly
     const html = `<!DOCTYPE html><html><head><title>Pinterest Connected</title></head><body>
 <script>
   if (window.opener) {
     window.opener.postMessage({ type: 'pinterest_connected' }, window.location.origin);
     window.close();
   } else {
-    window.location.href = '/creative-space?pinterest_connected=true';
+    window.location.href = '${returnPath}?pinterest_connected=true';
   }
 </script>
 <p>Connecting Pinterest... You can close this window.</p>
@@ -98,7 +104,7 @@ export async function GET(req: NextRequest) {
     window.opener.postMessage({ type: 'pinterest_error' }, window.location.origin);
     window.close();
   } else {
-    window.location.href = '/creative-space?error=auth_failed';
+    window.location.href = '${returnPath}?error=auth_failed';
   }
 </script>
 <p>Authentication failed. You can close this window.</p>
