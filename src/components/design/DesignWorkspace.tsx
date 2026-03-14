@@ -13,6 +13,8 @@ import { useSkus } from '@/hooks/useSkus';
 import { useColorways } from '@/hooks/useColorways';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
 import { PHASES } from '@/lib/timeline-template';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { TimelineMilestone } from '@/types/timeline';
 
 import { LastFormSection } from './sections/LastFormSection';
@@ -22,11 +24,11 @@ import { PatternSection } from './sections/PatternSection';
 
 type Tab = 'forms' | 'design' | 'colorways' | 'patterns';
 
-const TABS: { id: Tab; label: string; labelEs: string; icon: React.ElementType }[] = [
-  { id: 'forms', label: 'Lasts & Forms', labelEs: 'Hormas y Formas', icon: Footprints },
-  { id: 'design', label: 'Design Review', labelEs: 'Revisión de Diseño', icon: ImageIcon },
-  { id: 'colorways', label: 'Colorways', labelEs: 'Colores', icon: Palette },
-  { id: 'patterns', label: 'Patterns', labelEs: 'Patronaje', icon: Scissors },
+const TAB_IDS: { id: Tab; tKey: 'lastsAndForms' | 'designReview' | 'colorways' | 'patterns'; icon: React.ElementType }[] = [
+  { id: 'forms', tKey: 'lastsAndForms', icon: Footprints },
+  { id: 'design', tKey: 'designReview', icon: ImageIcon },
+  { id: 'colorways', tKey: 'colorways', icon: Palette },
+  { id: 'patterns', tKey: 'patterns', icon: Scissors },
 ];
 
 interface DesignWorkspaceProps {
@@ -52,6 +54,8 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
   const { colorways, loading: colorwaysLoading, addColorway, updateColorway, deleteColorway } =
     useColorways(collectionId);
   const [activeTab, setActiveTab] = useState<Tab>('forms');
+  const t = useTranslation();
+  const { language } = useLanguage();
 
   // Design data persisted to Supabase (replaces localStorage)
   const { data: localData, save: saveLocal, loading: dataLoading, saving } =
@@ -82,15 +86,15 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
       {/* Phase Header */}
       <div>
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-          {info.nameEs}
+          {language === 'es' ? info.nameEs : info.name}
         </p>
         <div className="flex items-center justify-between">
           <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-            {info.name}
+            {language === 'es' ? info.nameEs : info.name}
           </h1>
           {saving && (
             <span className="flex items-center gap-2 text-sm text-carbon/30">
-              <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+              <Loader2 className="h-3 w-3 animate-spin" /> {t.workspace.saving}
             </span>
           )}
         </div>
@@ -107,16 +111,16 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
             <span className="text-lg font-light text-carbon/40 ml-1">%</span>
           </div>
           <div className="flex gap-6 text-xs text-carbon/40">
-            <span>{completed} completed</span>
-            <span>{inProgress} in progress</span>
-            <span>{pending} pending</span>
+            <span>{completed} {t.workspace.completed}</span>
+            <span>{inProgress} {t.workspace.inProgress}</span>
+            <span>{pending} {t.workspace.pending}</span>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border border-carbon/[0.06]">
-        {TABS.map((tab) => {
+        {TAB_IDS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -130,7 +134,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
-              {tab.label}
+              {t.designPage[tab.tKey]}
             </button>
           );
         })}
@@ -173,7 +177,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
 
       {/* Milestones Checklist */}
       <div className="bg-white border border-carbon/[0.06] p-8">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">Milestones</p>
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">{t.workspace.milestones}</p>
         <div className="space-y-4">
           {phaseMilestones.map((m) => (
             <div key={m.id} className="flex items-center gap-4">
@@ -197,7 +201,7 @@ export function DesignWorkspace({ milestones }: DesignWorkspaceProps) {
               </div>
               <div className="flex-1">
                 <p className={`text-sm font-light ${m.status === 'completed' ? 'text-carbon/30 line-through' : 'text-carbon'}`}>
-                  {m.name}
+                  {language === 'es' ? m.nameEs || m.name : m.name}
                 </p>
               </div>
               <span className="text-xs text-carbon/30">{m.responsible}</span>

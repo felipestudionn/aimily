@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTranslation } from '@/i18n';
 
 /* ── Constants ── */
 
@@ -43,11 +44,10 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 type AiPill = 'libre' | 'asistido' | 'propuesta';
 
-const AI_PILLS: { id: AiPill; label: string; labelEs: string; desc: string }[] = [
-  { id: 'libre', label: 'Manual', labelEs: 'Libre', desc: 'Configure drops, SKUs & actions manually' },
-  { id: 'asistido', label: 'Assisted', labelEs: 'Asistido', desc: 'Define # drops + dates, AI suggests distribution' },
-  { id: 'propuesta', label: 'AI Proposal', labelEs: 'Propuesta IA', desc: 'AI generates full GTM plan from launch date' },
-];
+const AI_PILL_IDS: AiPill[] = ['libre', 'asistido', 'propuesta'];
+const AI_PILL_LABEL_KEYS: Record<AiPill, 'pillManual' | 'pillAssisted' | 'pillAiProposal'> = {
+  libre: 'pillManual', asistido: 'pillAssisted', propuesta: 'pillAiProposal',
+};
 
 /* ── Props ── */
 
@@ -58,6 +58,7 @@ interface GoToMarketCardProps {
 /* ── Component ── */
 
 export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
@@ -311,31 +312,31 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Lanzamiento al Mercado
+              {t.marketingPage.gtmLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Go-to-Market
+              {t.marketingPage.gtmTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Drops timeline, commercial actions, and SKU distribution across launch moments.
+          {t.marketingPage.gtmDesc}
         </p>
 
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {dropsLoading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : drops.length === 0 && actions.length === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No drops or actions yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noTasksYet}</p>
           ) : (
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-light text-carbon">{drops.length}</span>
-                <span className="text-xs text-carbon/40">drops</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.drops}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-light text-carbon">{actions.length}</span>
-                <span className="text-xs text-carbon/40">actions</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.commercialActions}</span>
               </div>
               {totalPlannedSales > 0 && (
                 <div className="flex items-center gap-2">
@@ -347,7 +348,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -365,21 +366,21 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               className="flex items-center gap-1 text-xs font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
-              Back
+              {t.marketingPage.back}
             </button>
             <div className="h-6 w-px bg-carbon/10" />
             <Rocket className="h-5 w-5 text-carbon/40" />
             <div>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-                Lanzamiento al Mercado
+                {t.marketingPage.gtmLabel}
               </p>
-              <h2 className="text-lg font-light text-carbon tracking-tight">Go-to-Market</h2>
+              <h2 className="text-lg font-light text-carbon tracking-tight">{t.marketingPage.gtmTitle}</h2>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {totalPlannedSales > 0 && (
               <div className="text-right">
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">Total Sales Target</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.totalSalesTarget}</p>
                 <p className="text-xl font-light text-carbon tracking-tight">€{totalPlannedSales.toLocaleString()}</p>
               </div>
             )}
@@ -392,19 +393,19 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
 
         {/* ── AI Pills ── */}
         <div className="flex items-center gap-3">
-          {AI_PILLS.map(pill => (
+          {AI_PILL_IDS.map(pillId => (
             <button
-              key={pill.id}
-              onClick={() => setActivePill(pill.id)}
+              key={pillId}
+              onClick={() => setActivePill(pillId)}
               className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
-                activePill === pill.id
+                activePill === pillId
                   ? 'bg-carbon text-crema border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
               }`}
             >
               <span className="flex items-center gap-1.5">
-                {pill.id !== 'libre' && <Sparkles className="h-3 w-3" />}
-                {pill.label}
+                {pillId !== 'libre' && <Sparkles className="h-3 w-3" />}
+                {t.marketingPage[AI_PILL_LABEL_KEYS[pillId]]}
               </span>
             </button>
           ))}
@@ -414,21 +415,21 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         {activePill === 'asistido' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">Assisted Mode</p>
-              <p className="text-sm font-light text-carbon/50">Define your constraints and AI will suggest the optimal distribution.</p>
+              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
+              <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-xs">Number of drops</Label>
+                <Label className="text-xs">{t.marketingPage.numberOfDrops}</Label>
                 <Input type="number" min={1} max={12} value={assistedDropCount} onChange={e => setAssistedDropCount(Number(e.target.value))} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Key dates (comma separated)</Label>
+                <Label className="text-xs">{t.marketingPage.keyDates}</Label>
                 <Input value={assistedDates} onChange={e => setAssistedDates(e.target.value)} placeholder="e.g. 2026-03-15, 2026-04-20" className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Generate Plan</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generatePlan}</>}
                 </Button>
               </div>
             </div>
@@ -438,25 +439,25 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         {activePill === 'propuesta' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">AI Proposal</p>
-              <p className="text-sm font-light text-carbon/50">Provide launch date and AI generates the complete go-to-market plan.</p>
+              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
+              <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
               <div>
-                <Label className="text-xs">Launch date</Label>
+                <Label className="text-xs">{t.marketingPage.launchDateLabel}</Label>
                 <Input type="date" value={propuestaLaunchDate} onChange={e => setPropuestaLaunchDate(e.target.value)} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Number of drops</Label>
+                <Label className="text-xs">{t.marketingPage.numberOfDrops}</Label>
                 <Input type="number" min={1} max={12} value={propuestaDropCount} onChange={e => setPropuestaDropCount(Number(e.target.value))} className="h-9" />
               </div>
               <div>
-                <Label className="text-xs">Channels</Label>
+                <Label className="text-xs">{t.marketingPage.channels}</Label>
                 <Input value={propuestaChannels} onChange={e => setPropuestaChannels(e.target.value)} placeholder="DTC,WHOLESALE" className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating || !propuestaLaunchDate} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="h-4 w-4 mr-2" />Generate Full Plan</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generateFullPlan}</>}
                 </Button>
               </div>
             </div>
@@ -468,12 +469,12 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           {/* Story filter */}
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-carbon/30" />
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Story:</span>
+            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.story}:</span>
             <button
               onClick={() => setActiveStoryId(null)}
               className={`px-3 py-1.5 text-xs border transition-colors ${!activeStoryId ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
-              All
+              {t.marketingPage.all}
             </button>
             {stories.map(story => (
               <button
@@ -490,14 +491,14 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
 
           {/* Channel filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Channel:</span>
+            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.channel}:</span>
             {['ALL', 'DTC', 'WHOLESALE'].map(ch => (
               <button
                 key={ch}
                 onClick={() => setChannelFilter(ch)}
                 className={`px-3 py-1.5 text-xs border transition-colors ${channelFilter === ch ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
-                {ch === 'ALL' ? 'All' : ch}
+                {ch === 'ALL' ? t.marketingPage.all : ch}
               </button>
             ))}
           </div>
@@ -506,8 +507,8 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         {/* ── Visual Timeline ── */}
         {drops.length > 0 && (
           <div className="bg-white border border-carbon/[0.06] p-6">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Launch Timeline</p>
-            <p className="text-sm font-light text-carbon/40 mb-4">Drops and commercial actions over time</p>
+            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.launchTimeline}</p>
+            <p className="text-sm font-light text-carbon/40 mb-4">{t.marketingPage.dropsAndActions}</p>
             <div className="relative">
               {/* Month labels */}
               <div className="flex border-b border-carbon/[0.06] mb-4">
@@ -578,7 +579,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <div className="flex items-center gap-6 mt-4 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold">D</div>
-                  <span className="text-carbon/40">Drops</span>
+                  <span className="text-carbon/40">{t.marketingPage.drops}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   {Object.entries(ACTION_COLORS).slice(0, 4).map(([type, color]) => (
@@ -597,22 +598,22 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         <div className="bg-white border border-carbon/[0.06] p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Drops</p>
-              <p className="text-sm font-light text-carbon/40">Drag products between drops to reorganize</p>
+              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.drops}</p>
+              <p className="text-sm font-light text-carbon/40">{t.marketingPage.dragProducts}</p>
             </div>
             <Button size="sm" onClick={() => setShowAddDrop(true)} className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-              <Plus className="h-4 w-4 mr-1" />Add Drop
+              <Plus className="h-4 w-4 mr-1" />{t.marketingPage.addDrop}
             </Button>
           </div>
 
           {showAddDrop && (
             <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-4 gap-4">
-              <div><Label className="text-xs">Drop Name</Label><Input value={newDrop.name} onChange={e => setNewDrop({ ...newDrop, name: e.target.value })} placeholder="e.g., Season Launch" className="h-9" /></div>
-              <div><Label className="text-xs">Launch Date</Label><Input type="date" value={newDrop.launch_date} onChange={e => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
-              <div><Label className="text-xs">Weeks Active</Label><Input type="number" value={newDrop.weeks_active} onChange={e => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
+              <div><Label className="text-xs">{t.marketingPage.dropName}</Label><Input value={newDrop.name} onChange={e => setNewDrop({ ...newDrop, name: e.target.value })} placeholder="e.g., Season Launch" className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.launchDate}</Label><Input type="date" value={newDrop.launch_date} onChange={e => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.weeksActive}</Label><Input type="number" value={newDrop.weeks_active} onChange={e => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
               <div className="flex items-end gap-2">
-                <Button size="sm" onClick={handleAddDrop} className="rounded-none">Add</Button>
-                <Button size="sm" variant="outline" onClick={() => setShowAddDrop(false)} className="rounded-none">Cancel</Button>
+                <Button size="sm" onClick={handleAddDrop} className="rounded-none">{t.common.add}</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowAddDrop(false)} className="rounded-none">{t.common.cancel}</Button>
               </div>
             </div>
           )}
@@ -653,19 +654,19 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                     </div>
                   ))}
                   {(!skusByDrop[drop.drop_number] || skusByDrop[drop.drop_number].length === 0) && (
-                    <p className="text-xs text-carbon/30 text-center py-4">No products</p>
+                    <p className="text-xs text-carbon/30 text-center py-4">{t.marketingPage.noProducts}</p>
                   )}
                 </div>
                 <div className="p-2 border-t border-carbon/[0.06] bg-carbon/[0.02] text-xs">
-                  <div className="flex justify-between"><span className="text-carbon/40">SKUs</span><span className="font-medium">{(skusByDrop[drop.drop_number] || []).length}</span></div>
-                  <div className="flex justify-between"><span className="text-carbon/40">Sales</span><span className="font-medium text-green-600">€{Math.round((skusByDrop[drop.drop_number] || []).reduce((s, sku) => s + (sku.expected_sales || 0), 0)).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-carbon/40">{t.marketingPage.skus}</span><span className="font-medium">{(skusByDrop[drop.drop_number] || []).length}</span></div>
+                  <div className="flex justify-between"><span className="text-carbon/40">{t.marketingPage.sales}</span><span className="font-medium text-green-600">€{Math.round((skusByDrop[drop.drop_number] || []).reduce((s, sku) => s + (sku.expected_sales || 0), 0)).toLocaleString()}</span></div>
                 </div>
               </div>
             ))}
             {drops.length === 0 && (
               <div className="w-full py-12 text-center text-carbon/30">
                 <Calendar className="h-8 w-8 mx-auto mb-3 opacity-30" />
-                <p className="text-sm font-light">No drops created yet. Add manually or use AI to generate a plan.</p>
+                <p className="text-sm font-light">{t.marketingPage.noDropsYet}</p>
               </div>
             )}
           </div>
@@ -675,19 +676,19 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         <div className="bg-white border border-carbon/[0.06] p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Commercial Actions</p>
-              <p className="text-sm font-light text-carbon/40">Marketing events, collabs, and campaigns</p>
+              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.commercialActions}</p>
+              <p className="text-sm font-light text-carbon/40">{t.marketingPage.commercialActionsDesc}</p>
             </div>
             <Button size="sm" onClick={() => setShowAddAction(true)} className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-              <Plus className="h-4 w-4 mr-1" />Add Action
+              <Plus className="h-4 w-4 mr-1" />{t.marketingPage.addAction}
             </Button>
           </div>
 
           {showAddAction && (
             <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-5 gap-4">
-              <div><Label className="text-xs">Name</Label><Input value={newAction.name} onChange={e => setNewAction({ ...newAction, name: e.target.value })} placeholder="e.g., Black Friday" className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.name}</Label><Input value={newAction.name} onChange={e => setNewAction({ ...newAction, name: e.target.value })} placeholder="e.g., Black Friday" className="h-9" /></div>
               <div>
-                <Label className="text-xs">Type</Label>
+                <Label className="text-xs">{t.marketingPage.type}</Label>
                 <Select value={newAction.action_type} onValueChange={v => setNewAction({ ...newAction, action_type: v as any })}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -699,9 +700,9 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label className="text-xs">Date</Label><Input type="date" value={newAction.start_date} onChange={e => setNewAction({ ...newAction, start_date: e.target.value })} className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.date}</Label><Input type="date" value={newAction.start_date} onChange={e => setNewAction({ ...newAction, start_date: e.target.value })} className="h-9" /></div>
               <div>
-                <Label className="text-xs">Category</Label>
+                <Label className="text-xs">{t.marketingPage.category}</Label>
                 <Select value={newAction.category} onValueChange={v => setNewAction({ ...newAction, category: v })}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Select..." /></SelectTrigger>
                   <SelectContent>
@@ -713,8 +714,8 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 </Select>
               </div>
               <div className="flex items-end gap-2">
-                <Button size="sm" onClick={handleAddAction} className="rounded-none">Add</Button>
-                <Button size="sm" variant="outline" onClick={() => setShowAddAction(false)} className="rounded-none">Cancel</Button>
+                <Button size="sm" onClick={handleAddAction} className="rounded-none">{t.common.add}</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowAddAction(false)} className="rounded-none">{t.common.cancel}</Button>
               </div>
             </div>
           )}
@@ -732,7 +733,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 </Button>
               </div>
             ))}
-            {actions.length === 0 && <p className="text-sm text-carbon/30 font-light">No commercial actions yet.</p>}
+            {actions.length === 0 && <p className="text-sm text-carbon/30 font-light">{t.marketingPage.noActionsYet}</p>}
           </div>
         </div>
 
@@ -740,11 +741,11 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         <div className="bg-white border border-carbon/[0.06] p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">AI Market Validation</p>
-              <p className="text-sm font-light text-carbon/40">Compare your plan with predicted market demand</p>
+              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.aiMarketValidation}</p>
+              <p className="text-sm font-light text-carbon/40">{t.marketingPage.compareWithMarket}</p>
             </div>
             <Button onClick={handleGeneratePrediction} disabled={isGenerating || drops.length === 0} className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
-              {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analyzing...</> : <><Sparkles className="h-4 w-4 mr-2" />Validate with AI</>}
+              {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.analyzing}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.validateWithAi}</>}
             </Button>
           </div>
 
@@ -755,7 +756,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06]">
                   <h4 className="text-sm font-medium text-carbon mb-4 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
-                    Sales Forecast: Your Plan vs Market Demand
+                    {t.marketingPage.salesForecast}
                   </h4>
                   <div className="relative h-64">
                     {(() => {
@@ -806,8 +807,8 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                     })()}
                   </div>
                   <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t border-carbon/[0.06]">
-                    <div className="flex items-center gap-2"><div className="w-8 h-1 bg-blue-500 rounded" /><span className="text-xs text-carbon/50">Your Plan</span></div>
-                    <div className="flex items-center gap-2"><div className="w-8 h-1 bg-orange-500 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #f97316 0, #f97316 8px, transparent 8px, transparent 12px)' }} /><span className="text-xs text-carbon/50">AI Market Prediction</span></div>
+                    <div className="flex items-center gap-2"><div className="w-8 h-1 bg-blue-500 rounded" /><span className="text-xs text-carbon/50">{t.marketingPage.yourPlan}</span></div>
+                    <div className="flex items-center gap-2"><div className="w-8 h-1 bg-orange-500 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #f97316 0, #f97316 8px, transparent 8px, transparent 12px)' }} /><span className="text-xs text-carbon/50">{t.marketingPage.aiMarketPrediction}</span></div>
                   </div>
                 </div>
               )}
@@ -815,7 +816,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               {/* Insights */}
               {prediction.insights && (
                 <div className="p-4 bg-blue-50 border border-blue-200">
-                  <h4 className="text-sm font-medium text-blue-900 mb-2">Insights</h4>
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">{t.marketingPage.insights}</h4>
                   <p className="text-sm text-blue-800 font-light">{prediction.insights}</p>
                 </div>
               )}
@@ -824,7 +825,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               {prediction.gaps?.length > 0 && (
                 <div className="p-4 bg-orange-50 border border-orange-200">
                   <h4 className="text-sm font-medium text-orange-900 mb-2 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />Gaps Detected
+                    <AlertTriangle className="h-4 w-4" />{t.marketingPage.gapsDetected}
                   </h4>
                   <ul className="text-sm text-orange-800 space-y-1">
                     {prediction.gaps.map((gap: string, i: number) => (
@@ -838,7 +839,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               {prediction.recommendations?.length > 0 && (
                 <div className="p-4 bg-green-50 border border-green-200">
                   <h4 className="text-sm font-medium text-green-900 mb-2 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />Recommendations
+                    <CheckCircle className="h-4 w-4" />{t.marketingPage.recommendations}
                   </h4>
                   <ul className="text-sm text-green-800 space-y-1">
                     {prediction.recommendations.map((rec: string, i: number) => (

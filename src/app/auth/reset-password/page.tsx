@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Loader2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useTranslation } from '@/i18n';
 
 export default function ResetPasswordPage() {
+  const t = useTranslation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ export default function ResetPasswordPage() {
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) {
-          setError('Reset link has expired or is invalid. Please request a new one.');
+          setError(t.auth.resetLinkExpiredOrInvalid);
         } else {
           setSessionReady(true);
         }
@@ -39,16 +41,17 @@ export default function ResetPasswordPage() {
         if (session) {
           setSessionReady(true);
         } else {
-          setError('No active session. Please request a new password reset link.');
+          setError(t.auth.noActiveSession);
         }
         setInitializing(false);
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validatePassword = (pw: string): string | null => {
-    if (pw.length < 8) return 'Password must be at least 8 characters';
-    if (!/\d/.test(pw)) return 'Password must contain at least 1 number';
+    if (pw.length < 8) return t.auth.errPasswordMinChars;
+    if (!/\d/.test(pw)) return t.auth.errPasswordNeedNumber;
     return null;
   };
 
@@ -63,7 +66,7 @@ export default function ResetPasswordPage() {
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t.auth.passwordsDoNotMatch);
       return;
     }
 
@@ -79,7 +82,7 @@ export default function ResetPasswordPage() {
         setSuccess(true);
       }
     } catch {
-      setError('An unexpected error occurred');
+      setError(t.common.unexpectedError);
     } finally {
       setLoading(false);
     }
@@ -101,40 +104,40 @@ export default function ResetPasswordPage() {
             <div className="text-center space-y-4">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
               <h1 className="text-2xl font-light text-crema tracking-tight">
-                Password updated
+                {t.auth.passwordUpdated}
               </h1>
               <p className="text-sm text-gris/60">
-                Your password has been successfully updated. You can now sign in with your new password.
+                {t.auth.passwordUpdateSuccess}
               </p>
               <Link
                 href="/my-collections"
                 className="inline-block w-full py-3 bg-crema text-carbon text-sm font-medium tracking-[0.1em] uppercase hover:bg-crema/90 transition-colors text-center"
               >
-                Go to my collections
+                {t.auth.goToCollections}
               </Link>
             </div>
           ) : !sessionReady ? (
             <div className="text-center space-y-4">
               <h1 className="text-2xl font-light text-crema tracking-tight">
-                Link expired
+                {t.auth.linkExpired}
               </h1>
               <p className="text-sm text-gris/60">
-                {error || 'This reset link is no longer valid.'}
+                {error || t.auth.linkExpiredDesc}
               </p>
               <Link
                 href="/auth/forgot-password"
                 className="inline-block w-full py-3 bg-crema text-carbon text-sm font-medium tracking-[0.1em] uppercase hover:bg-crema/90 transition-colors text-center"
               >
-                Request new reset link
+                {t.auth.requestNewResetLink}
               </Link>
             </div>
           ) : (
             <>
               <h1 className="text-2xl font-light text-crema tracking-tight">
-                Set new password
+                {t.auth.setNewPassword}
               </h1>
               <p className="text-sm text-gris/60 mt-2 mb-6">
-                Enter your new password below.
+                {t.auth.setNewPasswordDesc}
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -146,7 +149,7 @@ export default function ResetPasswordPage() {
 
                 <div className="space-y-1.5">
                   <label htmlFor="password" className="text-xs font-medium text-gris uppercase tracking-widest">
-                    New Password
+                    {t.auth.newPassword}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gris/50" />
@@ -155,19 +158,19 @@ export default function ResetPasswordPage() {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder={t.auth.newPasswordPlaceholder}
                       className="w-full pl-10 pr-4 py-3 bg-transparent border border-gris/30 text-crema text-sm placeholder:text-gris/40 focus:outline-none focus:border-crema/50 transition-colors"
                       minLength={8}
                       required
                       autoFocus
                     />
                   </div>
-                  <p className="text-xs text-gris/40">Minimum 8 characters, at least 1 number</p>
+                  <p className="text-xs text-gris/40">{t.auth.passwordHint}</p>
                 </div>
 
                 <div className="space-y-1.5">
                   <label htmlFor="confirmPassword" className="text-xs font-medium text-gris uppercase tracking-widest">
-                    Confirm Password
+                    {t.auth.confirmPassword}
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gris/50" />
@@ -176,7 +179,7 @@ export default function ResetPasswordPage() {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder={t.auth.newPasswordPlaceholder}
                       className="w-full pl-10 pr-4 py-3 bg-transparent border border-gris/30 text-crema text-sm placeholder:text-gris/40 focus:outline-none focus:border-crema/50 transition-colors"
                       minLength={8}
                       required
@@ -192,10 +195,10 @@ export default function ResetPasswordPage() {
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Updating...
+                      {t.auth.updatingPassword}
                     </span>
                   ) : (
-                    'Update password'
+                    t.auth.updatePassword
                   )}
                 </button>
               </form>

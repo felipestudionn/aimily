@@ -5,6 +5,7 @@ import { GoToMarketCard } from './GoToMarketCard';
 import { ContentCalendarCard } from './ContentCalendarCard';
 import { PaidGrowthCard } from './PaidGrowthCard';
 import { LaunchCard } from './LaunchCard';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   collectionPlanId: string;
@@ -12,18 +13,20 @@ interface Props {
 }
 
 export function MarketingDistributionScreen({ collectionPlanId, milestones }: Props) {
+  const t = useTranslation();
+
   return (
     <div className="px-8 md:px-12 lg:px-16 py-12">
       {/* Header */}
       <div className="mb-10">
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
-          Marketing & Digital
+          {t.marketingPage.sectionLabel}
         </p>
         <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-          Distribution & <span className="italic">Launch</span>
+          {t.marketingPage.distributionTitle} <span className="italic">{t.marketingPage.distributionTitleItalic}</span>
         </h2>
         <p className="text-base font-light text-carbon/50 mt-3 max-w-2xl leading-relaxed">
-          Plan your go-to-market, schedule content, manage paid campaigns, and execute the launch.
+          {t.marketingPage.distributionDesc}
         </p>
       </div>
 

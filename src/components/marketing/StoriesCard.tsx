@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useStories, type Story } from '@/hooks/useStories';
 import { useSkus, type SKU } from '@/hooks/useSkus';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Types ── */
 
@@ -46,6 +48,8 @@ interface StoriesCardProps {
 /* ── Component ── */
 
 export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
+  const t = useTranslation();
+  const { language } = useLanguage();
   const {
     stories,
     loading,
@@ -82,23 +86,23 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Historias
+              {t.marketingPage.storiesLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Collection Stories
+              {t.marketingPage.storiesTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Define narrative arcs that organize your collection into compelling stories for marketing.
+          {t.marketingPage.storiesDesc}
         </p>
 
         {/* Story count / preview */}
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {loading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : stories.length === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No stories yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noStoriesYet}</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {stories.map((s) => (
@@ -114,7 +118,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -232,10 +236,10 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
 
   /* ── TABS ── */
 
-  const TABS: { id: TabMode; label: string; labelEs: string }[] = [
-    { id: 'libre', label: 'Manual', labelEs: 'Libre' },
-    { id: 'asistido', label: 'Assisted', labelEs: 'Asistido' },
-    { id: 'propuesta', label: 'AI Proposal', labelEs: 'Propuesta IA' },
+  const TABS: { id: TabMode; labelKey: 'tabManual' | 'tabAssisted' | 'tabAiProposal' }[] = [
+    { id: 'libre', labelKey: 'tabManual' },
+    { id: 'asistido', labelKey: 'tabAssisted' },
+    { id: 'propuesta', labelKey: 'tabAiProposal' },
   ];
 
   /* ── Expanded view ── */
@@ -250,14 +254,14 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
             className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Creation
+            {t.marketingPage.backToCreation}
           </button>
           <div className="text-center">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-              Historias
+              {t.marketingPage.storiesLabel}
             </p>
             <h2 className="text-lg font-light text-carbon tracking-tight">
-              Collection Stories
+              {t.marketingPage.storiesTitle}
             </h2>
           </div>
           <div className="w-32" />
@@ -278,7 +282,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
                   : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
               }`}
             >
-              {tab.labelEs}
+              {t.marketingPage[tab.labelKey]}
             </button>
           ))}
         </div>
@@ -290,19 +294,19 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-light text-carbon/50">
-                Create and manage stories manually. Drag SKUs to assign them.
+                {t.marketingPage.createStoriesManually}
               </p>
               <button
                 onClick={handleAddStory}
                 className="flex items-center gap-2 bg-carbon text-crema px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors"
               >
-                <Plus className="h-3.5 w-3.5" /> Add Story
+                <Plus className="h-3.5 w-3.5" /> {t.marketingPage.addStory}
               </button>
             </div>
 
             {stories.length === 0 && !loading && (
               <div className="text-center py-20 text-carbon/30 text-sm font-light">
-                No stories yet. Add one manually or use the AI tabs.
+                {t.marketingPage.noStoriesEmpty}
               </div>
             )}
 
@@ -332,7 +336,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
             {skus.length > 0 && (
               <div className="mt-10">
                 <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-3">
-                  Unassigned SKUs ({unassignedSkus.length})
+                  {t.marketingPage.unassignedSkus} ({unassignedSkus.length})
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {unassignedSkus.map((sku) => (
@@ -349,7 +353,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
                     </div>
                   ))}
                   {unassignedSkus.length === 0 && (
-                    <p className="text-xs text-carbon/20">All SKUs assigned</p>
+                    <p className="text-xs text-carbon/20">{t.marketingPage.allSkusAssigned}</p>
                   )}
                 </div>
               </div>
@@ -361,12 +365,12 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
         {activeTab === 'asistido' && (
           <div className="space-y-6">
             <p className="text-sm font-light text-carbon/50">
-              Describe how you want the stories grouped. The AI will propose stories following your direction.
+              {t.marketingPage.assistedDesc}
             </p>
             <textarea
               value={userDirection}
               onChange={(e) => setUserDirection(e.target.value)}
-              placeholder="E.g. I want 3 stories: one sporty, one elegant evening, one casual daily. Put the new sneakers in the sporty story..."
+              placeholder={t.marketingPage.assistedPlaceholder}
               className="w-full h-32 bg-white border border-carbon/[0.06] px-4 py-3 text-sm font-light text-carbon placeholder:text-carbon/25 focus:outline-none focus:border-carbon/20 resize-none"
             />
             <button
@@ -379,7 +383,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
               ) : (
                 <Sparkles className="h-3.5 w-3.5" />
               )}
-              Generate with Direction
+              {t.marketingPage.generateWithDirection}
             </button>
 
             {/* AI drafts preview (editable) */}
@@ -399,7 +403,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
         {activeTab === 'propuesta' && (
           <div className="space-y-6">
             <p className="text-sm font-light text-carbon/50">
-              Let the AI analyze your SKUs, brand DNA, and creative vision to propose the optimal story grouping.
+              {t.marketingPage.proposalDesc}
             </p>
             <button
               onClick={() => generateStories('generate')}
@@ -411,7 +415,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
               ) : (
                 <Sparkles className="h-3.5 w-3.5" />
               )}
-              Generate AI Proposal
+              {t.marketingPage.generateAiProposal}
             </button>
 
             {aiDrafts && (
@@ -463,6 +467,7 @@ function StoryRow({
   onUnassignSku: (skuId: string) => void;
   dragActive: boolean;
 }) {
+  const t = useTranslation();
   const [dragOver, setDragOver] = useState(false);
 
   return (
@@ -493,7 +498,7 @@ function StoryRow({
               value={editForm.name ?? ''}
               onChange={(e) => onEditChange({ ...editForm, name: e.target.value })}
               className="text-xl font-light text-carbon tracking-tight bg-transparent border-b border-carbon/10 focus:border-carbon/30 outline-none w-full mr-4"
-              placeholder="Story name"
+              placeholder={t.marketingPage.storyNamePlaceholder}
             />
             <div className="flex gap-2 flex-shrink-0">
               <button onClick={onSaveEdit} className="p-1.5 text-carbon/60 hover:text-carbon">
@@ -508,7 +513,7 @@ function StoryRow({
             value={editForm.narrative ?? ''}
             onChange={(e) => onEditChange({ ...editForm, narrative: e.target.value })}
             className="w-full h-20 text-sm font-light text-carbon/70 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20 resize-none"
-            placeholder="Narrative..."
+            placeholder={t.marketingPage.narrativePlaceholder}
           />
           <div className="grid grid-cols-2 gap-4">
             <input
@@ -520,20 +525,20 @@ function StoryRow({
                 })
               }
               className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20"
-              placeholder="Mood keywords (comma separated)"
+              placeholder={t.marketingPage.moodPlaceholder}
             />
             <input
               value={editForm.tone ?? ''}
               onChange={(e) => onEditChange({ ...editForm, tone: e.target.value })}
               className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20"
-              placeholder="Tone"
+              placeholder={t.marketingPage.tonePlaceholder}
             />
           </div>
           <input
             value={editForm.content_direction ?? ''}
             onChange={(e) => onEditChange({ ...editForm, content_direction: e.target.value })}
             className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/20"
-            placeholder="Content direction (photography, video...)"
+            placeholder={t.marketingPage.contentDirectionPlaceholder}
           />
         </div>
       ) : (
@@ -599,7 +604,7 @@ function StoryRow({
             ))}
             {skus.length === 0 && (
               <p className="text-[11px] text-carbon/20 italic">
-                Drag SKUs here to assign them
+                {t.marketingPage.dragSkusHere}
               </p>
             )}
           </div>
@@ -624,6 +629,8 @@ function AiDraftsPreview({
   onConfirm: () => void;
   onDiscard: () => void;
 }) {
+  const t = useTranslation();
+
   const updateDraft = (index: number, field: keyof AiStoryDraft, value: unknown) => {
     const updated = { ...drafts };
     updated.stories = [...updated.stories];
@@ -640,20 +647,20 @@ function AiDraftsPreview({
     <div className="space-y-4 mt-6">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">
-          AI Proposal — Review & Edit
+          {t.marketingPage.aiProposalReview}
         </p>
         <div className="flex gap-2">
           <button
             onClick={onDiscard}
             className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon/80 transition-colors"
           >
-            Discard
+            {t.marketingPage.discard}
           </button>
           <button
             onClick={onConfirm}
             className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90 transition-colors"
           >
-            <Check className="h-3.5 w-3.5" /> Confirm & Save
+            <Check className="h-3.5 w-3.5" /> {t.marketingPage.confirmAndSave}
           </button>
         </div>
       </div>
@@ -661,7 +668,7 @@ function AiDraftsPreview({
       {drafts.rationale && (
         <div className="bg-carbon/[0.02] border border-carbon/[0.06] p-4">
           <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">
-            AI Rationale
+            {t.marketingPage.aiRationale}
           </p>
           <p className="text-sm font-light text-carbon/60 leading-relaxed">
             {drafts.rationale}
@@ -692,25 +699,25 @@ function AiDraftsPreview({
                 )
               }
               className="text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
-              placeholder="Mood (comma separated)"
+              placeholder={t.marketingPage.moodSeparated}
             />
             <input
               value={draft.tone}
               onChange={(e) => updateDraft(i, 'tone', e.target.value)}
               className="text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
-              placeholder="Tone"
+              placeholder={t.marketingPage.tonePlaceholder}
             />
           </div>
           <input
             value={draft.content_direction}
             onChange={(e) => updateDraft(i, 'content_direction', e.target.value)}
             className="w-full text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
-            placeholder="Content direction"
+            placeholder={t.marketingPage.contentDirection}
           />
           {/* SKU assignments */}
           <div>
             <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1.5">
-              Assigned SKUs ({draft.sku_ids.length})
+              {t.marketingPage.assignedSkus} ({draft.sku_ids.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
               {draft.sku_ids.map((id) => (

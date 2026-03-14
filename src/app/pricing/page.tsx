@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/navbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useTranslation } from '@/i18n';
 import { AuthModal } from '@/components/auth/AuthModal';
 import {
   Check,
@@ -20,71 +21,69 @@ import {
 
 type PlanId = 'starter' | 'professional' | 'enterprise';
 
-interface Feature {
-  text: string;
-  textEs: string;
-  starter: boolean | string;
-  professional: boolean | string;
-  enterprise: boolean | string;
+type FeatureKey = 'featUsers' | 'featActiveCollections' | 'featAIGenerations' | 'featSketchFlow' | 'featAIModelGenerator' | 'featAIVideo' | 'featTrendAnalytics' | 'featTrendAlerts' | 'featTimelineGantt' | 'featTechPacks' | 'featGTMPlanning' | 'featCreativeSpace' | 'featLookbookBuilder' | 'featRealtimeCollab' | 'featRolesPermissions' | 'featMultiBrand' | 'featSSO' | 'featAPIAccess' | 'featSupport' | 'featOnboarding';
+type ValueKey = 'unlimited' | 'emailSupport' | 'prioritySupport' | 'dedicatedSupport' | 'selfServe' | 'oneSession' | 'threeSessions';
+
+interface FeatureRow {
+  labelKey: FeatureKey;
+  starter: boolean | string | ValueKey;
+  professional: boolean | string | ValueKey;
+  enterprise: boolean | string | ValueKey;
 }
 
-const FEATURES: Feature[] = [
-  { text: 'Users', textEs: 'Usuarios', starter: '1', professional: '10', enterprise: 'Unlimited' },
-  { text: 'Active collections', textEs: 'Colecciones activas', starter: '2', professional: 'Unlimited', enterprise: 'Unlimited' },
-  { text: 'AI generations/month', textEs: 'Generaciones AI/mes', starter: '100', professional: '500', enterprise: 'Unlimited' },
-  { text: 'SketchFlow (AI sketches)', textEs: 'SketchFlow (bocetos AI)', starter: true, professional: true, enterprise: true },
-  { text: 'AI Model Generator', textEs: 'Generador de modelos AI', starter: true, professional: true, enterprise: true },
-  { text: 'AI Video', textEs: 'Video AI', starter: true, professional: true, enterprise: true },
-  { text: 'Trend Analytics', textEs: 'Analisis de tendencias', starter: true, professional: true, enterprise: true },
-  { text: 'Trend alerts', textEs: 'Alertas de tendencias', starter: false, professional: true, enterprise: true },
-  { text: 'Timeline / Gantt + export', textEs: 'Timeline / Gantt + exportar', starter: true, professional: true, enterprise: true },
-  { text: 'Tech Packs + PDF export', textEs: 'Tech Packs + exportar PDF', starter: true, professional: true, enterprise: true },
-  { text: 'Go-to-Market planning', textEs: 'Planificacion go-to-market', starter: true, professional: true, enterprise: true },
-  { text: 'Creative Space', textEs: 'Creative Space', starter: true, professional: true, enterprise: true },
-  { text: 'Lookbook Builder', textEs: 'Lookbook Builder', starter: true, professional: true, enterprise: true },
-  { text: 'Real-time collaboration', textEs: 'Colaboracion en tiempo real', starter: false, professional: true, enterprise: true },
-  { text: 'Roles & permissions', textEs: 'Roles y permisos', starter: false, professional: true, enterprise: true },
-  { text: 'Multi-brand', textEs: 'Multi-marca', starter: false, professional: true, enterprise: true },
-  { text: 'SSO', textEs: 'SSO', starter: false, professional: false, enterprise: true },
-  { text: 'API access', textEs: 'Acceso API', starter: false, professional: false, enterprise: true },
-  { text: 'Support', textEs: 'Soporte', starter: 'Email', professional: 'Priority', enterprise: 'Dedicated' },
-  { text: 'Onboarding', textEs: 'Onboarding', starter: 'Self-serve', professional: '1 session', enterprise: '3 sessions' },
+const VALUE_KEYS: ValueKey[] = ['unlimited', 'emailSupport', 'prioritySupport', 'dedicatedSupport', 'selfServe', 'oneSession', 'threeSessions'];
+
+const FEATURES: FeatureRow[] = [
+  { labelKey: 'featUsers', starter: '1', professional: '10', enterprise: 'unlimited' },
+  { labelKey: 'featActiveCollections', starter: '2', professional: 'unlimited', enterprise: 'unlimited' },
+  { labelKey: 'featAIGenerations', starter: '100', professional: '500', enterprise: 'unlimited' },
+  { labelKey: 'featSketchFlow', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featAIModelGenerator', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featAIVideo', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featTrendAnalytics', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featTrendAlerts', starter: false, professional: true, enterprise: true },
+  { labelKey: 'featTimelineGantt', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featTechPacks', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featGTMPlanning', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featCreativeSpace', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featLookbookBuilder', starter: true, professional: true, enterprise: true },
+  { labelKey: 'featRealtimeCollab', starter: false, professional: true, enterprise: true },
+  { labelKey: 'featRolesPermissions', starter: false, professional: true, enterprise: true },
+  { labelKey: 'featMultiBrand', starter: false, professional: true, enterprise: true },
+  { labelKey: 'featSSO', starter: false, professional: false, enterprise: true },
+  { labelKey: 'featAPIAccess', starter: false, professional: false, enterprise: true },
+  { labelKey: 'featSupport', starter: 'emailSupport', professional: 'prioritySupport', enterprise: 'dedicatedSupport' },
+  { labelKey: 'featOnboarding', starter: 'selfServe', professional: 'oneSession', enterprise: 'threeSessions' },
 ];
 
 const PLANS = [
   {
     id: 'starter' as PlanId,
-    name: 'Starter',
+    nameKey: 'starter' as const,
+    descKey: 'starterDesc' as const,
+    taglineKey: 'starterTagline' as const,
     icon: Rocket,
     price: 199,
     priceAnnual: 159,
-    description: 'For founders & solo designers',
-    descriptionEs: 'Para fundadores y disenadores independientes',
-    tagline: '1 person, 1 brand',
-    taglineEs: '1 persona, 1 marca',
   },
   {
     id: 'professional' as PlanId,
-    name: 'Professional',
+    nameKey: 'professional' as const,
+    descKey: 'professionalDesc' as const,
+    taglineKey: 'professionalTagline' as const,
     icon: Building2,
     price: 599,
     priceAnnual: 479,
-    description: 'For teams & growing brands',
-    descriptionEs: 'Para equipos y marcas en crecimiento',
-    tagline: '1 team, multiple brands',
-    taglineEs: '1 equipo, varias marcas',
     popular: true,
   },
   {
     id: 'enterprise' as PlanId,
-    name: 'Enterprise',
+    nameKey: 'enterprise' as const,
+    descKey: 'enterpriseDesc' as const,
+    taglineKey: 'enterpriseTagline' as const,
     icon: Crown,
-    price: null, // custom
-    priceAnnual: null,
-    description: 'For established brands & departments',
-    descriptionEs: 'Para marcas establecidas y departamentos',
-    tagline: 'Multiple teams, full control',
-    taglineEs: 'Multiples equipos, control total',
+    price: null as number | null, // custom
+    priceAnnual: null as number | null,
   },
 ];
 
@@ -92,10 +91,17 @@ export default function PricingPage() {
   const { user } = useAuth();
   const { subscription, checkoutPlan, isPaid, openPortal } = useSubscription();
   const router = useRouter();
+  const t = useTranslation();
   const [annual, setAnnual] = useState(true);
-  const [lang, setLang] = useState<'en' | 'es'>('en');
   const [showAuth, setShowAuth] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
+
+  /** Resolve a feature cell value — translate ValueKeys, pass through numbers/booleans */
+  const resolveValue = (val: boolean | string | ValueKey): boolean | string => {
+    if (typeof val === 'boolean') return val;
+    if (VALUE_KEYS.includes(val as ValueKey)) return t.pricingPage[val as ValueKey];
+    return val; // plain number strings like '1', '10', '100', '500'
+  };
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'enterprise') {
@@ -126,12 +132,10 @@ export default function PricingPage() {
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-[#282A29] mb-3">
-            {lang === 'es' ? 'Planes y Precios' : 'Plans & Pricing'}
+            {t.pricingPage.title}
           </h1>
           <p className="text-lg text-[#282A29]/60 mb-2">
-            {lang === 'es'
-              ? 'Todo lo que necesitas para gestionar tus colecciones con AI'
-              : 'Everything you need to manage your collections with AI'}
+            {t.pricingPage.subtitle}
           </p>
         </div>
 
@@ -143,21 +147,19 @@ export default function PricingPage() {
             </div>
             <div>
               <p className="font-semibold text-sm">
-                {lang === 'es' ? '14 dias de prueba gratis' : '14-day free trial'}
+                {t.pricingPage.trialTitle}
               </p>
               <p className="text-white/70 text-xs">
-                {lang === 'es'
-                  ? 'Acceso completo a todas las funcionalidades. Sin tarjeta de credito.'
-                  : 'Full access to all features. No credit card required.'}
+                {t.pricingPage.trialSubtitle}
               </p>
             </div>
           </div>
         </div>
 
         {/* Toggle annual/monthly */}
-        <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="flex items-center justify-center gap-3 mb-10">
           <span className={`text-sm ${!annual ? 'text-[#282A29] font-medium' : 'text-[#282A29]/50'}`}>
-            {lang === 'es' ? 'Mensual' : 'Monthly'}
+            {t.landing.monthly}
           </span>
           <button
             onClick={() => setAnnual(!annual)}
@@ -172,23 +174,13 @@ export default function PricingPage() {
             />
           </button>
           <span className={`text-sm ${annual ? 'text-[#282A29] font-medium' : 'text-[#282A29]/50'}`}>
-            {lang === 'es' ? 'Anual' : 'Annual'}
+            {t.landing.annual}
           </span>
           {annual && (
             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-              {lang === 'es' ? 'Ahorra ~20%' : 'Save ~20%'}
+              {t.landing.savePercent}
             </span>
           )}
-        </div>
-
-        {/* Language toggle */}
-        <div className="text-center mb-10">
-          <button
-            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
-            className="text-xs text-[#282A29]/40 hover:text-[#282A29]/60 transition-colors"
-          >
-            {lang === 'en' ? 'Ver en Espanol' : 'View in English'}
-          </button>
         </div>
 
         {/* Plans grid — 3 columns */}
@@ -209,18 +201,18 @@ export default function PricingPage() {
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#282A29] text-white text-xs px-3 py-1 rounded-full font-medium">
-                    {lang === 'es' ? 'Mas popular' : 'Most popular'}
+                    {t.landing.mostPopular}
                   </div>
                 )}
 
                 <div className="mb-4">
                   <plan.icon className="w-8 h-8 text-[#282A29] mb-3" />
-                  <h3 className="text-xl font-bold text-[#282A29]">{plan.name}</h3>
+                  <h3 className="text-xl font-bold text-[#282A29]">{t.landing[plan.nameKey]}</h3>
                   <p className="text-sm text-[#282A29]/50 mt-1">
-                    {lang === 'es' ? plan.descriptionEs : plan.description}
+                    {t.landing[plan.descKey]}
                   </p>
                   <p className="text-xs text-[#282A29]/40 mt-0.5 italic">
-                    {lang === 'es' ? plan.taglineEs : plan.tagline}
+                    {t.landing[plan.taglineKey]}
                   </p>
                 </div>
 
@@ -231,11 +223,11 @@ export default function PricingPage() {
                         {price}€
                       </span>
                       <span className="text-[#282A29]/50 text-sm">
-                        /{lang === 'es' ? 'mes' : 'mo'}
+                        {t.landing.perMonth}
                       </span>
                       {annual && (
                         <div className="text-xs text-[#282A29]/40 mt-1">
-                          {price * 12}€/{lang === 'es' ? 'ano' : 'year'}{' '}
+                          {price * 12}€{t.landing.perYear}{' '}
                           <span className="line-through text-[#282A29]/30">
                             {plan.price! * 12}€
                           </span>
@@ -244,9 +236,9 @@ export default function PricingPage() {
                     </>
                   ) : (
                     <>
-                      <span className="text-3xl font-bold text-[#282A29]">Custom</span>
+                      <span className="text-3xl font-bold text-[#282A29]">{t.landing.custom}</span>
                       <div className="text-xs text-[#282A29]/40 mt-1">
-                        {lang === 'es' ? 'Desde 1.500€/mes' : 'From €1,500/mo'}
+                        {t.landing.customFrom}
                       </div>
                     </>
                   )}
@@ -266,15 +258,15 @@ export default function PricingPage() {
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   ) : isCurrent ? (
-                    <>{lang === 'es' ? 'Plan actual' : 'Current plan'}</>
+                    <>{t.pricingPage.currentPlan}</>
                   ) : plan.id === 'enterprise' ? (
                     <>
-                      {lang === 'es' ? 'Contactar' : 'Contact sales'}
+                      {t.landing.contactSales}
                       <ArrowRight className="w-4 h-4" />
                     </>
                   ) : (
                     <>
-                      {lang === 'es' ? 'Empezar prueba gratis' : 'Start free trial'}
+                      {t.common.startFreeTrial}
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -283,8 +275,9 @@ export default function PricingPage() {
                 {/* Quick feature highlights */}
                 <ul className="mt-6 space-y-2.5">
                   {FEATURES.slice(0, 8).map((feature, i) => {
-                    const value = feature[plan.id];
-                    const included = value !== false;
+                    const rawValue = feature[plan.id];
+                    const resolved = resolveValue(rawValue);
+                    const included = resolved !== false;
 
                     return (
                       <li key={i} className="flex items-start gap-2 text-sm">
@@ -294,9 +287,9 @@ export default function PricingPage() {
                           <X className="w-4 h-4 text-[#282A29]/20 mt-0.5 shrink-0" />
                         )}
                         <span className={included ? 'text-[#282A29]' : 'text-[#282A29]/30'}>
-                          {typeof value === 'string'
-                            ? `${lang === 'es' ? feature.textEs : feature.text}: ${value}`
-                            : (lang === 'es' ? feature.textEs : feature.text)}
+                          {typeof resolved === 'string'
+                            ? `${t.pricingPage[feature.labelKey]}: ${resolved}`
+                            : t.pricingPage[feature.labelKey]}
                         </span>
                       </li>
                     );
@@ -311,7 +304,7 @@ export default function PricingPage() {
         <div className="bg-white rounded-2xl border border-[#282A29]/10 overflow-hidden mb-16">
           <div className="px-6 py-4 border-b border-[#282A29]/10">
             <h2 className="text-lg font-bold text-[#282A29]">
-              {lang === 'es' ? 'Comparativa completa' : 'Full comparison'}
+              {t.pricingPage.fullComparison}
             </h2>
           </div>
           <div className="overflow-x-auto">
@@ -319,21 +312,21 @@ export default function PricingPage() {
               <thead>
                 <tr className="border-b border-[#282A29]/10">
                   <th className="text-left text-sm font-medium text-[#282A29]/50 px-6 py-3 w-1/3">
-                    {lang === 'es' ? 'Funcionalidad' : 'Feature'}
+                    {t.pricingPage.feature}
                   </th>
-                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3">Starter</th>
-                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3 bg-[#282A29]/5">Professional</th>
-                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3">Enterprise</th>
+                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3">{t.landing.starter}</th>
+                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3 bg-[#282A29]/5">{t.landing.professional}</th>
+                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3">{t.landing.enterprise}</th>
                 </tr>
               </thead>
               <tbody>
                 {FEATURES.map((feature, i) => (
                   <tr key={i} className={i % 2 === 0 ? '' : 'bg-[#282A29]/[0.02]'}>
                     <td className="text-sm text-[#282A29] px-6 py-2.5">
-                      {lang === 'es' ? feature.textEs : feature.text}
+                      {t.pricingPage[feature.labelKey]}
                     </td>
                     {(['starter', 'professional', 'enterprise'] as PlanId[]).map((planId) => {
-                      const value = feature[planId];
+                      const resolved = resolveValue(feature[planId]);
                       return (
                         <td
                           key={planId}
@@ -341,9 +334,9 @@ export default function PricingPage() {
                             planId === 'professional' ? 'bg-[#282A29]/5' : ''
                           }`}
                         >
-                          {typeof value === 'string' ? (
-                            <span className="text-[#282A29] font-medium">{value}</span>
-                          ) : value ? (
+                          {typeof resolved === 'string' ? (
+                            <span className="text-[#282A29] font-medium">{resolved}</span>
+                          ) : resolved ? (
                             <Check className="w-4 h-4 text-green-600 mx-auto" />
                           ) : (
                             <X className="w-4 h-4 text-[#282A29]/20 mx-auto" />
@@ -361,18 +354,16 @@ export default function PricingPage() {
         {/* Value proposition */}
         <div className="max-w-3xl mx-auto mb-16">
           <h2 className="text-2xl font-bold text-[#282A29] text-center mb-8">
-            {lang === 'es'
-              ? 'Reemplaza +5 herramientas por una sola plataforma'
-              : 'Replace 5+ tools with one platform'}
+            {t.pricingPage.replaceTools}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { tool: lang === 'es' ? 'PLM / gestion de colecciones' : 'PLM / collection management', cost: '€597/mo', icon: Shield },
-              { tool: lang === 'es' ? 'Generacion de bocetos AI' : 'AI sketch generation', cost: '€560/mo', icon: Sparkles },
-              { tool: lang === 'es' ? 'Fotografias de modelo AI' : 'AI model photography', cost: '€500/mo', icon: Sparkles },
-              { tool: lang === 'es' ? 'Video AI' : 'AI video', cost: '€330/mo', icon: Sparkles },
-              { tool: lang === 'es' ? 'Analisis de tendencias' : 'Trend analytics', cost: '€1,500/mo', icon: Sparkles },
-              { tool: lang === 'es' ? 'Timeline y planificacion' : 'Timeline & planning', cost: '€57/mo', icon: Clock },
+              { tool: t.pricingPage.toolPLM, cost: '€597/mo', icon: Shield },
+              { tool: t.pricingPage.toolSketch, cost: '€560/mo', icon: Sparkles },
+              { tool: t.pricingPage.toolPhoto, cost: '€500/mo', icon: Sparkles },
+              { tool: t.pricingPage.toolVideo, cost: '€330/mo', icon: Sparkles },
+              { tool: t.pricingPage.toolTrend, cost: '€1,500/mo', icon: Sparkles },
+              { tool: t.pricingPage.toolTimeline, cost: '€57/mo', icon: Clock },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3 bg-white/60 rounded-xl px-4 py-3">
                 <X className="w-4 h-4 text-red-400 shrink-0" />
@@ -385,14 +376,10 @@ export default function PricingPage() {
           </div>
           <div className="text-center mt-6">
             <p className="text-[#282A29]/50 text-sm">
-              {lang === 'es'
-                ? 'Total con herramientas separadas: ~€3.544/mes'
-                : 'Total with separate tools: ~€3,544/mo'}
+              {t.pricingPage.totalSeparateTools}
             </p>
             <p className="text-[#282A29] font-bold text-lg mt-1">
-              {lang === 'es'
-                ? 'aimily desde 159€/mes — ahorra un 95%'
-                : 'aimily from €159/mo — save 95%'}
+              {t.pricingPage.aimilyFromSave}
             </p>
           </div>
         </div>
@@ -400,14 +387,10 @@ export default function PricingPage() {
         {/* Bottom */}
         <div className="text-center">
           <p className="text-[#282A29]/50 text-sm">
-            {lang === 'es'
-              ? 'Todos los planes incluyen todas las herramientas AI. La diferencia es escala y colaboracion.'
-              : 'All plans include every AI tool. The difference is scale and collaboration.'}
+            {t.landing.allPlansNote}
             <br />
             <span className="text-[#282A29]/30 text-xs">
-              {lang === 'es'
-                ? 'Precios sin IVA. Impuestos calculados en el checkout.'
-                : 'Prices excl. VAT. Tax calculated at checkout.'}
+              {t.landing.pricesExclVat}
             </span>
           </p>
           {isPaid && (
@@ -415,7 +398,7 @@ export default function PricingPage() {
               onClick={() => openPortal()}
               className="mt-4 text-sm text-[#282A29]/50 hover:text-[#282A29] underline transition-colors"
             >
-              {lang === 'es' ? 'Gestionar suscripcion' : 'Manage subscription'}
+              {t.pricingPage.manageSubscription}
             </button>
           )}
         </div>

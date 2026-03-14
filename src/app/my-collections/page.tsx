@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import {
@@ -61,6 +63,8 @@ export default function MyCollectionsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const supabase = createClient();
+  const t = useTranslation();
+  const { language } = useLanguage();
   const [collections, setCollections] = useState<CollectionPlan[]>([]);
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +111,7 @@ export default function MyCollectionsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this collection?')) return;
+    if (!confirm(t.collections.deleteConfirm)) return;
 
     try {
       const { error } = await supabase
@@ -244,17 +248,17 @@ export default function MyCollectionsPage() {
                     <Sparkles className="h-6 w-6 text-gris/60" />
                   </div>
                   <h2 className="text-2xl font-light text-crema tracking-tight mb-3">
-                    Your first collection awaits
+                    {t.collections.firstCollectionAwaits}
                   </h2>
                   <p className="text-gris/60 text-sm leading-relaxed max-w-xs mb-10">
-                    Plan your timeline, design your products, and launch with confidence.
+                    {t.collections.firstCollectionDesc}
                   </p>
                   <Link
                     href="/new-collection"
                     className="inline-flex items-center gap-2 px-10 py-4 bg-crema text-carbon text-sm font-medium tracking-[0.15em] uppercase hover:bg-crema/90 transition-colors"
                   >
                     <Plus className="h-4 w-4" />
-                    Create Collection
+                    {t.collections.createCollection}
                   </Link>
                 </div>
               </div>
@@ -266,10 +270,10 @@ export default function MyCollectionsPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
                 <div>
                   <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
-                    Your workspace
+                    {t.collections.yourWorkspace}
                   </p>
                   <h1 className="text-4xl md:text-5xl font-light text-carbon tracking-tight leading-[1.15]">
-                    <span className="italic">Collections</span>
+                    <span className="italic">{t.collections.collections}</span>
                   </h1>
                 </div>
                 <Link
@@ -277,7 +281,7 @@ export default function MyCollectionsPage() {
                   className="inline-flex items-center gap-2 px-8 py-3.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
-                  New Collection
+                  {t.collections.newCollection}
                 </Link>
               </div>
 
@@ -285,23 +289,23 @@ export default function MyCollectionsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gris/20">
                 <div className="bg-crema p-6 text-center">
                   <p className="text-3xl font-light text-carbon tracking-tight">{collections.length}</p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Collections</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.collections.collections}</p>
                 </div>
                 <div className="bg-crema p-6 text-center">
                   <p className="text-3xl font-light text-carbon tracking-tight">{stats.avgProgress}%</p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Avg Progress</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.collections.avgProgress}</p>
                 </div>
                 <div className="bg-crema p-6 text-center">
                   <p className={`text-3xl font-light tracking-tight ${stats.totalOverdue > 0 ? 'text-error' : 'text-carbon'}`}>
                     {stats.totalOverdue}
                   </p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Overdue</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.common.overdue}</p>
                 </div>
                 <div className="bg-crema p-6 text-center">
                   <p className="text-3xl font-light text-carbon tracking-tight">
                     {stats.nextLaunch ? `${stats.nextLaunch.daysUntilLaunch}d` : '--'}
                   </p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">Next Launch</p>
+                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.collections.nextLaunch}</p>
                 </div>
               </div>
 
@@ -310,7 +314,7 @@ export default function MyCollectionsPage() {
                 <div className="border border-gris/40 bg-white p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <Clock className="h-4 w-4 text-texto/40" />
-                    <h3 className="text-xs font-medium text-texto uppercase tracking-widest">Upcoming Deadlines</h3>
+                    <h3 className="text-xs font-medium text-texto uppercase tracking-widest">{t.collections.upcomingDeadlines}</h3>
                   </div>
                   <div className="divide-y divide-gris/30">
                     {upcomingDeadlines.map((d, i) => {
@@ -337,10 +341,10 @@ export default function MyCollectionsPage() {
                           <span className="text-xs text-texto/40 truncate max-w-[120px]">{d.collection}</span>
                           <span className={`text-xs font-medium ${d.isOverdue ? 'text-error' : 'text-texto/50'}`}>
                             {d.isOverdue
-                              ? `${daysOverdue}d overdue`
+                              ? `${daysOverdue}${t.collections.dOverdue}`
                               : daysLeft === 0
-                              ? 'Today'
-                              : `${daysLeft}d left`}
+                              ? t.common.today
+                              : `${daysLeft}${t.collections.dLeft}`}
                           </span>
                         </Link>
                       );
@@ -361,7 +365,7 @@ export default function MyCollectionsPage() {
                       <button
                         onClick={() => handleDelete(collection.id)}
                         className="p-1.5 text-gris/40 hover:text-error transition-colors flex-shrink-0"
-                        title="Delete collection"
+                        title={t.collections.deleteCollection}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -370,7 +374,7 @@ export default function MyCollectionsPage() {
                     <div className="flex items-center gap-3 mb-6 text-xs font-medium text-carbon/30">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {new Date(collection.updated_at).toLocaleDateString('es-ES')}
+                        {new Date(collection.updated_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
                       </span>
                       {collection.setup_data?.totalSalesTarget && (
                         <span className="flex items-center gap-1">
@@ -384,7 +388,7 @@ export default function MyCollectionsPage() {
                     {collection.timeline && (
                       <div className="mb-6">
                         <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="font-medium text-carbon/30 tracking-wide">Progress</span>
+                          <span className="font-medium text-carbon/30 tracking-wide">{t.common.progress}</span>
                           <span className="font-light text-carbon text-lg tracking-tight">{collection.progress}%</span>
                         </div>
                         <div className="h-[2px] bg-gris/20 overflow-hidden">
@@ -406,19 +410,19 @@ export default function MyCollectionsPage() {
                       {collection.overdue > 0 && (
                         <span className="flex items-center gap-1 text-xs font-medium text-error border border-error/20 px-2.5 py-1">
                           <AlertTriangle className="h-3 w-3" />
-                          {collection.overdue} overdue
+                          {collection.overdue} {t.common.overdue}
                         </span>
                       )}
                       {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch > 0 && (
                         <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
                           <Rocket className="h-3 w-3" />
-                          {collection.daysUntilLaunch}d to launch
+                          {collection.daysUntilLaunch}{t.collections.dToLaunch}
                         </span>
                       )}
                       {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch <= 0 && (
                         <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
                           <CheckCircle2 className="h-3 w-3" />
-                          Launched
+                          {t.common.launched}
                         </span>
                       )}
                     </div>
@@ -428,7 +432,7 @@ export default function MyCollectionsPage() {
                       href={`/collection/${collection.id}`}
                       className="mt-auto flex items-center justify-center gap-2 w-full py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
                     >
-                      Continue
+                      {t.common.continue}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>

@@ -14,6 +14,7 @@ import { useSkus, type SKU } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { useTranslation } from '@/i18n';
 
 // Month names for timeline
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -36,6 +37,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardProps) {
+  const t = useTranslation();
   const setupData = plan.setup_data;
   const { drops, addDrop, updateDrop, deleteDrop, loading: dropsLoading } = useDrops(plan.id);
   const { actions, addAction, deleteAction } = useCommercialActions(plan.id);
@@ -134,7 +136,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       setPrediction(data);
     } catch (error) {
       console.error('Error generating prediction:', error);
-      alert('Error generating market prediction. Please try again.');
+      alert(t.marketingPage.errorPrediction);
     } finally {
       setIsGeneratingPrediction(false);
     }
@@ -161,10 +163,10 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       
       if (!response.ok) throw new Error('Failed to save plan');
       
-      setSaveMessage({ type: 'success', text: 'Plan saved successfully!' });
+      setSaveMessage({ type: 'success', text: t.marketingPage.planSaved });
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (error) {
-      setSaveMessage({ type: 'error', text: 'Failed to save plan. Please try again.' });
+      setSaveMessage({ type: 'error', text: t.marketingPage.planSaveFailed });
     } finally {
       setIsSaving(false);
     }
@@ -243,7 +245,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-            Go to Market
+            {t.marketingPage.goToMarket}
           </p>
           <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
             {plan.name}
@@ -255,10 +257,10 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
             className="inline-flex items-center gap-1.5 px-4 py-3 bg-white border border-carbon/[0.06] text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/60 hover:text-carbon transition-colors"
           >
             <CalendarDays className="h-4 w-4" />
-            Calendar
+            {t.marketingPage.calendarLink}
           </a>
           <div className="text-right">
-            <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/30">Total Sales Target</p>
+            <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.totalSalesTarget}</p>
             <p className="text-2xl font-light text-carbon tracking-tight mt-1">€{totalPlannedSales.toLocaleString()}</p>
           </div>
 
@@ -275,9 +277,9 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
               className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase"
             >
               {isSaving ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.saving}</>
               ) : (
-                <><Save className="h-4 w-4 mr-2" />Save Plan</>
+                <><Save className="h-4 w-4 mr-2" />{t.marketingPage.savePlan}</>
               )}
             </Button>
 
@@ -294,7 +296,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
             ) : (
               <Button variant="outline" onClick={() => setShowAuthModal(true)} className="rounded-none">
                 <User className="h-4 w-4 mr-2" />
-                Sign In
+                {t.marketingPage.signIn}
               </Button>
             )}
           </div>
@@ -314,10 +316,10 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       {/* Channel Filter */}
       <div className="flex items-center gap-4">
         <Filter className="h-4 w-4 text-carbon/30" />
-        <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Channel:</span>
+        <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.channel}:</span>
         {['ALL', 'DTC', 'WHOLESALE'].map(channel => (
           <Button key={channel} variant={channelFilter === channel ? 'default' : 'outline'} size="sm" onClick={() => setChannelFilter(channel)}>
-            {channel === 'ALL' ? 'All Channels' : channel}
+            {channel === 'ALL' ? t.marketingPage.allChannels : channel}
           </Button>
         ))}
       </div>
@@ -326,8 +328,8 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       {drops.length > 0 && (
         <Card className="border-carbon/[0.06] rounded-none shadow-none">
           <CardHeader className="pb-2">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">Launch Timeline</p>
-            <p className="text-sm font-light text-carbon/40">Drops and commercial actions over time</p>
+            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">{t.marketingPage.launchTimeline}</p>
+            <p className="text-sm font-light text-carbon/40">{t.marketingPage.dropsAndActions}</p>
           </CardHeader>
           <CardContent>
             <div className="relative">
@@ -412,7 +414,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
               <div className="flex items-center gap-6 mt-4 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold">D</div>
-                  <span className="text-gray-600">Drops</span>
+                  <span className="text-gray-600">{t.marketingPage.drops}</span>
                 </div>
                 <div className="flex items-center gap-4">
                   {Object.entries(ACTION_COLORS).slice(0, 4).map(([type, color]) => (
@@ -432,17 +434,17 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       <Card className="border-carbon/[0.06] rounded-none shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Drops</p><p className="text-sm font-light text-carbon/40">Drag products between drops to reorganize</p></div>
-            <Button size="sm" onClick={() => setShowAddDrop(true)}><Plus className="h-4 w-4 mr-1" />Add Drop</Button>
+            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.drops}</p><p className="text-sm font-light text-carbon/40">{t.marketingPage.dragProducts}</p></div>
+            <Button size="sm" onClick={() => setShowAddDrop(true)}><Plus className="h-4 w-4 mr-1" />{t.marketingPage.addDrop}</Button>
           </div>
         </CardHeader>
         <CardContent>
           {showAddDrop && (
             <div className="mb-4 p-4 border rounded-lg bg-muted/50 grid grid-cols-4 gap-4">
-              <div><Label className="text-xs">Drop Name</Label><Input value={newDrop.name} onChange={(e) => setNewDrop({ ...newDrop, name: e.target.value })} placeholder="e.g., Season Launch" className="h-9" /></div>
-              <div><Label className="text-xs">Launch Date</Label><Input type="date" value={newDrop.launch_date} onChange={(e) => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
-              <div><Label className="text-xs">Weeks Active</Label><Input type="number" value={newDrop.weeks_active} onChange={(e) => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
-              <div className="flex items-end gap-2"><Button size="sm" onClick={handleAddDrop}>Add</Button><Button size="sm" variant="outline" onClick={() => setShowAddDrop(false)}>Cancel</Button></div>
+              <div><Label className="text-xs">{t.marketingPage.dropName}</Label><Input value={newDrop.name} onChange={(e) => setNewDrop({ ...newDrop, name: e.target.value })} placeholder="e.g., Season Launch" className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.launchDate}</Label><Input type="date" value={newDrop.launch_date} onChange={(e) => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.weeksActive}</Label><Input type="number" value={newDrop.weeks_active} onChange={(e) => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
+              <div className="flex items-end gap-2"><Button size="sm" onClick={handleAddDrop}>{t.common.add}</Button><Button size="sm" variant="outline" onClick={() => setShowAddDrop(false)}>{t.common.cancel}</Button></div>
             </div>
           )}
           <div className="flex gap-4 overflow-x-auto pb-4">
@@ -470,11 +472,11 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
                       </Select>
                     </div>
                   ))}
-                  {(!skusByDrop[drop.drop_number] || skusByDrop[drop.drop_number].length === 0) && <p className="text-xs text-muted-foreground text-center py-4">No products</p>}
+                  {(!skusByDrop[drop.drop_number] || skusByDrop[drop.drop_number].length === 0) && <p className="text-xs text-muted-foreground text-center py-4">{t.marketingPage.noProducts}</p>}
                 </div>
                 <div className="p-2 border-t bg-gray-50 text-xs">
-                  <div className="flex justify-between"><span className="text-muted-foreground">SKUs</span><span className="font-medium">{(skusByDrop[drop.drop_number] || []).length}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Sales</span><span className="font-medium text-green-600">€{Math.round((skusByDrop[drop.drop_number] || []).reduce((s, sku) => s + sku.expected_sales, 0)).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t.marketingPage.skus}</span><span className="font-medium">{(skusByDrop[drop.drop_number] || []).length}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{t.marketingPage.sales}</span><span className="font-medium text-green-600">€{Math.round((skusByDrop[drop.drop_number] || []).reduce((s, sku) => s + sku.expected_sales, 0)).toLocaleString()}</span></div>
                 </div>
               </div>
             ))}
@@ -486,18 +488,18 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       <Card className="border-carbon/[0.06] rounded-none shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">Commercial Actions</p><p className="text-sm font-light text-carbon/40">Marketing events, collabs, and campaigns</p></div>
-            <Button size="sm" onClick={() => setShowAddAction(true)}><Plus className="h-4 w-4 mr-1" />Add Action</Button>
+            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.commercialActions}</p><p className="text-sm font-light text-carbon/40">{t.marketingPage.commercialActionsDesc}</p></div>
+            <Button size="sm" onClick={() => setShowAddAction(true)}><Plus className="h-4 w-4 mr-1" />{t.marketingPage.addAction}</Button>
           </div>
         </CardHeader>
         <CardContent>
           {showAddAction && (
             <div className="mb-4 p-4 border rounded-lg bg-muted/50 grid grid-cols-5 gap-4">
-              <div><Label className="text-xs">Name</Label><Input value={newAction.name} onChange={(e) => setNewAction({ ...newAction, name: e.target.value })} placeholder="e.g., Black Friday" className="h-9" /></div>
-              <div><Label className="text-xs">Type</Label><Select value={newAction.action_type} onValueChange={(v) => setNewAction({ ...newAction, action_type: v as any })}><SelectTrigger className="h-9"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="SALE">Sale</SelectItem><SelectItem value="COLLAB">Collab</SelectItem><SelectItem value="CAMPAIGN">Campaign</SelectItem><SelectItem value="SEEDING">Seeding</SelectItem><SelectItem value="EVENT">Event</SelectItem></SelectContent></Select></div>
-              <div><Label className="text-xs">Date</Label><Input type="date" value={newAction.start_date} onChange={(e) => setNewAction({ ...newAction, start_date: e.target.value })} className="h-9" /></div>
-              <div><Label className="text-xs">Category</Label><Select value={newAction.category} onValueChange={(v) => setNewAction({ ...newAction, category: v })}><SelectTrigger className="h-9"><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent><SelectItem value="VISIBILIDAD">Visibilidad</SelectItem><SelectItem value="POSICIONAMIENTO">Posicionamiento</SelectItem><SelectItem value="VENTAS">Ventas</SelectItem><SelectItem value="NOTORIEDAD">Notoriedad</SelectItem></SelectContent></Select></div>
-              <div className="flex items-end gap-2"><Button size="sm" onClick={handleAddAction}>Add</Button><Button size="sm" variant="outline" onClick={() => setShowAddAction(false)}>Cancel</Button></div>
+              <div><Label className="text-xs">{t.marketingPage.name}</Label><Input value={newAction.name} onChange={(e) => setNewAction({ ...newAction, name: e.target.value })} placeholder="e.g., Black Friday" className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.type}</Label><Select value={newAction.action_type} onValueChange={(v) => setNewAction({ ...newAction, action_type: v as any })}><SelectTrigger className="h-9"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="SALE">Sale</SelectItem><SelectItem value="COLLAB">Collab</SelectItem><SelectItem value="CAMPAIGN">Campaign</SelectItem><SelectItem value="SEEDING">Seeding</SelectItem><SelectItem value="EVENT">Event</SelectItem></SelectContent></Select></div>
+              <div><Label className="text-xs">{t.marketingPage.date}</Label><Input type="date" value={newAction.start_date} onChange={(e) => setNewAction({ ...newAction, start_date: e.target.value })} className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.category}</Label><Select value={newAction.category} onValueChange={(v) => setNewAction({ ...newAction, category: v })}><SelectTrigger className="h-9"><SelectValue placeholder="Select..." /></SelectTrigger><SelectContent><SelectItem value="VISIBILIDAD">Visibilidad</SelectItem><SelectItem value="POSICIONAMIENTO">Posicionamiento</SelectItem><SelectItem value="VENTAS">Ventas</SelectItem><SelectItem value="NOTORIEDAD">Notoriedad</SelectItem></SelectContent></Select></div>
+              <div className="flex items-end gap-2"><Button size="sm" onClick={handleAddAction}>{t.common.add}</Button><Button size="sm" variant="outline" onClick={() => setShowAddAction(false)}>{t.common.cancel}</Button></div>
             </div>
           )}
           <div className="flex flex-wrap gap-2">
@@ -508,7 +510,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
                 <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => deleteAction(action.id)}><Trash2 className="h-3 w-3" /></Button>
               </div>
             ))}
-            {actions.length === 0 && <p className="text-sm text-muted-foreground">No commercial actions yet.</p>}
+            {actions.length === 0 && <p className="text-sm text-muted-foreground">{t.marketingPage.noActionsYet}</p>}
           </div>
         </CardContent>
       </Card>
@@ -517,9 +519,9 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       <Card className="border-carbon/[0.06] rounded-none shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">AI Market Validation</p><p className="text-sm font-light text-carbon/40">Compare your plan with predicted market demand</p></div>
+            <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.aiMarketValidation}</p><p className="text-sm font-light text-carbon/40">{t.marketingPage.compareWithMarket}</p></div>
             <Button onClick={handleGeneratePrediction} disabled={isGeneratingPrediction || drops.length === 0}>
-              {isGeneratingPrediction ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analyzing...</> : <><Sparkles className="h-4 w-4 mr-2" />Validate with AI</>}
+              {isGeneratingPrediction ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.analyzing}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.validateWithAi}</>}
             </Button>
           </div>
         </CardHeader>
@@ -531,7 +533,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4" />
-                    Sales Forecast: Your Plan vs Market Demand
+                    {t.marketingPage.salesForecast}
                   </h4>
                   
                   {/* Chart */}
@@ -682,11 +684,11 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
                   <div className="flex items-center justify-center gap-8 mt-4 pt-4 border-t">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-1 bg-blue-500 rounded" />
-                      <span className="text-sm text-gray-600">Your Plan</span>
+                      <span className="text-sm text-gray-600">{t.marketingPage.yourPlan}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-1 bg-orange-500 rounded" style={{ backgroundImage: 'repeating-linear-gradient(90deg, #f97316 0, #f97316 8px, transparent 8px, transparent 12px)' }} />
-                      <span className="text-sm text-gray-600">AI Market Prediction</span>
+                      <span className="text-sm text-gray-600">{t.marketingPage.aiMarketPrediction}</span>
                     </div>
                   </div>
                 </div>
@@ -694,7 +696,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
               
               {/* Insights */}
               <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-2">Insights</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">{t.marketingPage.insights}</h4>
                 <p className="text-sm text-blue-800">{prediction.insights}</p>
               </div>
               
@@ -702,7 +704,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
               {prediction.gaps?.length > 0 && (
                 <div className="p-4 bg-orange-50 rounded-lg">
                   <h4 className="font-semibold text-orange-900 mb-2 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />Gaps Detected
+                    <AlertTriangle className="h-4 w-4" />{t.marketingPage.gapsDetected}
                   </h4>
                   <ul className="text-sm text-orange-800 space-y-1">
                     {prediction.gaps.map((gap: string, i: number) => (
@@ -719,7 +721,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
               {prediction.recommendations?.length > 0 && (
                 <div className="p-4 bg-green-50 rounded-lg">
                   <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />Recommendations
+                    <CheckCircle className="h-4 w-4" />{t.marketingPage.recommendations}
                   </h4>
                   <ul className="text-sm text-green-800 space-y-1">
                     {prediction.recommendations.map((rec: string, i: number) => (
@@ -735,7 +737,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p>Click "Validate with AI" to analyze your commercial plan against market demand trends</p>
+              <p>{t.marketingPage.clickValidate}</p>
             </div>
           )}
         </CardContent>

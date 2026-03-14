@@ -5,6 +5,7 @@ import { ArrowRight, ArrowLeft, Check, User, Sparkles, Image, Fingerprint, Globe
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
+import { useTranslation } from '@/i18n';
 
 /* ─── AI generation helper ─── */
 async function generateCreative(
@@ -116,6 +117,7 @@ function VibeProposalFlow({
   error: string | null;
   setError: (v: string | null) => void;
 }) {
+  const t = useTranslation();
   const proposals = (data.vibeProposals as VibeProposal[]) || [];
   const selectedIdx = data.selectedVibe as number | null;
   const isEditing = data.editingVibe as boolean;
@@ -150,7 +152,7 @@ function VibeProposalFlow({
       {/* Reference input */}
       <div>
         <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-          Minimal Reference
+          {t.creative.minimalReference}
         </label>
         <input
           type="text"
@@ -168,7 +170,7 @@ function VibeProposalFlow({
         className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-        Generate Vibes
+        {t.creative.generateVibes}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
 
@@ -176,7 +178,7 @@ function VibeProposalFlow({
       {proposals.length > 0 && !selected && (
         <div className="space-y-3">
           <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
-            Select one direction
+            {t.creative.selectOneDirection}
           </p>
           {proposals.map((p, i) => (
             <button
@@ -186,7 +188,7 @@ function VibeProposalFlow({
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-carbon">{p.title}</span>
-                <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">{t.creative.selectAction}</span>
               </div>
               <div className="text-xs text-carbon/80 leading-relaxed">{p.vibe}</div>
               <div className="text-xs text-carbon/50 mt-2 tracking-wide">{p.keywords}</div>
@@ -200,18 +202,18 @@ function VibeProposalFlow({
         <div className="space-y-4 border border-carbon/20 p-5 bg-carbon/[0.02]">
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
-              Edit your vibe
+              {t.creative.editYourVibe}
             </p>
             <button
               onClick={deselectVibe}
               className="text-xs tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
             >
-              ← Choose another
+              {`← ${t.creative.chooseAnother}`}
             </button>
           </div>
           {/* Title */}
           <div>
-            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Title</label>
+            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.titleLabel}</label>
             <input
               type="text"
               value={(data.vibeTitle as string) || ''}
@@ -221,7 +223,7 @@ function VibeProposalFlow({
           </div>
           {/* Narrative */}
           <div>
-            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Creative Narrative</label>
+            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.creativeNarrative}</label>
             <textarea
               value={(data.vibe as string) || ''}
               onChange={(e) => onChange({ ...data, vibe: e.target.value })}
@@ -230,7 +232,7 @@ function VibeProposalFlow({
           </div>
           {/* Keywords */}
           <div>
-            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Keywords</label>
+            <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.keywords}</label>
             <input
               type="text"
               value={(data.keywords as string) || ''}
@@ -255,6 +257,7 @@ function ConsumerProposalFlow({
   error: string | null;
   setError: (v: string | null) => void;
 }) {
+  const t = useTranslation();
   const proposals = (data.proposals as ConsumerProfile[]) || [];
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [addingManual, setAddingManual] = useState(false);
@@ -328,7 +331,7 @@ function ConsumerProposalFlow({
       {/* Reference input */}
       <div>
         <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-          Minimal Reference
+          {t.creative.minimalReference}
         </label>
         <input
           type="text"
@@ -346,7 +349,7 @@ function ConsumerProposalFlow({
         className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-        {hasProposals ? 'Generate New Set' : 'Generate Consumer Profiles'}
+        {hasProposals ? t.creative.generateNewSet : t.creative.generateConsumerProfiles}
       </button>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -356,7 +359,7 @@ function ConsumerProposalFlow({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/50">
-              {likedProfiles.length} selected · {rejectedProfiles.length} rejected · {proposals.filter(p => p.status === 'pending').length} pending
+              {likedProfiles.length} {t.creative.selectedCount} · {rejectedProfiles.length} {t.creative.rejectedCount} · {proposals.filter(p => p.status === 'pending').length} {t.creative.pendingCount}
             </p>
           </div>
 
@@ -408,7 +411,7 @@ function ConsumerProposalFlow({
                     }`}
                   >
                     <ThumbsUp className="h-3 w-3" />
-                    {p.status === 'liked' ? 'Selected' : 'Select'}
+                    {p.status === 'liked' ? t.creative.selectedAction : t.creative.selectAction}
                   </button>
                   <button
                     onClick={() => updateProposal(i, { status: p.status === 'rejected' ? 'pending' : 'rejected' })}
@@ -419,7 +422,7 @@ function ConsumerProposalFlow({
                     }`}
                   >
                     <ThumbsDown className="h-3 w-3" />
-                    Reject
+                    {t.creative.rejectAction}
                   </button>
                   <button
                     onClick={() => setEditingIdx(editingIdx === i ? null : i)}
@@ -430,7 +433,7 @@ function ConsumerProposalFlow({
                     }`}
                   >
                     <Pencil className="h-3 w-3" />
-                    {editingIdx === i ? 'Done' : 'Edit'}
+                    {editingIdx === i ? t.creative.doneAction : t.creative.editAction}
                   </button>
                   <button
                     onClick={() => removeProposal(i)}
@@ -452,7 +455,7 @@ function ConsumerProposalFlow({
                 className="flex items-center gap-2 px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase border border-carbon/[0.12] text-carbon/70 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
               >
                 {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                Regenerate {rejectedProfiles.length} rejected
+                {t.creative.regenerateRejected} {rejectedProfiles.length} {t.creative.rejectedLabel}
               </button>
             )}
             <button
@@ -460,7 +463,7 @@ function ConsumerProposalFlow({
               className="flex items-center gap-2 px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase border border-dashed border-carbon/[0.15] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-all"
             >
               <Plus className="h-3 w-3" />
-              Add Profile Manually
+              {t.creative.addProfileManually}
             </button>
           </div>
 
@@ -471,14 +474,14 @@ function ConsumerProposalFlow({
                 type="text"
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
-                placeholder="Profile name — e.g. 'Urban Creative Professional'"
+                placeholder={t.creative.profileNamePlaceholder}
                 className="w-full px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
                 autoFocus
               />
               <textarea
                 value={manualDesc}
                 onChange={(e) => setManualDesc(e.target.value)}
-                placeholder="Describe this consumer segment — demographics, lifestyle, shopping behavior..."
+                placeholder={t.creative.profileDescPlaceholder}
                 className="w-full h-28 px-3 py-2 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
               />
               <div className="flex gap-2">
@@ -487,13 +490,13 @@ function ConsumerProposalFlow({
                   disabled={!manualTitle.trim() || !manualDesc.trim()}
                   className="px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30"
                 >
-                  Add Profile
+                  {t.creative.addProfile}
                 </button>
                 <button
                   onClick={() => { setAddingManual(false); setManualTitle(''); setManualDesc(''); }}
                   className="px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase text-carbon/50 border border-carbon/[0.1] hover:border-carbon/20 transition-colors"
                 >
-                  Cancel
+                  {t.common.cancel}
                 </button>
               </div>
             </div>
@@ -505,14 +508,15 @@ function ConsumerProposalFlow({
 }
 
 function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
+  const t = useTranslation();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const genderOptions = [
-    { id: 'women', label: 'Women' },
-    { id: 'men', label: 'Men' },
-    { id: 'unisex', label: 'Unisex' },
-    { id: 'mixed', label: 'Mixed' },
+    { id: 'women', label: t.creative.women },
+    { id: 'men', label: t.creative.men },
+    { id: 'unisex', label: t.creative.unisex },
+    { id: 'mixed', label: t.creative.mixed },
   ] as const;
 
   return (
@@ -520,7 +524,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
       {/* Gender selector — shared across all modes */}
       <div>
         <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-          Collection Target
+          {t.creative.collectionTarget}
         </label>
         <div className="flex gap-2">
           {genderOptions.map((opt) => (
@@ -538,10 +542,10 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
           ))}
         </div>
         {(data.gender as string) === 'mixed' && (
-          <p className="mt-1.5 text-xs text-carbon/50">Separate lines for men & women within the same collection</p>
+          <p className="mt-1.5 text-xs text-carbon/50">{t.creative.mixedDesc}</p>
         )}
         {(data.gender as string) === 'unisex' && (
-          <p className="mt-1.5 text-xs text-carbon/50">Same designs for all genders — no differentiation</p>
+          <p className="mt-1.5 text-xs text-carbon/50">{t.creative.unisexDesc}</p>
         )}
       </div>
 
@@ -550,18 +554,18 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
         <div className="space-y-4">
           <div>
             <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Target Consumer Profile
+              {t.creative.targetConsumerProfile}
             </label>
             <textarea
               value={(data.profile as string) || ''}
               onChange={(e) => onChange({ ...data, profile: e.target.value })}
-              placeholder="Describe your target consumer — demographics, lifestyle, preferences, buying behavior..."
+              placeholder={t.creative.targetConsumerPlaceholder}
               className="w-full h-40 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
           <div>
             <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Age Range
+              {t.creative.ageRange}
             </label>
             <div className="flex gap-3">
               <input
@@ -583,7 +587,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
           </div>
           <div>
             <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Key Markets
+              {t.creative.keyMarkets}
             </label>
             <input
               type="text"
@@ -600,7 +604,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
         <div className="space-y-4">
           <div>
             <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Direction & Keywords
+              {t.creative.directionKeywords}
             </label>
             <textarea
               value={(data.keywords as string) || ''}
@@ -626,13 +630,13 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Expand with AI
+            {t.creative.expandWithAI}
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.profile as string) && (
             <div className="mt-4">
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-                AI-Generated Profile <span className="text-carbon/40">(editable)</span>
+                {t.creative.aiGeneratedProfile} <span className="text-carbon/40">({t.creative.editable})</span>
               </label>
               <textarea
                 value={(data.profile as string) || ''}
@@ -660,6 +664,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
 }
 
 function VibeContent({ mode, data, onChange, collectionContext, consumerProfile }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
+  const t = useTranslation();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -669,18 +674,18 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
         <div className="space-y-4">
           <div>
             <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Collection Spirit & Direction
+              {t.creative.collectionSpiritDirection}
             </label>
             <textarea
               value={(data.vibe as string) || ''}
               onChange={(e) => onChange({ ...data, vibe: e.target.value })}
-              placeholder="Describe the spirit of your collection — what feeling should it evoke? What world does it live in?..."
+              placeholder={t.creative.vibePlaceholder}
               className="w-full h-40 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
           <div>
             <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Keywords
+              {t.creative.keywords}
             </label>
             <input
               type="text"
@@ -697,7 +702,7 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
         <div className="space-y-4">
           <div>
             <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-              Direction & Keywords
+              {t.creative.directionKeywords}
             </label>
             <textarea
               value={(data.direction as string) || ''}
@@ -724,14 +729,14 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Build Narrative
+            {t.creative.buildNarrative}
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.vibe as string) && (
             <div className="space-y-4">
               <div>
                 <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-                  AI-Generated Narrative <span className="text-carbon/40">(editable)</span>
+                  {t.creative.aiGeneratedNarrative} <span className="text-carbon/40">({t.creative.editable})</span>
                 </label>
                 <textarea
                   value={(data.vibe as string) || ''}
@@ -741,7 +746,7 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
               </div>
               <div>
                 <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-                  Keywords <span className="text-carbon/40">(editable)</span>
+                  {t.creative.keywords} <span className="text-carbon/40">({t.creative.editable})</span>
                 </label>
                 <input
                   type="text"
@@ -775,6 +780,7 @@ interface PinterestBoard { id: string; name: string; pin_count: number; image_th
 interface PinterestPin { id: string; title?: string; imageUrl: string; dominantColor?: string; }
 
 function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+  const t = useTranslation();
   const { id: collectionId } = useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const images = (data.images as string[]) || [];
@@ -796,7 +802,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setUploading(true);
     const newUrls: string[] = [];
     for (let i = 0; i < files.length; i++) {
-      setUploadProgress(`Uploading ${i + 1}/${files.length}...`);
+      setUploadProgress(`${t.creative.uploadingProgress} ${i + 1}/${files.length}...`);
       const file = files[i];
       const reader = new FileReader();
       const base64 = await new Promise<string>((resolve) => {
@@ -850,7 +856,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
       setBoards(boardsData.items || []);
       setPinterestStep('boards');
     } catch (e) {
-      setPinterestError('Failed to connect to Pinterest');
+      setPinterestError('Failed to connect to Pinterest'); // Internal error, not user-facing label
     }
     setPinterestLoading(false);
   };
@@ -890,7 +896,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setImportingPins(true);
     const newUrls: string[] = [];
     for (let i = 0; i < selected.length; i++) {
-      setUploadProgress(`Importing ${i + 1}/${selected.length}...`);
+      setUploadProgress(`${t.creative.importingProgress} ${i + 1}/${selected.length}...`);
       try {
         const res = await fetch('/api/storage/upload', {
           method: 'POST',
@@ -940,9 +946,9 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         >
           {uploading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <Upload className="h-6 w-6 text-carbon/30" />}
           <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
-            {uploading ? uploadProgress : 'Upload Photos'}
+            {uploading ? uploadProgress : t.creative.uploadPhotos}
           </span>
-          <span className="text-xs text-carbon/50">JPG, PNG, WEBP</span>
+          <span className="text-xs text-carbon/50">{t.creative.fileTypes}</span>
         </button>
         <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
           if (e.target.files && e.target.files.length > 0) handleUpload(e.target.files);
@@ -955,9 +961,9 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         >
           {pinterestLoading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <ExternalLink className="h-6 w-6 text-carbon/30" />}
           <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
-            {pinterestLoading ? 'Connecting...' : 'Pinterest'}
+            {pinterestLoading ? t.creative.connecting : t.creative.pinterest}
           </span>
-          <span className="text-xs text-carbon/50">Select from boards</span>
+          <span className="text-xs text-carbon/50">{t.creative.selectFromBoards}</span>
         </button>
       </div>
 
@@ -965,7 +971,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
       {pinterestStep === 'boards' && (
         <div className="border border-carbon/20 bg-white p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">Select a Board</p>
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{t.creative.selectBoard}</p>
             <button onClick={closePinterest} className="text-carbon/40 hover:text-carbon/70"><X className="h-4 w-4" /></button>
           </div>
           {pinterestError && <p className="text-xs text-red-600">{pinterestError}</p>}
@@ -981,13 +987,13 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
                     <img src={board.image_thumbnail_url} alt="" className="w-full aspect-square object-cover" />
                   )}
                   <span className="text-xs font-medium text-carbon/80 truncate w-full">{board.name}</span>
-                  <span className="text-xs text-carbon/50">{board.pin_count} pins</span>
+                  <span className="text-xs text-carbon/50">{board.pin_count} {t.creative.pins}</span>
                 </button>
               ))}
             </div>
           </div>
           {boards.length === 0 && !pinterestLoading && (
-            <p className="text-xs text-carbon/50 text-center py-4">No boards found</p>
+            <p className="text-xs text-carbon/50 text-center py-4">{t.creative.noBoardsFound}</p>
           )}
         </div>
       )}
@@ -998,7 +1004,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button onClick={() => setPinterestStep('boards')} className="text-xs text-carbon/50 hover:text-carbon/80">
-                <ArrowLeft className="h-3.5 w-3.5 inline mr-1" />Boards
+                <ArrowLeft className="h-3.5 w-3.5 inline mr-1" />{t.creative.boards}
               </button>
               <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{selectedBoard?.name}</p>
             </div>
@@ -1029,20 +1035,20 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
 
           {selectedPins.size > 0 && (
             <div className="flex items-center justify-between pt-2 border-t border-carbon/10">
-              <span className="text-xs text-carbon/60">{selectedPins.size} selected</span>
+              <span className="text-xs text-carbon/60">{selectedPins.size} {t.common.selected}</span>
               <button
                 onClick={handleImportPins}
                 disabled={importingPins}
                 className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-50"
               >
                 {importingPins ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                {importingPins ? uploadProgress : 'Import Selected'}
+                {importingPins ? uploadProgress : t.creative.importSelected}
               </button>
             </div>
           )}
 
           {pins.length === 0 && !pinterestLoading && (
-            <p className="text-xs text-carbon/50 text-center py-4">No pins found in this board</p>
+            <p className="text-xs text-carbon/50 text-center py-4">{t.creative.noPinsFound}</p>
           )}
         </div>
       )}
@@ -1050,7 +1056,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
       {/* Image Grid */}
       {images.length > 0 && (
         <div>
-          <p className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-3">{images.length} images</p>
+          <p className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-3">{images.length} {t.creative.images}</p>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
             {images.map((img, i) => (
               <div key={i} className="relative aspect-square bg-carbon/[0.04] overflow-hidden group">
@@ -1068,7 +1074,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
       )}
 
       {images.length === 0 && pinterestStep === 'idle' && (
-        <p className="text-xs text-carbon/60 text-center py-4">No images yet. Upload photos or import from Pinterest.</p>
+        <p className="text-xs text-carbon/60 text-center py-4">{t.creative.noImagesYet}</p>
       )}
     </div>
   );
@@ -1076,6 +1082,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
 
 /* ─── Shared editable brand result ─── */
 function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
+  const t = useTranslation();
   const colors = (data.colors as string[]) || [];
 
   // Parse hex from "hex (role)" format
@@ -1093,12 +1100,12 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
   return (
     <div className="space-y-5 border border-carbon/20 p-5 sm:p-6 bg-carbon/[0.02]">
       <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
-        Brand Identity <span className="text-carbon/40">(editable)</span>
+        {t.creative.brandIdentity} <span className="text-carbon/40">({t.creative.editable})</span>
       </p>
 
       {/* Brand Name */}
       <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Brand Name</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.brandName}</label>
         <input
           type="text"
           value={(data.brandName as string) || ''}
@@ -1109,7 +1116,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
       {/* Colors */}
       <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Colors</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.colorsLabel}</label>
         <div className="flex flex-wrap items-center gap-3">
           {colors.map((c, i) => {
             const hex = parseHex(c);
@@ -1141,34 +1148,34 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
       {/* Tone */}
       <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Voice & Tone</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.voiceTone}</label>
         <textarea
           value={(data.tone as string) || ''}
           onChange={(e) => onChange({ ...data, tone: e.target.value })}
-          placeholder="How does the brand speak? Intimate or authoritative? Playful or serious?..."
+          placeholder={t.creative.voiceTonePlaceholder}
           className="w-full h-20 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
         />
       </div>
 
       {/* Typography */}
       <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Typography</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.typographyLabel}</label>
         <input
           type="text"
           value={(data.typography as string) || ''}
           onChange={(e) => onChange({ ...data, typography: e.target.value })}
-          placeholder="e.g. Clean sans-serif headlines, humanist body text..."
+          placeholder={t.creative.typographyPlaceholder}
           className="w-full px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors placeholder:text-carbon/40"
         />
       </div>
 
       {/* Style */}
       <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">Visual Identity</label>
+        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.visualIdentity}</label>
         <textarea
           value={(data.style as string) || ''}
           onChange={(e) => onChange({ ...data, style: e.target.value })}
-          placeholder="What makes this brand recognizable? Spacing, image treatment, composition..."
+          placeholder={t.creative.visualIdentityPlaceholder}
           className="w-full h-20 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
         />
       </div>
@@ -1177,6 +1184,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 }
 
 function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, vibeText }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string; vibeText?: string }) {
+  const t = useTranslation();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasBrand = data.hasBrand as boolean | undefined;
@@ -1186,20 +1194,20 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-6">
         <p className="text-sm text-carbon text-center max-w-sm">
-          Do you already have a brand, or would you like to create one from scratch?
+          {t.creative.brandQuestion}
         </p>
         <div className="flex gap-4">
           <button
             onClick={() => onChange({ ...data, hasBrand: true })}
             className="px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon text-carbon hover:bg-carbon hover:text-crema transition-colors"
           >
-            I have a brand
+            {t.creative.iHaveABrand}
           </button>
           <button
             onClick={() => onChange({ ...data, hasBrand: false })}
             className="px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-colors"
           >
-            Create from scratch
+            {t.creative.createFromScratch}
           </button>
         </div>
       </div>
@@ -1209,11 +1217,11 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
   return (
     <div className="space-y-6">
       {hasBrand ? (
-        /* ═══ PATH A: Existing Brand — extract with AI ═══ */
+        /* PATH A: Existing Brand — extract with AI */
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Instagram</label>
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.instagramLabel}</label>
               <input
                 type="text"
                 value={(data.instagram as string) || ''}
@@ -1223,7 +1231,7 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
               />
             </div>
             <div className="flex-1">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Website</label>
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.websiteLabel}</label>
               <input
                 type="text"
                 value={(data.website as string) || ''}
@@ -1250,7 +1258,7 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Extract Brand DNA
+            {t.creative.extractBrandDNA}
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
 
@@ -1260,28 +1268,28 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
             onClick={() => onChange({ ...data, hasBrand: undefined, extracted: false })}
             className="text-xs text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
           >
-            ← Change option
+            {`← ${t.creative.changeOption}`}
           </button>
         </div>
       ) : (
-        /* ═══ PATH B: New Brand — manual or AI-generated ═══ */
+        /* PATH B: New Brand — manual or AI-generated */
         <div className="space-y-4">
           <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Brand Name</label>
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandName}</label>
             <input
               type="text"
               value={(data.brandName as string) || ''}
               onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-              placeholder="Your brand name or leave blank for AI to suggest..."
+              placeholder={t.creative.brandNamePlaceholder}
               className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">Brand Direction</label>
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandDirection}</label>
             <textarea
               value={(data.direction as string) || ''}
               onChange={(e) => onChange({ ...data, direction: e.target.value })}
-              placeholder="Describe the personality of your brand — what does it stand for, who is it for?..."
+              placeholder={t.creative.brandDirectionPlaceholder}
               className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
@@ -1307,14 +1315,14 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
               className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Generate with AI
+              {t.creative.generateWithAI}
             </button>
             {!hasResult && (
               <button
                 onClick={() => onChange({ ...data, generated: true, colors: ['#1a1a1a', '#6b7280', '#d4a574', '#f5f0eb'], tone: '', typography: '', style: '' })}
                 className="px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-colors"
               >
-                Fill manually
+                {t.creative.fillManually}
               </button>
             )}
           </div>
@@ -1326,7 +1334,7 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
             onClick={() => onChange({ ...data, hasBrand: undefined, generated: false })}
             className="text-xs text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
           >
-            ← Change option
+            {`← ${t.creative.changeOption}`}
           </button>
         </div>
       )}
@@ -1344,29 +1352,30 @@ interface ResearchResult {
 }
 
 function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
+  const t = useTranslation();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const config: Record<string, { label: string; placeholder: string; generateLabel: string }> = {
     'global-trends': {
-      label: 'Season & Category',
-      placeholder: 'e.g. SS27 footwear, FW26 outerwear...',
-      generateLabel: 'Analyze Global Trends',
+      label: t.creative.seasonCategory,
+      placeholder: t.creative.seasonCategoryPlaceholder,
+      generateLabel: t.creative.analyzeGlobalTrends,
     },
     'deep-dive': {
-      label: 'Product Type & Market',
-      placeholder: 'e.g. running shoes, European urban market, mid-range...',
-      generateLabel: 'Deep Dive Analysis',
+      label: t.creative.productTypeMarket,
+      placeholder: t.creative.productTypeMarketPlaceholder,
+      generateLabel: t.creative.deepDiveAnalysis,
     },
     'live-signals': {
-      label: 'Categories to Monitor',
-      placeholder: 'e.g. sneakers, sustainable fashion, Gen Z trends...',
-      generateLabel: 'Scan Live Signals',
+      label: t.creative.categoriesToMonitor,
+      placeholder: t.creative.categoriesToMonitorPlaceholder,
+      generateLabel: t.creative.scanLiveSignals,
     },
     'competitors': {
-      label: 'Reference Brands',
-      placeholder: 'e.g. Veja, Sézane, COS, Axel Arigato...',
-      generateLabel: 'Analyze Competitors',
+      label: t.creative.referenceBrands,
+      placeholder: t.creative.referenceBrandsPlaceholder,
+      generateLabel: t.creative.analyzeCompetitors,
     },
   };
 
@@ -1430,7 +1439,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
       {/* Status counter */}
       {results.length > 0 && (
         <div className="text-xs tracking-[0.1em] uppercase text-carbon/50">
-          {selectedCount} selected · {results.length - selectedCount} unselected · {results.length} total
+          {selectedCount} {t.creative.selectedCount} · {results.length - selectedCount} {t.creative.unselectedCount} · {results.length} {t.creative.totalCount}
         </div>
       )}
 
@@ -1462,7 +1471,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
                 onClick={() => updateResult(i, { editing: false })}
                 className="text-xs tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
               >
-                Done editing
+                {t.creative.doneEditing}
               </button>
             </div>
           ) : (
@@ -1541,6 +1550,7 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
    ═══════════════════════════════════════════════════════════ */
 
 export default function CreativeBrandPage() {
+  const t = useTranslation();
   const { id } = useParams();
   const collectionId = id as string;
   const router = useRouter();
@@ -1579,6 +1589,43 @@ export default function CreativeBrandPage() {
   }, [collectionId]);
 
   const step = STEPS[activeStep];
+
+  // Translated names for steps and blocks
+  const stepNameMap: Record<string, string> = {
+    'vision': t.creative.creativeVision,
+    'research': t.creative.marketResearch,
+    'synthesis': t.creative.creativeSynthesis,
+  };
+  const blockNameMap: Record<string, string> = {
+    'consumer': t.creative.consumerDefinition,
+    'vibe': t.creative.collectionVibe,
+    'moodboard': t.creative.moodboard,
+    'brand-dna': t.creative.brandDNA,
+    'global-trends': t.creative.globalTrends,
+    'deep-dive': t.creative.deepDive,
+    'live-signals': t.creative.liveSignals,
+    'competitors': t.creative.competitors,
+  };
+  const blockDescMap: Record<string, string> = {
+    'consumer': t.creative.consumerDesc,
+    'vibe': t.creative.vibeDesc,
+    'moodboard': t.creative.moodboardDesc,
+    'brand-dna': t.creative.brandDNADesc,
+    'global-trends': t.creative.globalTrendsDesc,
+    'deep-dive': t.creative.deepDiveDesc,
+    'live-signals': t.creative.liveSignalsDesc,
+    'competitors': t.creative.competitorsDesc,
+  };
+  const modeNameMap: Record<string, string> = {
+    'free': t.creative.modeFree,
+    'assisted': t.creative.modeAssisted,
+    'ai': t.creative.modeAI,
+  };
+  const modeDescMap: Record<string, string> = {
+    'free': t.creative.modeFreeDesc,
+    'assisted': t.creative.modeAssistedDesc,
+    'ai': t.creative.modeAIDesc,
+  };
 
   // Accumulated context from confirmed blocks — flows into subsequent AI prompts
   const consumerProfile = (blockData.consumer?.data?.profile as string) || '';
@@ -1631,13 +1678,13 @@ export default function CreativeBrandPage() {
             onClick={() => router.push(`/collection/${id}`)}
             className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
           >
-            <ArrowLeft className="h-3 w-3" /> Overview
+            <ArrowLeft className="h-3 w-3" /> {t.creative.overview}
           </button>
           <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-            Creative & <span className="italic">Brand</span>
+            {t.creative.title.split(' & ')[0]} & <span className="italic">{t.creative.title.split(' & ')[1] || 'Brand'}</span>
           </h2>
           <p className="text-sm text-carbon/60 mt-2 max-w-lg">
-            Define your creative vision, research the market, and synthesize everything into a unified creative input.
+            {t.creative.subtitle}
           </p>
         </div>
 
@@ -1660,7 +1707,7 @@ export default function CreativeBrandPage() {
               }`}>
                 {i + 1}
               </span>
-              <span className="whitespace-nowrap">{s.name}</span>
+              <span className="whitespace-nowrap">{stepNameMap[s.id] || s.name}</span>
             </button>
           ))}
         </div>
@@ -1689,7 +1736,7 @@ export default function CreativeBrandPage() {
                             ? 'bg-carbon/[0.04] border-carbon/[0.12]'
                             : 'bg-white border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm'
                         }`}
-                        title={block.name}
+                        title={blockNameMap[block.id] || block.name}
                       >
                         {state.confirmed ? (
                           <Check className="h-4 w-4 text-carbon/60" />
@@ -1698,7 +1745,7 @@ export default function CreativeBrandPage() {
                         )}
                         {/* Tooltip */}
                         <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">
-                          {block.name}
+                          {blockNameMap[block.id] || block.name}
                         </div>
                       </button>
                     );
@@ -1728,9 +1775,9 @@ export default function CreativeBrandPage() {
                             </div>
                             <div>
                               <h3 className="text-xl font-light text-carbon tracking-tight">
-                                {block.name}
+                                {blockNameMap[block.id] || block.name}
                               </h3>
-                              <p className="text-xs text-carbon/70 mt-0.5">{block.description}</p>
+                              <p className="text-xs text-carbon/70 mt-0.5">{blockDescMap[block.id] || block.description}</p>
                             </div>
                           </div>
                           <button
@@ -1754,11 +1801,11 @@ export default function CreativeBrandPage() {
                                     : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'
                                 }`}
                               >
-                                {m.label}
+                                {modeNameMap[m.id] || m.label}
                               </button>
                             ))}
                             <span className="hidden sm:inline text-xs text-carbon/60 ml-2">
-                              {INPUT_MODES.find((m) => m.id === state.mode)?.description}
+                              {modeDescMap[state.mode] || INPUT_MODES.find((m) => m.id === state.mode)?.description}
                             </span>
                           </div>
                         )}
@@ -1783,14 +1830,14 @@ export default function CreativeBrandPage() {
                             onClick={handleCollapse}
                             className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/50 hover:text-carbon transition-colors"
                           >
-                            ← Back to grid
+                            {`← ${t.creative.backToGrid}`}
                           </button>
                           <button
                             onClick={() => handleConfirm(block.id)}
                             className="flex items-center gap-2 px-8 py-3 text-[11px] font-medium tracking-[0.15em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors"
                           >
                             <Check className="h-3.5 w-3.5" />
-                            Confirm & Continue
+                            {t.creative.confirmContinue}
                           </button>
                         </div>
                       </div>
@@ -1833,13 +1880,13 @@ export default function CreativeBrandPage() {
                             <Icon className="h-5 w-5 text-carbon/50" />
                           </div>
                           <h3 className="text-xl font-light text-carbon tracking-tight">
-                            {block.name}
+                            {blockNameMap[block.id] || block.name}
                           </h3>
                         </div>
                       </div>
 
                       <p className="text-sm text-carbon/70 leading-relaxed flex-1">
-                        {block.description}
+                        {blockDescMap[block.id] || block.description}
                       </p>
 
                       {/* Input Mode Pills (preview) */}
@@ -1850,7 +1897,7 @@ export default function CreativeBrandPage() {
                               key={mode.id}
                               className="px-3 py-1.5 text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50"
                             >
-                              {mode.label}
+                              {modeNameMap[mode.id] || mode.label}
                             </span>
                           ))}
                         </div>
@@ -1859,7 +1906,7 @@ export default function CreativeBrandPage() {
                       {/* CTA */}
                       {(() => {
                         const hasData = Object.keys(state.data || {}).length > 0;
-                        const label = state.confirmed ? 'Edit' : hasData ? 'Continue' : 'Start';
+                        const label = state.confirmed ? t.common.edit : hasData ? t.common.continue : t.creative.start;
                         return (
                           <div className={`mt-6 flex items-center justify-center gap-2 py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors ${
                             state.confirmed
@@ -1883,20 +1930,20 @@ export default function CreativeBrandPage() {
               <Check className="h-6 w-6 text-carbon/30" />
             </div>
             <h3 className="text-2xl font-light text-carbon tracking-tight mb-3">
-              Creative Synthesis
+              {t.creative.creativeSynthesis}
             </h3>
             <p className="text-sm text-carbon/60 max-w-md leading-relaxed mb-8">
-              Once you complete Vision and Research, this step consolidates everything into a unified Creative Input that feeds the next block.
+              {t.creative.synthesisMessage}
             </p>
             <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/25">
               <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-xs">1</span>
-              Vision
+              {t.creative.vision}
               <ArrowRight className="h-3 w-3 text-carbon/15" />
               <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-xs">2</span>
-              Research
+              {t.creative.research}
               <ArrowRight className="h-3 w-3 text-carbon/15" />
               <span className="w-5 h-5 bg-carbon text-crema flex items-center justify-center text-xs">3</span>
-              Synthesis
+              {t.creative.synthesis}
             </div>
           </div>
         )}
@@ -1913,7 +1960,7 @@ export default function CreativeBrandPage() {
                   : 'border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30'
               }`}
             >
-              <ArrowLeft className="h-3.5 w-3.5" /> Previous
+              <ArrowLeft className="h-3.5 w-3.5" /> {t.creative.previous}
             </button>
             <button
               onClick={() => setActiveStep(Math.min(STEPS.length - 1, activeStep + 1))}
@@ -1924,7 +1971,7 @@ export default function CreativeBrandPage() {
                   : 'border-carbon text-carbon hover:bg-carbon hover:text-crema'
               }`}
             >
-              Next <ArrowRight className="h-3.5 w-3.5" />
+              {t.creative.next} <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         )}

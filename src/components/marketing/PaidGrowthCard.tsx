@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/i18n';
 
 /* ── Constants ── */
 
@@ -64,6 +65,7 @@ interface PaidGrowthCardProps {
 /* ── Component ── */
 
 export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [platformFilter, setPlatformFilter] = useState('ALL');
@@ -260,44 +262,44 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Paid y Crecimiento
+              {t.marketingPage.paidLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Paid & Growth
+              {t.marketingPage.paidTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Paid media campaigns, budget allocation, audience targeting, and performance tracking.
+          {t.marketingPage.paidDesc}
         </p>
 
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {loading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : campaigns.length === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No campaigns yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noCampaignsYet}</p>
           ) : (
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-light text-carbon">{campaigns.length}</span>
-                <span className="text-xs text-carbon/40">campaigns</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.campaigns}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-light text-carbon/60">
                   €{totalBudget.toLocaleString()}
                 </span>
-                <span className="text-xs text-carbon/40">budget</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.budget}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-light text-carbon">{totalAdSets}</span>
-                <span className="text-xs text-carbon/40">ad sets</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.adSets}</span>
               </div>
             </div>
           )}
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -315,21 +317,21 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               className="flex items-center gap-1 text-xs font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
-              Back
+              {t.marketingPage.back}
             </button>
             <div className="h-6 w-px bg-carbon/10" />
             <TrendingUp className="h-5 w-5 text-carbon/40" />
             <div>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-                Paid y Crecimiento
+                {t.marketingPage.paidLabel}
               </p>
-              <h2 className="text-lg font-light text-carbon tracking-tight">Paid & Growth</h2>
+              <h2 className="text-lg font-light text-carbon tracking-tight">{t.marketingPage.paidTitle}</h2>
             </div>
           </div>
           <div className="flex items-center gap-6">
             {totalBudget > 0 && (
               <div className="text-right">
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">Total Budget</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.totalBudget}</p>
                 <p className="text-xl font-light text-carbon tracking-tight">€{totalBudget.toLocaleString()}</p>
               </div>
             )}

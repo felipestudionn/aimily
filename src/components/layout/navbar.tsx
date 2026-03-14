@@ -5,6 +5,8 @@ import Image from "next/image";
 import { LogOut, Zap, User, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/i18n";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
@@ -18,11 +20,34 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const { user, signOut } = useAuth();
+  const { language, setLanguage } = useLanguage();
+  const t = useTranslation();
 
   const openAuth = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
     setShowAuthModal(true);
   };
+
+  const LanguageToggle = ({ className = '' }: { className?: string }) => (
+    <div className={`flex bg-transparent border border-current/20 overflow-hidden ${className}`}>
+      <button
+        onClick={() => setLanguage('en')}
+        className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+          language === 'en' ? 'bg-current/20 opacity-100' : 'opacity-40 hover:opacity-70'
+        }`}
+      >
+        EN
+      </button>
+      <button
+        onClick={() => setLanguage('es')}
+        className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+          language === 'es' ? 'bg-current/20 opacity-100' : 'opacity-40 hover:opacity-70'
+        }`}
+      >
+        ES
+      </button>
+    </div>
+  );
 
   // Slim workspace navbar — just logo + user avatar
   if (variant === 'workspace' || variant === 'workspace-dark') {
@@ -48,6 +73,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             />
           </Link>
           <div className="flex items-center gap-2">
+            <LanguageToggle className={isDark ? 'text-crema border-crema/20' : 'text-carbon border-carbon/20'} />
             <NotificationBell />
             {user && (
               <Link
@@ -55,7 +81,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 className={`w-7 h-7 flex items-center justify-center text-[11px] font-medium hover:opacity-80 transition-opacity ${
                   isDark ? 'bg-crema/20 text-crema' : 'bg-carbon text-crema'
                 }`}
-                title="Account"
+                title={t.common.account}
               >
                 {user.email?.charAt(0).toUpperCase()}
               </Link>
@@ -96,37 +122,39 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                   className="inline-flex items-center justify-center px-4 py-2 text-texto/40 text-[11px] font-medium tracking-[0.08em] uppercase transition-all hover:text-texto/70"
                 >
                   <Zap className="mr-1.5 h-3.5 w-3.5" />
-                  Pricing
+                  {t.common.pricing}
                 </Link>
                 <NotificationBell />
+                <LanguageToggle className="text-carbon border-carbon/20" />
                 <Link
                   href="/account"
                   className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:bg-carbon/80 transition-colors"
-                  title="Account"
+                  title={t.common.account}
                 >
                   {user.email?.charAt(0).toUpperCase()}
                 </Link>
                 <button
                   onClick={() => signOut()}
                   className="p-1.5 text-texto/30 hover:text-texto/60 transition-colors"
-                  title="Sign out"
+                  title={t.common.signOut}
                 >
                   <LogOut className="h-3.5 w-3.5" />
                 </button>
               </>
             ) : (
               <>
+                <LanguageToggle className="text-carbon border-carbon/20" />
                 <button
                   onClick={() => openAuth('signin')}
                   className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
                 >
-                  Log in
+                  {t.common.logIn}
                 </button>
                 <button
                   onClick={() => openAuth('signup')}
                   className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
                 >
-                  Start Free Trial
+                  {t.common.startFreeTrial}
                 </button>
               </>
             )}
@@ -146,7 +174,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
               </svg>
             )}
-            <span className="sr-only">Toggle Menu</span>
+            <span className="sr-only">{t.common.toggleMenu}</span>
           </button>
         </div>
       </div>
@@ -168,32 +196,35 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                     onClick={() => { signOut(); setMobileMenuOpen(false); }}
                     className="text-sm text-texto/50 hover:text-texto"
                   >
-                    Sign Out
+                    {t.common.signOut}
                   </button>
                 </div>
                 <Link href="/my-collections" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
-                  <FolderOpen className="h-4 w-4" /> My Collections
+                  <FolderOpen className="h-4 w-4" /> {t.common.myCollections}
                 </Link>
                 <Link href="/account" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
-                  <User className="h-4 w-4" /> Account
+                  <User className="h-4 w-4" /> {t.common.account}
                 </Link>
                 <Link href="/pricing" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
-                  <Zap className="h-4 w-4" /> Pricing
+                  <Zap className="h-4 w-4" /> {t.common.pricing}
                 </Link>
               </>
             ) : (
               <>
                 <button onClick={() => { openAuth('signin'); setMobileMenuOpen(false); }} className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70">
-                  <User className="h-4 w-4" /> Log in
+                  <User className="h-4 w-4" /> {t.common.logIn}
                 </button>
               </>
             )}
+            <div className="flex items-center gap-3 py-2">
+              <LanguageToggle className="text-carbon border-carbon/20" />
+            </div>
             <div className="pt-2">
               <button
                 onClick={() => { openAuth('signup'); setMobileMenuOpen(false); }}
                 className="w-full inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors bg-carbon text-crema shadow hover:bg-carbon/90 h-10 px-4 py-2"
               >
-                Start Free Trial
+                {t.common.startFreeTrial}
               </button>
             </div>
           </div>

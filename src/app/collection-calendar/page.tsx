@@ -7,6 +7,8 @@ import { createDefaultTimeline } from '@/lib/timeline-template';
 import { CollectionTimeline, TimelineMilestone } from '@/types/timeline';
 import { Calendar, Edit3, Save, RotateCcw, FolderOpen, ArrowRight, Download, Cloud } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/i18n';
 import Link from 'next/link';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
 
@@ -37,6 +39,8 @@ function saveTimelines(timelines: CollectionTimeline[]) {
 
 export default function CollectionCalendarPage() {
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = useTranslation();
   const [collections, setCollections] = useState<CollectionPlanSummary[]>([]);
   const [loadingCollections, setLoadingCollections] = useState(true);
   const [timelines, setTimelines] = useState<CollectionTimeline[]>([]);
@@ -179,7 +183,7 @@ export default function CollectionCalendarPage() {
 
   const resetTimeline = () => {
     if (!activeTimeline) return;
-    if (!confirm('¿Resetear todos los hitos a los valores por defecto?')) return;
+    if (!confirm(t.calendarPage.confirmReset)) return;
     const fresh = createDefaultTimeline(
       activeTimeline.collectionName,
       activeTimeline.season,
@@ -235,7 +239,7 @@ export default function CollectionCalendarPage() {
           <div className="mb-6">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
               <FolderOpen className="w-4 h-4" />
-              Tus colecciones
+              {t.calendarPage.yourCollections}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {collections.map((c) => (
@@ -290,7 +294,7 @@ export default function CollectionCalendarPage() {
                   </div>
                 ) : (
                   <h1 className="text-2xl font-bold text-gray-900">
-                    {activeTimeline?.collectionName || 'Calendario'}{' '}
+                    {activeTimeline?.collectionName || t.calendarPage.calendar}{' '}
                     <span className="text-gray-400 font-semibold">
                       {activeTimeline?.season}
                     </span>
@@ -298,7 +302,7 @@ export default function CollectionCalendarPage() {
                 )}
                 {isEditing ? (
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-gray-500">Lanzamiento:</span>
+                    <span className="text-sm text-gray-500">{t.calendarPage.launch}:</span>
                     <input
                       type="date"
                       value={editLaunchDate}
@@ -308,10 +312,10 @@ export default function CollectionCalendarPage() {
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500">
-                    Lanzamiento:{' '}
+                    {t.calendarPage.launch}:{' '}
                     <span className="font-semibold text-gray-700">
                       {activeTimeline
-                        ? new Date(activeTimeline.launchDate).toLocaleDateString('es-ES', {
+                        ? new Date(activeTimeline.launchDate).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
                             weekday: 'long',
                             day: 'numeric',
                             month: 'long',
@@ -322,7 +326,7 @@ export default function CollectionCalendarPage() {
                     {syncing && (
                       <span className="ml-2 inline-flex items-center gap-1 text-xs text-blue-500">
                         <Cloud className="w-3 h-3" />
-                        Syncing...
+                        {t.calendarPage.syncing}
                       </span>
                     )}
                     {user && !syncing && (
@@ -371,7 +375,7 @@ export default function CollectionCalendarPage() {
                 className="flex items-center gap-1.5 bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
               >
                 <Save className="w-4 h-4" />
-                Guardar
+                {t.calendarPage.save}
               </button>
             ) : (
               <button
@@ -379,7 +383,7 @@ export default function CollectionCalendarPage() {
                 className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
               >
                 <Edit3 className="w-4 h-4" />
-                Editar
+                {t.calendarPage.edit}
               </button>
             )}
             <button
@@ -389,14 +393,14 @@ export default function CollectionCalendarPage() {
                 await exportTimelineToExcel(activeTimeline, lang);
               }}
               className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-              title="Exportar a Excel"
+              title={t.calendarPage.exportToExcel}
             >
               <Download className="w-4 h-4" />
             </button>
             <button
               onClick={resetTimeline}
               className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-              title="Resetear al template base"
+              title={t.calendarPage.resetToTemplate}
             >
               <RotateCcw className="w-4 h-4" />
             </button>
@@ -404,7 +408,7 @@ export default function CollectionCalendarPage() {
               onClick={createNewTimeline}
               className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
             >
-              + Nuevo calendario
+              {t.calendarPage.newCalendar}
             </button>
           </div>
         </div>
@@ -412,13 +416,13 @@ export default function CollectionCalendarPage() {
         {/* Phase legend */}
         <div className="flex flex-wrap gap-2 mb-4">
           {[
-            { label: 'Creativo y Marca', color: '#5A8A7A' },
-            { label: 'Planificación y Estrategia', color: '#9A7A60' },
-            { label: 'Diseño y Desarrollo', color: '#7A6A9A' },
-            { label: 'Marketing y Digital', color: '#9A6070' },
+            { label: t.calendarPage.phaseCreative, color: '#5A8A7A' },
+            { label: t.calendarPage.phasePlanning, color: '#9A7A60' },
+            { label: t.calendarPage.phaseDesign, color: '#7A6A9A' },
+            { label: t.calendarPage.phaseMarketing, color: '#9A6070' },
           ].map((p) => (
             <div
-              key={p.label}
+              key={p.color}
               className="flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-full border border-gray-100 shadow-sm"
             >
               <div
@@ -447,13 +451,13 @@ export default function CollectionCalendarPage() {
         )}
 
         <div className="mt-4 text-xs text-gray-400 flex items-center gap-4">
-          <span>Click en el circulo para cambiar estado</span>
+          <span>{t.calendarPage.instructionStatus}</span>
           <span>|</span>
-          <span>Click en las semanas para editar duracion</span>
+          <span>{t.calendarPage.instructionWeeks}</span>
           <span>|</span>
-          <span>Hover sobre un hito para editar su inicio</span>
+          <span>{t.calendarPage.instructionHover}</span>
           <span>|</span>
-          <span>Linea roja = HOY, Linea negra = LAUNCH</span>
+          <span>{t.calendarPage.instructionLines}</span>
         </div>
       </div>
     </div>

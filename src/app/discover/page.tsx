@@ -22,79 +22,62 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
-
-const CAPABILITIES = [
-  {
-    icon: TrendingUp,
-    title: 'Trend Research & Product Strategy',
-    titleEs: 'Investigacion de Tendencias y Estrategia de Producto',
-    description: 'AI-powered trend analysis that identifies market opportunities, consumer signals, and optimal product direction for your collection.',
-    descriptionEs: 'Analisis de tendencias con IA que identifica oportunidades de mercado, senales del consumidor y la direccion optima de producto.',
-  },
-  {
-    icon: Palette,
-    title: 'Brand Identity & Creative Direction',
-    titleEs: 'Identidad de Marca y Direccion Creativa',
-    description: 'Build a cohesive brand universe — from moodboards and color palettes to typography and visual language — all in one workspace.',
-    descriptionEs: 'Construye un universo de marca coherente — desde moodboards y paletas de color hasta tipografia y lenguaje visual.',
-  },
-  {
-    icon: Layers,
-    title: 'Collection Merchandising & Planning',
-    titleEs: 'Merchandising y Planificacion de Coleccion',
-    description: 'Strategic SKU planning with size matrices, colorway management, pricing architecture, and margin optimization across your entire range.',
-    descriptionEs: 'Planificacion estrategica de SKUs con matrices de tallas, gestion de colorways, arquitectura de precios y optimizacion de margenes.',
-  },
-  {
-    icon: Camera,
-    title: 'Studio & Content Production',
-    titleEs: 'Estudio y Produccion de Contenido',
-    description: 'AI-generated lookbooks, campaign shoots, and product photography — from concept to final asset, with virtual try-on technology.',
-    descriptionEs: 'Lookbooks generados con IA, campanas fotograficas y fotografia de producto — del concepto al asset final, con tecnologia de prueba virtual.',
-  },
-  {
-    icon: Globe,
-    title: 'Go-to-Market & Digital Strategy',
-    titleEs: 'Go-to-Market y Estrategia Digital',
-    description: 'Content calendars, copywriting, PR outreach, and multi-channel launch planning — everything you need to bring your collection to market.',
-    descriptionEs: 'Calendarios de contenido, copywriting, contacto con prensa y planificacion de lanzamiento multicanal.',
-  },
-  {
-    icon: Factory,
-    title: 'Production & Supply Chain',
-    titleEs: 'Produccion y Cadena de Suministro',
-    description: 'Order management, production tracking, and timeline coordination to ensure your collection delivers on time and on budget.',
-    descriptionEs: 'Gestion de pedidos, seguimiento de produccion y coordinacion de timelines para entregar tu coleccion a tiempo y dentro del presupuesto.',
-  },
-];
-
-const WORKFLOW_STEPS = [
-  {
-    number: '01',
-    title: 'Create your collection',
-    description: 'Define your vision, season, category, and launch date. Our wizard guides you through every decision.',
-  },
-  {
-    number: '02',
-    title: 'Plan & design',
-    description: 'Build your brand identity, plan your SKU range, design colorways, and create moodboards — all AI-assisted.',
-  },
-  {
-    number: '03',
-    title: 'Produce & shoot',
-    description: 'Manage sampling, generate lookbooks with AI photography, and coordinate production orders.',
-  },
-  {
-    number: '04',
-    title: 'Launch & sell',
-    description: 'Execute your go-to-market strategy with content calendars, PR outreach, and multi-channel distribution.',
-  },
-];
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function DiscoverPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
+  const t = useTranslation();
+  const { language, setLanguage } = useLanguage();
+
+  const CAPABILITIES = [
+    {
+      icon: TrendingUp,
+      title: t.discoverPage.capTrend,
+      description: t.discoverPage.capTrendDesc,
+    },
+    {
+      icon: Palette,
+      title: t.discoverPage.capBrand,
+      description: t.discoverPage.capBrandDesc,
+    },
+    {
+      icon: Layers,
+      title: t.discoverPage.capMerch,
+      description: t.discoverPage.capMerchDesc,
+    },
+    {
+      icon: Camera,
+      title: t.discoverPage.capStudio,
+      description: t.discoverPage.capStudioDesc,
+    },
+    {
+      icon: Globe,
+      title: t.discoverPage.capGTM,
+      description: t.discoverPage.capGTMDesc,
+    },
+    {
+      icon: Factory,
+      title: t.discoverPage.capProd,
+      description: t.discoverPage.capProdDesc,
+    },
+  ];
+
+  const WORKFLOW_STEPS = [
+    { number: '01', title: t.discoverPage.step1Title, description: t.discoverPage.step1Desc },
+    { number: '02', title: t.discoverPage.step2Title, description: t.discoverPage.step2Desc },
+    { number: '03', title: t.discoverPage.step3Title, description: t.discoverPage.step3Desc },
+    { number: '04', title: t.discoverPage.step4Title, description: t.discoverPage.step4Desc },
+  ];
+
+  const ADVANTAGES = [
+    { before: t.discoverPage.advBefore1, after: t.discoverPage.advAfter1 },
+    { before: t.discoverPage.advBefore2, after: t.discoverPage.advAfter2 },
+    { before: t.discoverPage.advBefore3, after: t.discoverPage.advAfter3 },
+    { before: t.discoverPage.advBefore4, after: t.discoverPage.advAfter4 },
+  ];
 
   return (
     <div className="min-h-screen bg-carbon">
@@ -114,23 +97,42 @@ export default function DiscoverPage() {
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <Link href="/discover" className="text-crema text-xs font-medium tracking-widest uppercase">
-              Discover
+              {t.common.discover}
             </Link>
             <Link href="/meet-aimily" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              Meet Aimily
+              {t.common.meetAimily}
             </Link>
             <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              Contact
+              {t.common.contact}
             </Link>
           </div>
         </div>
         <div className="flex items-center gap-6">
+          {/* Language Toggle */}
+          <div className="flex items-center border border-gris/20 overflow-hidden">
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-2.5 py-1 text-[10px] font-medium tracking-wider transition-colors ${
+                language === 'en' ? 'bg-crema text-carbon' : 'text-gris/50 hover:text-crema'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLanguage('es')}
+              className={`px-2.5 py-1 text-[10px] font-medium tracking-wider transition-colors ${
+                language === 'es' ? 'bg-crema text-carbon' : 'text-gris/50 hover:text-crema'
+              }`}
+            >
+              ES
+            </button>
+          </div>
           {user ? (
             <Link
               href="/my-collections"
               className="text-crema text-xs font-medium tracking-widest uppercase hover:text-crema/70 transition-colors"
             >
-              My Collections
+              {t.common.myCollections}
             </Link>
           ) : (
             <>
@@ -138,13 +140,13 @@ export default function DiscoverPage() {
                 onClick={() => setAuthOpen(true)}
                 className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
               >
-                Log in
+                {t.common.logIn}
               </button>
               <button
                 onClick={() => setAuthOpen(true)}
                 className="btn-primary px-5 py-2 text-[11px] tracking-[0.15em]"
               >
-                GET STARTED
+                {t.common.startFreeTrialUpper}
               </button>
             </>
           )}
@@ -163,28 +165,28 @@ export default function DiscoverPage() {
         />
         <div className="relative z-10 max-w-4xl text-center">
           <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-8 animate-fade-in-up">
-            The future of fashion collection management
+            {t.discoverPage.heroLabel}
           </p>
           <h1 className="text-crema text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-4 animate-fade-in-up animate-delay-100">
-            From <span className="italic">concept</span> to <span className="italic">market</span>.
+            {t.discoverPage.heroTitle1} <span className="italic">{t.discoverPage.concept}</span> {t.discoverPage.heroTitle2} <span className="italic">{t.discoverPage.market}</span>.
           </h1>
           <p className="text-crema/70 text-xl sm:text-2xl md:text-3xl font-light tracking-tight mb-8 animate-fade-in-up animate-delay-150">
-            Built on <span className="italic">expertise</span> and powered by <span className="italic">AI</span>.
+            {t.discoverPage.heroSubtitle1} <span className="italic">{t.discoverPage.expertise}</span> {t.discoverPage.heroSubtitle2} <span className="italic">{t.discoverPage.ai}</span>.
           </p>
           <p className="text-gris text-lg md:text-xl font-light tracking-wide leading-relaxed max-w-2xl mx-auto mb-12 animate-fade-in-up animate-delay-200">
-            The all-in-one platform for fashion brands to plan, design, produce, and launch their collections.
+            {t.discoverPage.heroDesc}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animate-delay-300">
             {user ? (
               <Link href="/new-collection" className="btn-primary px-10 py-4 text-sm tracking-[0.15em]">
-                NEW COLLECTION
+                {t.discoverPage.newCollection}
               </Link>
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
                 className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
               >
-                START FREE
+                {t.discoverPage.startFree}
               </button>
             )}
           </div>
@@ -201,39 +203,39 @@ export default function DiscoverPage() {
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div>
               <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-                Why aimily
+                {t.discoverPage.whyAimily}
               </p>
               <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] mb-8">
-                The resources of a full team,{' '}
-                <span className="italic">at your fingertips</span>
+                {t.discoverPage.whyTitle1}{' '}
+                <span className="italic">{t.discoverPage.whyTitle2}</span>
               </h2>
               <p className="text-gris text-base md:text-lg font-light leading-relaxed mb-6">
-                You know the industry. You know your product. But not every project has the budget for a full team — trend research, creative direction, merchandising, photography, marketing. That&apos;s where aimily comes in.
+                {t.discoverPage.whyDesc1}
               </p>
               <p className="text-gris text-base md:text-lg font-light leading-relaxed">
-                aimily gives you access to world-class resources powered by AI — so you can deliver with the speed and quality of a large operation, on any budget. Your expertise drives the vision. aimily amplifies the execution.
+                {t.discoverPage.whyDesc2}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-px bg-gris/10">
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
                 <Sparkles className="h-6 w-6 text-crema/60 mb-4" />
                 <p className="text-crema text-2xl font-light mb-1">AI</p>
-                <p className="text-gris/60 text-xs tracking-widest uppercase">Agents</p>
+                <p className="text-gris/60 text-xs tracking-widest uppercase">{t.discoverPage.agents}</p>
               </div>
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
                 <Layers className="h-6 w-6 text-crema/60 mb-4" />
                 <p className="text-crema text-2xl font-light mb-1">11</p>
-                <p className="text-gris/60 text-xs tracking-widest uppercase">Workspaces</p>
+                <p className="text-gris/60 text-xs tracking-widest uppercase">{t.discoverPage.workspaces}</p>
               </div>
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
                 <Zap className="h-6 w-6 text-crema/60 mb-4" />
                 <p className="text-crema text-2xl font-light mb-1">24/7</p>
-                <p className="text-gris/60 text-xs tracking-widest uppercase">Available</p>
+                <p className="text-gris/60 text-xs tracking-widest uppercase">{t.discoverPage.available}</p>
               </div>
               <div className="bg-carbon p-8 flex flex-col items-center text-center">
                 <BarChart3 className="h-6 w-6 text-crema/60 mb-4" />
                 <p className="text-crema text-2xl font-light mb-1">360°</p>
-                <p className="text-gris/60 text-xs tracking-widest uppercase">Visibility</p>
+                <p className="text-gris/60 text-xs tracking-widest uppercase">{t.discoverPage.visibility}</p>
               </div>
             </div>
           </div>
@@ -245,11 +247,11 @@ export default function DiscoverPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
             <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-              Capabilities
+              {t.discoverPage.capabilities}
             </p>
             <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15]">
-              Everything your brand needs,{' '}
-              <span className="italic">nothing it doesn&apos;t</span>
+              {t.discoverPage.capTitle}{' '}
+              <span className="italic">{t.discoverPage.capTitleItalic}</span>
             </h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-gris/10">
@@ -273,20 +275,15 @@ export default function DiscoverPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-20">
             <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-              Your advantage
+              {t.discoverPage.yourAdvantage}
             </p>
             <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15]">
-              Your expertise,{' '}
-              <span className="italic">multiplied</span>
+              {t.discoverPage.advTitle1}{' '}
+              <span className="italic">{t.discoverPage.advTitle2}</span>
             </h2>
           </div>
           <div className="space-y-0">
-            {[
-              { before: 'Weeks of trend research', after: 'Done in minutes' },
-              { before: 'Outsourced photography', after: 'AI-generated lookbooks' },
-              { before: 'Scattered across 10 tools', after: 'One intelligent workspace' },
-              { before: 'Limited by team size', after: 'Unlimited by AI' },
-            ].map((row, i) => (
+            {ADVANTAGES.map((row, i) => (
               <div
                 key={i}
                 className={`flex items-center justify-center gap-6 md:gap-10 py-8 ${
@@ -311,11 +308,11 @@ export default function DiscoverPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-20">
             <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-              How it works
+              {t.discoverPage.howItWorks}
             </p>
             <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15]">
-              Four steps to your{' '}
-              <span className="italic">next collection</span>
+              {t.discoverPage.howTitle1}{' '}
+              <span className="italic">{t.discoverPage.howTitle2}</span>
             </h2>
           </div>
           <div className="space-y-0">
@@ -347,20 +344,20 @@ export default function DiscoverPage() {
       <section className="relative py-32 px-6 bg-crema">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-carbon/40 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-            The evolution
+            {t.discoverPage.theEvolution}
           </p>
           <h2 className="text-carbon text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] mb-8">
-            Decades of expertise,{' '}
-            <span className="italic">now in your hands</span>
+            {t.discoverPage.evoTitle1}{' '}
+            <span className="italic">{t.discoverPage.evoTitle2}</span>
           </h2>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto mb-8">
-            Built by fashion professionals with decades of experience at brands like Zara, Nike, and Karl Lagerfeld. We know every process, every bottleneck, every decision that makes or breaks a collection — because we&apos;ve lived them.
+            {t.discoverPage.evoDesc1}
           </p>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto mb-8">
-            We&apos;ve packaged all of that knowledge into AI-powered tools that work at your pace. Whether you&apos;re a solo designer, a brand manager, or a team of ten — aimily gives everyone the same resources and quality.
+            {t.discoverPage.evoDesc2}
           </p>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto">
-            Multiple team members can work on the same collection, each owning their block — research, design, merchandising, production. Everything stays connected, nothing gets lost.
+            {t.discoverPage.evoDesc3}
           </p>
         </div>
       </section>
@@ -369,29 +366,29 @@ export default function DiscoverPage() {
       <section className="relative py-32 px-6 border-t border-gris/10">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] italic mb-8">
-            We want to be part of your next collection
+            {t.discoverPage.ctaTitle}
           </h2>
           <p className="text-gris text-base md:text-lg font-light leading-relaxed max-w-xl mx-auto mb-12">
-            Join the brands already using aimily to plan, design, and launch their collections faster than ever.
+            {t.discoverPage.ctaDesc}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {user ? (
               <Link href="/new-collection" className="btn-primary px-10 py-4 text-sm tracking-[0.15em]">
-                NEW COLLECTION
+                {t.discoverPage.newCollection}
               </Link>
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
                 className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
               >
-                GET STARTED FREE
+                {t.discoverPage.getStartedFree}
               </button>
             )}
             <Link
               href="/contact"
               className="btn-secondary px-10 py-4 text-sm tracking-[0.15em] border-gris/30 text-gris hover:bg-white/5"
             >
-              CONTACT US
+              {t.discoverPage.contactUs}
             </Link>
           </div>
         </div>
@@ -412,19 +409,19 @@ export default function DiscoverPage() {
           </div>
           <div className="flex items-center gap-6">
             <Link href="/meet-aimily" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Meet Aimily
+              {t.common.meetAimily}
             </Link>
             <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Terms
+              {t.common.terms}
             </Link>
             <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Privacy
+              {t.common.privacy}
             </Link>
             <Link href="/cookies" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Cookies
+              {t.common.cookies}
             </Link>
             <Link href="/contact" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Contact
+              {t.common.contact}
             </Link>
           </div>
           <p className="text-gris/20 text-[10px] tracking-widest uppercase">

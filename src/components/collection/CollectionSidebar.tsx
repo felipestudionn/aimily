@@ -23,6 +23,7 @@ import { useState } from 'react';
 import { PHASES } from '@/lib/timeline-template';
 import { WIZARD_PHASES } from '@/lib/wizard-phases';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
+import { useTranslation } from '@/i18n';
 
 const WORKSPACE_ICONS: Record<string, React.ElementType> = {
   overview: LayoutDashboard,
@@ -42,55 +43,6 @@ const BLOCK_ICONS: Record<TimelinePhase, React.ElementType> = {
   development: PenTool,
   go_to_market: Rocket,
 };
-
-/** Group workspace items under their 4 calendar blocks */
-interface BlockGroup {
-  block: TimelinePhase;
-  label: string;
-  labelEs: string;
-  workspaces: Array<{ id: string; path: string; label: string; labelEs: string }>;
-}
-
-const BLOCK_GROUPS: BlockGroup[] = [
-  {
-    block: 'creative',
-    label: 'Creative & Brand',
-    labelEs: 'Creativo y Marca',
-    workspaces: [
-      { id: 'product', path: '/product', label: 'Product & Creative', labelEs: 'Producto y Creativo' },
-      { id: 'brand', path: '/brand', label: 'Brand & Identity', labelEs: 'Marca e Identidad' },
-    ],
-  },
-  {
-    block: 'planning',
-    label: 'Range Planning & Strategy',
-    labelEs: 'Planificación y Estrategia',
-    workspaces: [
-      // Planning milestones are managed within the Product workspace
-      // No dedicated workspace — the sidebar shows the block header as context
-    ],
-  },
-  {
-    block: 'development',
-    label: 'Design & Development',
-    labelEs: 'Diseño y Desarrollo',
-    workspaces: [
-      { id: 'design', path: '/design', label: 'Design', labelEs: 'Diseño' },
-      { id: 'prototyping', path: '/prototyping', label: 'Prototyping', labelEs: 'Prototipado' },
-      { id: 'sampling', path: '/sampling', label: 'Sampling', labelEs: 'Muestrario' },
-      { id: 'production', path: '/production', label: 'Production', labelEs: 'Producción' },
-    ],
-  },
-  {
-    block: 'go_to_market',
-    label: 'Marketing & Digital',
-    labelEs: 'Marketing y Digital',
-    workspaces: [
-      { id: 'marketing', path: '/marketing/creation', label: 'Marketing Creation', labelEs: 'Marketing Creación' },
-      { id: 'marketing', path: '/marketing/distribution', label: 'Marketing Distribution', labelEs: 'Marketing Distribución' },
-    ],
-  },
-];
 
 interface CollectionSidebarProps {
   collectionId: string;
@@ -123,6 +75,7 @@ export function CollectionSidebar({
 }: CollectionSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const t = useTranslation();
 
   const basePath = `/collection/${collectionId}`;
 
@@ -130,6 +83,45 @@ export function CollectionSidebar({
   const totalMilestones = milestones.length;
   const completedMilestones = milestones.filter((m) => m.status === 'completed').length;
   const overallProgress = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
+
+  // Block groups with translated labels
+  const BLOCK_GROUPS: {
+    block: TimelinePhase;
+    label: string;
+    workspaces: Array<{ id: string; path: string; label: string }>;
+  }[] = [
+    {
+      block: 'creative',
+      label: t.sidebar.creativeAndBrand,
+      workspaces: [
+        { id: 'product', path: '/product', label: t.sidebar.creativeAndBrand },
+        { id: 'brand', path: '/brand', label: t.sidebar.creativeAndBrand },
+      ],
+    },
+    {
+      block: 'planning',
+      label: t.sidebar.merchandisingPlanning,
+      workspaces: [],
+    },
+    {
+      block: 'development',
+      label: t.sidebar.designDevelopment,
+      workspaces: [
+        { id: 'design', path: '/design', label: t.sidebar.sketchColorMaterials },
+        { id: 'prototyping', path: '/prototyping', label: t.sidebar.prototyping },
+        { id: 'sampling', path: '/sampling', label: t.sidebar.selectionCatalog },
+        { id: 'production', path: '/production', label: t.sidebar.productionLogistics },
+      ],
+    },
+    {
+      block: 'go_to_market',
+      label: t.sidebar.marketingDigital,
+      workspaces: [
+        { id: 'marketing', path: '/marketing/creation', label: t.sidebar.creation },
+        { id: 'marketing', path: '/marketing/distribution', label: t.sidebar.distributionLaunch },
+      ],
+    },
+  ];
 
   return (
     <aside
@@ -145,7 +137,7 @@ export function CollectionSidebar({
           {/* Overall Progress */}
           <div className="mt-3">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Progress</span>
+              <span>{t.common.progress}</span>
               <span>{overallProgress}%</span>
             </div>
             <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -162,8 +154,8 @@ export function CollectionSidebar({
       <nav className="py-2 overflow-y-auto" style={{ maxHeight: collapsed ? 'calc(100vh - 6rem - 3rem)' : 'calc(100vh - 6rem - 8rem)' }}>
         {/* Top-level items: Overview + Calendar */}
         {[
-          { id: 'overview', path: '', label: 'Overview', labelEs: 'Vista General' },
-          { id: 'calendar', path: '/calendar', label: 'Calendar', labelEs: 'Calendario' },
+          { id: 'overview', path: '', label: t.sidebar.overview },
+          { id: 'calendar', path: '/calendar', label: t.sidebar.calendar },
         ].map((item) => {
           const Icon = WORKSPACE_ICONS[item.id] || Zap;
           const fullPath = `${basePath}${item.path}`;
@@ -222,7 +214,7 @@ export function CollectionSidebar({
 
                 return (
                   <Link
-                    key={ws.id}
+                    key={ws.path}
                     href={fullPath}
                     className={`flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm font-medium transition-all ${
                       isActive

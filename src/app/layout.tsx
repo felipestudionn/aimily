@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import '@/styles/globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { CookieConsent } from '@/components/CookieConsent';
 import { Analytics } from '@vercel/analytics/react';
@@ -36,12 +37,14 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen antialiased">
         <AuthProvider>
-          <SubscriptionProvider>
-            <ServiceWorkerRegistrar />
-            <main className="relative min-h-screen">{children}</main>
-            <CookieConsent />
-            <Analytics />
-          </SubscriptionProvider>
+          <LanguageProvider>
+            <SubscriptionProvider>
+              <ServiceWorkerRegistrar />
+              <main className="relative min-h-screen">{children}</main>
+              <CookieConsent />
+              <Analytics />
+            </SubscriptionProvider>
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

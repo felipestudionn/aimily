@@ -50,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/i18n';
 
 /* ── Constants ── */
 
@@ -91,6 +92,7 @@ interface ContentCalendarCardProps {
 /* ── Component ── */
 
 export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardProps) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [subTab, setSubTab] = useState<SubTab>('calendar');
@@ -346,22 +348,22 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Calendario Editorial
+              {t.marketingPage.contentCalendarLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Content Calendar
+              {t.marketingPage.contentCalendarTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Schedule content across platforms, coordinate influencers and PR outreach.
+          {t.marketingPage.contentCalendarDesc}
         </p>
 
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {entriesLoading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : entries.length === 0 && contacts.length === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No entries or contacts yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noContentYet}</p>
           ) : (
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
@@ -384,7 +386,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -402,15 +404,15 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
               className="flex items-center gap-1 text-xs font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
-              Back
+              {t.marketingPage.back}
             </button>
             <div className="h-6 w-px bg-carbon/10" />
             <Calendar className="h-5 w-5 text-carbon/40" />
             <div>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-                Calendario Editorial
+                {t.marketingPage.contentCalendarLabel}
               </p>
-              <h2 className="text-lg font-light text-carbon tracking-tight">Content Calendar</h2>
+              <h2 className="text-lg font-light text-carbon tracking-tight">{t.marketingPage.contentCalendarTitle}</h2>
             </div>
           </div>
           <div className="flex items-center gap-4">

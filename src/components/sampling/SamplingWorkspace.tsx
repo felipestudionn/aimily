@@ -12,6 +12,8 @@ import { useSkus } from '@/hooks/useSkus';
 import { useColorways } from '@/hooks/useColorways';
 import { useSampleReviews } from '@/hooks/useSampleReviews';
 import { PHASES } from '@/lib/timeline-template';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { TimelineMilestone } from '@/types/timeline';
 
 import { ColorSampleReview } from './sections/ColorSampleReview';
@@ -20,10 +22,10 @@ import { FinalApproval } from './sections/FinalApproval';
 
 type Tab = 'color' | 'fitting' | 'approval';
 
-const TABS: { id: Tab; label: string; labelEs: string; icon: React.ElementType }[] = [
-  { id: 'color', label: 'Color Samples', labelEs: 'Muestras de Color', icon: Palette },
-  { id: 'fitting', label: 'Fitting Review', labelEs: 'Revisión de Fitting', icon: Ruler },
-  { id: 'approval', label: 'Final Approval', labelEs: 'Aprobación Final', icon: Trophy },
+const TAB_IDS: { id: Tab; tKey: 'colorSamples' | 'fittingReview' | 'finalApproval'; icon: React.ElementType }[] = [
+  { id: 'color', tKey: 'colorSamples', icon: Palette },
+  { id: 'fitting', tKey: 'fittingReview', icon: Ruler },
+  { id: 'approval', tKey: 'finalApproval', icon: Trophy },
 ];
 
 interface SamplingWorkspaceProps {
@@ -43,6 +45,8 @@ export function SamplingWorkspace({ milestones }: SamplingWorkspaceProps) {
     deleteReview,
   } = useSampleReviews(collectionId);
   const [activeTab, setActiveTab] = useState<Tab>('color');
+  const t = useTranslation();
+  const { language } = useLanguage();
 
   const info = PHASES.development;
   const phaseMilestones = milestones.filter((m) => ['dd-11', 'dd-12', 'dd-13', 'dd-14'].includes(m.id));
@@ -73,10 +77,10 @@ export function SamplingWorkspace({ milestones }: SamplingWorkspaceProps) {
       {/* Phase Header */}
       <div>
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-          {info.nameEs}
+          {language === 'es' ? info.nameEs : info.name}
         </p>
         <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-          {info.name}
+          {language === 'es' ? info.nameEs : info.name}
         </h1>
       </div>
 
@@ -91,16 +95,16 @@ export function SamplingWorkspace({ milestones }: SamplingWorkspaceProps) {
             <span className="text-lg font-light text-carbon/40 ml-1">%</span>
           </div>
           <div className="flex gap-6 text-xs text-carbon/40">
-            <span>{completed} completed</span>
-            <span>{inProgress} in progress</span>
-            <span>{pending} pending</span>
+            <span>{completed} {t.workspace.completed}</span>
+            <span>{inProgress} {t.workspace.inProgress}</span>
+            <span>{pending} {t.workspace.pending}</span>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border border-carbon/[0.06]">
-        {TABS.map((tab) => {
+        {TAB_IDS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -114,7 +118,7 @@ export function SamplingWorkspace({ milestones }: SamplingWorkspaceProps) {
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
-              {tab.label}
+              {t.samplingPage[tab.tKey]}
             </button>
           );
         })}
@@ -148,7 +152,7 @@ export function SamplingWorkspace({ milestones }: SamplingWorkspaceProps) {
 
       {/* Milestones Checklist */}
       <div className="bg-white border border-carbon/[0.06] p-8">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">Milestones</p>
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">{t.workspace.milestones}</p>
         <div className="space-y-4">
           {phaseMilestones.map((m) => (
             <div key={m.id} className="flex items-center gap-4">
@@ -172,7 +176,7 @@ export function SamplingWorkspace({ milestones }: SamplingWorkspaceProps) {
               </div>
               <div className="flex-1">
                 <p className={`text-sm font-light ${m.status === 'completed' ? 'text-carbon/30 line-through' : 'text-carbon'}`}>
-                  {m.name}
+                  {language === 'es' ? m.nameEs || m.name : m.name}
                 </p>
               </div>
               <span className="text-xs text-carbon/30">{m.responsible}</span>

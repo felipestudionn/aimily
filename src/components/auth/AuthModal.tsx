@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { X, Loader2, Mail, Lock, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/i18n';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12,30 +13,27 @@ interface AuthModalProps {
   defaultMode?: 'signin' | 'signup';
 }
 
-function getErrorMessage(message: string): string {
-  const lower = message.toLowerCase();
-  if (lower.includes('user already registered') || lower.includes('already been registered')) {
-    return 'An account with this email already exists. Try signing in instead.';
-  }
-  if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
-    return 'Invalid email or password. Please try again.';
-  }
-  if (lower.includes('email not confirmed')) {
-    return 'Please confirm your email before signing in. Check your inbox.';
-  }
-  if (lower.includes('password') && lower.includes('weak')) {
-    return 'Password is too weak. Use at least 8 characters with a number.';
-  }
-  if (lower.includes('rate limit') || lower.includes('too many requests')) {
-    return 'Too many attempts. Please wait a moment and try again.';
-  }
-  return message;
-}
-
-function validatePassword(password: string): string | null {
-  if (password.length < 8) return 'Password must be at least 8 characters';
-  if (!/\d/.test(password)) return 'Password must contain at least 1 number';
-  return null;
+function useErrorMessages() {
+  const t = useTranslation();
+  return (message: string): string => {
+    const lower = message.toLowerCase();
+    if (lower.includes('user already registered') || lower.includes('already been registered')) {
+      return t.auth.errAlreadyRegistered;
+    }
+    if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
+      return t.auth.errInvalidCredentials;
+    }
+    if (lower.includes('email not confirmed')) {
+      return t.auth.errEmailNotConfirmed;
+    }
+    if (lower.includes('password') && lower.includes('weak')) {
+      return t.auth.errWeakPassword;
+    }
+    if (lower.includes('rate limit') || lower.includes('too many requests')) {
+      return t.auth.errRateLimit;
+    }
+    return message;
+  };
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }: AuthModalProps) {
@@ -47,6 +45,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, signUp, signInWithGoogle } = useAuth();
+  const t = useTranslation();
+  const getErrorMessage = useErrorMessages();
 
   // Reset mode when defaultMode changes
   React.useEffect(() => {
@@ -56,6 +56,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
 
   if (!isOpen) return null;
 
+  const validatePassword = (pw: string): string | null => {
+    if (pw.length < 8) return t.auth.errPasswordMinChars;
+    if (!/\d/.test(pw)) return t.auth.errPasswordNeedNumber;
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -63,7 +69,6 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
 
     try {
       if (mode === 'signup') {
-        // Validate password before submitting
         const validationError = validatePassword(password);
         if (validationError) {
           setError(validationError);
@@ -87,7 +92,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
         }
       }
     } catch {
-      setError('An unexpected error occurred');
+      setError(t.common.unexpectedError);
     } finally {
       setLoading(false);
     }
@@ -111,20 +116,20 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
             </button>
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
             <h2 className="text-2xl font-light text-crema tracking-tight">
-              Check your email
+              {t.auth.checkYourEmail}
             </h2>
             <p className="text-sm text-gris/70">
-              We sent a confirmation link to <strong className="text-crema">{email}</strong>.
-              Click the link to activate your account.
+              {t.auth.confirmationSent} <strong className="text-crema">{email}</strong>.
+              {' '}{t.auth.clickToActivate}
             </p>
             <p className="text-xs text-gris/50">
-              Didn&apos;t receive it? Check your spam folder or try signing up again.
+              {t.auth.didntReceive}
             </p>
             <button
               onClick={onClose}
               className="w-full py-3 bg-crema text-carbon text-sm font-medium tracking-[0.1em] uppercase hover:bg-crema/90 transition-colors"
             >
-              Got it
+              {t.auth.gotIt}
             </button>
           </div>
         </div>
@@ -140,7 +145,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
         onClick={onClose}
       />
 
-      {/* Modal — Alfred editorial style */}
+      {/* Modal */}
       <div className="relative bg-carbon w-full max-w-md mx-auto overflow-hidden border border-gris/20">
         {/* Header */}
         <div className="px-8 pt-8 pb-4">
@@ -151,12 +156,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
             <X className="h-5 w-5" />
           </button>
           <h2 className="text-2xl font-light text-crema tracking-tight">
-            {mode === 'signin' ? 'Welcome Back' : 'Create Account'}
+            {mode === 'signin' ? t.auth.welcomeBack : t.auth.createAccount}
           </h2>
           <p className="text-gris/70 text-sm mt-1">
             {mode === 'signin'
-              ? 'Sign in to access your collections'
-              : 'Create an account to get started'}
+              ? t.auth.signInToAccess
+              : t.auth.createAccountToStart}
           </p>
         </div>
 
@@ -186,13 +191,13 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
             )}
-            Continue with Google
+            {t.auth.continueWithGoogle}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-3 mt-5">
             <div className="flex-1 h-px bg-gris/20" />
-            <span className="text-xs text-gris/50 uppercase tracking-widest">or</span>
+            <span className="text-xs text-gris/50 uppercase tracking-widest">{t.common.or}</span>
             <div className="flex-1 h-px bg-gris/20" />
           </div>
         </div>
@@ -207,7 +212,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
 
           <div className="space-y-1.5">
             <label htmlFor="email" className="text-xs font-medium text-gris uppercase tracking-widest">
-              Email
+              {t.auth.emailLabel}
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gris/50" />
@@ -216,7 +221,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t.auth.emailPlaceholder}
                 className="w-full pl-10 pr-4 py-3 bg-transparent border border-gris/30 text-crema text-sm placeholder:text-gris/40 focus:outline-none focus:border-crema/50 transition-colors"
                 required
               />
@@ -225,7 +230,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
 
           <div className="space-y-1.5">
             <label htmlFor="password" className="text-xs font-medium text-gris uppercase tracking-widest">
-              Password
+              {t.auth.passwordLabel}
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gris/50" />
@@ -234,14 +239,14 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={t.auth.passwordPlaceholder}
                 className="w-full pl-10 pr-4 py-3 bg-transparent border border-gris/30 text-crema text-sm placeholder:text-gris/40 focus:outline-none focus:border-crema/50 transition-colors"
                 minLength={mode === 'signup' ? 8 : 6}
                 required
               />
             </div>
             {mode === 'signup' && (
-              <p className="text-xs text-gris/50">Minimum 8 characters, at least 1 number</p>
+              <p className="text-xs text-gris/50">{t.auth.passwordHint}</p>
             )}
           </div>
 
@@ -253,7 +258,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
                 onClick={onClose}
                 className="text-xs text-gris/60 hover:text-crema transition-colors"
               >
-                Forgot password?
+                {t.auth.forgotPassword}
               </Link>
             </div>
           )}
@@ -266,34 +271,34 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {mode === 'signin' ? 'Signing in...' : 'Creating account...'}
+                {mode === 'signin' ? t.auth.signingIn : t.auth.creatingAccount}
               </span>
             ) : (
-              mode === 'signin' ? 'Sign In' : 'Create Account'
+              mode === 'signin' ? t.common.signIn : t.auth.createAccount
             )}
           </button>
 
           <div className="text-center text-sm text-gris/60">
             {mode === 'signin' ? (
               <>
-                Don&apos;t have an account?{' '}
+                {t.auth.dontHaveAccount}{' '}
                 <button
                   type="button"
                   onClick={() => { setMode('signup'); setError(null); }}
                   className="text-crema hover:text-crema/80 font-medium transition-colors"
                 >
-                  Sign up
+                  {t.common.signUp}
                 </button>
               </>
             ) : (
               <>
-                Already have an account?{' '}
+                {t.auth.alreadyHaveAccount}{' '}
                 <button
                   type="button"
                   onClick={() => { setMode('signin'); setError(null); }}
                   className="text-crema hover:text-crema/80 font-medium transition-colors"
                 >
-                  Sign in
+                  {t.common.signIn}
                 </button>
               </>
             )}

@@ -10,6 +10,8 @@ import {
 import { useSkus } from '@/hooks/useSkus';
 import { useSampleReviews } from '@/hooks/useSampleReviews';
 import { PHASES } from '@/lib/timeline-template';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { TimelineMilestone } from '@/types/timeline';
 
 import { ProtoTracker } from './sections/ProtoTracker';
@@ -17,9 +19,9 @@ import { TechSheets } from './sections/TechSheets';
 
 type Tab = 'tracker' | 'tech-sheets';
 
-const TABS: { id: Tab; label: string; labelEs: string; icon: React.ElementType }[] = [
-  { id: 'tracker', label: 'Proto Tracker', labelEs: 'Rastreo de Protos', icon: Wrench },
-  { id: 'tech-sheets', label: 'Tech Sheets', labelEs: 'Fichas Técnicas', icon: FileText },
+const TAB_IDS: { id: Tab; tKey: 'protoTracker' | 'techSheets'; icon: React.ElementType }[] = [
+  { id: 'tracker', tKey: 'protoTracker', icon: Wrench },
+  { id: 'tech-sheets', tKey: 'techSheets', icon: FileText },
 ];
 
 interface PrototypingWorkspaceProps {
@@ -38,6 +40,8 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
     deleteReview,
   } = useSampleReviews(collectionId, 'white_proto');
   const [activeTab, setActiveTab] = useState<Tab>('tracker');
+  const t = useTranslation();
+  const { language } = useLanguage();
 
   const info = PHASES.development;
   const phaseMilestones = milestones.filter((m) => ['dd-7', 'dd-8', 'dd-9', 'dd-10'].includes(m.id));
@@ -64,10 +68,10 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
       {/* Phase Header */}
       <div>
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-          {info.nameEs}
+          {language === 'es' ? info.nameEs : info.name}
         </p>
         <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-          {info.name}
+          {language === 'es' ? info.nameEs : info.name}
         </h1>
       </div>
 
@@ -82,16 +86,16 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
             <span className="text-lg font-light text-carbon/40 ml-1">%</span>
           </div>
           <div className="flex gap-6 text-xs text-carbon/40">
-            <span>{completed} completed</span>
-            <span>{inProgress} in progress</span>
-            <span>{pending} pending</span>
+            <span>{completed} {t.workspace.completed}</span>
+            <span>{inProgress} {t.workspace.inProgress}</span>
+            <span>{pending} {t.workspace.pending}</span>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border border-carbon/[0.06]">
-        {TABS.map((tab) => {
+        {TAB_IDS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -105,7 +109,7 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
-              {tab.label}
+              {t.prototypingPage[tab.tKey]}
             </button>
           );
         })}
@@ -128,7 +132,7 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
 
       {/* Milestones Checklist */}
       <div className="bg-white border border-carbon/[0.06] p-8">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">Milestones</p>
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">{t.workspace.milestones}</p>
         <div className="space-y-4">
           {phaseMilestones.map((m) => (
             <div key={m.id} className="flex items-center gap-4">
@@ -152,7 +156,7 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
               </div>
               <div className="flex-1">
                 <p className={`text-sm font-light ${m.status === 'completed' ? 'text-carbon/30 line-through' : 'text-carbon'}`}>
-                  {m.name}
+                  {language === 'es' ? m.nameEs || m.name : m.name}
                 </p>
               </div>
               <span className="text-xs text-carbon/30">{m.responsible}</span>

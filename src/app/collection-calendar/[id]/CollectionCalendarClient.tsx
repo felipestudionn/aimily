@@ -18,6 +18,8 @@ import {
   Cloud,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/i18n';
 
 interface CollectionCalendarClientProps {
   plan: {
@@ -68,6 +70,9 @@ export function CollectionCalendarClient({
   commercialActions,
   embedded = false,
 }: CollectionCalendarClientProps) {
+  const { language } = useLanguage();
+  const t = useTranslation();
+
   // Derive launch date from earliest drop
   const derivedLaunchDate = useMemo(() => {
     if (drops.length > 0) {
@@ -116,7 +121,7 @@ export function CollectionCalendarClient({
       return (
         <div className="flex items-center justify-center gap-3 py-20">
           <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-          <span className="text-gray-500">Cargando calendario...</span>
+          <span className="text-gray-500">{t.calendarPage.loadingCalendar}</span>
         </div>
       );
     }
@@ -125,7 +130,7 @@ export function CollectionCalendarClient({
         <Navbar />
         <div className="pt-28 flex items-center justify-center gap-3">
           <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-          <span className="text-gray-500">Cargando calendario...</span>
+          <span className="text-gray-500">{t.calendarPage.loadingCalendar}</span>
         </div>
       </div>
     );
@@ -142,7 +147,7 @@ export function CollectionCalendarClient({
               className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              Volver al planner
+              {t.calendarPage.backToPlanner}
             </Link>
           )}
           <div className="flex items-center gap-3">
@@ -157,11 +162,11 @@ export function CollectionCalendarClient({
                 </span>
               </h1>
               <p className="text-sm text-gray-500">
-                Lanzamiento:{' '}
+                {t.calendarPage.launch}:{' '}
                 <span className="font-semibold text-gray-700">
                   {timeline
                     ? new Date(timeline.launchDate).toLocaleDateString(
-                        'es-ES',
+                        language === 'es' ? 'es-ES' : 'en-US',
                         {
                           weekday: 'long',
                           day: 'numeric',
@@ -174,7 +179,7 @@ export function CollectionCalendarClient({
                 {saving && (
                   <span className="ml-2 inline-flex items-center gap-1 text-xs text-blue-500">
                     <Cloud className="w-3 h-3" />
-                    Guardando...
+                    {t.calendarPage.saving}
                   </span>
                 )}
               </p>
@@ -205,14 +210,14 @@ export function CollectionCalendarClient({
               await exportTimelineToExcel(timeline, lang);
             }}
             className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-            title="Exportar a Excel"
+            title={t.calendarPage.exportToExcel}
           >
             <Download className="w-4 h-4" />
           </button>
           <button
             onClick={resetToDefaults}
             className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-            title="Resetear al template base"
+            title={t.calendarPage.resetToTemplate}
           >
             <RotateCcw className="w-4 h-4" />
           </button>
@@ -221,7 +226,7 @@ export function CollectionCalendarClient({
               href={`/go-to-market/${plan.id}`}
               className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
             >
-              Go to Market
+              {t.calendarPage.goToMarket}
             </Link>
           )}
         </div>
@@ -234,7 +239,7 @@ export function CollectionCalendarClient({
           <div className="flex items-center gap-2 mb-2">
             <Package className="w-4 h-4 text-carbon" />
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              Modelos a Desarrollar
+              {t.calendarPage.modelsToDevelop}
             </span>
           </div>
           <div className="text-2xl font-bold text-gray-900">
@@ -253,7 +258,7 @@ export function CollectionCalendarClient({
               ))}
               {stats.families.length > 5 && (
                 <span className="text-[10px] text-gray-400">
-                  +{stats.families.length - 5} mas
+                  +{stats.families.length - 5} {t.calendarPage.more}
                 </span>
               )}
             </div>
@@ -265,12 +270,12 @@ export function CollectionCalendarClient({
           <div className="flex items-center gap-2 mb-2">
             <Layers className="w-4 h-4 text-carbon" />
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              Drops Planificados
+              {t.calendarPage.plannedDrops}
             </span>
           </div>
           <div className="text-2xl font-bold text-gray-900">
             {stats.dropCount}{' '}
-            <span className="text-sm font-normal text-gray-400">drops</span>
+            <span className="text-sm font-normal text-gray-400">{t.calendarPage.drops}</span>
           </div>
           {drops.length > 0 && (
             <div className="flex flex-col gap-0.5 mt-2">
@@ -281,7 +286,7 @@ export function CollectionCalendarClient({
                 >
                   <span>{d.name}</span>
                   <span className="text-gray-400">
-                    {new Date(d.launch_date).toLocaleDateString('es-ES', {
+                    {new Date(d.launch_date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
                       day: 'numeric',
                       month: 'short',
                     })}
@@ -297,13 +302,13 @@ export function CollectionCalendarClient({
           <div className="flex items-center gap-2 mb-2">
             <Megaphone className="w-4 h-4 text-carbon" />
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              Acciones Comerciales
+              {t.calendarPage.commercialActions}
             </span>
           </div>
           <div className="text-2xl font-bold text-gray-900">
             {stats.actionCount}{' '}
             <span className="text-sm font-normal text-gray-400">
-              acciones
+              {t.calendarPage.actions}
             </span>
           </div>
           {commercialActions.length > 0 && (
@@ -325,13 +330,13 @@ export function CollectionCalendarClient({
       {/* Phase legend */}
       <div className="flex flex-wrap gap-2 mb-4">
         {[
-          { label: 'Creativo y Marca', color: '#5A8A7A' },
-          { label: 'Planificación y Estrategia', color: '#9A7A60' },
-          { label: 'Diseño y Desarrollo', color: '#7A6A9A' },
-          { label: 'Marketing y Digital', color: '#9A6070' },
+          { label: t.calendarPage.phaseCreative, color: '#5A8A7A' },
+          { label: t.calendarPage.phasePlanning, color: '#9A7A60' },
+          { label: t.calendarPage.phaseDesign, color: '#7A6A9A' },
+          { label: t.calendarPage.phaseMarketing, color: '#9A6070' },
         ].map((p) => (
           <div
-            key={p.label}
+            key={p.color}
             className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gris"
           >
             <div
@@ -359,13 +364,11 @@ export function CollectionCalendarClient({
 
       {/* Instructions */}
       <div className="mt-4 text-xs text-gray-400 flex items-center gap-4">
-        <span>
-          Click en el circulo para cambiar estado
-        </span>
+        <span>{t.calendarPage.instructionStatus}</span>
         <span>|</span>
-        <span>Click en las semanas para editar duracion</span>
+        <span>{t.calendarPage.instructionWeeks}</span>
         <span>|</span>
-        <span>Guardado automatico en la nube</span>
+        <span>{t.calendarPage.instructionAutoSave}</span>
       </div>
     </>
   );

@@ -20,6 +20,8 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ═══════════════════════════════════════════════════════════
    DYNAMIC SEASONS — generate from current date + 2 years
@@ -53,8 +55,12 @@ function generateSeasons(): { id: string; label: string; launch: string }[] {
    HELPERS
    ═══════════════════════════════════════════════════════════ */
 
-function formatShort(date: Date) {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function formatShort(date: Date, locale: string) {
+  return date.toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatLong(date: Date, locale: string) {
+  return date.toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
 function weeksFromNow(dateStr: string) {
@@ -70,6 +76,8 @@ export default function NewCollectionPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [showAuth, setShowAuth] = useState(false);
+  const t = useTranslation();
+  const { language } = useLanguage();
 
   // ── Setup state ──
   const [step, setStep] = useState(0);
@@ -149,13 +157,13 @@ export default function NewCollectionPage() {
 
   const renderName = () => (
     <div className="flex flex-col items-center animate-fade-in-up">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">Name your collection</h1>
-      <p className="text-texto/40 text-sm mb-14">Give it a name that inspires you</p>
+      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.nameYourCollection}</h1>
+      <p className="text-texto/40 text-sm mb-14">{t.newCollection.nameInspiration}</p>
       <input
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="e.g. Summer Essentials 2027"
+        placeholder={t.newCollection.namePlaceholder}
         className="w-full max-w-md text-center text-2xl font-light text-texto bg-transparent border-b-2 border-gris/30 focus:border-carbon outline-none pb-3 placeholder:text-texto/20 transition-colors"
         autoFocus
         onKeyDown={(e) => e.key === 'Enter' && canAdvance && next()}
@@ -165,8 +173,8 @@ export default function NewCollectionPage() {
 
   const renderSeason = () => (
     <div className="flex flex-col items-center animate-fade-in-up">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">Which season?</h1>
-      <p className="text-texto/40 text-sm mb-14">Select the target season</p>
+      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.whichSeason}</h1>
+      <p className="text-texto/40 text-sm mb-14">{t.newCollection.selectTargetSeason}</p>
       <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
         {SEASONS.map((s) => (
           <button
@@ -183,8 +191,8 @@ export default function NewCollectionPage() {
 
   const renderLaunchDate = () => (
     <div className="flex flex-col items-center animate-fade-in-up">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">When do you launch?</h1>
-      <p className="text-texto/40 text-sm mb-14">Your work calendar counts backwards from here</p>
+      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.whenLaunch}</h1>
+      <p className="text-texto/40 text-sm mb-14">{t.newCollection.calendarCountsBack}</p>
       <input
         type="date"
         value={launchDate}
@@ -193,12 +201,12 @@ export default function NewCollectionPage() {
       />
       {launchDate && (
         <div className="mt-6 space-y-1 text-center">
-          <p className="text-texto/30 text-sm">{weeksFromNow(launchDate)} weeks from today</p>
+          <p className="text-texto/30 text-sm">{weeksFromNow(launchDate)} {t.newCollection.weeksFromToday}</p>
           {earliestDate && (
             <p className="text-texto/30 text-sm">
-              Work starts around{' '}
+              {t.newCollection.workStartsAround}{' '}
               <span className="text-texto/50 font-medium">
-                {earliestDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {formatLong(earliestDate, language)}
               </span>
             </p>
           )}
@@ -209,15 +217,15 @@ export default function NewCollectionPage() {
 
   const renderSummary = () => (
     <div className="flex flex-col items-center animate-fade-in-up w-full max-w-lg mx-auto">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">Your collection plan</h1>
-      <p className="text-texto/40 text-sm mb-4">Review before creating</p>
+      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.yourCollectionPlan}</h1>
+      <p className="text-texto/40 text-sm mb-4">{t.newCollection.reviewBeforeCreating}</p>
 
       {/* Setup summary */}
       <div className="w-full space-y-0 mb-8">
         {[
-          ['Name', name],
-          ['Season', season],
-          ['Launch', new Date(launchDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })],
+          [t.newCollection.nameLabel, name],
+          [t.newCollection.seasonLabel, season],
+          [t.newCollection.launchLabel, formatLong(new Date(launchDate), language)],
         ].map(([label, value]) => (
           <div key={label} className="flex justify-between py-3 border-b border-gris/15">
             <span className="text-xs text-texto/30 uppercase tracking-[0.15em]">{label}</span>
@@ -229,9 +237,9 @@ export default function NewCollectionPage() {
       {/* Earliest start */}
       {earliestDate && (
         <div className="w-full text-center mb-8">
-          <p className="text-xs text-texto/30 uppercase tracking-[0.15em] mb-1">Work starts</p>
+          <p className="text-xs text-texto/30 uppercase tracking-[0.15em] mb-1">{t.newCollection.workStarts}</p>
           <p className="text-sm text-texto font-medium">
-            {earliestDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {formatLong(earliestDate, language)}
           </p>
         </div>
       )}
@@ -255,9 +263,9 @@ export default function NewCollectionPage() {
                   ) : (
                     <ChevronRight className="h-3.5 w-3.5 text-texto/25" />
                   )}
-                  <span className="text-sm text-texto font-medium">{phase.name}</span>
+                  <span className="text-sm text-texto font-medium">{language === 'es' ? phase.nameEs || phase.name : phase.name}</span>
                 </div>
-                <span className="text-xs text-texto/30">{milestones.length} milestones</span>
+                <span className="text-xs text-texto/30">{milestones.length} {t.newCollection.milestones}</span>
               </button>
 
               {isExpanded && (
@@ -270,10 +278,10 @@ export default function NewCollectionPage() {
                       <div key={m.id} className="flex items-center gap-3 py-2">
                         <div className="w-2 h-2 rounded-full bg-gris/30 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-texto">{m.name}</p>
+                          <p className="text-xs text-texto">{language === 'es' ? m.nameEs || m.name : m.name}</p>
                         </div>
                         <p className="text-[10px] text-texto/20 flex-shrink-0">
-                          {formatShort(startDate)} — {formatShort(endDate)}
+                          {formatShort(startDate, language)} — {formatShort(endDate, language)}
                         </p>
                       </div>
                     );
@@ -292,9 +300,9 @@ export default function NewCollectionPage() {
         className="inline-flex items-center gap-3 px-12 py-4 bg-carbon text-crema text-sm font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
       >
         {creating ? (
-          <><Loader2 className="h-4 w-4 animate-spin" />Creating...</>
+          <><Loader2 className="h-4 w-4 animate-spin" />{t.newCollection.creating}</>
         ) : (
-          <><span>Create Collection</span><ArrowRight className="h-4 w-4" /></>
+          <><span>{t.newCollection.createCollection}</span><ArrowRight className="h-4 w-4" /></>
         )}
       </button>
     </div>
@@ -346,7 +354,7 @@ export default function NewCollectionPage() {
               onClick={() => router.push('/my-collections')}
               className="text-xs text-texto/30 hover:text-texto transition-colors uppercase tracking-[0.15em]"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
           {/* Progress bar */}
@@ -372,7 +380,7 @@ export default function NewCollectionPage() {
           <div className="max-w-2xl mx-auto px-6 flex items-center justify-between">
             {step > 0 ? (
               <button onClick={back} className="inline-flex items-center gap-2 text-sm text-texto/30 hover:text-texto transition-colors">
-                <ArrowLeft className="h-4 w-4" />Back
+                <ArrowLeft className="h-4 w-4" />{t.common.back}
               </button>
             ) : <div />}
             <button
@@ -380,7 +388,7 @@ export default function NewCollectionPage() {
               disabled={!canAdvance}
               className="inline-flex items-center gap-2 px-8 py-3 bg-carbon text-crema text-sm font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-20"
             >
-              Next<ArrowRight className="h-4 w-4" />
+              {t.newCollection.next}<ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -391,7 +399,7 @@ export default function NewCollectionPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-crema pb-10 pt-6">
           <div className="max-w-2xl mx-auto px-6">
             <button onClick={back} className="inline-flex items-center gap-2 text-sm text-texto/30 hover:text-texto transition-colors">
-              <ArrowLeft className="h-4 w-4" />Back
+              <ArrowLeft className="h-4 w-4" />{t.common.back}
             </button>
           </div>
         </div>

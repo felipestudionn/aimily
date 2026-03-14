@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from '@/i18n';
 
 /* ── Constants ── */
 
@@ -69,6 +70,7 @@ interface LaunchCardProps {
 /* ── Component ── */
 
 export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -266,38 +268,38 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Lanzamiento
+              {t.marketingPage.launchLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Launch
+              {t.marketingPage.launchTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Pre-launch checklist, go-live tracker, launch day ops, and post-launch analytics.
+          {t.marketingPage.launchDesc}
         </p>
 
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {loading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : tasks.length === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No tasks yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noTasksYet}</p>
           ) : (
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="text-2xl font-light text-carbon">{tasks.length}</span>
-                <span className="text-xs text-carbon/40">tasks</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.tasks}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-light text-carbon/60">{completedPct}%</span>
-                <span className="text-xs text-carbon/40">done</span>
+                <span className="text-xs text-carbon/40">{t.marketingPage.done}</span>
               </div>
               {daysToLaunch !== null && (
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-light text-carbon">
                     {daysToLaunch > 0 ? daysToLaunch : 0}
                   </span>
-                  <span className="text-xs text-carbon/40">days to launch</span>
+                  <span className="text-xs text-carbon/40">{t.marketingPage.daysToLaunch}</span>
                 </div>
               )}
             </div>
@@ -305,7 +307,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -323,28 +325,28 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               className="flex items-center gap-1 text-xs font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
-              Back
+              {t.marketingPage.back}
             </button>
             <div className="h-6 w-px bg-carbon/10" />
             <Zap className="h-5 w-5 text-carbon/40" />
             <div>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-                Lanzamiento
+                {t.marketingPage.launchLabel}
               </p>
-              <h2 className="text-lg font-light text-carbon tracking-tight">Launch</h2>
+              <h2 className="text-lg font-light text-carbon tracking-tight">{t.marketingPage.launchTitle}</h2>
             </div>
           </div>
           <div className="flex items-center gap-6">
             {daysToLaunch !== null && (
               <div className="text-right">
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">Countdown</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.countdown}</p>
                 <p className="text-xl font-light text-carbon tracking-tight">
-                  {daysToLaunch > 0 ? `${daysToLaunch} days` : daysToLaunch === 0 ? 'TODAY' : `${Math.abs(daysToLaunch)}d ago`}
+                  {daysToLaunch > 0 ? `${daysToLaunch} ${t.marketingPage.days}` : daysToLaunch === 0 ? t.marketingPage.todayLabel : `${Math.abs(daysToLaunch)}${t.marketingPage.dAgo}`}
                 </p>
               </div>
             )}
             <div className="text-right">
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">Progress</p>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.progress}</p>
               <p className="text-xl font-light text-carbon tracking-tight">{completedPct}%</p>
             </div>
             <div className="text-right">

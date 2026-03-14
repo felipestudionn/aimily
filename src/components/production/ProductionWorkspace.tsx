@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useProductionOrders } from '@/hooks/useProductionOrders';
 import { useSkus } from '@/hooks/useSkus';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { TimelineMilestone } from '@/types/timeline';
 import type { ProductionTab } from '@/types/production';
 
@@ -17,10 +19,10 @@ import { OrderTracker } from './sections/OrderTracker';
 import { QcTracker } from './sections/QcTracker';
 import { LogisticsTracker } from './sections/LogisticsTracker';
 
-const TABS: { id: ProductionTab; label: string; labelEs: string; icon: React.ElementType }[] = [
-  { id: 'orders', label: 'Production Orders', labelEs: 'Ordenes de Produccion', icon: ClipboardList },
-  { id: 'qc', label: 'Quality Control', labelEs: 'Control de Calidad', icon: ClipboardCheck },
-  { id: 'logistics', label: 'Logistics', labelEs: 'Logistica', icon: Truck },
+const TAB_IDS: { id: ProductionTab; tKey: 'productionOrders' | 'qualityControl' | 'logistics'; icon: React.ElementType }[] = [
+  { id: 'orders', tKey: 'productionOrders', icon: ClipboardList },
+  { id: 'qc', tKey: 'qualityControl', icon: ClipboardCheck },
+  { id: 'logistics', tKey: 'logistics', icon: Truck },
 ];
 
 interface ProductionWorkspaceProps {
@@ -31,6 +33,8 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
   const { id } = useParams();
   const collectionId = id as string;
   const [activeTab, setActiveTab] = useState<ProductionTab>('orders');
+  const t = useTranslation();
+  const { language } = useLanguage();
 
   const {
     orders,
@@ -67,10 +71,10 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
       {/* Phase Header */}
       <div>
         <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-          Produccion y Logistica
+          {t.productionPage.headerLabel}
         </p>
         <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-          Production &amp; Logistics
+          {t.productionPage.title}
         </h1>
       </div>
 
@@ -85,16 +89,16 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
             <span className="text-lg font-light text-carbon/40 ml-1">%</span>
           </div>
           <div className="flex gap-6 text-xs text-carbon/40">
-            <span>{completed} completed</span>
-            <span>{inProgress} in progress</span>
-            <span>{pending} pending</span>
+            <span>{completed} {t.workspace.completed}</span>
+            <span>{inProgress} {t.workspace.inProgress}</span>
+            <span>{pending} {t.workspace.pending}</span>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex border border-carbon/[0.06]">
-        {TABS.map((tab) => {
+        {TAB_IDS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -108,7 +112,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
-              {tab.label}
+              {t.productionPage[tab.tKey]}
             </button>
           );
         })}
@@ -136,7 +140,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
 
       {/* Milestones Checklist */}
       <div className="bg-white border border-carbon/[0.06] p-8">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">Milestones</p>
+        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">{t.workspace.milestones}</p>
         <div className="space-y-4">
           {phaseMilestones.map((m) => (
             <div key={m.id} className="flex items-center gap-4">
@@ -160,7 +164,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
               </div>
               <div className="flex-1">
                 <p className={`text-sm font-light ${m.status === 'completed' ? 'text-carbon/30 line-through' : 'text-carbon'}`}>
-                  {m.name}
+                  {language === 'es' ? m.nameEs || m.name : m.name}
                 </p>
               </div>
               <span className="text-xs text-carbon/30">{m.responsible}</span>

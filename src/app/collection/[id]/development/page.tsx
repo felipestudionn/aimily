@@ -2,7 +2,9 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ArrowLeft, Lock, Pencil, Package, CheckSquare, Factory, LayoutGrid } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Pencil, Package, CheckSquare, Factory, LayoutGrid } from 'lucide-react';
+import { useTranslation } from '@/i18n';
+import type { Dictionary } from '@/i18n';
 
 /* ═══════════════════════════════════════════════════════════
    Design & Development Block — 4 Phases as Layers
@@ -12,12 +14,11 @@ import { ArrowRight, ArrowLeft, Lock, Pencil, Package, CheckSquare, Factory, Lay
 interface DevPhase {
   id: string;
   number: number;
-  name: string;
-  nameEs: string;
-  description: string;
+  nameKey: keyof Dictionary['developmentPage'];
+  descKey: keyof Dictionary['developmentPage'];
   icon: React.ElementType;
   route: string;
-  dimensions: string[];
+  dimensionKeys: (keyof Dictionary['developmentPage'])[];
   requiresPrevious: boolean;
 }
 
@@ -25,45 +26,41 @@ const DEV_PHASES: DevPhase[] = [
   {
     id: 'sketch',
     number: 1,
-    name: 'Sketch, Color & Materials',
-    nameEs: 'Sketch, Color y Materiales',
-    description: 'Add design sketches (manual or AI-generated), colorways, and material specs to each SKU in the Collection Builder.',
+    nameKey: 'phase1Name',
+    descKey: 'phase1Desc',
     icon: Pencil,
     route: 'design',
-    dimensions: ['Sketch', 'Colorways', 'Materials'],
+    dimensionKeys: ['dimSketch', 'dimColorways', 'dimMaterials'],
     requiresPrevious: false,
   },
   {
     id: 'prototyping',
     number: 2,
-    name: 'Prototyping',
-    nameEs: 'Prototipado',
-    description: 'Upload real prototype photos, review status (approved / with modifications / rejected), and select approved colors.',
+    nameKey: 'phase2Name',
+    descKey: 'phase2Desc',
     icon: Package,
     route: 'prototyping',
-    dimensions: ['Proto Photo', 'Proto Status', 'Approved Color', 'Notes'],
+    dimensionKeys: ['dimProtoPhoto', 'dimProtoStatus', 'dimApprovedColor', 'dimNotes'],
     requiresPrevious: true,
   },
   {
     id: 'selection',
     number: 3,
-    name: 'Final Selection & Catalog',
-    nameEs: 'Selección Final y Catálogo',
-    description: 'Assign final prototypes to each SKU, adjust pricing, and generate AI catalog images for sales.',
+    nameKey: 'phase3Name',
+    descKey: 'phase3Desc',
     icon: CheckSquare,
     route: 'sampling',
-    dimensions: ['Final Proto', 'Final Color', 'Adjusted PVP', 'AI Catalog Image'],
+    dimensionKeys: ['dimFinalProto', 'dimFinalColor', 'dimAdjustedPVP', 'dimAICatalogImage'],
     requiresPrevious: true,
   },
   {
     id: 'production',
     number: 4,
-    name: 'Production',
-    nameEs: 'Producción',
-    description: 'Generate production orders, assign factories, track QC, manage logistics, and export Excel POs.',
+    nameKey: 'phase4Name',
+    descKey: 'phase4Desc',
     icon: Factory,
     route: 'production',
-    dimensions: ['Units', 'Factory', 'Delivery Date', 'QC Status', 'Export PO'],
+    dimensionKeys: ['dimUnits', 'dimFactory', 'dimDeliveryDate', 'dimQCStatus', 'dimExportPO'],
     requiresPrevious: true,
   },
 ];
@@ -72,6 +69,7 @@ export default function DevelopmentPage() {
   const { id } = useParams();
   const router = useRouter();
   const collectionId = id as string;
+  const t = useTranslation();
 
   return (
     <div className="min-h-[80vh]">
@@ -82,13 +80,13 @@ export default function DevelopmentPage() {
             onClick={() => router.push(`/collection/${collectionId}`)}
             className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
           >
-            <ArrowLeft className="h-3 w-3" /> Overview
+            <ArrowLeft className="h-3 w-3" /> {t.developmentPage.backToOverview}
           </button>
           <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-            Design & <span className="italic">Development</span>
+            {t.developmentPage.title} <span className="italic">{t.developmentPage.titleItalic}</span>
           </h2>
           <p className="text-sm text-carbon/40 mt-2 max-w-lg">
-            Four phases that layer new dimensions onto your Collection Builder. Each phase enriches your SKUs with design, prototyping, selection, and production data.
+            {t.developmentPage.description}
           </p>
         </div>
 
@@ -97,19 +95,18 @@ export default function DevelopmentPage() {
           <LayoutGrid className="h-5 w-5 text-carbon/30 flex-shrink-0" />
           <div>
             <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-carbon/40">
-              Collection Builder is the center
+              {t.developmentPage.collectionBuilderCenter}
             </p>
             <p className="text-xs text-carbon/30 mt-0.5">
-              Each phase below adds columns and data to the same Collection Builder view.
+              {t.developmentPage.collectionBuilderDesc}
             </p>
           </div>
         </div>
 
         {/* Phases — Vertical Timeline Layout */}
         <div className="space-y-5">
-          {DEV_PHASES.map((phase, i) => {
+          {DEV_PHASES.map((phase) => {
             const Icon = phase.icon;
-            const isFirst = i === 0;
 
             return (
               <Link
@@ -127,26 +124,26 @@ export default function DevelopmentPage() {
                   <div className="flex items-center gap-3 mb-2">
                     <Icon className="h-4 w-4 text-carbon/40" />
                     <h3 className="text-xl font-light text-carbon tracking-tight">
-                      {phase.name}
+                      {t.developmentPage[phase.nameKey]}
                     </h3>
                     {phase.requiresPrevious && (
                       <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/20 border border-carbon/[0.08] px-2 py-0.5">
-                        Sequential
+                        {t.developmentPage.sequential}
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-carbon/40 font-light leading-relaxed mb-4">
-                    {phase.description}
+                    {t.developmentPage[phase.descKey]}
                   </p>
 
                   {/* Dimensions added */}
                   <div className="flex flex-wrap gap-2">
-                    {phase.dimensions.map((dim) => (
+                    {phase.dimensionKeys.map((dimKey) => (
                       <span
-                        key={dim}
+                        key={dimKey}
                         className="px-3 py-1 text-[10px] font-medium tracking-[0.08em] uppercase bg-carbon/[0.03] text-carbon/35 border border-carbon/[0.06]"
                       >
-                        + {dim}
+                        + {t.developmentPage[dimKey]}
                       </span>
                     ))}
                   </div>

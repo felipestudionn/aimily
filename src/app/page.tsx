@@ -5,66 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/i18n';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { Check, X, Sparkles, Rocket, Building2, Crown, ArrowRight, ChevronDown, Clock } from 'lucide-react';
-
-const PRICING_PLANS = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    icon: Rocket,
-    price: 199,
-    priceAnnual: 159,
-    description: 'For founders & solo designers',
-    tagline: '1 person, 1 brand',
-    features: [
-      { text: '1 user', included: true },
-      { text: '2 active collections', included: true },
-      { text: '100 AI generations/month', included: true },
-      { text: 'All AI tools (sketches, models, video)', included: true },
-      { text: 'Timeline / Gantt + export', included: true },
-      { text: 'Tech Packs + PDF', included: true },
-      { text: 'Trend analytics', included: true },
-    ],
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    icon: Building2,
-    price: 599,
-    priceAnnual: 479,
-    description: 'For teams & growing brands',
-    tagline: '1 team, multiple brands',
-    popular: true,
-    features: [
-      { text: '10 users', included: true },
-      { text: 'Unlimited collections', included: true },
-      { text: '500 AI generations/month', included: true },
-      { text: 'All AI tools + trend alerts', included: true },
-      { text: 'Real-time collaboration', included: true },
-      { text: 'Roles & permissions', included: true },
-      { text: 'Multi-brand support', included: true },
-    ],
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    icon: Crown,
-    price: null,
-    priceAnnual: null,
-    description: 'For established brands',
-    tagline: 'Multiple teams, full control',
-    features: [
-      { text: 'Unlimited users', included: true },
-      { text: 'Unlimited AI generations', included: true },
-      { text: 'SSO & API access', included: true },
-      { text: 'Custom integrations', included: true },
-      { text: 'Dedicated support', included: true },
-      { text: 'Custom onboarding (3 sessions)', included: true },
-      { text: 'Everything in Professional', included: true },
-    ],
-  },
-];
+import { Check, X, Rocket, Building2, Crown, ArrowRight, ChevronDown, Clock } from 'lucide-react';
 
 export default function LandingPage() {
   const { user } = useAuth();
@@ -73,6 +17,8 @@ export default function LandingPage() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [annual, setAnnual] = useState(true);
   const [mobileNav, setMobileNav] = useState(false);
+  const { language, setLanguage } = useLanguage();
+  const t = useTranslation();
 
   // If already authenticated, redirect to collections
   if (user) {
@@ -84,6 +30,64 @@ export default function LandingPage() {
     setAuthMode(mode);
     setAuthOpen(true);
   };
+
+  const PRICING_PLANS = [
+    {
+      id: 'starter',
+      name: t.landing.starter,
+      icon: Rocket,
+      price: 199,
+      priceAnnual: 159,
+      description: t.landing.starterDesc,
+      tagline: t.landing.starterTagline,
+      features: [
+        { text: t.landing.feat1User, included: true },
+        { text: t.landing.feat2Collections, included: true },
+        { text: t.landing.feat100AI, included: true },
+        { text: t.landing.featAllAITools, included: true },
+        { text: t.landing.featTimeline, included: true },
+        { text: t.landing.featTechPacks, included: true },
+        { text: t.landing.featTrend, included: true },
+      ],
+    },
+    {
+      id: 'professional',
+      name: t.landing.professional,
+      icon: Building2,
+      price: 599,
+      priceAnnual: 479,
+      description: t.landing.professionalDesc,
+      tagline: t.landing.professionalTagline,
+      popular: true,
+      features: [
+        { text: t.landing.feat10Users, included: true },
+        { text: t.landing.featUnlimitedCollections, included: true },
+        { text: t.landing.feat500AI, included: true },
+        { text: t.landing.featAllAIPlusTrends, included: true },
+        { text: t.landing.featRealtime, included: true },
+        { text: t.landing.featRoles, included: true },
+        { text: t.landing.featMultiBrand, included: true },
+      ],
+    },
+    {
+      id: 'enterprise',
+      name: t.landing.enterprise,
+      icon: Crown,
+      price: null,
+      priceAnnual: null,
+      description: t.landing.enterpriseDesc,
+      tagline: t.landing.enterpriseTagline,
+      features: [
+        { text: t.landing.featUnlimitedUsers, included: true },
+        { text: t.landing.featUnlimitedAI, included: true },
+        { text: t.landing.featSSO, included: true },
+        { text: t.landing.featCustomIntegrations, included: true },
+        { text: t.landing.featDedicatedSupport, included: true },
+        { text: t.landing.featCustomOnboarding, included: true },
+        { text: t.landing.featEverythingInPro, included: true },
+      ],
+    },
+  ];
 
   return (
     <div className="bg-carbon">
@@ -104,30 +108,49 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center justify-between">
             <div className="flex items-center gap-6">
               <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Discover
+                {t.common.discover}
               </Link>
               <Link href="/meet-aimily" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Meet Aimily
+                {t.common.meetAimily}
               </Link>
               <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Contact
+                {t.common.contact}
               </Link>
               <a href="#pricing" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Pricing
+                {t.common.pricing}
               </a>
             </div>
             <div className="flex items-center gap-6">
+              {/* Language toggle */}
+              <div className="flex border border-gris/20 overflow-hidden">
+                <button
+                  onClick={() => setLanguage('en')}
+                  className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+                    language === 'en' ? 'bg-crema/20 text-crema' : 'text-gris/40 hover:text-gris/60'
+                  }`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLanguage('es')}
+                  className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+                    language === 'es' ? 'bg-crema/20 text-crema' : 'text-gris/40 hover:text-gris/60'
+                  }`}
+                >
+                  ES
+                </button>
+              </div>
               <button
                 onClick={() => openAuth('signin')}
                 className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
               >
-                Log in
+                {t.common.logIn}
               </button>
               <button
                 onClick={() => openAuth('signup')}
                 className="bg-crema text-carbon text-xs font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors"
               >
-                Start free trial
+                {t.common.startFreeTrial}
               </button>
             </div>
           </div>
@@ -135,12 +158,12 @@ export default function LandingPage() {
           {/* Mobile nav */}
           <div className="md:hidden flex items-center justify-between">
             <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              Discover
+              {t.common.discover}
             </Link>
             <button
               onClick={() => setMobileNav(!mobileNav)}
               className="text-gris/60 hover:text-crema transition-colors p-1"
-              aria-label="Toggle menu"
+              aria-label={t.common.toggleMenu}
             >
               {mobileNav ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -158,29 +181,33 @@ export default function LandingPage() {
           {mobileNav && (
             <div className="md:hidden mt-4 bg-carbon/95 backdrop-blur-sm border border-gris/20 rounded-xl p-5 flex flex-col gap-4">
               <Link href="/discover" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Discover
+                {t.common.discover}
               </Link>
               <Link href="/meet-aimily" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Meet Aimily
+                {t.common.meetAimily}
               </Link>
               <Link href="/contact" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Contact
+                {t.common.contact}
               </Link>
               <a href="#pricing" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                Pricing
+                {t.common.pricing}
               </a>
+              <div className="flex border border-gris/20 overflow-hidden self-start">
+                <button onClick={() => setLanguage('en')} className={`px-3 py-1.5 text-xs font-semibold ${language === 'en' ? 'bg-crema/20 text-crema' : 'text-gris/40'}`}>EN</button>
+                <button onClick={() => setLanguage('es')} className={`px-3 py-1.5 text-xs font-semibold ${language === 'es' ? 'bg-crema/20 text-crema' : 'text-gris/40'}`}>ES</button>
+              </div>
               <hr className="border-gris/20" />
               <button
                 onClick={() => { openAuth('signin'); setMobileNav(false); }}
                 className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors text-left"
               >
-                Log in
+                {t.common.logIn}
               </button>
               <button
                 onClick={() => { openAuth('signup'); setMobileNav(false); }}
                 className="bg-crema text-carbon text-sm font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors text-center"
               >
-                Start free trial
+                {t.common.startFreeTrial}
               </button>
             </div>
           )}
@@ -201,7 +228,7 @@ export default function LandingPage() {
           </div>
 
           <p className="text-gris text-lg md:text-xl font-light tracking-wide leading-relaxed max-w-xl mb-12 animate-fade-in-up animate-delay-100">
-            Plan, design, and launch your fashion collection.
+            {t.landing.tagline}
           </p>
 
           {/* CTAs */}
@@ -210,13 +237,13 @@ export default function LandingPage() {
               onClick={() => openAuth('signup')}
               className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
             >
-              START FREE TRIAL
+              {t.common.startFreeTrialUpper}
             </button>
             <a
               href="#pricing"
               className="btn-secondary px-10 py-4 text-sm tracking-[0.15em] text-center"
             >
-              SEE PRICING
+              {t.common.seePricing}
             </a>
           </div>
         </div>
@@ -244,22 +271,22 @@ export default function LandingPage() {
           {/* Section header */}
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-crema mb-3">
-              Plans & Pricing
+              {t.landing.plansAndPricing}
             </h2>
             <p className="text-gris/60 text-lg mb-4">
-              All plans include every AI tool. The difference is scale.
+              {t.landing.allPlansInclude}
             </p>
 
             {/* Trial badge */}
             <div className="flex items-center justify-center gap-2 mb-8">
               <Clock className="w-4 h-4 text-crema/60" />
-              <span className="text-crema/60 text-sm">14-day free trial — full access, no credit card</span>
+              <span className="text-crema/60 text-sm">{t.landing.trialBadge}</span>
             </div>
 
             {/* Toggle annual/monthly */}
             <div className="flex items-center justify-center gap-3">
               <span className={`text-sm ${!annual ? 'text-crema font-medium' : 'text-gris/40'}`}>
-                Monthly
+                {t.landing.monthly}
               </span>
               <button
                 onClick={() => setAnnual(!annual)}
@@ -274,11 +301,11 @@ export default function LandingPage() {
                 />
               </button>
               <span className={`text-sm ${annual ? 'text-crema font-medium' : 'text-gris/40'}`}>
-                Annual
+                {t.landing.annual}
               </span>
               {annual && (
                 <span className="text-xs bg-crema/10 text-crema/80 px-2.5 py-0.5 rounded-full font-medium border border-crema/20">
-                  Save ~20%
+                  {t.landing.savePercent}
                 </span>
               )}
             </div>
@@ -300,7 +327,7 @@ export default function LandingPage() {
                 >
                   {plan.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-crema text-carbon text-xs px-3 py-1 rounded-full font-medium">
-                      Most popular
+                      {t.landing.mostPopular}
                     </div>
                   )}
 
@@ -315,18 +342,18 @@ export default function LandingPage() {
                     {price !== null ? (
                       <>
                         <span className="text-4xl font-bold text-crema">{price}€</span>
-                        <span className="text-gris/40 text-sm">/mo</span>
+                        <span className="text-gris/40 text-sm">{t.landing.perMonth}</span>
                         {annual && (
                           <div className="text-xs text-gris/30 mt-1">
-                            {price * 12}€/year{' '}
+                            {price * 12}€{t.landing.perYear}{' '}
                             <span className="line-through text-gris/20">{plan.price! * 12}€</span>
                           </div>
                         )}
                       </>
                     ) : (
                       <>
-                        <span className="text-3xl font-bold text-crema">Custom</span>
-                        <div className="text-xs text-gris/30 mt-1">From €1,500/mo</div>
+                        <span className="text-3xl font-bold text-crema">{t.landing.custom}</span>
+                        <div className="text-xs text-gris/30 mt-1">{t.landing.customFrom}</div>
                       </>
                     )}
                   </div>
@@ -342,7 +369,7 @@ export default function LandingPage() {
                         : 'bg-crema/10 text-crema hover:bg-crema/20 border border-crema/10'
                     }`}
                   >
-                    {plan.id === 'enterprise' ? 'Contact sales' : 'Start free trial'}
+                    {plan.id === 'enterprise' ? t.landing.contactSales : t.common.startFreeTrial}
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
@@ -367,9 +394,9 @@ export default function LandingPage() {
 
           {/* Bottom note */}
           <p className="text-center text-gris/30 text-sm mt-12">
-            All plans include every AI tool. The difference is scale and collaboration.
+            {t.landing.allPlansNote}
             <br />
-            <span className="text-gris/20 text-xs">Prices excl. VAT. Tax calculated at checkout.</span>
+            <span className="text-gris/20 text-xs">{t.landing.pricesExclVat}</span>
           </p>
         </div>
       </section>
@@ -378,18 +405,18 @@ export default function LandingPage() {
       <div className="relative z-20 pb-6">
         <div className="flex items-center justify-center gap-6 py-5">
           <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-            Terms
+            {t.common.terms}
           </Link>
           <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-            Privacy
+            {t.common.privacy}
           </Link>
           <Link href="/cookies" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-            Cookies
+            {t.common.cookies}
           </Link>
         </div>
         <div className="h-px bg-gris/20" />
         <p className="text-center text-gris/20 text-[10px] tracking-wide mt-4">
-          aimily is a product by StudioNN Agency S.L.
+          {t.common.studioNNProduct}
         </p>
       </div>
 

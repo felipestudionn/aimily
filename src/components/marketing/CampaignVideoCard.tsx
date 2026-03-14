@@ -26,6 +26,7 @@ import { useAiGenerations } from '@/hooks/useAiGenerations';
 import { useLookbookPages } from '@/hooks/useLookbookPages';
 import type { AiGeneration, LookbookLayout, LookbookPage } from '@/types/studio';
 import { MOTION_TYPES } from '@/types/studio';
+import { useTranslation } from '@/i18n';
 
 /* ── Types ── */
 
@@ -56,6 +57,7 @@ interface CampaignVideoCardProps {
 /* ── Component ── */
 
 export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) {
+  const t = useTranslation();
   const { user } = useAuth();
   const { stories, loading: storiesLoading } = useStories(collectionPlanId);
   const { skus } = useSkus(collectionPlanId);
@@ -144,32 +146,32 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Campana y Video
+              {t.marketingPage.campaignLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Campaign & Video
+              {t.marketingPage.campaignTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Lookbook layouts, editorial shoots, and video content for each story.
+          {t.marketingPage.campaignDesc}
         </p>
 
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {storiesLoading || gensLoading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : totalContent === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No content yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noContentYet}</p>
           ) : (
             <div className="flex items-center gap-4">
               <span className="text-2xl font-light text-carbon">{totalContent}</span>
-              <span className="text-xs text-carbon/40">assets created</span>
+              <span className="text-xs text-carbon/40">{t.marketingPage.assetsCreated}</span>
             </div>
           )}
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -305,10 +307,10 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
 
   /* ── TABS ── */
 
-  const TABS: { id: CampaignTab; label: string; Icon: typeof Film }[] = [
-    { id: 'lookbook', label: 'Lookbook', Icon: BookOpen },
-    { id: 'editorial', label: 'Editorial', Icon: ImageIcon },
-    { id: 'video', label: 'Video', Icon: Video },
+  const TABS: { id: CampaignTab; labelKey: 'lookbook' | 'editorial' | 'video'; Icon: typeof Film }[] = [
+    { id: 'lookbook', labelKey: 'lookbook', Icon: BookOpen },
+    { id: 'editorial', labelKey: 'editorial', Icon: ImageIcon },
+    { id: 'video', labelKey: 'video', Icon: Video },
   ];
 
   /* ── Expanded view ── */
@@ -322,14 +324,14 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Creation
+            {t.marketingPage.backToCreation}
           </button>
           <div className="text-center">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-              Campana y Video
+              {t.marketingPage.campaignLabel}
             </p>
             <h2 className="text-lg font-light text-carbon tracking-tight">
-              Campaign & Video
+              {t.marketingPage.campaignTitle}
             </h2>
           </div>
           <div className="w-32" />
@@ -348,7 +350,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
               }`}
             >
               <tab.Icon className="h-3.5 w-3.5" />
-              {tab.label}
+              {t.marketingPage[tab.labelKey]}
             </button>
           ))}
         </div>
@@ -378,7 +380,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         {/* No stories state */}
         {stories.length === 0 && !storiesLoading && (
           <div className="text-center py-20 text-carbon/30 text-sm font-light">
-            Create stories first in the Stories card to organize your campaign content.
+            {t.marketingPage.createStoriesCampaign}
           </div>
         )}
 
@@ -522,6 +524,7 @@ function LookbookTab({
   onDeletePage: (id: string) => Promise<boolean>;
   onLightbox: (url: string) => void;
 }) {
+  const t = useTranslation();
   const [showLayoutPicker, setShowLayoutPicker] = useState(false);
   const [assigningPageId, setAssigningPageId] = useState<string | null>(null);
 
@@ -531,10 +534,10 @@ function LookbookTab({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">
-            Lookbook
+            {t.marketingPage.lookbook}
           </p>
           <p className="text-sm font-light text-carbon/50">
-            {pages.length} page{pages.length !== 1 ? 's' : ''} · {favoriteVisuals.length} favorite visuals available
+            {pages.length} page{pages.length !== 1 ? 's' : ''} · {favoriteVisuals.length} {t.marketingPage.favoriteVisualsAvailable}
           </p>
         </div>
         <button
@@ -542,7 +545,7 @@ function LookbookTab({
           className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/60 hover:text-carbon hover:border-carbon/20 transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
-          Add Page
+          {t.marketingPage.addPage}
         </button>
       </div>
 
@@ -568,10 +571,10 @@ function LookbookTab({
 
       {/* Pages list */}
       {loading ? (
-        <div className="text-center py-12 text-carbon/30 text-sm font-light">Loading pages...</div>
+        <div className="text-center py-12 text-carbon/30 text-sm font-light">{t.marketingPage.loadingPages}</div>
       ) : pages.length === 0 ? (
         <div className="text-center py-16 text-carbon/25 text-sm font-light">
-          No lookbook pages yet. Add a page to start building your lookbook.
+          {t.marketingPage.noLookbookPages}
         </div>
       ) : (
         <div className="space-y-4">
@@ -622,7 +625,7 @@ function LookbookTab({
                   className="text-[11px] font-medium text-carbon/40 hover:text-carbon/70 transition-colors flex items-center gap-1"
                 >
                   <ImageIcon className="h-3 w-3" />
-                  {assigningPageId === page.id ? 'Close' : 'Assign Visuals'}
+                  {assigningPageId === page.id ? t.marketingPage.close : t.marketingPage.assignVisuals}
                 </button>
 
                 {/* Visual assignment grid */}
@@ -663,7 +666,7 @@ function LookbookTab({
                 )}
                 {assigningPageId === page.id && favoriteVisuals.length === 0 && (
                   <p className="mt-3 text-xs text-carbon/25 font-light">
-                    No favorite visuals yet. Star visuals in Product Visuals first.
+                    {t.marketingPage.noFavoriteVisuals}
                   </p>
                 )}
               </div>
@@ -708,6 +711,7 @@ function EditorialTab({
   onLightbox: (url: string) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  const t = useTranslation();
   const [selectedSourceIdx, setSelectedSourceIdx] = useState<number | null>(null);
 
   // Source images: favorite visuals from ProductVisualsCard
@@ -728,21 +732,21 @@ function EditorialTab({
       {/* Header */}
       <div>
         <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">
-          Editorial Shoots
+          {t.marketingPage.editorialShoots}
         </p>
         <p className="text-sm font-light text-carbon/50">
-          Generate editorial photography from your favorite product visuals or upload real shoots.
+          {t.marketingPage.editorialDesc}
         </p>
       </div>
 
       {/* Source image selection */}
       <div>
         <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
-          Select Source Image
+          {t.marketingPage.selectSourceImage}
         </p>
         {sourceImages.length === 0 ? (
           <p className="text-xs text-carbon/25 font-light py-4">
-            Star some visuals in the Product Visuals card first, or upload your own.
+            {t.marketingPage.starVisualsFirst}
           </p>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
@@ -766,12 +770,12 @@ function EditorialTab({
       {/* Art direction prompt */}
       <div>
         <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 block mb-2">
-          Art Direction (optional)
+          {t.marketingPage.artDirection}
         </label>
         <textarea
           value={prompt}
           onChange={(e) => onPromptChange(e.target.value)}
-          placeholder="E.g. dramatic side lighting, against raw concrete wall, model looking away..."
+          placeholder={t.marketingPage.artDirectionPlaceholder}
           className="w-full text-sm font-light text-carbon bg-white border border-carbon/[0.06] px-4 py-3 focus:outline-none focus:border-carbon/20 resize-none h-20"
         />
       </div>
@@ -792,7 +796,7 @@ function EditorialTab({
           ) : (
             <ImageIcon className="h-4 w-4" />
           )}
-          Generate Editorial
+          {t.marketingPage.generateEditorial}
         </button>
 
         <input
@@ -806,13 +810,13 @@ function EditorialTab({
           className="flex items-center gap-2 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors"
         >
           <Upload className="h-3.5 w-3.5" />
-          Upload Photo
+          {t.marketingPage.uploadPhoto}
         </button>
 
         {generating && (
           <span className="text-xs font-light text-carbon/40 flex items-center gap-2">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Generating editorial shoot...
+            {t.marketingPage.generatingEditorial}
           </span>
         )}
       </div>
@@ -821,7 +825,7 @@ function EditorialTab({
       {generations.length > 0 && (
         <div>
           <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
-            Editorial Gallery ({generations.length})
+            {t.marketingPage.editorialGallery} ({generations.length})
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {generations
@@ -875,7 +879,7 @@ function EditorialTab({
 
       {generations.length === 0 && !generating && (
         <div className="text-center py-12 text-carbon/20 text-sm font-light">
-          No editorial shots yet. Select a source image and generate.
+          {t.marketingPage.noEditorialShots}
         </div>
       )}
     </div>
@@ -911,6 +915,7 @@ function VideoTab({
   onVideoPreview: (url: string) => void;
   videoInputRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  const t = useTranslation();
   const [selectedSourceIdx, setSelectedSourceIdx] = useState<number | null>(null);
 
   const sourceImages = useMemo(() => {
@@ -930,21 +935,21 @@ function VideoTab({
       {/* Header */}
       <div>
         <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">
-          Video Content
+          {t.marketingPage.videoContent}
         </p>
         <p className="text-sm font-light text-carbon/50">
-          Generate reels and TikToks from your visuals with Kling 3.0, or upload real video.
+          {t.marketingPage.videoDesc}
         </p>
       </div>
 
       {/* Source image selection */}
       <div>
         <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
-          Select Source Image
+          {t.marketingPage.selectSourceImage}
         </p>
         {sourceImages.length === 0 ? (
           <p className="text-xs text-carbon/25 font-light py-4">
-            Star some visuals in the Product Visuals card first.
+            {t.marketingPage.starVisualsVideo}
           </p>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
@@ -970,7 +975,7 @@ function VideoTab({
         {/* Motion type */}
         <div className="flex items-center gap-2">
           <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
-            Motion
+            {t.marketingPage.motion}
           </label>
           <select
             value={selectedMotion}
@@ -989,12 +994,12 @@ function VideoTab({
       {/* Direction prompt */}
       <div>
         <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 block mb-2">
-          Direction (optional)
+          {t.marketingPage.direction}
         </label>
         <textarea
           value={prompt}
           onChange={(e) => onPromptChange(e.target.value)}
-          placeholder="E.g. slow reveal, fabric flowing in wind, model turning..."
+          placeholder={t.marketingPage.directionPlaceholder}
           className="w-full text-sm font-light text-carbon bg-white border border-carbon/[0.06] px-4 py-3 focus:outline-none focus:border-carbon/20 resize-none h-20"
         />
       </div>
@@ -1015,7 +1020,7 @@ function VideoTab({
           ) : (
             <Video className="h-4 w-4" />
           )}
-          Generate Video
+          {t.marketingPage.generateVideo}
         </button>
 
         <input
@@ -1029,13 +1034,13 @@ function VideoTab({
           className="flex items-center gap-2 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors"
         >
           <Upload className="h-3.5 w-3.5" />
-          Upload Video
+          {t.marketingPage.uploadVideo}
         </button>
 
         {generating && (
           <span className="text-xs font-light text-carbon/40 flex items-center gap-2">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            Generating video (this may take a minute)...
+            {t.marketingPage.generatingVideo}
           </span>
         )}
       </div>
@@ -1044,7 +1049,7 @@ function VideoTab({
       {generations.length > 0 && (
         <div>
           <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
-            Videos ({generations.length})
+            {t.marketingPage.videos} ({generations.length})
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {generations.map((gen) => {
@@ -1104,7 +1109,7 @@ function VideoTab({
 
       {generations.length === 0 && !generating && (
         <div className="text-center py-12 text-carbon/20 text-sm font-light">
-          No videos yet. Select a source image and generate.
+          {t.marketingPage.noVideosYet}
         </div>
       )}
     </div>

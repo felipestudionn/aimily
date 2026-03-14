@@ -1,118 +1,167 @@
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
+
 export default function PrivacyPage() {
+  const t = useTranslation();
+  const { language, setLanguage } = useLanguage();
+
   return (
-    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
-        <p className="text-sm text-gray-600 mb-8">Last updated: March 11, 2026</p>
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5 bg-white/80 backdrop-blur-sm border-b border-gray-100">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/images/aimily-logo-black.png"
+              alt="aimily"
+              width={774}
+              height={96}
+              className="object-contain h-5 w-auto"
+              priority
+              unoptimized
+            />
+          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/discover" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
+              {t.common.discover}
+            </Link>
+            <Link href="/meet-aimily" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
+              {t.common.meetAimily}
+            </Link>
+            <Link href="/contact" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
+              {t.common.contact}
+            </Link>
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          {/* Language toggle */}
+          <div className="flex border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+                language === 'en' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLanguage('es')}
+              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+                language === 'es' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              ES
+            </button>
+          </div>
+          <Link href="/" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
+            {t.common.home}
+          </Link>
+        </div>
+      </nav>
 
-        <div className="prose prose-lg">
-          <h2 className="text-2xl font-semibold mt-8 mb-4">1. Introduction</h2>
-          <p>
-            aimily ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and share information when you use our fashion merchandising platform.
-          </p>
+      {/* Content */}
+      <div className="pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-4xl font-bold mb-8">{t.privacyPage.title}</h1>
+          <p className="text-sm text-gray-600 mb-8">{t.privacyPage.lastUpdated}</p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">2. Information We Collect</h2>
-          <h3 className="text-xl font-semibold mt-6 mb-3">2.1 Information You Provide</h3>
-          <ul className="list-disc pl-6 mb-4">
-            <li>Account information (name, email)</li>
-            <li>Collection planning data</li>
-            <li>Uploaded images and moodboards</li>
-          </ul>
+          <div className="prose prose-lg">
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s1Title}</h2>
+            <p>{t.privacyPage.s1Text}</p>
 
-          <h3 className="text-xl font-semibold mt-6 mb-3">2.2 Pinterest Integration</h3>
-          <p>
-            When you connect your Pinterest account, we access:
-          </p>
-          <ul className="list-disc pl-6 mb-4">
-            <li>Your Pinterest boards (read-only)</li>
-            <li>Pins from your boards (read-only)</li>
-            <li>Board names and descriptions</li>
-          </ul>
-          <p>
-            We use this information solely to help you create fashion moodboards and generate AI-powered collection insights. We do NOT post, modify, or delete any content on your Pinterest account.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s2Title}</h2>
+            <h3 className="text-xl font-semibold mt-6 mb-3">{t.privacyPage.s2_1Title}</h3>
+            <ul className="list-disc pl-6 mb-4">
+              <li>{t.privacyPage.s2_1Item1}</li>
+              <li>{t.privacyPage.s2_1Item2}</li>
+              <li>{t.privacyPage.s2_1Item3}</li>
+            </ul>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">3. How We Use Your Information</h2>
-          <ul className="list-disc pl-6 mb-4">
-            <li>To provide and improve our services</li>
-            <li>To generate AI-powered fashion insights and recommendations</li>
-            <li>To analyze trends and patterns in fashion data</li>
-            <li>To communicate with you about your account</li>
-          </ul>
+            <h3 className="text-xl font-semibold mt-6 mb-3">{t.privacyPage.s2_2Title}</h3>
+            <p>{t.privacyPage.s2_2Text}</p>
+            <ul className="list-disc pl-6 mb-4">
+              <li>{t.privacyPage.s2_2Item1}</li>
+              <li>{t.privacyPage.s2_2Item2}</li>
+              <li>{t.privacyPage.s2_2Item3}</li>
+            </ul>
+            <p>{t.privacyPage.s2_2Note}</p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">4. Data Sharing &amp; Sub-Processors</h2>
-          <p>
-            We do NOT sell your personal information. We share data with the following service providers (sub-processors) as necessary to operate our platform:
-          </p>
-          <ul className="list-disc pl-6 mb-4">
-            <li><strong>Supabase</strong> (Singapore Pte. Ltd.) — Database hosting, authentication, and user management</li>
-            <li><strong>Stripe</strong> (Stripe, Inc.) — Payment processing and subscription billing</li>
-            <li><strong>Google</strong> (Google LLC) — AI processing (Gemini), OAuth authentication</li>
-            <li><strong>Anthropic</strong> (Anthropic PBC) — AI processing (Claude, SketchFlow)</li>
-            <li><strong>Resend</strong> (Resend, Inc.) — Transactional email delivery</li>
-            <li><strong>Vercel</strong> (Vercel, Inc.) — Application hosting and CDN</li>
-            <li>When required by law or to protect our rights</li>
-          </ul>
-          <p>
-            All sub-processors are bound by data processing agreements and comply with applicable data protection regulations.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s3Title}</h2>
+            <ul className="list-disc pl-6 mb-4">
+              <li>{t.privacyPage.s3Item1}</li>
+              <li>{t.privacyPage.s3Item2}</li>
+              <li>{t.privacyPage.s3Item3}</li>
+              <li>{t.privacyPage.s3Item4}</li>
+            </ul>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">5. Payment Data</h2>
-          <p>
-            Payment information is processed directly by Stripe. We do not store credit card numbers, CVVs, or full payment details on our servers. Stripe acts as an independent data controller for payment data. See{" "}
-            <a href="https://stripe.com/privacy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
-              Stripe&apos;s Privacy Policy
-            </a>{" "}
-            for details.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s4Title}</h2>
+            <p>{t.privacyPage.s4Text}</p>
+            <ul className="list-disc pl-6 mb-4">
+              <li><strong>{t.privacyPage.s4Supabase}</strong>{t.privacyPage.s4SupabaseDesc}</li>
+              <li><strong>{t.privacyPage.s4Stripe}</strong>{t.privacyPage.s4StripeDesc}</li>
+              <li><strong>{t.privacyPage.s4Google}</strong>{t.privacyPage.s4GoogleDesc}</li>
+              <li><strong>{t.privacyPage.s4Anthropic}</strong>{t.privacyPage.s4AnthropicDesc}</li>
+              <li><strong>{t.privacyPage.s4Resend}</strong>{t.privacyPage.s4ResendDesc}</li>
+              <li><strong>{t.privacyPage.s4Vercel}</strong>{t.privacyPage.s4VercelDesc}</li>
+              <li>{t.privacyPage.s4LawItem}</li>
+            </ul>
+            <p>{t.privacyPage.s4Note}</p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">6. Pinterest Data</h2>
-          <p>
-            Pinterest data is used exclusively within aimily for creating moodboards and generating insights. We comply with Pinterest's API Terms of Service and do not use Pinterest data for any other purpose.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s5Title}</h2>
+            <p>
+              {t.privacyPage.s5Text1}{" "}
+              <a href="https://stripe.com/privacy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+                {t.privacyPage.s5StripeLink}
+              </a>{" "}
+              {t.privacyPage.s5Text2}
+            </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">7. Data Security</h2>
-          <p>
-            We implement industry-standard security measures to protect your data, including encryption, secure authentication, and regular security audits.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s6Title}</h2>
+            <p>{t.privacyPage.s6Text}</p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">8. Your Rights (GDPR)</h2>
-          <p>Under EU/EEA data protection law, you have the right to:</p>
-          <ul className="list-disc pl-6 mb-4">
-            <li><strong>Access</strong> — Download all your personal data from your{" "}
-              <a href="/account" className="text-primary hover:underline">account settings</a>
-            </li>
-            <li><strong>Rectification</strong> — Correct inaccurate data in your account</li>
-            <li><strong>Erasure</strong> — Permanently delete your account and all associated data from your{" "}
-              <a href="/account" className="text-primary hover:underline">account settings</a>
-            </li>
-            <li><strong>Portability</strong> — Export your data in JSON format</li>
-            <li><strong>Objection</strong> — Object to processing of your data</li>
-            <li>Disconnect your Pinterest account at any time</li>
-          </ul>
-          <p>
-            To exercise any of these rights, visit your{" "}
-            <a href="/account" className="text-primary hover:underline">account settings</a>{" "}
-            or contact us at the email below.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s7Title}</h2>
+            <p>{t.privacyPage.s7Text}</p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">9. Data Controller</h2>
-          <p>
-            The data controller is StudioNN Agency S.L. (NIF: B42978130), based in Alicante, Spain.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s8Title}</h2>
+            <p>{t.privacyPage.s8Text}</p>
+            <ul className="list-disc pl-6 mb-4">
+              <li>
+                <strong>{t.privacyPage.s8Access}</strong>{t.privacyPage.s8AccessDesc}{" "}
+                <a href="/account" className="text-primary hover:underline">{t.privacyPage.s8AccountLink}</a>
+              </li>
+              <li><strong>{t.privacyPage.s8Rectification}</strong>{t.privacyPage.s8RectificationDesc}</li>
+              <li>
+                <strong>{t.privacyPage.s8Erasure}</strong>{t.privacyPage.s8ErasureDesc}{" "}
+                <a href="/account" className="text-primary hover:underline">{t.privacyPage.s8AccountLink}</a>
+              </li>
+              <li><strong>{t.privacyPage.s8Portability}</strong>{t.privacyPage.s8PortabilityDesc}</li>
+              <li><strong>{t.privacyPage.s8Objection}</strong>{t.privacyPage.s8ObjectionDesc}</li>
+              <li>{t.privacyPage.s8Pinterest}</li>
+            </ul>
+            <p>
+              {t.privacyPage.s8ExerciseText}{" "}
+              <a href="/account" className="text-primary hover:underline">{t.privacyPage.s8AccountLink}</a>{" "}
+              {t.privacyPage.s8ExerciseTextCont}
+            </p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">10. Contact Us</h2>
-          <p>
-            For privacy-related questions, contact us at:{" "}
-            <a href="mailto:privacy@aimily.app" className="text-primary hover:underline">
-              privacy@aimily.app
-            </a>
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s9Title}</h2>
+            <p>{t.privacyPage.s9Text}</p>
 
-          <h2 className="text-2xl font-semibold mt-8 mb-4">11. Changes to This Policy</h2>
-          <p>
-            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
-          </p>
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s10Title}</h2>
+            <p>
+              {t.privacyPage.s10Text}{" "}
+              <a href="mailto:privacy@aimily.app" className="text-primary hover:underline">
+                privacy@aimily.app
+              </a>
+            </p>
+
+            <h2 className="text-2xl font-semibold mt-8 mb-4">{t.privacyPage.s11Title}</h2>
+            <p>{t.privacyPage.s11Text}</p>
+          </div>
         </div>
       </div>
     </div>

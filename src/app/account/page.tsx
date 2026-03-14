@@ -3,22 +3,28 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Navbar } from '@/components/layout/navbar';
 import {
   User, Mail, Shield, CreditCard, Download, Trash2,
   Loader2, CheckCircle, AlertTriangle, Key,
 } from 'lucide-react';
 
-const PLAN_LABELS: Record<string, string> = {
-  trial: 'Trial (14 days)',
-  starter: 'Starter',
-  professional: 'Professional',
-  enterprise: 'Enterprise',
-};
-
 export default function AccountPage() {
   const { user, updatePassword, signOut } = useAuth();
   const { subscription, openPortal, aiUsagePercent, loading: subLoading } = useSubscription();
+  const t = useTranslation();
+  const { language } = useLanguage();
+
+  const dateFmtLocale = language === 'es' ? 'es-ES' : 'en-US';
+
+  const PLAN_LABELS: Record<string, string> = {
+    trial: t.account.planTrial,
+    starter: t.account.planStarter,
+    professional: t.account.planProfessional,
+    enterprise: t.account.planEnterprise,
+  };
 
   const [newPassword, setNewPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -36,11 +42,11 @@ export default function AccountPage() {
     setPasswordSuccess(false);
 
     if (newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
+      setPasswordError(t.auth.errPasswordMinChars);
       return;
     }
     if (!/\d/.test(newPassword)) {
-      setPasswordError('Password must contain at least 1 number');
+      setPasswordError(t.auth.errPasswordNeedNumber);
       return;
     }
 
@@ -70,7 +76,7 @@ export default function AccountPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      alert('Failed to export data. Please try again.');
+      alert(t.account.exportFailed);
     } finally {
       setExportLoading(false);
     }
@@ -84,7 +90,7 @@ export default function AccountPage() {
       await signOut();
       window.location.href = '/?account_deleted=true';
     } catch {
-      alert('Failed to delete account. Please try again.');
+      alert(t.account.deleteFailed);
       setDeleteLoading(false);
     }
   };
@@ -97,34 +103,34 @@ export default function AccountPage() {
       <main className="bg-[#fff6dc] min-h-screen pt-28 pb-16 px-4">
         <div className="max-w-2xl mx-auto space-y-8">
           <div>
-            <h1 className="text-3xl font-light text-carbon tracking-tight">Account</h1>
-            <p className="text-sm text-gris mt-1">Manage your profile, subscription, and data.</p>
+            <h1 className="text-3xl font-light text-carbon tracking-tight">{t.account.title}</h1>
+            <p className="text-sm text-gris mt-1">{t.account.manageDesc}</p>
           </div>
 
           {/* Profile Section */}
           <section className="bg-white border border-gris/20 p-6 space-y-4">
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-carbon" />
-              <h2 className="text-lg font-medium text-carbon">Profile</h2>
+              <h2 className="text-lg font-medium text-carbon">{t.account.profile}</h2>
             </div>
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="h-4 w-4 text-gris" />
-                <span className="text-gris">Email:</span>
+                <span className="text-gris">{t.account.emailLabel}</span>
                 <span className="text-carbon font-medium">{user?.email}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Shield className="h-4 w-4 text-gris" />
-                <span className="text-gris">Auth method:</span>
+                <span className="text-gris">{t.account.authMethod}</span>
                 <span className="text-carbon font-medium">
-                  {isOAuthUser ? 'Google' : 'Email + password'}
+                  {isOAuthUser ? 'Google' : t.account.emailPassword}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <span className="text-gris ml-7">Member since:</span>
+                <span className="text-gris ml-7">{t.account.memberSince}</span>
                 <span className="text-carbon font-medium">
                   {user?.created_at
-                    ? new Date(user.created_at).toLocaleDateString('en-US', {
+                    ? new Date(user.created_at).toLocaleDateString(dateFmtLocale, {
                         year: 'numeric', month: 'long', day: 'numeric',
                       })
                     : '—'}
@@ -138,14 +144,14 @@ export default function AccountPage() {
             <section className="bg-white border border-gris/20 p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Key className="h-5 w-5 text-carbon" />
-                <h2 className="text-lg font-medium text-carbon">Change Password</h2>
+                <h2 className="text-lg font-medium text-carbon">{t.account.changePassword}</h2>
               </div>
               <form onSubmit={handleChangePassword} className="space-y-3">
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="New password (min. 8 chars, 1 number)"
+                  placeholder={t.auth.newPasswordPlaceholder}
                   className="w-full px-4 py-3 border border-gris/30 text-sm text-carbon placeholder:text-gris/40 focus:outline-none focus:border-carbon/50"
                   minLength={8}
                   required
@@ -155,7 +161,7 @@ export default function AccountPage() {
                 )}
                 {passwordSuccess && (
                   <p className="text-sm text-green-600 flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4" /> Password updated
+                    <CheckCircle className="h-4 w-4" /> {t.auth.passwordUpdated}
                   </p>
                 )}
                 <button
@@ -165,9 +171,9 @@ export default function AccountPage() {
                 >
                   {passwordLoading ? (
                     <span className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Updating...
+                      <Loader2 className="h-4 w-4 animate-spin" /> {t.auth.updatingPassword}
                     </span>
-                  ) : 'Update Password'}
+                  ) : t.auth.updatePassword}
                 </button>
               </form>
             </section>
@@ -177,40 +183,40 @@ export default function AccountPage() {
           <section className="bg-white border border-gris/20 p-6 space-y-4">
             <div className="flex items-center gap-3">
               <CreditCard className="h-5 w-5 text-carbon" />
-              <h2 className="text-lg font-medium text-carbon">Subscription</h2>
+              <h2 className="text-lg font-medium text-carbon">{t.account.subscription}</h2>
             </div>
             {subLoading ? (
               <div className="flex items-center gap-2 text-sm text-gris">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading...
+                <Loader2 className="h-4 w-4 animate-spin" /> {t.common.loading}
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gris">Current plan:</span>
+                  <span className="text-gris">{t.account.currentPlan}</span>
                   <span className="text-carbon font-medium">
                     {PLAN_LABELS[subscription?.plan || 'trial']}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gris">Status:</span>
+                  <span className="text-gris">{t.account.status}</span>
                   <span className={`font-medium ${subscription?.cancelAtPeriodEnd ? 'text-amber-600' : 'text-green-600'}`}>
-                    {subscription?.cancelAtPeriodEnd ? 'Cancels at period end' : subscription?.status || 'Active'}
+                    {subscription?.cancelAtPeriodEnd ? t.account.cancelsAtPeriodEnd : subscription?.status || t.account.active}
                   </span>
                 </div>
                 {subscription?.currentPeriodEnd && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gris">Next billing:</span>
+                    <span className="text-gris">{t.account.nextBilling}</span>
                     <span className="text-carbon font-medium">
-                      {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
+                      {new Date(subscription.currentPeriodEnd).toLocaleDateString(dateFmtLocale, {
                         year: 'numeric', month: 'long', day: 'numeric',
                       })}
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gris">AI usage this month:</span>
+                  <span className="text-gris">{t.account.aiUsageMonth}</span>
                   <span className="text-carbon font-medium">
-                    {subscription?.usage?.aiGenerations || 0} / {subscription?.limits?.aiGenerations === -1 ? 'Unlimited' : subscription?.limits?.aiGenerations}
+                    {subscription?.usage?.aiGenerations || 0} / {subscription?.limits?.aiGenerations === -1 ? t.account.unlimited : subscription?.limits?.aiGenerations}
                     {aiUsagePercent > 0 && ` (${aiUsagePercent}%)`}
                   </span>
                 </div>
@@ -218,7 +224,7 @@ export default function AccountPage() {
                   onClick={openPortal}
                   className="px-6 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide hover:bg-carbon/90 transition-colors"
                 >
-                  Manage Subscription
+                  {t.account.manageSubscription}
                 </button>
               </div>
             )}
@@ -228,10 +234,10 @@ export default function AccountPage() {
           <section className="bg-white border border-gris/20 p-6 space-y-4">
             <div className="flex items-center gap-3">
               <Download className="h-5 w-5 text-carbon" />
-              <h2 className="text-lg font-medium text-carbon">Export Your Data</h2>
+              <h2 className="text-lg font-medium text-carbon">{t.account.exportData}</h2>
             </div>
             <p className="text-sm text-gris">
-              Download all your data (collections, SKUs, timelines, settings) as a JSON file.
+              {t.account.exportDataDesc}
             </p>
             <button
               onClick={handleExport}
@@ -240,9 +246,9 @@ export default function AccountPage() {
             >
               {exportLoading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Exporting...
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t.account.exporting}
                 </span>
-              ) : 'Download My Data'}
+              ) : t.account.downloadMyData}
             </button>
           </section>
 
@@ -250,10 +256,10 @@ export default function AccountPage() {
           <section className="bg-white border border-red-200 p-6 space-y-4">
             <div className="flex items-center gap-3">
               <Trash2 className="h-5 w-5 text-red-600" />
-              <h2 className="text-lg font-medium text-red-600">Delete Account</h2>
+              <h2 className="text-lg font-medium text-red-600">{t.account.deleteAccount}</h2>
             </div>
             <p className="text-sm text-gris">
-              Permanently delete your account and all associated data. This action cannot be undone.
+              {t.account.deleteAccountDesc}
             </p>
 
             {deleteStep === 0 && (
@@ -261,7 +267,7 @@ export default function AccountPage() {
                 onClick={() => setDeleteStep(1)}
                 className="px-6 py-2.5 border border-red-300 text-red-600 text-sm font-medium tracking-wide hover:bg-red-50 transition-colors"
               >
-                Delete My Account
+                {t.account.deleteMyAccount}
               </button>
             )}
 
@@ -270,13 +276,13 @@ export default function AccountPage() {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
                   <div className="text-sm text-red-800">
-                    <p className="font-medium">Are you sure?</p>
-                    <p className="mt-1">This will permanently delete:</p>
+                    <p className="font-medium">{t.account.areYouSure}</p>
+                    <p className="mt-1">{t.account.deleteWillRemove}</p>
                     <ul className="list-disc ml-4 mt-1 space-y-0.5">
-                      <li>All your collections and SKUs</li>
-                      <li>All timelines and calendar data</li>
-                      <li>Your subscription (will be cancelled)</li>
-                      <li>Your account and login credentials</li>
+                      <li>{t.account.deleteItem1}</li>
+                      <li>{t.account.deleteItem2}</li>
+                      <li>{t.account.deleteItem3}</li>
+                      <li>{t.account.deleteItem4}</li>
                     </ul>
                   </div>
                 </div>
@@ -285,13 +291,13 @@ export default function AccountPage() {
                     onClick={() => setDeleteStep(2)}
                     className="px-6 py-2.5 bg-red-600 text-white text-sm font-medium tracking-wide hover:bg-red-700 transition-colors"
                   >
-                    Yes, delete everything
+                    {t.account.yesDeleteEverything}
                   </button>
                   <button
                     onClick={() => setDeleteStep(0)}
                     className="px-6 py-2.5 border border-gris/30 text-carbon text-sm font-medium tracking-wide hover:bg-gris/10 transition-colors"
                   >
-                    Cancel
+                    {t.common.cancel}
                   </button>
                 </div>
               </div>
@@ -300,7 +306,7 @@ export default function AccountPage() {
             {deleteStep === 2 && (
               <div className="p-4 bg-red-50 border border-red-200 space-y-3">
                 <p className="text-sm text-red-800 font-medium">
-                  Last chance — click below to permanently delete your account.
+                  {t.account.lastChance}
                 </p>
                 <div className="flex gap-3">
                   <button
@@ -310,16 +316,16 @@ export default function AccountPage() {
                   >
                     {deleteLoading ? (
                       <span className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Deleting...
+                        <Loader2 className="h-4 w-4 animate-spin" /> {t.account.deleting}
                       </span>
-                    ) : 'Permanently Delete My Account'}
+                    ) : t.account.permanentlyDelete}
                   </button>
                   <button
                     onClick={() => setDeleteStep(0)}
                     disabled={deleteLoading}
                     className="px-6 py-2.5 border border-gris/30 text-carbon text-sm font-medium tracking-wide hover:bg-gris/10 transition-colors disabled:opacity-50"
                   >
-                    Cancel
+                    {t.common.cancel}
                   </button>
                 </div>
               </div>

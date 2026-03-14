@@ -23,6 +23,7 @@ import { useAiGenerations } from '@/hooks/useAiGenerations';
 import { useBrandModels } from '@/hooks/useBrandModels';
 import type { AiGeneration, BrandModel } from '@/types/studio';
 import { SCENE_OPTIONS } from '@/types/studio';
+import { useTranslation } from '@/i18n';
 
 /* ── Types ── */
 
@@ -42,6 +43,7 @@ interface ProductVisualsCardProps {
 /* ── Component ── */
 
 export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps) {
+  const t = useTranslation();
   const { user } = useAuth();
   const { stories, loading: storiesLoading } = useStories(collectionPlanId);
   const { skus } = useSkus(collectionPlanId);
@@ -110,30 +112,30 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Visuales
+              {t.marketingPage.visualsLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Product Visuals
+              {t.marketingPage.visualsTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Renders, on-model shots, and lifestyle photography organized by story.
+          {t.marketingPage.visualsDesc}
         </p>
 
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {storiesLoading || gensLoading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : totalVisuals === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No visuals yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noVisualsYet}</p>
           ) : (
             <div className="flex items-center gap-4">
               <span className="text-2xl font-light text-carbon">{totalVisuals}</span>
-              <span className="text-xs text-carbon/40">visuals generated</span>
+              <span className="text-xs text-carbon/40">{t.marketingPage.visualsGenerated}</span>
               {generations.filter((g) => g.is_favorite).length > 0 && (
                 <span className="text-xs text-carbon/30 flex items-center gap-1">
                   <Star className="h-3 w-3" />
-                  {generations.filter((g) => g.is_favorite).length} favorites
+                  {generations.filter((g) => g.is_favorite).length} {t.marketingPage.favorites}
                 </span>
               )}
             </div>
@@ -141,7 +143,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -244,14 +246,14 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
             className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Creation
+            {t.marketingPage.backToCreation}
           </button>
           <div className="text-center">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-              Visuales
+              {t.marketingPage.visualsLabel}
             </p>
             <h2 className="text-lg font-light text-carbon tracking-tight">
-              Product Visuals
+              {t.marketingPage.visualsTitle}
             </h2>
           </div>
           <div className="w-32" />
@@ -283,7 +285,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
                     : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                 }`}
               >
-                Unassigned
+                {t.marketingPage.unassigned}
                 <span className="ml-2 text-[10px] opacity-60">({unassignedSkus.length})</span>
               </button>
             )}
@@ -297,7 +299,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
           {/* Scene selector */}
           <div className="flex items-center gap-2">
             <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
-              Scene
+              {t.marketingPage.scene}
             </label>
             <select
               value={selectedScene}
@@ -317,7 +319,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
             <div className="flex items-center gap-2">
               <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
                 <Users className="h-3 w-3 inline mr-1" />
-                Model
+                {t.marketingPage.model}
               </label>
               <select
                 value={selectedModelId || models[0]?.id || ''}
@@ -335,10 +337,10 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
 
           {/* Gallery count */}
           <div className="ml-auto text-xs font-light text-carbon/40">
-            {totalVisuals} visual{totalVisuals !== 1 ? 's' : ''} generated
+            {totalVisuals} {t.marketingPage.visualsGenerated}
             {generations.filter((g) => g.is_favorite).length > 0 && (
               <span className="ml-2">
-                · {generations.filter((g) => g.is_favorite).length} favorites
+                · {generations.filter((g) => g.is_favorite).length} {t.marketingPage.favorites}
               </span>
             )}
           </div>
@@ -347,7 +349,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         {/* No stories state */}
         {stories.length === 0 && !storiesLoading && (
           <div className="text-center py-20 text-carbon/30 text-sm font-light">
-            Create stories first in the Stories card to organize your visuals.
+            {t.marketingPage.createStoriesFirst}
           </div>
         )}
 
@@ -378,7 +380,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
             {/* SKU rows */}
             {activeStory.skus.length === 0 ? (
               <div className="text-center py-12 text-carbon/25 text-sm font-light">
-                No SKUs assigned to this story yet.
+                {t.marketingPage.noSkusAssigned}
               </div>
             ) : (
               activeStory.skus.map((sku) => (
@@ -404,9 +406,9 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         {activeStoryId === '__unassigned__' && (
           <div className="space-y-4">
             <div className="bg-white border border-carbon/[0.06] p-5 mb-6">
-              <h3 className="text-lg font-light text-carbon tracking-tight">Unassigned SKUs</h3>
+              <h3 className="text-lg font-light text-carbon tracking-tight">{t.marketingPage.unassignedSkusTitle}</h3>
               <p className="text-sm font-light text-carbon/50 mt-1">
-                These SKUs are not assigned to any story. Visuals generated here won&apos;t have story context.
+                {t.marketingPage.unassignedSkusDesc}
               </p>
             </div>
             {unassignedSkus.map((sku) => (
@@ -430,7 +432,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         {activeStory && activeStoryId !== '__unassigned__' && gensForStory.length > 0 && (
           <div className="mt-12">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
-              All Visuals — {activeStory.name} ({gensForStory.length})
+              {t.marketingPage.allVisuals} — {activeStory.name} ({gensForStory.length})
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
               {gensForStory
@@ -525,15 +527,16 @@ function SkuVisualRow({
   onToggleExpand: () => void;
   onLightbox: (url: string) => void;
 }) {
+  const t = useTranslation();
   const completedGens = generations.filter(
     (g) => g.status === 'completed' && g.output_data?.images?.length
   );
   const isGenerating = generating?.skuId === sku.id;
 
-  const ACTIONS: { id: VisualAction; label: string; Icon: typeof Camera; desc: string }[] = [
-    { id: 'product-render', label: 'Render', Icon: ImageIcon, desc: 'Studio product shot' },
-    { id: 'tryon', label: 'On-Model', Icon: Shirt, desc: 'Virtual try-on' },
-    { id: 'lifestyle', label: 'Lifestyle', Icon: Palmtree, desc: 'Lifestyle scene' },
+  const ACTIONS: { id: VisualAction; labelKey: 'render' | 'onModel' | 'lifestyle'; Icon: typeof Camera; descKey: 'studioProductShot' | 'virtualTryOn' | 'lifestyleScene' }[] = [
+    { id: 'product-render', labelKey: 'render', Icon: ImageIcon, descKey: 'studioProductShot' },
+    { id: 'tryon', labelKey: 'onModel', Icon: Shirt, descKey: 'virtualTryOn' },
+    { id: 'lifestyle', labelKey: 'lifestyle', Icon: Palmtree, descKey: 'lifestyleScene' },
   ];
 
   return (
@@ -587,7 +590,7 @@ function SkuVisualRow({
           )}
         </div>
 
-        <span className="text-xs text-carbon/30">{completedGens.length} visuals</span>
+        <span className="text-xs text-carbon/30">{completedGens.length} {t.marketingPage.visuals}</span>
 
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 text-carbon/25 flex-shrink-0" />
@@ -610,14 +613,14 @@ function SkuVisualRow({
                   onClick={() => onGenerate(action.id)}
                   disabled={loading || isGenerating || needsImage}
                   className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/60 hover:text-carbon hover:border-carbon/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={needsImage ? 'Upload a reference image first' : action.desc}
+                  title={needsImage ? t.marketingPage.uploadRefFirst : t.marketingPage[action.descKey]}
                 >
                   {loading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <action.Icon className="h-3.5 w-3.5" />
                   )}
-                  {action.label}
+                  {t.marketingPage[action.labelKey]}
                 </button>
               );
             })}
@@ -626,7 +629,7 @@ function SkuVisualRow({
           {/* Generation results */}
           {completedGens.length === 0 && !isGenerating && (
             <p className="text-xs text-carbon/20 font-light">
-              No visuals yet. Use the buttons above to generate.
+              {t.marketingPage.noVisualsGenerate}
             </p>
           )}
 
@@ -683,7 +686,7 @@ function SkuVisualRow({
             <div className="flex items-center gap-3 py-4">
               <Loader2 className="h-4 w-4 animate-spin text-carbon/40" />
               <p className="text-xs font-light text-carbon/40">
-                Generating {generating?.action?.replace('-', ' ')}...
+                {t.marketingPage.generating} {generating?.action?.replace('-', ' ')}...
               </p>
             </div>
           )}

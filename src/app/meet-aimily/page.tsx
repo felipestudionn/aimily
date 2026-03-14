@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ──────────────────────────────────────────────
    Scroll-triggered reveal hook
@@ -121,96 +123,36 @@ function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
 }
 
 /* ──────────────────────────────────────────────
-   Block data
+   Block data (icons only — text comes from i18n)
    ────────────────────────────────────────────── */
-const BLOCKS = [
+const BLOCK_ICONS = [
   {
     step: '01',
-    label: 'CREATIVE VISION',
     icon: Palette,
-    headline: 'Start with a vision,',
-    headlineItalic: 'not a spreadsheet',
-    headlineEs: 'Empieza con una vision,',
-    headlineItalicEs: 'no con una hoja de calculo',
-    description:
-      'Capture your creative direction with AI-powered moodboards, trend analysis, and color palette generation. Turn abstract inspiration into a structured creative brief.',
-    descriptionEs:
-      'Captura tu direccion creativa con moodboards generados por IA, analisis de tendencias y generacion de paletas de color. Transforma la inspiracion abstracta en un brief creativo estructurado.',
-    features: [
-      { icon: TrendingUp, text: 'Trend Analysis & Forecasting', textEs: 'Analisis y Prediccion de Tendencias' },
-      { icon: Sparkles, text: 'AI Moodboard Generation', textEs: 'Generacion de Moodboards con IA' },
-      { icon: Palette, text: 'Color Palette Intelligence', textEs: 'Inteligencia de Paletas de Color' },
-      { icon: BookOpen, text: 'Creative Brief Builder', textEs: 'Constructor de Brief Creativo' },
-    ],
-    screenshotPlaceholder: 'Creative Block — Moodboard & Trend Analysis',
+    featureIcons: [TrendingUp, Sparkles, Palette, BookOpen],
   },
   {
     step: '02',
-    label: 'MERCHANDISING INTELLIGENCE',
     icon: DollarSign,
-    headline: 'From gut feeling',
-    headlineItalic: 'to business model',
-    headlineEs: 'De la intuicion',
-    headlineItalicEs: 'al modelo de negocio',
-    description:
-      'Transform creative vision into commercial reality. Define product families, set pricing strategies, plan distribution channels, and build budgets — all powered by market intelligence.',
-    descriptionEs:
-      'Transforma la vision creativa en realidad comercial. Define familias de producto, establece estrategias de precios, planifica canales de distribucion y construye presupuestos — todo impulsado por inteligencia de mercado.',
-    features: [
-      { icon: Layers, text: 'Product Family Architecture', textEs: 'Arquitectura de Familias de Producto' },
-      { icon: DollarSign, text: 'Pricing Strategy Engine', textEs: 'Motor de Estrategia de Precios' },
-      { icon: ShoppingBag, text: 'Channel Distribution Planning', textEs: 'Planificacion de Distribucion por Canal' },
-      { icon: BarChart3, text: 'Budget & Margin Builder', textEs: 'Constructor de Presupuesto y Margen' },
-    ],
-    screenshotPlaceholder: 'Merchandising Block — Pricing & Channel Strategy',
+    featureIcons: [Layers, DollarSign, ShoppingBag, BarChart3],
   },
   {
     step: '03',
-    label: 'DESIGN & DEVELOPMENT',
     icon: PenTool,
-    headline: 'Your collection,',
-    headlineItalic: 'pixel to pattern',
-    headlineEs: 'Tu coleccion,',
-    headlineItalicEs: 'del pixel al patron',
-    description:
-      'From AI-generated sketches to production-ready tech packs. Manage prototypes, curate your final selection, and build a complete product catalog — all in one connected workflow.',
-    descriptionEs:
-      'De bocetos generados por IA a fichas tecnicas listas para produccion. Gestiona prototipos, cura tu seleccion final y construye un catalogo completo — todo en un flujo de trabajo conectado.',
-    features: [
-      { icon: Scissors, text: 'AI Sketch Generation', textEs: 'Generacion de Bocetos con IA' },
-      { icon: Layers, text: 'Prototype Management', textEs: 'Gestion de Prototipos' },
-      { icon: Target, text: 'Collection Curation & Selection', textEs: 'Curacion y Seleccion de Coleccion' },
-      { icon: BookOpen, text: 'Production-Ready Catalogs', textEs: 'Catalogos Listos para Produccion' },
-    ],
-    screenshotPlaceholder: 'Design Block — Sketch to Catalog Pipeline',
+    featureIcons: [Scissors, Layers, Target, BookOpen],
   },
   {
     step: '04',
-    label: 'MARKETING & LAUNCH',
     icon: Megaphone,
-    headline: 'Launch day?',
-    headlineItalic: 'Already planned',
-    headlineEs: 'Dia de lanzamiento?',
-    headlineItalicEs: 'Ya esta planificado',
-    description:
-      'Plan your go-to-market strategy, create campaign content, schedule your content calendar, and execute your launch — from brand story to paid media, everything in sync.',
-    descriptionEs:
-      'Planifica tu estrategia go-to-market, crea contenido de campana, programa tu calendario de contenido y ejecuta tu lanzamiento — desde la historia de marca hasta medios pagados, todo sincronizado.',
-    features: [
-      { icon: BookOpen, text: 'Content Strategy & Calendar', textEs: 'Estrategia y Calendario de Contenido' },
-      { icon: Video, text: 'Campaign Video Briefs', textEs: 'Briefs de Video de Campana' },
-      { icon: Globe, text: 'Go-To-Market Planning', textEs: 'Planificacion Go-To-Market' },
-      { icon: Rocket, text: 'Launch Execution Dashboard', textEs: 'Dashboard de Ejecucion de Lanzamiento' },
-    ],
-    screenshotPlaceholder: 'Marketing Block — Campaign Creation & Launch',
+    featureIcons: [BookOpen, Video, Globe, Rocket],
   },
 ];
 
-const STATS = [
-  { value: 4, suffix: '', label: 'Integrated blocks', labelEs: 'Bloques integrados' },
-  { value: 45, suffix: '', label: 'Automated milestones', labelEs: 'Hitos automatizados' },
-  { value: 1, suffix: '', label: 'Connected timeline', labelEs: 'Timeline conectado' },
-  { value: 360, suffix: '°', label: 'Collection visibility', labelEs: 'Visibilidad de coleccion' },
+const STATS_DATA = [
+  { value: 4, suffix: '' },
+  { value: 45, suffix: '' },
+  { value: 1, suffix: '' },
+  { value: 360, suffix: '°' },
 ];
 
 /* ──────────────────────────────────────────────
@@ -220,8 +162,50 @@ export default function MeetAimilyPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
-  const [lang, setLang] = useState<'en' | 'es'>('en');
-  const en = lang === 'en';
+  const t = useTranslation();
+  const { language, setLanguage } = useLanguage();
+  const p = t.meetAimilyPage;
+
+  // Build translated block data from i18n keys
+  const BLOCKS = BLOCK_ICONS.map((b, i) => {
+    const n = (i + 1) as 1 | 2 | 3 | 4;
+    return {
+      ...b,
+      label: p[`block${n}Label`],
+      headline: p[`block${n}Headline`],
+      headlineItalic: p[`block${n}HeadlineItalic`],
+      description: p[`block${n}Desc`],
+      features: [
+        p[`block${n}Feat1`],
+        p[`block${n}Feat2`],
+        p[`block${n}Feat3`],
+        p[`block${n}Feat4`],
+      ],
+      screenshot: p[`block${n}Screenshot`],
+    };
+  });
+
+  const STATS_LABELS = [
+    p.statIntegratedBlocks,
+    p.statAutomatedMilestones,
+    p.statConnectedTimeline,
+    p.statCollectionVisibility,
+  ];
+
+  const TRANSFORM_ROWS = [
+    { before: p.transformBefore1, after: p.transformAfter1 },
+    { before: p.transformBefore2, after: p.transformAfter2 },
+    { before: p.transformBefore3, after: p.transformAfter3 },
+    { before: p.transformBefore4, after: p.transformAfter4 },
+    { before: p.transformBefore5, after: p.transformAfter5 },
+  ];
+
+  const MILESTONE_BLOCKS = [
+    { label: p.orchestratorCreative, count: 12 },
+    { label: p.orchestratorMerchandising, count: 10 },
+    { label: p.orchestratorDesignDev, count: 13 },
+    { label: p.orchestratorMarketing, count: 10 },
+  ];
 
   return (
     <div className="min-h-screen bg-carbon">
@@ -244,36 +228,48 @@ export default function MeetAimilyPage() {
               href="/discover"
               className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
             >
-              Discover
+              {t.common.discover}
             </Link>
             <Link
               href="/meet-aimily"
               className="text-crema text-xs font-medium tracking-widest uppercase"
             >
-              Meet Aimily
+              {t.common.meetAimily}
             </Link>
             <Link
               href="/contact"
               className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
             >
-              Contact
+              {t.common.contact}
             </Link>
           </div>
         </div>
         <div className="flex items-center gap-4">
           {/* Language toggle */}
-          <button
-            onClick={() => setLang(en ? 'es' : 'en')}
-            className="text-gris/40 text-[10px] font-medium tracking-widest uppercase hover:text-crema transition-colors"
-          >
-            {en ? 'ES' : 'EN'}
-          </button>
+          <div className="flex items-center border border-gris/20 overflow-hidden">
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-2.5 py-1 text-[10px] font-medium tracking-wider transition-colors ${
+                language === 'en' ? 'bg-crema text-carbon' : 'text-gris/50 hover:text-crema'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLanguage('es')}
+              className={`px-2.5 py-1 text-[10px] font-medium tracking-wider transition-colors ${
+                language === 'es' ? 'bg-crema text-carbon' : 'text-gris/50 hover:text-crema'
+              }`}
+            >
+              ES
+            </button>
+          </div>
           {user ? (
             <Link
               href="/my-collections"
               className="text-crema text-xs font-medium tracking-widest uppercase hover:text-crema/70 transition-colors"
             >
-              {en ? 'My Collections' : 'Mis Colecciones'}
+              {t.common.myCollections}
             </Link>
           ) : (
             <>
@@ -281,13 +277,13 @@ export default function MeetAimilyPage() {
                 onClick={() => setAuthOpen(true)}
                 className="hidden md:block text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
               >
-                Log in
+                {t.common.logIn}
               </button>
               <button
                 onClick={() => setAuthOpen(true)}
                 className="btn-primary px-5 py-2 text-[11px] tracking-[0.15em]"
               >
-                {en ? 'GET STARTED' : 'EMPEZAR'}
+                {p.getStarted}
               </button>
             </>
           )}
@@ -306,25 +302,14 @@ export default function MeetAimilyPage() {
         />
         <div className="relative z-10 max-w-4xl text-center">
           <p className="text-gris/50 text-xs font-medium tracking-[0.3em] uppercase mb-8 animate-fade-in-up">
-            MEET AIMILY
+            {p.heroLabel}
           </p>
           <h1 className="text-crema text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[1.1] mb-6 animate-fade-in-up animate-delay-100">
-            {en ? (
-              <>
-                Your AI-powered fashion{' '}
-                <span className="italic">collection assistant</span>
-              </>
-            ) : (
-              <>
-                Tu asistente de colecciones{' '}
-                <span className="italic">de moda con IA</span>
-              </>
-            )}
+            {p.heroTitle}{' '}
+            <span className="italic">{p.heroTitleItalic}</span>
           </h1>
           <p className="text-gris text-lg md:text-xl font-light tracking-wide leading-relaxed max-w-2xl mx-auto mb-12 animate-fade-in-up animate-delay-200">
-            {en
-              ? 'From a spark of inspiration to a sold-out launch. One platform. Every step.'
-              : 'De una chispa de inspiracion a un lanzamiento agotado. Una plataforma. Cada paso.'}
+            {p.heroDesc}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animate-delay-300">
             {user ? (
@@ -332,21 +317,21 @@ export default function MeetAimilyPage() {
                 href="/my-collections"
                 className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
               >
-                {en ? 'MY COLLECTIONS' : 'MIS COLECCIONES'}
+                {t.common.myCollections.toUpperCase()}
               </Link>
             ) : (
               <button
                 onClick={() => setAuthOpen(true)}
                 className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
               >
-                {en ? 'START FREE TRIAL' : 'PRUEBA GRATIS'}
+                {t.common.startFreeTrialUpper}
               </button>
             )}
             <Link
               href="/pricing"
               className="btn-secondary px-10 py-4 text-sm tracking-[0.15em] border-gris/30 text-gris hover:bg-white/5"
             >
-              {en ? 'SEE PRICING' : 'VER PRECIOS'}
+              {t.common.seePricing}
             </Link>
           </div>
         </div>
@@ -362,13 +347,13 @@ export default function MeetAimilyPage() {
       <section id="stats" className="relative py-0 border-t border-gris/10">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gris/10">
-            {STATS.map((stat, i) => (
+            {STATS_DATA.map((stat, i) => (
               <Reveal key={i} className="bg-carbon p-8 md:p-10 text-center" delay={i * 100}>
                 <p className="text-crema text-3xl md:text-4xl font-light mb-2">
                   <Counter target={stat.value} suffix={stat.suffix} />
                 </p>
                 <p className="text-gris/50 text-[10px] md:text-xs font-medium tracking-[0.2em] uppercase">
-                  {en ? stat.label : stat.labelEs}
+                  {STATS_LABELS[i]}
                 </p>
               </Reveal>
             ))}
@@ -381,25 +366,14 @@ export default function MeetAimilyPage() {
         <div className="max-w-3xl mx-auto text-center">
           <Reveal>
             <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-              {en ? 'The complete lifecycle' : 'El ciclo completo'}
+              {p.introLabel}
             </p>
             <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] mb-8">
-              {en ? (
-                <>
-                  From <span className="italic">idea</span> to{' '}
-                  <span className="italic">market</span>, connected
-                </>
-              ) : (
-                <>
-                  De la <span className="italic">idea</span> al{' '}
-                  <span className="italic">mercado</span>, conectado
-                </>
-              )}
+              {p.introTitle1} <span className="italic">{p.introTitleIdea}</span> {p.introTitleTo}{' '}
+              <span className="italic">{p.introTitleMarket}</span>{p.introTitleEnd}
             </h2>
             <p className="text-gris text-base md:text-lg font-light leading-relaxed">
-              {en
-                ? 'Four integrated blocks guide your collection from creative vision to market launch. Every decision in one block informs the next. Nothing falls through the cracks.'
-                : 'Cuatro bloques integrados guian tu coleccion desde la vision creativa hasta el lanzamiento al mercado. Cada decision en un bloque informa al siguiente. Nada se pierde por el camino.'}
+              {p.introDesc}
             </p>
           </Reveal>
         </div>
@@ -432,26 +406,29 @@ export default function MeetAimilyPage() {
                       {block.label}
                     </p>
                     <h2 className="text-crema text-2xl sm:text-3xl md:text-4xl font-light tracking-tight leading-[1.2] mb-6">
-                      {en ? block.headline : block.headlineEs}{' '}
+                      {block.headline}{' '}
                       <span className="italic">
-                        {en ? block.headlineItalic : block.headlineItalicEs}
+                        {block.headlineItalic}
                       </span>
                     </h2>
                     <p className="text-gris text-base font-light leading-relaxed mb-8">
-                      {en ? block.description : block.descriptionEs}
+                      {block.description}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {block.features.map((feat, fi) => (
-                        <div
-                          key={fi}
-                          className="flex items-center gap-3 text-gris/60 group"
-                        >
-                          <feat.icon className="w-4 h-4 text-gris/30 group-hover:text-crema/60 transition-colors shrink-0" />
-                          <span className="text-sm font-light">
-                            {en ? feat.text : feat.textEs}
-                          </span>
-                        </div>
-                      ))}
+                      {block.features.map((featText, fi) => {
+                        const FeatIcon = block.featureIcons[fi];
+                        return (
+                          <div
+                            key={fi}
+                            className="flex items-center gap-3 text-gris/60 group"
+                          >
+                            <FeatIcon className="w-4 h-4 text-gris/30 group-hover:text-crema/60 transition-colors shrink-0" />
+                            <span className="text-sm font-light">
+                              {featText}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </Reveal>
                 </div>
@@ -471,7 +448,7 @@ export default function MeetAimilyPage() {
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
                         <block.icon className="w-12 h-12 text-gris/10 mb-4 group-hover:text-gris/20 transition-colors" />
                         <p className="text-gris/20 text-xs font-medium tracking-widest uppercase text-center">
-                          {block.screenshotPlaceholder}
+                          {block.screenshot}
                         </p>
                       </div>
                     </div>
@@ -491,26 +468,15 @@ export default function MeetAimilyPage() {
               <div className="flex items-center justify-center gap-3 mb-6">
                 <CalendarRange className="w-5 h-5 text-carbon/30" />
                 <p className="text-carbon/40 text-[10px] font-medium tracking-[0.3em] uppercase">
-                  {en ? 'THE ORCHESTRATOR' : 'EL ORQUESTADOR'}
+                  {p.orchestratorLabel}
                 </p>
               </div>
               <h2 className="text-carbon text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] mb-6">
-                {en ? (
-                  <>
-                    Every deadline. Every team.{' '}
-                    <span className="italic">One timeline.</span>
-                  </>
-                ) : (
-                  <>
-                    Cada deadline. Cada equipo.{' '}
-                    <span className="italic">Un solo timeline.</span>
-                  </>
-                )}
+                {p.orchestratorTitle1}{' '}
+                <span className="italic">{p.orchestratorTitleItalic}</span>
               </h2>
               <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed max-w-2xl mx-auto">
-                {en
-                  ? 'A visual Gantt timeline that connects all four blocks. 45 milestones with cross-block dependencies. Drag, resize, export. Your entire collection journey in one view.'
-                  : 'Un timeline Gantt visual que conecta los cuatro bloques. 45 hitos con dependencias entre bloques. Arrastra, redimensiona, exporta. Todo el recorrido de tu coleccion en una vista.'}
+                {p.orchestratorDesc}
               </p>
             </div>
           </Reveal>
@@ -529,7 +495,7 @@ export default function MeetAimilyPage() {
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
                 <CalendarRange className="w-16 h-16 text-texto/5 mb-4 group-hover:text-texto/10 transition-colors" />
                 <p className="text-texto/20 text-xs font-medium tracking-widest uppercase text-center">
-                  Gantt Timeline — 45 Milestones Across 4 Blocks
+                  {p.orchestratorGanttPlaceholder}
                 </p>
               </div>
             </div>
@@ -538,33 +504,14 @@ export default function MeetAimilyPage() {
           {/* Milestone highlights */}
           <Reveal delay={300}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-texto/10 mt-px">
-              {[
-                {
-                  label: en ? 'Creative' : 'Creativo',
-                  count: '12 milestones',
-                  color: 'text-carbon',
-                },
-                {
-                  label: 'Merchandising',
-                  count: '10 milestones',
-                  color: 'text-carbon',
-                },
-                {
-                  label: en ? 'Design & Dev' : 'Diseno & Dev',
-                  count: '13 milestones',
-                  color: 'text-carbon',
-                },
-                {
-                  label: 'Marketing',
-                  count: '10 milestones',
-                  color: 'text-carbon',
-                },
-              ].map((item, i) => (
+              {MILESTONE_BLOCKS.map((item, i) => (
                 <div key={i} className="bg-crema p-6 text-center">
-                  <p className={`text-sm font-medium tracking-wide ${item.color}`}>
+                  <p className="text-sm font-medium tracking-wide text-carbon">
                     {item.label}
                   </p>
-                  <p className="text-texto/40 text-xs mt-1">{item.count}</p>
+                  <p className="text-texto/40 text-xs mt-1">
+                    {item.count} {p.milestones}
+                  </p>
                 </div>
               ))}
             </div>
@@ -578,40 +525,16 @@ export default function MeetAimilyPage() {
           <Reveal>
             <div className="text-center mb-16">
               <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-                {en ? 'The transformation' : 'La transformacion'}
+                {p.transformLabel}
               </p>
               <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15]">
-                {en ? (
-                  <>
-                    Your expertise,{' '}
-                    <span className="italic">amplified</span>
-                  </>
-                ) : (
-                  <>
-                    Tu experiencia,{' '}
-                    <span className="italic">amplificada</span>
-                  </>
-                )}
+                {p.transformTitle}{' '}
+                <span className="italic">{p.transformTitleItalic}</span>
               </h2>
             </div>
           </Reveal>
           <div className="space-y-0">
-            {(en
-              ? [
-                  { before: 'Weeks of trend research', after: 'AI analysis in minutes' },
-                  { before: 'Pricing by guesswork', after: 'Data-driven margins' },
-                  { before: 'Sketches on paper', after: 'AI-generated concepts' },
-                  { before: 'Launch chaos', after: 'Orchestrated go-to-market' },
-                  { before: 'Scattered across 10 tools', after: 'One connected platform' },
-                ]
-              : [
-                  { before: 'Semanas de investigacion', after: 'Analisis IA en minutos' },
-                  { before: 'Precios a ojo', after: 'Margenes basados en datos' },
-                  { before: 'Bocetos en papel', after: 'Conceptos generados por IA' },
-                  { before: 'Caos de lanzamiento', after: 'Go-to-market orquestado' },
-                  { before: 'Disperso en 10 herramientas', after: 'Una plataforma conectada' },
-                ]
-            ).map((row, i, arr) => (
+            {TRANSFORM_ROWS.map((row, i, arr) => (
               <Reveal key={i} delay={i * 80}>
                 <div
                   className={`flex items-center justify-center gap-6 md:gap-10 py-7 ${
@@ -645,12 +568,10 @@ export default function MeetAimilyPage() {
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <Reveal>
             <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15] italic mb-6">
-              {en ? "That's all you need." : 'Eso es todo lo que necesitas.'}
+              {p.ctaTitle}
             </h2>
             <p className="text-gris text-base md:text-lg font-light leading-relaxed max-w-xl mx-auto mb-10">
-              {en
-                ? 'Join designers, brands, and studios managing their collections with Aimily. 14-day free trial — no credit card required.'
-                : 'Unete a disenadores, marcas y estudios que gestionan sus colecciones con Aimily. Prueba gratuita de 14 dias — sin tarjeta de credito.'}
+              {p.ctaDesc}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {user ? (
@@ -658,21 +579,21 @@ export default function MeetAimilyPage() {
                   href="/my-collections"
                   className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
                 >
-                  {en ? 'MY COLLECTIONS' : 'MIS COLECCIONES'}
+                  {t.common.myCollections.toUpperCase()}
                 </Link>
               ) : (
                 <button
                   onClick={() => setAuthOpen(true)}
                   className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
                 >
-                  {en ? 'START FREE TRIAL' : 'PRUEBA GRATIS'}
+                  {t.common.startFreeTrialUpper}
                 </button>
               )}
               <Link
                 href="/pricing"
                 className="btn-secondary px-10 py-4 text-sm tracking-[0.15em] border-gris/30 text-gris hover:bg-white/5"
               >
-                {en ? 'SEE PRICING' : 'VER PRECIOS'}
+                {t.common.seePricing}
               </Link>
             </div>
           </Reveal>
@@ -697,37 +618,37 @@ export default function MeetAimilyPage() {
               href="/discover"
               className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors"
             >
-              Discover
+              {t.common.discover}
             </Link>
             <Link
               href="/meet-aimily"
               className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors"
             >
-              Meet Aimily
+              {t.common.meetAimily}
             </Link>
             <Link
               href="/terms"
               className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors"
             >
-              Terms
+              {t.common.terms}
             </Link>
             <Link
               href="/privacy"
               className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors"
             >
-              Privacy
+              {t.common.privacy}
             </Link>
             <Link
               href="/cookies"
               className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors"
             >
-              Cookies
+              {t.common.cookies}
             </Link>
             <Link
               href="/contact"
               className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors"
             >
-              Contact
+              {t.common.contact}
             </Link>
           </div>
           <p className="text-gris/20 text-[10px] tracking-widest uppercase">

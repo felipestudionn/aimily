@@ -4,8 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { Loader2, CheckCircle, XCircle, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useTranslation } from '@/i18n';
 
 export default function ConfirmPage() {
+  const t = useTranslation();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [error, setError] = useState<string | null>(null);
   const [resendEmail, setResendEmail] = useState('');
@@ -23,18 +25,19 @@ export default function ConfirmPage() {
       } else if (user) {
         // User exists but email not confirmed yet
         setStatus('error');
-        setError('Your email has not been confirmed yet. Please check your inbox.');
+        setError(t.auth.emailNotConfirmedYet);
         setResendEmail(user.email ?? '');
       } else {
         // No user — probably landed here directly
         setStatus('error');
-        setError('No active session found. Please sign up or sign in first.');
+        setError(t.auth.noSessionFound);
       }
     };
 
     // Small delay to allow auth state to settle after redirect
     const timer = setTimeout(checkAuth, 1000);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleResend = async () => {
@@ -57,7 +60,7 @@ export default function ConfirmPage() {
         setResendSent(true);
       }
     } catch {
-      setError('Failed to resend confirmation email');
+      setError(t.auth.resendFailed);
     } finally {
       setResendLoading(false);
     }
@@ -71,10 +74,10 @@ export default function ConfirmPage() {
             <div className="space-y-4">
               <Loader2 className="h-12 w-12 text-carbon animate-spin mx-auto" />
               <h1 className="text-2xl font-light text-carbon tracking-tight">
-                Verifying your email...
+                {t.auth.confirmingEmail}
               </h1>
               <p className="text-sm text-carbon/60">
-                Please wait while we confirm your email address.
+                {t.auth.confirmingEmailDesc}
               </p>
             </div>
           )}
@@ -83,16 +86,16 @@ export default function ConfirmPage() {
             <div className="space-y-4">
               <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
               <h1 className="text-2xl font-light text-carbon tracking-tight">
-                Email confirmed
+                {t.auth.emailConfirmed}
               </h1>
               <p className="text-sm text-carbon/60">
-                Your email has been successfully verified. Welcome to aimily!
+                {t.auth.emailConfirmedDesc}
               </p>
               <Link
                 href="/my-collections"
                 className="inline-block w-full py-3 bg-carbon text-crema text-sm font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors"
               >
-                Go to my collections
+                {t.auth.goToCollections}
               </Link>
             </div>
           )}
@@ -101,7 +104,7 @@ export default function ConfirmPage() {
             <div className="space-y-4">
               <XCircle className="h-12 w-12 text-red-500 mx-auto" />
               <h1 className="text-2xl font-light text-carbon tracking-tight">
-                Verification issue
+                {t.auth.confirmFailed}
               </h1>
               <p className="text-sm text-carbon/60">
                 {error}
@@ -116,12 +119,12 @@ export default function ConfirmPage() {
                   {resendLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Sending...
+                      {t.auth.resendSending}
                     </>
                   ) : (
                     <>
                       <Mail className="h-4 w-4" />
-                      Resend confirmation email
+                      {t.auth.resendConfirmationEmail}
                     </>
                   )}
                 </button>
@@ -129,7 +132,7 @@ export default function ConfirmPage() {
 
               {resendSent && (
                 <p className="text-sm text-green-600">
-                  Confirmation email sent! Check your inbox.
+                  {t.auth.resendSent}
                 </p>
               )}
 
@@ -137,7 +140,7 @@ export default function ConfirmPage() {
                 href="/"
                 className="inline-block text-sm text-carbon/60 hover:text-carbon transition-colors"
               >
-                Back to home
+                {t.auth.backToHome}
               </Link>
             </div>
           )}

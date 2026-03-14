@@ -7,7 +7,6 @@ import {
   ArrowRight,
   LayoutGrid,
   CalendarDays,
-  GitBranch,
   User,
   Sparkles,
   Image,
@@ -28,31 +27,25 @@ import {
 import { PHASES, PHASE_ORDER } from '@/lib/timeline-template';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
-import DecisionMap from './DecisionMap';
 import InlineTimeline from './InlineTimeline';
+import { useTranslation } from '@/i18n';
 
-type ViewMode = 'blocks' | 'calendar' | 'map';
-
-const VIEW_TABS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
-  { id: 'blocks', label: 'Bloques', icon: LayoutGrid },
-  { id: 'calendar', label: 'Calendario', icon: CalendarDays },
-  { id: 'map', label: 'Mapa', icon: GitBranch },
-];
+type ViewMode = 'blocks' | 'calendar';
 
 /* ═══════════════════════════════════════════════════════════
    Block definitions — internal structure for each of the 4 blocks
    ═══════════════════════════════════════════════════════════ */
 
 interface BlockStep {
-  name: string;
+  nameKey: string;
   icon: React.ElementType;
 }
 
 interface BlockDef {
   phase: TimelinePhase;
-  title: string;
-  titleItalic: string;
-  subtitle: string;
+  titleKey: string;
+  titleItalicKey: string;
+  subtitleKey: string;
   route: string;
   steps: BlockStep[];
 }
@@ -60,54 +53,54 @@ interface BlockDef {
 const BLOCK_DEFS: BlockDef[] = [
   {
     phase: 'creative',
-    title: 'Creative &',
-    titleItalic: 'Brand',
-    subtitle: '3 screens — Vision, Research, Synthesis',
+    titleKey: 'creativeTitle',
+    titleItalicKey: 'creativeItalic',
+    subtitleKey: 'creativeSub',
     route: 'creative',
     steps: [
-      { name: 'Consumer Definition', icon: User },
-      { name: 'Collection Vibe', icon: Sparkles },
-      { name: 'Moodboard', icon: Image },
-      { name: 'Brand DNA', icon: Fingerprint },
+      { nameKey: 'consumerDefinition', icon: User },
+      { nameKey: 'collectionVibe', icon: Sparkles },
+      { nameKey: 'moodboard', icon: Image },
+      { nameKey: 'brandDNA', icon: Fingerprint },
     ],
   },
   {
     phase: 'planning',
-    title: 'Merchandising &',
-    titleItalic: 'Planning',
-    subtitle: '4 cards — Families, Pricing, Channels, Budget',
+    titleKey: 'planningTitle',
+    titleItalicKey: 'planningItalic',
+    subtitleKey: 'planningSub',
     route: 'merchandising',
     steps: [
-      { name: 'Product Families', icon: ShoppingBag },
-      { name: 'Pricing', icon: DollarSign },
-      { name: 'Channels & Markets', icon: Store },
-      { name: 'Budget & Financials', icon: Calculator },
+      { nameKey: 'productFamilies', icon: ShoppingBag },
+      { nameKey: 'pricing', icon: DollarSign },
+      { nameKey: 'channelsMarkets', icon: Store },
+      { nameKey: 'budgetFinancials', icon: Calculator },
     ],
   },
   {
     phase: 'development',
-    title: 'Design &',
-    titleItalic: 'Development',
-    subtitle: '4 phases layered on Collection Builder',
+    titleKey: 'devTitle',
+    titleItalicKey: 'devItalic',
+    subtitleKey: 'devSub',
     route: 'development',
     steps: [
-      { name: 'Sketch & Color', icon: Pencil },
-      { name: 'Prototyping', icon: Package },
-      { name: 'Selection & Catalog', icon: CheckSquare },
-      { name: 'Production', icon: Factory },
+      { nameKey: 'sketchColor', icon: Pencil },
+      { nameKey: 'prototyping', icon: Package },
+      { nameKey: 'selectionCatalog', icon: CheckSquare },
+      { nameKey: 'production', icon: Factory },
     ],
   },
   {
     phase: 'go_to_market',
-    title: 'Marketing &',
-    titleItalic: 'Digital',
-    subtitle: '2 screens — Creation + Distribution',
+    titleKey: 'gtmTitle',
+    titleItalicKey: 'gtmItalic',
+    subtitleKey: 'gtmSub',
     route: 'marketing/creation',
     steps: [
-      { name: 'Collection Stories', icon: Palette },
-      { name: 'Content Strategy', icon: Megaphone },
-      { name: 'Go-To-Market', icon: Target },
-      { name: 'Launch & Growth', icon: Rocket },
+      { nameKey: 'collectionStories', icon: Palette },
+      { nameKey: 'contentStrategy', icon: Megaphone },
+      { nameKey: 'goToMarket', icon: Target },
+      { nameKey: 'launchGrowth', icon: Rocket },
     ],
   },
 ];
@@ -134,6 +127,7 @@ function BlockCard({
   milestones: TimelineMilestone[];
   collectionId: string;
 }) {
+  const t = useTranslation();
   const phaseMilestones = milestones.filter((m) => m.phase === block.phase);
   const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
   const total = phaseMilestones.length;
@@ -156,7 +150,7 @@ function BlockCard({
       {/* Title + circular progress */}
       <div className="flex items-start justify-between mb-2">
         <h3 className="text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
-          {block.title} <span className="italic">{block.titleItalic}</span>
+          {t.overview[block.titleKey as keyof typeof t.overview]} <span className="italic">{t.overview[block.titleItalicKey as keyof typeof t.overview]}</span>
         </h3>
 
         {/* Circular progress */}
@@ -188,7 +182,7 @@ function BlockCard({
 
       {/* Subtitle */}
       <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-carbon/50 mb-8">
-        {block.subtitle}
+        {t.overview[block.subtitleKey as keyof typeof t.overview]}
       </p>
 
       {/* Internal steps */}
@@ -196,12 +190,12 @@ function BlockCard({
         {block.steps.map((step) => {
           const Icon = step.icon;
           return (
-            <div key={step.name} className="flex items-center gap-3">
+            <div key={step.nameKey} className="flex items-center gap-3">
               <div className="w-7 h-7 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
                 <Icon className="h-3.5 w-3.5 text-carbon/40" />
               </div>
               <p className="text-sm text-carbon/70 truncate">
-                {step.name}
+                {t.overview[step.nameKey as keyof typeof t.overview]}
               </p>
             </div>
           );
@@ -211,7 +205,7 @@ function BlockCard({
       {/* CTA bar */}
       <div className={`relative mt-auto pt-8`}>
         <div className="flex items-center justify-center gap-3 bg-carbon text-crema py-3.5 px-6 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors overflow-hidden">
-          {isStarted ? 'Continue' : 'Start'}
+          {isStarted ? t.common.continue : t.overview.start}
           <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
 
           {/* Shimmer effect for unstarted blocks */}
@@ -229,6 +223,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const collectionId = id as string;
   const milestones = timeline?.milestones || [];
   const [view, setView] = useState<ViewMode>('blocks');
+  const t = useTranslation();
 
   return (
     <div className="min-h-[80vh]">
@@ -237,16 +232,19 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
           <div>
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
-              Your workspace
+              {t.overview.yourWorkspace}
             </p>
             <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-              Team <span className="italic">Blocks</span>
+              {t.overview.teamBlocks} <span className="italic">{t.overview.teamBlocksItalic}</span>
             </h2>
           </div>
 
           {/* View Toggle */}
           <div className="flex border border-carbon/[0.06] overflow-x-auto">
-            {VIEW_TABS.map((tab) => {
+            {[
+              { id: 'blocks' as ViewMode, label: t.overview.blocks, icon: LayoutGrid },
+              { id: 'calendar' as ViewMode, label: t.overview.calendar, icon: CalendarDays },
+            ].map((tab) => {
               const Icon = tab.icon;
               const isActive = view === tab.id;
               return (
@@ -291,13 +289,6 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
         />
       )}
 
-      {view === 'map' && (
-        <DecisionMap
-          milestones={milestones}
-          launchDate={timeline?.launch_date}
-          collectionId={collectionId}
-        />
-      )}
     </div>
   );
 }

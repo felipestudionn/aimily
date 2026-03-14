@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslation } from '@/i18n';
 
 const COOKIE_CONSENT_KEY = 'aimily-cookie-consent';
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const t = useTranslation();
 
   useEffect(() => {
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
@@ -34,9 +36,9 @@ export function CookieConsent() {
       <div className="mx-auto max-w-3xl bg-carbon border border-gris/20 p-5 sm:p-6 shadow-2xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex-1 text-sm text-gris/80 leading-relaxed">
-            We use essential cookies to keep you signed in and functional cookies to improve your experience.{' '}
+            {t.cookie.message}{' '}
             <Link href="/cookies" className="text-crema underline hover:text-crema/80 transition-colors">
-              Cookie Policy
+              {t.cookie.cookiePolicy}
             </Link>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -44,13 +46,13 @@ export function CookieConsent() {
               onClick={decline}
               className="px-4 py-2 text-xs font-medium text-gris/60 uppercase tracking-widest hover:text-crema transition-colors"
             >
-              Decline
+              {t.cookie.decline}
             </button>
             <button
               onClick={accept}
               className="px-5 py-2 bg-crema text-carbon text-xs font-medium uppercase tracking-widest hover:bg-crema/90 transition-colors"
             >
-              Accept
+              {t.cookie.accept}
             </button>
           </div>
         </div>

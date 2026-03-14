@@ -3,25 +3,28 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Phone, MapPin, Linkedin, Instagram, ArrowUpRight } from 'lucide-react';
-
-const TEAM = [
-  {
-    name: 'Felipe Martinez Cutillas',
-    role: 'Co-Founder / Creative & Strategy',
-    description:
-      'Product merchandising expert with experience at Zara, Nike, and Karl Lagerfeld. Felipe brings strategic vision and a deep understanding of consumer behaviour to every project.',
-    linkedin: 'https://www.linkedin.com/in/felipe-martinez-cutillas/',
-  },
-  {
-    name: 'Noelia Noguera Pardo',
-    role: 'Co-Founder / Creative & Product',
-    description:
-      'Creative and product specialist with a background in trend research and collection development at leading global fashion brands. Noelia shapes the creative direction and product architecture.',
-    linkedin: 'https://www.linkedin.com/in/noelia-noguera-pardo/',
-  },
-];
+import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ContactPage() {
+  const t = useTranslation();
+  const { language, setLanguage } = useLanguage();
+
+  const TEAM = [
+    {
+      name: 'Felipe Martinez Cutillas',
+      role: t.contactPage.felipeRole,
+      description: t.contactPage.felipeDesc,
+      linkedin: 'https://www.linkedin.com/in/felipe-martinez-cutillas/',
+    },
+    {
+      name: 'Noelia Noguera Pardo',
+      role: t.contactPage.noeliaRole,
+      description: t.contactPage.noeliaDesc,
+      linkedin: 'https://www.linkedin.com/in/noelia-noguera-pardo/',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-carbon">
       {/* Navigation */}
@@ -40,16 +43,35 @@ export default function ContactPage() {
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              Discover
+              {t.common.discover}
             </Link>
             <Link href="/contact" className="text-crema text-xs font-medium tracking-widest uppercase">
-              Contact
+              {t.common.contact}
             </Link>
           </div>
         </div>
         <div className="flex items-center gap-6">
+          {/* Language toggle */}
+          <div className="flex border border-gris/20 overflow-hidden">
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+                language === 'en' ? 'bg-crema/20 text-crema' : 'text-gris/40 hover:text-gris/60'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              onClick={() => setLanguage('es')}
+              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
+                language === 'es' ? 'bg-crema/20 text-crema' : 'text-gris/40 hover:text-gris/60'
+              }`}
+            >
+              ES
+            </button>
+          </div>
           <Link href="/" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-            Home
+            {t.common.home}
           </Link>
         </div>
       </nav>
@@ -65,14 +87,14 @@ export default function ContactPage() {
         />
         <div className="relative z-10 max-w-4xl mx-auto text-center">
           <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6 animate-fade-in-up">
-            Get in touch
+            {t.contactPage.getInTouch}
           </p>
           <h1 className="text-crema text-4xl sm:text-5xl md:text-6xl font-light tracking-tight leading-[1.1] mb-8 animate-fade-in-up animate-delay-100">
-            We want to be part of{' '}
-            <span className="italic">your success</span>
+            {t.contactPage.heroTitle1}{' '}
+            <span className="italic">{t.contactPage.heroTitle2}</span>
           </h1>
           <p className="text-gris text-lg font-light tracking-wide leading-relaxed max-w-xl mx-auto animate-fade-in-up animate-delay-200">
-            aimily is built and maintained by StudioNN Agency — a fashion strategy consultancy based in Spain.
+            {t.contactPage.heroDesc}
           </p>
         </div>
       </section>
@@ -86,7 +108,7 @@ export default function ContactPage() {
               className="bg-carbon p-10 group hover:bg-carbon/80 transition-colors"
             >
               <Mail className="h-5 w-5 text-gris/40 mb-5 group-hover:text-crema transition-colors" />
-              <p className="text-gris/50 text-xs font-medium tracking-[0.2em] uppercase mb-2">Email</p>
+              <p className="text-gris/50 text-xs font-medium tracking-[0.2em] uppercase mb-2">{t.contactPage.emailLabel}</p>
               <p className="text-crema text-sm font-light">studionn.agency@gmail.com</p>
             </a>
             <a
@@ -94,13 +116,13 @@ export default function ContactPage() {
               className="bg-carbon p-10 group hover:bg-carbon/80 transition-colors"
             >
               <Phone className="h-5 w-5 text-gris/40 mb-5 group-hover:text-crema transition-colors" />
-              <p className="text-gris/50 text-xs font-medium tracking-[0.2em] uppercase mb-2">Phone</p>
+              <p className="text-gris/50 text-xs font-medium tracking-[0.2em] uppercase mb-2">{t.contactPage.phoneLabel}</p>
               <p className="text-crema text-sm font-light">+34 646 907 470</p>
             </a>
             <div className="bg-carbon p-10 group">
               <MapPin className="h-5 w-5 text-gris/40 mb-5" />
-              <p className="text-gris/50 text-xs font-medium tracking-[0.2em] uppercase mb-2">Location</p>
-              <p className="text-crema text-sm font-light">Spain</p>
+              <p className="text-gris/50 text-xs font-medium tracking-[0.2em] uppercase mb-2">{t.contactPage.locationLabel}</p>
+              <p className="text-crema text-sm font-light">{t.contactPage.spain}</p>
             </div>
           </div>
         </div>
@@ -146,10 +168,10 @@ export default function ContactPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-20">
             <p className="text-gris/50 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-              The team
+              {t.contactPage.theTeam}
             </p>
             <h2 className="text-crema text-3xl sm:text-4xl md:text-5xl font-light tracking-tight leading-[1.15]">
-              Meet the founders
+              {t.contactPage.meetFounders}
             </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-px bg-gris/10">
@@ -186,17 +208,17 @@ export default function ContactPage() {
       <section className="relative py-32 px-6 bg-crema">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-carbon/40 text-xs font-medium tracking-[0.25em] uppercase mb-6">
-            About StudioNN Agency
+            {t.contactPage.aboutStudioNN}
           </p>
           <h2 className="text-carbon text-3xl sm:text-4xl font-light tracking-tight leading-[1.15] mb-8">
-            Experts in translating trends to{' '}
-            <span className="italic">bestselling products</span>
+            {t.contactPage.studioNNTitle1}{' '}
+            <span className="italic">{t.contactPage.studioNNTitle2}</span>
           </h2>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed mb-6">
-            StudioNN Agency is a fashion and product strategy consultancy specializing in trend research, collection merchandising, brand building, and digital content creation. With backgrounds at Zara, Nike, and Karl Lagerfeld, our team brings a consumer-centric, data-driven approach to every project.
+            {t.contactPage.studioNNDesc1}
           </p>
           <p className="text-texto/60 text-base md:text-lg font-light leading-relaxed mb-10">
-            The consumer, the product, and a strategic approach to merchandising are the pillars of our blueprint. aimily is the technological evolution of this expertise — making world-class fashion consulting accessible to every brand.
+            {t.contactPage.studioNNDesc2}
           </p>
           <a
             href="https://studionnagency.com"
@@ -204,7 +226,7 @@ export default function ContactPage() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-carbon text-xs font-medium tracking-[0.15em] uppercase border border-carbon px-8 py-3 hover:bg-carbon hover:text-crema transition-colors"
           >
-            Visit StudioNN Agency
+            {t.contactPage.visitStudioNN}
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
         </div>
@@ -225,13 +247,13 @@ export default function ContactPage() {
           </div>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Terms
+              {t.common.terms}
             </Link>
             <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Privacy
+              {t.common.privacy}
             </Link>
             <Link href="/cookies" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              Cookies
+              {t.common.cookies}
             </Link>
           </div>
           <p className="text-gris/20 text-[10px] tracking-widest uppercase">

@@ -25,6 +25,7 @@ import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 import { useProductCopy } from '@/hooks/useProductCopy';
 import { useBrandProfile } from '@/hooks/useBrandProfile';
 import { useSkus, type SKU } from '@/hooks/useSkus';
+import { useTranslation } from '@/i18n';
 import type {
   ContentPillar,
   BrandVoiceConfig,
@@ -44,12 +45,12 @@ interface ContentStrategyCardProps {
 
 /* ── Tab config ── */
 
-const TABS: { id: ContentStrategyTab; label: string; labelEs: string; Icon: typeof PenTool }[] = [
-  { id: 'pillars-voice', label: 'Pillars & Voice', labelEs: 'Pilares y Voz', Icon: Megaphone },
-  { id: 'product-copy', label: 'Product Copy', labelEs: 'Copy Producto', Icon: Copy },
-  { id: 'social', label: 'Social Templates', labelEs: 'Templates Social', Icon: Hash },
-  { id: 'email', label: 'Email Templates', labelEs: 'Templates Email', Icon: Mail },
-  { id: 'seo', label: 'SEO', labelEs: 'SEO', Icon: Search },
+const TAB_KEYS: { id: ContentStrategyTab; labelKey: 'pillarsAndVoice' | 'productCopy' | 'socialTemplates' | 'emailTemplates' | 'seo'; Icon: typeof PenTool }[] = [
+  { id: 'pillars-voice', labelKey: 'pillarsAndVoice', Icon: Megaphone },
+  { id: 'product-copy', labelKey: 'productCopy', Icon: Copy },
+  { id: 'social', labelKey: 'socialTemplates', Icon: Hash },
+  { id: 'email', labelKey: 'emailTemplates', Icon: Mail },
+  { id: 'seo', labelKey: 'seo', Icon: Search },
 ];
 
 const PLATFORMS: { id: SocialPlatform; label: string }[] = [
@@ -69,6 +70,7 @@ const EMAIL_TYPES: { id: EmailTemplateType; label: string }[] = [
 /* ── Component ── */
 
 export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardProps) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<ContentStrategyTab>('pillars-voice');
 
@@ -311,22 +313,22 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
           </div>
           <div>
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              Estrategia de Contenido
+              {t.marketingPage.contentStrategyLabel}
             </p>
             <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              Content Strategy
+              {t.marketingPage.contentStrategyTitle}
             </h3>
           </div>
         </div>
         <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          Brand voice, content pillars, product copy, social templates, and SEO.
+          {t.marketingPage.contentStrategyDesc}
         </p>
 
         <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
           {pillarsLoading ? (
-            <p className="text-xs text-carbon/30">Loading...</p>
+            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
           ) : totalItems === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">No content yet</p>
+            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noContentYet}</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {pillars.map(p => (
@@ -350,7 +352,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
-          Open
+          {t.marketingPage.open}
         </div>
       </button>
     );
@@ -368,20 +370,20 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Creation
+            {t.marketingPage.backToCreation}
           </button>
           <div className="text-center">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-              Estrategia de Contenido
+              {t.marketingPage.contentStrategyLabel}
             </p>
-            <h2 className="text-lg font-light text-carbon tracking-tight">Content Strategy</h2>
+            <h2 className="text-lg font-light text-carbon tracking-tight">{t.marketingPage.contentStrategyTitle}</h2>
           </div>
           <div className="w-32" />
         </div>
 
         {/* Tabs */}
         <div className="max-w-6xl mx-auto px-6 pb-3 flex gap-1 overflow-x-auto">
-          {TABS.map(tab => (
+          {TAB_KEYS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -392,7 +394,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               }`}
             >
               <tab.Icon className="h-3.5 w-3.5" />
-              {tab.labelEs}
+              {t.marketingPage[tab.labelKey]}
             </button>
           ))}
         </div>
