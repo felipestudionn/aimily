@@ -1672,29 +1672,29 @@ export default function CreativeBrandPage() {
   return (
     <div className="min-h-[80vh]">
       <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">
-        {/* Header */}
-        <div className="mb-8 sm:mb-10">
+        {/* Header — left-padded on mobile to avoid hamburger overlap */}
+        <div className="mb-8 sm:mb-10 pl-12 md:pl-0">
           <button
             onClick={() => router.push(`/collection/${id}`)}
-            className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
+            className="text-[10px] sm:text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
           >
             <ArrowLeft className="h-3 w-3" /> {t.creative.overview}
           </button>
-          <h2 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
             {t.creative.title.split(' & ')[0]} & <span className="italic">{t.creative.title.split(' & ')[1] || 'Brand'}</span>
           </h2>
-          <p className="text-sm text-carbon/60 mt-2 max-w-lg">
+          <p className="text-xs sm:text-sm text-carbon/60 mt-2 max-w-lg">
             {t.creative.subtitle}
           </p>
         </div>
 
-        {/* Step Navigation */}
+        {/* Step Navigation — scrollable on mobile with smaller padding */}
         <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] w-fit overflow-x-auto max-w-full">
           {STEPS.map((s, i) => (
             <button
               key={s.id}
               onClick={() => { if (!expandedBlock) setActiveStep(i); }}
-              className={`flex items-center gap-3 px-6 py-3 text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
+              className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
                 activeStep === i
                   ? 'bg-carbon text-crema'
                   : expandedBlock
@@ -1766,18 +1766,18 @@ export default function CreativeBrandPage() {
                     const Icon = block.icon;
                     const state = getBlockState(block.id);
                     return (
-                      <div className="p-5 sm:p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
+                      <div className="p-4 sm:p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
                         {/* Header row */}
-                        <div className="flex items-start justify-between mb-8">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center">
-                              <Icon className="h-5 w-5 text-carbon/50" />
+                        <div className="flex items-start justify-between mb-6 sm:mb-8">
+                          <div className="flex items-center gap-3 sm:gap-4">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-carbon/[0.04] flex items-center justify-center shrink-0">
+                              <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-carbon/50" />
                             </div>
                             <div>
-                              <h3 className="text-xl font-light text-carbon tracking-tight">
+                              <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">
                                 {blockNameMap[block.id] || block.name}
                               </h3>
-                              <p className="text-xs text-carbon/70 mt-0.5">{blockDescMap[block.id] || block.description}</p>
+                              <p className="text-[11px] sm:text-xs text-carbon/70 mt-0.5">{blockDescMap[block.id] || block.description}</p>
                             </div>
                           </div>
                           <button
@@ -1790,12 +1790,12 @@ export default function CreativeBrandPage() {
 
                         {/* Mode Pills (not for moodboard) */}
                         {!hideModePills && (
-                          <div className="flex items-center gap-2 mb-8">
+                          <div className="flex items-center gap-2 mb-6 sm:mb-8 flex-wrap">
                             {INPUT_MODES.map((m) => (
                               <button
                                 key={m.id}
                                 onClick={() => updateBlockData(block.id, { mode: m.id })}
-                                className={`px-4 py-2 text-xs font-medium tracking-[0.1em] uppercase border transition-all ${
+                                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border transition-all ${
                                   state.mode === m.id
                                     ? 'border-carbon bg-carbon text-crema'
                                     : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'
@@ -1825,16 +1825,16 @@ export default function CreativeBrandPage() {
                         </div>
 
                         {/* Confirm — pinned to bottom */}
-                        <div className="mt-auto flex items-center justify-between pt-6 border-t border-carbon/[0.06]">
+                        <div className="mt-auto flex items-center justify-between pt-4 sm:pt-6 border-t border-carbon/[0.06] gap-3">
                           <button
                             onClick={handleCollapse}
-                            className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+                            className="text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/50 hover:text-carbon transition-colors shrink-0"
                           >
                             {`← ${t.creative.backToGrid}`}
                           </button>
                           <button
                             onClick={() => handleConfirm(block.id)}
-                            className="flex items-center gap-2 px-8 py-3 text-[11px] font-medium tracking-[0.15em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors"
+                            className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.1em] sm:tracking-[0.15em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors"
                           >
                             <Check className="h-3.5 w-3.5" />
                             {t.creative.confirmContinue}
@@ -1860,7 +1860,7 @@ export default function CreativeBrandPage() {
                     <div
                       key={block.id}
                       onClick={() => handleExpand(block.id)}
-                      className={`group relative bg-white p-6 sm:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border flex flex-col min-h-[240px] sm:min-h-[320px] cursor-pointer ${
+                      className={`group relative bg-white p-5 sm:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border flex flex-col min-h-[200px] sm:min-h-[320px] cursor-pointer ${
                         state.confirmed
                           ? 'border-carbon/[0.12] bg-carbon/[0.01]'
                           : 'border-carbon/[0.06]'
@@ -1874,28 +1874,28 @@ export default function CreativeBrandPage() {
                       )}
 
                       {/* Icon + Title */}
-                      <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-start justify-between mb-4 sm:mb-6">
                         <div>
-                          <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center mb-4">
-                            <Icon className="h-5 w-5 text-carbon/50" />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-carbon/[0.04] flex items-center justify-center mb-3 sm:mb-4">
+                            <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-carbon/50" />
                           </div>
-                          <h3 className="text-xl font-light text-carbon tracking-tight">
+                          <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">
                             {blockNameMap[block.id] || block.name}
                           </h3>
                         </div>
                       </div>
 
-                      <p className="text-sm text-carbon/70 leading-relaxed flex-1">
+                      <p className="text-xs sm:text-sm text-carbon/70 leading-relaxed flex-1">
                         {blockDescMap[block.id] || block.description}
                       </p>
 
                       {/* Input Mode Pills (preview) */}
                       {block.id !== 'moodboard' && block.id !== 'brand-dna' && (
-                        <div className="mt-6 flex items-center gap-2">
+                        <div className="mt-4 sm:mt-6 flex items-center gap-1.5 sm:gap-2 flex-wrap">
                           {INPUT_MODES.map((mode) => (
                             <span
                               key={mode.id}
-                              className="px-3 py-1.5 text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50"
+                              className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50"
                             >
                               {modeNameMap[mode.id] || mode.label}
                             </span>
@@ -1908,7 +1908,7 @@ export default function CreativeBrandPage() {
                         const hasData = Object.keys(state.data || {}).length > 0;
                         const label = state.confirmed ? t.common.edit : hasData ? t.common.continue : t.creative.start;
                         return (
-                          <div className={`mt-6 flex items-center justify-center gap-2 py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors ${
+                          <div className={`mt-4 sm:mt-6 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.15em] transition-colors ${
                             state.confirmed
                               ? 'bg-carbon/[0.06] text-carbon/40 group-hover:bg-carbon/[0.1]'
                               : 'bg-carbon text-crema group-hover:bg-carbon/90'
@@ -1925,17 +1925,17 @@ export default function CreativeBrandPage() {
           </div>
         ) : (
           /* Synthesis Step — Consolidated View */
-          <div className="bg-white border border-carbon/[0.06] p-12 lg:p-16 min-h-[400px] flex flex-col items-center justify-center text-center">
-            <div className="w-14 h-14 bg-carbon/[0.04] flex items-center justify-center mb-6">
-              <Check className="h-6 w-6 text-carbon/30" />
+          <div className="bg-white border border-carbon/[0.06] p-6 sm:p-12 lg:p-16 min-h-[300px] sm:min-h-[400px] flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-carbon/[0.04] flex items-center justify-center mb-4 sm:mb-6">
+              <Check className="h-5 w-5 sm:h-6 sm:w-6 text-carbon/30" />
             </div>
-            <h3 className="text-2xl font-light text-carbon tracking-tight mb-3">
+            <h3 className="text-xl sm:text-2xl font-light text-carbon tracking-tight mb-3">
               {t.creative.creativeSynthesis}
             </h3>
-            <p className="text-sm text-carbon/60 max-w-md leading-relaxed mb-8">
+            <p className="text-xs sm:text-sm text-carbon/60 max-w-md leading-relaxed mb-6 sm:mb-8">
               {t.creative.synthesisMessage}
             </p>
-            <div className="flex items-center gap-3 text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/25">
+            <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/25 flex-wrap justify-center">
               <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-xs">1</span>
               {t.creative.vision}
               <ArrowRight className="h-3 w-3 text-carbon/15" />
@@ -1954,7 +1954,7 @@ export default function CreativeBrandPage() {
             <button
               onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
               disabled={activeStep === 0}
-              className={`flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.08em] uppercase transition-all border ${
+              className={`flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all border ${
                 activeStep === 0
                   ? 'border-carbon/[0.06] text-carbon/20 cursor-not-allowed'
                   : 'border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30'
@@ -1965,7 +1965,7 @@ export default function CreativeBrandPage() {
             <button
               onClick={() => setActiveStep(Math.min(STEPS.length - 1, activeStep + 1))}
               disabled={activeStep === STEPS.length - 1}
-              className={`flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.08em] uppercase transition-all border ${
+              className={`flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all border ${
                 activeStep === STEPS.length - 1
                   ? 'border-carbon/[0.06] text-carbon/20 cursor-not-allowed'
                   : 'border-carbon text-carbon hover:bg-carbon hover:text-crema'
