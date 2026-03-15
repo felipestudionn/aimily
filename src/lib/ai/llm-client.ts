@@ -24,7 +24,7 @@ export interface LLMRequest {
   temperature?: number;       // 0-1, default 0.7
   maxTokens?: number;         // default 4096
   jsonMode?: boolean;         // hint to prefer JSON output
-  language?: 'en' | 'es' | 'fr' | 'it' | 'de';  // output language (default: 'en')
+  language?: string;  // output language code (default: 'en')
 }
 
 export interface LLMResponse {
@@ -37,14 +37,16 @@ export interface LLMResponse {
 
 export async function generateWithAI(req: LLMRequest): Promise<LLMResponse> {
   // Inject language instruction into system prompt
-  const LANG_INSTRUCTIONS: Record<string, string> = {
-    es: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in Spanish (Castilian). ALL text content, descriptions, labels, names, recommendations, and explanations must be written in Spanish. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
-    fr: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in French. ALL text content, descriptions, labels, names, recommendations, and explanations must be written in French. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
-    it: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in Italian. ALL text content, descriptions, labels, names, recommendations, and explanations must be written in Italian. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
-    de: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in German. ALL text content, descriptions, labels, names, recommendations, and explanations must be written in German. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
+  const LANG_NAMES: Record<string, string> = {
+    es: 'Spanish (Castilian)', fr: 'French', it: 'Italian', de: 'German',
+    pt: 'Portuguese (Brazilian)', nl: 'Dutch', sv: 'Swedish', no: 'Norwegian (Bokmål)',
   };
-  if (req.language && req.language !== 'en' && LANG_INSTRUCTIONS[req.language]) {
-    req = { ...req, system: req.system + LANG_INSTRUCTIONS[req.language] };
+  if (req.language && req.language !== 'en' && LANG_NAMES[req.language]) {
+    const langName = LANG_NAMES[req.language];
+    req = {
+      ...req,
+      system: req.system + `\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in ${langName}. ALL text content, descriptions, labels, names, recommendations, and explanations must be written in ${langName}. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.`,
+    };
   }
 
   // Try Haiku first

@@ -62,6 +62,10 @@ export default function ContactPage() {
             <option value="fr">FR</option>
             <option value="it">IT</option>
             <option value="de">DE</option>
+      <option value="pt">PT</option>
+      <option value="nl">NL</option>
+      <option value="sv">SV</option>
+      <option value="no">NO</option>
           </select>
           <Link href="/" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
             {t.common.home}

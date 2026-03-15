@@ -4,7 +4,13 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Language = 'en' | 'es' | 'fr' | 'it' | 'de';
+export type Language = 'en' | 'es' | 'fr' | 'it' | 'de' | 'pt' | 'nl' | 'sv' | 'no';
+
+const SUPPORTED_LANGUAGES: Language[] = ['en', 'es', 'fr', 'it', 'de', 'pt', 'nl', 'sv', 'no'];
+
+function isLanguage(val: unknown): val is Language {
+  return typeof val === 'string' && SUPPORTED_LANGUAGES.includes(val as Language);
+}
 
 interface LanguageContextType {
   language: Language;
@@ -15,19 +21,23 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const STORAGE_KEY = 'aimily_language';
 
+// Map browser language prefixes to our supported languages
+const BROWSER_LANG_MAP: Record<string, Language> = {
+  es: 'es', fr: 'fr', it: 'it', de: 'de',
+  pt: 'pt', nl: 'nl', sv: 'sv', nb: 'no', nn: 'no', no: 'no',
+};
+
 function detectDefaultLanguage(): Language {
   if (typeof window === 'undefined') return 'en';
 
   // 1. Check localStorage
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'en' || stored === 'es' || stored === 'fr' || stored === 'it' || stored === 'de') return stored;
+  if (isLanguage(stored)) return stored;
 
   // 2. Check browser language
   const browserLang = navigator.language.toLowerCase();
-  if (browserLang.startsWith('es')) return 'es';
-  if (browserLang.startsWith('fr')) return 'fr';
-  if (browserLang.startsWith('it')) return 'it';
-  if (browserLang.startsWith('de')) return 'de';
+  const prefix = browserLang.split('-')[0];
+  if (BROWSER_LANG_MAP[prefix]) return BROWSER_LANG_MAP[prefix];
 
   return 'en';
 }
@@ -43,7 +53,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     // Check user profile first
     const userLang = user?.user_metadata?.language;
-    if (userLang === 'en' || userLang === 'es' || userLang === 'fr' || userLang === 'it' || userLang === 'de') {
+    if (isLanguage(userLang)) {
       setLanguageState(userLang);
       localStorage.setItem(STORAGE_KEY, userLang);
     } else {

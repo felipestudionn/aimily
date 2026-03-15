@@ -119,6 +119,10 @@ export default function DiscoverPage() {
             <option value="fr">FR</option>
             <option value="it">IT</option>
             <option value="de">DE</option>
+      <option value="pt">PT</option>
+      <option value="nl">NL</option>
+      <option value="sv">SV</option>
+      <option value="no">NO</option>
           </select>
           {user ? (
             <Link

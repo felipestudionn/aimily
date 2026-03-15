@@ -132,6 +132,10 @@ export default function LandingPage() {
                 <option value="fr">FR</option>
                 <option value="it">IT</option>
                 <option value="de">DE</option>
+      <option value="pt">PT</option>
+      <option value="nl">NL</option>
+      <option value="sv">SV</option>
+      <option value="no">NO</option>
               </select>
               <button
                 onClick={() => openAuth('signin')}
@@ -195,6 +199,10 @@ export default function LandingPage() {
                 <option value="fr">FR</option>
                 <option value="it">IT</option>
                 <option value="de">DE</option>
+      <option value="pt">PT</option>
+      <option value="nl">NL</option>
+      <option value="sv">SV</option>
+      <option value="no">NO</option>
               </select>
               <hr className="border-gris/20" />
               <button
