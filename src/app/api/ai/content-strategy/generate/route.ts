@@ -183,8 +183,8 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const body: GenerateRequest = await req.json();
-    const { mode, brandContext } = body;
+    const body: GenerateRequest & { language?: 'en' | 'es' } = await req.json();
+    const { mode, brandContext, language } = body;
 
     if (!mode || !brandContext) {
       return NextResponse.json({ error: 'mode and brandContext are required' }, { status: 400 });
@@ -196,6 +196,7 @@ export async function POST(req: NextRequest) {
       system: prompt.system,
       user: prompt.user,
       temperature: 0.7,
+      language,
     });
 
     return NextResponse.json({

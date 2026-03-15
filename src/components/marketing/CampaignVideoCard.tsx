@@ -27,6 +27,7 @@ import { useLookbookPages } from '@/hooks/useLookbookPages';
 import type { AiGeneration, LookbookLayout, LookbookPage } from '@/types/studio';
 import { MOTION_TYPES } from '@/types/studio';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Types ── */
 
@@ -58,6 +59,7 @@ interface CampaignVideoCardProps {
 
 export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const { user } = useAuth();
   const { stories, loading: storiesLoading } = useStories(collectionPlanId);
   const { skus } = useSkus(collectionPlanId);
@@ -216,6 +218,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           prompt: promptParts,
           background: 'editorial-studio',
           story_context: storyCtx,
+          language,
         }),
       });
 
@@ -264,6 +267,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           motion_type: selectedMotion,
           prompt: videoPrompt || undefined,
           story_context: storyCtx,
+          language,
         }),
       });
 

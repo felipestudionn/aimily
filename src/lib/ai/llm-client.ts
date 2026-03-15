@@ -24,6 +24,7 @@ export interface LLMRequest {
   temperature?: number;       // 0-1, default 0.7
   maxTokens?: number;         // default 4096
   jsonMode?: boolean;         // hint to prefer JSON output
+  language?: 'en' | 'es';    // output language (default: 'en')
 }
 
 export interface LLMResponse {
@@ -35,6 +36,14 @@ export interface LLMResponse {
 // ─── Main entry point ───
 
 export async function generateWithAI(req: LLMRequest): Promise<LLMResponse> {
+  // Inject language instruction into system prompt
+  if (req.language === 'es') {
+    req = {
+      ...req,
+      system: req.system + '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in Spanish (Castilian). ALL text content, descriptions, labels, names, recommendations, and explanations must be written in Spanish. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
+    };
+  }
+
   // Try Haiku first
   if (ANTHROPIC_API_KEY) {
     try {

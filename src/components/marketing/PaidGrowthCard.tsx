@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Constants ── */
 
@@ -65,6 +66,7 @@ interface PaidGrowthCardProps {
 
 export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [platformFilter, setPlatformFilter] = useState('ALL');
@@ -192,6 +194,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         totalSalesTarget: 0,
         targetRoas: mode === 'propuesta' ? propuestaRoas : 4,
         activePlatforms: mode === 'propuesta' ? propuestaPlatforms : 'Meta, Google',
+        language,
       };
 
       if (mode === 'asistido') {

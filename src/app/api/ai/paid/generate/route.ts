@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
       consumerLifestyle,
       markets,
       userDirection,
+      language,
     } = body;
 
     const dropsBlock = (drops || []).map((d: { name: string; launch_date: string; story_alignment?: string; expected_sales_weight?: number }) =>
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
       system: MARKETING_PROMPTS.paid_plan.system,
       user: userPrompt,
       temperature: 0.65,
+      language,
     });
 
     return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });

@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
 
   const type = body.type as GenerationType;
   const input = (body.input || {}) as Record<string, string>;
+  const language = body.language as 'en' | 'es' | undefined;
 
   const prompt = buildMerchPrompt(type, input);
   if (!prompt) {
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
       system: prompt.system,
       user: prompt.user,
       temperature: prompt.temperature,
+      language,
     });
     return NextResponse.json({ result: data, model, fallback });
   } catch (error) {

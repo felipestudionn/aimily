@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getColorValue, getContrastColor, parseColorString, parseTrendString } from '@/lib/image-utils';
 import type { TrendExploration, SelectedTrends } from '@/types/creative';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TrendExplorerProps {
   selectedTrends: SelectedTrends;
@@ -13,6 +14,7 @@ interface TrendExplorerProps {
 }
 
 export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerProps) {
+  const { language } = useLanguage();
   const [trendQuery, setTrendQuery] = useState('');
   const [trendExploration, setTrendExploration] = useState<TrendExploration | null>(null);
   const [exploringTrend, setExploringTrend] = useState(false);
@@ -24,7 +26,7 @@ export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerPr
       const response = await fetch('/api/ai/explore-trends', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: trendQuery }),
+        body: JSON.stringify({ query: trendQuery, language }),
       });
       if (response.ok) {
         const data = await response.json();

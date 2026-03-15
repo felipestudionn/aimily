@@ -26,6 +26,7 @@ import { useProductCopy } from '@/hooks/useProductCopy';
 import { useBrandProfile } from '@/hooks/useBrandProfile';
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type {
   ContentPillar,
   BrandVoiceConfig,
@@ -71,6 +72,7 @@ const EMAIL_TYPES: { id: EmailTemplateType; label: string }[] = [
 
 export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<ContentStrategyTab>('pillars-voice');
 
@@ -154,6 +156,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
           brandVoiceSummary: voiceSummary,
           contentPillars: pillarsSummary,
           userDirection: userDirection || undefined,
+          language,
           ...extra,
         }),
       });

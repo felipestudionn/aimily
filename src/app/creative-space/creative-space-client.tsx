@@ -13,6 +13,7 @@ import { saveCreativeSpaceData, type CreativeSpaceData } from '@/lib/data-sync';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { imageToBase64 } from '@/lib/image-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodboardUploader } from '@/components/creative/MoodboardUploader';
 import { InsightsPanel } from '@/components/creative/InsightsPanel';
 import { PinterestImporter } from '@/components/creative/PinterestImporter';
@@ -20,6 +21,7 @@ import type { MoodImage, MoodboardAnalysis } from '@/types/creative';
 
 export function CreativeSpaceClient() {
   const { user, loading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Core state
@@ -68,7 +70,7 @@ export function CreativeSpaceClient() {
       const response = await fetch('/api/ai/analyze-moodboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: validImages }),
+        body: JSON.stringify({ images: validImages, language }),
       });
       const data = await response.json();
       if (response.ok && data && (data.keyColors || data.keyTrends || data.keyItems)) {

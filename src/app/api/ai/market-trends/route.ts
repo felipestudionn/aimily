@@ -10,6 +10,8 @@ export async function GET(req: NextRequest) {
   if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
+    const language = (req.nextUrl.searchParams.get('language') || undefined) as 'en' | 'es' | undefined;
+
     const system = `You are a senior fashion trend forecaster working at the level of WGSN or Heuritech. You report on the LATEST runway collections, celebrity adoptions, and social media signals with the specificity of a professional trend report.
 
 TODAY'S DATE: March 2026
@@ -45,6 +47,7 @@ Return JSON:
       system,
       user: userPrompt,
       temperature: 0.8,
+      language,
     });
 
     data.lastUpdated = new Date().toISOString().split('T')[0];

@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       channels,
       userDirection,
       existingTasks,
+      language,
     } = body;
 
     // Build real context from all collection data
@@ -68,6 +69,7 @@ Channels: ${channels || 'Instagram, TikTok, Email, Website'}`;
       system: MARKETING_PROMPTS.launch_checklist.system,
       user: `${promptTemplate}${userInput}`,
       temperature: 0.6,
+      language,
     });
 
     return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });

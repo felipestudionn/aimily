@@ -15,6 +15,7 @@ import type { SetupData } from '@/types/planner';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Month names for timeline
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -38,6 +39,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const setupData = plan.setup_data;
   const { drops, addDrop, updateDrop, deleteDrop, loading: dropsLoading } = useDrops(plan.id);
   const { actions, addAction, deleteAction } = useCommercialActions(plan.id);
@@ -128,7 +130,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
         body: JSON.stringify({
           collectionPlanId: plan.id, drops, commercialActions: actions, skus,
           totalSalesTarget: calculatedSalesTarget, season: (setupData as any).season || 'AW',
-          productCategory: setupData.productCategory, location: (setupData as any).location || 'Europe',
+          productCategory: setupData.productCategory, location: (setupData as any).location || 'Europe', language,
         }),
       });
       if (!response.ok) throw new Error('Failed to generate prediction');

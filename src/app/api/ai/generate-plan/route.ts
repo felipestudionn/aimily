@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
       location,
       signals,
       userMoodboardContext,
+      language,
     } = body;
 
     const categoryContext = categories.join(', ');
@@ -79,6 +80,7 @@ CRITICAL: All percentage arrays must sum to exactly 100.`;
       system,
       user: userPrompt,
       temperature: 0.6,
+      language,
     });
 
     return NextResponse.json(data);

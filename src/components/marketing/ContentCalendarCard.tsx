@@ -51,6 +51,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Constants ── */
 
@@ -92,6 +93,7 @@ interface ContentCalendarCardProps {
 
 export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [subTab, setSubTab] = useState<SubTab>('calendar');
@@ -278,6 +280,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
         stories: stories.map(s => ({
           name: s.name, mood: (s.mood || []).join(', '),
         })),
+        language,
       };
 
       if (mode === 'asistido') {

@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Constants ── */
 
@@ -70,6 +71,7 @@ interface LaunchCardProps {
 
 export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -173,6 +175,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         dropsCount: drops.length,
         skuCount: 0,
         storiesCount: 0,
+        language,
       };
 
       if (mode === 'asistido') {

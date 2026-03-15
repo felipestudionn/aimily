@@ -5,6 +5,7 @@ import { Sparkles, Loader2, RefreshCw, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ColorGrid, TrendCardGrid } from './TrendExplorer';
 import type { MarketTrends, SelectedTrends } from '@/types/creative';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MarketTrendsPanelProps {
   selectedTrends: SelectedTrends;
@@ -15,13 +16,14 @@ export function MarketTrendsPanel({
   selectedTrends,
   onToggleTrend,
 }: MarketTrendsPanelProps) {
+  const { language } = useLanguage();
   const [marketTrends, setMarketTrends] = useState<MarketTrends | null>(null);
   const [loading, setLoading] = useState(false);
 
   const loadMarketTrends = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/ai/market-trends');
+      const response = await fetch(`/api/ai/market-trends?language=${language}`);
       if (response.ok) {
         const data = await response.json();
         setMarketTrends(data);

@@ -8,6 +8,7 @@ import GarmentDetailsForm from '@/components/sketch-flow/GarmentDetailsForm';
 import TechPackPreview from '@/components/sketch-flow/TechPackPreview';
 import CommentSelector from '@/components/sketch-flow/CommentSelector';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useTechPacks } from '@/hooks/useTechPacks';
 import { exportTechPackPDF, exportTechPackPNG } from '@/lib/export-pdf';
 import {
@@ -36,6 +37,7 @@ import {
 
 export default function SketchFlowPage() {
   const { user } = useAuth();
+  const { language } = useLanguage();
   const { saveTechPack } = useTechPacks(user?.id);
   const techPackRef = useRef<HTMLDivElement>(null);
 
@@ -100,7 +102,7 @@ export default function SketchFlowPage() {
       const sketchResponse = await fetch('/api/ai/generate-sketch-options', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, language }),
       });
 
       if (!sketchResponse.ok) {
@@ -124,6 +126,7 @@ export default function SketchFlowPage() {
           conceptDescription: sketch.description,
           fabric: garmentDetails.fabric,
           additionalNotes: garmentDetails.additionalNotes,
+          language,
         }),
       });
 

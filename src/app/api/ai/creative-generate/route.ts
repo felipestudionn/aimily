@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
 
   const type = body.type as GenerationType;
   const input = (body.input || {}) as Record<string, string>;
+  const language = body.language as 'en' | 'es' | undefined;
 
   // ── Brand Extract: scrape real data before calling LLM ──
   if (type === 'brand-extract') {
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
         user: prompt.user,
         temperature: prompt.temperature,
         maxTokens: prompt.maxTokens,
+        language,
       });
       return NextResponse.json({ result: text.trim(), model, fallback });
     }
@@ -96,6 +98,7 @@ export async function POST(req: NextRequest) {
       user: prompt.user,
       temperature: prompt.temperature,
       maxTokens: prompt.maxTokens,
+      language,
     });
     return NextResponse.json({ result: data, model, fallback });
   } catch (error) {

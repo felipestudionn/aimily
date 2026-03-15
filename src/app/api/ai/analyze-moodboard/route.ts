@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { images } = body as { images: ImageData[] };
+    const { images, language } = body as { images: ImageData[]; language?: 'en' | 'es' };
 
     if (!images || images.length === 0) {
       return NextResponse.json(
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     const batchResults: AnalysisResult[] = [];
     for (let i = 0; i < batches.length; i++) {
       console.log(`[Moodboard] Analyzing batch ${i + 1}/${batches.length}...`);
-      const result = await analyzeBatch(batches[i]);
+      const result = await analyzeBatch(batches[i], language);
       if (result) {
         batchResults.push(result);
       }
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     // Merge results from multiple batches using AI
     console.log(`[Moodboard] Merging ${batchResults.length} batch results...`);
-    const mergedResult = await mergeAnalysisResults(batchResults);
+    const mergedResult = await mergeAnalysisResults(batchResults, language);
     return NextResponse.json(mergedResult);
 
   } catch (error) {
@@ -168,11 +168,15 @@ export async function POST(req: NextRequest) {
 
 // ─── Vision: Sonnet primary, Gemini Flash fallback ───
 
-async function analyzeBatch(imageBatch: ImageData[]): Promise<AnalysisResult | null> {
+const LANG_INSTRUCTION_ES = '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in Spanish (Castilian). ALL text content, descriptions, labels, names, recommendations, and explanations must be written in Spanish. Technical fashion terms universally used in English (e.g., "mood board", "drop", "SKU") may remain in English.';
+
+async function analyzeBatch(imageBatch: ImageData[], language?: 'en' | 'es'): Promise<AnalysisResult | null> {
+  const systemPrompt = language === 'es' ? ANALYSIS_SYSTEM + LANG_INSTRUCTION_ES : ANALYSIS_SYSTEM;
+
   // Try Sonnet first
   if (ANTHROPIC_API_KEY) {
     try {
-      const result = await analyzeBatchSonnet(imageBatch);
+      const result = await analyzeBatchSonnet(imageBatch, systemPrompt);
       if (result) {
         console.log('[Moodboard] Batch analyzed with Sonnet');
         return result;
@@ -185,7 +189,7 @@ async function analyzeBatch(imageBatch: ImageData[]): Promise<AnalysisResult | n
   // Fallback to Gemini Flash (vision)
   if (GEMINI_API_KEY) {
     try {
-      const result = await analyzeBatchGemini(imageBatch);
+      const result = await analyzeBatchGemini(imageBatch, systemPrompt);
       if (result) {
         console.log('[Moodboard] Batch analyzed with Gemini Flash (fallback)');
         return result;
@@ -198,7 +202,7 @@ async function analyzeBatch(imageBatch: ImageData[]): Promise<AnalysisResult | n
   return null;
 }
 
-async function analyzeBatchSonnet(imageBatch: ImageData[]): Promise<AnalysisResult | null> {
+async function analyzeBatchSonnet(imageBatch: ImageData[], systemPrompt: string): Promise<AnalysisResult | null> {
   const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
   // Build content array with images + text
@@ -223,7 +227,7 @@ async function analyzeBatchSonnet(imageBatch: ImageData[]): Promise<AnalysisResu
   const response = await client.messages.create({
     model: SONNET_MODEL,
     max_tokens: 8192,
-    system: ANALYSIS_SYSTEM,
+    system: systemPrompt,
     messages: [{ role: 'user', content }],
     temperature: 0.7,
   });
@@ -236,7 +240,7 @@ async function analyzeBatchSonnet(imageBatch: ImageData[]): Promise<AnalysisResu
   return extractJSON<AnalysisResult>(block.text);
 }
 
-async function analyzeBatchGemini(imageBatch: ImageData[]): Promise<AnalysisResult | null> {
+async function analyzeBatchGemini(imageBatch: ImageData[], systemPrompt: string): Promise<AnalysisResult | null> {
   const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
 
   for (const img of imageBatch) {
@@ -248,7 +252,7 @@ async function analyzeBatchGemini(imageBatch: ImageData[]): Promise<AnalysisResu
     });
   }
 
-  parts.push({ text: `${ANALYSIS_SYSTEM}\n\n${ANALYSIS_USER}` });
+  parts.push({ text: `${systemPrompt}\n\n${ANALYSIS_USER}` });
 
   const url = new URL(
     `https://generativelanguage.googleapis.com/v1beta/${GEMINI_VISION_MODEL}:generateContent`
@@ -289,7 +293,7 @@ async function analyzeBatchGemini(imageBatch: ImageData[]): Promise<AnalysisResu
 
 // ─── Merge multiple batch results using unified LLM client ───
 
-async function mergeAnalysisResults(results: AnalysisResult[]): Promise<AnalysisResult> {
+async function mergeAnalysisResults(results: AnalysisResult[], language?: 'en' | 'es'): Promise<AnalysisResult> {
   const allColors = Array.from(new Set(results.flatMap(r => r.keyColors || [])));
   const allTrends = Array.from(new Set(results.flatMap(r => r.keyTrends || [])));
   const allBrands = Array.from(new Set(results.flatMap(r => r.keyBrands || [])));
@@ -338,6 +342,7 @@ Return JSON:
       user,
       temperature: 0.5,
       maxTokens: 4096,
+      language,
     });
     return data;
   } catch (error) {

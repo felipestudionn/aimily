@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { setupData, count } = body;
+    const { setupData, count, language } = body;
 
     if (!setupData) {
       return NextResponse.json({ error: 'setupData is required' }, { status: 400 });
@@ -76,6 +76,7 @@ RULES:
       system,
       user: userPrompt,
       temperature: 0.7,
+      language,
     });
 
     // POST-PROCESSING: Ensure exact SKU count and sales target

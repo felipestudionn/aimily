@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Constants ── */
 
@@ -59,6 +60,7 @@ interface GoToMarketCardProps {
 
 export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
@@ -202,7 +204,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         body: JSON.stringify({
           collectionPlanId, drops, commercialActions: actions, skus,
           totalSalesTarget: calculatedSalesTarget, season: 'SS',
-          productCategory: 'Fashion', location: 'Europe',
+          productCategory: 'Fashion', location: 'Europe', language,
         }),
       });
       if (!response.ok) throw new Error('Failed to generate prediction');
@@ -230,6 +232,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         stories: storiesContext,
         skus: skus.map(s => ({ id: s.id, name: s.name, family: s.family, pvp: s.pvp, drop_number: s.drop_number, expected_sales: s.expected_sales, type: s.type })),
         totalSalesTarget: totalPlannedSales,
+        language,
       };
 
       if (mode === 'asistido') {

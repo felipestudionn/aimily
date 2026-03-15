@@ -6,16 +6,18 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
 import { useTranslation } from '@/i18n';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ─── AI generation helper ─── */
 async function generateCreative(
   type: string,
   input: Record<string, string>,
+  language?: string,
 ): Promise<{ result: unknown; error?: string }> {
   const res = await fetch('/api/ai/creative-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, input }),
+    body: JSON.stringify({ type, input, language }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Network error' }));
@@ -118,6 +120,7 @@ function VibeProposalFlow({
   setError: (v: string | null) => void;
 }) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const proposals = (data.vibeProposals as VibeProposal[]) || [];
   const selectedIdx = data.selectedVibe as number | null;
   const isEditing = data.editingVibe as boolean;
@@ -129,7 +132,7 @@ function VibeProposalFlow({
       reference: (data.reference as string) || '',
       consumer: consumerProfile || '',
       ...collectionContext,
-    });
+    }, language);
     if (err) { setError(err); setGenerating(false); return; }
     const parsed = result as { proposals: VibeProposal[] };
     onChange({ ...data, vibeProposals: parsed.proposals || [], selectedVibe: null, editingVibe: false });
@@ -258,6 +261,7 @@ function ConsumerProposalFlow({
   setError: (v: string | null) => void;
 }) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const proposals = (data.proposals as ConsumerProfile[]) || [];
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [addingManual, setAddingManual] = useState(false);
@@ -286,7 +290,7 @@ function ConsumerProposalFlow({
       reference: (data.reference as string) || '',
       gender: (data.gender as string) || '',
       ...collectionContext,
-    });
+    }, language);
     if (err) { setError(err); setGenerating(false); return; }
     const parsed = result as { proposals: Array<{ title: string; desc: string }> };
     const withStatus = (parsed.proposals || []).map(p => ({ ...p, status: 'pending' as const }));
@@ -306,7 +310,7 @@ function ConsumerProposalFlow({
       existingProfiles: existingLiked,
       count: String(count),
       ...collectionContext,
-    });
+    }, language);
     if (err) { setError(err); setGenerating(false); return; }
     const parsed = result as { proposals: Array<{ title: string; desc: string }> };
     const newProposals = (parsed.proposals || []).map(p => ({ ...p, status: 'pending' as const }));
@@ -509,6 +513,7 @@ function ConsumerProposalFlow({
 
 function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -621,7 +626,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
                 keywords: (data.keywords as string) || '',
                 gender: (data.gender as string) || '',
                 ...collectionContext,
-              });
+              }, language);
               if (err) { setError(err); setGenerating(false); return; }
               onChange({ ...data, profile: result as string });
               setGenerating(false);
@@ -665,6 +670,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
 
 function VibeContent({ mode, data, onChange, collectionContext, consumerProfile }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -719,7 +725,7 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
                 direction: (data.direction as string) || '',
                 consumer: consumerProfile || '',
                 ...collectionContext,
-              });
+              }, language);
               if (err) { setError(err); setGenerating(false); return; }
               const parsed = result as { vibe: string; keywords: string };
               onChange({ ...data, vibe: parsed.vibe, keywords: parsed.keywords });
@@ -1185,6 +1191,7 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
 
 function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, vibeText }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string; vibeText?: string }) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasBrand = data.hasBrand as boolean | undefined;
@@ -1248,7 +1255,7 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
               const { result, error: err } = await generateCreative('brand-extract', {
                 instagram: (data.instagram as string) || '',
                 website: (data.website as string) || '',
-              });
+              }, language);
               if (err) { setError(err); setGenerating(false); return; }
               const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
               onChange({ ...data, extracted: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '' });
@@ -1305,7 +1312,7 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
                   consumer: consumerProfile || '',
                   vibe: vibeText || '',
                   ...collectionContext,
-                });
+                }, language);
                 if (err) { setError(err); setGenerating(false); return; }
                 const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
                 onChange({ ...data, brandName: parsed.brandName || (data.brandName as string), colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '', generated: true });
@@ -1353,6 +1360,7 @@ interface ResearchResult {
 
 function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
   const t = useTranslation();
+  const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -1421,7 +1429,7 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
             input: (data.input as string) || '',
             consumer: consumerProfile || '',
             ...collectionContext,
-          });
+          }, language);
           if (err) { setError(err); setGenerating(false); return; }
           const parsed = result as { results: Array<{ title: string; desc: string; relevance?: string }> };
           const newResults = (parsed.results || []).map((r) => ({ ...r, selected: false, editing: false }));

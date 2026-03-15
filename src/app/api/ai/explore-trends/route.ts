@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
-    const { query } = await req.json();
+    const { query, language } = await req.json();
 
     if (!query || query.trim().length === 0) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -55,6 +55,7 @@ Return JSON:
       system,
       user: userPrompt,
       temperature: 0.7,
+      language,
     });
 
     return NextResponse.json(data);

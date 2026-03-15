@@ -147,6 +147,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
           collectionPlanId,
           mode,
           userDirection: mode === 'assist' ? userDirection : undefined,
+          language,
         }),
       });
       if (!res.ok) throw new Error('AI generation failed');

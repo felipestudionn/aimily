@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { collectionPlanId, mode = 'generate', userDirection } = body;
+    const { collectionPlanId, mode = 'generate', userDirection, language } = body;
 
     if (!collectionPlanId) {
       return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       user: userPrompt,
       temperature: 0.8,
+      language,
     });
 
     return NextResponse.json({

@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       startDate,
       endDate,
       platforms,
+      language,
     } = body;
 
     const dropsBlock = (drops || []).map((d: { name: string; launch_date: string; story_alignment?: string }) =>
@@ -70,6 +71,7 @@ ${userInput}`;
       user: userPrompt,
       temperature: 0.75,
       maxTokens: 8192,
+      language,
     });
 
     return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });

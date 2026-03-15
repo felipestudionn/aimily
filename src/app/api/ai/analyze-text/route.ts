@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const text: string | undefined = body?.text;
   const locationHint: string | undefined = body?.locationHint;
+  const language = body?.language as 'en' | 'es' | undefined;
 
   if (!text || typeof text !== 'string') {
     return NextResponse.json({ error: 'Missing "text" in request body' }, { status: 400 });
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_PROMPT,
       user: userParts.join('\n'),
       temperature: 0.3,
+      language,
     });
     return NextResponse.json(data);
   } catch (error) {

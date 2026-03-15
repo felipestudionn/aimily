@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download } from 'lucide-react';
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CollectionBuilderProps {
   setupData: SetupData;
@@ -17,6 +18,7 @@ interface CollectionBuilderProps {
 }
 
 export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBuilderProps) {
+  const { language } = useLanguage();
   const [name, setName] = useState('');
   const [family, setFamily] = useState('');
   const [type, setType] = useState<'REVENUE' | 'IMAGEN' | 'ENTRY'>('REVENUE');
@@ -261,6 +263,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         body: JSON.stringify({
           setupData: adjustedSetupData,
           count: remaining, // Generate EXACTLY the remaining count
+          language,
         }),
       });
 

@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       specificDates,
       launchDate,
       channels,
+      language,
     } = body;
 
     const priceValues = skus.map((s: { pvp?: number }) => s.pvp || 0);
@@ -74,6 +75,7 @@ ${userInput}`;
       system: MARKETING_PROMPTS.gtm_plan.system,
       user: userPrompt,
       temperature: 0.7,
+      language,
     });
 
     return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });

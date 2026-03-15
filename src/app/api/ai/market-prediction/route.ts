@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       season,
       productCategory,
       location,
+      language,
     } = body;
 
     // Calculate date range from drops
@@ -121,6 +122,7 @@ RULES:
       system,
       user: userPrompt,
       temperature: 0.5,
+      language,
     });
 
     // Calculate predictedSales from demandWeights
