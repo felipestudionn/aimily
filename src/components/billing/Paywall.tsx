@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
+import { useTranslation } from '@/i18n';
 
 export default function Paywall() {
+  const t = useTranslation();
   return (
     <>
       <Navbar />
@@ -14,23 +16,23 @@ export default function Paywall() {
             <Lock className="w-8 h-8 text-amber-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">
-            Your 14-day trial has ended
+            {t.billing.trialEnded}
           </h1>
           <p className="text-gray-600 mb-8">
-            Choose a plan to continue creating collections, using AI tools, and managing your fashion workflow.
+            {t.billing.trialEndedDesc}
           </p>
           <div className="space-y-3">
             <Link
               href="/pricing"
               className="block w-full py-3 px-6 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
             >
-              See Plans
+              {t.billing.seePlans}
             </Link>
             <Link
               href="/contact"
               className="block w-full py-3 px-6 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
             >
-              Contact Sales
+              {t.billing.contactSales}
             </Link>
           </div>
         </div>

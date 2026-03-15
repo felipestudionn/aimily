@@ -10,6 +10,7 @@ import {
   FileText,
   ExternalLink,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
 
 interface PatternFile {
@@ -34,6 +35,7 @@ function SkuPatternCard({
   files: PatternFile[];
   onChange: (files: PatternFile[]) => void;
 }) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   const addFile = () => {
@@ -78,7 +80,7 @@ function SkuPatternCard({
           </p>
         </div>
         <span className="text-xs text-gray-400">
-          {files.length} file{files.length !== 1 ? 's' : ''}
+          {files.length} {files.length !== 1 ? t.designSections.files : t.designSections.file}
         </span>
       </button>
 
@@ -95,7 +97,7 @@ function SkuPatternCard({
                   type="text"
                   value={file.name}
                   onChange={(e) => updateFile(idx, { name: e.target.value })}
-                  placeholder="Pattern file name"
+                  placeholder={t.designSections.patternFileName}
                   className="flex-1 text-sm bg-transparent border-none focus:outline-none"
                 />
                 <select
@@ -107,7 +109,7 @@ function SkuPatternCard({
                   <option value="AI">AI</option>
                   <option value="DXF">DXF</option>
                   <option value="PLT">PLT</option>
-                  <option value="Other">Other</option>
+                  <option value="Other">{t.designSections.other}</option>
                 </select>
                 <button
                   onClick={() => removeFile(idx)}
@@ -121,7 +123,7 @@ function SkuPatternCard({
                   type="url"
                   value={file.url}
                   onChange={(e) => updateFile(idx, { url: e.target.value })}
-                  placeholder="File URL..."
+                  placeholder={t.designSections.fileUrl}
                   className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
                 />
                 {file.url && (
@@ -138,7 +140,7 @@ function SkuPatternCard({
               <textarea
                 value={file.gradingNotes}
                 onChange={(e) => updateFile(idx, { gradingNotes: e.target.value })}
-                placeholder="Grading notes..."
+                placeholder={t.designSections.gradingNotes}
                 rows={1}
                 className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 resize-none"
               />
@@ -149,7 +151,7 @@ function SkuPatternCard({
             onClick={addFile}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-500 text-xs hover:bg-gray-50 transition-colors"
           >
-            <Plus className="h-3 w-3" /> Add Pattern File
+            <Plus className="h-3 w-3" /> {t.designSections.addPatternFile}
           </button>
         </div>
       )}
@@ -158,6 +160,7 @@ function SkuPatternCard({
 }
 
 export function PatternSection({ skus, patterns, onUpdate }: Props) {
+  const t = useTranslation();
   const getFiles = (skuId: string): PatternFile[] => patterns[skuId] || [];
 
   const handleChange = (skuId: string, files: PatternFile[]) => {
@@ -171,10 +174,10 @@ export function PatternSection({ skus, patterns, onUpdate }: Props) {
       <div className="bg-white border border-gray-100 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Scissors className="h-4 w-4 text-texto/60" />
-          <h2 className="font-semibold text-gray-900">Pattern Management</h2>
+          <h2 className="font-semibold text-gray-900">{t.designSections.patternManagement}</h2>
         </div>
         <p className="text-sm text-gray-400 text-center py-6">
-          No SKUs found. Add products in the Product tab first.
+          {t.designSections.noSkusFound}
         </p>
       </div>
     );
@@ -185,10 +188,10 @@ export function PatternSection({ skus, patterns, onUpdate }: Props) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Scissors className="h-4 w-4 text-texto/60" />
-          <h2 className="font-semibold text-gray-900">Pattern Management</h2>
+          <h2 className="font-semibold text-gray-900">{t.designSections.patternManagement}</h2>
         </div>
         {totalFiles > 0 && (
-          <span className="text-xs text-gray-400">{totalFiles} files</span>
+          <span className="text-xs text-gray-400">{totalFiles} {t.designSections.files}</span>
         )}
       </div>
 

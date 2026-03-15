@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
 import { getColorValue, getContrastColor } from '@/lib/image-utils';
 import type { MoodboardAnalysis } from '@/types/creative';
+import { useTranslation } from '@/i18n';
 
 interface InsightsPanelProps {
   analysis: MoodboardAnalysis;
@@ -56,6 +57,7 @@ export function InsightsPanel({
   onAnalysisChange,
   compact = false,
 }: InsightsPanelProps) {
+  const t = useTranslation();
   const removeItem = (field: keyof MoodboardAnalysis, index: number) => {
     const arr = analysis[field];
     if (!Array.isArray(arr)) return;
@@ -69,7 +71,7 @@ export function InsightsPanel({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Colors */}
         <InsightSection
-          title="Key Colors"
+          title={t.creativeSections.keyColors}
           items={analysis.keyColors || []}
           onRemove={(i) => removeItem('keyColors', i)}
           renderBadge={(color, i) => {
@@ -98,35 +100,35 @@ export function InsightsPanel({
 
         {/* Trends */}
         <InsightSection
-          title="Key Trends"
+          title={t.creativeSections.keyTrends}
           items={analysis.keyTrends || []}
           onRemove={(i) => removeItem('keyTrends', i)}
         />
 
         {/* Brands */}
         <InsightSection
-          title="Reference Brands"
+          title={t.creativeSections.referenceBrands}
           items={analysis.keyBrands || []}
           onRemove={(i) => removeItem('keyBrands', i)}
         />
 
         {/* Items */}
         <InsightSection
-          title="Key Items"
+          title={t.creativeSections.keyItems}
           items={analysis.keyItems || []}
           onRemove={(i) => removeItem('keyItems', i)}
         />
 
         {/* Materials */}
         <InsightSection
-          title="Key Materials"
+          title={t.creativeSections.keyMaterials}
           items={analysis.keyMaterials || []}
           onRemove={(i) => removeItem('keyMaterials', i)}
         />
 
         {/* Styles */}
         <InsightSection
-          title="Key Styles"
+          title={t.creativeSections.keyStyles}
           items={analysis.keyStyles || []}
           onRemove={(i) => removeItem('keyStyles', i)}
         />
@@ -135,7 +137,7 @@ export function InsightsPanel({
       {analysis.targetAudience && (
         <div className="mt-4 pt-4 border-t border-purple-200">
           <p className="text-sm text-purple-800">
-            <span className="font-semibold">Target Audience:</span> {analysis.targetAudience}
+            <span className="font-semibold">{t.creativeSections.targetAudience}:</span> {analysis.targetAudience}
           </p>
         </div>
       )}
@@ -158,13 +160,13 @@ export function InsightsPanel({
                 onChange={(e) =>
                   onAnalysisChange({ ...analysis, collectionName: e.target.value })
                 }
-                placeholder="Collection Name"
+                placeholder={t.creativeSections.collectionName}
                 className="text-xl font-semibold text-purple-900 bg-transparent border-none hover:bg-white/50 focus:bg-white/80 px-2 py-1 h-auto transition-colors"
               />
               <Pencil className="h-4 w-4 text-purple-400 flex-shrink-0" />
             </div>
             <CardDescription className="mt-1">
-              {analysis.moodDescription || 'Insights extracted from your creative direction'}
+              {analysis.moodDescription || t.creativeSections.insightsFromDirection}
             </CardDescription>
           </div>
           {analysis.seasonalFit && (

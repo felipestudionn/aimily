@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Package } from 'lucide-react';
 import type { BrandProfile } from '@/types/brand';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   notes: string | null;
@@ -10,18 +11,19 @@ interface Props {
 }
 
 export function PackagingSection({ notes, onUpdate }: Props) {
+  const t = useTranslation();
   const [text, setText] = useState(notes || '');
 
   return (
     <div className="bg-white border border-gray-100 p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Package className="h-4 w-4 text-teal-500" />
-        <h2 className="font-semibold text-gray-900">Packaging Design</h2>
+        <h2 className="font-semibold text-gray-900">{t.brandPage.packagingTitle}</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">Packaging Notes & Requirements</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.packagingNotesLabel}</label>
           <textarea
             value={text}
             onChange={(e) => {
@@ -29,7 +31,7 @@ export function PackagingSection({ notes, onUpdate }: Props) {
               onUpdate({ packaging_notes: e.target.value });
             }}
             rows={5}
-            placeholder="Describe packaging requirements: box type, materials, printing method, sustainability, inserts, tissue paper, stickers, labels, hangtags, dust bags, etc."
+            placeholder={t.brandPage.packagingPlaceholder}
             className="w-full px-4 py-3 border border-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
           />
         </div>
@@ -37,8 +39,8 @@ export function PackagingSection({ notes, onUpdate }: Props) {
 
       <div className="rounded-xl border-2 border-dashed border-gray-200 p-6 text-center">
         <Package className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-        <p className="text-sm text-gray-500">Packaging design uploads coming with the asset system</p>
-        <p className="text-xs text-gray-400 mt-1">Upload mockups, prototypes, and supplier specs</p>
+        <p className="text-sm text-gray-500">{t.brandPage.packagingUploadsComing}</p>
+        <p className="text-xs text-gray-400 mt-1">{t.brandPage.uploadMockups}</p>
       </div>
     </div>
   );

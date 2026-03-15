@@ -13,6 +13,7 @@ import {
   Trash2,
   Palette,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
 import type { SkuColorway } from '@/types/design';
 import type { SampleReview } from '@/types/prototyping';
@@ -41,6 +42,7 @@ export function ColorSampleReview({
   onUpdateReview,
   onDeleteReview,
 }: ColorSampleReviewProps) {
+  const t = useTranslation();
   const [expandedSku, setExpandedSku] = useState<string | null>(null);
 
   const getSkuColorways = (skuId: string) =>
@@ -70,19 +72,19 @@ export function ColorSampleReview({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-gray-900">Color Sample Review</h3>
-          <p className="text-sm text-gray-500">Review color samples per SKU against approved colorways</p>
+          <h3 className="font-semibold text-gray-900">{t.samplingSections.colorSampleReview}</h3>
+          <p className="text-sm text-gray-500">{t.samplingSections.colorSampleSubtitle}</p>
         </div>
         <div className="flex gap-2 text-xs">
           <span className="px-2 py-1 rounded-full bg-green-50 text-green-600">
-            {approvedCount}/{totalReviews} approved
+            {approvedCount}/{totalReviews} {t.samplingSections.statusApproved.toLowerCase()}
           </span>
         </div>
       </div>
 
       {skus.length === 0 && (
         <div className="text-center py-12 text-gray-400 text-sm">
-          No SKUs found. Add products in the Product tab first.
+          {t.designSections.noSkusFound}
         </div>
       )}
 
@@ -103,7 +105,7 @@ export function ColorSampleReview({
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 truncate">{sku.name}</p>
                 <p className="text-xs text-gray-400">
-                  {skuColorways.length} colorways · {skuReviews.length} reviews
+                  {skuColorways.length} {t.designSections.colorways} · {skuReviews.length} {t.samplingSections.reviews}
                 </p>
               </div>
 
@@ -185,10 +187,10 @@ export function ColorSampleReview({
                             }
                             className="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
                           >
-                            <option value="pending">Pending</option>
-                            <option value="issues_found">Issues Found</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
+                            <option value="pending">{t.samplingSections.statusPending}</option>
+                            <option value="issues_found">{t.samplingSections.statusIssuesFound}</option>
+                            <option value="approved">{t.samplingSections.statusApproved}</option>
+                            <option value="rejected">{t.samplingSections.statusRejected}</option>
                           </select>
                           <button
                             onClick={() => onDeleteReview(review.id)}
@@ -201,7 +203,7 @@ export function ColorSampleReview({
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] text-gray-400 mb-1 block">Color Notes</label>
+                          <label className="text-[10px] text-gray-400 mb-1 block">{t.samplingSections.colorNotes}</label>
                           <textarea
                             value={review.color_notes || ''}
                             onChange={(e) =>
@@ -209,11 +211,11 @@ export function ColorSampleReview({
                             }
                             rows={2}
                             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 resize-none bg-white focus:outline-none focus:ring-1 focus:ring-pink-300"
-                            placeholder="Color accuracy, consistency..."
+                            placeholder={t.samplingSections.colorNotesPlaceholder}
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-gray-400 mb-1 block">Material Notes</label>
+                          <label className="text-[10px] text-gray-400 mb-1 block">{t.samplingSections.materialNotes}</label>
                           <textarea
                             value={review.material_notes || ''}
                             onChange={(e) =>
@@ -221,7 +223,7 @@ export function ColorSampleReview({
                             }
                             rows={2}
                             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 resize-none bg-white focus:outline-none focus:ring-1 focus:ring-pink-300"
-                            placeholder="Material quality, texture..."
+                            placeholder={t.samplingSections.materialNotesPlaceholder}
                           />
                         </div>
                       </div>
@@ -234,7 +236,7 @@ export function ColorSampleReview({
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-dashed border-gray-200 text-gray-400 text-xs font-medium hover:border-pink-300 hover:text-pink-500 transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Color Sample Review
+                  {t.samplingSections.addColorSampleReview}
                 </button>
               </div>
             )}

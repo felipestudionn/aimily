@@ -6,6 +6,7 @@ import { CheckCircle2, Clock, AlertCircle, CalendarDays } from 'lucide-react';
 import { PHASES } from '@/lib/timeline-template';
 import { PhaseIcon } from '@/lib/phase-icons';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
+import { useTranslation } from '@/i18n';
 
 interface PhasePlaceholderProps {
   phase: TimelinePhase;
@@ -13,6 +14,7 @@ interface PhasePlaceholderProps {
 }
 
 export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
+  const t = useTranslation();
   const { id } = useParams();
   const info = PHASES[phase];
   const phaseMilestones = milestones.filter((m) => m.phase === phase);
@@ -39,7 +41,7 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
       {/* Progress Card */}
       <div className="bg-white border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900">Phase Progress</h2>
+          <h2 className="font-semibold text-gray-900">{t.misc.phaseProgress}</h2>
           <span className="text-2xl font-bold text-carbon">
             {progress}%
           </span>
@@ -53,22 +55,22 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
         <div className="flex gap-6 text-sm">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span className="text-gray-600">{completed} completed</span>
+            <span className="text-gray-600">{completed} {t.misc.completed}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-texto/60" />
-            <span className="text-gray-600">{inProgress} in progress</span>
+            <span className="text-gray-600">{inProgress} {t.misc.inProgress}</span>
           </div>
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-gray-300" />
-            <span className="text-gray-600">{pending} pending</span>
+            <span className="text-gray-600">{pending} {t.misc.pending}</span>
           </div>
         </div>
       </div>
 
       {/* Milestones Checklist */}
       <div className="bg-white border border-gray-100 p-6">
-        <h2 className="font-semibold text-gray-900 mb-4">Milestones</h2>
+        <h2 className="font-semibold text-gray-900 mb-4">{t.misc.milestones}</h2>
         <div className="space-y-3">
           {phaseMilestones.map((m) => (
             <div
@@ -110,13 +112,13 @@ export function PhasePlaceholder({ phase, milestones }: PhasePlaceholderProps) {
         className="border-2 border-dashed border-gris p-8 text-center"
       >
         <p className="text-lg font-semibold text-gray-700 mb-2">
-          Phase tools coming soon
+          {t.misc.phaseToolsComingSoon}
         </p>
         <p className="text-sm text-gray-500 mb-4">
-          This module will include specialized tools for the {info.name.toLowerCase()} phase.
-          Track milestone progress from the{' '}
+          {t.misc.phaseToolsDesc} {info.name.toLowerCase()} {t.misc.phaseToolsSuffix}
+          {' '}{t.misc.trackFromCalendar}{' '}
           <Link href={`/collection/${id}/calendar`} className="text-carbon underline hover:text-carbon/70">
-            Calendar
+            {t.misc.calendarLink}
           </Link>.
         </p>
         <CalendarDays className="h-8 w-8 mx-auto text-gray-300" />

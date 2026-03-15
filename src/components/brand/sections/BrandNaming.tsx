@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, X, Star, StarOff } from 'lucide-react';
 import type { NamingOption, BrandProfile } from '@/types/brand';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   namingOptions: NamingOption[] | null;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Props) {
+  const t = useTranslation();
   const [options, setOptions] = useState<NamingOption[]>(namingOptions || []);
   const [newName, setNewName] = useState('');
   const [name, setName] = useState(brandName || '');
@@ -38,12 +40,12 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
 
   return (
     <div className="bg-white border border-gray-100 p-6 space-y-5">
-      <h2 className="font-semibold text-gray-900">Brand Naming & Strategy</h2>
+      <h2 className="font-semibold text-gray-900">{t.brandPage.namingTitle}</h2>
 
       {/* Brand Name */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">Brand Name</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.brandNameLabel}</label>
           <input
             type="text"
             value={name}
@@ -51,12 +53,12 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
               setName(e.target.value);
               onUpdate({ brand_name: e.target.value });
             }}
-            placeholder="Your brand name"
+            placeholder={t.brandPage.brandNamePlaceholder}
             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">Tagline</label>
+          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.taglineLabel}</label>
           <input
             type="text"
             value={tag}
@@ -64,7 +66,7 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
               setTag(e.target.value);
               onUpdate({ tagline: e.target.value });
             }}
-            placeholder="A short brand tagline"
+            placeholder={t.brandPage.taglinePlaceholder}
             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
           />
         </div>
@@ -72,14 +74,14 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
 
       {/* Naming brainstorm */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-2">Name Options</label>
+        <label className="block text-xs font-medium text-gray-500 mb-2">{t.brandPage.nameOptions}</label>
         <div className="flex gap-2 mb-3">
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addOption()}
-            placeholder="Add a name idea…"
+            placeholder={t.brandPage.addNameIdea}
             className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
           />
           <button
@@ -100,7 +102,7 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
                     : 'bg-gray-50 border-gray-200 text-gray-700'
                 }`}
               >
-                <button onClick={() => selectAsName(opt)} title="Select as brand name">
+                <button onClick={() => selectAsName(opt)} title={t.brandPage.selectAsBrandName}>
                   {name === opt.name ? (
                     <Star className="h-3.5 w-3.5 text-teal-500 fill-teal-500" />
                   ) : (

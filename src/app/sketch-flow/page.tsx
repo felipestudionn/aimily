@@ -9,6 +9,7 @@ import TechPackPreview from '@/components/sketch-flow/TechPackPreview';
 import CommentSelector from '@/components/sketch-flow/CommentSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/i18n';
 import { useTechPacks } from '@/hooks/useTechPacks';
 import { exportTechPackPDF, exportTechPackPNG } from '@/lib/export-pdf';
 import {
@@ -38,6 +39,7 @@ import {
 export default function SketchFlowPage() {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const t = useTranslation();
   const { saveTechPack } = useTechPacks(user?.id);
   const techPackRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +84,7 @@ export default function SketchFlowPage() {
     setSelectedSketchId(null);
 
     try {
-      setGenerationStep('Analizando fotos de referencia...');
+      setGenerationStep(t.sketchFlowPage.analyzingPhotos);
 
       const payload = {
         images: images.map((img) => ({
@@ -97,7 +99,7 @@ export default function SketchFlowPage() {
         additionalNotes: garmentDetails.additionalNotes,
       };
 
-      setGenerationStep('Generando sketch técnico...');
+      setGenerationStep(t.sketchFlowPage.generatingSketch);
 
       const sketchResponse = await fetch('/api/ai/generate-sketch-options', {
         method: 'POST',
@@ -107,7 +109,7 @@ export default function SketchFlowPage() {
 
       if (!sketchResponse.ok) {
         const data = await sketchResponse.json();
-        throw new Error(data.error || 'Error en la generación');
+        throw new Error(data.error || t.sketchFlowPage.generationError);
       }
 
       const sketchResult = await sketchResponse.json();
@@ -116,7 +118,7 @@ export default function SketchFlowPage() {
       setSelectedSketchId(sketch.id);
 
       // Auto-proceed to comments generation
-      setGenerationStep('Generando propuestas de comentarios...');
+      setGenerationStep(t.sketchFlowPage.generatingComments);
 
       const commentsResponse = await fetch('/api/ai/propose-comments', {
         method: 'POST',
@@ -132,7 +134,7 @@ export default function SketchFlowPage() {
 
       if (!commentsResponse.ok) {
         const data = await commentsResponse.json();
-        throw new Error(data.error || 'Error al generar comentarios');
+        throw new Error(data.error || t.sketchFlowPage.commentsError);
       }
 
       const commentsResult = await commentsResponse.json();
@@ -141,12 +143,12 @@ export default function SketchFlowPage() {
       setFlowStep('comments');
       setGenerationStep('');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ha ocurrido un error inesperado';
+      const message = err instanceof Error ? err.message : t.sketchFlowPage.unexpectedError;
       setError(message);
       setFlowStep('input');
       setGenerationStep('');
     }
-  }, [canGenerate, images, garmentDetails]);
+  }, [canGenerate, images, garmentDetails, t]);
 
   // Step 4 → 5: Compose final tech pack
   const handleConfirmComments = useCallback(async () => {
@@ -238,18 +240,18 @@ export default function SketchFlowPage() {
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">SketchFlow</h1>
             </div>
             <p className="text-gray-500 text-sm max-w-xl">
-              Sube fotos de referencia y la IA generará un sketch técnico fiel al original para tu ficha.
+              {t.sketchFlowPage.subtitle}
             </p>
           </div>
 
           {/* Step indicator */}
           {flowStep !== 'input' && !isGenerating && (
             <div className="flex items-center gap-2 mb-6 text-xs text-gray-400">
-              <span className="text-gray-400">1. Datos</span>
+              <span className="text-gray-400">{t.sketchFlowPage.stepData}</span>
               <ChevronDown className="h-3 w-3 -rotate-90" />
-              <span className={flowStep === 'comments' ? 'text-gray-900 font-medium' : 'text-gray-400'}>2. Comentarios</span>
+              <span className={flowStep === 'comments' ? 'text-gray-900 font-medium' : 'text-gray-400'}>{t.sketchFlowPage.stepComments}</span>
               <ChevronDown className="h-3 w-3 -rotate-90" />
-              <span className={flowStep === 'final' ? 'text-gray-900 font-medium' : 'text-gray-400'}>3. Ficha final</span>
+              <span className={flowStep === 'final' ? 'text-gray-900 font-medium' : 'text-gray-400'}>{t.sketchFlowPage.stepFinalSheet}</span>
             </div>
           )}
 
@@ -260,7 +262,7 @@ export default function SketchFlowPage() {
               <section className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold">1</div>
-                  <span className="text-sm font-medium text-gray-500">Fotos de referencia</span>
+                  <span className="text-sm font-medium text-gray-500">{t.sketchFlowPage.referencePhotos}</span>
                 </div>
                 <ImageUploader images={images} onImagesChange={setImages} />
               </section>
@@ -270,7 +272,7 @@ export default function SketchFlowPage() {
                 <section className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold">2</div>
-                    <span className="text-sm font-medium text-gray-500">¿Qué quieres de cada foto?</span>
+                    <span className="text-sm font-medium text-gray-500">{t.sketchFlowPage.whatFromEachPhoto}</span>
                   </div>
                   <div className="space-y-3">
                     {images.map((img, i) => (
@@ -290,7 +292,7 @@ export default function SketchFlowPage() {
               <section className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs font-bold">3</div>
-                  <span className="text-sm font-medium text-gray-500">Detalles generales</span>
+                  <span className="text-sm font-medium text-gray-500">{t.sketchFlowPage.generalDetails}</span>
                 </div>
                 <GarmentDetailsForm details={garmentDetails} onChange={setGarmentDetails} />
               </section>
@@ -314,7 +316,7 @@ export default function SketchFlowPage() {
                     }`}
                 >
                   <Sparkles className="h-5 w-5" />
-                  Generar sketch técnico
+                  {t.sketchFlowPage.generateTechnicalSketch}
                 </button>
               </div>
             </div>
@@ -327,8 +329,8 @@ export default function SketchFlowPage() {
               <p className="text-gray-900 font-medium">{generationStep}</p>
               <p className="text-gray-500 text-sm mt-1">
                 {flowStep === 'generating-sketches'
-                  ? 'Esto puede tardar 30-60 segundos...'
-                  : 'Un momento...'}
+                  ? t.sketchFlowPage.mayTake30to60
+                  : t.sketchFlowPage.oneMoment}
               </p>
             </div>
           )}
@@ -342,19 +344,19 @@ export default function SketchFlowPage() {
                   className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Volver a editar
+                  {t.sketchFlowPage.backToEdit}
                 </button>
                 <button
                   onClick={handleGenerateSketches}
                   className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  Regenerar sketch
+                  {t.sketchFlowPage.regenerateSketch}
                 </button>
               </div>
 
               <section className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900 mb-1">Notas de construcción</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-1">{t.sketchFlowPage.constructionNotes}</h2>
                 <CommentSelector
                   proposedNotes={proposedNotes}
                   onNotesChange={setProposedNotes}
@@ -368,7 +370,7 @@ export default function SketchFlowPage() {
                   className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-base font-medium bg-gray-900 text-white hover:bg-gray-800 hover:shadow-xl transition-all shadow-lg"
                 >
                   <Check className="h-5 w-5" />
-                  Generar ficha técnica
+                  {t.sketchFlowPage.generateTechPack}
                 </button>
               </div>
             </div>
@@ -384,11 +386,11 @@ export default function SketchFlowPage() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  Editar comentarios
+                  {t.sketchFlowPage.editComments}
                 </button>
                 <div className="flex items-center gap-2">
                   {saved && (
-                    <span className="text-xs text-green-600 font-medium">Guardado</span>
+                    <span className="text-xs text-green-600 font-medium">{t.sketchFlowPage.saved}</span>
                   )}
                   <div className="relative">
                     <button
@@ -396,7 +398,7 @@ export default function SketchFlowPage() {
                       className="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      Exportar
+                      {t.sketchFlowPage.exportBtn}
                       <ChevronDown className="h-3 w-3" />
                     </button>
                     {showExportMenu && (
@@ -406,14 +408,14 @@ export default function SketchFlowPage() {
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
                           <FileDown className="h-3.5 w-3.5" />
-                          Descargar PDF
+                          {t.sketchFlowPage.downloadPDF}
                         </button>
                         <button
                           onClick={handleExportPNG}
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         >
                           <ImageIcon className="h-3.5 w-3.5" />
-                          Descargar PNG
+                          {t.sketchFlowPage.downloadPNG}
                         </button>
                       </div>
                     )}

@@ -396,11 +396,11 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               </div>
               <div>
                 <Label className="text-xs">{t.marketingPage.channels}</Label>
-                <Input value={assistedChannels} onChange={e => setAssistedChannels(e.target.value)} placeholder="Instagram, TikTok, Email" className="h-9" />
+                <Input value={assistedChannels} onChange={e => setAssistedChannels(e.target.value)} placeholder={t.marketingPage.channelsPlaceholderLaunch} className="h-9" />
               </div>
               <div>
                 <Label className="text-xs">{t.marketingPage.directionOptional}</Label>
-                <Input value={assistedDirection} onChange={e => setAssistedDirection(e.target.value)} placeholder="e.g. Focus on hype pre-launch" className="h-9" />
+                <Input value={assistedDirection} onChange={e => setAssistedDirection(e.target.value)} placeholder={t.marketingPage.directionPlaceholderLaunch} className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -425,7 +425,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               </div>
               <div>
                 <Label className="text-xs">{t.marketingPage.channels}</Label>
-                <Input value={propuestaChannels} onChange={e => setPropuestaChannels(e.target.value)} placeholder="Instagram, TikTok, Email, Website" className="h-9" />
+                <Input value={propuestaChannels} onChange={e => setPropuestaChannels(e.target.value)} placeholder={t.marketingPage.channelsPlaceholderPropuesta} className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -581,7 +581,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                 </div>
                 <div>
                   <Label className="text-xs">{t.marketingPage.assignedTo}</Label>
-                  <Input value={newTask.assigned_to} onChange={e => setNewTask(prev => ({ ...prev, assigned_to: e.target.value }))} placeholder="Name" className="h-9" />
+                  <Input value={newTask.assigned_to} onChange={e => setNewTask(prev => ({ ...prev, assigned_to: e.target.value }))} placeholder={t.marketingPage.namePlaceholder} className="h-9" />
                 </div>
                 <div>
                   <Label className="text-xs">{t.marketingPage.notes}</Label>

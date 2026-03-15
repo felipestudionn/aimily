@@ -11,6 +11,7 @@ import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, 
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/i18n';
 
 interface CollectionBuilderProps {
   setupData: SetupData;
@@ -19,6 +20,7 @@ interface CollectionBuilderProps {
 
 export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBuilderProps) {
   const { language } = useLanguage();
+  const t = useTranslation();
   const [name, setName] = useState('');
   const [family, setFamily] = useState('');
   const [type, setType] = useState<'REVENUE' | 'IMAGEN' | 'ENTRY'>('REVENUE');
@@ -310,7 +312,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       <Card>
         <CardHeader>
           <CardTitle>Financial Overview</CardTitle>
-          <CardDescription>Collection budget and margin analysis</CardDescription>
+          <CardDescription>{t.plannerSections.collectionBudgetDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
@@ -327,7 +329,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               <p className="text-2xl font-bold text-green-600">€{Math.round(totalMargin).toLocaleString()}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Margin %</p>
+              <p className="text-xs text-muted-foreground">{t.plannerSections.marginPercent}</p>
               <p className="text-2xl font-bold">{marginPercentage.toFixed(1)}%</p>
             </div>
           </div>
@@ -381,7 +383,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {/* Family Distribution */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">Family Mix</h4>
+                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.familyMix}</h4>
                 <div className="space-y-1">
                   {frameworkValidation.familyDistribution.map((fam) => (
                     <div key={fam.name} className="flex items-center justify-between text-xs">
@@ -396,7 +398,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
               {/* Type Distribution */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">Type Mix</h4>
+                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.typeMix}</h4>
                 <div className="space-y-1">
                   {frameworkValidation.typeDistribution.map((t) => (
                     <div key={t.name} className="flex items-center justify-between text-xs">
@@ -432,7 +434,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
               {/* Margin */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">Margin</h4>
+                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.margin}</h4>
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
                     <span>Current</span>
@@ -456,7 +458,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 mt-4 pt-4 border-t border-blue-200">
               {/* Role Distribution */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">Product Role Mix</h4>
+                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.productRoleMix}</h4>
                 <div className="space-y-1">
                   {frameworkValidation.roleDistribution.map((r) => (
                     <div key={r.name} className="flex items-center justify-between text-xs">
@@ -475,7 +477,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
               {/* Origin Distribution */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">Origin Mix</h4>
+                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.originMix}</h4>
                 <div className="space-y-1">
                   {frameworkValidation.originDistribution.filter(o => o.actual > 0).map((o) => (
                     <div key={o.name} className="flex items-center justify-between text-xs">
@@ -493,25 +495,25 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       {/* Add SKU Form */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Add New SKU</CardTitle>
-          <CardDescription>Create individual products for your collection</CardDescription>
+          <CardTitle className="text-base">{t.plannerSections.addNewSku}</CardTitle>
+          <CardDescription>{t.plannerSections.createSkuDesc}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div className="col-span-2">
-              <Label className="text-xs">Product Name</Label>
+              <Label className="text-xs">{t.plannerSections.productName}</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Oversized Bomber Jacket"
+                placeholder={t.plannerSections.productNamePlaceholder}
                 className="h-9"
               />
             </div>
             <div>
-              <Label className="text-xs">Family</Label>
+              <Label className="text-xs">{t.plannerSections.family}</Label>
               <Select value={family} onValueChange={setFamily}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select" />
+                  <SelectValue placeholder={t.plannerSections.selectPlaceholder} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableFamilies.map((fam) => (
@@ -521,7 +523,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Type</Label>
+              <Label className="text-xs">{t.plannerSections.type}</Label>
               <Select value={type} onValueChange={(v) => setType(v as any)}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
@@ -534,7 +536,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Channel</Label>
+              <Label className="text-xs">{t.plannerSections.channel}</Label>
               <Select value={channel} onValueChange={(v) => setChannel(v as any)}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
@@ -547,7 +549,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Origin</Label>
+              <Label className="text-xs">{t.plannerSections.origin}</Label>
               <Select value={origin} onValueChange={(v) => setOrigin(v as any)}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
@@ -561,7 +563,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Role</Label>
+              <Label className="text-xs">{t.plannerSections.role}</Label>
               <Select value={skuRole} onValueChange={(v) => setSkuRole(v as any)}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
@@ -575,7 +577,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Drop #</Label>
+              <Label className="text-xs">{t.plannerSections.dropNumber}</Label>
               <Input
                 type="number"
                 value={dropNumber}
@@ -586,7 +588,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               />
             </div>
             <div>
-              <Label className="text-xs">Cost (€)</Label>
+              <Label className="text-xs">{t.plannerSections.costLabel}</Label>
               <Input
                 type="number"
                 value={cost || ''}
@@ -596,7 +598,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               />
             </div>
             <div>
-              <Label className="text-xs">PVP (€)</Label>
+              <Label className="text-xs">{t.plannerSections.pvpLabel}</Label>
               <Input
                 type="number"
                 value={pvp || ''}
@@ -606,7 +608,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               />
             </div>
             <div>
-              <Label className="text-xs">Units</Label>
+              <Label className="text-xs">{t.plannerSections.units}</Label>
               <Input
                 type="number"
                 value={buyUnits || ''}
@@ -616,7 +618,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               />
             </div>
             <div>
-              <Label className="text-xs">Sale %</Label>
+              <Label className="text-xs">{t.plannerSections.salePercent}</Label>
               <Input
                 type="number"
                 value={salePercentage}
@@ -627,7 +629,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               />
             </div>
             <div>
-              <Label className="text-xs">Discount %</Label>
+              <Label className="text-xs">{t.plannerSections.discountPercent}</Label>
               <Input
                 type="number"
                 value={discount}
@@ -644,7 +646,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 className="h-9 w-full"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add
+                {t.plannerSections.add}
               </Button>
             </div>
           </div>
@@ -655,7 +657,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>SKU List ({skus.length})</CardTitle>
+            <CardTitle>{t.plannerSections.skuList} ({skus.length})</CardTitle>
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <Button
                 variant={viewMode === 'list' ? 'secondary' : 'ghost'}
@@ -664,7 +666,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 className="h-8 px-3"
               >
                 <List className="h-4 w-4 mr-1" />
-                List
+                {t.plannerSections.listView}
               </Button>
               <Button
                 variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
@@ -673,32 +675,32 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 className="h-8 px-3"
               >
                 <LayoutGrid className="h-4 w-4 mr-1" />
-                Cards
+                {t.plannerSections.cardsView}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading SKUs...</p>
+            <p className="text-sm text-muted-foreground">{t.plannerSections.loadingSkus}</p>
           ) : skus.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No SKUs yet. Add your first product above.</p>
+            <p className="text-sm text-muted-foreground">{t.plannerSections.noSkusYet}</p>
           ) : viewMode === 'list' ? (
             /* List View */
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left py-2 px-2">Name</th>
-                    <th className="text-left py-2 px-2">Family</th>
-                    <th className="text-left py-2 px-2">Type</th>
-                    <th className="text-left py-2 px-2">Role</th>
-                    <th className="text-left py-2 px-2">Origin</th>
-                    <th className="text-right py-2 px-2">Cost</th>
+                    <th className="text-left py-2 px-2">{t.plannerSections.productName}</th>
+                    <th className="text-left py-2 px-2">{t.plannerSections.family}</th>
+                    <th className="text-left py-2 px-2">{t.plannerSections.type}</th>
+                    <th className="text-left py-2 px-2">{t.plannerSections.role}</th>
+                    <th className="text-left py-2 px-2">{t.plannerSections.origin}</th>
+                    <th className="text-right py-2 px-2">{t.plannerSections.cost}</th>
                     <th className="text-right py-2 px-2">PVP</th>
-                    <th className="text-right py-2 px-2">Units</th>
-                    <th className="text-right py-2 px-2">Sales</th>
-                    <th className="text-right py-2 px-2">Margin %</th>
+                    <th className="text-right py-2 px-2">{t.plannerSections.units}</th>
+                    <th className="text-right py-2 px-2">{t.plannerSections.sales}</th>
+                    <th className="text-right py-2 px-2">{t.plannerSections.marginPercent}</th>
                     <th className="text-right py-2 px-2"></th>
                   </tr>
                 </thead>
@@ -789,15 +791,15 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <p className="font-semibold">€{sku.pvp}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Cost</span>
+                        <span className="text-muted-foreground">{t.plannerSections.cost}</span>
                         <p className="font-semibold">€{sku.cost}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Units</span>
+                        <span className="text-muted-foreground">{t.plannerSections.units}</span>
                         <p className="font-semibold">{sku.buy_units}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Margin</span>
+                        <span className="text-muted-foreground">{t.plannerSections.margin}</span>
                         <p className={`font-semibold ${sku.margin >= 50 ? 'text-green-600' : 'text-orange-600'}`}>
                           {sku.margin.toFixed(1)}%
                         </p>
@@ -878,7 +880,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               {/* Attributes Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Type</Label>
+                  <Label className="text-xs text-muted-foreground">{t.plannerSections.type}</Label>
                   <Badge className={`w-full justify-center ${
                     selectedSku.type === 'IMAGEN' ? 'bg-purple-500' : 
                     selectedSku.type === 'ENTRY' ? 'bg-blue-500' : 'bg-green-500'
@@ -887,15 +889,15 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   </Badge>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Channel</Label>
+                  <Label className="text-xs text-muted-foreground">{t.plannerSections.channel}</Label>
                   <p className="font-semibold text-sm">{selectedSku.channel}</p>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Origin</Label>
+                  <Label className="text-xs text-muted-foreground">{t.plannerSections.origin}</Label>
                   <p className="font-semibold text-sm">{selectedSku.origin || '—'}</p>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Role</Label>
+                  <Label className="text-xs text-muted-foreground">{t.plannerSections.role}</Label>
                   <p className="font-semibold text-sm">{selectedSku.sku_role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : selectedSku.sku_role === 'CARRYOVER' ? 'Carry-over' : selectedSku.sku_role || 'New'}</p>
                 </div>
                 <div className="space-y-1">
@@ -913,7 +915,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 <h4 className="font-semibold text-sm mb-3">Financial Details</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Cost</span>
+                    <span className="text-muted-foreground">{t.plannerSections.cost}</span>
                     <p className="font-semibold text-lg">€{selectedSku.cost}</p>
                   </div>
                   <div>
@@ -921,17 +923,17 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     <p className="font-semibold text-lg">€{selectedSku.pvp}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Buy Units</span>
+                    <span className="text-muted-foreground">{t.plannerSections.buyUnits}</span>
                     <p className="font-semibold text-lg">{selectedSku.buy_units}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Margin</span>
+                    <span className="text-muted-foreground">{t.plannerSections.margin}</span>
                     <p className={`font-semibold text-lg ${selectedSku.margin >= 50 ? 'text-green-600' : 'text-orange-600'}`}>
                       {selectedSku.margin.toFixed(1)}%
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Discount</span>
+                    <span className="text-muted-foreground">{t.plannerSections.discount}</span>
                     <p className="font-semibold">{selectedSku.discount}%</p>
                   </div>
                   <div>
@@ -939,7 +941,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     <p className="font-semibold">€{selectedSku.final_price}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Sale %</span>
+                    <span className="text-muted-foreground">{t.plannerSections.salePercent}</span>
                     <p className="font-semibold">{selectedSku.sale_percentage}%</p>
                   </div>
                   <div>
@@ -995,7 +997,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 <textarea
                   value={editingNotes}
                   onChange={(e) => setEditingNotes(e.target.value)}
-                  placeholder="Add notes about this SKU, concept ideas, fabric details, etc..."
+                  placeholder={t.plannerSections.skuNotesPlaceholder}
                   className="w-full h-24 p-3 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 <div className="flex justify-end">

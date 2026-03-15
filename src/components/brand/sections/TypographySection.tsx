@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Type } from 'lucide-react';
 import type { BrandProfile, BrandTypography } from '@/types/brand';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   typography: BrandTypography | null;
@@ -21,6 +22,7 @@ const POPULAR_FONTS = [
 ];
 
 export function TypographySection({ typography, onUpdate }: Props) {
+  const tr = useTranslation();
   const [t, setT] = useState<BrandTypography>(typography || EMPTY);
 
   const update = (partial: Partial<BrandTypography>) => {
@@ -33,18 +35,18 @@ export function TypographySection({ typography, onUpdate }: Props) {
     <div className="bg-white border border-gray-100 p-6 space-y-5">
       <div className="flex items-center gap-2">
         <Type className="h-4 w-4 text-teal-500" />
-        <h2 className="font-semibold text-gray-900">Typography</h2>
+        <h2 className="font-semibold text-gray-900">{tr.brandPage.typographyTitle}</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
         {/* Primary Font */}
         <div className="space-y-3">
-          <label className="block text-xs font-medium text-gray-500">Primary Font (Headings)</label>
+          <label className="block text-xs font-medium text-gray-500">{tr.brandPage.primaryFont}</label>
           <input
             type="text"
             value={t.primary.family}
             onChange={(e) => update({ primary: { ...t.primary, family: e.target.value } })}
-            placeholder="Font family"
+            placeholder={tr.brandPage.fontFamily}
             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
           />
           <select
@@ -70,12 +72,12 @@ export function TypographySection({ typography, onUpdate }: Props) {
 
         {/* Secondary Font */}
         <div className="space-y-3">
-          <label className="block text-xs font-medium text-gray-500">Secondary Font (Body)</label>
+          <label className="block text-xs font-medium text-gray-500">{tr.brandPage.secondaryFont}</label>
           <input
             type="text"
             value={t.secondary.family}
             onChange={(e) => update({ secondary: { ...t.secondary, family: e.target.value } })}
-            placeholder="Font family"
+            placeholder={tr.brandPage.fontFamily}
             className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
           />
           <select
@@ -102,7 +104,7 @@ export function TypographySection({ typography, onUpdate }: Props) {
 
       {/* Font suggestions */}
       <div>
-        <label className="block text-xs font-medium text-gray-400 mb-2">Popular choices</label>
+        <label className="block text-xs font-medium text-gray-400 mb-2">{tr.brandPage.popularChoices}</label>
         <div className="flex flex-wrap gap-1.5">
           {POPULAR_FONTS.map((f) => (
             <button

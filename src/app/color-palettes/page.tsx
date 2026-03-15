@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { Palette, Shuffle, Copy, Check, ArrowLeft, Search, X } from 'lucide-react';
 import palettesData from '@/data/sanzo-palettes.json';
+import { useTranslation } from '@/i18n';
 
 interface SanzoColor {
   name: string;
@@ -14,6 +15,7 @@ interface SanzoColor {
 type SanzoPalette = SanzoColor[];
 
 export default function ColorPalettesPage() {
+  const t = useTranslation();
   const [copiedColor, setCopiedColor] = useState<string | null>(null);
   const [randomPalette, setRandomPalette] = useState<SanzoPalette | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,10 +66,10 @@ export default function ColorPalettesPage() {
                   >
                     <ArrowLeft className="h-5 w-5 text-gray-600" />
                   </Link>
-                  <h1 className="text-3xl font-bold text-gray-900">Color Palette Inspiration</h1>
+                  <h1 className="text-3xl font-bold text-gray-900">{t.colorPalettesPage.title}</h1>
                 </div>
                 <p className="text-gray-600 ml-12">
-                  A collection of {palettes.length} color combinations by Sanzo Wada (1883-1967)
+                  {t.colorPalettesPage.subtitle.replace('{count}', String(palettes.length))}
                 </p>
               </div>
               <button
@@ -75,7 +77,7 @@ export default function ColorPalettesPage() {
                 className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-medium transition-all hover:bg-gray-800"
               >
                 <Shuffle className="mr-2 h-4 w-4" />
-                Random Palette
+                {t.colorPalettesPage.randomPalette}
               </button>
             </div>
             
@@ -86,7 +88,7 @@ export default function ColorPalettesPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search colors... (e.g., violet, blue, red)"
+                placeholder={t.colorPalettesPage.searchPlaceholder}
                 className="w-full pl-11 pr-10 py-3 rounded-full bg-white border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
               />
               {searchQuery && (
@@ -103,10 +105,10 @@ export default function ColorPalettesPage() {
             {searchQuery && (
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-gray-600">
-                  Found <span className="font-semibold text-gray-900">{filteredPalettes.length}</span> palettes containing "{searchQuery}"
+                  {t.colorPalettesPage.foundPalettes} <span className="font-semibold text-gray-900">{filteredPalettes.length}</span> {t.colorPalettesPage.palettesContaining} &quot;{searchQuery}&quot;
                 </span>
                 {filteredPalettes.length === 0 && (
-                  <span className="text-orange-600">— Try another color name</span>
+                  <span className="text-orange-600">{t.colorPalettesPage.tryAnotherColor}</span>
                 )}
               </div>
             )}
@@ -117,7 +119,7 @@ export default function ColorPalettesPage() {
             <div className="mb-12 bg-white rounded-2xl shadow-lg p-8 border border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
                 <Palette className="h-5 w-5 text-orange-500" />
-                Featured Palette
+                {t.colorPalettesPage.featuredPalette}
               </h2>
               <div className="flex gap-4 flex-wrap">
                 {displayedPalette.map((color, index) => (
@@ -147,7 +149,7 @@ export default function ColorPalettesPage() {
 
           {/* All Palettes Grid */}
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            {searchQuery ? `Matching Palettes` : 'Browse All Palettes'}
+            {searchQuery ? t.colorPalettesPage.matchingPalettes : t.colorPalettesPage.browseAllPalettes}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredPalettes.map((palette, paletteIndex) => (
@@ -192,8 +194,8 @@ export default function ColorPalettesPage() {
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Palette #{selectedPalette.index + 1}</h2>
-                <p className="text-sm text-gray-500 mt-1">{selectedPalette.palette.length} colors by Sanzo Wada</p>
+                <h2 className="text-2xl font-bold text-gray-900">{t.colorPalettesPage.paletteNumber} #{selectedPalette.index + 1}</h2>
+                <p className="text-sm text-gray-500 mt-1">{selectedPalette.palette.length} {t.colorPalettesPage.colorsBySanzo}</p>
               </div>
               <button
                 onClick={() => setSelectedPalette(null)}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Palette, Plus, Trash2 } from 'lucide-react';
 import type { BrandProfile, BrandColor } from '@/types/brand';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   primaryColors: BrandColor[] | null;
@@ -14,10 +15,12 @@ function ColorRow({
   color,
   onChange,
   onRemove,
+  colorNamePlaceholder,
 }: {
   color: BrandColor;
   onChange: (c: BrandColor) => void;
   onRemove: () => void;
+  colorNamePlaceholder: string;
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -38,7 +41,7 @@ function ColorRow({
         type="text"
         value={color.name}
         onChange={(e) => onChange({ ...color, name: e.target.value })}
-        placeholder="Color name"
+        placeholder={colorNamePlaceholder}
         className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
       />
       <input
@@ -59,10 +62,16 @@ function ColorGroup({
   label,
   colors,
   onChange,
+  addLabel,
+  noColorsDefined,
+  colorNamePlaceholder,
 }: {
   label: string;
   colors: BrandColor[];
   onChange: (colors: BrandColor[]) => void;
+  addLabel: string;
+  noColorsDefined: string;
+  colorNamePlaceholder: string;
 }) {
   const add = () => onChange([...colors, { hex: '#4ECDC4', name: '', pantone: '' }]);
   const update = (idx: number, c: BrandColor) =>
@@ -77,11 +86,11 @@ function ColorGroup({
           onClick={add}
           className="flex items-center gap-1 px-2 py-1 rounded-md bg-gray-50 text-gray-500 text-xs hover:bg-gray-100"
         >
-          <Plus className="h-3 w-3" /> Add
+          <Plus className="h-3 w-3" /> {addLabel}
         </button>
       </div>
       {colors.length === 0 && (
-        <p className="text-xs text-gray-300 text-center py-2">No colors defined</p>
+        <p className="text-xs text-gray-300 text-center py-2">{noColorsDefined}</p>
       )}
       {/* Color swatches preview */}
       {colors.length > 0 && (
@@ -98,7 +107,7 @@ function ColorGroup({
       )}
       <div className="space-y-2">
         {colors.map((c, i) => (
-          <ColorRow key={i} color={c} onChange={(u) => update(i, u)} onRemove={() => remove(i)} />
+          <ColorRow key={i} color={c} onChange={(u) => update(i, u)} onRemove={() => remove(i)} colorNamePlaceholder={colorNamePlaceholder} />
         ))}
       </div>
     </div>
@@ -106,6 +115,7 @@ function ColorGroup({
 }
 
 export function ColorPalette({ primaryColors, secondaryColors, onUpdate }: Props) {
+  const t = useTranslation();
   const [primary, setPrimary] = useState<BrandColor[]>(primaryColors || []);
   const [secondary, setSecondary] = useState<BrandColor[]>(secondaryColors || []);
 
@@ -113,27 +123,33 @@ export function ColorPalette({ primaryColors, secondaryColors, onUpdate }: Props
     <div className="bg-white border border-gray-100 p-6 space-y-6">
       <div className="flex items-center gap-2">
         <Palette className="h-4 w-4 text-teal-500" />
-        <h2 className="font-semibold text-gray-900">Color Palette</h2>
+        <h2 className="font-semibold text-gray-900">{t.brandPage.colorPaletteTitle}</h2>
       </div>
 
       <ColorGroup
-        label="Primary Colors"
+        label={t.brandPage.primaryColors}
         colors={primary}
         onChange={(c) => {
           setPrimary(c);
           onUpdate({ primary_colors: c });
         }}
+        addLabel={t.common.add}
+        noColorsDefined={t.brandPage.noColorsDefined}
+        colorNamePlaceholder={t.brandPage.colorNamePlaceholder}
       />
 
       <div className="border-t border-gray-100" />
 
       <ColorGroup
-        label="Secondary / Accent Colors"
+        label={t.brandPage.secondaryColors}
         colors={secondary}
         onChange={(c) => {
           setSecondary(c);
           onUpdate({ secondary_colors: c });
         }}
+        addLabel={t.common.add}
+        noColorsDefined={t.brandPage.noColorsDefined}
+        colorNamePlaceholder={t.brandPage.colorNamePlaceholder}
       />
     </div>
   );

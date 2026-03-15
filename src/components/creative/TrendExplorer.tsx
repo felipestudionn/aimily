@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { getColorValue, getContrastColor, parseColorString, parseTrendString } from '@/lib/image-utils';
 import type { TrendExploration, SelectedTrends } from '@/types/creative';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/i18n';
 
 interface TrendExplorerProps {
   selectedTrends: SelectedTrends;
@@ -14,6 +15,7 @@ interface TrendExplorerProps {
 }
 
 export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerProps) {
+  const t = useTranslation();
   const { language } = useLanguage();
   const [trendQuery, setTrendQuery] = useState('');
   const [trendExploration, setTrendExploration] = useState<TrendExploration | null>(null);
@@ -62,8 +64,8 @@ export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerPr
               <Search className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold tracking-tight">Explore Trends</h3>
-              <p className="text-sm text-muted-foreground">Deep dive into any aesthetic or trend</p>
+              <h3 className="text-2xl font-bold tracking-tight">{t.creativeSections.exploreTrends}</h3>
+              <p className="text-sm text-muted-foreground">{t.creativeSections.exploreTrendsDesc}</p>
             </div>
           </div>
         </div>
@@ -88,7 +90,7 @@ export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerPr
           ) : (
             <>
               <Search className="h-5 w-5 mr-2" />
-              Explore
+              {t.creativeSections.explore}
             </>
           )}
         </Button>
@@ -100,7 +102,7 @@ export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerPr
           <div className="flex items-center justify-between border-b pb-4">
             <div>
               <h4 className="text-xl font-bold text-slate-900">
-                Deep Dive: {trendExploration.query}
+                {t.creativeSections.deepDive}: {trendExploration.query}
               </h4>
               <p className="text-sm text-muted-foreground mt-2 max-w-3xl">
                 {trendExploration.description}
@@ -112,7 +114,7 @@ export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerPr
               className="rounded-full px-6"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add All to Selection
+              {t.creativeSections.addAllToSelection}
             </Button>
           </div>
 
@@ -121,11 +123,12 @@ export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerPr
             colors={trendExploration.keyColors}
             selectedColors={selectedTrends.colors}
             onToggle={(color) => onToggleTrend('colors', color)}
+            title={t.creativeSections.keyColors}
           />
 
           {/* Trends */}
           <TrendCardGrid
-            title="Key Trends"
+            title={t.creativeSections.keyTrends}
             items={trendExploration.keyTrends}
             selectedItems={selectedTrends.trends}
             onToggle={(trend) => onToggleTrend('trends', trend)}
@@ -134,7 +137,7 @@ export function TrendExplorer({ selectedTrends, onToggleTrend }: TrendExplorerPr
 
           {/* Items */}
           <TrendCardGrid
-            title="Key Items"
+            title={t.creativeSections.keyItems}
             items={trendExploration.keyItems}
             selectedItems={selectedTrends.items}
             onToggle={(item) => onToggleTrend('items', item)}
@@ -152,16 +155,18 @@ export function ColorGrid({
   colors,
   selectedColors,
   onToggle,
+  title,
 }: {
   colors: string[];
   selectedColors: string[];
   onToggle: (color: string) => void;
+  title?: string;
 }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-          Key Colors
+          {title || 'Key Colors'}
         </h4>
         <div className="flex-1 h-px bg-gradient-to-r from-muted to-transparent" />
       </div>

@@ -9,6 +9,7 @@ import {
   ChevronRight,
   GripVertical,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
 import type { SkuColorway, ColorwayStatus } from '@/types/design';
 
@@ -20,11 +21,11 @@ interface Props {
   onDelete: (id: string) => Promise<boolean>;
 }
 
-const STATUS_OPTIONS: { value: ColorwayStatus; label: string; color: string }[] = [
-  { value: 'proposed', label: 'Proposed', color: 'bg-gray-100 text-gray-600' },
-  { value: 'sampled', label: 'Sampled', color: 'bg-blue-50 text-blue-600' },
-  { value: 'approved', label: 'Approved', color: 'bg-green-50 text-green-600' },
-  { value: 'production', label: 'Production', color: 'bg-purple-50 text-purple-600' },
+const STATUS_OPTIONS: { value: ColorwayStatus; labelKey: 'statusProposed' | 'statusSampled' | 'statusApproved' | 'statusProduction'; color: string }[] = [
+  { value: 'proposed', labelKey: 'statusProposed', color: 'bg-gray-100 text-gray-600' },
+  { value: 'sampled', labelKey: 'statusSampled', color: 'bg-blue-50 text-blue-600' },
+  { value: 'approved', labelKey: 'statusApproved', color: 'bg-green-50 text-green-600' },
+  { value: 'production', labelKey: 'statusProduction', color: 'bg-purple-50 text-purple-600' },
 ];
 
 function ColorwayCard({
@@ -36,6 +37,7 @@ function ColorwayCard({
   onUpdate: (updates: Partial<SkuColorway>) => void;
   onDelete: () => void;
 }) {
+  const t = useTranslation();
   const statusCfg = STATUS_OPTIONS.find((s) => s.value === colorway.status) || STATUS_OPTIONS[0];
 
   return (
@@ -78,7 +80,7 @@ function ColorwayCard({
         type="text"
         value={colorway.pantone_primary || ''}
         onChange={(e) => onUpdate({ pantone_primary: e.target.value })}
-        placeholder="Pantone"
+        placeholder={t.designSections.pantone}
         className="w-24 text-xs bg-transparent border-none focus:outline-none text-gray-400 text-right"
       />
 
@@ -90,7 +92,7 @@ function ColorwayCard({
       >
         {STATUS_OPTIONS.map((s) => (
           <option key={s.value} value={s.value}>
-            {s.label}
+            {t.designSections[s.labelKey]}
           </option>
         ))}
       </select>
@@ -119,6 +121,7 @@ function SkuColorwayGroup({
   onUpdate: (id: string, updates: Partial<SkuColorway>) => void;
   onDelete: (id: string) => void;
 }) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(colorways.length > 0);
 
   return (
@@ -168,7 +171,7 @@ function SkuColorwayGroup({
           </div>
         )}
         <span className="text-xs text-gray-400 ml-2">
-          {colorways.length} colorway{colorways.length !== 1 ? 's' : ''}
+          {colorways.length} {colorways.length !== 1 ? t.designSections.colorways : t.designSections.colorway}
         </span>
       </button>
 
@@ -187,7 +190,7 @@ function SkuColorwayGroup({
             onClick={onAdd}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 text-gray-500 text-xs hover:bg-gray-100 transition-colors"
           >
-            <Plus className="h-3 w-3" /> Add Colorway
+            <Plus className="h-3 w-3" /> {t.designSections.addColorway}
           </button>
         </div>
       )}
@@ -196,6 +199,7 @@ function SkuColorwayGroup({
 }
 
 export function ColorwayManager({ skus, colorways, onAdd, onUpdate, onDelete }: Props) {
+  const t = useTranslation();
   const getSkuColorways = (skuId: string) =>
     colorways.filter((c) => c.sku_id === skuId);
 
@@ -203,7 +207,7 @@ export function ColorwayManager({ skus, colorways, onAdd, onUpdate, onDelete }: 
     const position = getSkuColorways(skuId).length;
     await onAdd({
       sku_id: skuId,
-      name: 'New Colorway',
+      name: t.designSections.newColorway,
       hex_primary: '#4ECDC4',
       hex_secondary: null,
       hex_accent: null,
@@ -231,10 +235,10 @@ export function ColorwayManager({ skus, colorways, onAdd, onUpdate, onDelete }: 
       <div className="bg-white border border-gray-100 p-6">
         <div className="flex items-center gap-2 mb-4">
           <Palette className="h-4 w-4 text-texto/60" />
-          <h2 className="font-semibold text-gray-900">Colorway Manager</h2>
+          <h2 className="font-semibold text-gray-900">{t.designSections.colorwayManager}</h2>
         </div>
         <p className="text-sm text-gray-400 text-center py-6">
-          No SKUs found. Add products in the Product tab first.
+          {t.designSections.noSkusFound}
         </p>
       </div>
     );
@@ -245,11 +249,11 @@ export function ColorwayManager({ skus, colorways, onAdd, onUpdate, onDelete }: 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Palette className="h-4 w-4 text-texto/60" />
-          <h2 className="font-semibold text-gray-900">Colorway Manager</h2>
+          <h2 className="font-semibold text-gray-900">{t.designSections.colorwayManager}</h2>
         </div>
         {totalColorways > 0 && (
           <span className="text-xs text-gray-400">
-            {approvedColorways}/{totalColorways} approved
+            {approvedColorways}/{totalColorways} {t.designSections.approved}
           </span>
         )}
       </div>

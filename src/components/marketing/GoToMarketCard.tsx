@@ -428,7 +428,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               </div>
               <div>
                 <Label className="text-xs">{t.marketingPage.keyDates}</Label>
-                <Input value={assistedDates} onChange={e => setAssistedDates(e.target.value)} placeholder="e.g. 2026-03-15, 2026-04-20" className="h-9" />
+                <Input value={assistedDates} onChange={e => setAssistedDates(e.target.value)} placeholder={t.marketingPage.datePlaceholderGtm} className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -456,7 +456,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               </div>
               <div>
                 <Label className="text-xs">{t.marketingPage.channels}</Label>
-                <Input value={propuestaChannels} onChange={e => setPropuestaChannels(e.target.value)} placeholder="DTC,WHOLESALE" className="h-9" />
+                <Input value={propuestaChannels} onChange={e => setPropuestaChannels(e.target.value)} placeholder={t.marketingPage.channelsPlaceholderGtm} className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating || !propuestaLaunchDate} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -611,7 +611,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
 
           {showAddDrop && (
             <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-4 gap-4">
-              <div><Label className="text-xs">{t.marketingPage.dropName}</Label><Input value={newDrop.name} onChange={e => setNewDrop({ ...newDrop, name: e.target.value })} placeholder="e.g., Season Launch" className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.dropName}</Label><Input value={newDrop.name} onChange={e => setNewDrop({ ...newDrop, name: e.target.value })} placeholder={t.marketingPage.dropNamePlaceholder} className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.launchDate}</Label><Input type="date" value={newDrop.launch_date} onChange={e => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.weeksActive}</Label><Input type="number" value={newDrop.weeks_active} onChange={e => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
               <div className="flex items-end gap-2">
@@ -689,7 +689,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
 
           {showAddAction && (
             <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-5 gap-4">
-              <div><Label className="text-xs">{t.marketingPage.name}</Label><Input value={newAction.name} onChange={e => setNewAction({ ...newAction, name: e.target.value })} placeholder="e.g., Black Friday" className="h-9" /></div>
+              <div><Label className="text-xs">{t.marketingPage.name}</Label><Input value={newAction.name} onChange={e => setNewAction({ ...newAction, name: e.target.value })} placeholder={t.marketingPage.actionNamePlaceholder} className="h-9" /></div>
               <div>
                 <Label className="text-xs">{t.marketingPage.type}</Label>
                 <Select value={newAction.action_type} onValueChange={v => setNewAction({ ...newAction, action_type: v as any })}>
@@ -707,7 +707,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <div>
                 <Label className="text-xs">{t.marketingPage.category}</Label>
                 <Select value={newAction.category} onValueChange={v => setNewAction({ ...newAction, category: v })}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectTrigger className="h-9"><SelectValue placeholder={t.marketingPage.selectPlaceholder} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="VISIBILIDAD">Visibilidad</SelectItem>
                     <SelectItem value="POSICIONAMIENTO">Posicionamiento</SelectItem>

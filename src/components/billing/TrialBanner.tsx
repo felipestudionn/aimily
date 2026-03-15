@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface TrialBannerProps {
   daysLeft: number;
 }
 
 export default function TrialBanner({ daysLeft }: TrialBannerProps) {
+  const t = useTranslation();
   if (daysLeft > 5) return null;
 
   const isUrgent = daysLeft <= 2;
@@ -20,13 +22,13 @@ export default function TrialBanner({ daysLeft }: TrialBannerProps) {
     }`}>
       <Clock className="inline-block w-4 h-4 mr-1.5 -mt-0.5" />
       {daysLeft === 0
-        ? 'Your trial expires today!'
-        : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left in your trial`}
+        ? t.billing.trialExpiresToday
+        : `${daysLeft} ${daysLeft === 1 ? t.billing.dayLeft : t.billing.daysLeft}`}
       {' — '}
       <Link href="/pricing" className={`underline font-semibold ${
         isUrgent ? 'text-white hover:text-red-100' : 'text-amber-900 hover:text-amber-800'
       }`}>
-        Choose a plan
+        {t.billing.chooseAPlan}
       </Link>
     </div>
   );

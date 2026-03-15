@@ -13,6 +13,7 @@ import {
   ChevronUp,
   Trash2,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
 import type { SampleReview, ReviewIssue } from '@/types/prototyping';
 
@@ -39,6 +40,7 @@ const SEVERITY_COLORS = {
 };
 
 export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDeleteReview }: ProtoTrackerProps) {
+  const t = useTranslation();
   const [expandedSku, setExpandedSku] = useState<string | null>(null);
   const [addingIssue, setAddingIssue] = useState<string | null>(null);
   const [newIssue, setNewIssue] = useState({ area: '', severity: 'medium' as ReviewIssue['severity'], description: '' });
@@ -102,22 +104,22 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-gray-900">White Proto Tracker</h3>
-          <p className="text-sm text-gray-500">Track and review white prototypes per SKU</p>
+          <h3 className="font-semibold text-gray-900">{t.samplingSections.whiteProtoTracker}</h3>
+          <p className="text-sm text-gray-500">{t.samplingSections.protoSubtitle}</p>
         </div>
         <div className="flex gap-2 text-xs">
           <span className="px-2 py-1 rounded-full bg-green-50 text-green-600">
-            {reviews.filter((r) => r.review_type === 'white_proto' && r.status === 'approved').length} approved
+            {reviews.filter((r) => r.review_type === 'white_proto' && r.status === 'approved').length} {t.samplingSections.statusApproved.toLowerCase()}
           </span>
           <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-600">
-            {reviews.filter((r) => r.review_type === 'white_proto' && r.status === 'issues_found').length} with issues
+            {reviews.filter((r) => r.review_type === 'white_proto' && r.status === 'issues_found').length} {t.samplingSections.withIssues}
           </span>
         </div>
       </div>
 
       {skus.length === 0 && (
         <div className="text-center py-12 text-gray-400 text-sm">
-          No SKUs found. Add products in the Product tab first.
+          {t.designSections.noSkusFound}
         </div>
       )}
 
@@ -162,7 +164,7 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-50 text-purple-600 text-xs font-medium hover:bg-purple-100 transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Start Review
+                  {t.samplingSections.startReview}
                 </button>
               )}
 
@@ -179,20 +181,20 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                 {/* Status & Rating Row */}
                 <div className="flex items-center gap-6">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Status</label>
+                    <label className="text-xs text-gray-500 mb-1 block">{t.productionSections.status}</label>
                     <select
                       value={review.status}
                       onChange={(e) => handleStatusChange(review.id, e.target.value as SampleReview['status'])}
                       className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white"
                     >
-                      <option value="pending">Pending</option>
-                      <option value="issues_found">Issues Found</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
+                      <option value="pending">{t.samplingSections.statusPending}</option>
+                      <option value="issues_found">{t.samplingSections.statusIssuesFound}</option>
+                      <option value="approved">{t.samplingSections.statusApproved}</option>
+                      <option value="rejected">{t.samplingSections.statusRejected}</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Rating</label>
+                    <label className="text-xs text-gray-500 mb-1 block">{t.samplingSections.rating}</label>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button
@@ -217,14 +219,14 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                       className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      Delete
+                      {t.samplingSections.deleteReview}
                     </button>
                   </div>
                 </div>
 
                 {/* Photo Upload Placeholder */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-2 block">Proto Photos</label>
+                  <label className="text-xs text-gray-500 mb-2 block">{t.samplingSections.protoPhotos}</label>
                   <div className="flex gap-3">
                     {(review.photos || []).map((photo, i) => (
                       <div key={i} className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden">
@@ -233,7 +235,7 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                     ))}
                     <button className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-purple-300 hover:text-purple-400 transition-colors">
                       <Camera className="h-5 w-5" />
-                      <span className="text-[10px] mt-1">Add</span>
+                      <span className="text-[10px] mt-1">{t.samplingSections.addPhoto}</span>
                     </button>
                   </div>
                 </div>
@@ -241,21 +243,21 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                 {/* Notes Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { key: 'fit_notes', label: 'Fit Notes', labelEs: 'Notas de calce' },
-                    { key: 'construction_notes', label: 'Construction', labelEs: 'Construcción' },
-                    { key: 'material_notes', label: 'Material', labelEs: 'Material' },
-                    { key: 'rectification_notes', label: 'Rectification', labelEs: 'Rectificación' },
-                  ].map(({ key, label, labelEs }) => (
+                    { key: 'fit_notes', labelKey: 'fitNotesLabel' as const },
+                    { key: 'construction_notes', labelKey: 'constructionLabel' as const },
+                    { key: 'material_notes', labelKey: 'materialLabel' as const },
+                    { key: 'rectification_notes', labelKey: 'rectificationLabel' as const },
+                  ].map(({ key, labelKey }) => (
                     <div key={key}>
                       <label className="text-xs text-gray-500 mb-1 block">
-                        {label} <span className="text-gray-300">/ {labelEs}</span>
+                        {t.samplingSections[labelKey]}
                       </label>
                       <textarea
                         value={(review as unknown as Record<string, unknown>)[key] as string || ''}
                         onChange={(e) => handleNotesChange(review.id, key, e.target.value)}
                         rows={2}
                         className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-purple-300"
-                        placeholder={`${label}...`}
+                        placeholder={`${t.samplingSections[labelKey]}...`}
                       />
                     </div>
                   ))}
@@ -265,14 +267,14 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-xs text-gray-500">
-                      Issues ({unresolvedIssues} unresolved)
+                      {t.productionSections.issues} ({unresolvedIssues} {t.samplingSections.issuesCount})
                     </label>
                     <button
                       onClick={() => setAddingIssue(addingIssue === review.id ? null : review.id)}
                       className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
                     >
                       <Plus className="h-3 w-3" />
-                      Add Issue
+                      {t.samplingSections.addIssue}
                     </button>
                   </div>
 
@@ -282,7 +284,7 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                         <input
                           value={newIssue.area}
                           onChange={(e) => setNewIssue({ ...newIssue, area: e.target.value })}
-                          placeholder="Area (e.g. toe box, heel, stitching)"
+                          placeholder={t.samplingSections.areaPlaceholder}
                           className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white"
                         />
                         <select
@@ -290,16 +292,16 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                           onChange={(e) => setNewIssue({ ...newIssue, severity: e.target.value as ReviewIssue['severity'] })}
                           className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white"
                         >
-                          <option value="low">Low</option>
-                          <option value="medium">Medium</option>
-                          <option value="high">High</option>
-                          <option value="critical">Critical</option>
+                          <option value="low">{t.samplingSections.severityLow}</option>
+                          <option value="medium">{t.samplingSections.severityMedium}</option>
+                          <option value="high">{t.samplingSections.severityHigh}</option>
+                          <option value="critical">{t.samplingSections.severityCritical}</option>
                         </select>
                       </div>
                       <textarea
                         value={newIssue.description}
                         onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
-                        placeholder="Describe the issue..."
+                        placeholder={t.samplingSections.describeIssuePlaceholder}
                         rows={2}
                         className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none bg-white"
                       />
@@ -308,14 +310,14 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                           onClick={() => setAddingIssue(null)}
                           className="text-xs text-gray-500 px-3 py-1.5"
                         >
-                          Cancel
+                          {t.samplingSections.cancel}
                         </button>
                         <button
                           onClick={() => handleAddIssue(review)}
                           disabled={!newIssue.area || !newIssue.description}
                           className="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-50 hover:bg-purple-700 transition-colors"
                         >
-                          Add Issue
+                          {t.samplingSections.addIssue}
                         </button>
                       </div>
                     </div>
@@ -363,7 +365,7 @@ export function ProtoTracker({ skus, reviews, onAddReview, onUpdateReview, onDel
                       </div>
                     ))}
                     {(!review.issues || review.issues.length === 0) && (
-                      <p className="text-xs text-gray-400 text-center py-4">No issues logged yet</p>
+                      <p className="text-xs text-gray-400 text-center py-4">{t.samplingSections.noIssuesYet}</p>
                     )}
                   </div>
                 </div>

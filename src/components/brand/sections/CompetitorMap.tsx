@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Swords, Plus, Trash2 } from 'lucide-react';
 import type { BrandProfile, Competitor } from '@/types/brand';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   competitors: Competitor[] | null;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function CompetitorMap({ competitors, onUpdate }: Props) {
+  const t = useTranslation();
   const [list, setList] = useState<Competitor[]>(competitors || []);
 
   const add = () => {
@@ -35,19 +37,19 @@ export function CompetitorMap({ competitors, onUpdate }: Props) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Swords className="h-4 w-4 text-teal-500" />
-          <h2 className="font-semibold text-gray-900">Competitor Mapping</h2>
+          <h2 className="font-semibold text-gray-900">{t.brandPage.competitorTitle}</h2>
         </div>
         <button
           onClick={add}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 text-teal-600 text-xs font-medium hover:bg-teal-100 transition-colors"
         >
-          <Plus className="h-3.5 w-3.5" /> Add
+          <Plus className="h-3.5 w-3.5" /> {t.common.add}
         </button>
       </div>
 
       {list.length === 0 && (
         <p className="text-sm text-gray-400 text-center py-4">
-          No competitors mapped yet. Click &quot;Add&quot; to start.
+          {t.brandPage.noCompetitors}
         </p>
       )}
 
@@ -58,21 +60,21 @@ export function CompetitorMap({ competitors, onUpdate }: Props) {
               type="text"
               value={c.name}
               onChange={(e) => updateItem(i, { name: e.target.value })}
-              placeholder="Brand name"
+              placeholder={t.brandPage.competitorName}
               className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
             />
             <input
               type="text"
               value={c.positioning}
               onChange={(e) => updateItem(i, { positioning: e.target.value })}
-              placeholder="Positioning"
+              placeholder={t.brandPage.positioning}
               className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
             />
             <input
               type="text"
               value={c.priceRange}
               onChange={(e) => updateItem(i, { priceRange: e.target.value })}
-              placeholder="Price range"
+              placeholder={t.brandPage.priceRange}
               className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
             />
             <button

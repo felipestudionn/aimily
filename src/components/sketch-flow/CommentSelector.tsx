@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ProposedNote } from '@/types/tech-pack';
 import { Plus, X } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface CommentSelectorProps {
   proposedNotes: ProposedNote[];
@@ -10,6 +11,7 @@ interface CommentSelectorProps {
 }
 
 export default function CommentSelector({ proposedNotes, onNotesChange }: CommentSelectorProps) {
+  const t = useTranslation();
   const [customText, setCustomText] = useState('');
 
   const toggleNote = (index: number) => {
@@ -41,8 +43,7 @@ export default function CommentSelector({ proposedNotes, onNotesChange }: Commen
   return (
     <div>
       <p className="text-sm text-gray-500 mb-4">
-        Selecciona las notas de construcción que quieres incluir en la ficha técnica.
-        También puedes añadir las tuyas propias.
+        {t.sketchFlowPage.commentSelectorDesc}
       </p>
 
       {/* Proposed notes as checkboxes */}
@@ -99,7 +100,7 @@ export default function CommentSelector({ proposedNotes, onNotesChange }: Commen
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addCustomNote()}
-          placeholder="Añadir nota personalizada..."
+          placeholder={t.sketchFlowPage.addCustomNotePlaceholder}
           className="flex-1 h-10 px-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400 placeholder:text-gray-400"
         />
         <button
@@ -113,7 +114,7 @@ export default function CommentSelector({ proposedNotes, onNotesChange }: Commen
 
       {/* Selection count */}
       <p className="text-xs text-gray-400 mt-3">
-        {selectedCount} nota{selectedCount !== 1 ? 's' : ''} seleccionada{selectedCount !== 1 ? 's' : ''}
+        {selectedCount} {t.sketchFlowPage.notesSelected}
       </p>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import type { ProductionOrder, QcIssue, OrderStatus } from '@/types/production';
 import { QC_SEVERITY, ORDER_STATUSES } from '@/types/production';
 
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function QcTracker({ orders, onUpdate }: Props) {
+  const t = useTranslation();
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [addingIssue, setAddingIssue] = useState<string | null>(null);
 
@@ -95,17 +97,17 @@ export function QcTracker({ orders, onUpdate }: Props) {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-gray-900">{qcOrders.length}</div>
-          <div className="text-xs text-gray-500">Orders in QC Pipeline</div>
+          <div className="text-xs text-gray-500">{t.productionSections.ordersInQcPipeline}</div>
         </div>
         <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-amber-600">{unresolvedIssues}</div>
-          <div className="text-xs text-gray-500">Open Issues / Problemas</div>
+          <div className="text-xs text-gray-500">{t.productionSections.openIssues}</div>
         </div>
         <div className="bg-white border border-gray-100 p-4 text-center">
           <div className="text-2xl font-bold text-green-600">
             {totalIssues - unresolvedIssues}
           </div>
-          <div className="text-xs text-gray-500">Resolved / Resueltos</div>
+          <div className="text-xs text-gray-500">{t.productionSections.resolved}</div>
         </div>
       </div>
 
@@ -113,8 +115,8 @@ export function QcTracker({ orders, onUpdate }: Props) {
       {qcOrders.length === 0 ? (
         <div className="bg-white border border-gray-100 p-8 text-center">
           <ClipboardCheck className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-          <p className="text-sm text-gray-400">No orders in QC pipeline yet</p>
-          <p className="text-xs text-gray-300 mt-1">Orders in production or beyond will appear here</p>
+          <p className="text-sm text-gray-400">{t.productionSections.noOrdersInQc}</p>
+          <p className="text-xs text-gray-300 mt-1">{t.productionSections.ordersInQcHint}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -156,7 +158,7 @@ export function QcTracker({ orders, onUpdate }: Props) {
                           {getStatusLabel(order.status)}
                         </span>
                         <span className="text-xs text-gray-400">
-                          {issues.length} issues ({openCount} open)
+                          {issues.length} {t.productionSections.issues} ({openCount} {t.productionSections.open})
                         </span>
                       </div>
                     </div>
@@ -226,7 +228,7 @@ export function QcTracker({ orders, onUpdate }: Props) {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-400 text-center py-2">No QC issues reported</p>
+                      <p className="text-xs text-gray-400 text-center py-2">{t.productionSections.noQcIssuesReported}</p>
                     )}
 
                     {/* Add Issue Form */}
@@ -237,7 +239,7 @@ export function QcTracker({ orders, onUpdate }: Props) {
                             type="text"
                             value={issueSku}
                             onChange={(e) => setIssueSku(e.target.value)}
-                            placeholder="SKU name (optional)"
+                            placeholder={t.productionSections.skuNameOptional}
                             className="px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
                           />
                           <select
@@ -254,19 +256,19 @@ export function QcTracker({ orders, onUpdate }: Props) {
                           type="text"
                           value={issueDesc}
                           onChange={(e) => setIssueDesc(e.target.value)}
-                          placeholder="Describe the issue..."
+                          placeholder={t.productionSections.describeIssue}
                           className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
                         />
                         <div className="flex justify-end gap-2">
                           <button onClick={() => setAddingIssue(null)} className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-200 rounded">
-                            Cancel
+                            {t.productionSections.cancel}
                           </button>
                           <button
                             onClick={() => handleAddIssue(order.id)}
                             disabled={!issueDesc}
                             className="px-3 py-1 text-xs bg-blue-500 text-white rounded font-medium hover:bg-blue-600 disabled:opacity-50"
                           >
-                            Add Issue
+                            {t.productionSections.addIssue}
                           </button>
                         </div>
                       </div>
@@ -275,7 +277,7 @@ export function QcTracker({ orders, onUpdate }: Props) {
                         onClick={() => setAddingIssue(order.id)}
                         className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"
                       >
-                        <Plus className="h-3 w-3" /> Report Issue / Reportar Problema
+                        <Plus className="h-3 w-3" /> {t.productionSections.reportIssue}
                       </button>
                     )}
                   </div>

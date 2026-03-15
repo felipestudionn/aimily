@@ -13,6 +13,7 @@ import {
   Trash2,
   Ruler,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
 import type { SampleReview, MeasurementRow } from '@/types/prototyping';
 
@@ -46,6 +47,7 @@ export function FittingReview({
   onUpdateReview,
   onDeleteReview,
 }: FittingReviewProps) {
+  const t = useTranslation();
   const [expandedSku, setExpandedSku] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<Record<string, MeasurementRow[]>>({});
 
@@ -94,21 +96,21 @@ export function FittingReview({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-gray-900">Fitting Sample Review</h3>
+          <h3 className="font-semibold text-gray-900">{t.samplingSections.fittingSampleReview}</h3>
           <p className="text-sm text-gray-500">
-            Fit testing, measurements & construction feedback
+            {t.samplingSections.fittingSubtitle}
           </p>
         </div>
         <div className="flex gap-2 text-xs">
           <span className="px-2 py-1 rounded-full bg-green-50 text-green-600">
-            {approvedCount}/{totalReviews} approved
+            {approvedCount}/{totalReviews} {t.samplingSections.statusApproved.toLowerCase()}
           </span>
         </div>
       </div>
 
       {skus.length === 0 && (
         <div className="text-center py-12 text-gray-400 text-sm">
-          No SKUs found. Add products in the Product tab first.
+          {t.designSections.noSkusFound}
         </div>
       )}
 
@@ -128,7 +130,7 @@ export function FittingReview({
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-gray-900 truncate">{sku.name}</p>
                 <p className="text-xs text-gray-400">
-                  {skuReviews.length} fitting review{skuReviews.length !== 1 ? 's' : ''}
+                  {skuReviews.length} {skuReviews.length !== 1 ? t.samplingSections.fittingReviews : t.samplingSections.fittingReview}
                 </p>
               </div>
               {isExpanded ? (
@@ -179,10 +181,10 @@ export function FittingReview({
                             }
                             className="text-xs border border-gray-200 rounded px-2 py-1 bg-white"
                           >
-                            <option value="pending">Pending</option>
-                            <option value="issues_found">Issues Found</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
+                            <option value="pending">{t.samplingSections.statusPending}</option>
+                            <option value="issues_found">{t.samplingSections.statusIssuesFound}</option>
+                            <option value="approved">{t.samplingSections.statusApproved}</option>
+                            <option value="rejected">{t.samplingSections.statusRejected}</option>
                           </select>
                           <button
                             onClick={() => onDeleteReview(review.id)}
@@ -196,17 +198,17 @@ export function FittingReview({
                       {/* Measurement Table */}
                       <div>
                         <label className="text-[10px] text-gray-400 mb-2 block font-medium uppercase tracking-wide">
-                          Measurement Validation
+                          {t.samplingSections.measurementValidation}
                         </label>
                         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                           <table className="w-full text-xs">
                             <thead>
                               <tr className="bg-gray-50 text-gray-500">
-                                <th className="text-left px-3 py-2 font-medium">Point</th>
-                                <th className="text-left px-3 py-2 font-medium">Spec</th>
-                                <th className="text-left px-3 py-2 font-medium">Actual</th>
-                                <th className="text-left px-3 py-2 font-medium">Tolerance</th>
-                                <th className="text-center px-3 py-2 font-medium">Pass</th>
+                                <th className="text-left px-3 py-2 font-medium">{t.samplingSections.point}</th>
+                                <th className="text-left px-3 py-2 font-medium">{t.samplingSections.spec}</th>
+                                <th className="text-left px-3 py-2 font-medium">{t.samplingSections.actual}</th>
+                                <th className="text-left px-3 py-2 font-medium">{t.samplingSections.tolerance}</th>
+                                <th className="text-center px-3 py-2 font-medium">{t.samplingSections.pass}</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -265,7 +267,7 @@ export function FittingReview({
                       {/* Notes */}
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-[10px] text-gray-400 mb-1 block">Fit Notes</label>
+                          <label className="text-[10px] text-gray-400 mb-1 block">{t.samplingSections.fitNotes}</label>
                           <textarea
                             value={review.fit_notes || ''}
                             onChange={(e) =>
@@ -273,11 +275,11 @@ export function FittingReview({
                             }
                             rows={2}
                             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 resize-none bg-white focus:outline-none focus:ring-1 focus:ring-pink-300"
-                            placeholder="Fit comfort, sizing accuracy..."
+                            placeholder={t.samplingSections.fitNotesPlaceholder}
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-gray-400 mb-1 block">Construction Notes</label>
+                          <label className="text-[10px] text-gray-400 mb-1 block">{t.samplingSections.constructionNotes}</label>
                           <textarea
                             value={review.construction_notes || ''}
                             onChange={(e) =>
@@ -287,7 +289,7 @@ export function FittingReview({
                             }
                             rows={2}
                             className="w-full text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 resize-none bg-white focus:outline-none focus:ring-1 focus:ring-pink-300"
-                            placeholder="Stitching, sole attachment..."
+                            placeholder={t.samplingSections.constructionNotesPlaceholder}
                           />
                         </div>
                       </div>
@@ -300,7 +302,7 @@ export function FittingReview({
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-dashed border-gray-200 text-gray-400 text-xs font-medium hover:border-pink-300 hover:text-pink-500 transition-colors"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Fitting Review
+                  {t.samplingSections.addFittingReview}
                 </button>
               </div>
             )}

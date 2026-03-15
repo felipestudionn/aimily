@@ -11,6 +11,7 @@ import {
   Clock,
   Eye,
 } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
 
 interface DesignFile {
@@ -26,10 +27,10 @@ interface Props {
 }
 
 const STATUS_CONFIG = {
-  draft: { label: 'Draft', color: 'bg-gray-100 text-gray-600', icon: Clock },
-  review: { label: 'In Review', color: 'bg-amber-50 text-amber-600', icon: Eye },
-  approved: { label: 'Approved', color: 'bg-green-50 text-green-600', icon: Check },
-  rejected: { label: 'Rejected', color: 'bg-red-50 text-red-600', icon: X },
+  draft: { labelKey: 'statusDraft' as const, color: 'bg-gray-100 text-gray-600', icon: Clock },
+  review: { labelKey: 'statusInReview' as const, color: 'bg-amber-50 text-amber-600', icon: Eye },
+  approved: { labelKey: 'statusApproved' as const, color: 'bg-green-50 text-green-600', icon: Check },
+  rejected: { labelKey: 'statusRejected' as const, color: 'bg-red-50 text-red-600', icon: X },
 };
 
 function SkuDesignCard({
@@ -41,6 +42,7 @@ function SkuDesignCard({
   files: DesignFile[];
   onChange: (files: DesignFile[]) => void;
 }) {
+  const t = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
@@ -83,12 +85,12 @@ function SkuDesignCard({
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-900">{sku.name}</p>
           <p className="text-xs text-gray-400">
-            {files.length} iteration{files.length !== 1 ? 's' : ''}
+            {files.length} {files.length !== 1 ? t.designSections.iterations : t.designSections.iteration}
           </p>
         </div>
         {files.length > 0 && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-600">
-            {approvedCount}/{files.length} approved
+            {approvedCount}/{files.length} {t.designSections.approved}
           </span>
         )}
       </button>
@@ -163,10 +165,10 @@ function SkuDesignCard({
                     onClick={(e) => e.stopPropagation()}
                     className={`text-xs px-2 py-1 rounded-full border-none ${cfg.color} cursor-pointer focus:outline-none`}
                   >
-                    <option value="draft">Draft</option>
-                    <option value="review">In Review</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
+                    <option value="draft">{t.designSections.statusDraft}</option>
+                    <option value="review">{t.designSections.statusInReview}</option>
+                    <option value="approved">{t.designSections.statusApproved}</option>
+                    <option value="rejected">{t.designSections.statusRejected}</option>
                   </select>
                   <button
                     onClick={(e) => {
@@ -186,13 +188,13 @@ function SkuDesignCard({
           {selectedIdx !== null && files[selectedIdx] && (
             <div className="pt-3">
               <label className="text-xs font-medium text-gray-500 mb-1 block">
-                Image URL for &quot;{files[selectedIdx].name}&quot;
+                {t.designSections.imageUrlFor} &quot;{files[selectedIdx].name}&quot;
               </label>
               <input
                 type="url"
                 value={files[selectedIdx].url}
                 onChange={(e) => updateFile(selectedIdx, { url: e.target.value })}
-                placeholder="Paste image URL..."
+                placeholder={t.designSections.pasteImageUrl}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400"
               />
             </div>
@@ -202,7 +204,7 @@ function SkuDesignCard({
             onClick={addFile}
             className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 text-gray-500 text-xs hover:bg-gray-100 transition-colors"
           >
-            <Upload className="h-3 w-3" /> Add Iteration
+            <Upload className="h-3 w-3" /> {t.designSections.addIteration}
           </button>
         </div>
       )}
@@ -211,6 +213,7 @@ function SkuDesignCard({
 }
 
 export function DesignReviewHub({ skus, designFiles, onUpdate }: Props) {
+  const t = useTranslation();
   const getFiles = (skuId: string): DesignFile[] => designFiles[skuId] || [];
 
   const handleChange = (skuId: string, files: DesignFile[]) => {
@@ -227,10 +230,10 @@ export function DesignReviewHub({ skus, designFiles, onUpdate }: Props) {
       <div className="bg-white border border-gray-100 p-6">
         <div className="flex items-center gap-2 mb-4">
           <ImageIcon className="h-4 w-4 text-texto/60" />
-          <h2 className="font-semibold text-gray-900">Design Review Hub</h2>
+          <h2 className="font-semibold text-gray-900">{t.designSections.designReviewHub}</h2>
         </div>
         <p className="text-sm text-gray-400 text-center py-6">
-          No SKUs found. Add products in the Product tab first.
+          {t.designSections.noSkusFound}
         </p>
       </div>
     );
@@ -241,11 +244,11 @@ export function DesignReviewHub({ skus, designFiles, onUpdate }: Props) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-4 w-4 text-texto/60" />
-          <h2 className="font-semibold text-gray-900">Design Review Hub</h2>
+          <h2 className="font-semibold text-gray-900">{t.designSections.designReviewHub}</h2>
         </div>
         {totalFiles > 0 && (
           <span className="text-xs text-gray-400">
-            {approvedFiles}/{totalFiles} approved
+            {approvedFiles}/{totalFiles} {t.designSections.approved}
           </span>
         )}
       </div>

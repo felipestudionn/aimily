@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/i18n';
+
 interface MetadataHeaderProps {
   brandName: string;
   designerName: string;
@@ -21,6 +23,7 @@ export default function MetadataHeader({
   dateCreated,
   onFieldChange,
 }: MetadataHeaderProps) {
+  const t = useTranslation();
   return (
     <div className="border-b border-gray-300 pb-3 mb-3">
       {/* Brand row */}
@@ -28,13 +31,13 @@ export default function MetadataHeader({
         <input
           value={brandName}
           onChange={(e) => onFieldChange('brandName', e.target.value)}
-          placeholder="NOMBRE DE MARCA"
+          placeholder={t.sketchFlowPage.brandNamePlaceholder}
           className="text-sm font-bold tracking-wider uppercase bg-transparent border-none outline-none placeholder:text-gray-300 w-1/2"
         />
         <input
           value={designerName}
           onChange={(e) => onFieldChange('designerName', e.target.value)}
-          placeholder="Nombre del diseñador/a"
+          placeholder={t.sketchFlowPage.designerNamePlaceholder}
           className="text-[10px] text-gray-500 text-right bg-transparent border-none outline-none placeholder:text-gray-300 w-1/2"
           style={{ fontStyle: 'italic' }}
         />
@@ -45,7 +48,7 @@ export default function MetadataHeader({
         <tbody>
           <tr>
             <td className="border border-gray-300 px-2 py-1">
-              <span className="text-gray-400 mr-1">Fecha:</span>
+              <span className="text-gray-400 mr-1">{t.sketchFlowPage.dateLabel}</span>
               <input
                 value={dateCreated}
                 onChange={(e) => onFieldChange('dateCreated', e.target.value)}
@@ -53,11 +56,11 @@ export default function MetadataHeader({
               />
             </td>
             <td className="border border-gray-300 px-2 py-1">
-              <span className="text-gray-400 mr-1">Temporada:</span>
+              <span className="text-gray-400 mr-1">{t.sketchFlowPage.seasonLabel}</span>
               <span className="text-gray-700 font-medium">{season}</span>
             </td>
             <td className="border border-gray-300 px-2 py-1">
-              <span className="text-gray-400 mr-1">Estilo:</span>
+              <span className="text-gray-400 mr-1">{t.sketchFlowPage.styleLabel}</span>
               <input
                 value={styleName}
                 onChange={(e) => onFieldChange('styleName', e.target.value)}
@@ -67,7 +70,7 @@ export default function MetadataHeader({
           </tr>
           <tr>
             <td className="border border-gray-300 px-2 py-1">
-              <span className="text-gray-400 mr-1">Diseñador/a:</span>
+              <span className="text-gray-400 mr-1">{t.sketchFlowPage.designerLabel}</span>
               <input
                 value={designerName}
                 onChange={(e) => onFieldChange('designerName', e.target.value)}
@@ -75,7 +78,7 @@ export default function MetadataHeader({
               />
             </td>
             <td className="border border-gray-300 px-2 py-1">
-              <span className="text-gray-400 mr-1">Ext:</span>
+              <span className="text-gray-400 mr-1">{t.sketchFlowPage.extLabel}</span>
               <input
                 value={extension}
                 onChange={(e) => onFieldChange('extension', e.target.value)}
@@ -83,7 +86,7 @@ export default function MetadataHeader({
               />
             </td>
             <td className="border border-gray-300 px-2 py-1">
-              <span className="text-gray-400 mr-1">Patronista:</span>
+              <span className="text-gray-400 mr-1">{t.sketchFlowPage.patternCutterLabel}</span>
               <input
                 value={patternCutter}
                 onChange={(e) => onFieldChange('patternCutter', e.target.value)}

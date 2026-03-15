@@ -484,7 +484,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Input
                       value={assistedDirection}
                       onChange={e => setAssistedDirection(e.target.value)}
-                      placeholder="e.g. Focus on Instagram reels for Gen Z, heavy teasing phase"
+                      placeholder={t.marketingPage.calendarDirectionPlaceholder}
                       className="h-9"
                     />
                   </div>
@@ -499,7 +499,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </div>
                 </div>
                 {drops.length === 0 && (
-                  <p className="text-xs text-amber-600">You need at least one drop in Go-to-Market to use assisted mode.</p>
+                  <p className="text-xs text-amber-600">{t.marketingPage.needDropsForAssisted}</p>
                 )}
               </div>
             )}
@@ -522,7 +522,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </div>
                   <div>
                     <Label className="text-xs">{t.marketingPage.platforms}</Label>
-                    <Input value={propuestaPlatforms} onChange={e => setPropuestaPlatforms(e.target.value)} placeholder="instagram,tiktok,email" className="h-9" />
+                    <Input value={propuestaPlatforms} onChange={e => setPropuestaPlatforms(e.target.value)} placeholder={t.marketingPage.channelsPlaceholderLaunch} className="h-9" />
                   </div>
                   <div className="flex items-end">
                     <Button
@@ -685,7 +685,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </div>
                   <div>
                     <Label className="text-xs">{t.marketingPage.story}</Label>
-                    <Input value={newEntry.campaign} onChange={e => setNewEntry(p => ({ ...p, campaign: e.target.value }))} placeholder="e.g. drop-1-teasing" className="h-9" />
+                    <Input value={newEntry.campaign} onChange={e => setNewEntry(p => ({ ...p, campaign: e.target.value }))} placeholder={t.marketingPage.campaignPlaceholder} className="h-9" />
                   </div>
                   <div>
                     <Label className="text-xs">{t.marketingPage.status}</Label>
@@ -702,7 +702,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <textarea
                     value={newEntry.caption}
                     onChange={e => setNewEntry(p => ({ ...p, caption: e.target.value }))}
-                    placeholder="Write caption..."
+                    placeholder={t.marketingPage.writeCaptionPlaceholder}
                     className="w-full h-20 border border-carbon/[0.08] p-3 text-sm font-light resize-none focus:outline-none focus:border-carbon/20"
                   />
                 </div>
@@ -979,16 +979,16 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </div>
                   <div>
                     <Label className="text-xs">{t.marketingPage.platform}</Label>
-                    <Input value={newContact.platform} onChange={e => setNewContact(p => ({ ...p, platform: e.target.value }))} placeholder="Instagram" className="h-9" />
+                    <Input value={newContact.platform} onChange={e => setNewContact(p => ({ ...p, platform: e.target.value }))} placeholder={t.marketingPage.instagramPlaceholder} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Handle</Label>
-                    <Input value={newContact.handle} onChange={e => setNewContact(p => ({ ...p, handle: e.target.value }))} placeholder="@handle" className="h-9" />
+                    <Label className="text-xs">{t.marketingPage.handleLabel}</Label>
+                    <Input value={newContact.handle} onChange={e => setNewContact(p => ({ ...p, handle: e.target.value }))} placeholder={t.marketingPage.handlePlaceholder} className="h-9" />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-4">
                   <div>
-                    <Label className="text-xs">Followers</Label>
+                    <Label className="text-xs">{t.marketingPage.followersLabel}</Label>
                     <Input type="number" value={newContact.followers || ''} onChange={e => setNewContact(p => ({ ...p, followers: Number(e.target.value) }))} className="h-9" />
                   </div>
                   <div>

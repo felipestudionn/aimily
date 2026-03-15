@@ -416,7 +416,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               <textarea
                 value={userDirection}
                 onChange={e => setUserDirection(e.target.value)}
-                placeholder="E.g. We want a sophisticated but approachable tone. Focus on sustainability, craftsmanship, and modern elegance..."
+                placeholder={t.marketingPage.strategyDirectionPlaceholder}
                 className="w-full h-24 bg-white border border-carbon/[0.06] px-4 py-3 text-sm font-light text-carbon placeholder:text-carbon/25 focus:outline-none focus:border-carbon/20 resize-none"
               />
               <button
@@ -453,7 +453,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                             value={editPillarForm.name ?? ''}
                             onChange={e => setEditPillarForm({ ...editPillarForm, name: e.target.value })}
                             className="text-base font-light text-carbon tracking-tight bg-transparent border-b border-carbon/10 focus:border-carbon/30 outline-none w-full mr-4"
-                            placeholder="Pillar name"
+                            placeholder={t.marketingPage.pillarNamePlaceholder}
                           />
                           <div className="flex gap-2 flex-shrink-0">
                             <button onClick={() => { updatePillar(pillar.id, editPillarForm); setEditingPillarId(null); }} className="p-1.5 text-carbon/60 hover:text-carbon"><Check className="h-4 w-4" /></button>
@@ -464,13 +464,13 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                           value={editPillarForm.description ?? ''}
                           onChange={e => setEditPillarForm({ ...editPillarForm, description: e.target.value })}
                           className="w-full h-16 text-sm font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none"
-                          placeholder="Description..."
+                          placeholder={t.marketingPage.descriptionPlaceholder}
                         />
                         <input
                           value={(editPillarForm.examples ?? []).join(', ')}
                           onChange={e => setEditPillarForm({ ...editPillarForm, examples: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                           className="w-full text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
-                          placeholder="Examples (comma separated)"
+                          placeholder={t.marketingPage.examplesPlaceholder}
                         />
                       </div>
                     ) : (
@@ -518,13 +518,13 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               {editingVoice ? (
                 <div className="bg-white border border-carbon/[0.06] p-5 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <input value={voiceForm.personality ?? ''} onChange={e => setVoiceForm({ ...voiceForm, personality: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Personality (e.g. Bold, refined, playful)" />
-                    <input value={voiceForm.tone ?? ''} onChange={e => setVoiceForm({ ...voiceForm, tone: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Tone" />
+                    <input value={voiceForm.personality ?? ''} onChange={e => setVoiceForm({ ...voiceForm, personality: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.personalityPlaceholder} />
+                    <input value={voiceForm.tone ?? ''} onChange={e => setVoiceForm({ ...voiceForm, tone: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.tonePlaceholderField} />
                   </div>
-                  <input value={(voiceForm.do_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, do_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Do rules (comma separated)" />
-                  <input value={(voiceForm.dont_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, dont_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Don't rules (comma separated)" />
-                  <input value={(voiceForm.vocabulary ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Vocabulary / key phrases (comma separated)" />
-                  <textarea value={voiceForm.example_caption ?? ''} onChange={e => setVoiceForm({ ...voiceForm, example_caption: e.target.value })} className="w-full h-16 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder="Example caption..." />
+                  <input value={(voiceForm.do_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, do_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.doRulesPlaceholder} />
+                  <input value={(voiceForm.dont_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, dont_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.dontRulesPlaceholder} />
+                  <input value={(voiceForm.vocabulary ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.vocabularyPlaceholder} />
+                  <textarea value={voiceForm.example_caption ?? ''} onChange={e => setVoiceForm({ ...voiceForm, example_caption: e.target.value })} className="w-full h-16 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder={t.marketingPage.exampleCaptionPlaceholder} />
                   <div className="flex gap-2">
                     <button onClick={() => { saveVoiceConfig(voiceForm); setEditingVoice(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90"><Check className="h-3.5 w-3.5" /> Save</button>
                     <button onClick={() => setEditingVoice(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon/80">Cancel</button>
@@ -814,6 +814,7 @@ function SocialTemplateRow({ template, stories, onDelete }: { template: SocialTe
 }
 
 function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template: EmailTemplateContent; stories: Story[]; onDelete: () => void; onUpdate: (id: string, updates: Partial<EmailTemplateContent>) => Promise<EmailTemplateContent | null> }) {
+  const t = useTranslation();
   const story = stories.find(s => s.id === template.story_id);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState(template);
@@ -834,13 +835,13 @@ function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template:
 
       {editing ? (
         <div className="space-y-2">
-          <input value={form.subject_line ?? ''} onChange={e => setForm({ ...form, subject_line: e.target.value })} className="w-full text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Subject line" />
-          <input value={form.preview_text ?? ''} onChange={e => setForm({ ...form, preview_text: e.target.value })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Preview text" />
-          <input value={form.heading ?? ''} onChange={e => setForm({ ...form, heading: e.target.value })} className="w-full text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="Heading" />
-          <textarea value={form.body ?? ''} onChange={e => setForm({ ...form, body: e.target.value })} className="w-full h-24 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder="Body" />
+          <input value={form.subject_line ?? ''} onChange={e => setForm({ ...form, subject_line: e.target.value })} className="w-full text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.subjectLinePlaceholder} />
+          <input value={form.preview_text ?? ''} onChange={e => setForm({ ...form, preview_text: e.target.value })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.previewTextPlaceholder} />
+          <input value={form.heading ?? ''} onChange={e => setForm({ ...form, heading: e.target.value })} className="w-full text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.headingPlaceholder} />
+          <textarea value={form.body ?? ''} onChange={e => setForm({ ...form, body: e.target.value })} className="w-full h-24 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder={t.marketingPage.bodyPlaceholder} />
           <div className="grid grid-cols-2 gap-2">
-            <input value={form.cta_text ?? ''} onChange={e => setForm({ ...form, cta_text: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="CTA text" />
-            <input value={form.cta_url ?? ''} onChange={e => setForm({ ...form, cta_url: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder="CTA URL" />
+            <input value={form.cta_text ?? ''} onChange={e => setForm({ ...form, cta_text: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.ctaTextPlaceholder} />
+            <input value={form.cta_url ?? ''} onChange={e => setForm({ ...form, cta_url: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.ctaUrlPlaceholder} />
           </div>
           <div className="flex gap-2">
             <button onClick={() => { onUpdate(template.id, form); setEditing(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema"><Check className="h-3.5 w-3.5" /> Save</button>

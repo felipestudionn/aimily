@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Bell, X, AlertTriangle, Clock, Rocket, CheckCheck } from 'lucide-react';
 import { useNotifications, type AppNotification } from '@/hooks/useNotifications';
+import { useTranslation } from '@/i18n';
 
 const TYPE_CONFIG: Record<AppNotification['type'], { icon: React.ElementType; color: string; bgColor: string }> = {
   overdue: { icon: AlertTriangle, color: '#EF4444', bgColor: '#FEE2E2' },
@@ -13,6 +14,7 @@ const TYPE_CONFIG: Record<AppNotification['type'], { icon: React.ElementType; co
 };
 
 export function NotificationBell() {
+  const t = useTranslation();
   const { notifications, unreadCount, dismiss, dismissAll, loading } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -34,7 +36,7 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen(!open)}
         className="relative inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/50 hover:bg-white/80 transition-colors"
-        title="Notifications"
+        title={t.misc.notifications}
       >
         <Bell className="h-4 w-4 text-gray-700" />
         {unreadCount > 0 && (
@@ -50,7 +52,7 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
+              <h3 className="font-semibold text-gray-900 text-sm">{t.misc.notifications}</h3>
               {unreadCount > 0 && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">
                   {unreadCount}
@@ -63,7 +65,7 @@ export function NotificationBell() {
                 className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
               >
                 <CheckCheck className="h-3 w-3" />
-                Clear all
+                {t.misc.clearAll}
               </button>
             )}
           </div>
@@ -71,12 +73,12 @@ export function NotificationBell() {
           {/* Notification List */}
           <div className="overflow-y-auto max-h-[22rem]">
             {loading && notifications.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-400">Loading...</div>
+              <div className="py-8 text-center text-sm text-gray-400">{t.misc.loadingEllipsis}</div>
             ) : notifications.length === 0 ? (
               <div className="py-8 text-center">
                 <Bell className="h-8 w-8 mx-auto text-gray-200 mb-2" />
-                <p className="text-sm text-gray-400">All caught up!</p>
-                <p className="text-xs text-gray-300 mt-0.5">Al dia con todo</p>
+                <p className="text-sm text-gray-400">{t.misc.allCaughtUp}</p>
+                <p className="text-xs text-gray-300 mt-0.5">{t.misc.allCaughtUpDesc}</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-50">

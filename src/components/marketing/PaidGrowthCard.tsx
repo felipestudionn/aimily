@@ -393,7 +393,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               </div>
               <div>
                 <Label className="text-xs">{t.marketingPage.directionOptional}</Label>
-                <Input value={assistedDirection} onChange={e => setAssistedDirection(e.target.value)} placeholder="e.g. Focus on Meta retargeting" className="h-9" />
+                <Input value={assistedDirection} onChange={e => setAssistedDirection(e.target.value)} placeholder={t.marketingPage.directionPlaceholderPaid} className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -422,7 +422,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               </div>
               <div>
                 <Label className="text-xs">{t.marketingPage.platforms}</Label>
-                <Input value={propuestaPlatforms} onChange={e => setPropuestaPlatforms(e.target.value)} placeholder="Meta, Google, TikTok" className="h-9" />
+                <Input value={propuestaPlatforms} onChange={e => setPropuestaPlatforms(e.target.value)} placeholder={t.marketingPage.platformsPlaceholderPaid} className="h-9" />
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -748,13 +748,13 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                                   value={adSet.name}
                                   onChange={e => handleUpdateAdSet(campaign.id, adSet.id, { name: e.target.value })}
                                   className="h-7 text-xs flex-1"
-                                  placeholder="Name"
+                                  placeholder={t.marketingPage.adSetNamePlaceholder}
                                 />
                                 <Input
                                   value={adSet.audience}
                                   onChange={e => handleUpdateAdSet(campaign.id, adSet.id, { audience: e.target.value })}
                                   className="h-7 text-xs flex-[2]"
-                                  placeholder="Audience"
+                                  placeholder={t.marketingPage.audiencePlaceholder}
                                 />
                                 <Input
                                   type="number"

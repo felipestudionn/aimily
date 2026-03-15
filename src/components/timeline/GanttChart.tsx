@@ -845,7 +845,7 @@ export function GanttChart({
                     }
                   }}
                   className="flex items-center gap-1 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Eliminar hito"
+                  title={t('Delete milestone', 'Eliminar hito')}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   {t('Delete', 'Eliminar')}
