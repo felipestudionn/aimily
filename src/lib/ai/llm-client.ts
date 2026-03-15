@@ -24,7 +24,7 @@ export interface LLMRequest {
   temperature?: number;       // 0-1, default 0.7
   maxTokens?: number;         // default 4096
   jsonMode?: boolean;         // hint to prefer JSON output
-  language?: 'en' | 'es';    // output language (default: 'en')
+  language?: 'en' | 'es' | 'fr' | 'it' | 'de';  // output language (default: 'en')
 }
 
 export interface LLMResponse {
@@ -37,11 +37,14 @@ export interface LLMResponse {
 
 export async function generateWithAI(req: LLMRequest): Promise<LLMResponse> {
   // Inject language instruction into system prompt
-  if (req.language === 'es') {
-    req = {
-      ...req,
-      system: req.system + '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in Spanish (Castilian). ALL text content, descriptions, labels, names, recommendations, and explanations must be written in Spanish. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
-    };
+  const LANG_INSTRUCTIONS: Record<string, string> = {
+    es: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in Spanish (Castilian). ALL text content, descriptions, labels, names, recommendations, and explanations must be written in Spanish. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
+    fr: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in French. ALL text content, descriptions, labels, names, recommendations, and explanations must be written in French. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
+    it: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in Italian. ALL text content, descriptions, labels, names, recommendations, and explanations must be written in Italian. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
+    de: '\n\nIMPORTANT LANGUAGE INSTRUCTION: You MUST respond entirely in German. ALL text content, descriptions, labels, names, recommendations, and explanations must be written in German. Do NOT mix English into your response. Technical fashion terms that are universally used in English (e.g., "mood board", "drop", "SKU") may remain in English only if they are standard industry terminology.',
+  };
+  if (req.language && req.language !== 'en' && LANG_INSTRUCTIONS[req.language]) {
+    req = { ...req, system: req.system + LANG_INSTRUCTIONS[req.language] };
   }
 
   // Try Haiku first

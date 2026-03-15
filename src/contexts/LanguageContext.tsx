@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Language = 'en' | 'es';
+export type Language = 'en' | 'es' | 'fr' | 'it' | 'de';
 
 interface LanguageContextType {
   language: Language;
@@ -20,11 +20,14 @@ function detectDefaultLanguage(): Language {
 
   // 1. Check localStorage
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'en' || stored === 'es') return stored;
+  if (stored === 'en' || stored === 'es' || stored === 'fr' || stored === 'it' || stored === 'de') return stored;
 
   // 2. Check browser language
   const browserLang = navigator.language.toLowerCase();
   if (browserLang.startsWith('es')) return 'es';
+  if (browserLang.startsWith('fr')) return 'fr';
+  if (browserLang.startsWith('it')) return 'it';
+  if (browserLang.startsWith('de')) return 'de';
 
   return 'en';
 }
@@ -40,7 +43,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     // Check user profile first
     const userLang = user?.user_metadata?.language;
-    if (userLang === 'en' || userLang === 'es') {
+    if (userLang === 'en' || userLang === 'es' || userLang === 'fr' || userLang === 'it' || userLang === 'de') {
       setLanguageState(userLang);
       localStorage.setItem(STORAGE_KEY, userLang);
     } else {

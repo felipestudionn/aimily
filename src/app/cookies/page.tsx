@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslation } from '@/i18n';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
 
 export default function CookiesPage() {
   const t = useTranslation();
@@ -39,24 +39,17 @@ export default function CookiesPage() {
         </div>
         <div className="flex items-center gap-6">
           {/* Language toggle */}
-          <div className="flex border border-gray-200 overflow-hidden">
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
-                language === 'en' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLanguage('es')}
-              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
-                language === 'es' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              ES
-            </button>
-          </div>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as Language)}
+            className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gray-200 rounded px-2 py-1 text-gray-700 transition-colors focus:outline-none"
+          >
+            <option value="en">EN</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="it">IT</option>
+            <option value="de">DE</option>
+          </select>
           <Link href="/" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
             {t.common.home}
           </Link>

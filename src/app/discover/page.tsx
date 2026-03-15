@@ -23,7 +23,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { useTranslation } from '@/i18n';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
 
 export default function DiscoverPage() {
   const { user } = useAuth();
@@ -109,24 +109,17 @@ export default function DiscoverPage() {
         </div>
         <div className="flex items-center gap-6">
           {/* Language Toggle */}
-          <div className="flex items-center border border-gris/20 overflow-hidden">
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-2.5 py-1 text-[10px] font-medium tracking-wider transition-colors ${
-                language === 'en' ? 'bg-crema text-carbon' : 'text-gris/50 hover:text-crema'
-              }`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLanguage('es')}
-              className={`px-2.5 py-1 text-[10px] font-medium tracking-wider transition-colors ${
-                language === 'es' ? 'bg-crema text-carbon' : 'text-gris/50 hover:text-crema'
-              }`}
-            >
-              ES
-            </button>
-          </div>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as Language)}
+            className="bg-transparent text-[10px] font-medium tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-2.5 py-1 text-crema transition-colors focus:outline-none [&>option]:bg-carbon [&>option]:text-crema"
+          >
+            <option value="en">EN</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="it">IT</option>
+            <option value="de">DE</option>
+          </select>
           {user ? (
             <Link
               href="/my-collections"

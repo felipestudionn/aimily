@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Phone, MapPin, Linkedin, Instagram, ArrowUpRight } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
 
 export default function ContactPage() {
   const t = useTranslation();
@@ -52,24 +52,17 @@ export default function ContactPage() {
         </div>
         <div className="flex items-center gap-6">
           {/* Language toggle */}
-          <div className="flex border border-gris/20 overflow-hidden">
-            <button
-              onClick={() => setLanguage('en')}
-              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
-                language === 'en' ? 'bg-crema/20 text-crema' : 'text-gris/40 hover:text-gris/60'
-              }`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLanguage('es')}
-              className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
-                language === 'es' ? 'bg-crema/20 text-crema' : 'text-gris/40 hover:text-gris/60'
-              }`}
-            >
-              ES
-            </button>
-          </div>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as Language)}
+            className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-2 py-1 text-crema transition-colors focus:outline-none [&>option]:bg-carbon [&>option]:text-crema"
+          >
+            <option value="en">EN</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="it">IT</option>
+            <option value="de">DE</option>
+          </select>
           <Link href="/" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
             {t.common.home}
           </Link>

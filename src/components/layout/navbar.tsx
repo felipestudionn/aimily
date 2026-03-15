@@ -5,7 +5,7 @@ import Image from "next/image";
 import { LogOut, Zap, User, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useLanguage, type Language } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/i18n";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -29,24 +29,17 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   };
 
   const LanguageToggle = ({ className = '' }: { className?: string }) => (
-    <div className={`flex bg-transparent border border-current/20 overflow-hidden ${className}`}>
-      <button
-        onClick={() => setLanguage('en')}
-        className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
-          language === 'en' ? 'bg-current/20 opacity-100' : 'opacity-40 hover:opacity-70'
-        }`}
-      >
-        EN
-      </button>
-      <button
-        onClick={() => setLanguage('es')}
-        className={`px-2 py-1 text-[10px] font-semibold tracking-wide transition-colors ${
-          language === 'es' ? 'bg-current/20 opacity-100' : 'opacity-40 hover:opacity-70'
-        }`}
-      >
-        ES
-      </button>
-    </div>
+    <select
+      value={language}
+      onChange={(e) => setLanguage(e.target.value as Language)}
+      className={`bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border rounded px-2 py-1 transition-colors focus:outline-none ${className}`}
+    >
+      <option value="en">EN</option>
+      <option value="es">ES</option>
+      <option value="fr">FR</option>
+      <option value="it">IT</option>
+      <option value="de">DE</option>
+    </select>
   );
 
   // Slim workspace navbar — just logo + user avatar
