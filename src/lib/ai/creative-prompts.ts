@@ -123,60 +123,60 @@ Return this exact JSON structure:
         system: PERSONAS.creativeDirector,
         user: `${ctx}
 
-The user is defining the creative direction for their collection and has provided these keywords/direction:
+The user is defining the creative direction for their collection with these keywords:
 
 "${input.direction}"
 
-Write a compelling creative narrative (150-200 words) that captures the emotional and visual world of this collection. This narrative will be used to brief designers, photographers, stylists, and copywriters — it must be specific enough to align an entire team.
+Write a creative brief (80-120 words) that captures the world of this collection. Write with the voice of Vogue or Harper's Bazaar — aspirational, visual, magnetic. Short punchy sentences that make you want to see this collection exist. Fashion-forward language, not academic.
 
-Structure the narrative around:
-1. THE WORLD — Where does this collection live? Not a generic mood, but a specific place, time, light condition. ("The courtyard of a Brutalist art museum at closing time" is better than "modern and artistic")
-2. SENSORY PALETTE — Colors as physical references, textures you can feel, sounds that set the atmosphere
-3. THE PROTAGONIST — Who wears this? Not demographics, but a character sketch — what is she doing, thinking, wanting in the moment she reaches for these clothes?
-4. THE TENSION — Every great collection has a creative tension (soft vs. structured, minimal vs. maximal, ancient vs. future). Name it.
-5. SEASONAL ANCHOR — How does this world connect to the specific season?
+Cover:
+1. THE WORLD — A specific place, time, atmosphere (not generic moods)
+2. COLORS & MATERIALS — Name them concretely
+3. THE PERSON — Who wears this? A character, not demographics
+4. THE TWIST — What makes this direction unexpected?
 
-Also extract 6-8 keywords that capture the essence — these should be evocative and specific, not generic mood words.
+Also extract 6-8 evocative keywords.
 
-${QUALITY_GATES.creativeSpecificity}
-${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
-  "vibe": "The complete narrative text...",
+  "vibe": "The creative brief...",
   "keywords": "keyword1, keyword2, keyword3, ..."
 }`,
       };
 
     case 'vibe-proposals':
       return {
-        temperature: 0.9,
+        temperature: 0.85,
         system: PERSONAS.creativeDirector,
         user: `${ctx}
 
-The user needs a creative direction for their collection and has given this minimal reference:
+The user needs a creative direction for their collection. Their reference:
 
 "${input.reference}"
 
-Generate exactly 3 distinct creative directions. These must feel like completely different worlds — different color universes, different cultural references, different emotional registers. A designer should be able to close their eyes and see three entirely different collections.
+Generate exactly 3 distinct creative directions. Each must feel like a completely different collection — different colors, different references, different energy.
 
-DIFFERENTIATION STRATEGY:
-- Direction 1: The most refined/restrained interpretation — less is more, architectural, considered
-- Direction 2: The most sensual/textural interpretation — material-driven, tactile, immersive
-- Direction 3: The most narrative/conceptual interpretation — story-driven, referential, with layers of meaning
+IMPORTANT — TONE AND STYLE:
+- Write with the voice of Vogue or Harper's Bazaar — aspirational, magnetic, fashion-forward
+- Short, punchy sentences. Visual language that makes you want this collection to exist
+- NOT academic, NOT verbose. Think editorial caption, not dissertation.
+- Direction 1: The most refined/minimal interpretation
+- Direction 2: The most textural/sensorial interpretation
+- Direction 3: The most narrative/conceptual interpretation
 
-${QUALITY_GATES.creativeSpecificity}
-${QUALITY_GATES.antiGeneric}
+Each direction should answer: What does this world look like? What are the key colors and materials? Who is this person? What makes it unexpected?
+
 ${OUTPUT_RULES}
 
 Return:
 {
   "proposals": [
     {
-      "title": "2-3 word vibe name (evocative, not descriptive)",
-      "vibe": "Creative narrative (100-140 words): the world, sensory palette, protagonist, tension, seasonal anchor. Must include at least one non-fashion reference and one specific material/texture.",
-      "keywords": "6-8 comma-separated keywords — specific and evocative, not generic"
+      "title": "2-3 word vibe name",
+      "vibe": "Creative brief (60-80 words). Short sentences. Visual. Specific but accessible. A designer should read this and immediately see the collection.",
+      "keywords": "6-8 comma-separated keywords"
     }
   ]
 }`,
