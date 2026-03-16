@@ -2018,12 +2018,10 @@ export const nl: Dictionary = {
     modeProposalTitle: 'aimily stelt voor',
     modeProposalDesc: 'Geef aimily het absolute minimum — je seizoen, je markt, je vibe. aimily genereert complete consumentenprofielen, prijsstrategieën, zelfs marketingplannen. Jij beoordeelt en keurt goed. Alsof je een senior consultant op snelkeuze hebt.',
     spectrumYou: 'U',
-    workflowLabel: 'HOE U OOK BEGINT, DE WERKWIJZE IS HETZELFDE',
-    workflowStep1: 'U of aimily begint',
-    workflowStep2: 'aimily structureert',
-    workflowStep3: 'U beoordeelt en bewerkt',
-    workflowStep4: 'Mijlpaal-goedkeuring',
-    workflowNote: 'Elk voorstel is bewerkbaar. Elke beslissing is van u. aimily gaat nooit verder zonder uw goedkeuring.',
+    workflowLabel: 'IN ELKE MODUS BEHOUDT U DE CONTROLE',
+    workflowLine1: 'U kunt elk detail bewerken dat aimily voorstelt.',
+    workflowLine2: 'Niets gaat verder zonder uw goedkeuring.',
+    workflowLine3: 'aimily is er altijd om te helpen — nooit om voor u te beslissen.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOK 01 — CREATIEF & MERK',

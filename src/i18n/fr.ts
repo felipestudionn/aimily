@@ -2018,12 +2018,10 @@ export const fr: Dictionary = {
     modeProposalTitle: "aimily propose",
     modeProposalDesc: "Donnez à aimily le strict minimum — votre saison, votre marché, votre vibe. aimily génère des profils consommateurs complets, des stratégies de prix, même des plans marketing. Vous révisez et approuvez. Comme avoir un consultant senior toujours disponible.",
     spectrumYou: 'VOUS',
-    workflowLabel: 'PEU IMPORTE QUI COMMENCE, LE FLUX EST LE MEME',
-    workflowStep1: 'Vous ou aimily commencez',
-    workflowStep2: 'aimily structure',
-    workflowStep3: 'Vous relisez et editez',
-    workflowStep4: 'Validation du jalon',
-    workflowNote: 'Chaque proposition est modifiable. Chaque decision vous appartient. aimily ne passe jamais a la suite sans votre approbation.',
+    workflowLabel: 'DANS CHAQUE MODE, VOUS GARDEZ LE CONTRÔLE',
+    workflowLine1: 'Vous pouvez modifier chaque détail proposé par aimily.',
+    workflowLine2: 'Rien ne progresse sans votre approbation.',
+    workflowLine3: 'aimily est toujours là pour vous aider — jamais pour décider à votre place.',
 
     // Slide 2: Creative Overview
     creative_overview_label: "BLOC 01 — CRÉATIF ET MARQUE",

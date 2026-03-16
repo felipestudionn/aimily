@@ -2000,12 +2000,10 @@ export const pt: Dictionary = {
     modeProposalTitle: 'aimily propõe',
     modeProposalDesc: 'Dê à aimily o mínimo — sua temporada, seu mercado, sua vibe. aimily gera perfis de consumidor completos, estratégias de precificação, até planos de marketing. Você revisa e aprova. Como ter um consultor sênior à disposição.',
     spectrumYou: 'VOCÊ',
-    workflowLabel: 'NAO IMPORTA QUEM COMECA, O FLUXO E O MESMO',
-    workflowStep1: 'Voce ou a aimily comecam',
-    workflowStep2: 'aimily estrutura',
-    workflowStep3: 'Voce revisa e edita',
-    workflowStep4: 'Sign-off do marco',
-    workflowNote: 'Cada proposta e editavel. Cada decisao e sua. a aimily nunca avanca sem sua aprovacao.',
+    workflowLabel: 'EM TODOS OS MODOS, VOCÊ SEMPRE TEM O CONTROLE',
+    workflowLine1: 'Você pode editar cada detalhe que a aimily propõe.',
+    workflowLine2: 'Nada avança sem a sua aprovação.',
+    workflowLine3: 'aimily está sempre lá para ajudar — nunca para decidir por você.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOCO 01 — CRIATIVO & MARCA',

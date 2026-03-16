@@ -1892,12 +1892,10 @@ export const sv: Dictionary = {
     modeProposalTitle: 'aimily föreslår',
     modeProposalDesc: 'Ge aimily det absoluta minimum — din säsong, din marknad, din vibe. aimily genererar kompletta konsumentprofiler, prisstrategier, till och med marknadsföringsplaner. Du granskar och godkänner. Som att ha en seniorkonsult på snabbval.',
     spectrumYou: 'DU',
-    workflowLabel: 'OAVSETT VEM SOM BORJAR, ARBETSFLODEN AR DETSAMMA',
-    workflowStep1: 'Du eller aimily borjar',
-    workflowStep2: 'aimily strukturerar',
-    workflowStep3: 'Du granskar och redigerar',
-    workflowStep4: 'Milstolpe-godkannande',
-    workflowNote: 'Varje forslag ar redigerbart. Varje beslut ar ditt. aimily gar aldrig vidare utan ditt godkannande.',
+    workflowLabel: 'I VARJE LÄGE HAR DU ALLTID KONTROLLEN',
+    workflowLine1: 'Du kan redigera varje detalj som aimily föreslår.',
+    workflowLine2: 'Inget går vidare utan ditt godkännande.',
+    workflowLine3: 'aimily finns alltid där för att hjälpa — aldrig för att bestämma åt dig.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOCK 01 — KREATIVT & VARUMÄRKE',

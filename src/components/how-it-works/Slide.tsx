@@ -113,34 +113,18 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
             })}
           </div>
 
-          {/* Always the same workflow — large and prominent */}
-          <div className={`border ${borderColor} p-6 md:p-10`}>
-            <p className="text-center text-crema text-sm md:text-base font-medium tracking-[0.2em] uppercase mb-8">
+          {/* Always in control — simple and clear */}
+          <div className={`border ${borderColor} p-8 md:p-12 text-center`}>
+            <p className="text-crema text-xs md:text-sm font-medium tracking-[0.25em] uppercase mb-8">
               {t.workflowLabel}
             </p>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-0">
-              {[
-                { key: 'workflowStep1' as const, num: '01' },
-                { key: 'workflowStep2' as const, num: '02' },
-                { key: 'workflowStep3' as const, num: '03' },
-                { key: 'workflowStep4' as const, num: '04' },
-              ].map((step, i, arr) => (
-                <div key={step.key} className="flex items-center gap-0">
-                  <div className={`flex items-center gap-3 px-5 py-4 ${i === arr.length - 1 ? 'border-crema/40 bg-crema/5' : `${borderColor}`} border`}>
-                    <span className={`text-lg font-light ${i === arr.length - 1 ? 'text-crema/60' : 'text-gris/25'}`}>{step.num}</span>
-                    <p className={`${i === arr.length - 1 ? 'text-crema font-medium' : textMain} text-sm tracking-[0.05em]`}>
-                      {t[step.key]}
-                    </p>
-                  </div>
-                  {i < arr.length - 1 && (
-                    <ArrowRight className="h-4 w-4 text-gris/30 mx-3 shrink-0 hidden md:block" />
-                  )}
-                </div>
+            <div className="space-y-4 max-w-lg mx-auto">
+              {(['workflowLine1', 'workflowLine2', 'workflowLine3'] as const).map((key, i) => (
+                <p key={key} className={`text-base md:text-lg font-light leading-relaxed ${i === 2 ? 'text-crema' : 'text-gris/60'}`}>
+                  {t[key]}
+                </p>
               ))}
             </div>
-            <p className={`text-center ${textSub} text-sm font-light mt-6 max-w-2xl mx-auto leading-relaxed`}>
-              {t.workflowNote}
-            </p>
           </div>
         </div>
       </div>

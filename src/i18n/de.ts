@@ -2018,12 +2018,10 @@ export const de: Dictionary = {
     modeProposalTitle: 'aimily schlägt vor',
     modeProposalDesc: 'Gib aimily das Minimum — deine Saison, deinen Markt, deine Vibe. aimily generiert vollständige Verbraucherprofile, Preisstrategien, sogar Marketingpläne. Du prüfst und genehmigst. Wie einen Senior-Berater immer zur Hand zu haben.',
     spectrumYou: 'SIE',
-    workflowLabel: 'EGAL WER BEGINNT, DER ABLAUF IST DERSELBE',
-    workflowStep1: 'Sie oder aimily starten',
-    workflowStep2: 'aimily strukturiert',
-    workflowStep3: 'Sie prufen und bearbeiten',
-    workflowStep4: 'Meilenstein-Freigabe',
-    workflowNote: 'Jeder Vorschlag ist bearbeitbar. Jede Entscheidung liegt bei Ihnen. aimily geht nie ohne Ihre Freigabe zum nachsten Schritt.',
+    workflowLabel: 'IN JEDEM MODUS BEHALTEN SIE DIE KONTROLLE',
+    workflowLine1: 'Sie können jedes Detail bearbeiten, das aimily vorschlägt.',
+    workflowLine2: 'Nichts geht weiter ohne Ihre Zustimmung.',
+    workflowLine3: 'aimily ist immer da, um zu helfen — nie, um für Sie zu entscheiden.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOCK 01 — KREATIV UND MARKE',

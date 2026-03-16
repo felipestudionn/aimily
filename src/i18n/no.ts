@@ -1892,12 +1892,10 @@ export const no: Dictionary = {
     modeProposalTitle: 'aimily foreslår',
     modeProposalDesc: 'Gi aimily det aller minste — sesongen din, markedet ditt, viben din. aimily genererer komplette forbrukerprofiler, prisstrategier, til og med markedsføringsplaner. Du gjennomgår og godkjenner. Som å ha en seniorkonsulent på hurtigtast.',
     spectrumYou: 'DU',
-    workflowLabel: 'UANSETT HVEM SOM STARTER, ARBEIDSFLYTEN ER DEN SAMME',
-    workflowStep1: 'Du eller aimily starter',
-    workflowStep2: 'aimily strukturerer',
-    workflowStep3: 'Du gjennomgar og redigerer',
-    workflowStep4: 'Milepael-godkjenning',
-    workflowNote: 'Hvert forslag kan redigeres. Hver beslutning er din. aimily gar aldri videre uten din godkjenning.',
+    workflowLabel: 'I ALLE MODUSER HAR DU ALLTID KONTROLLEN',
+    workflowLine1: 'Du kan redigere hver detalj aimily foreslår.',
+    workflowLine2: 'Ingenting går videre uten din godkjenning.',
+    workflowLine3: 'aimily er alltid der for å hjelpe — aldri for å bestemme for deg.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOKK 01 — KREATIVT & MERKEVARE',

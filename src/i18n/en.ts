@@ -2019,12 +2019,10 @@ export const en = {
     modeProposalTitle: 'aimily proposes',
     modeProposalDesc: 'Give aimily the bare minimum — your season, your market, your vibe. aimily generates complete consumer profiles, pricing strategies, even marketing plans. You review and approve. Like having a senior consultant on speed dial.',
     spectrumYou: 'YOU',
-    workflowLabel: 'HOWEVER YOU START, THE WORKFLOW IS THE SAME',
-    workflowStep1: 'You or aimily start',
-    workflowStep2: 'aimily structures',
-    workflowStep3: 'You review & edit',
-    workflowStep4: 'Milestone sign-off',
-    workflowNote: 'Every proposal is editable. Every decision is yours. aimily never moves forward without your approval — you sign off each milestone before the next one begins.',
+    workflowLabel: 'IN EVERY MODE, YOU ARE ALWAYS IN CONTROL',
+    workflowLine1: 'You can edit every detail aimily proposes.',
+    workflowLine2: 'Nothing moves forward until you approve it.',
+    workflowLine3: 'aimily is always there to help — never to decide for you.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOCK 01 — CREATIVE & BRAND',
