@@ -152,10 +152,9 @@ Return:
         system: PERSONAS.creativeDirector,
         user: `${ctx}
 
-The user needs a creative direction for their collection. Their reference:
+The user needs a creative direction for their collection. Use ALL available context to generate proposals:
 
-"${input.reference}"
-
+${input.consumer ? `CONSUMER PROFILE:\n${input.consumer}\n` : ''}${input.moodboard ? `MOODBOARD REFERENCES:\n${input.moodboard}\n` : ''}${input.reference ? `EXTRA DIRECTION FROM USER:\n"${input.reference}"\n` : ''}${!input.consumer && !input.moodboard && !input.reference ? 'No additional context provided — use the collection name and season to inspire creative directions.\n' : ''}
 Generate exactly 3 distinct creative directions. Each must feel like a completely different collection — different colors, different references, different energy.
 
 IMPORTANT — TONE AND STYLE:

@@ -87,9 +87,9 @@ const STEPS = [
 ];
 
 const INPUT_MODES: { id: InputMode; label: string; description: string }[] = [
-  { id: 'free', label: 'Libre', description: 'You fill everything manually' },
-  { id: 'assisted', label: 'Asistido', description: 'Give direction, AI complements' },
-  { id: 'ai', label: 'Propuesta IA', description: 'Minimal input, AI generates proposals' },
+  { id: 'free', label: 'Free', description: 'You fill everything manually' },
+  { id: 'assisted', label: 'Assisted', description: 'Give direction, AI complements' },
+  { id: 'ai', label: 'AI Proposal', description: 'aimily generates from your collection context — you edit and approve' },
 ];
 
 /* ─── Expanded Block Content Components ─── */
@@ -131,6 +131,7 @@ function VibeProposalFlow({
     const { result, error: err } = await generateCreative('vibe-proposals', {
       reference: (data.reference as string) || '',
       consumer: consumerProfile || '',
+      moodboard: (data._moodboardContext as string) || '',
       ...collectionContext,
     }, language);
     if (err) { setError(err); setGenerating(false); return; }
@@ -150,26 +151,55 @@ function VibeProposalFlow({
 
   const selected = selectedIdx !== null && selectedIdx !== undefined;
 
+  // Build context summary from existing collection data
+  const hasContext = !!(consumerProfile || collectionContext.season || collectionContext.collectionName);
+  const contextParts: string[] = [];
+  if (collectionContext.collectionName) contextParts.push(`Collection: ${collectionContext.collectionName}`);
+  if (collectionContext.season) contextParts.push(`Season: ${collectionContext.season}`);
+  if (consumerProfile) contextParts.push(`Consumer: ${consumerProfile.slice(0, 200)}`);
+  // Moodboard images are stored in the parent data
+  const moodboardData = data._moodboardContext as string | undefined;
+  if (moodboardData) contextParts.push(`Moodboard: ${moodboardData}`);
+
   return (
     <div className="space-y-4">
-      {/* Reference input */}
+      {/* Context summary — show what aimily already knows */}
+      <div className="bg-carbon/[0.03] border border-carbon/[0.06] p-4 space-y-2">
+        <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
+          {t.creative.aimilyKnows || 'WHAT AIMILY ALREADY KNOWS'}
+        </p>
+        {contextParts.length > 0 ? (
+          <ul className="space-y-1">
+            {contextParts.map((part, i) => (
+              <li key={i} className="text-xs text-carbon/60 flex items-start gap-2">
+                <Check className="h-3 w-3 mt-0.5 text-carbon/30 flex-shrink-0" />
+                {part}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-carbon/40 italic">{t.creative.noContextYet || 'No data yet — fill in other blocks first for better results, or generate directly.'}</p>
+        )}
+      </div>
+
+      {/* Optional extra direction */}
       <div>
-        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-          {t.creative.minimalReference}
+        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/40 mb-1.5 block">
+          {t.creative.optionalDirection || 'EXTRA DIRECTION (OPTIONAL)'}
         </label>
         <input
           type="text"
           value={(data.reference as string) || ''}
           onChange={(e) => onChange({ ...data, reference: e.target.value })}
-          placeholder="e.g. 'sporty elegance' or 'coastal Italian summer'..."
+          placeholder={t.creative.optionalDirectionPlaceholder || "e.g. 'coastal vibes' or leave empty — aimily will propose from context"}
           className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
         />
       </div>
 
-      {/* Generate button */}
+      {/* Generate button — always enabled */}
       <button
         onClick={generateVibes}
-        disabled={generating || !(data.reference as string)?.trim()}
+        disabled={generating}
         className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}

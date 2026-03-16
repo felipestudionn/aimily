@@ -430,6 +430,10 @@ export const en = {
     regenerateRejected: 'Regenerate',
     rejectedLabel: 'rejected',
     minimalReference: 'Minimal Reference',
+    aimilyKnows: 'WHAT AIMILY ALREADY KNOWS',
+    noContextYet: 'No data yet — fill in other blocks first for better results, or generate directly.',
+    optionalDirection: 'EXTRA DIRECTION (OPTIONAL)',
+    optionalDirectionPlaceholder: "e.g. 'coastal vibes' or leave empty — aimily will propose from context",
     // Vibe
     collectionSpiritDirection: 'Collection Spirit & Direction',
     vibePlaceholder: 'Describe the spirit of your collection — what feeling should it evoke? What world does it live in?...',

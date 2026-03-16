@@ -432,6 +432,10 @@ export const pt: Dictionary = {
     regenerateRejected: 'Regenerar',
     rejectedLabel: 'rejeitados',
     minimalReference: 'Referência Mínima',
+    aimilyKnows: 'O QUE AIMILY JÁ SABE',
+    noContextYet: 'Sem dados ainda — preencha outros blocos para melhores resultados, ou gere diretamente.',
+    optionalDirection: 'DIREÇÃO EXTRA (OPCIONAL)',
+    optionalDirectionPlaceholder: "ex. 'vibrações costeiras' ou deixe vazio — aimily propõe a partir do contexto",
     // Vibe
     collectionSpiritDirection: 'Espírito e Direção da Coleção',
     vibePlaceholder: 'Descreva o espírito da sua coleção — que sensação deveria evocar? Em que mundo ela vive?...',
