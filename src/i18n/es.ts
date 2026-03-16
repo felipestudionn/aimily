@@ -2109,6 +2109,21 @@ export const es: Dictionary = {
     calBlock4Label: 'Hitos de marketing',
 
     // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'LA TRANSFORMACIÓN',
+    transformation_title: 'Todo',
+    transformation_titleItalic: 'cambia',
+    transform_before1: 'Hojas de cálculo y cadenas de email',
+    transform_after1: 'Una plataforma conectada',
+    transform_before2: 'Adivinar qué se venderá',
+    transform_after2: 'Inteligencia de mercado con IA',
+    transform_before3: 'Meses de ida y vuelta',
+    transform_after3: '45 hitos automatizados',
+    transform_before4: 'Archivos y carpetas dispersos',
+    transform_after4: 'Collection Builder en vivo',
+    transform_before5: 'Caos el día del lanzamiento',
+    transform_after5: 'Ejecución orquestada',
+
     cta_label: 'ESO ES TODO LO QUE NECESITAS',
     cta_title: 'Tu colección',
     cta_titleItalic: 'está lanzada',

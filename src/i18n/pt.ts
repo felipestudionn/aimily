@@ -2109,6 +2109,21 @@ export const pt: Dictionary = {
     calBlock4Label: 'Marcos de marketing',
 
     // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'A TRANSFORMAÇÃO',
+    transformation_title: 'Tudo',
+    transformation_titleItalic: 'muda',
+    transform_before1: 'Planilhas e cadeias de email',
+    transform_after1: 'Uma plataforma conectada',
+    transform_before2: 'Adivinhar o que vai vender',
+    transform_after2: 'Inteligência de mercado com IA',
+    transform_before3: 'Meses de vai e vem',
+    transform_after3: '45 marcos automatizados',
+    transform_before4: 'Arquivos e pastas espalhados',
+    transform_after4: 'Collection Builder ao vivo',
+    transform_before5: 'Caos no dia do lançamento',
+    transform_after5: 'Execução orquestrada',
+
     cta_label: 'É TUDO QUE VOCÊ PRECISA',
     cta_title: 'Sua coleção',
     cta_titleItalic: 'está lançada',

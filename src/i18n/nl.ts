@@ -2127,6 +2127,21 @@ export const nl: Dictionary = {
     calBlock4Label: 'Marketingmijlpalen',
 
     // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'DE TRANSFORMATIE',
+    transformation_title: 'Alles',
+    transformation_titleItalic: 'verandert',
+    transform_before1: 'Spreadsheets en e-mailketens',
+    transform_after1: 'Eén verbonden platform',
+    transform_before2: 'Gokken wat verkoopt',
+    transform_after2: 'AI-gestuurde marktintelligentie',
+    transform_before3: 'Maanden heen en weer',
+    transform_after3: '45 geautomatiseerde mijlpalen',
+    transform_before4: 'Verspreide bestanden en mappen',
+    transform_after4: 'Levende Collection Builder',
+    transform_before5: 'Chaos op de lanceerdag',
+    transform_after5: 'Georkestreerde uitvoering',
+
     cta_label: 'DAT IS ALLES WAT JE NODIG HEBT',
     cta_title: 'Je collectie',
     cta_titleItalic: 'is gelanceerd',

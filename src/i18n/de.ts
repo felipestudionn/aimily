@@ -2127,6 +2127,21 @@ export const de: Dictionary = {
     calBlock4Label: 'Marketing-Meilensteine',
 
     // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'DIE TRANSFORMATION',
+    transformation_title: 'Alles',
+    transformation_titleItalic: 'ändert sich',
+    transform_before1: 'Tabellen und E-Mail-Ketten',
+    transform_after1: 'Eine vernetzte Plattform',
+    transform_before2: 'Raten, was sich verkauft',
+    transform_after2: 'KI-gestützte Marktintelligenz',
+    transform_before3: 'Monate des Hin und Her',
+    transform_after3: '45 automatisierte Meilensteine',
+    transform_before4: 'Verstreute Dateien und Ordner',
+    transform_after4: 'Lebendiger Collection Builder',
+    transform_before5: 'Chaos am Launchtag',
+    transform_after5: 'Orchestrierte Umsetzung',
+
     cta_label: 'DAS IST ALLES, WAS DU BRAUCHST',
     cta_title: 'Deine Kollektion',
     cta_titleItalic: 'ist gelauncht',

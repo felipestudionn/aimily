@@ -2127,6 +2127,21 @@ export const fr: Dictionary = {
     calBlock4Label: 'Jalons marketing',
 
     // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'LA TRANSFORMATION',
+    transformation_title: 'Tout',
+    transformation_titleItalic: 'change',
+    transform_before1: "Tableurs et chaînes d'emails",
+    transform_after1: 'Une plateforme connectée',
+    transform_before2: 'Deviner ce qui se vendra',
+    transform_after2: "Intelligence de marché par l'IA",
+    transform_before3: "Des mois d'allers-retours",
+    transform_after3: '45 jalons automatisés',
+    transform_before4: 'Fichiers et dossiers dispersés',
+    transform_after4: 'Collection Builder en direct',
+    transform_before5: 'Chaos le jour du lancement',
+    transform_after5: 'Exécution orchestrée',
+
     cta_label: "C'EST TOUT CE QU'IL VOUS FAUT",
     cta_title: 'Votre collection',
     cta_titleItalic: 'est lancée',

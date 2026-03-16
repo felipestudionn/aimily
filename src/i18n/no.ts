@@ -2001,6 +2001,21 @@ export const no: Dictionary = {
     calBlock4Label: 'Markedsføringsmilepæler',
 
     // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'TRANSFORMASJONEN',
+    transformation_title: 'Alt',
+    transformation_titleItalic: 'endrer seg',
+    transform_before1: 'Regneark og e-postkjeder',
+    transform_after1: 'Én tilkoblet plattform',
+    transform_before2: 'Gjette hva som selger',
+    transform_after2: 'AI-drevet markedsintelligens',
+    transform_before3: 'Måneder med frem og tilbake',
+    transform_after3: '45 automatiserte milepæler',
+    transform_before4: 'Spredte filer og mapper',
+    transform_after4: 'Levende Collection Builder',
+    transform_before5: 'Kaos på lanseringsdagen',
+    transform_after5: 'Orkestrert gjennomføring',
+
     cta_label: 'DET ER ALT DU TRENGER',
     cta_title: 'Kolleksjonen din',
     cta_titleItalic: 'er lansert',

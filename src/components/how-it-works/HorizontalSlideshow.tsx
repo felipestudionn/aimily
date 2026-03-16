@@ -12,8 +12,8 @@ interface HorizontalSlideshowProps {
   onSkip?: () => void;
 }
 
-const AUTO_ADVANCE_MS = 6000;
-const IDLE_RESUME_MS = 10000;
+const AUTO_ADVANCE_MS = 8000;  // 8s per slide — enough time to read
+const IDLE_RESUME_MS = 12000;  // 12s idle before auto-resume
 
 export function HorizontalSlideshow({ mode, t, onSkip }: HorizontalSlideshowProps) {
   const containerRef = useRef<HTMLDivElement>(null);

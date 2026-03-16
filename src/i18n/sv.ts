@@ -2001,6 +2001,21 @@ export const sv: Dictionary = {
     calBlock4Label: 'Marknadsföringsmilstolpar',
 
     // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'TRANSFORMATIONEN',
+    transformation_title: 'Allt',
+    transformation_titleItalic: 'förändras',
+    transform_before1: 'Kalkylblad och e-postkedjor',
+    transform_after1: 'En sammankopplad plattform',
+    transform_before2: 'Gissa vad som säljer',
+    transform_after2: 'AI-driven marknadsintelligens',
+    transform_before3: 'Månader av fram och tillbaka',
+    transform_after3: '45 automatiserade milstolpar',
+    transform_before4: 'Utspridda filer och mappar',
+    transform_after4: 'Levande Collection Builder',
+    transform_before5: 'Kaos på lanseringsdagen',
+    transform_after5: 'Orkestrerat genomförande',
+
     cta_label: 'DET ÄR ALLT DU BEHÖVER',
     cta_title: 'Din kollektion',
     cta_titleItalic: 'är lanserad',

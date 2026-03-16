@@ -2127,7 +2127,22 @@ export const en = {
     calBlock4Count: '15',
     calBlock4Label: 'Marketing milestones',
 
-    // Slide 12: CTA
+    // Slide 12: Transformation
+    transformation_label: 'THE TRANSFORMATION',
+    transformation_title: 'Everything',
+    transformation_titleItalic: 'changes',
+    transform_before1: 'Spreadsheets & email chains',
+    transform_after1: 'One connected platform',
+    transform_before2: 'Guessing what will sell',
+    transform_after2: 'AI-powered market intelligence',
+    transform_before3: 'Months of back-and-forth',
+    transform_after3: '45 automated milestones',
+    transform_before4: 'Scattered files & folders',
+    transform_after4: 'Living Collection Builder',
+    transform_before5: 'Launch day chaos',
+    transform_after5: 'Orchestrated execution',
+
+    // Slide 13: CTA
     cta_label: "THAT'S ALL YOU NEED",
     cta_title: 'Your collection',
     cta_titleItalic: 'is launched',

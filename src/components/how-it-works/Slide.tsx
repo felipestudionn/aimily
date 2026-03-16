@@ -22,8 +22,8 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
   const textLabel = isDark ? 'text-gris/50' : 'text-carbon/40';
   const borderColor = isDark ? 'border-gris/10' : 'border-carbon/10';
 
-  const anim = isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6';
-  const transition = 'transition-all duration-700 ease-out';
+  const anim = isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8';
+  const transition = 'transition-all duration-[1200ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]';
 
   // Get slide-specific text from i18n using slide.id
   const getText = (suffix: string): string => {
@@ -225,6 +225,49 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
               ))}
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Transformation slide (before → after rows)
+  if (slide.id === 'transformation') {
+    const rows = ['1', '2', '3', '4', '5'];
+    return (
+      <div className={`w-full h-full flex items-center justify-center ${bg} relative`}>
+        {isDark && <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: GRID_PATTERN }} />}
+        <div className={`relative z-10 max-w-4xl w-full px-6 ${anim} ${transition}`}>
+          <div className="text-center mb-10 md:mb-14">
+            <p className={`${textLabel} text-xs font-medium tracking-[0.25em] uppercase mb-6`}>
+              {t.transformation_label}
+            </p>
+            <h2 className={`${textMain} text-2xl sm:text-3xl md:text-4xl font-light tracking-tight leading-[1.15]`}>
+              {t.transformation_title} <span className="italic">{t.transformation_titleItalic}</span>
+            </h2>
+          </div>
+          <div className="space-y-0">
+            {rows.map((num, i) => (
+              <div
+                key={num}
+                className={`flex items-center justify-center gap-4 md:gap-8 py-5 ${
+                  i < rows.length - 1 ? `border-b ${borderColor}` : ''
+                }`}
+                style={{
+                  opacity: isActive ? 1 : 0,
+                  transform: isActive ? 'none' : 'translateX(-20px)',
+                  transition: `opacity 0.8s ease ${300 + i * 120}ms, transform 0.8s ease ${300 + i * 120}ms`,
+                }}
+              >
+                <span className={`text-gris/30 text-sm md:text-base font-light tracking-wide text-right w-[140px] md:w-[240px]`}>
+                  {t[`transform_before${num}` as keyof typeof t] as string}
+                </span>
+                <ArrowRight className="h-4 w-4 text-crema/20 shrink-0" />
+                <span className={`text-crema text-sm md:text-base font-medium tracking-wide text-left w-[140px] md:w-[240px]`}>
+                  {t[`transform_after${num}` as keyof typeof t] as string}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

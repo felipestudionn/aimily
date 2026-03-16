@@ -155,7 +155,13 @@ export const SLIDES: SlideDefinition[] = [
     layout: 'diagram',
     theme: 'light',
   },
-  // 12 — CTA
+  // 12 — Before → After Transformation
+  {
+    id: 'transformation',
+    layout: 'centered',
+    theme: 'dark',
+  },
+  // 13 — CTA
   {
     id: 'cta',
     layout: 'hero',
