@@ -34,7 +34,7 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
   // Hero layout (intro + cta)
   if (slide.layout === 'hero') {
     return (
-      <div className={`min-w-[100vw] w-screen h-screen flex items-center justify-center ${bg} relative`}>
+      <div className={`w-full h-full flex items-center justify-center ${bg} relative`}>
         {isDark && <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: GRID_PATTERN }} />}
         <div className={`relative z-10 max-w-4xl text-center px-6 ${anim} ${transition}`}>
           <p className={`${textLabel} text-xs font-medium tracking-[0.25em] uppercase mb-8`}>
@@ -69,7 +69,7 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
       { icon: Zap, nameKey: 'modeProposalTitle' as const, descKey: 'modeProposalDesc' as const },
     ];
     return (
-      <div className={`min-w-[100vw] w-screen h-screen flex items-center justify-center ${bg} relative`}>
+      <div className={`w-full h-full flex items-center justify-center ${bg} relative`}>
         {isDark && <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: GRID_PATTERN }} />}
         <div className={`relative z-10 max-w-5xl w-full px-6 ${anim} ${transition}`}>
           <div className="text-center mb-12 md:mb-16">
@@ -105,7 +105,7 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
   if (slide.layout === 'split') {
     const isEven = index % 2 === 0;
     return (
-      <div className={`min-w-[100vw] w-screen h-screen flex items-center justify-center ${bg} relative`}>
+      <div className={`w-full h-full flex items-center justify-center ${bg} relative`}>
         {isDark && <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: GRID_PATTERN }} />}
         <div className={`relative z-10 max-w-6xl w-full px-6 flex flex-col lg:flex-row gap-12 lg:gap-20 items-center ${isEven ? '' : 'lg:flex-row-reverse'} ${anim} ${transition}`}>
           {/* Text side */}
@@ -137,7 +137,7 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
   // Centered layout (deep dive slides with tool cards)
   if (slide.layout === 'centered' && slide.tools) {
     return (
-      <div className={`min-w-[100vw] w-screen h-screen flex items-center justify-center ${bg} relative overflow-y-auto`}>
+      <div className={`w-full h-full flex items-center justify-center ${bg} relative overflow-y-auto`}>
         <div className={`relative z-10 max-w-5xl w-full px-6 py-12 ${anim} ${transition}`}>
           <div className="text-center mb-10 md:mb-14">
             {slide.blockNumber && (
@@ -181,7 +181,7 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
   // Diagram layout (Collection Builder + Calendar)
   if (slide.layout === 'diagram') {
     return (
-      <div className={`min-w-[100vw] w-screen h-screen flex items-center justify-center ${bg} relative`}>
+      <div className={`w-full h-full flex items-center justify-center ${bg} relative`}>
         <div className={`relative z-10 max-w-5xl w-full px-6 ${anim} ${transition}`}>
           <div className="text-center mb-10 md:mb-14">
             <p className={`${textLabel} text-xs font-medium tracking-[0.25em] uppercase mb-6`}>
@@ -231,5 +231,5 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
   }
 
   // Fallback
-  return <div className={`min-w-[100vw] w-screen h-screen ${bg}`} />;
+  return <div className={`w-full h-full ${bg}`} />;
 }

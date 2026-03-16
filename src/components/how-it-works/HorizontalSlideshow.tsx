@@ -19,40 +19,33 @@ export function HorizontalSlideshow({ mode, t, onSkip }: HorizontalSlideshowProp
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null);
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeIndexRef = useRef(0);
 
   const total = SLIDES.length;
+
+  // Keep ref in sync with state
+  useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
 
   const scrollToSlide = useCallback((index: number) => {
     const container = containerRef.current;
     if (!container) return;
-    const slideWidth = container.clientWidth;
+    const slideWidth = window.innerWidth;
     container.scrollTo({ left: index * slideWidth, behavior: 'smooth' });
+    setActiveIndex(index);
   }, []);
 
   const goNext = useCallback(() => {
-    setActiveIndex((prev) => {
-      const next = prev < total - 1 ? prev + 1 : 0;
-      scrollToSlide(next);
-      return next;
-    });
+    const next = activeIndexRef.current < total - 1 ? activeIndexRef.current + 1 : 0;
+    scrollToSlide(next);
   }, [total, scrollToSlide]);
 
   const goPrev = useCallback(() => {
-    setActiveIndex((prev) => {
-      const next = prev > 0 ? prev - 1 : total - 1;
-      scrollToSlide(next);
-      return next;
-    });
+    const next = activeIndexRef.current > 0 ? activeIndexRef.current - 1 : total - 1;
+    scrollToSlide(next);
   }, [total, scrollToSlide]);
 
-  const goTo = useCallback((index: number) => {
-    setActiveIndex(index);
-    scrollToSlide(index);
-  }, [scrollToSlide]);
-
-  // Detect active slide from scroll position
+  // Detect active slide from manual scroll (swipe)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -62,10 +55,13 @@ export function HorizontalSlideshow({ mode, t, onSkip }: HorizontalSlideshowProp
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
-        const slideWidth = container.clientWidth;
+        const slideWidth = window.innerWidth;
         if (slideWidth > 0) {
           const newIndex = Math.round(container.scrollLeft / slideWidth);
-          setActiveIndex(Math.max(0, Math.min(newIndex, total - 1)));
+          const clamped = Math.max(0, Math.min(newIndex, total - 1));
+          if (clamped !== activeIndexRef.current) {
+            setActiveIndex(clamped);
+          }
         }
         ticking = false;
       });
@@ -79,10 +75,8 @@ export function HorizontalSlideshow({ mode, t, onSkip }: HorizontalSlideshowProp
   useEffect(() => {
     if (isPaused) return;
 
-    autoAdvanceRef.current = setInterval(goNext, AUTO_ADVANCE_MS);
-    return () => {
-      if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
-    };
+    const interval = setInterval(goNext, AUTO_ADVANCE_MS);
+    return () => clearInterval(interval);
   }, [isPaused, goNext]);
 
   // Pause on user interaction, resume after idle
@@ -117,12 +111,19 @@ export function HorizontalSlideshow({ mode, t, onSkip }: HorizontalSlideshowProp
       {/* Scroll-snap container */}
       <div
         ref={containerRef}
-        className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-        style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+        className="flex w-full h-full overflow-x-auto scrollbar-hide"
+        style={{
+          scrollSnapType: 'x mandatory',
+          WebkitOverflowScrolling: 'touch',
+        }}
         onMouseEnter={pauseAutoAdvance}
       >
         {SLIDES.map((slide, i) => (
-          <div key={slide.id} className="snap-start shrink-0" style={{ scrollSnapAlign: 'start' }}>
+          <div
+            key={slide.id}
+            className="shrink-0 w-screen h-screen"
+            style={{ scrollSnapAlign: 'start' }}
+          >
             <Slide slide={slide} index={i} t={t} isActive={i === activeIndex} />
           </div>
         ))}
@@ -134,7 +135,7 @@ export function HorizontalSlideshow({ mode, t, onSkip }: HorizontalSlideshowProp
         total={total}
         onPrev={() => { goPrev(); pauseAutoAdvance(); }}
         onNext={() => { goNext(); pauseAutoAdvance(); }}
-        onDotClick={(i) => { goTo(i); pauseAutoAdvance(); }}
+        onDotClick={(i) => { scrollToSlide(i); pauseAutoAdvance(); }}
         showSkip={mode === 'onboarding'}
         onSkip={onSkip}
         skipLabel={t.skipOnboarding}
