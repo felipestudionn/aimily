@@ -4,18 +4,18 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useTranslation } from '@/i18n';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { Navbar } from '@/components/layout/navbar';
 import {
   User, Mail, Shield, CreditCard, Download, Trash2,
-  Loader2, CheckCircle, AlertTriangle, Key,
+  Loader2, CheckCircle, AlertTriangle, Key, Globe,
 } from 'lucide-react';
 
 export default function AccountPage() {
   const { user, updatePassword, signOut } = useAuth();
   const { subscription, openPortal, aiUsagePercent, loading: subLoading } = useSubscription();
   const t = useTranslation();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
   const dateFmtLocale = language === 'es' ? 'es-ES' : 'en-US';
 
@@ -136,6 +136,38 @@ export default function AccountPage() {
                     : '—'}
                 </span>
               </div>
+            </div>
+          </section>
+
+          {/* Language Section */}
+          <section className="bg-white border border-gris/20 p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <Globe className="h-5 w-5 text-carbon" />
+              <h2 className="text-lg font-medium text-carbon">{t.account.languageSection}</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-gris">{t.account.languageLabel}</span>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as Language)}
+                  className="bg-white border border-gris/30 text-sm text-carbon px-3 py-2 focus:outline-none focus:border-carbon/50 cursor-pointer"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                  <option value="it">Italiano</option>
+                  <option value="de">Deutsch</option>
+                  <option value="pt">Português</option>
+                  <option value="nl">Nederlands</option>
+                  <option value="sv">Svenska</option>
+                  <option value="no">Norsk</option>
+                </select>
+              </div>
+              <p className="text-xs text-gris/60 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                {t.account.languageWarning}
+              </p>
             </div>
           </section>
 

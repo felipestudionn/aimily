@@ -5,7 +5,6 @@ import Image from "next/image";
 import { LogOut, Zap, User, FolderOpen } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage, type Language } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/i18n";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -20,31 +19,12 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const { user, signOut } = useAuth();
-  const { language, setLanguage } = useLanguage();
   const t = useTranslation();
 
   const openAuth = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
     setShowAuthModal(true);
   };
-
-  const LanguageToggle = ({ className = '' }: { className?: string }) => (
-    <select
-      value={language}
-      onChange={(e) => setLanguage(e.target.value as Language)}
-      className={`bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border rounded px-2 py-1 transition-colors focus:outline-none ${className}`}
-    >
-      <option value="en">EN</option>
-      <option value="es">ES</option>
-      <option value="fr">FR</option>
-      <option value="it">IT</option>
-      <option value="de">DE</option>
-      <option value="pt">PT</option>
-      <option value="nl">NL</option>
-      <option value="sv">SV</option>
-      <option value="no">NO</option>
-    </select>
-  );
 
   // Slim workspace navbar — just logo + user avatar
   if (variant === 'workspace' || variant === 'workspace-dark') {
@@ -70,7 +50,6 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             />
           </Link>
           <div className="flex items-center gap-2">
-            <LanguageToggle className={isDark ? 'text-crema border-crema/20' : 'text-carbon border-carbon/20'} />
             <NotificationBell />
             {user && (
               <Link
@@ -122,7 +101,6 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                   {t.common.pricing}
                 </Link>
                 <NotificationBell />
-                <LanguageToggle className="text-carbon border-carbon/20" />
                 <Link
                   href="/account"
                   className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:bg-carbon/80 transition-colors"
@@ -140,7 +118,6 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               </>
             ) : (
               <>
-                <LanguageToggle className="text-carbon border-carbon/20" />
                 <button
                   onClick={() => openAuth('signin')}
                   className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
@@ -213,9 +190,6 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 </button>
               </>
             )}
-            <div className="flex items-center gap-3 py-2">
-              <LanguageToggle className="text-carbon border-carbon/20" />
-            </div>
             <div className="pt-2">
               <button
                 onClick={() => { openAuth('signup'); setMobileMenuOpen(false); }}
