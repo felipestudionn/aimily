@@ -15,6 +15,7 @@ const publicRoutes = [
   '/auth/reset-password',
   '/auth/confirm',
   '/meet-aimily',
+  '/how-it-works',
   '/video-reel',
 ];
 
