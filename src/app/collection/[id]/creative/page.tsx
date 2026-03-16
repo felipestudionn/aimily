@@ -59,10 +59,10 @@ const STEPS = [
     nameEs: 'Visión Creativa',
     description: 'Define your consumer, collection vibe, moodboard, and brand DNA',
     blocks: [
-      { id: 'consumer', name: 'Consumer Definition', nameEs: 'Definición de Consumidor', description: 'Define your target consumer profiles with AI-assisted personas', icon: User, available: true },
-      { id: 'vibe', name: 'Collection Vibe', nameEs: 'Vibe de la Colección', description: 'Set the spirit and creative direction of the collection', icon: Sparkles, available: true },
-      { id: 'moodboard', name: 'Moodboard', nameEs: 'Moodboard', description: 'Upload photos or connect Pinterest for visual references', icon: Image, available: true },
       { id: 'brand-dna', name: 'Brand DNA', nameEs: 'Identidad de Marca', description: 'Extract or create your brand identity — logo, colors, typography, tone', icon: Fingerprint, available: true },
+      { id: 'consumer', name: 'Consumer Definition', nameEs: 'Definición de Consumidor', description: 'Define your target consumer profiles with AI-assisted personas', icon: User, available: true },
+      { id: 'moodboard', name: 'Moodboard', nameEs: 'Moodboard', description: 'Upload photos or connect Pinterest for visual references', icon: Image, available: true },
+      { id: 'vibe', name: 'Collection Vibe', nameEs: 'Vibe de la Colección', description: 'Set the spirit and creative direction of the collection', icon: Sparkles, available: true },
     ] as MiniBlock[],
   },
   {
@@ -1219,42 +1219,34 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
   );
 }
 
-function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, vibeText }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string; vibeText?: string }) {
+function BrandDNAContent({ mode, data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
   const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const hasBrand = data.hasBrand as boolean | undefined;
   const hasResult = (data.extracted as boolean) || (data.generated as boolean);
-
-  if (hasBrand === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-6">
-        <p className="text-sm text-carbon text-center max-w-sm">
-          {t.creative.brandQuestion}
-        </p>
-        <div className="flex gap-4">
-          <button
-            onClick={() => onChange({ ...data, hasBrand: true })}
-            className="px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon text-carbon hover:bg-carbon hover:text-crema transition-colors"
-          >
-            {t.creative.iHaveABrand}
-          </button>
-          <button
-            onClick={() => onChange({ ...data, hasBrand: false })}
-            className="px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-colors"
-          >
-            {t.creative.createFromScratch}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      {hasBrand ? (
-        /* PATH A: Existing Brand — extract with AI */
+      {/* ── FREE: Manual brand identity ── */}
+      {mode === 'free' && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandName}</label>
+            <input
+              type="text"
+              value={(data.brandName as string) || ''}
+              onChange={(e) => onChange({ ...data, brandName: e.target.value })}
+              placeholder={t.creative.brandNamePlaceholder}
+              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+            />
+          </div>
+          {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
+        </div>
+      )}
+
+      {/* ── ASSISTED: Extract from existing brand (website/IG) ── */}
+      {mode === 'assisted' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
@@ -1298,81 +1290,68 @@ function BrandDNAContent({ data, onChange, collectionContext, consumerProfile, v
             {t.creative.extractBrandDNA}
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
-
           {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
-
-          <button
-            onClick={() => onChange({ ...data, hasBrand: undefined, extracted: false })}
-            className="text-xs text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
-          >
-            {`← ${t.creative.changeOption}`}
-          </button>
         </div>
-      ) : (
-        /* PATH B: New Brand — manual or AI-generated */
+      )}
+
+      {/* ── AI PROPOSAL: aimily creates brand identity from collection context ── */}
+      {mode === 'ai' && (
         <div className="space-y-4">
+          <div className="bg-carbon/[0.03] border border-carbon/[0.06] p-4 space-y-2">
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
+              {t.creative.aimilyKnows}
+            </p>
+            <ul className="space-y-1">
+              {collectionContext.collectionName && (
+                <li className="text-xs text-carbon/60 flex items-start gap-2">
+                  <Check className="h-3 w-3 mt-0.5 text-carbon/30 flex-shrink-0" />
+                  Collection: {collectionContext.collectionName}
+                </li>
+              )}
+              {collectionContext.season && (
+                <li className="text-xs text-carbon/60 flex items-start gap-2">
+                  <Check className="h-3 w-3 mt-0.5 text-carbon/30 flex-shrink-0" />
+                  Season: {collectionContext.season}
+                </li>
+              )}
+            </ul>
+          </div>
+
           <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandName}</label>
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/40 mb-1.5 block">
+              {t.creative.optionalDirection}
+            </label>
             <input
               type="text"
-              value={(data.brandName as string) || ''}
-              onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-              placeholder={t.creative.brandNamePlaceholder}
-              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandDirection}</label>
-            <textarea
               value={(data.direction as string) || ''}
               onChange={(e) => onChange({ ...data, direction: e.target.value })}
               placeholder={t.creative.brandDirectionPlaceholder}
-              className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={async () => {
-                setGenerating(true);
-                setError(null);
-                const { result, error: err } = await generateCreative('brand-generate', {
-                  brandName: (data.brandName as string) || '',
-                  direction: (data.direction as string) || '',
-                  consumer: consumerProfile || '',
-                  vibe: vibeText || '',
-                  ...collectionContext,
-                }, language);
-                if (err) { setError(err); setGenerating(false); return; }
-                const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
-                onChange({ ...data, brandName: parsed.brandName || (data.brandName as string), colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '', generated: true });
-                setGenerating(false);
-              }}
-              disabled={generating}
+          <button
+            onClick={async () => {
+              setGenerating(true);
+              setError(null);
+              const { result, error: err } = await generateCreative('brand-generate', {
+                brandName: (data.brandName as string) || '',
+                direction: (data.direction as string) || '',
+                ...collectionContext,
+              }, language);
+              if (err) { setError(err); setGenerating(false); return; }
+              const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
+              onChange({ ...data, brandName: parsed.brandName || (data.brandName as string), colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '', generated: true });
+              setGenerating(false);
+            }}
+            disabled={generating}
               className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {t.creative.generateWithAI}
             </button>
-            {!hasResult && (
-              <button
-                onClick={() => onChange({ ...data, generated: true, colors: ['#1a1a1a', '#6b7280', '#d4a574', '#f5f0eb'], tone: '', typography: '', style: '' })}
-                className="px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-colors"
-              >
-                {t.creative.fillManually}
-              </button>
-            )}
-          </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
-
           {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
-
-          <button
-            onClick={() => onChange({ ...data, hasBrand: undefined, generated: false })}
-            className="text-xs text-carbon/50 hover:text-carbon/70 transition-colors tracking-wide uppercase"
-          >
-            {`← ${t.creative.changeOption}`}
-          </button>
         </div>
       )}
     </div>
@@ -1574,7 +1553,7 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
       case 'consumer': return <ConsumerContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} />;
       case 'vibe': return <VibeContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} />;
       case 'moodboard': return <MoodboardContent data={data} onChange={onChange} />;
-      case 'brand-dna': return <BrandDNAContent data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} vibeText={vibeText} />;
+      case 'brand-dna': return <BrandDNAContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} />;
     }
   }
   if (stepId === 'research') {
@@ -1697,7 +1676,7 @@ export default function CreativeBrandPage() {
     handleCollapse();
   }, [updateBlockData, handleCollapse]);
 
-  const hideModePills = expandedBlock === 'moodboard' || expandedBlock === 'brand-dna';
+  const hideModePills = expandedBlock === 'moodboard';
 
   if (persistLoading) {
     return (
