@@ -1891,6 +1891,12 @@ export const sv: Dictionary = {
     modeAssistedDesc: 'Berätta för aimily vad du har i åtanke — en brief, en riktning, en instinkt. aimily expanderar det till ett fullständigt förslag. Du redigerar, förfinar och gör det verkligen ditt. Se det som brainstorming med en mycket välinsatt kollega.',
     modeProposalTitle: 'aimily föreslår',
     modeProposalDesc: 'Ge aimily det absoluta minimum — din säsong, din marknad, din vibe. aimily genererar kompletta konsumentprofiler, prisstrategier, till och med marknadsföringsplaner. Du granskar och godkänner. Som att ha en seniorkonsult på snabbval.',
+    workflowLabel: 'OAVSETT VEM SOM BORJAR, ARBETSFLODEN AR DETSAMMA',
+    workflowStep1: 'Du eller aimily borjar',
+    workflowStep2: 'aimily strukturerar',
+    workflowStep3: 'Du granskar och redigerar',
+    workflowStep4: 'Milstolpe-godkannande',
+    workflowNote: 'Varje forslag ar redigerbart. Varje beslut ar ditt. aimily gar aldrig vidare utan ditt godkannande.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOCK 01 — KREATIVT & VARUMÄRKE',

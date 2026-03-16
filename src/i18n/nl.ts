@@ -2017,6 +2017,12 @@ export const nl: Dictionary = {
     modeAssistedDesc: 'Vertel aimily wat je in gedachten hebt — een briefing, een richting, een instinct. aimily werkt het uit tot een volledig voorstel. Jij bewerkt, verfijnt en maakt het echt van jou. Zie het als brainstormen met een zeer goed geïnformeerde collega.',
     modeProposalTitle: 'aimily stelt voor',
     modeProposalDesc: 'Geef aimily het absolute minimum — je seizoen, je markt, je vibe. aimily genereert complete consumentenprofielen, prijsstrategieën, zelfs marketingplannen. Jij beoordeelt en keurt goed. Alsof je een senior consultant op snelkeuze hebt.',
+    workflowLabel: 'HOE U OOK BEGINT, DE WERKWIJZE IS HETZELFDE',
+    workflowStep1: 'U of aimily begint',
+    workflowStep2: 'aimily structureert',
+    workflowStep3: 'U beoordeelt en bewerkt',
+    workflowStep4: 'Mijlpaal-goedkeuring',
+    workflowNote: 'Elk voorstel is bewerkbaar. Elke beslissing is van u. aimily gaat nooit verder zonder uw goedkeuring.',
 
     // Slide 2: Creative Overview
     creative_overview_label: 'BLOK 01 — CREATIEF & MERK',

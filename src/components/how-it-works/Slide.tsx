@@ -96,6 +96,35 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
               );
             })}
           </div>
+
+          {/* Collaborative workflow pill */}
+          <div className="mt-10 md:mt-14">
+            <p className={`text-center ${textLabel} text-[10px] font-medium tracking-[0.25em] uppercase mb-5`}>
+              {t.workflowLabel}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0">
+              {[
+                { key: 'workflowStep1' as const, icon: '?' },
+                { key: 'workflowStep2' as const, icon: null },
+                { key: 'workflowStep3' as const, icon: null },
+                { key: 'workflowStep4' as const, icon: null },
+              ].map((step, i, arr) => (
+                <div key={step.key} className="flex items-center gap-0">
+                  <div className={`px-4 py-2.5 ${i === arr.length - 1 ? 'border-crema/30 bg-crema/5' : `${borderColor}`} border text-center`}>
+                    <p className={`${i === arr.length - 1 ? 'text-crema font-medium' : textMain} text-xs tracking-[0.08em]`}>
+                      {t[step.key]}
+                    </p>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <ArrowRight className={`h-3.5 w-3.5 ${textLabel} mx-1.5 shrink-0 hidden sm:block`} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className={`text-center ${textSub} text-xs font-light mt-4 max-w-lg mx-auto`}>
+              {t.workflowNote}
+            </p>
+          </div>
         </div>
       </div>
     );
