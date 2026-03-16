@@ -5,6 +5,7 @@ export const nl: Dictionary = {
   common: {
     discover: 'Ontdekken',
     meetAimily: 'Maak kennis met aimily',
+    howItWorks: 'Hoe het werkt',
     contact: 'Contact',
     pricing: 'Prijzen',
     home: 'Startpagina',
@@ -1991,5 +1992,144 @@ export const nl: Dictionary = {
     targetAudience: 'Doelgroep',
     collectionName: 'Collectienaam',
     insightsFromDirection: 'Inzichten afgeleid uit uw creatieve richting',
+  },
+
+  howItWorksPage: {
+    // Nav
+    navTitle: 'Hoe Het Werkt',
+    skipOnboarding: 'Overslaan',
+    slideOf: 'van',
+    ctaButton: 'Start Gratis Proefperiode',
+    ctaSecondary: 'Bekijk Prijzen',
+
+    // Slide 0: Intro
+    intro_label: 'DE REIS',
+    intro_title: 'Je hebt een idee',
+    intro_titleItalic: 'voor een collectie',
+    intro_desc: 'Van die eerste vonk van inspiratie tot een volledig gelanceerde collectie op de markt. aimily begeleidt je bij elke stap — met AI die mode begrijpt, niet alleen data.',
+
+    // Slide 1: AI Modes
+    ai_modes_label: 'JOUW MANIER VAN WERKEN',
+    ai_modes_title: 'Drie manieren om te creëren,',
+    ai_modes_titleItalic: 'één platform',
+    modeManualTitle: 'Handmatig',
+    modeManualDesc: 'Volledige creatieve controle. Jij voert alles in — aimily organiseert, verbindt en structureert je werk gedurende de gehele collectielevenscyclus.',
+    modeAssistedTitle: 'Geassisteerd',
+    modeAssistedDesc: 'Jij bepaalt de richting, AI breidt uit. Geef een briefing, ontvang een volledig voorstel. Bewerk, verfijn en maak het van jou.',
+    modeProposalTitle: 'AI-Voorstel',
+    modeProposalDesc: 'Minimale input, maximale output. AI genereert complete voorstellen — consumentenprofielen, prijsstrategieën, marketingplannen — klaar voor jouw beoordeling.',
+
+    // Slide 2: Creative Overview
+    creative_overview_label: 'BLOK 01 — CREATIEF & MERK',
+    creative_overview_title: 'Vang je visie,',
+    creative_overview_titleItalic: 'definieer je merk',
+    creative_overview_desc: 'Transformeer abstracte inspiratie in een gestructureerde creatieve richting. Bepaal voor wie je ontwerpt, de sfeer van de collectie, je merkidentiteit en de trends die je seizoen vormgeven.',
+    creative_overview_screenshotLabel: 'Voorbeeld creatieve werkruimte',
+
+    // Slide 3: Creative Deep Dive
+    creative_deep_label: 'BINNEN BLOK 01',
+    creative_deep_title: 'Vier tools die',
+    creative_deep_titleItalic: 'je creatieve basis bouwen',
+    creativeTool1: 'Consumentenprofielen',
+    creativeTool1Desc: 'AI genereert psychografische consumentenprofielen op basis van je doelmarkt. Niet alleen demografie — levensstijl, waarden, koopgedrag en merkaffiniteiten.',
+    creativeTool2: 'Collectie Vibes',
+    creativeTool2Desc: 'Definieer de emotionele wereld van je collectie. AI stelt creatieve richtingen voor met sfeernaratieven, zoekwoorden en visuele referenties die je kunt bewerken en verfijnen.',
+    creativeTool3: 'Moodboard Builder',
+    creativeTool3Desc: 'Upload referentiebeelden of koppel Pinterest. Bouw visuele moodboards die de basis worden voor AI-gedreven trendanalyse en ontwerprichting.',
+    creativeTool4: 'Merk-DNA',
+    creativeTool4Desc: 'Extraheer je merkidentiteit van Instagram en je website, of bouw het vanaf nul op. Kleuren, typografie, tone of voice — alles wat je merk herkenbaar maakt.',
+
+    // Slide 4: Merchandising Overview
+    merch_overview_label: 'BLOK 02 — MERCHANDISING',
+    merch_overview_title: 'Van creatieve visie',
+    merch_overview_titleItalic: 'naar businessmodel',
+    merch_overview_desc: 'Zet inspiratie om in een commercieel plan. Definieer productfamilies, stel prijsarchitectuur op, kies distributiekanalen en bouw budgetten — alles aangedreven door marktintelligentie die mode begrijpt.',
+    merch_overview_screenshotLabel: 'Voorbeeld merchandising werkruimte',
+
+    // Slide 5: Merchandising Deep Dive
+    merch_deep_label: 'BINNEN BLOK 02',
+    merch_deep_title: 'Vier kaarten die',
+    merch_deep_titleItalic: 'je collectiestrategie bouwen',
+    merchTool1: 'Productfamilies',
+    merchTool1Desc: 'AI stelt familiehiërarchieën voor op basis van je creatieve richting en marktpositionering. Schoenen, tassen, confectie — gestructureerd voor commercieel succes.',
+    merchTool2: 'Prijsarchitectuur',
+    merchTool2Desc: 'Stel prijsranges in per familie en subcategorie. AI benchmarkt tegen echte Europese marktdata voor jouw merkniveau.',
+    merchTool3: 'Kanalen & Markten',
+    merchTool3Desc: 'Definieer DTC vs wholesale distributie. Breng geografische markten in kaart met kansenniveaus. AI suggereert kanaalstrategieën op basis van je merkpositionering.',
+    merchTool4: 'Budget & Financiën',
+    merchTool4Desc: 'Verkoopprognoses, margedoelstellingen, afprijsstrategie. AI genereert financiële kaders gebaseerd op branchebenchmarks voor jouw segment.',
+    merchBuilderTeaser: 'Alle vier kaarten gevalideerd → Collection Builder wordt ontgrendeld',
+
+    // Slide 6: Collection Builder
+    collection_builder_label: 'DE HUB',
+    collection_builder_title: 'Alles komt samen in',
+    collection_builder_titleItalic: 'de Collection Builder',
+    collection_builder_desc: 'De Collection Builder is waar je collectie tot leven komt als een levende productcatalogus. Elke SKU, elk attribuut, elk ontwerpdetail — verbonden over alle vier blokken.',
+    builderFrom1: 'Creatief + Merchandising',
+    builderCenter: 'Collection Builder',
+    builderCenterDesc: 'Je levende productcatalogus',
+    builderTo1: 'Design + Marketing',
+
+    // Slide 7: Design Overview
+    design_overview_label: 'BLOK 03 — DESIGN & ONTWIKKELING',
+    design_overview_title: 'Van schets tot',
+    design_overview_titleItalic: 'afgewerkt product',
+    design_overview_desc: 'Het langste en meest gedetailleerde blok. AI-gegenereerde schetsen, prototypebeheer, kleursampling, pasbeurten en volledige productietracking — van pixel tot magazijn.',
+    design_overview_screenshotLabel: 'Voorbeeld design werkruimte',
+
+    // Slide 8: Design Deep Dive
+    design_deep_label: 'BINNEN BLOK 03',
+    design_deep_title: 'Vier fases die je product',
+    design_deep_titleItalic: 'van concept naar realiteit brengen',
+    designTool1: 'Design & Schetsen',
+    designTool1Desc: 'AI genereert technische vlaktekeningen vanuit referentiefoto\'s. Beheer kleurvarianten, leesten & vormen, patronen — elk ontwerpdetail per SKU.',
+    designTool2: 'Prototyping',
+    designTool2Desc: 'Volg prototyperonden met je fabriek. Beoordeel, keur goed, vraag aanpassingen aan. Technische fiches en constructienotities — alles gekoppeld aan elke SKU.',
+    designTool3: 'Sampling & Selectie',
+    designTool3Desc: 'Kleurmonsterbeoordelingen, passessies, definitieve goedkeuringsworkflow. Cureer je uiteindelijke selectie van prototypes tot catalogusklare producten.',
+    designTool4: 'Productie & Logistiek',
+    designTool4Desc: 'Plaats productieorders, volg kwaliteitscontrole, beheer verzendlogistiek. Van de fabrieksvloer tot je magazijn, elke stap zichtbaar.',
+
+    // Slide 9: Marketing Overview
+    marketing_overview_label: 'BLOK 04 — MARKETING & LANCERING',
+    marketing_overview_title: 'Lanceerdag?',
+    marketing_overview_titleItalic: 'Al gepland.',
+    marketing_overview_desc: 'Creëer overtuigende verhalen, genereer productvisuals met AI, plan je contentkalender, stel betaalde campagnes in en voer je lancering uit — van merkverhaal tot eerste verkoop.',
+    marketing_overview_screenshotLabel: 'Voorbeeld marketing werkruimte',
+
+    // Slide 10: Marketing Deep Dive
+    marketing_deep_label: 'BINNEN BLOK 04',
+    marketing_deep_title: 'Vijf tools die je',
+    marketing_deep_titleItalic: 'van content naar conversie brengen',
+    marketingTool1: 'Collectieverhalen',
+    marketingTool1Desc: 'Groepeer je SKU\'s in narratieve clusters — minicollecties met namen, sferen en verhaallijnen. Elk downstream-asset verwijst naar deze verhalen.',
+    marketingTool2: 'Productvisuals',
+    marketingTool2Desc: 'AI genereert productvisualisaties, virtuele try-ons en lifestylefotografie. Professionele beelden van je catalogusfoto\'s — geen fotoshoot nodig.',
+    marketingTool3: 'Contentkalender',
+    marketingTool3Desc: 'AI genereert een 8-weekse social media kalender voor Instagram, TikTok, Pinterest en e-mail. Platformeigen content, afgestemd op je lancering.',
+    marketingTool4: 'Betaald & Groei',
+    marketingTool4Desc: 'Stel betaalde campagnes in via Meta, Google en TikTok. AI stelt budgetallocatie, doelgroeptargeting en creatieve briefings voor op basis van je verhalen.',
+    marketingTool5: 'Lanceringsuitvoering',
+    marketingTool5Desc: 'Pre-lanceringschecklist, coördinatie op lanceerdag, post-lanceringsoptimalisatie. Elke taak bijgehouden, elk kanaal gesynchroniseerd.',
+
+    // Slide 11: Calendar
+    calendar_label: 'DE ORKESTRATOR',
+    calendar_title: 'Elke deadline, elk team,',
+    calendar_titleItalic: 'één tijdlijn',
+    calendar_desc: 'Een visuele Gantt-tijdlijn verbindt alle vier blokken. 45 mijlpalen met blok-overschrijdende afhankelijkheden. Versleep, pas grootte aan, exporteer. Je gehele collectiereis in één overzicht.',
+    calBlock1Count: '6',
+    calBlock1Label: 'Creatieve mijlpalen',
+    calBlock2Count: '6',
+    calBlock2Label: 'Planningsmijlpalen',
+    calBlock3Count: '18',
+    calBlock3Label: 'Designmijlpalen',
+    calBlock4Count: '15',
+    calBlock4Label: 'Marketingmijlpalen',
+
+    // Slide 12: CTA
+    cta_label: 'DAT IS ALLES WAT JE NODIG HEBT',
+    cta_title: 'Je collectie',
+    cta_titleItalic: 'is gelanceerd',
+    cta_desc: 'Van een vonk van inspiratie tot een uitverkochte lancering. Eén platform. Elke stap. Sluit je aan bij designers, merken en studio\'s die hun collecties beheren met aimily.',
   },
 };

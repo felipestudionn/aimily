@@ -236,6 +236,9 @@ export default function MeetAimilyPage() {
             >
               {t.common.meetAimily}
             </Link>
+              <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                {t.common.howItWorks}
+              </Link>
             <Link
               href="/contact"
               className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
@@ -623,6 +626,9 @@ export default function MeetAimilyPage() {
             >
               {t.common.meetAimily}
             </Link>
+              <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                {t.common.howItWorks}
+              </Link>
             <Link
               href="/terms"
               className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors"

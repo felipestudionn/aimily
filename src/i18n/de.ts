@@ -5,6 +5,7 @@ export const de: Dictionary = {
   common: {
     discover: 'Entdecken',
     meetAimily: 'aimily kennenlernen',
+    howItWorks: 'So funktioniert es',
     contact: 'Kontakt',
     pricing: 'Preise',
     home: 'Startseite',
@@ -1991,5 +1992,144 @@ export const de: Dictionary = {
     targetAudience: 'Zielgruppe',
     collectionName: 'Kollektionsname',
     insightsFromDirection: 'Aus deiner kreativen Richtung gewonnene Erkenntnisse',
+  },
+
+  howItWorksPage: {
+    // Nav
+    navTitle: 'So funktioniert es',
+    skipOnboarding: 'Überspringen',
+    slideOf: 'von',
+    ctaButton: 'Kostenlos testen',
+    ctaSecondary: 'Preise ansehen',
+
+    // Slide 0: Intro
+    intro_label: 'DIE REISE',
+    intro_title: 'Du hast eine Idee',
+    intro_titleItalic: 'für eine Kollektion',
+    intro_desc: 'Von diesem ersten Funken Inspiration bis zu einer vollständig am Markt eingeführten Kollektion. aimily begleitet dich bei jedem Schritt — mit KI, die Mode versteht, nicht nur Daten.',
+
+    // Slide 1: AI Modes
+    ai_modes_label: 'DEINE ARBEITSWEISE',
+    ai_modes_title: 'Drei Wege zu kreieren,',
+    ai_modes_titleItalic: 'eine Plattform',
+    modeManualTitle: 'Manuell',
+    modeManualDesc: 'Volle kreative Kontrolle. Du gibst alles ein — aimily organisiert, vernetzt und strukturiert deine Arbeit über den gesamten Kollektionszyklus.',
+    modeAssistedTitle: 'Assistiert',
+    modeAssistedDesc: 'Du gibst die Richtung vor, die KI erweitert. Gib ein Briefing, erhalte einen vollständigen Vorschlag. Bearbeite, verfeinere und mache ihn zu deinem.',
+    modeProposalTitle: 'KI-Vorschlag',
+    modeProposalDesc: 'Minimaler Input, maximaler Output. Die KI erstellt vollständige Vorschläge — Verbraucherprofile, Preisstrategien, Marketingpläne — bereit für deine Prüfung.',
+
+    // Slide 2: Creative Overview
+    creative_overview_label: 'BLOCK 01 — KREATIV UND MARKE',
+    creative_overview_title: 'Erfasse deine Vision,',
+    creative_overview_titleItalic: 'definiere deine Marke',
+    creative_overview_desc: 'Verwandle abstrakte Inspiration in eine strukturierte kreative Richtung. Definiere, für wen du entwirfst, die Stimmung der Kollektion, deine Markenidentität und die Trends, die deine Saison prägen werden.',
+    creative_overview_screenshotLabel: 'Vorschau des kreativen Arbeitsbereichs',
+
+    // Slide 3: Creative Deep Dive
+    creative_deep_label: 'IN BLOCK 01',
+    creative_deep_title: 'Vier Werkzeuge, die dein',
+    creative_deep_titleItalic: 'kreatives Fundament aufbauen',
+    creativeTool1: 'Verbraucherprofile',
+    creativeTool1Desc: 'Die KI erstellt psychografische Verbraucherprofile basierend auf deinem Zielmarkt. Nicht nur Demografie — Lebensstil, Werte, Kaufverhalten und Markenaffinitäten.',
+    creativeTool2: 'Kollektions-Vibes',
+    creativeTool2Desc: 'Definiere die emotionale Welt deiner Kollektion. Die KI schlägt kreative Richtungen mit Stimmungsnarrativen, Schlüsselwörtern und visuellen Referenzen vor, die du bearbeiten und verfeinern kannst.',
+    creativeTool3: 'Moodboard-Builder',
+    creativeTool3Desc: 'Lade Referenzbilder hoch oder verbinde Pinterest. Erstelle visuelle Moodboards, die zur Grundlage für KI-gestützte Trendanalysen und Design-Richtung werden.',
+    creativeTool4: 'Marken-DNA',
+    creativeTool4Desc: 'Extrahiere deine Markenidentität aus Instagram und deiner Website oder baue sie von Grund auf. Farben, Typografie, Tonalität — alles, was deine Marke erkennbar macht.',
+
+    // Slide 4: Merchandising Overview
+    merch_overview_label: 'BLOCK 02 — MERCHANDISING',
+    merch_overview_title: 'Von der kreativen Vision',
+    merch_overview_titleItalic: 'zum Geschäftsmodell',
+    merch_overview_desc: 'Verwandle Inspiration in einen kommerziellen Plan. Definiere Produktfamilien, lege die Preisarchitektur fest, wähle Vertriebskanäle und erstelle Budgets — alles angetrieben von Marktintelligenz, die Mode versteht.',
+    merch_overview_screenshotLabel: 'Vorschau des Merchandising-Arbeitsbereichs',
+
+    // Slide 5: Merchandising Deep Dive
+    merch_deep_label: 'IN BLOCK 02',
+    merch_deep_title: 'Vier Karten, die deine',
+    merch_deep_titleItalic: 'Kollektionsstrategie aufbauen',
+    merchTool1: 'Produktfamilien',
+    merchTool1Desc: 'Die KI schlägt Familienhierarchien basierend auf deiner kreativen Richtung und Marktpositionierung vor. Schuhe, Taschen, RTW — strukturiert für kommerziellen Erfolg.',
+    merchTool2: 'Preisarchitektur',
+    merchTool2Desc: 'Lege Preisspannen pro Familie und Unterkategorie fest. Die KI vergleicht mit realen europäischen Marktdaten für dein Markensegment.',
+    merchTool3: 'Kanäle und Märkte',
+    merchTool3Desc: 'Definiere DTC- vs. Wholesale-Distribution. Kartiere geografische Märkte mit Chancenniveaus. Die KI schlägt Kanalstrategien basierend auf deiner Markenpositionierung vor.',
+    merchTool4: 'Budget und Finanzen',
+    merchTool4Desc: 'Umsatzziele, Margenziele, Markdown-Strategie. Die KI erstellt Finanzrahmen basierend auf Branchen-Benchmarks für dein Segment.',
+    merchBuilderTeaser: 'Alle vier Karten validiert → der Collection Builder wird freigeschaltet',
+
+    // Slide 6: Collection Builder
+    collection_builder_label: 'DAS HUB',
+    collection_builder_title: 'Alles verbindet sich im',
+    collection_builder_titleItalic: 'Collection Builder',
+    collection_builder_desc: 'Der Collection Builder ist der Ort, an dem deine Kollektion als lebendiger Produktkatalog zum Leben erwacht. Jede SKU, jedes Attribut, jedes Designdetail — verbunden über alle vier Blöcke.',
+    builderFrom1: 'Kreativ + Merchandising',
+    builderCenter: 'Collection Builder',
+    builderCenterDesc: 'Dein lebendiger Produktkatalog',
+    builderTo1: 'Design + Marketing',
+
+    // Slide 7: Design Overview
+    design_overview_label: 'BLOCK 03 — DESIGN UND ENTWICKLUNG',
+    design_overview_title: 'Von der Skizze zum',
+    design_overview_titleItalic: 'fertigen Produkt',
+    design_overview_desc: 'Der längste und detaillierteste Block. KI-generierte Skizzen, Prototypen-Management, Farbmusterung, Fitting-Reviews und vollständige Produktionsverfolgung — vom Pixel zum Lager.',
+    design_overview_screenshotLabel: 'Vorschau des Design-Arbeitsbereichs',
+
+    // Slide 8: Design Deep Dive
+    design_deep_label: 'IN BLOCK 03',
+    design_deep_title: 'Vier Phasen, die dein Produkt',
+    design_deep_titleItalic: 'vom Konzept zur Realität bringen',
+    designTool1: 'Design und Skizzen',
+    designTool1Desc: 'Die KI generiert technische Flachskizzen aus Referenzfotos. Verwalte Farbvarianten, Leisten und Formen, Schnittmuster — jedes Designdetail pro SKU.',
+    designTool2: 'Prototyping',
+    designTool2Desc: 'Verfolge Prototypen-Runden mit deiner Fabrik. Prüfe, genehmige, fordere Änderungen an. Technische Datenblätter und Konstruktionshinweise — alles mit jeder SKU verbunden.',
+    designTool3: 'Bemusterung und Selektion',
+    designTool3Desc: 'Farbmuster-Reviews, Fitting-Sessions, finaler Freigabe-Workflow. Kuratiere deine endgültige Auswahl vom Prototyp zu katalogfertigen Produkten.',
+    designTool4: 'Produktion und Logistik',
+    designTool4Desc: 'Platziere Produktionsaufträge, kontrolliere die Qualität, manage die Versandlogistik. Von der Fabrik zu deinem Lager, jeder Schritt sichtbar.',
+
+    // Slide 9: Marketing Overview
+    marketing_overview_label: 'BLOCK 04 — MARKETING UND LAUNCH',
+    marketing_overview_title: 'Der Launch-Tag?',
+    marketing_overview_titleItalic: 'Bereits geplant.',
+    marketing_overview_desc: 'Erstelle fesselnde Geschichten, generiere Produkt-Visuals mit KI, plane deinen Content-Kalender, richte Paid-Kampagnen ein und führe deinen Launch durch — von der Markenerzählung bis zum ersten Verkauf.',
+    marketing_overview_screenshotLabel: 'Vorschau des Marketing-Arbeitsbereichs',
+
+    // Slide 10: Marketing Deep Dive
+    marketing_deep_label: 'IN BLOCK 04',
+    marketing_deep_title: 'Fünf Werkzeuge, die dich',
+    marketing_deep_titleItalic: 'vom Content zur Conversion bringen',
+    marketingTool1: 'Kollektions-Geschichten',
+    marketingTool1Desc: 'Gruppiere deine SKUs in narrative Cluster — Mini-Kollektionen mit Namen, Stimmungen und Storylines. Jedes nachfolgende Asset referenziert diese Geschichten.',
+    marketingTool2: 'Produkt-Visuals',
+    marketingTool2Desc: 'Die KI generiert Produkt-Renderings, virtuelle Anproben und Lifestyle-Fotografie. Professionelle Bilder aus deinen Katalogfotos — kein Fotoshooting nötig.',
+    marketingTool3: 'Content-Kalender',
+    marketingTool3Desc: 'Die KI erstellt einen 8-Wochen-Social-Media-Kalender über Instagram, TikTok, Pinterest und E-Mail. Plattform-nativer Content, abgestimmt auf deinen Launch.',
+    marketingTool4: 'Paid & Growth',
+    marketingTool4Desc: 'Richte Paid-Kampagnen über Meta, Google und TikTok ein. Die KI schlägt Budgetverteilung, Zielgruppen-Targeting und Creative-Briefings basierend auf deinen Geschichten vor.',
+    marketingTool5: 'Launch-Durchführung',
+    marketingTool5Desc: 'Pre-Launch-Checkliste, Launch-Day-Koordination, Post-Launch-Optimierung. Jede Aufgabe verfolgt, jeder Kanal synchronisiert.',
+
+    // Slide 11: Calendar
+    calendar_label: 'DER ORCHESTRATOR',
+    calendar_title: 'Jede Deadline, jedes Team,',
+    calendar_titleItalic: 'eine Timeline',
+    calendar_desc: 'Eine visuelle Gantt-Timeline verbindet alle vier Blöcke. 45 Meilensteine mit blockübergreifenden Abhängigkeiten. Ziehen, skalieren, exportieren. Die gesamte Reise deiner Kollektion in einer Ansicht.',
+    calBlock1Count: '6',
+    calBlock1Label: 'Kreative Meilensteine',
+    calBlock2Count: '6',
+    calBlock2Label: 'Planungs-Meilensteine',
+    calBlock3Count: '18',
+    calBlock3Label: 'Design-Meilensteine',
+    calBlock4Count: '15',
+    calBlock4Label: 'Marketing-Meilensteine',
+
+    // Slide 12: CTA
+    cta_label: 'DAS IST ALLES, WAS DU BRAUCHST',
+    cta_title: 'Deine Kollektion',
+    cta_titleItalic: 'ist gelauncht',
+    cta_desc: 'Von einem Funken Inspiration zu einem ausverkauften Launch. Eine Plattform. Jeder Schritt. Schließe dich Designern, Marken und Studios an, die ihre Kollektionen mit aimily managen.',
   },
 };

@@ -5,6 +5,7 @@ export const pt: Dictionary = {
   common: {
     discover: 'Descobrir',
     meetAimily: 'Conheça Aimily',
+    howItWorks: 'Como Funciona',
     contact: 'Contato',
     pricing: 'Preços',
     home: 'Início',
@@ -1973,5 +1974,144 @@ export const pt: Dictionary = {
     targetAudience: 'Público-Alvo',
     collectionName: 'Nome da Coleção',
     insightsFromDirection: 'Insights extraídos da sua direção criativa',
+  },
+
+  howItWorksPage: {
+    // Nav
+    navTitle: 'Como Funciona',
+    skipOnboarding: 'Pular',
+    slideOf: 'de',
+    ctaButton: 'Começar Teste Gratuito',
+    ctaSecondary: 'Ver Preços',
+
+    // Slide 0: Intro
+    intro_label: 'A JORNADA',
+    intro_title: 'Você tem uma ideia',
+    intro_titleItalic: 'para uma coleção',
+    intro_desc: 'Daquela primeira faísca de inspiração até uma coleção totalmente lançada no mercado. aimily guia você em cada etapa — com IA que entende moda, não apenas dados.',
+
+    // Slide 1: AI Modes
+    ai_modes_label: 'SEU JEITO DE TRABALHAR',
+    ai_modes_title: 'Três formas de criar,',
+    ai_modes_titleItalic: 'uma plataforma',
+    modeManualTitle: 'Manual',
+    modeManualDesc: 'Controle criativo total. Você insere tudo — aimily organiza, conecta e estrutura seu trabalho ao longo de todo o ciclo de vida da coleção.',
+    modeAssistedTitle: 'Assistido',
+    modeAssistedDesc: 'Você define a direção, a IA expande. Forneça um briefing, receba uma proposta completa. Edite, refine e torne-a sua.',
+    modeProposalTitle: 'Proposta IA',
+    modeProposalDesc: 'Entrada mínima, resultado máximo. A IA gera propostas completas — perfis de consumidor, estratégias de precificação, planos de marketing — prontas para sua revisão.',
+
+    // Slide 2: Creative Overview
+    creative_overview_label: 'BLOCO 01 — CRIATIVO & MARCA',
+    creative_overview_title: 'Capture sua visão,',
+    creative_overview_titleItalic: 'defina sua marca',
+    creative_overview_desc: 'Transforme inspiração abstrata em uma direção criativa estruturada. Defina para quem você está projetando, o clima da coleção, sua identidade de marca e as tendências que moldarão sua temporada.',
+    creative_overview_screenshotLabel: 'Prévia do espaço de trabalho criativo',
+
+    // Slide 3: Creative Deep Dive
+    creative_deep_label: 'DENTRO DO BLOCO 01',
+    creative_deep_title: 'Quatro ferramentas que constroem',
+    creative_deep_titleItalic: 'sua base criativa',
+    creativeTool1: 'Perfis de Consumidor',
+    creativeTool1Desc: 'A IA gera perfis psicográficos de consumidores baseados no seu mercado-alvo. Não apenas dados demográficos — estilo de vida, valores, comportamento de compra e afinidades de marca.',
+    creativeTool2: 'Vibes da Coleção',
+    creativeTool2Desc: 'Defina o universo emocional da sua coleção. A IA propõe direções criativas com narrativas de mood, palavras-chave e referências visuais que você pode editar e refinar.',
+    creativeTool3: 'Construtor de Moodboard',
+    creativeTool3Desc: 'Faça upload de imagens de referência ou conecte o Pinterest. Construa moodboards visuais que se tornam a base para análise de tendências e direção de design alimentadas por IA.',
+    creativeTool4: 'DNA da Marca',
+    creativeTool4Desc: 'Extraia a identidade da sua marca do Instagram e do site, ou construa do zero. Cores, tipografia, tom de voz — tudo que torna sua marca reconhecível.',
+
+    // Slide 4: Merchandising Overview
+    merch_overview_label: 'BLOCO 02 — MERCHANDISING',
+    merch_overview_title: 'Da visão criativa',
+    merch_overview_titleItalic: 'ao modelo de negócio',
+    merch_overview_desc: 'Transforme inspiração em um plano comercial. Defina famílias de produtos, estruture preços, escolha canais de distribuição e monte orçamentos — tudo impulsionado por inteligência de mercado que entende moda.',
+    merch_overview_screenshotLabel: 'Prévia do espaço de trabalho de merchandising',
+
+    // Slide 5: Merchandising Deep Dive
+    merch_deep_label: 'DENTRO DO BLOCO 02',
+    merch_deep_title: 'Quatro cards que constroem',
+    merch_deep_titleItalic: 'sua estratégia de coleção',
+    merchTool1: 'Famílias de Produtos',
+    merchTool1Desc: 'A IA propõe hierarquias de famílias baseadas na sua direção criativa e posicionamento de mercado. Calçados, bolsas, prêt-à-porter — estruturados para o sucesso comercial.',
+    merchTool2: 'Arquitetura de Preços',
+    merchTool2Desc: 'Defina faixas de preço por família e subcategoria. A IA compara com dados reais do mercado europeu para o nível da sua marca.',
+    merchTool3: 'Canais & Mercados',
+    merchTool3Desc: 'Defina distribuição DTC vs atacado. Mapeie mercados geográficos com níveis de oportunidade. A IA sugere estratégias de canal baseadas no posicionamento da sua marca.',
+    merchTool4: 'Orçamento & Financeiro',
+    merchTool4Desc: 'Metas de vendas, objetivos de margem, estratégia de markdown. A IA gera frameworks financeiros fundamentados em benchmarks do setor para seu segmento.',
+    merchBuilderTeaser: 'Os quatro cards validados → Collection Builder é desbloqueado',
+
+    // Slide 6: Collection Builder
+    collection_builder_label: 'O HUB',
+    collection_builder_title: 'Tudo se conecta no',
+    collection_builder_titleItalic: 'Collection Builder',
+    collection_builder_desc: 'O Collection Builder é onde sua coleção ganha vida como um catálogo de produtos vivo. Cada SKU, cada atributo, cada detalhe de design — conectados através dos quatro blocos.',
+    builderFrom1: 'Criativo + Merchandising',
+    builderCenter: 'Collection Builder',
+    builderCenterDesc: 'Seu catálogo de produtos vivo',
+    builderTo1: 'Design + Marketing',
+
+    // Slide 7: Design Overview
+    design_overview_label: 'BLOCO 03 — DESIGN & DESENVOLVIMENTO',
+    design_overview_title: 'Do esboço ao',
+    design_overview_titleItalic: 'produto finalizado',
+    design_overview_desc: 'O bloco mais longo e detalhado. Esboços gerados por IA, gestão de protótipos, amostragem de cores, revisões de prova e rastreamento completo de produção — do pixel ao estoque.',
+    design_overview_screenshotLabel: 'Prévia do espaço de trabalho de design',
+
+    // Slide 8: Design Deep Dive
+    design_deep_label: 'DENTRO DO BLOCO 03',
+    design_deep_title: 'Quatro fases que levam seu produto',
+    design_deep_titleItalic: 'do conceito à realidade',
+    designTool1: 'Design & Esboços',
+    designTool1Desc: 'A IA gera esboços técnicos planos a partir de fotos de referência. Gerencie variantes de cor, formas e modelagens — cada detalhe de design por SKU.',
+    designTool2: 'Prototipagem',
+    designTool2Desc: 'Acompanhe rodadas de protótipos com sua fábrica. Revise, aprove, solicite modificações. Fichas técnicas e notas de construção — tudo conectado a cada SKU.',
+    designTool3: 'Amostragem & Seleção',
+    designTool3Desc: 'Revisões de amostras de cores, sessões de prova, fluxo de aprovação final. Faça a curadoria da sua seleção final, de protótipos a produtos prontos para o catálogo.',
+    designTool4: 'Produção & Logística',
+    designTool4Desc: 'Faça pedidos de produção, acompanhe o controle de qualidade, gerencie a logística de envio. Do chão de fábrica ao seu estoque, cada etapa visível.',
+
+    // Slide 9: Marketing Overview
+    marketing_overview_label: 'BLOCO 04 — MARKETING & LANÇAMENTO',
+    marketing_overview_title: 'Dia do lançamento?',
+    marketing_overview_titleItalic: 'Já planejado.',
+    marketing_overview_desc: 'Crie histórias envolventes, gere visuais de produto com IA, planeje seu calendário de conteúdo, configure campanhas pagas e execute seu lançamento — da narrativa de marca à primeira venda.',
+    marketing_overview_screenshotLabel: 'Prévia do espaço de trabalho de marketing',
+
+    // Slide 10: Marketing Deep Dive
+    marketing_deep_label: 'DENTRO DO BLOCO 04',
+    marketing_deep_title: 'Cinco ferramentas que levam você',
+    marketing_deep_titleItalic: 'do conteúdo à conversão',
+    marketingTool1: 'Histórias da Coleção',
+    marketingTool1Desc: 'Agrupe seus SKUs em clusters narrativos — mini-coleções com nomes, moods e storylines. Cada ativo downstream referencia essas histórias.',
+    marketingTool2: 'Visuais de Produto',
+    marketingTool2Desc: 'A IA gera renders de produto, provas virtuais e fotografia lifestyle. Imagens profissionais a partir das suas fotos de catálogo — sem necessidade de sessão fotográfica.',
+    marketingTool3: 'Calendário de Conteúdo',
+    marketingTool3Desc: 'A IA gera um calendário de mídia social de 8 semanas para Instagram, TikTok, Pinterest e e-mail. Conteúdo nativo para cada plataforma, alinhado ao seu lançamento.',
+    marketingTool4: 'Mídia Paga & Crescimento',
+    marketingTool4Desc: 'Configure campanhas pagas no Meta, Google e TikTok. A IA propõe alocação de orçamento, segmentação de público e briefings criativos baseados nas suas histórias.',
+    marketingTool5: 'Execução do Lançamento',
+    marketingTool5Desc: 'Checklist pré-lançamento, coordenação do dia do lançamento, otimização pós-lançamento. Cada tarefa rastreada, cada canal sincronizado.',
+
+    // Slide 11: Calendar
+    calendar_label: 'O ORQUESTRADOR',
+    calendar_title: 'Cada prazo, cada equipe,',
+    calendar_titleItalic: 'uma timeline',
+    calendar_desc: 'Uma timeline visual Gantt conecta todos os quatro blocos. 45 marcos com dependências entre blocos. Arraste, redimensione, exporte. Toda a jornada da sua coleção em uma única visualização.',
+    calBlock1Count: '6',
+    calBlock1Label: 'Marcos criativos',
+    calBlock2Count: '6',
+    calBlock2Label: 'Marcos de planejamento',
+    calBlock3Count: '18',
+    calBlock3Label: 'Marcos de design',
+    calBlock4Count: '15',
+    calBlock4Label: 'Marcos de marketing',
+
+    // Slide 12: CTA
+    cta_label: 'É TUDO QUE VOCÊ PRECISA',
+    cta_title: 'Sua coleção',
+    cta_titleItalic: 'está lançada',
+    cta_desc: 'De uma faísca de inspiração a um lançamento esgotado. Uma plataforma. Cada etapa. Junte-se a designers, marcas e estúdios gerenciando suas coleções com aimily.',
   },
 };

@@ -5,6 +5,7 @@ export const sv: Dictionary = {
   common: {
     discover: 'Utforska',
     meetAimily: 'Möt Aimily',
+    howItWorks: 'Hur det fungerar',
     contact: 'Kontakt',
     pricing: 'Priser',
     home: 'Hem',
@@ -1865,5 +1866,144 @@ export const sv: Dictionary = {
     targetAudience: 'Målgrupp',
     collectionName: 'Kollektionsnamn',
     insightsFromDirection: 'Insikter extraherade från din kreativa riktning',
+  },
+
+  howItWorksPage: {
+    // Nav
+    navTitle: 'Så Fungerar Det',
+    skipOnboarding: 'Hoppa över',
+    slideOf: 'av',
+    ctaButton: 'Starta Gratis Provperiod',
+    ctaSecondary: 'Se Priser',
+
+    // Slide 0: Intro
+    intro_label: 'RESAN',
+    intro_title: 'Du har en idé',
+    intro_titleItalic: 'för en kollektion',
+    intro_desc: 'Från den första gnistan av inspiration till en fullt lanserad kollektion på marknaden. aimily guidar dig genom varje steg — med AI som förstår mode, inte bara data.',
+
+    // Slide 1: AI Modes
+    ai_modes_label: 'DITT SÄTT ATT ARBETA',
+    ai_modes_title: 'Tre sätt att skapa,',
+    ai_modes_titleItalic: 'en plattform',
+    modeManualTitle: 'Manuellt',
+    modeManualDesc: 'Full kreativ kontroll. Du matar in allt — aimily organiserar, kopplar samman och strukturerar ditt arbete genom hela kollektionens livscykel.',
+    modeAssistedTitle: 'Assisterat',
+    modeAssistedDesc: 'Du sätter riktningen, AI expanderar. Ge en brief, få ett komplett förslag. Redigera, förfina och gör det till ditt.',
+    modeProposalTitle: 'AI-Förslag',
+    modeProposalDesc: 'Minimal input, maximal output. AI genererar kompletta förslag — konsumentprofiler, prissättningsstrategier, marknadsföringsplaner — redo för din granskning.',
+
+    // Slide 2: Creative Overview
+    creative_overview_label: 'BLOCK 01 — KREATIVT & VARUMÄRKE',
+    creative_overview_title: 'Fånga din vision,',
+    creative_overview_titleItalic: 'definiera ditt varumärke',
+    creative_overview_desc: 'Omvandla abstrakt inspiration till en strukturerad kreativ riktning. Definiera vem du designar för, kollektionens stämning, din varumärkesidentitet och trenderna som formar din säsong.',
+    creative_overview_screenshotLabel: 'Förhandsgranskning kreativ arbetsyta',
+
+    // Slide 3: Creative Deep Dive
+    creative_deep_label: 'INUTI BLOCK 01',
+    creative_deep_title: 'Fyra verktyg som bygger',
+    creative_deep_titleItalic: 'din kreativa grund',
+    creativeTool1: 'Konsumentprofiler',
+    creativeTool1Desc: 'AI genererar psykografiska konsumentprofiler baserade på din målmarknad. Inte bara demografi — livsstil, värderingar, köpbeteende och varumärkesaffinitet.',
+    creativeTool2: 'Kollektionsvibes',
+    creativeTool2Desc: 'Definiera den emotionella världen i din kollektion. AI föreslår kreativa riktningar med stämningsberättelser, nyckelord och visuella referenser du kan redigera och förfina.',
+    creativeTool3: 'Moodboard-Byggare',
+    creativeTool3Desc: 'Ladda upp referensbilder eller anslut Pinterest. Bygg visuella moodboards som blir grunden för AI-driven trendanalys och designriktning.',
+    creativeTool4: 'Varumärkes-DNA',
+    creativeTool4Desc: 'Extrahera din varumärkesidentitet från Instagram och webbplats, eller bygg den från grunden. Färger, typografi, tonalitet — allt som gör ditt varumärke igenkännbart.',
+
+    // Slide 4: Merchandising Overview
+    merch_overview_label: 'BLOCK 02 — MERCHANDISING',
+    merch_overview_title: 'Från kreativ vision',
+    merch_overview_titleItalic: 'till affärsmodell',
+    merch_overview_desc: 'Omvandla inspiration till en kommersiell plan. Definiera produktfamiljer, sätt prisarkitektur, välj distributionskanaler och bygg budgetar — allt drivet av marknadsintelligens som förstår mode.',
+    merch_overview_screenshotLabel: 'Förhandsgranskning merchandising arbetsyta',
+
+    // Slide 5: Merchandising Deep Dive
+    merch_deep_label: 'INUTI BLOCK 02',
+    merch_deep_title: 'Fyra kort som bygger',
+    merch_deep_titleItalic: 'din kollektionsstrategi',
+    merchTool1: 'Produktfamiljer',
+    merchTool1Desc: 'AI föreslår familjehierarkier baserade på din kreativa riktning och marknadspositionering. Skor, väskor, konfektion — strukturerat för kommersiell framgång.',
+    merchTool2: 'Prisarkitektur',
+    merchTool2Desc: 'Ställ in prisintervall per familj och underkategori. AI jämför med verklig europeisk marknadsdata för din varumärkesnivå.',
+    merchTool3: 'Kanaler & Marknader',
+    merchTool3Desc: 'Definiera DTC vs grossistdistribution. Kartlägg geografiska marknader med möjlighetsnivåer. AI föreslår kanalstrategier baserade på din varumärkespositionering.',
+    merchTool4: 'Budget & Ekonomi',
+    merchTool4Desc: 'Försäljningsmål, marginalmål, nedsättningsstrategi. AI genererar finansiella ramverk grundade i branschriktmärken för ditt segment.',
+    merchBuilderTeaser: 'Alla fyra kort validerade → Collection Builder låses upp',
+
+    // Slide 6: Collection Builder
+    collection_builder_label: 'NAVET',
+    collection_builder_title: 'Allt kopplas samman i',
+    collection_builder_titleItalic: 'Collection Builder',
+    collection_builder_desc: 'Collection Builder är där din kollektion får liv som en levande produktkatalog. Varje SKU, varje attribut, varje designdetalj — sammankopplat över alla fyra block.',
+    builderFrom1: 'Kreativt + Merchandising',
+    builderCenter: 'Collection Builder',
+    builderCenterDesc: 'Din levande produktkatalog',
+    builderTo1: 'Design + Marknadsföring',
+
+    // Slide 7: Design Overview
+    design_overview_label: 'BLOCK 03 — DESIGN & UTVECKLING',
+    design_overview_title: 'Från skiss till',
+    design_overview_titleItalic: 'färdig produkt',
+    design_overview_desc: 'Det längsta och mest detaljerade blocket. AI-genererade skisser, prototyphantering, färgsampling, passformsöversyn och fullständig produktionsspårning — från pixel till lager.',
+    design_overview_screenshotLabel: 'Förhandsgranskning design arbetsyta',
+
+    // Slide 8: Design Deep Dive
+    design_deep_label: 'INUTI BLOCK 03',
+    design_deep_title: 'Fyra faser som tar din produkt',
+    design_deep_titleItalic: 'från koncept till verklighet',
+    designTool1: 'Design & Skisser',
+    designTool1Desc: 'AI genererar tekniska plattskisser från referensfoton. Hantera färgvarianter, läster & former, mönster — varje designdetalj per SKU.',
+    designTool2: 'Prototypframtagning',
+    designTool2Desc: 'Följ prototyprundor med din fabrik. Granska, godkänn, begär ändringar. Tekniska specifikationer och konstruktionsnoteringar — allt kopplat till varje SKU.',
+    designTool3: 'Sampling & Urval',
+    designTool3Desc: 'Färgprovsöversyn, passformssessioner, slutgiltigt godkännandeflöde. Kurera ditt slutgiltiga urval från prototyper till katalogfärdiga produkter.',
+    designTool4: 'Produktion & Logistik',
+    designTool4Desc: 'Lägg produktionsordrar, följ kvalitetskontroll, hantera fraktlogistik. Från fabriksgolv till ditt lager, varje steg synligt.',
+
+    // Slide 9: Marketing Overview
+    marketing_overview_label: 'BLOCK 04 — MARKNADSFÖRING & LANSERING',
+    marketing_overview_title: 'Lanseringsdag?',
+    marketing_overview_titleItalic: 'Redan planerad.',
+    marketing_overview_desc: 'Skapa övertygande berättelser, generera produktbilder med AI, planera din innehållskalender, sätt upp betalda kampanjer och genomför din lansering — från varumärkesberättelse till första försäljning.',
+    marketing_overview_screenshotLabel: 'Förhandsgranskning marknadsförings arbetsyta',
+
+    // Slide 10: Marketing Deep Dive
+    marketing_deep_label: 'INUTI BLOCK 04',
+    marketing_deep_title: 'Fem verktyg som tar dig',
+    marketing_deep_titleItalic: 'från innehåll till konvertering',
+    marketingTool1: 'Kollektionsberättelser',
+    marketingTool1Desc: 'Gruppera dina SKU:er i narrativa kluster — minikollektioner med namn, stämningar och storylines. Varje nedströms-tillgång refererar till dessa berättelser.',
+    marketingTool2: 'Produktvisualer',
+    marketingTool2Desc: 'AI genererar produktrenderingar, virtuella try-ons och livsstilsfotografering. Professionella bilder från dina katalogfoton — ingen fotografering behövs.',
+    marketingTool3: 'Innehållskalender',
+    marketingTool3Desc: 'AI genererar en 8-veckors kalender för sociala medier över Instagram, TikTok, Pinterest och e-post. Plattformsanpassat innehåll, timat till din lansering.',
+    marketingTool4: 'Betalt & Tillväxt',
+    marketingTool4Desc: 'Sätt upp betalda kampanjer via Meta, Google och TikTok. AI föreslår budgetfördelning, målgruppsinriktning och kreativa briefer baserade på dina berättelser.',
+    marketingTool5: 'Lanseringsgenomförande',
+    marketingTool5Desc: 'Checklista före lansering, samordning på lanseringsdagen, optimering efter lansering. Varje uppgift spårad, varje kanal synkroniserad.',
+
+    // Slide 11: Calendar
+    calendar_label: 'ORKESTRATORN',
+    calendar_title: 'Varje deadline, varje team,',
+    calendar_titleItalic: 'en tidslinje',
+    calendar_desc: 'En visuell Gantt-tidslinje kopplar samman alla fyra block. 45 milstolpar med blocköverskridande beroenden. Dra, ändra storlek, exportera. Hela din kollektionsresa i en vy.',
+    calBlock1Count: '6',
+    calBlock1Label: 'Kreativa milstolpar',
+    calBlock2Count: '6',
+    calBlock2Label: 'Planeringsmilstolpar',
+    calBlock3Count: '18',
+    calBlock3Label: 'Designmilstolpar',
+    calBlock4Count: '15',
+    calBlock4Label: 'Marknadsföringsmilstolpar',
+
+    // Slide 12: CTA
+    cta_label: 'DET ÄR ALLT DU BEHÖVER',
+    cta_title: 'Din kollektion',
+    cta_titleItalic: 'är lanserad',
+    cta_desc: 'Från en gnista av inspiration till en utsåld lansering. En plattform. Varje steg. Gå med designers, varumärken och studior som hanterar sina kollektioner med aimily.',
   },
 } as Dictionary;

@@ -9,6 +9,7 @@ import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
+import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import {
   FolderOpen,
   Plus,
@@ -223,6 +224,7 @@ export default function MyCollectionsPage() {
     <SubscriptionGate>
     <div className="min-h-screen bg-crema">
       <Navbar />
+      <OnboardingModal />
 
       <main className="pt-20 pb-16 px-6 md:px-10">
         <div className="max-w-7xl mx-auto">

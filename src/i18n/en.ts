@@ -3,6 +3,7 @@ export const en = {
   common: {
     discover: 'Discover',
     meetAimily: 'Meet Aimily',
+    howItWorks: 'How It Works',
     contact: 'Contact',
     pricing: 'Pricing',
     home: 'Home',
@@ -1992,6 +1993,145 @@ export const en = {
     targetAudience: 'Target Audience',
     collectionName: 'Collection Name',
     insightsFromDirection: 'Insights extracted from your creative direction',
+  },
+
+  howItWorksPage: {
+    // Nav
+    navTitle: 'How It Works',
+    skipOnboarding: 'Skip',
+    slideOf: 'of',
+    ctaButton: 'Start Free Trial',
+    ctaSecondary: 'See Pricing',
+
+    // Slide 0: Intro
+    intro_label: 'THE JOURNEY',
+    intro_title: 'You have an idea',
+    intro_titleItalic: 'for a collection',
+    intro_desc: 'From that first spark of inspiration to a fully launched collection on the market. aimily guides you through every step — with AI that understands fashion, not just data.',
+
+    // Slide 1: AI Modes
+    ai_modes_label: 'YOUR WAY OF WORKING',
+    ai_modes_title: 'Three ways to create,',
+    ai_modes_titleItalic: 'one platform',
+    modeManualTitle: 'Manual',
+    modeManualDesc: 'Full creative control. You input everything — aimily organizes, connects, and structures your work across the entire collection lifecycle.',
+    modeAssistedTitle: 'Assisted',
+    modeAssistedDesc: 'You set the direction, AI expands. Give a brief, get a complete proposal. Edit, refine, and make it yours.',
+    modeProposalTitle: 'AI Proposal',
+    modeProposalDesc: 'Minimal input, maximum output. AI generates complete proposals — consumer profiles, pricing strategies, marketing plans — ready for your review.',
+
+    // Slide 2: Creative Overview
+    creative_overview_label: 'BLOCK 01 — CREATIVE & BRAND',
+    creative_overview_title: 'Capture your vision,',
+    creative_overview_titleItalic: 'define your brand',
+    creative_overview_desc: 'Transform abstract inspiration into a structured creative direction. Define who you are designing for, the mood of the collection, your brand identity, and the trends that will shape your season.',
+    creative_overview_screenshotLabel: 'Creative workspace preview',
+
+    // Slide 3: Creative Deep Dive
+    creative_deep_label: 'INSIDE BLOCK 01',
+    creative_deep_title: 'Four tools that build',
+    creative_deep_titleItalic: 'your creative foundation',
+    creativeTool1: 'Consumer Profiles',
+    creativeTool1Desc: 'AI generates psychographic consumer profiles based on your target market. Not just demographics — lifestyle, values, shopping behavior, and brand affinities.',
+    creativeTool2: 'Collection Vibes',
+    creativeTool2Desc: 'Define the emotional world of your collection. AI proposes creative directions with mood narratives, keywords, and visual references you can edit and refine.',
+    creativeTool3: 'Moodboard Builder',
+    creativeTool3Desc: 'Upload reference images or connect Pinterest. Build visual moodboards that become the foundation for AI-powered trend analysis and design direction.',
+    creativeTool4: 'Brand DNA',
+    creativeTool4Desc: 'Extract your brand identity from Instagram and website, or build it from scratch. Colors, typography, tone of voice — everything that makes your brand recognizable.',
+
+    // Slide 4: Merchandising Overview
+    merch_overview_label: 'BLOCK 02 — MERCHANDISING',
+    merch_overview_title: 'From creative vision',
+    merch_overview_titleItalic: 'to business model',
+    merch_overview_desc: 'Turn inspiration into a commercial plan. Define product families, set pricing architecture, choose distribution channels, and build budgets — all powered by market intelligence that knows fashion.',
+    merch_overview_screenshotLabel: 'Merchandising workspace preview',
+
+    // Slide 5: Merchandising Deep Dive
+    merch_deep_label: 'INSIDE BLOCK 02',
+    merch_deep_title: 'Four cards that build',
+    merch_deep_titleItalic: 'your collection strategy',
+    merchTool1: 'Product Families',
+    merchTool1Desc: 'AI proposes family hierarchies based on your creative direction and market positioning. Shoes, bags, RTW — structured for commercial success.',
+    merchTool2: 'Pricing Architecture',
+    merchTool2Desc: 'Set price ranges per family and subcategory. AI benchmarks against real European market data for your brand tier.',
+    merchTool3: 'Channels & Markets',
+    merchTool3Desc: 'Define DTC vs wholesale distribution. Map geographic markets with opportunity levels. AI suggests channel strategies based on your brand positioning.',
+    merchTool4: 'Budget & Financials',
+    merchTool4Desc: 'Sales targets, margin goals, markdown strategy. AI generates financial frameworks grounded in industry benchmarks for your segment.',
+    merchBuilderTeaser: 'All four cards validated → Collection Builder unlocks',
+
+    // Slide 6: Collection Builder
+    collection_builder_label: 'THE HUB',
+    collection_builder_title: 'Everything connects in',
+    collection_builder_titleItalic: 'the Collection Builder',
+    collection_builder_desc: 'The Collection Builder is where your collection comes to life as a living product catalog. Every SKU, every attribute, every design detail — connected across all four blocks.',
+    builderFrom1: 'Creative + Merchandising',
+    builderCenter: 'Collection Builder',
+    builderCenterDesc: 'Your living product catalog',
+    builderTo1: 'Design + Marketing',
+
+    // Slide 7: Design Overview
+    design_overview_label: 'BLOCK 03 — DESIGN & DEVELOPMENT',
+    design_overview_title: 'From sketch to',
+    design_overview_titleItalic: 'finished product',
+    design_overview_desc: 'The longest and most detailed block. AI-generated sketches, prototype management, color sampling, fitting reviews, and full production tracking — from pixel to warehouse.',
+    design_overview_screenshotLabel: 'Design workspace preview',
+
+    // Slide 8: Design Deep Dive
+    design_deep_label: 'INSIDE BLOCK 03',
+    design_deep_title: 'Four phases that take your product',
+    design_deep_titleItalic: 'from concept to reality',
+    designTool1: 'Design & Sketches',
+    designTool1Desc: 'AI generates technical flat sketches from reference photos. Manage colorways, lasts & forms, patterns — every design detail per SKU.',
+    designTool2: 'Prototyping',
+    designTool2Desc: 'Track prototype rounds with your factory. Review, approve, request modifications. Tech sheets and construction notes — all connected to each SKU.',
+    designTool3: 'Sampling & Selection',
+    designTool3Desc: 'Color sample reviews, fitting sessions, final approval workflow. Curate your final selection from prototypes to catalog-ready products.',
+    designTool4: 'Production & Logistics',
+    designTool4Desc: 'Place production orders, track quality control, manage shipping logistics. From factory floor to your warehouse, every step visible.',
+
+    // Slide 9: Marketing Overview
+    marketing_overview_label: 'BLOCK 04 — MARKETING & LAUNCH',
+    marketing_overview_title: 'Launch day?',
+    marketing_overview_titleItalic: 'Already planned.',
+    marketing_overview_desc: 'Create compelling stories, generate product visuals with AI, plan your content calendar, set up paid campaigns, and execute your launch — from brand narrative to first sale.',
+    marketing_overview_screenshotLabel: 'Marketing workspace preview',
+
+    // Slide 10: Marketing Deep Dive
+    marketing_deep_label: 'INSIDE BLOCK 04',
+    marketing_deep_title: 'Five tools that take you',
+    marketing_deep_titleItalic: 'from content to conversion',
+    marketingTool1: 'Collection Stories',
+    marketingTool1Desc: 'Group your SKUs into narrative clusters — mini-collections with names, moods, and storylines. Every downstream asset references these stories.',
+    marketingTool2: 'Product Visuals',
+    marketingTool2Desc: 'AI generates product renders, virtual try-ons, and lifestyle photography. Professional imagery from your catalog photos — no photoshoot needed.',
+    marketingTool3: 'Content Calendar',
+    marketingTool3Desc: 'AI generates an 8-week social media calendar across Instagram, TikTok, Pinterest, email. Platform-native content, timed to your launch.',
+    marketingTool4: 'Paid & Growth',
+    marketingTool4Desc: 'Set up paid campaigns across Meta, Google, TikTok. AI proposes budget allocation, audience targeting, and creative briefs based on your stories.',
+    marketingTool5: 'Launch Execution',
+    marketingTool5Desc: 'Pre-launch checklist, launch day coordination, post-launch optimization. Every task tracked, every channel synchronized.',
+
+    // Slide 11: Calendar
+    calendar_label: 'THE ORCHESTRATOR',
+    calendar_title: 'Every deadline, every team,',
+    calendar_titleItalic: 'one timeline',
+    calendar_desc: 'A visual Gantt timeline connects all four blocks. 45 milestones with cross-block dependencies. Drag, resize, export. Your entire collection journey in one view.',
+    calBlock1Count: '6',
+    calBlock1Label: 'Creative milestones',
+    calBlock2Count: '6',
+    calBlock2Label: 'Planning milestones',
+    calBlock3Count: '18',
+    calBlock3Label: 'Design milestones',
+    calBlock4Count: '15',
+    calBlock4Label: 'Marketing milestones',
+
+    // Slide 12: CTA
+    cta_label: "THAT'S ALL YOU NEED",
+    cta_title: 'Your collection',
+    cta_titleItalic: 'is launched',
+    cta_desc: 'From a spark of inspiration to a sold-out launch. One platform. Every step. Join designers, brands, and studios managing their collections with aimily.',
   },
 };
 

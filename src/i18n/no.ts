@@ -5,6 +5,7 @@ export const no: Dictionary = {
   common: {
     discover: 'Oppdag',
     meetAimily: 'Møt Aimily',
+    howItWorks: 'Slik fungerer det',
     contact: 'Kontakt',
     pricing: 'Priser',
     home: 'Hjem',
@@ -1865,5 +1866,144 @@ export const no: Dictionary = {
     targetAudience: 'Målgruppe',
     collectionName: 'Kolleksjonsnavn',
     insightsFromDirection: 'Innsikter hentet fra din kreative retning',
+  },
+
+  howItWorksPage: {
+    // Nav
+    navTitle: 'Slik Fungerer Det',
+    skipOnboarding: 'Hopp over',
+    slideOf: 'av',
+    ctaButton: 'Start Gratis Prøveperiode',
+    ctaSecondary: 'Se Priser',
+
+    // Slide 0: Intro
+    intro_label: 'REISEN',
+    intro_title: 'Du har en idé',
+    intro_titleItalic: 'for en kolleksjon',
+    intro_desc: 'Fra den første gnisten av inspirasjon til en fullt lansert kolleksjon på markedet. aimily guider deg gjennom hvert steg — med AI som forstår mote, ikke bare data.',
+
+    // Slide 1: AI Modes
+    ai_modes_label: 'DIN MÅTE Å JOBBE PÅ',
+    ai_modes_title: 'Tre måter å skape på,',
+    ai_modes_titleItalic: 'én plattform',
+    modeManualTitle: 'Manuelt',
+    modeManualDesc: 'Full kreativ kontroll. Du legger inn alt — aimily organiserer, kobler og strukturerer arbeidet ditt gjennom hele kolleksjonens livssyklus.',
+    modeAssistedTitle: 'Assistert',
+    modeAssistedDesc: 'Du setter retningen, AI utvider. Gi en brief, motta et komplett forslag. Rediger, foredl og gjør det til ditt.',
+    modeProposalTitle: 'AI-Forslag',
+    modeProposalDesc: 'Minimal input, maksimal output. AI genererer komplette forslag — forbrukerprofiler, prisstrategier, markedsføringsplaner — klare for din gjennomgang.',
+
+    // Slide 2: Creative Overview
+    creative_overview_label: 'BLOKK 01 — KREATIVT & MERKEVARE',
+    creative_overview_title: 'Fang visjonen din,',
+    creative_overview_titleItalic: 'definer merkevaren din',
+    creative_overview_desc: 'Omform abstrakt inspirasjon til en strukturert kreativ retning. Definer hvem du designer for, stemningen i kolleksjonen, din merkevareidentitet og trendene som vil forme sesongen din.',
+    creative_overview_screenshotLabel: 'Forhåndsvisning kreativt arbeidsområde',
+
+    // Slide 3: Creative Deep Dive
+    creative_deep_label: 'INNE I BLOKK 01',
+    creative_deep_title: 'Fire verktøy som bygger',
+    creative_deep_titleItalic: 'ditt kreative fundament',
+    creativeTool1: 'Forbrukerprofiler',
+    creativeTool1Desc: 'AI genererer psykografiske forbrukerprofiler basert på målmarkedet ditt. Ikke bare demografi — livsstil, verdier, kjøpsatferd og merkevareaffinitet.',
+    creativeTool2: 'Kolleksjonsvibes',
+    creativeTool2Desc: 'Definer den emosjonelle verdenen i kolleksjonen din. AI foreslår kreative retninger med stemningsfortellinger, nøkkelord og visuelle referanser du kan redigere og foredle.',
+    creativeTool3: 'Moodboard-Bygger',
+    creativeTool3Desc: 'Last opp referansebilder eller koble til Pinterest. Bygg visuelle moodboards som blir grunnlaget for AI-drevet trendanalyse og designretning.',
+    creativeTool4: 'Merkevare-DNA',
+    creativeTool4Desc: 'Hent merkevareidentiteten din fra Instagram og nettstedet, eller bygg den fra bunnen av. Farger, typografi, tone of voice — alt som gjør merkevaren din gjenkjennelig.',
+
+    // Slide 4: Merchandising Overview
+    merch_overview_label: 'BLOKK 02 — MERCHANDISING',
+    merch_overview_title: 'Fra kreativ visjon',
+    merch_overview_titleItalic: 'til forretningsmodell',
+    merch_overview_desc: 'Omform inspirasjon til en kommersiell plan. Definer produktfamilier, sett prisarkitektur, velg distribusjonskanaler og bygg budsjetter — alt drevet av markedsintelligens som forstår mote.',
+    merch_overview_screenshotLabel: 'Forhåndsvisning merchandising arbeidsområde',
+
+    // Slide 5: Merchandising Deep Dive
+    merch_deep_label: 'INNE I BLOKK 02',
+    merch_deep_title: 'Fire kort som bygger',
+    merch_deep_titleItalic: 'din kolleksjonsstrategi',
+    merchTool1: 'Produktfamilier',
+    merchTool1Desc: 'AI foreslår familiehierarkier basert på din kreative retning og markedsposisjonering. Sko, vesker, konfeksjon — strukturert for kommersiell suksess.',
+    merchTool2: 'Prisarkitektur',
+    merchTool2Desc: 'Sett prisintervaller per familie og underkategori. AI sammenligner med ekte europeiske markedsdata for ditt merkevarenivå.',
+    merchTool3: 'Kanaler & Markeder',
+    merchTool3Desc: 'Definer DTC vs grossistdistribusjon. Kartlegg geografiske markeder med mulighetsnivåer. AI foreslår kanalstrategier basert på din merkevareposisjonering.',
+    merchTool4: 'Budsjett & Økonomi',
+    merchTool4Desc: 'Salgsmål, marginmål, nedskrivningsstrategi. AI genererer økonomiske rammeverk basert på bransjestandarder for ditt segment.',
+    merchBuilderTeaser: 'Alle fire kort validert → Collection Builder låses opp',
+
+    // Slide 6: Collection Builder
+    collection_builder_label: 'NAVET',
+    collection_builder_title: 'Alt kobles sammen i',
+    collection_builder_titleItalic: 'Collection Builder',
+    collection_builder_desc: 'Collection Builder er der kolleksjonen din får liv som en levende produktkatalog. Hver SKU, hvert attributt, hver designdetalj — koblet på tvers av alle fire blokker.',
+    builderFrom1: 'Kreativt + Merchandising',
+    builderCenter: 'Collection Builder',
+    builderCenterDesc: 'Din levende produktkatalog',
+    builderTo1: 'Design + Markedsføring',
+
+    // Slide 7: Design Overview
+    design_overview_label: 'BLOKK 03 — DESIGN & UTVIKLING',
+    design_overview_title: 'Fra skisse til',
+    design_overview_titleItalic: 'ferdig produkt',
+    design_overview_desc: 'Den lengste og mest detaljerte blokken. AI-genererte skisser, prototypehåndtering, fargesampling, passeformsgjennomgang og fullstendig produksjonssporing — fra piksel til lager.',
+    design_overview_screenshotLabel: 'Forhåndsvisning design arbeidsområde',
+
+    // Slide 8: Design Deep Dive
+    design_deep_label: 'INNE I BLOKK 03',
+    design_deep_title: 'Fire faser som tar produktet ditt',
+    design_deep_titleItalic: 'fra konsept til virkelighet',
+    designTool1: 'Design & Skisser',
+    designTool1Desc: 'AI genererer tekniske flattegninger fra referansebilder. Håndter fargevarianter, lester & former, mønstre — hver designdetalj per SKU.',
+    designTool2: 'Prototyping',
+    designTool2Desc: 'Følg prototyperunder med fabrikken din. Gjennomgå, godkjenn, be om endringer. Tekniske spesifikasjoner og konstruksjonsnotater — alt koblet til hver SKU.',
+    designTool3: 'Sampling & Utvalg',
+    designTool3Desc: 'Fargeprøvegjennomganger, passeformsøkter, endelig godkjenningsflyt. Kurater ditt endelige utvalg fra prototyper til katalogklare produkter.',
+    designTool4: 'Produksjon & Logistikk',
+    designTool4Desc: 'Legg produksjonsordrer, følg kvalitetskontroll, håndter fraktlogistikk. Fra fabrikkgulvet til lageret ditt, hvert steg synlig.',
+
+    // Slide 9: Marketing Overview
+    marketing_overview_label: 'BLOKK 04 — MARKEDSFØRING & LANSERING',
+    marketing_overview_title: 'Lanseringsdag?',
+    marketing_overview_titleItalic: 'Allerede planlagt.',
+    marketing_overview_desc: 'Skap overbevisende historier, generer produktvisualer med AI, planlegg innholdskalenderen din, sett opp betalte kampanjer og gjennomfør lanseringen — fra merkevarefortelling til første salg.',
+    marketing_overview_screenshotLabel: 'Forhåndsvisning markedsførings arbeidsområde',
+
+    // Slide 10: Marketing Deep Dive
+    marketing_deep_label: 'INNE I BLOKK 04',
+    marketing_deep_title: 'Fem verktøy som tar deg',
+    marketing_deep_titleItalic: 'fra innhold til konvertering',
+    marketingTool1: 'Kolleksjonshistorier',
+    marketingTool1Desc: 'Grupper SKU-ene dine i narrative klustere — minikolleksjoner med navn, stemninger og storylines. Hver nedstrømsressurs refererer til disse historiene.',
+    marketingTool2: 'Produktvisualer',
+    marketingTool2Desc: 'AI genererer produktrenderinger, virtuelle try-ons og livsstilsfotografering. Profesjonelle bilder fra katalogbildene dine — ingen fotoshoot nødvendig.',
+    marketingTool3: 'Innholdskalender',
+    marketingTool3Desc: 'AI genererer en 8-ukers kalender for sosiale medier på tvers av Instagram, TikTok, Pinterest og e-post. Plattformtilpasset innhold, timet til lanseringen din.',
+    marketingTool4: 'Betalt & Vekst',
+    marketingTool4Desc: 'Sett opp betalte kampanjer via Meta, Google og TikTok. AI foreslår budsjettfordeling, målgruppemålretting og kreative briefer basert på historiene dine.',
+    marketingTool5: 'Lanseringsgjennomføring',
+    marketingTool5Desc: 'Sjekkliste før lansering, koordinering på lanseringsdagen, optimalisering etter lansering. Hver oppgave sporet, hver kanal synkronisert.',
+
+    // Slide 11: Calendar
+    calendar_label: 'ORKESTRATOREN',
+    calendar_title: 'Hver frist, hvert team,',
+    calendar_titleItalic: 'én tidslinje',
+    calendar_desc: 'En visuell Gantt-tidslinje kobler alle fire blokker. 45 milepæler med kryssblokk-avhengigheter. Dra, endre størrelse, eksporter. Hele kolleksjonsreisen din i én visning.',
+    calBlock1Count: '6',
+    calBlock1Label: 'Kreative milepæler',
+    calBlock2Count: '6',
+    calBlock2Label: 'Planleggingsmilepæler',
+    calBlock3Count: '18',
+    calBlock3Label: 'Designmilepæler',
+    calBlock4Count: '15',
+    calBlock4Label: 'Markedsføringsmilepæler',
+
+    // Slide 12: CTA
+    cta_label: 'DET ER ALT DU TRENGER',
+    cta_title: 'Kolleksjonen din',
+    cta_titleItalic: 'er lansert',
+    cta_desc: 'Fra en gnist av inspirasjon til en utsolgt lansering. Én plattform. Hvert steg. Bli med designere, merkevarer og studioer som håndterer kolleksjonene sine med aimily.',
   },
 };
