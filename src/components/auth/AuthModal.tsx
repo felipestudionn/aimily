@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Loader2, Mail, Lock, CheckCircle } from 'lucide-react';
+import { X, Loader2, Mail, Lock, CheckCircle, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/i18n';
 
 interface AuthModalProps {
@@ -45,6 +46,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const t = useTranslation();
   const getErrorMessage = useErrorMessages();
 
@@ -249,6 +251,31 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
               <p className="text-xs text-gris/50">{t.auth.passwordHint}</p>
             )}
           </div>
+
+          {/* Language selector — only on signup */}
+          {mode === 'signup' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-gris uppercase tracking-widest flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" />
+                {t.auth.chooseLanguage}
+              </label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+                className="w-full px-4 py-3 bg-transparent border border-gris/30 text-crema text-sm focus:outline-none focus:border-crema/50 transition-colors cursor-pointer [&>option]:bg-carbon [&>option]:text-crema"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="it">Italiano</option>
+                <option value="de">Deutsch</option>
+                <option value="pt">Português</option>
+                <option value="nl">Nederlands</option>
+                <option value="sv">Svenska</option>
+                <option value="no">Norsk</option>
+              </select>
+            </div>
+          )}
 
           {/* Forgot password link */}
           {mode === 'signin' && (

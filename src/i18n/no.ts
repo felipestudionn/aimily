@@ -70,6 +70,7 @@ export const no: Dictionary = {
     emailPlaceholder: 'deg@eksempel.com',
     passwordPlaceholder: '••••••••',
     passwordHint: 'Minst 8 tegn, minst 1 tall',
+    chooseLanguage: 'Hvilket språk vil du jobbe med aimily på?',
     forgotPassword: 'Glemt passord?',
     signingIn: 'Logger inn...',
     creatingAccount: 'Oppretter konto...',

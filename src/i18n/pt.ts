@@ -70,6 +70,7 @@ export const pt: Dictionary = {
     emailPlaceholder: 'voce@exemplo.com',
     passwordPlaceholder: '••••••••',
     passwordHint: 'Mínimo 8 caracteres, pelo menos 1 número',
+    chooseLanguage: 'Em qual idioma você quer trabalhar com a aimily?',
     forgotPassword: 'Esqueceu sua senha?',
     signingIn: 'Entrando...',
     creatingAccount: 'Criando conta...',

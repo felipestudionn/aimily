@@ -70,6 +70,7 @@ export const nl: Dictionary = {
     emailPlaceholder: 'u@voorbeeld.com',
     passwordPlaceholder: '••••••••',
     passwordHint: 'Minimaal 8 tekens, minimaal 1 cijfer',
+    chooseLanguage: 'In welke taal wilt u met aimily werken?',
     forgotPassword: 'Wachtwoord vergeten?',
     signingIn: 'Bezig met inloggen...',
     creatingAccount: 'Account wordt aangemaakt...',

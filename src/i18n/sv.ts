@@ -70,6 +70,7 @@ export const sv: Dictionary = {
     emailPlaceholder: 'du@exempel.com',
     passwordPlaceholder: '••••••••',
     passwordHint: 'Minst 8 tecken, minst 1 siffra',
+    chooseLanguage: 'Vilket språk vill du arbeta med aimily på?',
     forgotPassword: 'Glömt lösenord?',
     signingIn: 'Loggar in...',
     creatingAccount: 'Skapar konto...',

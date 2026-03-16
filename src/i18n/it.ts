@@ -70,6 +70,7 @@ export const it: Dictionary = {
     emailPlaceholder: 'tu@esempio.com',
     passwordPlaceholder: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
     passwordHint: 'Minimo 8 caratteri, almeno 1 numero',
+    chooseLanguage: 'In che lingua vuoi lavorare con aimily?',
     forgotPassword: 'Password dimenticata?',
     signingIn: 'Accesso in corso...',
     creatingAccount: 'Creazione account...',

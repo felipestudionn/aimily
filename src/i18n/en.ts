@@ -68,6 +68,7 @@ export const en = {
     emailPlaceholder: 'you@example.com',
     passwordPlaceholder: '••••••••',
     passwordHint: 'Minimum 8 characters, at least 1 number',
+    chooseLanguage: 'What language do you want to work with aimily in?',
     forgotPassword: 'Forgot password?',
     signingIn: 'Signing in...',
     creatingAccount: 'Creating account...',
