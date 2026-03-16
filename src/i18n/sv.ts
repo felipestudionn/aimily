@@ -4,8 +4,7 @@ export const sv: Dictionary = {
   // ─── Common / shared ───
   common: {
     discover: 'Utforska',
-    meetAimily: 'Möt Aimily',
-    howItWorks: 'Hur det fungerar',
+    howAimilyWorks: 'Hur aimily fungerar',
     contact: 'Kontakt',
     pricing: 'Priser',
     home: 'Hem',
@@ -536,7 +535,7 @@ export const sv: Dictionary = {
     advAfter3: 'En intelligent arbetsyta',
     advBefore4: 'Begränsad av teamstorlek',
     advAfter4: 'Obegränsad med AI',
-    howItWorks: 'Så fungerar det',
+    howItWorks: 'Hur aimily fungerar',
     howTitle1: 'Fyra steg till din',
     howTitle2: 'nästa kollektion',
     step1Title: 'Skapa din kollektion',

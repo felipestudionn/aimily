@@ -29,8 +29,8 @@ export default function TermsPage() {
             <Link href="/discover" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
               {t.common.discover}
             </Link>
-            <Link href="/meet-aimily" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
-              {t.common.meetAimily}
+            <Link href="/how-it-works" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
+              {t.common.howAimilyWorks}
             </Link>
             <Link href="/contact" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
               {t.common.contact}

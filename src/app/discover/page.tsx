@@ -99,12 +99,10 @@ export default function DiscoverPage() {
             <Link href="/discover" className="text-crema text-xs font-medium tracking-widest uppercase">
               {t.common.discover}
             </Link>
-            <Link href="/meet-aimily" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              {t.common.meetAimily}
+            <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+              {t.common.howAimilyWorks}
             </Link>
-              <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.howItWorks}
-              </Link>
+
             <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
               {t.common.contact}
             </Link>
@@ -408,12 +406,10 @@ export default function DiscoverPage() {
             />
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/meet-aimily" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              {t.common.meetAimily}
+            <Link href="/how-it-works" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
+              {t.common.howAimilyWorks}
             </Link>
-              <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.howItWorks}
-              </Link>
+
             <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
               {t.common.terms}
             </Link>

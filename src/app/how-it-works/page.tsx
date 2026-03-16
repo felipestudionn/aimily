@@ -42,8 +42,8 @@ export default function HowItWorksPage() {
               <Link href="/discover" className="text-gris/50 text-xs font-medium tracking-[0.15em] uppercase hover:text-crema transition-colors">
                 {t.common.discover}
               </Link>
-              <Link href="/meet-aimily" className="text-gris/50 text-xs font-medium tracking-[0.15em] uppercase hover:text-crema transition-colors">
-                {t.common.meetAimily}
+              <Link href="/how-it-works" className="text-gris/50 text-xs font-medium tracking-[0.15em] uppercase hover:text-crema transition-colors">
+                {t.common.howAimilyWorks}
               </Link>
               <Link href="/contact" className="text-gris/50 text-xs font-medium tracking-[0.15em] uppercase hover:text-crema transition-colors">
                 {t.common.contact}

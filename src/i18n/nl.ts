@@ -4,8 +4,7 @@ export const nl: Dictionary = {
   // ─── Common / shared ───
   common: {
     discover: 'Ontdekken',
-    meetAimily: 'Maak kennis met aimily',
-    howItWorks: 'Hoe het werkt',
+    howAimilyWorks: 'Hoe aimily werkt',
     contact: 'Contact',
     pricing: 'Prijzen',
     home: 'Startpagina',
@@ -562,7 +561,7 @@ export const nl: Dictionary = {
     advBefore4: 'Beperkt door teamgrootte',
     advAfter4: 'Onbeperkt door AI',
     // How it works
-    howItWorks: 'Zo werkt het',
+    howItWorks: 'Hoe aimily werkt',
     howTitle1: 'Vier stappen naar uw',
     howTitle2: 'volgende collectie',
     step1Title: 'Collectie aanmaken',

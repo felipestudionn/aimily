@@ -110,12 +110,10 @@ export default function LandingPage() {
               <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 {t.common.discover}
               </Link>
-              <Link href="/meet-aimily" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.meetAimily}
-              </Link>
               <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.howItWorks}
+                {t.common.howAimilyWorks}
               </Link>
+
               <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 {t.common.contact}
               </Link>
@@ -183,11 +181,11 @@ export default function LandingPage() {
               <Link href="/discover" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 {t.common.discover}
               </Link>
-              <Link href="/meet-aimily" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.meetAimily}
+              <Link href="/how-it-works" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                {t.common.howAimilyWorks}
               </Link>
               <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.howItWorks}
+                {t.common.howAimilyWorks}
               </Link>
               <Link href="/contact" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 {t.common.contact}

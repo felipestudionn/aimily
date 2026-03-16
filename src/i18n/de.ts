@@ -4,8 +4,7 @@ export const de: Dictionary = {
   // ─── Common / shared ───
   common: {
     discover: 'Entdecken',
-    meetAimily: 'aimily kennenlernen',
-    howItWorks: 'So funktioniert es',
+    howAimilyWorks: 'So funktioniert aimily',
     contact: 'Kontakt',
     pricing: 'Preise',
     home: 'Startseite',
@@ -562,7 +561,7 @@ export const de: Dictionary = {
     advBefore4: 'Begrenzt durch Teamgröße',
     advAfter4: 'Unbegrenzt durch KI',
     // How it works
-    howItWorks: 'So funktioniert es',
+    howItWorks: 'So funktioniert aimily',
     howTitle1: 'Vier Schritte zu Ihrer',
     howTitle2: 'nächsten Kollektion',
     step1Title: 'Kollektion erstellen',

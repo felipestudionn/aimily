@@ -2,8 +2,7 @@ export const en = {
   // ─── Common / shared ───
   common: {
     discover: 'Discover',
-    meetAimily: 'Meet Aimily',
-    howItWorks: 'How It Works',
+    howAimilyWorks: 'How aimily works',
     contact: 'Contact',
     pricing: 'Pricing',
     home: 'Home',

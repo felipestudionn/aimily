@@ -4,8 +4,7 @@ export const no: Dictionary = {
   // ─── Common / shared ───
   common: {
     discover: 'Oppdag',
-    meetAimily: 'Møt Aimily',
-    howItWorks: 'Slik fungerer det',
+    howAimilyWorks: 'Slik fungerer aimily',
     contact: 'Kontakt',
     pricing: 'Priser',
     home: 'Hjem',
@@ -536,7 +535,7 @@ export const no: Dictionary = {
     advAfter3: 'Ett intelligent arbeidsområde',
     advBefore4: 'Begrenset av teamstørrelse',
     advAfter4: 'Ubegrenset av AI',
-    howItWorks: 'Slik fungerer det',
+    howItWorks: 'Slik fungerer aimily',
     howTitle1: 'Fire steg til din',
     howTitle2: 'neste kolleksjon',
     step1Title: 'Opprett kolleksjonen din',
