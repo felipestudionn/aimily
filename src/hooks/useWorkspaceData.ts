@@ -68,6 +68,12 @@ export function useWorkspaceData<T extends object>(
               data: newData,
             }),
           });
+          // Sync milestone progress after save
+          fetch('/api/collection-timelines/sync-progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ planId: collectionPlanId }),
+          }).catch(() => {});
         } catch {
           // silent fail — data is still in state
         } finally {
