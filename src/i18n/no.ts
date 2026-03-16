@@ -1891,6 +1891,7 @@ export const no: Dictionary = {
     modeAssistedDesc: 'Fortell aimily hva du har i tankene — en brief, en retning, en instinkt. aimily utvider det til et komplett forslag. Du redigerer, foredler og gjør det virkelig ditt. Tenk på det som brainstorming med en veldig godt informert kollega.',
     modeProposalTitle: 'aimily foreslår',
     modeProposalDesc: 'Gi aimily det aller minste — sesongen din, markedet ditt, viben din. aimily genererer komplette forbrukerprofiler, prisstrategier, til og med markedsføringsplaner. Du gjennomgår og godkjenner. Som å ha en seniorkonsulent på hurtigtast.',
+    spectrumYou: 'DU',
     workflowLabel: 'UANSETT HVEM SOM STARTER, ARBEIDSFLYTEN ER DEN SAMME',
     workflowStep1: 'Du eller aimily starter',
     workflowStep2: 'aimily strukturerer',

@@ -1999,6 +1999,7 @@ export const es: Dictionary = {
     modeAssistedDesc: 'Dile a aimily lo que tienes en mente — un brief, una dirección, un instinto. aimily lo expande en una propuesta completa. Tú editas, refinas y lo haces verdaderamente tuyo. Piensa en ello como hacer brainstorming con un colega muy bien informado.',
     modeProposalTitle: 'aimily propone',
     modeProposalDesc: 'Dale a aimily lo mínimo — tu temporada, tu mercado, tu vibra. aimily genera perfiles de consumidor completos, estrategias de precios, incluso planes de marketing. Tú revisas y apruebas. Como tener un consultor sénior siempre a mano.',
+    spectrumYou: 'TÚ',
     workflowLabel: 'EMPIECES TU O AIMILY, EL FLUJO ES EL MISMO',
     workflowStep1: 'Tu o aimily empezais',
     workflowStep2: 'aimily estructura',

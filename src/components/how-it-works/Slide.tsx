@@ -61,18 +61,19 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
     );
   }
 
-  // AI Modes (centered, 3-column)
+  // AI Modes — visual spectrum + collaborative workflow
   if (slide.id === 'ai-modes') {
     const modes = [
-      { icon: Hand, nameKey: 'modeManualTitle' as const, descKey: 'modeManualDesc' as const },
-      { icon: Sparkles, nameKey: 'modeAssistedTitle' as const, descKey: 'modeAssistedDesc' as const },
-      { icon: Zap, nameKey: 'modeProposalTitle' as const, descKey: 'modeProposalDesc' as const },
+      { icon: Hand, nameKey: 'modeManualTitle' as const, descKey: 'modeManualDesc' as const, youPct: 90, aimilyPct: 10 },
+      { icon: Sparkles, nameKey: 'modeAssistedTitle' as const, descKey: 'modeAssistedDesc' as const, youPct: 50, aimilyPct: 50 },
+      { icon: Zap, nameKey: 'modeProposalTitle' as const, descKey: 'modeProposalDesc' as const, youPct: 15, aimilyPct: 85 },
     ];
     return (
-      <div className={`w-full h-full flex items-center justify-center ${bg} relative`}>
+      <div className={`w-full h-full flex items-center justify-center ${bg} relative overflow-y-auto`}>
         {isDark && <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: GRID_PATTERN }} />}
-        <div className={`relative z-10 max-w-5xl w-full px-6 ${anim} ${transition}`}>
-          <div className="text-center mb-12 md:mb-16">
+        <div className={`relative z-10 max-w-5xl w-full px-6 py-16 md:py-0 ${anim} ${transition}`}>
+          {/* Header */}
+          <div className="text-center mb-10 md:mb-14">
             <p className={`${textLabel} text-xs font-medium tracking-[0.25em] uppercase mb-6`}>
               {t.ai_modes_label}
             </p>
@@ -80,15 +81,30 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
               {t.ai_modes_title} <span className="italic">{t.ai_modes_titleItalic}</span>
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-gris/10">
+
+          {/* 3 Modes with spectrum bars */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
             {modes.map((mode) => {
               const Icon = mode.icon;
               return (
-                <div key={mode.nameKey} className={`${bg} p-8 md:p-10`}>
-                  <Icon className={`h-8 w-8 ${isDark ? 'text-gris/30' : 'text-carbon/30'} mb-6`} />
-                  <h3 className={`${textMain} text-lg font-medium tracking-tight mb-3`}>
-                    {t[mode.nameKey]}
-                  </h3>
+                <div key={mode.nameKey} className={`p-6 md:p-8 border ${borderColor}`}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDark ? 'bg-gris/10' : 'bg-carbon/5'}`}>
+                      <Icon className={`h-5 w-5 ${isDark ? 'text-crema/70' : 'text-carbon/60'}`} />
+                    </div>
+                    <h3 className={`${textMain} text-lg font-medium tracking-tight`}>
+                      {t[mode.nameKey]}
+                    </h3>
+                  </div>
+                  {/* Spectrum bar — you vs aimily */}
+                  <div className="flex h-2 rounded-full overflow-hidden mb-3">
+                    <div className="bg-crema/60 transition-all duration-700" style={{ width: `${mode.youPct}%` }} />
+                    <div className="bg-gris/30 transition-all duration-700" style={{ width: `${mode.aimilyPct}%` }} />
+                  </div>
+                  <div className="flex justify-between mb-4">
+                    <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-crema/50">{t.spectrumYou}</span>
+                    <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-gris/40">aimily</span>
+                  </div>
                   <p className={`${textSub} text-sm font-light leading-relaxed`}>
                     {t[mode.descKey]}
                   </p>
@@ -97,31 +113,32 @@ export function Slide({ slide, index, t, isActive }: SlideProps) {
             })}
           </div>
 
-          {/* Collaborative workflow pill */}
-          <div className="mt-10 md:mt-14">
-            <p className={`text-center ${textLabel} text-[10px] font-medium tracking-[0.25em] uppercase mb-5`}>
+          {/* Always the same workflow — large and prominent */}
+          <div className={`border ${borderColor} p-6 md:p-10`}>
+            <p className="text-center text-crema text-sm md:text-base font-medium tracking-[0.2em] uppercase mb-8">
               {t.workflowLabel}
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-0">
               {[
-                { key: 'workflowStep1' as const, icon: '?' },
-                { key: 'workflowStep2' as const, icon: null },
-                { key: 'workflowStep3' as const, icon: null },
-                { key: 'workflowStep4' as const, icon: null },
+                { key: 'workflowStep1' as const, num: '01' },
+                { key: 'workflowStep2' as const, num: '02' },
+                { key: 'workflowStep3' as const, num: '03' },
+                { key: 'workflowStep4' as const, num: '04' },
               ].map((step, i, arr) => (
                 <div key={step.key} className="flex items-center gap-0">
-                  <div className={`px-4 py-2.5 ${i === arr.length - 1 ? 'border-crema/30 bg-crema/5' : `${borderColor}`} border text-center`}>
-                    <p className={`${i === arr.length - 1 ? 'text-crema font-medium' : textMain} text-xs tracking-[0.08em]`}>
+                  <div className={`flex items-center gap-3 px-5 py-4 ${i === arr.length - 1 ? 'border-crema/40 bg-crema/5' : `${borderColor}`} border`}>
+                    <span className={`text-lg font-light ${i === arr.length - 1 ? 'text-crema/60' : 'text-gris/25'}`}>{step.num}</span>
+                    <p className={`${i === arr.length - 1 ? 'text-crema font-medium' : textMain} text-sm tracking-[0.05em]`}>
                       {t[step.key]}
                     </p>
                   </div>
                   {i < arr.length - 1 && (
-                    <ArrowRight className={`h-3.5 w-3.5 ${textLabel} mx-1.5 shrink-0 hidden sm:block`} />
+                    <ArrowRight className="h-4 w-4 text-gris/30 mx-3 shrink-0 hidden md:block" />
                   )}
                 </div>
               ))}
             </div>
-            <p className={`text-center ${textSub} text-xs font-light mt-4 max-w-lg mx-auto`}>
+            <p className={`text-center ${textSub} text-sm font-light mt-6 max-w-2xl mx-auto leading-relaxed`}>
               {t.workflowNote}
             </p>
           </div>

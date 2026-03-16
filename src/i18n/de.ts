@@ -2017,6 +2017,7 @@ export const de: Dictionary = {
     modeAssistedDesc: 'Sag aimily, was du im Kopf hast — ein Briefing, eine Richtung, ein Instinkt. aimily entwickelt daraus einen vollständigen Vorschlag. Du bearbeitest, verfeinerst und machst ihn wirklich zu deinem. Stell es dir vor wie Brainstorming mit einem sehr gut informierten Kollegen.',
     modeProposalTitle: 'aimily schlägt vor',
     modeProposalDesc: 'Gib aimily das Minimum — deine Saison, deinen Markt, deine Vibe. aimily generiert vollständige Verbraucherprofile, Preisstrategien, sogar Marketingpläne. Du prüfst und genehmigst. Wie einen Senior-Berater immer zur Hand zu haben.',
+    spectrumYou: 'SIE',
     workflowLabel: 'EGAL WER BEGINNT, DER ABLAUF IST DERSELBE',
     workflowStep1: 'Sie oder aimily starten',
     workflowStep2: 'aimily strukturiert',

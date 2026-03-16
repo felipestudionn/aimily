@@ -2017,6 +2017,7 @@ export const fr: Dictionary = {
     modeAssistedDesc: "Dites à aimily ce que vous avez en tête — un brief, une direction, un instinct. aimily le développe en une proposition complète. Vous éditez, affinez et le rendez vraiment vôtre. Comme un brainstorming avec un collègue très bien informé.",
     modeProposalTitle: "aimily propose",
     modeProposalDesc: "Donnez à aimily le strict minimum — votre saison, votre marché, votre vibe. aimily génère des profils consommateurs complets, des stratégies de prix, même des plans marketing. Vous révisez et approuvez. Comme avoir un consultant senior toujours disponible.",
+    spectrumYou: 'VOUS',
     workflowLabel: 'PEU IMPORTE QUI COMMENCE, LE FLUX EST LE MEME',
     workflowStep1: 'Vous ou aimily commencez',
     workflowStep2: 'aimily structure',

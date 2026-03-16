@@ -2018,6 +2018,7 @@ export const en = {
     modeAssistedDesc: 'Tell aimily what you have in mind — a brief, a direction, an instinct. aimily expands it into a full proposal. You edit, refine, and make it truly yours. Think of it as brainstorming with a very well-informed colleague.',
     modeProposalTitle: 'aimily proposes',
     modeProposalDesc: 'Give aimily the bare minimum — your season, your market, your vibe. aimily generates complete consumer profiles, pricing strategies, even marketing plans. You review and approve. Like having a senior consultant on speed dial.',
+    spectrumYou: 'YOU',
     workflowLabel: 'HOWEVER YOU START, THE WORKFLOW IS THE SAME',
     workflowStep1: 'You or aimily start',
     workflowStep2: 'aimily structures',
