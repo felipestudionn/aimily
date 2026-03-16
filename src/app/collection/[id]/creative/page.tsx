@@ -1225,9 +1225,51 @@ function BrandDNAContent({ mode, data, onChange, collectionContext }: { mode: In
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasResult = (data.extracted as boolean) || (data.generated as boolean);
+  const isTrendDriven = data.trendDriven as boolean;
+
+  // Trend-driven confirmation view
+  if (isTrendDriven) {
+    return (
+      <div className="space-y-5">
+        <div className="bg-carbon/[0.03] border border-carbon/[0.06] p-6 text-center space-y-3">
+          <div className="w-12 h-12 mx-auto bg-carbon/[0.06] flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-carbon/40" />
+          </div>
+          <p className="text-sm font-medium text-carbon">{t.creative.trendDrivenTitle || 'Trend-Driven Brand'}</p>
+          <p className="text-xs text-carbon/50 max-w-md mx-auto leading-relaxed">
+            {t.creative.trendDrivenDesc || 'Your brand identity will adapt to each season\'s trends. aimily will use market data and trend research — not a fixed brand guideline — to shape your collection.'}
+          </p>
+        </div>
+        <button
+          onClick={() => onChange({ ...data, trendDriven: false })}
+          className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
+        >
+          ← {t.creative.changeOption || 'Change option'}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* ── Trend-driven option — shown across all modes ── */}
+      <button
+        onClick={() => onChange({ ...data, trendDriven: true })}
+        className="w-full text-left p-4 border border-dashed border-carbon/[0.12] hover:border-carbon/30 transition-all group flex items-center gap-4"
+      >
+        <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
+          <RefreshCw className="h-4 w-4 text-carbon/40 group-hover:text-carbon/60 transition-colors" />
+        </div>
+        <div>
+          <p className="text-xs font-medium text-carbon/70 group-hover:text-carbon transition-colors">
+            {t.creative.trendDrivenOption || 'My brand is trend-driven'}
+          </p>
+          <p className="text-[10px] text-carbon/40 mt-0.5">
+            {t.creative.trendDrivenOptionDesc || 'Like Zara or H&M — no fixed identity, trends guide each collection'}
+          </p>
+        </div>
+      </button>
+
       {/* ── FREE: Manual brand identity ── */}
       {mode === 'free' && (
         <div className="space-y-4">
