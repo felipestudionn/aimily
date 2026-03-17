@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON, generateText } from '@/lib/ai/llm-client';
 import { buildCreativePrompt } from '@/lib/ai/creative-prompts';
-import { scrapeWebsite, scrapeInstagramProfile } from '@/lib/brand-scraper';
 
 /* ═══════════════════════════════════════════════════════════
    Creative Block — AI Generation Endpoint
    10 prompt types · Claude Haiku primary, Gemini fallback
-   brand-extract: scrapes website/IG first, feeds real data to LLM
+   brand-extract: uses LLM knowledge of the brand directly
    ═══════════════════════════════════════════════════════════ */
 
 type GenerationType =
@@ -38,41 +37,24 @@ export async function POST(req: NextRequest) {
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
 
-  // ── Brand Extract: scrape real data before calling LLM ──
+  // ── Brand Extract: derive brand name from inputs for LLM knowledge lookup ──
   if (type === 'brand-extract') {
-    const scraped: string[] = [];
-
-    // Scrape website and Instagram in parallel
-    const [websiteData, igData] = await Promise.all([
-      input.website ? scrapeWebsite(input.website) : Promise.resolve(null),
-      input.instagram ? scrapeInstagramProfile(input.instagram) : Promise.resolve(null),
-    ]);
-
-    if (websiteData) {
-      scraped.push(`=== WEBSITE DATA (${websiteData.url}) ===`);
-      if (websiteData.title) scraped.push(`Title: ${websiteData.title}`);
-      if (websiteData.description) scraped.push(`Description: ${websiteData.description}`);
-      if (websiteData.headings.length) scraped.push(`Key headings: ${websiteData.headings.join(' | ')}`);
-      if (websiteData.cssColors.length) scraped.push(`CSS colors found: ${websiteData.cssColors.join(', ')}`);
-      if (websiteData.fontFamilies.length) scraped.push(`Fonts: ${websiteData.fontFamilies.join(', ')}`);
-      if (websiteData.socialLinks.length) scraped.push(`Social links: ${websiteData.socialLinks.join(', ')}`);
-      if (websiteData.metaKeywords.length) scraped.push(`Keywords: ${websiteData.metaKeywords.join(', ')}`);
-      if (websiteData.textContent) scraped.push(`\nPage content:\n${websiteData.textContent}`);
+    // Extract brand name from website URL or Instagram handle
+    // The LLM uses its own knowledge of the brand — no scraping needed
+    if (!input.brandName) {
+      if (input.website) {
+        // Extract domain name as brand hint (e.g., "karllagerfeld.com" → "Karl Lagerfeld")
+        try {
+          const hostname = new URL(
+            input.website.startsWith('http') ? input.website : 'https://' + input.website
+          ).hostname.replace('www.', '');
+          input._brandHint = hostname;
+        } catch { input._brandHint = input.website; }
+      }
+      if (input.instagram) {
+        input._igHandle = input.instagram.replace(/^@/, '').replace(/\/$/, '');
+      }
     }
-
-    if (igData) {
-      scraped.push(`\n=== INSTAGRAM PROFILE ===`);
-      if (igData.name) scraped.push(`Name: ${igData.name}`);
-      if (igData.bio) scraped.push(`Bio: ${igData.bio}`);
-      if (igData.followers) scraped.push(`Followers: ${igData.followers}`);
-    }
-
-    // Pass scraped content to prompt builder via input
-    input._scrapedContent = scraped.length > 0
-      ? scraped.join('\n')
-      : 'NO DATA COULD BE SCRAPED — use your knowledge of the brand based on the name/handle.';
-    input._hadWebsite = websiteData ? 'true' : 'false';
-    input._hadInstagram = igData ? 'true' : 'false';
   }
 
   const prompt = buildCreativePrompt(type, input);

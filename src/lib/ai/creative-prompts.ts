@@ -191,51 +191,49 @@ Return:
         maxTokens: 8192,
         system: `${PERSONAS.brandArchitect}
 
-You are analyzing REAL scraped data from the brand's website and/or Instagram profile. This data was fetched by our server — you have actual content to work with. Your job is to analyze this real data and extract the brand's visual identity system.
+You are extracting the Brand DNA of a REAL fashion/lifestyle brand. You have deep knowledge of major and mid-tier brands worldwide — their visual identity, tone of voice, typography choices, color systems, and overall aesthetic.
 
 RULES:
-- Base your analysis PRIMARILY on the scraped data provided (colors, fonts, copy, headings, descriptions).
-- If CSS colors were found, USE THEM as-is for the color palette — these are the brand's actual colors.
-- If fonts were found, reference them in your typography analysis.
-- Analyze the tone of the actual copy/headings to determine voice and tone.
-- If no data could be scraped, fall back to your knowledge of the brand name.
+- Use your EXISTING KNOWLEDGE of this brand. You know these brands from training data: their campaigns, stores, websites, social media presence, runway shows, and brand communications.
+- Be SPECIFIC and ACCURATE. If you know the brand uses Futura for headlines, say Futura. If their signature color is a specific black, give the right hex.
+- For lesser-known brands, use the website/Instagram references provided to infer positioning and identity.
 - NEVER refuse. ALWAYS return valid JSON.`,
-        user: `The user has an existing brand and wants to extract its visual DNA for use in their collection planning.
+        user: `The user has an existing brand and wants to extract its Brand DNA for use in their fashion collection planning.
 
-Brand references:
-${input.instagram ? `- Instagram: ${input.instagram}` : ''}
+BRAND TO ANALYZE:
+${input.brandName ? `- Brand name: ${input.brandName}` : ''}
 ${input.website ? `- Website: ${input.website}` : ''}
+${input.instagram ? `- Instagram: ${input.instagram}` : ''}
+${input._brandHint ? `- Domain: ${input._brandHint}` : ''}
+${input._igHandle ? `- IG handle: @${input._igHandle}` : ''}
 
-───── SCRAPED DATA FROM THE BRAND'S ACTUAL PRESENCE ─────
-${input._scrapedContent || 'No data could be scraped.'}
-──────────────────────────────────────────────────────────
+Extract the complete Brand DNA based on your knowledge of this brand:
 
-Scraping results: Website ${input._hadWebsite === 'true' ? 'SUCCESS' : 'FAILED'} | Instagram ${input._hadInstagram === 'true' ? 'SUCCESS' : 'FAILED'}
+1. BRAND NAME — The official brand name as it appears in their communications.
 
-ANALYSIS INSTRUCTIONS:
-1. COLOR SYSTEM — Extract 4 strategic colors from the REAL CSS colors found above. Map them to roles:
-   - Primary: The dominant brand color (most frequent or prominent in the scraped palette)
-   - Secondary: A supporting color from the palette
-   - Accent: An energy/highlight color from the palette
-   - Neutral: A background/base color from the palette
-   If fewer than 4 colors were scraped, infer the missing ones to complement the real ones.
+2. COLOR SYSTEM — The brand's ACTUAL signature colors. Not CSS colors from their e-commerce template, but the colors that DEFINE the brand identity:
+   - Primary: The color most associated with this brand (e.g., Hermès orange, Tiffany blue, Valentino red)
+   - Secondary: A key supporting color in their visual system
+   - Accent: A highlight/energy color they use
+   - Neutral: Their base/background tone
+   Provide accurate hex codes.
 
-2. TYPOGRAPHIC CHARACTER — If real fonts were scraped, describe the typographic system using those actual font names. If not, infer from the brand's visual language in the copy.
+3. VOICE & TONE — How does this brand ACTUALLY communicate? Reference their real campaign language, taglines, social media voice, product descriptions. What is their tonal register? (Authoritative? Playful? Minimalist? Provocative?) Be specific — quote real phrases or describe real patterns.
 
-3. TONAL REGISTER — Analyze the ACTUAL headings, descriptions, and page copy above. How does this brand speak? Quote specific phrases if possible.
+4. TYPOGRAPHY — What typefaces does this brand actually use? Name specific fonts for headlines and body. Describe the typographic personality (geometric? serif? humanist? high-contrast?).
 
-4. VISUAL GRAMMAR — Based on the content structure, word choices, and overall presentation, describe what makes this brand recognizable.
+5. VISUAL IDENTITY — What makes this brand VISUALLY recognizable? Their photography style, layout preferences, use of space, iconic elements, graphic devices, packaging aesthetic. What would a designer need to know to create something that feels "on brand"?
 
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
-  "brandName": "The brand name (extracted from the real data)",
+  "brandName": "Official brand name",
   "colors": ["#hex1 (primary)", "#hex2 (secondary)", "#hex3 (accent)", "#hex4 (neutral)"],
-  "tone": "20-40 word description of brand voice — reference actual copy patterns you observed",
-  "typography": "20-30 word description of typographic character — mention actual fonts if scraped",
-  "style": "25-40 word description of overall visual identity system — grounded in the real data"
+  "tone": "30-50 word description of brand voice — reference real campaign language, taglines, or communication patterns",
+  "typography": "20-35 word description — name actual typefaces used, describe the typographic system",
+  "style": "30-50 word description of visual identity — photography style, layout, iconic elements, what makes it recognizable"
 }`,
       };
 
