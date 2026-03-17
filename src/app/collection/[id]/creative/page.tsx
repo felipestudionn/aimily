@@ -1895,6 +1895,91 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
   const hasCompetitors = competitors.length > 0;
   const hasAnything = hasVibe || hasConsumer || hasMoodboard || hasBrand || hasTrends;
 
+  // ── Synthesis state ──
+  const [validated, setValidated] = useState(!!blockData._synthesis?.confirmed);
+  const [addingTrend, setAddingTrend] = useState(false);
+  const [addingCompetitor, setAddingCompetitor] = useState(false);
+  const [newCard, setNewCard] = useState({ title: '', brands: '', desc: '' });
+  const [editingTrendIdx, setEditingTrendIdx] = useState<number | null>(null);
+  const [editingCompIdx, setEditingCompIdx] = useState<number | null>(null);
+
+  // ── Research edit helpers ──
+  const updateResearchResults = (blockId: string, updatedResults: ResearchResult[]) => {
+    const currentData = blockData[blockId]?.data || {};
+    const allResults = (currentData.results as ResearchResult[]) || [];
+    // Rebuild: keep unselected as-is, replace selected with updated
+    const unselected = allResults.filter(r => !r.selected);
+    updateBlockData(blockId, { data: { ...currentData, results: [...unselected, ...updatedResults] } });
+  };
+
+  const removeTrend = (idx: number) => {
+    // Find which block this trend belongs to and remove it
+    let offset = 0;
+    for (const blockId of ['global-trends', 'deep-dive', 'live-signals'] as const) {
+      const selected = getSelectedResults(blockId);
+      if (idx < offset + selected.length) {
+        const localIdx = idx - offset;
+        const updated = selected.filter((_, i) => i !== localIdx);
+        updateResearchResults(blockId, updated);
+        return;
+      }
+      offset += selected.length;
+    }
+  };
+
+  const updateTrend = (idx: number, updates: Partial<ResearchResult>) => {
+    let offset = 0;
+    for (const blockId of ['global-trends', 'deep-dive', 'live-signals'] as const) {
+      const selected = getSelectedResults(blockId);
+      if (idx < offset + selected.length) {
+        const localIdx = idx - offset;
+        const updated = [...selected];
+        updated[localIdx] = { ...updated[localIdx], ...updates };
+        updateResearchResults(blockId, updated);
+        return;
+      }
+      offset += selected.length;
+    }
+  };
+
+  const addManualTrend = () => {
+    if (!newCard.title.trim()) return;
+    const currentData = blockData['global-trends']?.data || {};
+    const results = (currentData.results as ResearchResult[]) || [];
+    const manual: ResearchResult = { title: newCard.title, brands: newCard.brands, desc: newCard.desc, relevance: 'high', selected: true };
+    updateBlockData('global-trends', { data: { ...currentData, results: [...results, manual] } });
+    setNewCard({ title: '', brands: '', desc: '' });
+    setAddingTrend(false);
+  };
+
+  const removeCompetitor = (idx: number) => {
+    const selected = getSelectedResults('competitors');
+    const updated = selected.filter((_, i) => i !== idx);
+    updateResearchResults('competitors', updated);
+  };
+
+  const updateCompetitor = (idx: number, updates: Partial<ResearchResult>) => {
+    const selected = getSelectedResults('competitors');
+    const updated = [...selected];
+    updated[idx] = { ...updated[idx], ...updates };
+    updateResearchResults('competitors', updated);
+  };
+
+  const addManualCompetitor = () => {
+    if (!newCard.title.trim()) return;
+    const currentData = blockData['competitors']?.data || {};
+    const results = (currentData.results as ResearchResult[]) || [];
+    const manual: ResearchResult = { title: newCard.title, brands: newCard.brands, desc: newCard.desc, relevance: 'high', selected: true };
+    updateBlockData('competitors', { data: { ...currentData, results: [...results, manual] } });
+    setNewCard({ title: '', brands: '', desc: '' });
+    setAddingCompetitor(false);
+  };
+
+  const handleValidate = () => {
+    setValidated(true);
+    updateBlockData('_synthesis', { confirmed: true, data: { validatedAt: new Date().toISOString() } });
+  };
+
   // ── Moodboard edit actions ──
   const removeImage = (idx: number) => {
     const updated = moodboardImages.filter((_, i) => i !== idx);
@@ -1944,6 +2029,32 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
   return (
     <div className="space-y-6">
+      {/* ── Validate Button — prominent at top ── */}
+      <div className={`p-6 sm:p-8 border flex items-center justify-between ${
+        validated ? 'bg-carbon/[0.02] border-carbon/[0.12]' : 'bg-white border-carbon/[0.06]'
+      }`}>
+        <div>
+          <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">
+            {validated ? 'Creative Direction Validated' : 'Creative Direction'}
+          </h3>
+          <p className="text-xs text-carbon/50 mt-1">
+            {validated ? 'Your creative input is locked and ready for Merchandising.' : 'Review everything below, make final edits, then validate to proceed.'}
+          </p>
+        </div>
+        <button
+          onClick={handleValidate}
+          className={`flex items-center gap-2 px-6 sm:px-8 py-3 text-[11px] font-medium tracking-[0.15em] uppercase transition-colors ${
+            validated
+              ? 'bg-carbon/[0.08] text-carbon/40 cursor-default'
+              : 'bg-carbon text-crema hover:bg-carbon/90'
+          }`}
+          disabled={validated}
+        >
+          <Check className="h-4 w-4" />
+          {validated ? 'Validated' : 'Validate Creative Direction'}
+        </button>
+      </div>
+
       {/* ── Hero: Collection + Vibe Statement ── */}
       {hasVibe && (
         <div className="bg-carbon text-crema p-8 sm:p-12 lg:p-16">
@@ -2091,37 +2202,109 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         )}
       </div>
 
-      {/* ── Trend Direction ── */}
-      {hasTrends && (
+      {/* ── Trend Direction — editable ── */}
+      {(hasTrends || hasAnything) && (
         <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-            Trend Direction · {allTrends.length} selected
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+              Trend Direction {hasTrends ? `· ${allTrends.length}` : ''}
+            </div>
+            <button
+              onClick={() => { setAddingTrend(true); setNewCard({ title: '', brands: '', desc: '' }); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+            >
+              <Plus className="h-3 w-3" /> Add trend
+            </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {allTrends.map((tr, i) => (
-              <div key={i} className="p-4 border border-carbon/[0.06]">
-                <h5 className="text-sm font-medium text-carbon mb-1">{tr.title}</h5>
-                {tr.brands && <div className="text-[10px] text-carbon/40 italic mb-2">{tr.brands}</div>}
-                <p className="text-[11px] text-carbon/60 leading-relaxed">{tr.desc}</p>
+              <div key={i} className="group relative p-4 border border-carbon/[0.06]">
+                {editingTrendIdx === i ? (
+                  <div className="space-y-2">
+                    <input type="text" value={tr.title} onChange={(e) => updateTrend(i, { title: e.target.value })} className="w-full px-2 py-1 text-sm font-medium text-carbon border border-carbon/[0.12] focus:outline-none" />
+                    <input type="text" value={tr.brands || ''} onChange={(e) => updateTrend(i, { brands: e.target.value })} placeholder="Brands..." className="w-full px-2 py-1 text-[10px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
+                    <textarea value={tr.desc} onChange={(e) => updateTrend(i, { desc: e.target.value })} className="w-full px-2 py-1 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
+                    <button onClick={() => setEditingTrendIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Done</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setEditingTrendIdx(i)} className="w-5 h-5 flex items-center justify-center text-carbon/30 hover:text-carbon/70"><Pencil className="h-2.5 w-2.5" /></button>
+                      <button onClick={() => removeTrend(i)} className="w-5 h-5 flex items-center justify-center text-carbon/30 hover:text-red-500"><X className="h-2.5 w-2.5" /></button>
+                    </div>
+                    <h5 className="text-sm font-medium text-carbon mb-1 pr-12">{tr.title}</h5>
+                    {tr.brands && <div className="text-[10px] text-carbon/40 italic mb-2">{tr.brands}</div>}
+                    <p className="text-[11px] text-carbon/60 leading-relaxed">{tr.desc}</p>
+                  </>
+                )}
               </div>
             ))}
           </div>
+          {/* Add trend form */}
+          {addingTrend && (
+            <div className="mt-4 p-4 border border-dashed border-carbon/[0.15] space-y-2">
+              <input type="text" value={newCard.title} onChange={(e) => setNewCard({ ...newCard, title: e.target.value })} placeholder="Trend name..." className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
+              <input type="text" value={newCard.brands} onChange={(e) => setNewCard({ ...newCard, brands: e.target.value })} placeholder="Reference brands..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
+              <textarea value={newCard.desc} onChange={(e) => setNewCard({ ...newCard, desc: e.target.value })} placeholder="Description..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
+              <div className="flex gap-2">
+                <button onClick={addManualTrend} disabled={!newCard.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">Add</button>
+                <button onClick={() => setAddingTrend(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Cancel</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Competitive Landscape ── */}
-      {hasCompetitors && (
+      {/* ── Competitive Landscape — editable ── */}
+      {(hasCompetitors || hasAnything) && (
         <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">Competitive Landscape</div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+              Competitive Landscape {hasCompetitors ? `· ${competitors.length}` : ''}
+            </div>
+            <button
+              onClick={() => { setAddingCompetitor(true); setNewCard({ title: '', brands: '', desc: '' }); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+            >
+              <Plus className="h-3 w-3" /> Add insight
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {competitors.map((c, i) => (
-              <div key={i} className="p-4 border border-carbon/[0.06]">
-                <h5 className="text-sm font-medium text-carbon mb-1">{c.title}</h5>
-                {c.brands && <div className="text-[10px] text-carbon/40 italic mb-2">{c.brands}</div>}
-                <p className="text-[11px] text-carbon/60 leading-relaxed">{c.desc}</p>
+              <div key={i} className="group relative p-4 border border-carbon/[0.06]">
+                {editingCompIdx === i ? (
+                  <div className="space-y-2">
+                    <input type="text" value={c.title} onChange={(e) => updateCompetitor(i, { title: e.target.value })} className="w-full px-2 py-1 text-sm font-medium text-carbon border border-carbon/[0.12] focus:outline-none" />
+                    <input type="text" value={c.brands || ''} onChange={(e) => updateCompetitor(i, { brands: e.target.value })} placeholder="Brands..." className="w-full px-2 py-1 text-[10px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
+                    <textarea value={c.desc} onChange={(e) => updateCompetitor(i, { desc: e.target.value })} className="w-full px-2 py-1 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
+                    <button onClick={() => setEditingCompIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Done</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setEditingCompIdx(i)} className="w-5 h-5 flex items-center justify-center text-carbon/30 hover:text-carbon/70"><Pencil className="h-2.5 w-2.5" /></button>
+                      <button onClick={() => removeCompetitor(i)} className="w-5 h-5 flex items-center justify-center text-carbon/30 hover:text-red-500"><X className="h-2.5 w-2.5" /></button>
+                    </div>
+                    <h5 className="text-sm font-medium text-carbon mb-1 pr-12">{c.title}</h5>
+                    {c.brands && <div className="text-[10px] text-carbon/40 italic mb-2">{c.brands}</div>}
+                    <p className="text-[11px] text-carbon/60 leading-relaxed">{c.desc}</p>
+                  </>
+                )}
               </div>
             ))}
           </div>
+          {/* Add competitor form */}
+          {addingCompetitor && (
+            <div className="mt-4 p-4 border border-dashed border-carbon/[0.15] space-y-2">
+              <input type="text" value={newCard.title} onChange={(e) => setNewCard({ ...newCard, title: e.target.value })} placeholder="Brand: Key insight..." className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
+              <input type="text" value={newCard.brands} onChange={(e) => setNewCard({ ...newCard, brands: e.target.value })} placeholder="Related brands..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
+              <textarea value={newCard.desc} onChange={(e) => setNewCard({ ...newCard, desc: e.target.value })} placeholder="Positioning, prices, gap, lesson..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
+              <div className="flex gap-2">
+                <button onClick={addManualCompetitor} disabled={!newCard.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">Add</button>
+                <button onClick={() => setAddingCompetitor(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Cancel</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
