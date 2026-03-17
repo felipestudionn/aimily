@@ -148,13 +148,30 @@ Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...",
       break;
 
     case 'live-signals':
-      prompt = `${collectionInfo}Find 6-8 things TRENDING RIGHT NOW in ${trendQuery ? trendQuery + ' fashion' : 'fashion and style'}. What are people wearing, buying, posting about? Search TikTok trends, Instagram style, celebrity fashion, street style photos from this month.
+      prompt = `${collectionInfo}Find 6-8 LIVE FASHION SIGNALS — what real people are actually wearing, buying, and talking about right now in ${trendQuery ? trendQuery : 'fashion'}.
 ${trendQuery ? `\nFocus specifically on ${trendQuery}. ALL signals must be about ${trendQuery}.\n` : ''}
+This is NOT about runway predictions. This is about what's HAPPENING ON THE GROUND:
+
+1. STREET STYLE — What are people wearing in fashion neighborhoods?
+   - London: Hackney, Shoreditch, Dalston
+   - NYC: Williamsburg, SoHo, Lower East Side
+   - Paris: Le Marais, Saint-Germain, Pigalle
+   - Tokyo: Daikanyama, Harajuku, Shimokitazawa
+   - Stockholm: Södermalm
+   - Barcelona: Born, Gràcia
+   - Copenhagen: Nørrebro, Vesterbro
+   - Milan: Brera, Navigli
+
+2. SOCIAL MEDIA — What's viral on TikTok fashion, Instagram style accounts, Reddit r/malefashionadvice and r/femalefashionadvice, Pinterest most-saved
+
+3. RETAIL SIGNALS — What's selling out at Zara, COS, & Other Stories, Massimo Dutti, Arket? What new stores or pop-ups have opened in key neighborhoods?
+
+4. CULTURAL MOMENTS — Which celebrity outfits went viral? Which TV shows or films are influencing style?
 
 For EACH signal:
-- "title": What people call it (e.g., "Cherry Red Everything", "Barn Jacket Revival")
-- "brands": 3-5 brands/people driving this
-- "desc": 50-70 words — what it looks like, who's driving it, where it's trending, how long it will last
+- "title": What people call it (e.g., "Cherry Red Everything", "Barn Jacket Revival", "Ballet Flat Comeback")
+- "brands": 3-5 brands, people, neighborhoods, or platforms driving this
+- "desc": 50-70 words — what it looks like, WHERE it's been spotted (city/neighborhood/platform), who's wearing it, how long it will last
 - "relevance": "high" or "medium"
 
 Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
@@ -173,7 +190,14 @@ Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...",
       break;
   }
 
-  return callSonar(prompt, type === 'live-signals' ? 'month' : 'year');
+  // Live signals: last 3 months; others: last year
+  if (type === 'live-signals') {
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const afterDate = `${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}/${String(threeMonthsAgo.getDate()).padStart(2, '0')}/${threeMonthsAgo.getFullYear()}`;
+    return callSonar(prompt, undefined, afterDate);
+  }
+  return callSonar(prompt, 'year');
 }
 
 // ─── Search API (raw results) ───
@@ -223,26 +247,30 @@ async function callSearch(
 
 async function callSonar(
   prompt: string,
-  recency: 'hour' | 'day' | 'week' | 'month' | 'year' = 'year'
+  recency?: 'hour' | 'day' | 'week' | 'month' | 'year',
+  afterDate?: string // MM/DD/YYYY format
 ): Promise<TrendResearchResponse | null> {
   try {
+    const body: Record<string, unknown> = {
+      model: 'sonar',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a fashion industry expert. Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON. Every trend must be real, visual, and concrete — something you could see on a runway or in a store.',
+        },
+        { role: 'user', content: prompt },
+      ],
+    };
+    if (recency) body.search_recency_filter = recency;
+    if (afterDate) body.search_after_date_filter = afterDate;
+
     const res = await fetch(SONAR_ENDPOINT, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a fashion industry expert. Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON. Every trend must be real, visual, and concrete — something you could see on a runway or in a store.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        search_recency_filter: recency,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
