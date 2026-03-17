@@ -5,22 +5,9 @@ import {
   buildCommentUserPrompt,
 } from '@/lib/prompts/sketch-generation';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { extractJSON } from '@/lib/ai/llm-client';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
-function parseJsonFromText(text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch {
-    let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-    }
-    return JSON.parse(cleaned);
-  }
-}
 
 interface RequestBody {
   garmentType: string;
@@ -72,7 +59,10 @@ export async function POST(req: NextRequest) {
       throw new Error('No text content in Claude response');
     }
 
-    const result = parseJsonFromText(textContent.text) as {
+    const result = extractJSON<{
+      notes: Array<{ text: string; position: string; x: number; y: number }>;
+      suggestedMeasurements: Record<string, string>;
+    }>(textContent.text) as {
       notes: Array<{ text: string; position: string; x: number; y: number }>;
       suggestedMeasurements: Record<string, string>;
     };

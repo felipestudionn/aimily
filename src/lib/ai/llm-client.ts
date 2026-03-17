@@ -146,49 +146,56 @@ async function callGemini(req: LLMRequest): Promise<string> {
 
 // ─── JSON extraction (robust) ───
 
+/** Remove trailing commas before } or ] — common LLM mistake */
+function fixTrailingCommas(str: string): string {
+  return str.replace(/,\s*([}\]])/g, '$1');
+}
+
+function tryParse<T>(str: string): T | undefined {
+  try {
+    return JSON.parse(str) as T;
+  } catch {
+    // Try fixing trailing commas
+    try {
+      return JSON.parse(fixTrailingCommas(str)) as T;
+    } catch {
+      return undefined;
+    }
+  }
+}
+
 export function extractJSON<T = unknown>(text: string): T {
   // 1. Try direct parse
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    // continue
-  }
+  const direct = tryParse<T>(text);
+  if (direct !== undefined) return direct;
 
   // 2. Strip markdown code blocks
   const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
-    try {
-      return JSON.parse(codeBlockMatch[1].trim()) as T;
-    } catch {
-      // continue
-    }
+    const parsed = tryParse<T>(codeBlockMatch[1].trim());
+    if (parsed !== undefined) return parsed;
   }
 
   // 3. Find outermost { ... }
   const firstBrace = text.indexOf('{');
   const lastBrace = text.lastIndexOf('}');
   if (firstBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(text.slice(firstBrace, lastBrace + 1)) as T;
-    } catch {
-      // continue
-    }
+    const parsed = tryParse<T>(text.slice(firstBrace, lastBrace + 1));
+    if (parsed !== undefined) return parsed;
   }
 
   // 4. Find outermost [ ... ] (for array responses)
   const firstBracket = text.indexOf('[');
   const lastBracket = text.lastIndexOf(']');
   if (firstBracket !== -1 && lastBracket > firstBracket) {
-    try {
-      return JSON.parse(text.slice(firstBracket, lastBracket + 1)) as T;
-    } catch {
-      // continue
-    }
+    const parsed = tryParse<T>(text.slice(firstBracket, lastBracket + 1));
+    if (parsed !== undefined) return parsed;
   }
 
-  // Check if the model refused the task or gave explanatory text
+  // Check if the model refused the task
   const lower = text.toLowerCase();
-  if (lower.includes('i cannot') || lower.includes("i can't") || lower.includes('i don\'t have') || lower.includes('i need to be transparent') || lower.includes('unable to access')) {
+  if (lower.includes('i cannot') || lower.includes("i can't") || lower.includes('i don\'t have') || lower.includes('i need to be transparent') || lower.includes('unable to access')
+    || lower.includes('no puedo') || lower.includes('no es posible') || lower.includes('lo siento')) {
     throw new Error('AI was unable to complete the request. Please try again or adjust your input.');
   }
 

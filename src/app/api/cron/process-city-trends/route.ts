@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { extractJSON } from '@/lib/ai/llm-client';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -80,11 +81,7 @@ Be analytical. Find patterns. Identify what's UNIQUE to ${neighborhood}.`;
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     
-    // Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
+    return extractJSON(text);
   } catch (error) {
     console.error(`Error extracting trends for ${neighborhood}:`, error);
   }

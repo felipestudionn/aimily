@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { SKETCH_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/prompts/sketch-generation';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { extractJSON } from '@/lib/ai/llm-client';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -18,25 +19,6 @@ interface RequestBody {
   styleName: string;
   fabric: string;
   additionalNotes: string;
-}
-
-function parseJsonFromText(text: string): unknown {
-  // Try direct parse first
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Remove markdown code blocks if present
-    let cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
-
-    // Try to extract JSON object
-    const firstBrace = cleaned.indexOf('{');
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-    }
-
-    return JSON.parse(cleaned);
-  }
 }
 
 async function generateWithClaude(body: RequestBody) {
@@ -79,7 +61,7 @@ async function generateWithClaude(body: RequestBody) {
     throw new Error('No text content in Claude response');
   }
 
-  return parseJsonFromText(textContent.text);
+  return extractJSON(textContent.text);
 }
 
 async function generateWithGemini(body: RequestBody) {
@@ -131,7 +113,7 @@ async function generateWithGemini(body: RequestBody) {
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('No text in Gemini response');
 
-  return parseJsonFromText(text);
+  return extractJSON(text);
 }
 
 export async function POST(req: NextRequest) {
