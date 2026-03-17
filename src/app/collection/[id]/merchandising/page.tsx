@@ -719,11 +719,61 @@ export default function MerchandisingPage() {
     });
   }, [persistData]);
 
-  // Fetch collection context + creative input for AI prompts
+  // Fetch collection context + creative block data for AI prompts
   useEffect(() => {
     const supabase = createClient();
+
+    // Load collection name + season
     supabase.from('collection_plans').select('name, season').eq('id', collectionId).single().then(({ data }) => {
       if (data) setCollectionContext(prev => ({ ...prev, collectionName: data.name || '', season: data.season || '' }));
+    });
+
+    // Load Creative block data (consumer, vibe, brand DNA, trends)
+    supabase.from('collection_workspace_data').select('data').eq('collection_plan_id', collectionId).eq('workspace', 'creative').single().then(({ data }) => {
+      if (!data?.data) return;
+      const creative = data.data as { blockData?: Record<string, { confirmed?: boolean; data?: Record<string, unknown> }> };
+      const bd = creative.blockData || {};
+
+      // Consumer — extract liked profiles
+      const consumerProposals = (bd.consumer?.data?.proposals as Array<{ title: string; desc: string; status: string }>) || [];
+      const likedConsumers = consumerProposals.filter(p => p.status === 'liked');
+      const consumerText = likedConsumers.map(p => `${p.title}: ${p.desc}`).join('\n\n');
+
+      // Vibe — title + narrative + keywords
+      const vibeTitle = (bd.vibe?.data?.vibeTitle as string) || '';
+      const vibeNarrative = (bd.vibe?.data?.vibe as string) || '';
+      const vibeKeywords = (bd.vibe?.data?.keywords as string) || '';
+      const vibeText = [vibeTitle, vibeNarrative, vibeKeywords ? `Keywords: ${vibeKeywords}` : ''].filter(Boolean).join('\n');
+
+      // Brand DNA — name + colors + tone + typography + style
+      const brand = bd['brand-dna']?.data || {};
+      const brandParts = [
+        brand.brandName ? `Brand: ${brand.brandName}` : '',
+        (brand.colors as string[])?.length ? `Colors: ${(brand.colors as string[]).join(', ')}` : '',
+        brand.tone ? `Tone: ${brand.tone}` : '',
+        brand.typography ? `Typography: ${brand.typography}` : '',
+        brand.style ? `Visual Identity: ${brand.style}` : '',
+      ].filter(Boolean);
+      const brandText = brandParts.join('\n');
+
+      // Trends — selected results from all research blocks
+      const trendParts: string[] = [];
+      for (const blockId of ['global-trends', 'deep-dive', 'live-signals']) {
+        const results = (bd[blockId]?.data?.results as Array<{ title: string; brands?: string; desc: string; selected?: boolean }>) || [];
+        const selected = results.filter(r => r.selected);
+        selected.forEach(r => {
+          trendParts.push(`${r.title}${r.brands ? ` (${r.brands})` : ''}: ${r.desc}`);
+        });
+      }
+      const trendsText = trendParts.join('\n\n');
+
+      setCollectionContext(prev => ({
+        ...prev,
+        consumer: consumerText,
+        vibe: vibeText,
+        brandDNA: brandText,
+        trends: trendsText,
+      }));
     });
   }, [collectionId]);
 
