@@ -503,6 +503,18 @@ export const en = {
     // Upload
     uploadingProgress: 'Uploading',
     importingProgress: 'Importing',
+    // Brand DNA — 3 options + saved brands
+    myBrand: 'My Brand',
+    extractIdentity: 'Extract identity from your brand or an inspiration',
+    buildFromScratch: 'Build from scratch',
+    buildFromScratchDesc: 'Define every aspect of your brand identity manually',
+    trendDrivenCard: 'Trend-driven',
+    trendDrivenCardDesc: 'Like Zara — no fixed identity, trends guide each collection',
+    savedBrands: 'Your saved brands',
+    useBrand: 'Use',
+    saveToMyBrands: 'Save to My Brands',
+    brandSaved: 'Brand saved!',
+    noSavedBrands: 'No saved brands yet',
   },
 
   // ─── Language Selector ───

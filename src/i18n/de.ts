@@ -505,6 +505,18 @@ export const de: Dictionary = {
     // Upload
     uploadingProgress: 'Wird hochgeladen',
     importingProgress: 'Wird importiert',
+    // Brand DNA — 3 Optionen + gespeicherte Marken
+    myBrand: 'Meine Marke',
+    extractIdentity: 'Identität aus deiner Marke oder einer Inspiration extrahieren',
+    buildFromScratch: 'Von Grund auf erstellen',
+    buildFromScratchDesc: 'Definiere jeden Aspekt deiner Markenidentität manuell',
+    trendDrivenCard: 'Trendgesteuert',
+    trendDrivenCardDesc: 'Wie Zara — keine feste Identität, Trends leiten jede Kollektion',
+    savedBrands: 'Deine gespeicherten Marken',
+    useBrand: 'Verwenden',
+    saveToMyBrands: 'In Meine Marken speichern',
+    brandSaved: 'Marke gespeichert!',
+    noSavedBrands: 'Noch keine gespeicherten Marken',
   },
 
   // ─── Language Selector ───

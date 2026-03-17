@@ -483,6 +483,18 @@ export const sv: Dictionary = {
     overview: 'Översikt',
     uploadingProgress: 'Laddar upp',
     importingProgress: 'Importerar',
+    // Brand DNA — 3 alternativ + sparade varumärken
+    myBrand: 'Mitt Varumärke',
+    extractIdentity: 'Extrahera identitet från ditt varumärke eller en inspiration',
+    buildFromScratch: 'Bygg från grunden',
+    buildFromScratchDesc: 'Definiera varje aspekt av din varumärkesidentitet manuellt',
+    trendDrivenCard: 'Trendstyrd',
+    trendDrivenCardDesc: 'Som Zara — ingen fast identitet, trender styr varje kollektion',
+    savedBrands: 'Dina sparade varumärken',
+    useBrand: 'Använd',
+    saveToMyBrands: 'Spara i Mina Varumärken',
+    brandSaved: 'Varumärke sparat!',
+    noSavedBrands: 'Inga sparade varumärken ännu',
   },
 
   // ─── Language Selector ───

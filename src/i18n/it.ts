@@ -505,6 +505,18 @@ export const it: Dictionary = {
     // Upload
     uploadingProgress: 'Caricamento',
     importingProgress: 'Importazione',
+    // Brand DNA — 3 opzioni + marchi salvati
+    myBrand: 'Il Mio Marchio',
+    extractIdentity: "Estrai l'identità dal tuo marchio o da un'ispirazione",
+    buildFromScratch: 'Crea da zero',
+    buildFromScratchDesc: 'Definisci ogni aspetto della tua identità di marchio manualmente',
+    trendDrivenCard: 'Trend-driven',
+    trendDrivenCardDesc: 'Come Zara — nessuna identità fissa, le tendenze guidano ogni collezione',
+    savedBrands: 'I tuoi marchi salvati',
+    useBrand: 'Usa',
+    saveToMyBrands: 'Salva nei Miei Marchi',
+    brandSaved: 'Marchio salvato!',
+    noSavedBrands: 'Nessun marchio salvato',
   },
 
   // ─── Language Selector ───

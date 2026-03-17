@@ -1219,13 +1219,95 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
   );
 }
 
-function BrandDNAContent({ mode, data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
+interface SavedBrand {
+  id: string;
+  brand_name: string;
+  colors: string[];
+  tone: string;
+  typography: string;
+  style: string;
+  instagram: string;
+  website: string;
+  is_trend_driven: boolean;
+  brand_data: Record<string, unknown>;
+}
+
+type BrandDNAOption = 'my-brand' | 'manual' | 'trend-driven' | null;
+
+function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
   const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedBrands, setSavedBrands] = useState<SavedBrand[]>([]);
+  const [loadingBrands, setLoadingBrands] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState(false);
   const hasResult = (data.extracted as boolean) || (data.generated as boolean);
   const isTrendDriven = data.trendDriven as boolean;
+  const selectedOption = (data._brandOption as BrandDNAOption) || null;
+
+  // Fetch saved brands on mount
+  useEffect(() => {
+    fetch('/api/user-brands')
+      .then(res => res.json())
+      .then(res => setSavedBrands(res.brands || []))
+      .catch(() => setSavedBrands([]))
+      .finally(() => setLoadingBrands(false));
+  }, []);
+
+  const selectOption = (opt: BrandDNAOption) => {
+    onChange({ ...data, _brandOption: opt, trendDriven: opt === 'trend-driven' });
+  };
+
+  const handleSaveBrand = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/user-brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand_name: (data.brandName as string) || 'Untitled Brand',
+          colors: (data.colors as string[]) || [],
+          tone: (data.tone as string) || '',
+          typography: (data.typography as string) || '',
+          style: (data.style as string) || '',
+          instagram: (data.instagram as string) || '',
+          website: (data.website as string) || '',
+          is_trend_driven: isTrendDriven || false,
+          brand_data: data,
+        }),
+      });
+      const result = await res.json();
+      if (result.brand) {
+        setSavedBrands(prev => [result.brand, ...prev]);
+        setSavedMsg(true);
+        setTimeout(() => setSavedMsg(false), 2500);
+      }
+    } catch { /* silent */ }
+    setSaving(false);
+  };
+
+  const handleUseBrand = (brand: SavedBrand) => {
+    onChange({
+      ...data,
+      brandName: brand.brand_name,
+      colors: brand.colors || [],
+      tone: brand.tone || '',
+      typography: brand.typography || '',
+      style: brand.style || '',
+      instagram: brand.instagram || '',
+      website: brand.website || '',
+      trendDriven: brand.is_trend_driven || false,
+      extracted: true,
+      _brandOption: brand.is_trend_driven ? 'trend-driven' : 'my-brand',
+    });
+  };
+
+  const handleDeleteBrand = async (id: string) => {
+    await fetch(`/api/user-brands?id=${id}`, { method: 'DELETE' });
+    setSavedBrands(prev => prev.filter(b => b.id !== id));
+  };
 
   // Trend-driven confirmation view
   if (isTrendDriven) {
@@ -1240,55 +1322,134 @@ function BrandDNAContent({ mode, data, onChange, collectionContext }: { mode: In
             {t.creative.trendDrivenDesc || 'Your brand identity will adapt to each season\'s trends. aimily will use market data and trend research — not a fixed brand guideline — to shape your collection.'}
           </p>
         </div>
-        <button
-          onClick={() => onChange({ ...data, trendDriven: false })}
-          className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
-        >
-          ← {t.creative.changeOption || 'Change option'}
-        </button>
+        {/* Save to My Brands */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => { onChange({ ...data, trendDriven: false, _brandOption: null }); }}
+            className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
+          >
+            ← {t.creative.changeOption || 'Change option'}
+          </button>
+          <button
+            onClick={handleSaveBrand}
+            disabled={saving}
+            className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
+          >
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+            {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* ── Trend-driven option — shown across all modes ── */}
-      <button
-        onClick={() => onChange({ ...data, trendDriven: true })}
-        className="w-full text-left p-4 border border-dashed border-carbon/[0.12] hover:border-carbon/30 transition-all group flex items-center gap-4"
-      >
-        <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
-          <RefreshCw className="h-4 w-4 text-carbon/40 group-hover:text-carbon/60 transition-colors" />
-        </div>
-        <div>
-          <p className="text-xs font-medium text-carbon/70 group-hover:text-carbon transition-colors">
-            {t.creative.trendDrivenOption || 'My brand is trend-driven'}
+      {/* ── Saved Brands Section ── */}
+      {!loadingBrands && savedBrands.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
+            {t.creative.savedBrands || 'Your saved brands'}
           </p>
-          <p className="text-[10px] text-carbon/40 mt-0.5">
-            {t.creative.trendDrivenOptionDesc || 'Like Zara or H&M — no fixed identity, trends guide each collection'}
-          </p>
-        </div>
-      </button>
-
-      {/* ── FREE: Manual brand identity ── */}
-      {mode === 'free' && (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandName}</label>
-            <input
-              type="text"
-              value={(data.brandName as string) || ''}
-              onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-              placeholder={t.creative.brandNamePlaceholder}
-              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-            />
+          <div className="flex flex-wrap gap-3">
+            {savedBrands.map((brand) => (
+              <div
+                key={brand.id}
+                className="flex items-center gap-3 px-4 py-3 border border-carbon/[0.08] hover:border-carbon/20 transition-all group"
+              >
+                {/* Color swatches */}
+                <div className="flex gap-1">
+                  {(brand.colors || []).slice(0, 4).map((c, i) => {
+                    const hex = c.replace(/\s*\(.*\)/, '').trim();
+                    return (
+                      <div
+                        key={i}
+                        className="w-5 h-5 border border-carbon/[0.08]"
+                        style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }}
+                      />
+                    );
+                  })}
+                  {(!brand.colors || brand.colors.length === 0) && (
+                    <div className="w-5 h-5 bg-carbon/[0.06] border border-carbon/[0.08]" />
+                  )}
+                </div>
+                <span className="text-xs font-medium text-carbon">{brand.brand_name}</span>
+                {brand.is_trend_driven && (
+                  <RefreshCw className="h-3 w-3 text-carbon/30" />
+                )}
+                <button
+                  onClick={() => handleUseBrand(brand)}
+                  className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors px-2 py-1 border border-carbon/[0.08] hover:border-carbon/20"
+                >
+                  {t.creative.useBrand || 'Use'}
+                </button>
+                <button
+                  onClick={() => handleDeleteBrand(brand.id)}
+                  className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
           </div>
-          {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
         </div>
       )}
 
-      {/* ── ASSISTED: Extract from existing brand (website/IG) ── */}
-      {mode === 'assisted' && (
+      {/* ── 3 Option Cards ── */}
+      {!hasResult && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Option A: My Brand */}
+          <button
+            onClick={() => selectOption('my-brand')}
+            className={`text-left p-5 border transition-all hover:shadow-sm ${
+              selectedOption === 'my-brand'
+                ? 'border-carbon bg-carbon/[0.03]'
+                : 'border-carbon/[0.08] hover:border-carbon/20'
+            }`}
+          >
+            <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center mb-3">
+              <Fingerprint className="h-4 w-4 text-carbon/50" />
+            </div>
+            <p className="text-sm font-medium text-carbon mb-1">{t.creative.myBrand || 'My Brand'}</p>
+            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.extractIdentity || 'Extract identity from your brand or an inspiration'}</p>
+          </button>
+
+          {/* Option B: Manual */}
+          <button
+            onClick={() => selectOption('manual')}
+            className={`text-left p-5 border transition-all hover:shadow-sm ${
+              selectedOption === 'manual'
+                ? 'border-carbon bg-carbon/[0.03]'
+                : 'border-carbon/[0.08] hover:border-carbon/20'
+            }`}
+          >
+            <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center mb-3">
+              <Pencil className="h-4 w-4 text-carbon/50" />
+            </div>
+            <p className="text-sm font-medium text-carbon mb-1">{t.creative.buildFromScratch || 'Build from scratch'}</p>
+            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.buildFromScratchDesc || 'Define every aspect of your brand identity manually'}</p>
+          </button>
+
+          {/* Option C: Trend-driven */}
+          <button
+            onClick={() => selectOption('trend-driven')}
+            className={`text-left p-5 border transition-all hover:shadow-sm ${
+              selectedOption === 'trend-driven'
+                ? 'border-carbon bg-carbon/[0.03]'
+                : 'border-carbon/[0.08] hover:border-carbon/20'
+            }`}
+          >
+            <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center mb-3">
+              <RefreshCw className="h-4 w-4 text-carbon/50" />
+            </div>
+            <p className="text-sm font-medium text-carbon mb-1">{t.creative.trendDrivenCard || 'Trend-driven'}</p>
+            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.trendDrivenCardDesc || 'Like Zara — no fixed identity, trends guide each collection'}</p>
+          </button>
+        </div>
+      )}
+
+      {/* ── My Brand: Extract from existing brand (website/IG) ── */}
+      {selectedOption === 'my-brand' && !hasResult && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
@@ -1332,68 +1493,45 @@ function BrandDNAContent({ mode, data, onChange, collectionContext }: { mode: In
             {t.creative.extractBrandDNA}
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
-          {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
         </div>
       )}
 
-      {/* ── AI PROPOSAL: aimily creates brand identity from collection context ── */}
-      {mode === 'ai' && (
+      {/* ── Manual: Build brand identity from scratch ── */}
+      {selectedOption === 'manual' && !hasResult && (
         <div className="space-y-4">
-          <div className="bg-carbon/[0.03] border border-carbon/[0.06] p-4 space-y-2">
-            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
-              {t.creative.aimilyKnows}
-            </p>
-            <ul className="space-y-1">
-              {collectionContext.collectionName && (
-                <li className="text-xs text-carbon/60 flex items-start gap-2">
-                  <Check className="h-3 w-3 mt-0.5 text-carbon/30 flex-shrink-0" />
-                  Collection: {collectionContext.collectionName}
-                </li>
-              )}
-              {collectionContext.season && (
-                <li className="text-xs text-carbon/60 flex items-start gap-2">
-                  <Check className="h-3 w-3 mt-0.5 text-carbon/30 flex-shrink-0" />
-                  Season: {collectionContext.season}
-                </li>
-              )}
-            </ul>
-          </div>
-
           <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/40 mb-1.5 block">
-              {t.creative.optionalDirection}
-            </label>
+            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandName}</label>
             <input
               type="text"
-              value={(data.direction as string) || ''}
-              onChange={(e) => onChange({ ...data, direction: e.target.value })}
-              placeholder={t.creative.brandDirectionPlaceholder}
+              value={(data.brandName as string) || ''}
+              onChange={(e) => onChange({ ...data, brandName: e.target.value })}
+              placeholder={t.creative.brandNamePlaceholder}
               className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
             />
           </div>
+        </div>
+      )}
 
-          <button
-            onClick={async () => {
-              setGenerating(true);
-              setError(null);
-              const { result, error: err } = await generateCreative('brand-generate', {
-                brandName: (data.brandName as string) || '',
-                direction: (data.direction as string) || '',
-                ...collectionContext,
-              }, language);
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
-              onChange({ ...data, brandName: parsed.brandName || (data.brandName as string), colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '', generated: true });
-              setGenerating(false);
-            }}
-            disabled={generating}
-              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      {/* ── Result Editor (shown after extract/manual fill) ── */}
+      {hasResult && (
+        <div className="space-y-4">
+          <BrandResultEditor data={data} onChange={onChange} />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { onChange({ ...data, extracted: false, generated: false, _brandOption: null }); }}
+              className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
             >
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              {t.creative.generateWithAI}
+              ← {t.creative.changeOption || 'Change option'}
             </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          {hasResult && <BrandResultEditor data={data} onChange={onChange} />}
+            <button
+              onClick={handleSaveBrand}
+              disabled={saving}
+              className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
+            >
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+              {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -1595,7 +1733,7 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
       case 'consumer': return <ConsumerContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} />;
       case 'vibe': return <VibeContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} consumerProfile={consumerProfile} />;
       case 'moodboard': return <MoodboardContent data={data} onChange={onChange} />;
-      case 'brand-dna': return <BrandDNAContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} />;
+      case 'brand-dna': return <BrandDNAContent data={data} onChange={onChange} collectionContext={collectionContext} />;
     }
   }
   if (stepId === 'research') {
@@ -1718,7 +1856,7 @@ export default function CreativeBrandPage() {
     handleCollapse();
   }, [updateBlockData, handleCollapse]);
 
-  const hideModePills = expandedBlock === 'moodboard';
+  const hideModePills = expandedBlock === 'moodboard' || expandedBlock === 'brand-dna';
 
   if (persistLoading) {
     return (

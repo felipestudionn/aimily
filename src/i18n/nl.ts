@@ -505,6 +505,18 @@ export const nl: Dictionary = {
     // Upload
     uploadingProgress: 'Wordt geüpload',
     importingProgress: 'Wordt geïmporteerd',
+    // Brand DNA — 3 opties + opgeslagen merken
+    myBrand: 'Mijn Merk',
+    extractIdentity: 'Haal de identiteit uit je merk of een inspiratie',
+    buildFromScratch: 'Vanaf nul opbouwen',
+    buildFromScratchDesc: 'Definieer elk aspect van je merkidentiteit handmatig',
+    trendDrivenCard: 'Trendgestuurd',
+    trendDrivenCardDesc: 'Zoals Zara — geen vaste identiteit, trends leiden elke collectie',
+    savedBrands: 'Je opgeslagen merken',
+    useBrand: 'Gebruik',
+    saveToMyBrands: 'Opslaan in Mijn Merken',
+    brandSaved: 'Merk opgeslagen!',
+    noSavedBrands: 'Nog geen opgeslagen merken',
   },
 
   // ─── Language Selector ───
