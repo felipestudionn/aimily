@@ -1851,8 +1851,11 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
    Creative Synthesis — Visual Creative Brief
    ═══════════════════════════════════════════════════════════ */
 
-function CreativeSynthesisView({ blockData, collectionContext }: { blockData: BlockData; collectionContext: { season: string; collectionName: string } }) {
+function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }: { blockData: BlockData; collectionContext: { season: string; collectionName: string }; updateBlockData: (blockId: string, updates: Partial<BlockData[string]>) => void }) {
   const t = useTranslation();
+  const [showAllImages, setShowAllImages] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { id: collectionId } = useParams();
 
   // ── Extract all confirmed data ──
   const vibeData = blockData.vibe?.data || {};
@@ -1873,7 +1876,6 @@ function CreativeSynthesisView({ blockData, collectionContext }: { blockData: Bl
   const brandTypography = (brandData.typography as string) || '';
   const brandStyle = (brandData.style as string) || '';
 
-  // Research results — only selected ones
   const getSelectedResults = (blockId: string): ResearchResult[] => {
     const results = (blockData[blockId]?.data?.results as ResearchResult[]) || [];
     return results.filter(r => r.selected);
@@ -1885,7 +1887,6 @@ function CreativeSynthesisView({ blockData, collectionContext }: { blockData: Bl
   const competitors = getSelectedResults('competitors');
   const allTrends = [...globalTrends, ...deepDive, ...liveSignals];
 
-  // Check what's completed
   const hasVibe = !!(vibeTitle || vibeNarrative);
   const hasConsumer = consumerProposals.length > 0;
   const hasMoodboard = moodboardImages.length > 0;
@@ -1893,6 +1894,39 @@ function CreativeSynthesisView({ blockData, collectionContext }: { blockData: Bl
   const hasTrends = allTrends.length > 0;
   const hasCompetitors = competitors.length > 0;
   const hasAnything = hasVibe || hasConsumer || hasMoodboard || hasBrand || hasTrends;
+
+  // ── Moodboard edit actions ──
+  const removeImage = (idx: number) => {
+    const updated = moodboardImages.filter((_, i) => i !== idx);
+    updateBlockData('moodboard', { data: { ...blockData.moodboard?.data, images: updated } });
+  };
+
+  const addImages = async (files: FileList) => {
+    const newUrls: string[] = [];
+    for (const file of Array.from(files)) {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+      try {
+        const res = await fetch('/api/storage/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionPlanId: collectionId, assetType: 'moodboard', name: file.name, base64, mimeType: file.type }),
+        });
+        const data = await res.json();
+        if (data.publicUrl) newUrls.push(data.publicUrl);
+      } catch { /* skip failed uploads */ }
+    }
+    if (newUrls.length > 0) {
+      updateBlockData('moodboard', { data: { ...blockData.moodboard?.data, images: [...moodboardImages, ...newUrls] } });
+    }
+  };
+
+  // Images to show: first 16 or all
+  const visibleImages = showAllImages ? moodboardImages : moodboardImages.slice(0, 16);
+  const hasMoreImages = moodboardImages.length > 16;
 
   if (!hasAnything) {
     return (
@@ -1938,28 +1972,68 @@ function CreativeSynthesisView({ blockData, collectionContext }: { blockData: Bl
         </div>
       )}
 
-      {/* ── Moodboard Gallery ── */}
-      {hasMoodboard && (
+      {/* ── Moodboard — compact grid with edit controls ── */}
+      {(hasMoodboard || hasAnything) && (
         <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">Moodboard</div>
-          <div className={`grid gap-2 ${
-            moodboardImages.length === 1 ? 'grid-cols-1' :
-            moodboardImages.length === 2 ? 'grid-cols-2' :
-            moodboardImages.length <= 4 ? 'grid-cols-2 sm:grid-cols-2' :
-            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
-          }`}>
-            {moodboardImages.map((url, i) => (
-              <div key={i} className="aspect-[4/5] bg-carbon/[0.04] overflow-hidden">
-                <img src={url} alt="" className="w-full h-full object-cover" />
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+              Moodboard {hasMoodboard ? `· ${moodboardImages.length}` : ''}
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+            >
+              <Plus className="h-3 w-3" /> Add photos
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => e.target.files && addImages(e.target.files)}
+            />
           </div>
+          {hasMoodboard ? (
+            <>
+              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1.5">
+                {visibleImages.map((url, i) => (
+                  <div key={i} className="group relative aspect-square bg-carbon/[0.04] overflow-hidden">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeImage(i)}
+                      className="absolute top-1 right-1 w-5 h-5 bg-carbon/80 text-crema flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {hasMoreImages && !showAllImages && (
+                <button
+                  onClick={() => setShowAllImages(true)}
+                  className="mt-3 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+                >
+                  Show all {moodboardImages.length} photos
+                </button>
+              )}
+              {showAllImages && hasMoreImages && (
+                <button
+                  onClick={() => setShowAllImages(false)}
+                  className="mt-3 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
+                >
+                  Show less
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="py-8 text-center text-xs text-carbon/30">No moodboard images yet</div>
+          )}
         </div>
       )}
 
       {/* ── Brand DNA + Consumer — Side by Side ── */}
       <div className={`grid gap-6 ${hasBrand && hasConsumer ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-        {/* Brand DNA */}
         {hasBrand && (
           <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
             <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">Brand DNA</div>
@@ -2000,7 +2074,6 @@ function CreativeSynthesisView({ blockData, collectionContext }: { blockData: Bl
           </div>
         )}
 
-        {/* Consumer Profiles */}
         {hasConsumer && (
           <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
             <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
@@ -2022,15 +2095,13 @@ function CreativeSynthesisView({ blockData, collectionContext }: { blockData: Bl
       {hasTrends && (
         <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
           <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-            Trend Direction — {allTrends.length} selected
+            Trend Direction · {allTrends.length} selected
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {allTrends.map((tr, i) => (
               <div key={i} className="p-4 border border-carbon/[0.06]">
                 <h5 className="text-sm font-medium text-carbon mb-1">{tr.title}</h5>
-                {tr.brands && (
-                  <div className="text-[10px] text-carbon/40 italic mb-2">{tr.brands}</div>
-                )}
+                {tr.brands && <div className="text-[10px] text-carbon/40 italic mb-2">{tr.brands}</div>}
                 <p className="text-[11px] text-carbon/60 leading-relaxed">{tr.desc}</p>
               </div>
             ))}
@@ -2041,16 +2112,12 @@ function CreativeSynthesisView({ blockData, collectionContext }: { blockData: Bl
       {/* ── Competitive Landscape ── */}
       {hasCompetitors && (
         <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-            Competitive Landscape
-          </div>
+          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">Competitive Landscape</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {competitors.map((c, i) => (
               <div key={i} className="p-4 border border-carbon/[0.06]">
                 <h5 className="text-sm font-medium text-carbon mb-1">{c.title}</h5>
-                {c.brands && (
-                  <div className="text-[10px] text-carbon/40 italic mb-2">{c.brands}</div>
-                )}
+                {c.brands && <div className="text-[10px] text-carbon/40 italic mb-2">{c.brands}</div>}
                 <p className="text-[11px] text-carbon/60 leading-relaxed">{c.desc}</p>
               </div>
             ))}
@@ -2443,7 +2510,7 @@ export default function CreativeBrandPage() {
           </div>
         ) : (
           /* Synthesis Step — Visual Creative Brief */
-          <CreativeSynthesisView blockData={blockData} collectionContext={collectionContext} />
+          <CreativeSynthesisView blockData={blockData} collectionContext={collectionContext} updateBlockData={updateBlockData} />
         )}
 
         {/* Step Navigation Footer */}
