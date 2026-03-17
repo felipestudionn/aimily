@@ -2024,9 +2024,15 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
   };
 
   const handleValidate = () => {
-    setValidated(true);
-    setShowCelebration(true);
-    updateBlockData('_synthesis', { confirmed: true, data: { validatedAt: new Date().toISOString() } });
+    if (validated) {
+      // Un-validate to allow re-editing
+      setValidated(false);
+      updateBlockData('_synthesis', { confirmed: false, data: {} });
+    } else {
+      setValidated(true);
+      setShowCelebration(true);
+      updateBlockData('_synthesis', { confirmed: true, data: { validatedAt: new Date().toISOString() } });
+    }
   };
 
   // ── Moodboard edit actions ──
@@ -2094,13 +2100,12 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
           onClick={handleValidate}
           className={`flex items-center gap-2 px-6 sm:px-8 py-3 text-[11px] font-medium tracking-[0.15em] uppercase transition-colors ${
             validated
-              ? 'bg-carbon/[0.08] text-carbon/40 cursor-default'
+              ? 'bg-carbon/[0.08] text-carbon/60 hover:text-carbon hover:bg-carbon/[0.12]'
               : 'bg-carbon text-crema hover:bg-carbon/90'
           }`}
-          disabled={validated}
         >
           <Check className="h-4 w-4" />
-          {validated ? 'Validated' : 'Validate Creative Direction'}
+          {validated ? 'Validated — click to edit' : 'Validate Creative Direction'}
         </button>
       </div>
 
