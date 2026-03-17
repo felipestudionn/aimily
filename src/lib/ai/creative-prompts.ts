@@ -191,20 +191,20 @@ Return:
         maxTokens: 8192,
         system: `${PERSONAS.brandArchitect}
 
-You are extracting the Brand DNA of a fashion/lifestyle brand. You will receive REAL CONTENT scraped from their website — their actual copy, headlines, about page, and product descriptions. Your job is to analyze this real content deeply to understand who this brand truly is.
+You are extracting the Brand DNA of a fashion/lifestyle brand. You will receive TWO sources of real information:
 
-METHODOLOGY:
-1. READ the scraped content carefully — it contains the brand's actual words, their story, their positioning.
-2. COMBINE what you read with your knowledge of the fashion industry to produce an expert-level brand analysis.
-3. For COLORS — identify the brand's signature palette from their visual identity (not from website CSS). If you recognize the brand, use your knowledge. If not, infer from their positioning, product category, and communication style.
-4. For VOICE — analyze the ACTUAL COPY provided. Quote or reference specific phrases. How do they describe their products? What words do they choose? What do they avoid?
-5. For TYPOGRAPHY — if you recognize the brand, name their actual fonts. If not, describe the typographic character that would match their positioning.
-6. For VISUAL IDENTITY — describe what makes this brand visually distinctive. Their photography style, spatial grammar, iconic elements, packaging.
+1. **WEB RESEARCH** — sourced information about this brand from fashion press, reviews, articles, and industry analysis. This gives you the brand's positioning, reputation, and identity as perceived by the industry.
+2. **WEBSITE CONTENT** — the brand's own words: their copy, about page, product descriptions, headlines. This gives you their voice, tone, and self-positioning.
+
+Your job is to CROSS-REFERENCE both sources to produce an expert-level brand analysis that is deeply specific to THIS brand and no other.
 
 CRITICAL RULES:
-- The brand name must be EXACTLY correct. Read the scraped content to find the official name.
-- Be SPECIFIC to THIS brand. Every sentence should be true ONLY of this brand, not of any other.
-- If a description could apply to 10 other brands, it's too generic — rewrite it.
+- The brand name must be EXACTLY correct — check both sources.
+- Every sentence must be true ONLY of this brand. If it could describe 10 other brands, it's too generic.
+- For COLORS: identify the brand's REAL signature palette. If the research mentions specific colors, use those. Think Hermès orange, Tiffany blue — what color IS this brand?
+- For VOICE: analyze their ACTUAL copy. Quote specific phrases. How do they describe products? What words do they choose vs. avoid?
+- For TYPOGRAPHY: name specific typefaces if known from research. Otherwise, describe the typographic character precisely.
+- For VISUAL IDENTITY: be concrete — photography style, spatial grammar, iconic elements, packaging details.
 - NEVER refuse. ALWAYS return valid JSON.`,
         user: `Extract the complete Brand DNA for use in fashion collection planning.
 
@@ -213,38 +213,51 @@ ${input.website ? `- Website: ${input.website}` : ''}
 ${input.instagram ? `- Instagram: ${input.instagram}` : ''}
 ${input._igHandle ? `- IG handle: @${input._igHandle}` : ''}
 
+${input._webResearch ? `
+═══════════════════════════════════════════════════════════
+SOURCE 1: WEB RESEARCH (from fashion press, articles, reviews)
+═══════════════════════════════════════════════════════════
+${input._webResearch}
+${input._sources ? `\nSources: ${input._sources}` : ''}
+═══════════════════════════════════════════════════════════
+` : ''}
+
 ${input._brandName || input._bodyContent ? `
-───── REAL CONTENT SCRAPED FROM THE BRAND'S WEBSITE ─────
+───────────────────────────────────────────────────────────
+SOURCE 2: BRAND'S OWN WEBSITE CONTENT
+───────────────────────────────────────────────────────────
 
 DETECTED BRAND NAME: ${input._brandName || 'Unknown'}
-${input._tagline ? `TAGLINE/DESCRIPTION: ${input._tagline}` : ''}
+${input._tagline ? `TAGLINE: ${input._tagline}` : ''}
 
-${input._headings ? `KEY HEADLINES FROM THEIR SITE:\n${input._headings}` : ''}
+${input._headings ? `HEADLINES:\n${input._headings}` : ''}
 
 ${input._bodyContent ? `HOMEPAGE COPY:\n${input._bodyContent}` : ''}
 
 ${input._aboutContent ? `\nABOUT/STORY PAGE:\n${input._aboutContent}` : ''}
 
 ${input._productDescriptions ? `\nPRODUCT DESCRIPTIONS:\n${input._productDescriptions}` : ''}
-──────────────────────────────────────────────────────────
-` : `No website content could be scraped. Use your knowledge of this brand based on the URL/handle provided.`}
+───────────────────────────────────────────────────────────
+` : ''}
 
-ANALYSIS TASK — Extract:
+${!input._webResearch && !input._bodyContent ? 'No data available — use your knowledge of this brand.' : ''}
 
-1. BRAND NAME — The EXACT official brand name. Read the scraped content carefully — look at the title, headings, and how the brand refers to itself. Get this right.
+ANALYSIS TASK — Cross-reference BOTH sources to extract:
 
-2. COLOR SYSTEM — 4 colors that define this brand's identity:
-   - Primary: The signature color most associated with this brand
-   - Secondary: A key supporting color
+1. BRAND NAME — The EXACT official name as the brand uses it.
+
+2. COLOR SYSTEM — 4 colors that define this brand's visual identity:
+   - Primary: THE signature color (from research + website visual cues)
+   - Secondary: A key supporting color in their system
    - Accent: A highlight/energy color
    - Neutral: Their base/background tone
-   These should be the brand's IDENTITY colors (think Hermès orange, Tiffany blue), not generic black/white unless that IS their identity (like Chanel). Provide hex codes.
+   Use the web research to identify real brand colors. Provide accurate hex codes.
 
-3. VOICE & TONE — Analyze the REAL COPY above. How does this brand speak? Reference specific phrases or patterns from the scraped content. What is their tonal register? What vocabulary do they favor? What do they avoid? This must be specific enough that a copywriter could write on-brand after reading it.
+3. VOICE & TONE — Cross-reference the web research (how press describes them) with their actual copy (how they describe themselves). Quote or reference specific phrases from Source 2. Describe: tonal register, vocabulary patterns, what they emphasize, what they avoid. A copywriter should be able to write on-brand after reading this.
 
-4. TYPOGRAPHY — Name specific typefaces if you know them. Otherwise, describe the typographic character (serif/sans-serif, geometric/humanist, high-contrast/mono-weight) and what it communicates about the brand's positioning.
+4. TYPOGRAPHY — If the research or your knowledge identifies specific typefaces, name them. Otherwise, describe the precise typographic character and what it signals about positioning.
 
-5. VISUAL IDENTITY — What makes this brand visually recognizable? Photography style (studio/lifestyle/editorial/artisanal), layout preferences (minimal/dense/grid/organic), use of space, iconic elements (logos, monograms, patterns), packaging aesthetic. A designer should read this and immediately understand the visual world.
+5. VISUAL IDENTITY — Synthesize from both sources: photography style (artisanal/editorial/studio/lifestyle), layout approach, spatial grammar, iconic brand elements (logos, patterns, signatures), packaging details, store/showroom aesthetic. A designer should immediately see the visual world.
 
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
@@ -253,9 +266,9 @@ Return:
 {
   "brandName": "Exact official brand name",
   "colors": ["#hex1 (primary)", "#hex2 (secondary)", "#hex3 (accent)", "#hex4 (neutral)"],
-  "tone": "40-60 words — analyze the real copy above, reference specific phrases or patterns, describe tonal register and vocabulary",
-  "typography": "25-40 words — name actual typefaces if known, describe typographic character and what it signals",
-  "style": "40-60 words — photography style, layout, spatial grammar, iconic elements, packaging. Specific enough to brief a designer."
+  "tone": "40-70 words — cross-reference press perception with actual copy, quote specific phrases, describe tonal register and vocabulary patterns",
+  "typography": "25-40 words — name actual typefaces if known, describe typographic character and positioning signal",
+  "style": "40-70 words — photography style, layout, iconic elements, packaging, store aesthetic. Specific enough to brief a designer."
 }`,
       };
 
@@ -314,6 +327,13 @@ The user is researching macro-trends for their collection. They provided this co
 
 "${input.input}"
 
+${input._webResearch ? `
+═══ REAL-TIME WEB RESEARCH (sourced from current fashion press & industry data) ═══
+${input._webResearch}
+${input._sources ? `Sources: ${input._sources}` : ''}
+═══════════════════════════════════════════════════════════════════════════════════
+USE THIS RESEARCH as your primary source of evidence. Cross-reference with your knowledge to produce expert analysis.
+` : ''}
 Identify 4-5 global macro-trends relevant to this season and context. These should be MACRO-level cultural/design shifts, not product-specific details.
 
 ANALYSIS FRAMEWORK (for each trend):
@@ -350,6 +370,13 @@ The user is doing a product-specific trend deep dive. Context:
 
 "${input.input}"
 
+${input._webResearch ? `
+═══ REAL-TIME WEB RESEARCH (sourced from current fashion press & industry data) ═══
+${input._webResearch}
+${input._sources ? `Sources: ${input._sources}` : ''}
+═══════════════════════════════════════════════════════════════════════════════════
+USE THIS RESEARCH as your primary source of evidence. Cross-reference with your knowledge to produce expert analysis.
+` : ''}
 Identify 4-5 specific MICRO-TRENDS relevant to this product category and market. These should be design-level details, not macro shifts.
 
 ANALYSIS FRAMEWORK (for each micro-trend):
@@ -382,11 +409,18 @@ Return:
         system: PERSONAS.trendForecaster,
         user: `${ctx}
 
-The user wants to know what is trending — live cultural and style signals that could inform their collection. Use your most recent training knowledge to identify current or emerging signals.
+The user wants to know what is trending — live cultural and style signals that could inform their collection.
 
 Categories/context: "${input.input}"
 
-Identify 4-5 LIVE SIGNALS — things happening across social media, street style, pop culture, or retail that are relevant to fashion. Base this on your training knowledge of recent trends — do NOT say you cannot access real-time data. Use what you know.
+${input._webResearch ? `
+═══ REAL-TIME WEB RESEARCH (sourced from current social media, press & trend reports) ═══
+${input._webResearch}
+${input._sources ? `Sources: ${input._sources}` : ''}
+═══════════════════════════════════════════════════════════════════════════════════════════
+THIS IS REAL, CURRENT DATA. Use it as your primary source. These are actual signals happening right now.
+` : ''}
+Identify 4-5 LIVE SIGNALS — things happening across social media, street style, pop culture, or retail that are relevant to fashion.
 
 ANALYSIS FRAMEWORK (for each signal):
 1. THE SIGNAL — What specifically is happening? (Not "X is popular" but "X started appearing on TikTok after Y event/person/moment")
@@ -423,6 +457,14 @@ You also have deep competitive intelligence expertise — you analyze brands not
 The user wants competitive intelligence on these reference/competitor brands:
 
 "${input.input}"
+
+${input._webResearch ? `
+═══ REAL-TIME WEB RESEARCH (sourced from current industry data & brand analysis) ═══
+${input._webResearch}
+${input._sources ? `Sources: ${input._sources}` : ''}
+═══════════════════════════════════════════════════════════════════════════════════════
+USE THIS RESEARCH as your primary source. It contains real, current data about these brands.
+` : ''}
 
 For each brand or the group as a whole, provide STRATEGIC insights — not descriptions.
 

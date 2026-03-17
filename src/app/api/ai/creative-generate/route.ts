@@ -3,11 +3,13 @@ import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/a
 import { generateJSON, generateText } from '@/lib/ai/llm-client';
 import { buildCreativePrompt } from '@/lib/ai/creative-prompts';
 import { scrapeBrandContent } from '@/lib/brand-scraper';
+import { researchBrand, researchTrends } from '@/lib/ai/perplexity-client';
 
 /* ═══════════════════════════════════════════════════════════
    Creative Block — AI Generation Endpoint
    10 prompt types · Claude Haiku primary, Gemini fallback
-   brand-extract: scrapes real content + LLM brand knowledge
+   brand-extract: Perplexity web research + website scraping + Claude
+   trends: Perplexity web research + Claude analysis
    ═══════════════════════════════════════════════════════════ */
 
 type GenerationType =
@@ -38,23 +40,60 @@ export async function POST(req: NextRequest) {
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
 
-  // ── Brand Extract: scrape website content + feed to LLM ──
+  // ── Brand Extract: Perplexity research + website scraping in parallel ──
   if (type === 'brand-extract') {
+    // Derive brand name hint from inputs
+    let brandHint = '';
     if (input.website) {
-      const scraped = await scrapeBrandContent(input.website);
-      if (scraped) {
-        input._brandName = scraped.brandName;
-        input._tagline = scraped.tagline;
-        input._headings = scraped.headings.join(' | ');
-        input._bodyContent = scraped.bodyContent;
-        input._aboutContent = scraped.aboutContent;
-        input._productDescriptions = scraped.productDescriptions.join('\n');
-      } else {
-        input._scrapeFailed = 'true';
-      }
+      try {
+        brandHint = new URL(
+          input.website.startsWith('http') ? input.website : 'https://' + input.website
+        ).hostname.replace('www.', '').split('.')[0];
+      } catch { brandHint = input.website; }
     }
     if (input.instagram) {
       input._igHandle = input.instagram.replace(/^@/, '').replace(/\/$/, '');
+      if (!brandHint) brandHint = input._igHandle;
+    }
+
+    // Run Perplexity research + website scraping in parallel
+    const [perplexityResult, scraped] = await Promise.all([
+      researchBrand(brandHint, input.website, input.instagram),
+      input.website ? scrapeBrandContent(input.website) : Promise.resolve(null),
+    ]);
+
+    // Perplexity research (rich web-sourced brand info)
+    if (perplexityResult) {
+      input._webResearch = perplexityResult.content;
+      if (perplexityResult.sources.length > 0) {
+        input._sources = perplexityResult.sources.slice(0, 5).join(', ');
+      }
+    }
+
+    // Website scraping (direct brand content)
+    if (scraped) {
+      input._brandName = scraped.brandName;
+      input._tagline = scraped.tagline;
+      input._headings = scraped.headings.join(' | ');
+      input._bodyContent = scraped.bodyContent;
+      input._aboutContent = scraped.aboutContent;
+      input._productDescriptions = scraped.productDescriptions.join('\n');
+    }
+  }
+
+  // ── Trends: Perplexity research for real-time trend data ──
+  if (type.startsWith('trends-')) {
+    const trendType = type.replace('trends-', '') as 'global' | 'deep-dive' | 'live-signals' | 'competitors';
+    const perplexityResult = await researchTrends(
+      input.input || '',
+      input.season,
+      trendType,
+    );
+    if (perplexityResult) {
+      input._webResearch = perplexityResult.content;
+      if (perplexityResult.sources.length > 0) {
+        input._sources = perplexityResult.sources.slice(0, 5).join(', ');
+      }
     }
   }
 
