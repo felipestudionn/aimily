@@ -48,11 +48,13 @@ export async function POST(req: NextRequest) {
   if (type.startsWith('trends-')) {
     const trendType = type.replace('trends-', '') as 'global' | 'deep-dive' | 'live-signals' | 'competitors';
     try {
+      const excludeTitles = input.excludeTitles ? input.excludeTitles.split('|||') : undefined;
       const sonarResult = await researchTrends(
         input.input || '',
         input.season,
         trendType,
         { collectionName: input.collectionName, consumer: input.consumer },
+        excludeTitles,
       );
 
       if (sonarResult && sonarResult.results.length > 0) {

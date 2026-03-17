@@ -99,11 +99,17 @@ export async function researchTrends(
   trendQuery: string,
   season?: string,
   type: 'global' | 'deep-dive' | 'live-signals' | 'competitors' = 'global',
-  collectionContext?: { collectionName?: string; consumer?: string }
+  collectionContext?: { collectionName?: string; consumer?: string },
+  excludeTitles?: string[]
 ): Promise<TrendResearchResponse | null> {
   if (!PERPLEXITY_API_KEY) return null;
 
   const { full: seasonFull, previousSeason, isFuture } = expandSeason(season);
+
+  // Exclusion instruction (for Load More / Replace Unselected)
+  const exclusionNote = excludeTitles && excludeTitles.length > 0
+    ? `\n\nIMPORTANT: Do NOT repeat any of these trends that the user already has: ${excludeTitles.join(', ')}. Generate COMPLETELY DIFFERENT trends.\n`
+    : '';
 
   // Build the Sonar prompt based on trend type
   let prompt = '';
@@ -128,7 +134,7 @@ For EACH trend, provide:
 - "desc": 60-80 words — what it looks like (silhouettes, colors, materials), how a designer would use it. Direct and visual, not academic.
 - "relevance": "high" or "medium"
 
-Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
+${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
 
     case 'deep-dive':
@@ -144,7 +150,7 @@ For EACH micro-trend:
 - "desc": 60-80 words — what it looks like, how to execute it, shelf life (flash/wave/staying)
 - "relevance": "high" or "medium"
 
-Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
+${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
 
     case 'live-signals':
@@ -174,7 +180,7 @@ For EACH signal:
 - "desc": 50-70 words — what it looks like, WHERE it's been spotted (city/neighborhood/platform), who's wearing it, how long it will last
 - "relevance": "high" or "medium"
 
-Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
+${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
 
     case 'competitors':
@@ -186,7 +192,7 @@ For EACH brand mentioned, provide:
 - "desc": 60-80 words — price range (real € numbers), positioning, what they do well, the gap/opportunity for the user
 - "relevance": "high" or "medium"
 
-Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
+${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
   }
 

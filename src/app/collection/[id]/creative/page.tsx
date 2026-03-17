@@ -1600,27 +1600,69 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   };
 
   const selectedCount = results.filter(r => r.selected).length;
+  const unselectedCount = results.length - selectedCount;
   const hasInput = !!(data.input as string)?.trim();
   const canGenerate = c.requiresInput ? hasInput : true;
+
+  const typeMap: Record<string, string> = {
+    'global-trends': 'trends-global',
+    'deep-dive': 'trends-deep-dive',
+    'live-signals': 'trends-live-signals',
+    'competitors': 'trends-competitors',
+  };
+
+  const callResearch = async (excludeTitles: string[] = []) => {
+    const inputPayload: Record<string, string> = {
+      input: (data.input as string) || collectionContext.collectionName || '',
+      consumer: consumerProfile || '',
+      ...collectionContext,
+    };
+    // Tell the API which titles to exclude (avoid duplicates)
+    if (excludeTitles.length > 0) {
+      inputPayload.excludeTitles = excludeTitles.join('|||');
+    }
+    return generateCreative(typeMap[blockId] || 'trends-global', inputPayload, language);
+  };
 
   const handleGenerate = async () => {
     setGenerating(true);
     setError(null);
-    const typeMap: Record<string, string> = {
-      'global-trends': 'trends-global',
-      'deep-dive': 'trends-deep-dive',
-      'live-signals': 'trends-live-signals',
-      'competitors': 'trends-competitors',
-    };
-    const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', {
-      input: (data.input as string) || collectionContext.collectionName || '',
-      consumer: consumerProfile || '',
-      ...collectionContext,
-    }, language);
+    const { result, error: err } = await callResearch();
     if (err) { setError(err); setGenerating(false); return; }
-    const parsed = result as { results: Array<{ title: string; desc: string; relevance?: string }> };
+    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string }> };
     const newResults = (parsed.results || []).map((r) => ({ ...r, selected: false, editing: false }));
     onChange({ ...data, results: newResults });
+    setGenerating(false);
+  };
+
+  const handleLoadMore = async () => {
+    setGenerating(true);
+    setError(null);
+    const existingTitles = results.map(r => r.title);
+    const { result, error: err } = await callResearch(existingTitles);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string }> };
+    const moreResults = (parsed.results || [])
+      .filter(r => !existingTitles.includes(r.title)) // Extra safety: no duplicates
+      .slice(0, 4)
+      .map((r) => ({ ...r, selected: false, editing: false }));
+    onChange({ ...data, results: [...results, ...moreResults] });
+    setGenerating(false);
+  };
+
+  const handleReplaceUnselected = async () => {
+    setGenerating(true);
+    setError(null);
+    const selectedResults = results.filter(r => r.selected);
+    const excludeTitles = selectedResults.map(r => r.title);
+    const { result, error: err } = await callResearch(excludeTitles);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string }> };
+    const newResults = (parsed.results || [])
+      .filter(r => !excludeTitles.includes(r.title))
+      .slice(0, unselectedCount)
+      .map((r) => ({ ...r, selected: false, editing: false }));
+    onChange({ ...data, results: [...selectedResults, ...newResults] });
     setGenerating(false);
   };
 
@@ -1752,6 +1794,30 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
           )}
         </div>
       ))}
+
+      {/* ── Load More / Replace Unselected ── */}
+      {results.length > 0 && (
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            onClick={handleLoadMore}
+            disabled={generating}
+            className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/70 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+            Load 4 more
+          </button>
+          {selectedCount > 0 && unselectedCount > 0 && (
+            <button
+              onClick={handleReplaceUnselected}
+              disabled={generating}
+              className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/70 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Replace {unselectedCount} unselected
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
