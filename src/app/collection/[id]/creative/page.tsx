@@ -1547,36 +1547,45 @@ interface ResearchResult {
   editing?: boolean;
 }
 
-function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
+function ResearchBlockContent({ blockId, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
   const t = useTranslation();
   const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const config: Record<string, { label: string; placeholder: string; generateLabel: string }> = {
+  // Config per block: which need required input, which are one-click
+  const config: Record<string, { requiresInput: boolean; inputLabel: string; placeholder: string; generateLabel: string; description: string }> = {
     'global-trends': {
-      label: t.creative.seasonCategory,
-      placeholder: t.creative.seasonCategoryPlaceholder,
+      requiresInput: false,
+      inputLabel: 'Optional focus',
+      placeholder: 'e.g. footwear, knitwear, sustainable materials... (optional)',
       generateLabel: t.creative.analyzeGlobalTrends,
+      description: `We'll research macro-trends for ${collectionContext.season || 'your season'} using your collection context.`,
     },
     'deep-dive': {
-      label: t.creative.productTypeMarket,
+      requiresInput: true,
+      inputLabel: t.creative.productTypeMarket,
       placeholder: t.creative.productTypeMarketPlaceholder,
       generateLabel: t.creative.deepDiveAnalysis,
+      description: 'Tell us what specific area to investigate — product category, material, technique, or market segment.',
     },
     'live-signals': {
-      label: t.creative.categoriesToMonitor,
-      placeholder: t.creative.categoriesToMonitorPlaceholder,
+      requiresInput: false,
+      inputLabel: 'Optional focus',
+      placeholder: 'e.g. streetwear, Gen Z, sustainability... (optional)',
       generateLabel: t.creative.scanLiveSignals,
+      description: `We'll scan what's trending right now in fashion and culture.`,
     },
     'competitors': {
-      label: t.creative.referenceBrands,
+      requiresInput: true,
+      inputLabel: t.creative.referenceBrands,
       placeholder: t.creative.referenceBrandsPlaceholder,
       generateLabel: t.creative.analyzeCompetitors,
+      description: 'Which brands do you want to analyze? Enter brand names.',
     },
   };
 
-  const c = config[blockId] || { label: 'Input', placeholder: '', generateLabel: 'Generate' };
+  const c = config[blockId] || { requiresInput: true, inputLabel: 'Input', placeholder: '', generateLabel: 'Generate', description: '' };
   const results = (data.results as ResearchResult[]) || [];
 
   const updateResult = (idx: number, updates: Partial<ResearchResult>) => {
@@ -1590,42 +1599,68 @@ function ResearchBlockContent({ blockId, mode, data, onChange, collectionContext
   };
 
   const selectedCount = results.filter(r => r.selected).length;
+  const hasInput = !!(data.input as string)?.trim();
+  const canGenerate = c.requiresInput ? hasInput : true;
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setError(null);
+    const typeMap: Record<string, string> = {
+      'global-trends': 'trends-global',
+      'deep-dive': 'trends-deep-dive',
+      'live-signals': 'trends-live-signals',
+      'competitors': 'trends-competitors',
+    };
+    const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', {
+      input: (data.input as string) || collectionContext.collectionName || '',
+      consumer: consumerProfile || '',
+      ...collectionContext,
+    }, language);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { results: Array<{ title: string; desc: string; relevance?: string }> };
+    const newResults = (parsed.results || []).map((r) => ({ ...r, selected: false, editing: false }));
+    onChange({ ...data, results: newResults });
+    setGenerating(false);
+  };
 
   return (
     <div className="space-y-6">
+      {/* Context info for auto-research blocks */}
+      {!c.requiresInput && results.length === 0 && (
+        <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06]">
+          <p className="text-xs text-carbon/60 leading-relaxed">{c.description}</p>
+        </div>
+      )}
+
+      {/* Input area */}
       <div>
         <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-          {c.label}
+          {c.inputLabel}
         </label>
-        <textarea
-          value={(data.input as string) || ''}
-          onChange={(e) => onChange({ ...data, input: e.target.value })}
-          placeholder={c.placeholder}
-          className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
-        />
+        {c.requiresInput ? (
+          <>
+            <p className="text-xs text-carbon/50 mb-3">{c.description}</p>
+            <textarea
+              value={(data.input as string) || ''}
+              onChange={(e) => onChange({ ...data, input: e.target.value })}
+              placeholder={c.placeholder}
+              className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+            />
+          </>
+        ) : (
+          <input
+            type="text"
+            value={(data.input as string) || ''}
+            onChange={(e) => onChange({ ...data, input: e.target.value })}
+            placeholder={c.placeholder}
+            className="w-full px-4 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+          />
+        )}
       </div>
+
       <button
-        onClick={async () => {
-          setGenerating(true);
-          setError(null);
-          const typeMap: Record<string, string> = {
-            'global-trends': 'trends-global',
-            'deep-dive': 'trends-deep-dive',
-            'live-signals': 'trends-live-signals',
-            'competitors': 'trends-competitors',
-          };
-          const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', {
-            input: (data.input as string) || '',
-            consumer: consumerProfile || '',
-            ...collectionContext,
-          }, language);
-          if (err) { setError(err); setGenerating(false); return; }
-          const parsed = result as { results: Array<{ title: string; desc: string; relevance?: string }> };
-          const newResults = (parsed.results || []).map((r) => ({ ...r, selected: false, editing: false }));
-          onChange({ ...data, results: newResults });
-          setGenerating(false);
-        }}
-        disabled={generating || !(data.input as string)?.trim()}
+        onClick={handleGenerate}
+        disabled={generating || !canGenerate}
         className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -1856,7 +1891,9 @@ export default function CreativeBrandPage() {
     handleCollapse();
   }, [updateBlockData, handleCollapse]);
 
-  const hideModePills = expandedBlock === 'moodboard' || expandedBlock === 'brand-dna';
+  // Hide mode pills for blocks with their own flow (moodboard, brand-dna, all research blocks)
+  const researchBlocks = ['global-trends', 'deep-dive', 'live-signals', 'competitors'];
+  const hideModePills = expandedBlock === 'moodboard' || expandedBlock === 'brand-dna' || researchBlocks.includes(expandedBlock || '');
 
   if (persistLoading) {
     return (
