@@ -1902,6 +1902,10 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
   const [newCard, setNewCard] = useState({ title: '', brands: '', desc: '' });
   const [editingTrendIdx, setEditingTrendIdx] = useState<number | null>(null);
   const [editingCompIdx, setEditingCompIdx] = useState<number | null>(null);
+  const [editingBrand, setEditingBrand] = useState(false);
+  const [editingConsumerIdx, setEditingConsumerIdx] = useState<number | null>(null);
+  const [addingConsumer, setAddingConsumer] = useState(false);
+  const [newConsumer, setNewConsumer] = useState({ title: '', desc: '' });
 
   // ── Research edit helpers ──
   const updateResearchResults = (blockId: string, updatedResults: ResearchResult[]) => {
@@ -1973,6 +1977,48 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
     updateBlockData('competitors', { data: { ...currentData, results: [...results, manual] } });
     setNewCard({ title: '', brands: '', desc: '' });
     setAddingCompetitor(false);
+  };
+
+  // ── Brand DNA edit helpers ──
+  const updateBrandField = (field: string, value: string | string[]) => {
+    const current = blockData['brand-dna']?.data || {};
+    updateBlockData('brand-dna', { data: { ...current, [field]: value } });
+  };
+
+  // ── Consumer edit helpers ──
+  const getAllConsumerProposals = (): Array<{ title: string; desc: string; status: string }> => {
+    return (consumerData.proposals as Array<{ title: string; desc: string; status: string }>) || [];
+  };
+
+  const updateConsumerProposal = (likedIdx: number, updates: { title?: string; desc?: string }) => {
+    const all = getAllConsumerProposals();
+    const liked = all.filter(p => p.status === 'liked');
+    const target = liked[likedIdx];
+    if (!target) return;
+    const globalIdx = all.indexOf(target);
+    const updated = [...all];
+    updated[globalIdx] = { ...updated[globalIdx], ...updates };
+    updateBlockData('consumer', { data: { ...consumerData, proposals: updated } });
+  };
+
+  const removeConsumerProposal = (likedIdx: number) => {
+    const all = getAllConsumerProposals();
+    const liked = all.filter(p => p.status === 'liked');
+    const target = liked[likedIdx];
+    if (!target) return;
+    const globalIdx = all.indexOf(target);
+    const updated = [...all];
+    updated[globalIdx] = { ...updated[globalIdx], status: 'rejected' };
+    updateBlockData('consumer', { data: { ...consumerData, proposals: updated } });
+  };
+
+  const addManualConsumer = () => {
+    if (!newConsumer.title.trim()) return;
+    const all = getAllConsumerProposals();
+    const manual = { title: newConsumer.title, desc: newConsumer.desc, status: 'liked' };
+    updateBlockData('consumer', { data: { ...consumerData, proposals: [...all, manual] } });
+    setNewConsumer({ title: '', desc: '' });
+    setAddingConsumer(false);
   };
 
   const handleValidate = () => {
@@ -2143,61 +2189,129 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         </div>
       )}
 
-      {/* ── Brand DNA + Consumer — Side by Side ── */}
+      {/* ── Brand DNA + Consumer — Side by Side, editable ── */}
       <div className={`grid gap-6 ${hasBrand && hasConsumer ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
         {hasBrand && (
           <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">Brand DNA</div>
-            {brandName && (
-              <h4 className="text-lg font-light text-carbon tracking-tight mb-4">{brandName}</h4>
-            )}
-            {brandColors.length > 0 && (
-              <div className="flex gap-2 mb-5">
-                {brandColors.map((c, i) => {
-                  const hex = c.replace(/\s*\(.*\)/, '').trim();
-                  return (
-                    <div key={i} className="flex flex-col items-center gap-1.5">
-                      <div className="w-10 h-10 border border-carbon/[0.08]" style={{ backgroundColor: hex }} />
-                      <span className="text-[9px] text-carbon/40 font-mono">{hex}</span>
-                    </div>
-                  );
-                })}
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">Brand DNA</div>
+              <button
+                onClick={() => setEditingBrand(!editingBrand)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+              >
+                <Pencil className="h-3 w-3" /> {editingBrand ? 'Done' : 'Edit'}
+              </button>
+            </div>
+            {editingBrand ? (
+              <div className="space-y-3">
+                <div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Brand Name</div>
+                  <input type="text" value={brandName} onChange={(e) => updateBrandField('brandName', e.target.value)} className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
+                </div>
+                <div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Colors (hex, comma-separated)</div>
+                  <input type="text" value={brandColors.join(', ')} onChange={(e) => updateBrandField('colors', e.target.value.split(',').map(c => c.trim()).filter(Boolean))} className="w-full px-2 py-1.5 text-xs text-carbon border border-carbon/[0.12] focus:outline-none font-mono" />
+                </div>
+                <div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Voice & Tone</div>
+                  <textarea value={brandTone} onChange={(e) => updateBrandField('tone', e.target.value)} className="w-full px-2 py-1.5 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
+                </div>
+                <div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Typography</div>
+                  <textarea value={brandTypography} onChange={(e) => updateBrandField('typography', e.target.value)} className="w-full px-2 py-1.5 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-12" />
+                </div>
+                <div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Visual Identity</div>
+                  <textarea value={brandStyle} onChange={(e) => updateBrandField('style', e.target.value)} className="w-full px-2 py-1.5 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
+                </div>
               </div>
-            )}
-            {brandTone && (
-              <div className="mb-3">
-                <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Voice & Tone</div>
-                <p className="text-xs text-carbon/70 leading-relaxed">{brandTone}</p>
-              </div>
-            )}
-            {brandTypography && (
-              <div className="mb-3">
-                <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Typography</div>
-                <p className="text-xs text-carbon/70 leading-relaxed">{brandTypography}</p>
-              </div>
-            )}
-            {brandStyle && (
-              <div>
-                <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Visual Identity</div>
-                <p className="text-xs text-carbon/70 leading-relaxed">{brandStyle}</p>
-              </div>
+            ) : (
+              <>
+                {brandName && <h4 className="text-lg font-light text-carbon tracking-tight mb-4">{brandName}</h4>}
+                {brandColors.length > 0 && (
+                  <div className="flex gap-2 mb-5">
+                    {brandColors.map((c, i) => {
+                      const hex = c.replace(/\s*\(.*\)/, '').trim();
+                      return (
+                        <div key={i} className="flex flex-col items-center gap-1.5">
+                          <div className="w-10 h-10 border border-carbon/[0.08]" style={{ backgroundColor: hex }} />
+                          <span className="text-[9px] text-carbon/40 font-mono">{hex}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {brandTone && (
+                  <div className="mb-3">
+                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Voice & Tone</div>
+                    <p className="text-xs text-carbon/70 leading-relaxed">{brandTone}</p>
+                  </div>
+                )}
+                {brandTypography && (
+                  <div className="mb-3">
+                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Typography</div>
+                    <p className="text-xs text-carbon/70 leading-relaxed">{brandTypography}</p>
+                  </div>
+                )}
+                {brandStyle && (
+                  <div>
+                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Visual Identity</div>
+                    <p className="text-xs text-carbon/70 leading-relaxed">{brandStyle}</p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
 
-        {hasConsumer && (
+        {(hasConsumer || hasAnything) && (
           <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
-              Target Consumer{consumerProposals.length > 1 ? 's' : ''}
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+                Target Consumer{consumerProposals.length > 1 ? 's' : ''} {hasConsumer ? `· ${consumerProposals.length}` : ''}
+              </div>
+              <button
+                onClick={() => { setAddingConsumer(true); setNewConsumer({ title: '', desc: '' }); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
+              >
+                <Plus className="h-3 w-3" /> Add
+              </button>
             </div>
             <div className="space-y-4">
               {consumerProposals.map((p, i) => (
-                <div key={i}>
-                  <h5 className="text-sm font-medium text-carbon mb-1">{p.title}</h5>
-                  <p className="text-xs text-carbon/70 leading-relaxed">{p.desc}</p>
+                <div key={i} className="group relative">
+                  {editingConsumerIdx === i ? (
+                    <div className="space-y-2 p-3 border border-carbon/[0.12]">
+                      <input type="text" value={p.title} onChange={(e) => updateConsumerProposal(i, { title: e.target.value })} className="w-full px-2 py-1 text-sm font-medium text-carbon border border-carbon/[0.12] focus:outline-none" />
+                      <textarea value={p.desc} onChange={(e) => updateConsumerProposal(i, { desc: e.target.value })} className="w-full px-2 py-1 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-20" />
+                      <button onClick={() => setEditingConsumerIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Done</button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="absolute top-0 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setEditingConsumerIdx(i)} className="w-5 h-5 flex items-center justify-center text-carbon/30 hover:text-carbon/70"><Pencil className="h-2.5 w-2.5" /></button>
+                        <button onClick={() => removeConsumerProposal(i)} className="w-5 h-5 flex items-center justify-center text-carbon/30 hover:text-red-500"><X className="h-2.5 w-2.5" /></button>
+                      </div>
+                      <h5 className="text-sm font-medium text-carbon mb-1 pr-12">{p.title}</h5>
+                      <p className="text-xs text-carbon/70 leading-relaxed">{p.desc}</p>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
+            {addingConsumer && (
+              <div className="mt-4 p-4 border border-dashed border-carbon/[0.15] space-y-2">
+                <input type="text" value={newConsumer.title} onChange={(e) => setNewConsumer({ ...newConsumer, title: e.target.value })} placeholder="Consumer segment name..." className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
+                <textarea value={newConsumer.desc} onChange={(e) => setNewConsumer({ ...newConsumer, desc: e.target.value })} placeholder="Profile description..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-20" />
+                <div className="flex gap-2">
+                  <button onClick={addManualConsumer} disabled={!newConsumer.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">Add</button>
+                  <button onClick={() => setAddingConsumer(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Cancel</button>
+                </div>
+              </div>
+            )}
+            {!hasConsumer && !addingConsumer && (
+              <div className="py-4 text-center text-xs text-carbon/30">No consumer profiles selected</div>
+            )}
           </div>
         )}
       </div>
