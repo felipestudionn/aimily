@@ -191,49 +191,71 @@ Return:
         maxTokens: 8192,
         system: `${PERSONAS.brandArchitect}
 
-You are extracting the Brand DNA of a REAL fashion/lifestyle brand. You have deep knowledge of major and mid-tier brands worldwide — their visual identity, tone of voice, typography choices, color systems, and overall aesthetic.
+You are extracting the Brand DNA of a fashion/lifestyle brand. You will receive REAL CONTENT scraped from their website — their actual copy, headlines, about page, and product descriptions. Your job is to analyze this real content deeply to understand who this brand truly is.
 
-RULES:
-- Use your EXISTING KNOWLEDGE of this brand. You know these brands from training data: their campaigns, stores, websites, social media presence, runway shows, and brand communications.
-- Be SPECIFIC and ACCURATE. If you know the brand uses Futura for headlines, say Futura. If their signature color is a specific black, give the right hex.
-- For lesser-known brands, use the website/Instagram references provided to infer positioning and identity.
+METHODOLOGY:
+1. READ the scraped content carefully — it contains the brand's actual words, their story, their positioning.
+2. COMBINE what you read with your knowledge of the fashion industry to produce an expert-level brand analysis.
+3. For COLORS — identify the brand's signature palette from their visual identity (not from website CSS). If you recognize the brand, use your knowledge. If not, infer from their positioning, product category, and communication style.
+4. For VOICE — analyze the ACTUAL COPY provided. Quote or reference specific phrases. How do they describe their products? What words do they choose? What do they avoid?
+5. For TYPOGRAPHY — if you recognize the brand, name their actual fonts. If not, describe the typographic character that would match their positioning.
+6. For VISUAL IDENTITY — describe what makes this brand visually distinctive. Their photography style, spatial grammar, iconic elements, packaging.
+
+CRITICAL RULES:
+- The brand name must be EXACTLY correct. Read the scraped content to find the official name.
+- Be SPECIFIC to THIS brand. Every sentence should be true ONLY of this brand, not of any other.
+- If a description could apply to 10 other brands, it's too generic — rewrite it.
 - NEVER refuse. ALWAYS return valid JSON.`,
-        user: `The user has an existing brand and wants to extract its Brand DNA for use in their fashion collection planning.
+        user: `Extract the complete Brand DNA for use in fashion collection planning.
 
-BRAND TO ANALYZE:
-${input.brandName ? `- Brand name: ${input.brandName}` : ''}
+BRAND REFERENCES:
 ${input.website ? `- Website: ${input.website}` : ''}
 ${input.instagram ? `- Instagram: ${input.instagram}` : ''}
-${input._brandHint ? `- Domain: ${input._brandHint}` : ''}
 ${input._igHandle ? `- IG handle: @${input._igHandle}` : ''}
 
-Extract the complete Brand DNA based on your knowledge of this brand:
+${input._brandName || input._bodyContent ? `
+───── REAL CONTENT SCRAPED FROM THE BRAND'S WEBSITE ─────
 
-1. BRAND NAME — The official brand name as it appears in their communications.
+DETECTED BRAND NAME: ${input._brandName || 'Unknown'}
+${input._tagline ? `TAGLINE/DESCRIPTION: ${input._tagline}` : ''}
 
-2. COLOR SYSTEM — The brand's ACTUAL signature colors. Not CSS colors from their e-commerce template, but the colors that DEFINE the brand identity:
-   - Primary: The color most associated with this brand (e.g., Hermès orange, Tiffany blue, Valentino red)
-   - Secondary: A key supporting color in their visual system
-   - Accent: A highlight/energy color they use
+${input._headings ? `KEY HEADLINES FROM THEIR SITE:\n${input._headings}` : ''}
+
+${input._bodyContent ? `HOMEPAGE COPY:\n${input._bodyContent}` : ''}
+
+${input._aboutContent ? `\nABOUT/STORY PAGE:\n${input._aboutContent}` : ''}
+
+${input._productDescriptions ? `\nPRODUCT DESCRIPTIONS:\n${input._productDescriptions}` : ''}
+──────────────────────────────────────────────────────────
+` : `No website content could be scraped. Use your knowledge of this brand based on the URL/handle provided.`}
+
+ANALYSIS TASK — Extract:
+
+1. BRAND NAME — The EXACT official brand name. Read the scraped content carefully — look at the title, headings, and how the brand refers to itself. Get this right.
+
+2. COLOR SYSTEM — 4 colors that define this brand's identity:
+   - Primary: The signature color most associated with this brand
+   - Secondary: A key supporting color
+   - Accent: A highlight/energy color
    - Neutral: Their base/background tone
-   Provide accurate hex codes.
+   These should be the brand's IDENTITY colors (think Hermès orange, Tiffany blue), not generic black/white unless that IS their identity (like Chanel). Provide hex codes.
 
-3. VOICE & TONE — How does this brand ACTUALLY communicate? Reference their real campaign language, taglines, social media voice, product descriptions. What is their tonal register? (Authoritative? Playful? Minimalist? Provocative?) Be specific — quote real phrases or describe real patterns.
+3. VOICE & TONE — Analyze the REAL COPY above. How does this brand speak? Reference specific phrases or patterns from the scraped content. What is their tonal register? What vocabulary do they favor? What do they avoid? This must be specific enough that a copywriter could write on-brand after reading it.
 
-4. TYPOGRAPHY — What typefaces does this brand actually use? Name specific fonts for headlines and body. Describe the typographic personality (geometric? serif? humanist? high-contrast?).
+4. TYPOGRAPHY — Name specific typefaces if you know them. Otherwise, describe the typographic character (serif/sans-serif, geometric/humanist, high-contrast/mono-weight) and what it communicates about the brand's positioning.
 
-5. VISUAL IDENTITY — What makes this brand VISUALLY recognizable? Their photography style, layout preferences, use of space, iconic elements, graphic devices, packaging aesthetic. What would a designer need to know to create something that feels "on brand"?
+5. VISUAL IDENTITY — What makes this brand visually recognizable? Photography style (studio/lifestyle/editorial/artisanal), layout preferences (minimal/dense/grid/organic), use of space, iconic elements (logos, monograms, patterns), packaging aesthetic. A designer should read this and immediately understand the visual world.
 
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
-  "brandName": "Official brand name",
+  "brandName": "Exact official brand name",
   "colors": ["#hex1 (primary)", "#hex2 (secondary)", "#hex3 (accent)", "#hex4 (neutral)"],
-  "tone": "30-50 word description of brand voice — reference real campaign language, taglines, or communication patterns",
-  "typography": "20-35 word description — name actual typefaces used, describe the typographic system",
-  "style": "30-50 word description of visual identity — photography style, layout, iconic elements, what makes it recognizable"
+  "tone": "40-60 words — analyze the real copy above, reference specific phrases or patterns, describe tonal register and vocabulary",
+  "typography": "25-40 words — name actual typefaces if known, describe typographic character and what it signals",
+  "style": "40-60 words — photography style, layout, spatial grammar, iconic elements, packaging. Specific enough to brief a designer."
 }`,
       };
 

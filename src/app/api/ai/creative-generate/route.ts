@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON, generateText } from '@/lib/ai/llm-client';
 import { buildCreativePrompt } from '@/lib/ai/creative-prompts';
+import { scrapeBrandContent } from '@/lib/brand-scraper';
 
 /* ═══════════════════════════════════════════════════════════
    Creative Block — AI Generation Endpoint
    10 prompt types · Claude Haiku primary, Gemini fallback
-   brand-extract: uses LLM knowledge of the brand directly
+   brand-extract: scrapes real content + LLM brand knowledge
    ═══════════════════════════════════════════════════════════ */
 
 type GenerationType =
@@ -37,23 +38,23 @@ export async function POST(req: NextRequest) {
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
 
-  // ── Brand Extract: derive brand name from inputs for LLM knowledge lookup ──
+  // ── Brand Extract: scrape website content + feed to LLM ──
   if (type === 'brand-extract') {
-    // Extract brand name from website URL or Instagram handle
-    // The LLM uses its own knowledge of the brand — no scraping needed
-    if (!input.brandName) {
-      if (input.website) {
-        // Extract domain name as brand hint (e.g., "karllagerfeld.com" → "Karl Lagerfeld")
-        try {
-          const hostname = new URL(
-            input.website.startsWith('http') ? input.website : 'https://' + input.website
-          ).hostname.replace('www.', '');
-          input._brandHint = hostname;
-        } catch { input._brandHint = input.website; }
+    if (input.website) {
+      const scraped = await scrapeBrandContent(input.website);
+      if (scraped) {
+        input._brandName = scraped.brandName;
+        input._tagline = scraped.tagline;
+        input._headings = scraped.headings.join(' | ');
+        input._bodyContent = scraped.bodyContent;
+        input._aboutContent = scraped.aboutContent;
+        input._productDescriptions = scraped.productDescriptions.join('\n');
+      } else {
+        input._scrapeFailed = 'true';
       }
-      if (input.instagram) {
-        input._igHandle = input.instagram.replace(/^@/, '').replace(/\/$/, '');
-      }
+    }
+    if (input.instagram) {
+      input._igHandle = input.instagram.replace(/^@/, '').replace(/\/$/, '');
     }
   }
 
