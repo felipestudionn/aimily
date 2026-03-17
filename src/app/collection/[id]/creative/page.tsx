@@ -2123,8 +2123,8 @@ export default function CreativeBrandPage() {
                         {blockDescMap[block.id] || block.description}
                       </p>
 
-                      {/* Input Mode Pills (preview) */}
-                      {block.id !== 'moodboard' && block.id !== 'brand-dna' && (
+                      {/* Input Mode Pills (preview) — only for vision blocks that use modes */}
+                      {!['moodboard', 'brand-dna', 'global-trends', 'deep-dive', 'live-signals', 'competitors'].includes(block.id) && (
                         <div className="mt-4 sm:mt-6 flex items-center gap-1.5 sm:gap-2 flex-wrap">
                           {INPUT_MODES.map((mode) => (
                             <span
