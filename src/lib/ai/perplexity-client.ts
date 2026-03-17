@@ -255,15 +255,13 @@ async function callSonar(
 
     // Parse JSON from response
     try {
-      // Try direct parse
       const parsed = JSON.parse(text);
-      return { results: parsed.results || [], citations };
+      return { results: cleanResults(parsed.results || []), citations };
     } catch {
-      // Extract JSON from text
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        return { results: parsed.results || [], citations };
+        return { results: cleanResults(parsed.results || []), citations };
       }
     }
 
@@ -273,4 +271,28 @@ async function callSonar(
     console.error('Perplexity Sonar failed:', e);
     return null;
   }
+}
+
+// ─── Clean Sonar results ───
+
+function cleanResults(results: TrendResult[]): TrendResult[] {
+  return results.map(r => ({
+    ...r,
+    // Remove citation references like [1], [2], [3] from descriptions
+    desc: r.desc.replace(/\[\d+\]/g, '').replace(/\s{2,}/g, ' ').trim(),
+    title: r.title.replace(/\[\d+\]/g, '').trim(),
+    // Fix brands: ensure comma-separated (Sonar sometimes concatenates them)
+    brands: fixBrandsList(r.brands || ''),
+  }));
+}
+
+function fixBrandsList(brands: string): string {
+  // If already has commas, just clean up
+  if (brands.includes(',')) {
+    return brands.replace(/\[\d+\]/g, '').trim();
+  }
+  // Detect concatenated PascalCase brand names: "CelineLoewePradaVersace"
+  // Split on uppercase letter boundaries (but keep consecutive uppercase like "DKNY", "A.P.C.")
+  const split = brands.replace(/([a-z])([A-Z])/g, '$1, $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1, $2');
+  return split.replace(/\[\d+\]/g, '').trim();
 }
