@@ -28,6 +28,7 @@ export function WizardLayout({
   setupData,
 }: WizardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
@@ -40,6 +41,7 @@ export function WizardLayout({
         setupData={setupData}
         mobileOpen={sidebarOpen}
         onMobileClose={() => setSidebarOpen(false)}
+        onCollapsedChange={setSidebarCollapsed}
       />
 
       {/* Mobile hamburger button */}
@@ -51,7 +53,9 @@ export function WizardLayout({
         <Menu className="h-5 w-5" />
       </button>
 
-      <main className="ml-0 md:ml-72 min-h-screen transition-all duration-300">
+      <main className={`ml-0 min-h-screen transition-all duration-300 ${
+        sidebarCollapsed ? 'md:ml-[52px]' : 'md:ml-72'
+      }`}>
         {children}
       </main>
     </TimelineProvider>

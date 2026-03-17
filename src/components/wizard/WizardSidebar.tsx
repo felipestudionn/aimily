@@ -75,6 +75,7 @@ interface WizardSidebarProps {
   setupData?: Record<string, unknown> | null;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
 export function WizardSidebar({
@@ -86,6 +87,7 @@ export function WizardSidebar({
   setupData,
   mobileOpen = false,
   onMobileClose,
+  onCollapsedChange,
 }: WizardSidebarProps) {
   const pathname = usePathname();
   const { milestones, saving } = useTimeline();
@@ -368,7 +370,7 @@ export function WizardSidebar({
 
       {/* Collapse Toggle (desktop only) */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={() => { setCollapsed(!collapsed); onCollapsedChange?.(!collapsed); }}
         className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-carbon border border-white/20 items-center justify-center text-white/50 hover:text-white hover:border-white/40 transition-colors"
       >
         {collapsed ? (
