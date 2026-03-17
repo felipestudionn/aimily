@@ -1848,6 +1848,220 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
 }
 
 /* ═══════════════════════════════════════════════════════════
+   Creative Synthesis — Visual Creative Brief
+   ═══════════════════════════════════════════════════════════ */
+
+function CreativeSynthesisView({ blockData, collectionContext }: { blockData: BlockData; collectionContext: { season: string; collectionName: string } }) {
+  const t = useTranslation();
+
+  // ── Extract all confirmed data ──
+  const vibeData = blockData.vibe?.data || {};
+  const vibeTitle = (vibeData.vibeTitle as string) || '';
+  const vibeNarrative = (vibeData.vibe as string) || '';
+  const vibeKeywords = (vibeData.keywords as string) || '';
+
+  const consumerData = blockData.consumer?.data || {};
+  const consumerProposals = ((consumerData.proposals as Array<{ title: string; desc: string; status: string }>) || [])
+    .filter(p => p.status === 'liked');
+
+  const moodboardImages = (blockData.moodboard?.data?.images as string[]) || [];
+
+  const brandData = blockData['brand-dna']?.data || {};
+  const brandName = (brandData.brandName as string) || '';
+  const brandColors = (brandData.colors as string[]) || [];
+  const brandTone = (brandData.tone as string) || '';
+  const brandTypography = (brandData.typography as string) || '';
+  const brandStyle = (brandData.style as string) || '';
+
+  // Research results — only selected ones
+  const getSelectedResults = (blockId: string): ResearchResult[] => {
+    const results = (blockData[blockId]?.data?.results as ResearchResult[]) || [];
+    return results.filter(r => r.selected);
+  };
+
+  const globalTrends = getSelectedResults('global-trends');
+  const deepDive = getSelectedResults('deep-dive');
+  const liveSignals = getSelectedResults('live-signals');
+  const competitors = getSelectedResults('competitors');
+  const allTrends = [...globalTrends, ...deepDive, ...liveSignals];
+
+  // Check what's completed
+  const hasVibe = !!(vibeTitle || vibeNarrative);
+  const hasConsumer = consumerProposals.length > 0;
+  const hasMoodboard = moodboardImages.length > 0;
+  const hasBrand = !!(brandName || brandColors.length > 0);
+  const hasTrends = allTrends.length > 0;
+  const hasCompetitors = competitors.length > 0;
+  const hasAnything = hasVibe || hasConsumer || hasMoodboard || hasBrand || hasTrends;
+
+  if (!hasAnything) {
+    return (
+      <div className="bg-white border border-carbon/[0.06] p-6 sm:p-12 lg:p-16 min-h-[300px] flex flex-col items-center justify-center text-center">
+        <div className="w-14 h-14 bg-carbon/[0.04] flex items-center justify-center mb-6">
+          <Sparkles className="h-6 w-6 text-carbon/30" />
+        </div>
+        <h3 className="text-2xl font-light text-carbon tracking-tight mb-3">Creative Synthesis</h3>
+        <p className="text-sm text-carbon/60 max-w-md leading-relaxed">
+          Complete your Creative Vision and Market Research to see your unified creative direction here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* ── Hero: Collection + Vibe Statement ── */}
+      {hasVibe && (
+        <div className="bg-carbon text-crema p-8 sm:p-12 lg:p-16">
+          <div className="text-[10px] font-medium tracking-[0.3em] uppercase text-crema/40 mb-4">
+            {collectionContext.collectionName} · {collectionContext.season}
+          </div>
+          {vibeTitle && (
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-[1.1] mb-6">
+              {vibeTitle}
+            </h2>
+          )}
+          {vibeNarrative && (
+            <p className="text-sm sm:text-base font-light text-crema/80 leading-relaxed max-w-2xl">
+              {vibeNarrative}
+            </p>
+          )}
+          {vibeKeywords && (
+            <div className="flex flex-wrap gap-2 mt-6">
+              {vibeKeywords.split(',').map((kw, i) => (
+                <span key={i} className="px-3 py-1 text-[10px] tracking-[0.15em] uppercase border border-crema/20 text-crema/60">
+                  {kw.trim()}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Moodboard Gallery ── */}
+      {hasMoodboard && (
+        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">Moodboard</div>
+          <div className={`grid gap-2 ${
+            moodboardImages.length === 1 ? 'grid-cols-1' :
+            moodboardImages.length === 2 ? 'grid-cols-2' :
+            moodboardImages.length <= 4 ? 'grid-cols-2 sm:grid-cols-2' :
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+          }`}>
+            {moodboardImages.map((url, i) => (
+              <div key={i} className="aspect-[4/5] bg-carbon/[0.04] overflow-hidden">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Brand DNA + Consumer — Side by Side ── */}
+      <div className={`grid gap-6 ${hasBrand && hasConsumer ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+        {/* Brand DNA */}
+        {hasBrand && (
+          <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">Brand DNA</div>
+            {brandName && (
+              <h4 className="text-lg font-light text-carbon tracking-tight mb-4">{brandName}</h4>
+            )}
+            {brandColors.length > 0 && (
+              <div className="flex gap-2 mb-5">
+                {brandColors.map((c, i) => {
+                  const hex = c.replace(/\s*\(.*\)/, '').trim();
+                  return (
+                    <div key={i} className="flex flex-col items-center gap-1.5">
+                      <div className="w-10 h-10 border border-carbon/[0.08]" style={{ backgroundColor: hex }} />
+                      <span className="text-[9px] text-carbon/40 font-mono">{hex}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {brandTone && (
+              <div className="mb-3">
+                <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Voice & Tone</div>
+                <p className="text-xs text-carbon/70 leading-relaxed">{brandTone}</p>
+              </div>
+            )}
+            {brandTypography && (
+              <div className="mb-3">
+                <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Typography</div>
+                <p className="text-xs text-carbon/70 leading-relaxed">{brandTypography}</p>
+              </div>
+            )}
+            {brandStyle && (
+              <div>
+                <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Visual Identity</div>
+                <p className="text-xs text-carbon/70 leading-relaxed">{brandStyle}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Consumer Profiles */}
+        {hasConsumer && (
+          <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+              Target Consumer{consumerProposals.length > 1 ? 's' : ''}
+            </div>
+            <div className="space-y-4">
+              {consumerProposals.map((p, i) => (
+                <div key={i}>
+                  <h5 className="text-sm font-medium text-carbon mb-1">{p.title}</h5>
+                  <p className="text-xs text-carbon/70 leading-relaxed">{p.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Trend Direction ── */}
+      {hasTrends && (
+        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+            Trend Direction — {allTrends.length} selected
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allTrends.map((tr, i) => (
+              <div key={i} className="p-4 border border-carbon/[0.06]">
+                <h5 className="text-sm font-medium text-carbon mb-1">{tr.title}</h5>
+                {tr.brands && (
+                  <div className="text-[10px] text-carbon/40 italic mb-2">{tr.brands}</div>
+                )}
+                <p className="text-[11px] text-carbon/60 leading-relaxed">{tr.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Competitive Landscape ── */}
+      {hasCompetitors && (
+        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+          <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+            Competitive Landscape
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {competitors.map((c, i) => (
+              <div key={i} className="p-4 border border-carbon/[0.06]">
+                <h5 className="text-sm font-medium text-carbon mb-1">{c.title}</h5>
+                {c.brands && (
+                  <div className="text-[10px] text-carbon/40 italic mb-2">{c.brands}</div>
+                )}
+                <p className="text-[11px] text-carbon/60 leading-relaxed">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    Main Page Component
    ═══════════════════════════════════════════════════════════ */
 
@@ -2228,28 +2442,8 @@ export default function CreativeBrandPage() {
             )}
           </div>
         ) : (
-          /* Synthesis Step — Consolidated View */
-          <div className="bg-white border border-carbon/[0.06] p-6 sm:p-12 lg:p-16 min-h-[300px] sm:min-h-[400px] flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-carbon/[0.04] flex items-center justify-center mb-4 sm:mb-6">
-              <Check className="h-5 w-5 sm:h-6 sm:w-6 text-carbon/30" />
-            </div>
-            <h3 className="text-xl sm:text-2xl font-light text-carbon tracking-tight mb-3">
-              {t.creative.creativeSynthesis}
-            </h3>
-            <p className="text-xs sm:text-sm text-carbon/60 max-w-md leading-relaxed mb-6 sm:mb-8">
-              {t.creative.synthesisMessage}
-            </p>
-            <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/25 flex-wrap justify-center">
-              <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-xs">1</span>
-              {t.creative.vision}
-              <ArrowRight className="h-3 w-3 text-carbon/15" />
-              <span className="w-5 h-5 bg-carbon/[0.06] flex items-center justify-center text-xs">2</span>
-              {t.creative.research}
-              <ArrowRight className="h-3 w-3 text-carbon/15" />
-              <span className="w-5 h-5 bg-carbon text-crema flex items-center justify-center text-xs">3</span>
-              {t.creative.synthesis}
-            </div>
-          </div>
+          /* Synthesis Step — Visual Creative Brief */
+          <CreativeSynthesisView blockData={blockData} collectionContext={collectionContext} />
         )}
 
         {/* Step Navigation Footer */}
