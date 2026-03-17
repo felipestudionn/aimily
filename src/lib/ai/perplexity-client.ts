@@ -119,11 +119,11 @@ export async function researchTrends(
   switch (type) {
     case 'global':
       prompt = `${collectionInfo}${seasonNote}
-
-Find 6-8 KEY FASHION TRENDS from runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, and WWD. These must be REAL trends seen on runways and in fashion coverage — not abstract concepts.
+${trendQuery ? `\nIMPORTANT: The user wants trends specifically about "${trendQuery}". ALL trends must be relevant to ${trendQuery}. Do NOT return general fashion trends — focus exclusively on ${trendQuery} trends.\n` : ''}
+Find 6-8 KEY FASHION TRENDS${trendQuery ? ` for ${trendQuery}` : ''} from runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, and WWD. These must be REAL trends seen on runways and in fashion coverage — not abstract concepts.
 
 For EACH trend, provide:
-- "title": A Vogue-style headline (2-4 words). GOOD: "Quiet Luxury", "Sheer Everything", "The New Prep", "Linen Suiting". BAD: "Digital Enlightenment", "Regenerative Authenticity"
+- "title": A Vogue-style headline (2-4 words). GOOD: ${trendQuery ? `e.g. for footwear: "Mesh Ballet Flats", "Chunky Loafers", "Kitten Heel Return"` : `"Quiet Luxury", "Sheer Everything", "The New Prep", "Linen Suiting"`}. BAD: "Digital Enlightenment", "Regenerative Authenticity"
 - "brands": 3-5 designer/brand names that represent this trend
 - "desc": 60-80 words — what it looks like (silhouettes, colors, materials), how a designer would use it. Direct and visual, not academic.
 - "relevance": "high" or "medium"
@@ -148,7 +148,8 @@ Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...",
       break;
 
     case 'live-signals':
-      prompt = `${collectionInfo}Find 6-8 things TRENDING RIGHT NOW in fashion and style. What are people wearing, buying, posting about? Search TikTok trends, Instagram style, celebrity fashion, street style photos from this month.
+      prompt = `${collectionInfo}Find 6-8 things TRENDING RIGHT NOW in ${trendQuery ? trendQuery + ' fashion' : 'fashion and style'}. What are people wearing, buying, posting about? Search TikTok trends, Instagram style, celebrity fashion, street style photos from this month.
+${trendQuery ? `\nFocus specifically on ${trendQuery}. ALL signals must be about ${trendQuery}.\n` : ''}
 
 For EACH signal:
 - "title": What people call it (e.g., "Cherry Red Everything", "Barn Jacket Revival")
