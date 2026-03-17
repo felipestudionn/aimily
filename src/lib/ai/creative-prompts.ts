@@ -357,7 +357,8 @@ Return:
   "results": [
     {
       "title": "Trend Name (2-4 words — Vogue headline style)",
-      "desc": "60-100 words: what it looks like (silhouettes, colors, materials), who is doing it (specific designers/brands/shows), how to use it (practical design advice)",
+      "brands": "3-5 reference brands that represent this trend (e.g., The Row, Loro Piana, Brunello Cucinelli)",
+      "desc": "60-100 words: what it looks like (silhouettes, colors, materials), how to use it (practical design advice for this collection)",
       "relevance": "high" or "medium"
     }
   ]
@@ -399,7 +400,8 @@ Return:
   "results": [
     {
       "title": "Micro-Trend Name (2-4 words, concrete)",
-      "desc": "60-100 words: what it looks like, who is doing it (real brands), how to execute, shelf life",
+      "brands": "3-5 brands doing this trend (e.g., Nike, Salomon, New Balance)",
+      "desc": "60-100 words: what it looks like, how to execute, shelf life",
       "relevance": "high" or "medium"
     }
   ]
@@ -441,7 +443,8 @@ Return:
   "results": [
     {
       "title": "Signal Name (2-4 words, concrete)",
-      "desc": "50-80 words: what it looks like, who is wearing/posting it, where it's trending, how long it will last",
+      "brands": "3-5 brands/people driving this signal",
+      "desc": "50-80 words: what it looks like, where it's trending, how long it will last",
       "relevance": "high" or "medium"
     }
   ]

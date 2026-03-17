@@ -1541,6 +1541,7 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
 /* Placeholder content for Step 2 blocks */
 interface ResearchResult {
   title: string;
+  brands?: string;
   desc: string;
   relevance?: string;
   selected: boolean;
@@ -1736,6 +1737,9 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
                   </button>
                 </div>
               </div>
+              {r.brands && (
+                <div className="text-[11px] text-carbon/50 italic mb-2">{r.brands}</div>
+              )}
               <div className="text-xs text-carbon/80 leading-relaxed">{r.desc}</div>
               {r.relevance && (
                 <div className={`inline-block mt-2 px-2 py-0.5 text-xs uppercase tracking-wide ${
