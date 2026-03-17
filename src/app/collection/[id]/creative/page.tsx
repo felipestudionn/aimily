@@ -1853,6 +1853,7 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
 
 function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }: { blockData: BlockData; collectionContext: { season: string; collectionName: string }; updateBlockData: (blockId: string, updates: Partial<BlockData[string]>) => void }) {
   const t = useTranslation();
+  const router = useRouter();
   const [showAllImages, setShowAllImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { id: collectionId } = useParams();
@@ -1897,6 +1898,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
   // ── Synthesis state ──
   const [validated, setValidated] = useState(!!blockData._synthesis?.confirmed);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [addingTrend, setAddingTrend] = useState(false);
   const [addingCompetitor, setAddingCompetitor] = useState(false);
   const [newCard, setNewCard] = useState({ title: '', brands: '', desc: '' });
@@ -2023,6 +2025,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
   const handleValidate = () => {
     setValidated(true);
+    setShowCelebration(true);
     updateBlockData('_synthesis', { confirmed: true, data: { validatedAt: new Date().toISOString() } });
   };
 
@@ -2419,6 +2422,66 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══ Celebration Overlay ═══ */}
+      {showCelebration && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center"
+          style={{ animation: 'fadeIn 0.6s ease-out forwards' }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-carbon/95" style={{ animation: 'fadeIn 0.4s ease-out forwards' }} />
+
+          {/* Content */}
+          <div className="relative z-10 text-center px-6 max-w-2xl" style={{ animation: 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}>
+            {/* aimily logo mark */}
+            <div className="w-16 h-16 mx-auto mb-8 border border-crema/20 flex items-center justify-center" style={{ animation: 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both' }}>
+              <Check className="h-7 w-7 text-crema/80" />
+            </div>
+
+            <div className="text-[10px] font-medium tracking-[0.4em] uppercase text-crema/30 mb-4" style={{ animation: 'fadeIn 0.6s ease-out 0.8s both' }}>
+              {collectionContext.collectionName} · {collectionContext.season}
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
+              Your creative direction<br />is <span className="italic">validated</span>.
+            </h2>
+
+            <p className="text-sm sm:text-base font-light text-crema/60 leading-relaxed max-w-lg mx-auto mb-4" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
+              Consumer, vibe, brand DNA, moodboard, trends — everything is captured.
+              Your collection has a soul now. Time to give it structure.
+            </p>
+
+            <p className="text-xs text-crema/30 italic mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
+              Every great collection starts with a clear point of view. You have yours.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease-out 1.8s both' }}>
+              <button
+                onClick={() => router.push(`/collection/${collectionId}/merchandising`)}
+                className="flex items-center gap-3 px-8 py-3.5 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-white transition-colors"
+              >
+                Start Merchandising <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => router.push(`/collection/${collectionId}`)}
+                className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/50 border border-crema/15 hover:text-crema/80 hover:border-crema/30 transition-colors"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+
+            {/* Dismiss */}
+            <button
+              onClick={() => setShowCelebration(false)}
+              className="mt-8 text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 transition-colors"
+            >
+              Stay here and keep editing
+            </button>
+          </div>
         </div>
       )}
     </div>
