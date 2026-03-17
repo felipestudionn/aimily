@@ -53,25 +53,28 @@ export async function POST(req: Request) {
       .eq('user_id', user.id);
 
     if (plans && plans.length > 0) {
-      const planIds = plans.map((p) => p.id);
-
-      // Tables referencing collection_plan_id
-      const cascadeTables = [
-        'collection_skus', 'collection_timelines', 'drops',
-        'commercial_actions', 'market_predictions', 'ai_generations',
-        'brand_models', 'brand_profiles', 'content_calendar',
-        'lookbook_pages', 'pr_contacts', 'product_copy',
-        'production_orders', 'raw_content', 'reports',
-        'sample_reviews', 'sku_colorways', 'tech_packs',
-      ];
-
-      for (const table of cascadeTables) {
-        await supabaseAdmin.from(table).delete().in('collection_plan_id', planIds);
+      // Clean up Storage files for each collection
+      const BUCKET = 'collection-assets';
+      const assetTypes = ['moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model'];
+      for (const plan of plans) {
+        const paths: string[] = [];
+        for (const type of assetTypes) {
+          const { data: files } = await supabaseAdmin.storage.from(BUCKET).list(`${plan.id}/${type}`);
+          if (files?.length) paths.push(...files.map((f) => `${plan.id}/${type}/${f.name}`));
+        }
+        if (paths.length > 0) {
+          for (let i = 0; i < paths.length; i += 100) {
+            await supabaseAdmin.storage.from(BUCKET).remove(paths.slice(i, i + 100));
+          }
+        }
       }
 
-      // Delete collection plans themselves
+      // Delete collection plans — CASCADE handles all 29 related tables automatically
       await supabaseAdmin.from('collection_plans').delete().eq('user_id', user.id);
     }
+
+    // Delete user_brands
+    await supabaseAdmin.from('user_brands').delete().eq('user_id', user.id);
 
     // 3. Delete the auth user
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);

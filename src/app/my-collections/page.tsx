@@ -115,12 +115,11 @@ export default function MyCollectionsPage() {
     if (!confirm(t.collections.deleteConfirm)) return;
 
     try {
-      const { error } = await supabase
-        .from('collection_plans')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      const res = await fetch(`/api/collections/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Failed to delete');
+      }
       setCollections(collections.filter((c) => c.id !== id));
     } catch (error) {
       console.error('Error deleting collection:', error);
