@@ -25,6 +25,52 @@ interface PerplexitySearchResponse {
 }
 
 /**
+ * Expand season codes to full searchable strings.
+ * "SS27" → "Spring Summer 2027"
+ * "FW26" → "Fall Winter 2026"
+ * Also determines if the season's shows have already happened.
+ */
+function expandSeason(season?: string): { full: string; year: string; isFuture: boolean } {
+  const s = (season || '').toUpperCase().trim();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based
+
+  // Extract year digits
+  const yearMatch = s.match(/(\d{2,4})/);
+  let year = '';
+  if (yearMatch) {
+    year = yearMatch[1].length === 2 ? '20' + yearMatch[1] : yearMatch[1];
+  } else {
+    year = String(currentYear);
+  }
+  const yearNum = parseInt(year);
+
+  // Determine season type and full name
+  let full = '';
+  let showMonth = 0; // Month when runway shows typically happen
+
+  if (s.startsWith('SS') || s.includes('SPRING') || s.includes('SUMMER')) {
+    full = `Spring Summer ${year}`;
+    showMonth = 8; // SS shows happen in September of PREVIOUS year
+    // SS27 shows happen Sept 2026
+    const showYear = yearNum - 1;
+    const showDate = new Date(showYear, showMonth);
+    return { full, year, isFuture: now < showDate };
+  }
+
+  if (s.startsWith('FW') || s.startsWith('AW') || s.includes('FALL') || s.includes('WINTER')) {
+    full = `Fall Winter ${year}`;
+    showMonth = 1; // FW shows happen in February of SAME year
+    const showDate = new Date(yearNum, showMonth);
+    return { full, year, isFuture: now < showDate };
+  }
+
+  // Fallback
+  return { full: season || String(currentYear), year, isFuture: false };
+}
+
+/**
  * Research a brand using web search.
  * Returns real articles, press coverage, and reviews about the brand.
  */
@@ -41,7 +87,6 @@ export async function researchBrand(
   const brandRef = brandName || website || instagram || '';
   if (!brandRef) return null;
 
-  // Multiple targeted queries for comprehensive brand research
   const queries = [
     `"${brandRef}" fashion brand identity visual style colors typography aesthetic`,
     `"${brandRef}" brand positioning tone of voice campaigns photography`,
@@ -64,31 +109,42 @@ export async function researchTrends(
     return null;
   }
 
-  const seasonStr = season || '2026';
+  const { full: seasonFull, year, isFuture } = expandSeason(season);
   const queries: string[] = [];
 
   switch (type) {
     case 'global':
-      queries.push(
-        `${seasonStr} runway trends Vogue "The Impression" "Tag Walk" fashion week key looks silhouettes`,
-        `${seasonStr} fashion trends "Harper's Bazaar" street style colors materials what to wear`,
-      );
+      if (isFuture) {
+        // Season shows haven't happened yet → search for forecasts + current runway direction
+        queries.push(
+          `"${seasonFull}" fashion trend forecast predictions Vogue WGSN colors silhouettes`,
+          `${year} fashion trends runway direction "Tag Walk" "The Impression" "Harper's Bazaar" key looks`,
+          `fashion trends ${year} what designers are showing resort pre-fall collections`,
+        );
+      } else {
+        // Season shows already happened → search for runway coverage
+        queries.push(
+          `"${seasonFull}" runway trends Vogue "The Impression" "Tag Walk" fashion week key looks`,
+          `"${seasonFull}" fashion trends "Harper's Bazaar" colors materials silhouettes designers`,
+          `"${seasonFull}" best collections runway highlights street style`,
+        );
+      }
       break;
     case 'deep-dive':
       queries.push(
-        `${trendQuery} ${seasonStr} runway trends Vogue "Tag Walk" designers collections`,
-        `${trendQuery} ${seasonStr} fashion trend details street style brands styling`,
+        `${trendQuery} fashion trends ${year} runway designers collections Vogue "Tag Walk"`,
+        `${trendQuery} ${seasonFull} trend details materials colors styling brands`,
       );
       break;
     case 'live-signals':
       queries.push(
-        `fashion trending right now ${seasonStr} street style viral looks celebrity style`,
-        `${seasonStr} most popular fashion trends TikTok Instagram what people are wearing`,
+        `fashion trending right now ${year} street style viral looks celebrity style`,
+        `most popular fashion trends ${year} TikTok Instagram what people are wearing`,
       );
       break;
     case 'competitors':
       queries.push(
-        `${trendQuery} brand analysis positioning pricing collections ${seasonStr}`,
+        `${trendQuery} brand analysis positioning pricing collections ${year}`,
         `${trendQuery} competitive landscape fashion market strategy`,
       );
       break;

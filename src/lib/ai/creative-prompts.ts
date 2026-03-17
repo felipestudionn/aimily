@@ -333,13 +333,16 @@ CRITICAL STYLE RULES FOR TREND NAMES AND DESCRIPTIONS:
 ${input.input ? `User focus: "${input.input}"` : ''}
 
 ${input._webResearch ? `
-═══ CURRENT FASHION DATA (from Vogue, WWD, BoF, WGSN, Highsnobiety) ═══
+═══ CURRENT FASHION DATA (from Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD) ═══
 ${input._webResearch}
 ${input._sources ? `Sources: ${input._sources}` : ''}
-═══════════════════════════════════════════════════════════════════════
-BASE YOUR ANALYSIS on this real data. These are actual trends from real fashion coverage.
+═════════════════════════════════════════════════════════════════════════════════════════
+THIS IS REAL DATA from fashion press. BASE YOUR ANALYSIS PRIMARILY on this data.
+Do NOT ignore this research. Extract and organize the trends found here.
 ` : ''}
-Identify 6-8 fashion trends for this season. These must be REAL, VISIBLE trends — things you can see on runways, in stores, on the street. NOT abstract concepts.
+Identify 6-8 fashion trends for this season. These must be REAL, VISIBLE trends — things you can see on runways, in stores, or on the street. NOT abstract concepts.
+
+IMPORTANT: Use the web research data above as your PRIMARY source. The trends you list should come FROM that data, organized and analyzed with your fashion expertise. Do not invent trends that aren't supported by the research.
 
 For each trend:
 1. NAME — 2-4 words that Vogue would use as a headline. Concrete and visual.
