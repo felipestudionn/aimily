@@ -7,9 +7,10 @@ import { researchBrand, researchTrends } from '@/lib/ai/perplexity-client';
 
 /* ═══════════════════════════════════════════════════════════
    Creative Block — AI Generation Endpoint
-   10 prompt types · Claude Haiku primary, Gemini fallback
-   brand-extract: Perplexity web research + website scraping + Claude
-   trends: Perplexity web research + Claude analysis
+
+   brand-extract: Perplexity Search + website scraping → Claude analysis
+   trends (4 types): Perplexity Sonar DIRECT (1 call, no Claude needed)
+   consumer/vibe/brand-generate: Claude Haiku (creative tasks)
    ═══════════════════════════════════════════════════════════ */
 
 type GenerationType =
@@ -40,9 +41,39 @@ export async function POST(req: NextRequest) {
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
 
-  // ── Brand Extract: Perplexity research + website scraping in parallel ──
+  // ══════════════════════════════════════════════════════════
+  // TRENDS: Perplexity Sonar DIRECT — 1 call, returns JSON
+  // No Claude needed. Sonar searches web + structures response.
+  // ══════════════════════════════════════════════════════════
+  if (type.startsWith('trends-')) {
+    const trendType = type.replace('trends-', '') as 'global' | 'deep-dive' | 'live-signals' | 'competitors';
+    try {
+      const sonarResult = await researchTrends(
+        input.input || '',
+        input.season,
+        trendType,
+        { collectionName: input.collectionName, consumer: input.consumer },
+      );
+
+      if (sonarResult && sonarResult.results.length > 0) {
+        return NextResponse.json({
+          result: { results: sonarResult.results },
+          model: 'sonar',
+          fallback: false,
+        });
+      }
+
+      // Sonar failed or returned empty — fall through to Claude
+      console.warn('Sonar returned no results, falling through to Claude');
+    } catch (e) {
+      console.error('Sonar trend research failed, falling through to Claude:', e);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // BRAND EXTRACT: Perplexity Search + scraping → Claude analysis
+  // ══════════════════════════════════════════════════════════
   if (type === 'brand-extract') {
-    // Derive brand name hint from inputs
     let brandHint = '';
     if (input.website) {
       try {
@@ -56,13 +87,11 @@ export async function POST(req: NextRequest) {
       if (!brandHint) brandHint = input._igHandle;
     }
 
-    // Run Perplexity research + website scraping in parallel
     const [perplexityResult, scraped] = await Promise.all([
       researchBrand(brandHint, input.website, input.instagram),
       input.website ? scrapeBrandContent(input.website) : Promise.resolve(null),
     ]);
 
-    // Perplexity research (rich web-sourced brand info)
     if (perplexityResult) {
       input._webResearch = perplexityResult.content;
       if (perplexityResult.sources.length > 0) {
@@ -70,7 +99,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Website scraping (direct brand content)
     if (scraped) {
       input._brandName = scraped.brandName;
       input._tagline = scraped.tagline;
@@ -81,29 +109,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // ── Trends: Perplexity research for real-time trend data ──
-  if (type.startsWith('trends-')) {
-    const trendType = type.replace('trends-', '') as 'global' | 'deep-dive' | 'live-signals' | 'competitors';
-    const perplexityResult = await researchTrends(
-      input.input || '',
-      input.season,
-      trendType,
-    );
-    if (perplexityResult) {
-      input._webResearch = perplexityResult.content;
-      if (perplexityResult.sources.length > 0) {
-        input._sources = perplexityResult.sources.slice(0, 5).join(', ');
-      }
-    }
-  }
-
+  // ══════════════════════════════════════════════════════════
+  // ALL OTHER TYPES: Claude Haiku (creative/analysis tasks)
+  // ══════════════════════════════════════════════════════════
   const prompt = buildCreativePrompt(type, input);
   if (!prompt) {
     return NextResponse.json({ error: `Unknown generation type: ${type}` }, { status: 400 });
   }
 
   try {
-    // consumer-assisted returns plain text; everything else returns JSON
     if (type === 'consumer-assisted') {
       const { text, model, fallback } = await generateText({
         system: prompt.system,

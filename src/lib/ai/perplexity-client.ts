@@ -1,15 +1,19 @@
 /**
- * Perplexity Search Client — Web research for Brand DNA & Trends.
+ * Perplexity Client — Web-grounded research for Brand DNA & Trends.
  *
- * Uses Perplexity's Search API to get real web content (articles, press,
- * reviews) that Claude then analyzes with expert-level fashion knowledge.
+ * Brand DNA: Search API (raw results) → fed to Claude for analysis
+ * Trends: Sonar API (AI + search) → returns structured JSON directly, no Claude needed
  *
- * Search API: $5 per 1,000 requests ($0.005/search)
- * Docs: https://docs.perplexity.ai/api-reference/search-post
+ * Search API: $5 per 1,000 requests
+ * Sonar API: ~$0.01 per request
+ * Docs: https://docs.perplexity.ai
  */
 
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const SEARCH_ENDPOINT = 'https://api.perplexity.ai/search';
+const SONAR_ENDPOINT = 'https://api.perplexity.ai/v1/sonar';
+
+// ─── Types ───
 
 interface SearchResult {
   title: string;
@@ -18,25 +22,31 @@ interface SearchResult {
   date: string | null;
 }
 
-interface PerplexitySearchResponse {
-  content: string;        // Combined content from all results
-  sources: string[];      // Source URLs
+export interface PerplexitySearchResponse {
+  content: string;
+  sources: string[];
   resultCount: number;
 }
 
-/**
- * Expand season codes to full searchable strings.
- * "SS27" → "Spring Summer 2027"
- * "FW26" → "Fall Winter 2026"
- * Also determines if the season's shows have already happened.
- */
-function expandSeason(season?: string): { full: string; year: string; isFuture: boolean } {
+export interface TrendResult {
+  title: string;
+  brands: string;
+  desc: string;
+  relevance: 'high' | 'medium';
+}
+
+export interface TrendResearchResponse {
+  results: TrendResult[];
+  citations: string[];
+}
+
+// ─── Season Logic ───
+
+function expandSeason(season?: string): { full: string; year: string; isFuture: boolean; previousSeason: string } {
   const s = (season || '').toUpperCase().trim();
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based
 
-  // Extract year digits
   const yearMatch = s.match(/(\d{2,4})/);
   let year = '';
   if (yearMatch) {
@@ -46,43 +56,31 @@ function expandSeason(season?: string): { full: string; year: string; isFuture: 
   }
   const yearNum = parseInt(year);
 
-  // Determine season type and full name
-  let full = '';
-  let showMonth = 0; // Month when runway shows typically happen
-
   if (s.startsWith('SS') || s.includes('SPRING') || s.includes('SUMMER')) {
-    full = `Spring Summer ${year}`;
-    showMonth = 8; // SS shows happen in September of PREVIOUS year
-    // SS27 shows happen Sept 2026
-    const showYear = yearNum - 1;
-    const showDate = new Date(showYear, showMonth);
-    return { full, year, isFuture: now < showDate };
+    const full = `Spring Summer ${year}`;
+    const previousSeason = `Spring Summer ${yearNum - 1}`;
+    const showDate = new Date(yearNum - 1, 8); // SS shows happen Sept of previous year
+    return { full, year, isFuture: now < showDate, previousSeason };
   }
 
   if (s.startsWith('FW') || s.startsWith('AW') || s.includes('FALL') || s.includes('WINTER')) {
-    full = `Fall Winter ${year}`;
-    showMonth = 1; // FW shows happen in February of SAME year
-    const showDate = new Date(yearNum, showMonth);
-    return { full, year, isFuture: now < showDate };
+    const full = `Fall Winter ${year}`;
+    const previousSeason = `Fall Winter ${yearNum - 1}`;
+    const showDate = new Date(yearNum, 1); // FW shows happen Feb of same year
+    return { full, year, isFuture: now < showDate, previousSeason };
   }
 
-  // Fallback
-  return { full: season || String(currentYear), year, isFuture: false };
+  return { full: season || String(currentYear), year, isFuture: false, previousSeason: '' };
 }
 
-/**
- * Research a brand using web search.
- * Returns real articles, press coverage, and reviews about the brand.
- */
+// ─── Brand Research (Search API → raw results for Claude) ───
+
 export async function researchBrand(
   brandName: string,
   website?: string,
   instagram?: string
 ): Promise<PerplexitySearchResponse | null> {
-  if (!PERPLEXITY_API_KEY) {
-    console.warn('PERPLEXITY_API_KEY not configured — skipping web research');
-    return null;
-  }
+  if (!PERPLEXITY_API_KEY) return null;
 
   const brandRef = brandName || website || instagram || '';
   if (!brandRef) return null;
@@ -95,66 +93,89 @@ export async function researchBrand(
   return callSearch(queries);
 }
 
-/**
- * Research fashion trends using web search.
- * Returns current, real-world trend data from fashion press and industry sources.
- */
+// ─── Trend Research (Sonar API → structured JSON directly) ───
+
 export async function researchTrends(
   trendQuery: string,
   season?: string,
-  type: 'global' | 'deep-dive' | 'live-signals' | 'competitors' = 'global'
-): Promise<PerplexitySearchResponse | null> {
-  if (!PERPLEXITY_API_KEY) {
-    console.warn('PERPLEXITY_API_KEY not configured — skipping web research');
-    return null;
-  }
+  type: 'global' | 'deep-dive' | 'live-signals' | 'competitors' = 'global',
+  collectionContext?: { collectionName?: string; consumer?: string }
+): Promise<TrendResearchResponse | null> {
+  if (!PERPLEXITY_API_KEY) return null;
 
-  const { full: seasonFull, year, isFuture } = expandSeason(season);
-  const queries: string[] = [];
+  const { full: seasonFull, previousSeason, isFuture } = expandSeason(season);
+
+  // Build the Sonar prompt based on trend type
+  let prompt = '';
+
+  const seasonNote = isFuture
+    ? `The user is planning for ${seasonFull}, which hasn't been shown on runways yet. Research the most recent equivalent season (${previousSeason}) as the primary reference — those trends inform what's coming next. Also include any early forecasts or pre-collection signals for ${seasonFull}.`
+    : `The user is researching ${seasonFull}. Search for runway coverage, trend reports, and street style from this season.`;
+
+  const collectionInfo = collectionContext?.collectionName
+    ? `Collection: "${collectionContext.collectionName}". `
+    : '';
 
   switch (type) {
     case 'global':
-      if (isFuture) {
-        // Season shows haven't happened yet → search for forecasts + current runway direction
-        queries.push(
-          `"${seasonFull}" fashion trend forecast predictions Vogue WGSN colors silhouettes`,
-          `${year} fashion trends runway direction "Tag Walk" "The Impression" "Harper's Bazaar" key looks`,
-          `fashion trends ${year} what designers are showing resort pre-fall collections`,
-        );
-      } else {
-        // Season shows already happened → search for runway coverage
-        queries.push(
-          `"${seasonFull}" runway trends Vogue "The Impression" "Tag Walk" fashion week key looks`,
-          `"${seasonFull}" fashion trends "Harper's Bazaar" colors materials silhouettes designers`,
-          `"${seasonFull}" best collections runway highlights street style`,
-        );
-      }
+      prompt = `${collectionInfo}${seasonNote}
+
+Find 6-8 KEY FASHION TRENDS from runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, and WWD. These must be REAL trends seen on runways and in fashion coverage — not abstract concepts.
+
+For EACH trend, provide:
+- "title": A Vogue-style headline (2-4 words). GOOD: "Quiet Luxury", "Sheer Everything", "The New Prep", "Linen Suiting". BAD: "Digital Enlightenment", "Regenerative Authenticity"
+- "brands": 3-5 designer/brand names that represent this trend
+- "desc": 60-80 words — what it looks like (silhouettes, colors, materials), how a designer would use it. Direct and visual, not academic.
+- "relevance": "high" or "medium"
+
+Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
+
     case 'deep-dive':
-      queries.push(
-        `${trendQuery} fashion trends ${year} runway designers collections Vogue "Tag Walk"`,
-        `${trendQuery} ${seasonFull} trend details materials colors styling brands`,
-      );
+      prompt = `${collectionInfo}${seasonNote}
+
+The user wants a deep dive on: "${trendQuery}"
+
+Find 6-8 SPECIFIC MICRO-TRENDS in this area from Vogue, Tag Walk, runway shows, and street style coverage. Design-level details — specific looks, constructions, materials, finishes.
+
+For EACH micro-trend:
+- "title": Concrete name (e.g., "Mesh Panel Sneakers", "Raw-Edge Denim", "Butter Yellow")
+- "brands": 3-5 brands doing this
+- "desc": 60-80 words — what it looks like, how to execute it, shelf life (flash/wave/staying)
+- "relevance": "high" or "medium"
+
+Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
+
     case 'live-signals':
-      queries.push(
-        `fashion trending right now ${year} street style viral looks celebrity style`,
-        `most popular fashion trends ${year} TikTok Instagram what people are wearing`,
-      );
+      prompt = `${collectionInfo}Find 6-8 things TRENDING RIGHT NOW in fashion and style. What are people wearing, buying, posting about? Search TikTok trends, Instagram style, celebrity fashion, street style photos from this month.
+
+For EACH signal:
+- "title": What people call it (e.g., "Cherry Red Everything", "Barn Jacket Revival")
+- "brands": 3-5 brands/people driving this
+- "desc": 50-70 words — what it looks like, who's driving it, where it's trending, how long it will last
+- "relevance": "high" or "medium"
+
+Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
+
     case 'competitors':
-      queries.push(
-        `${trendQuery} brand analysis positioning pricing collections ${year}`,
-        `${trendQuery} competitive landscape fashion market strategy`,
-      );
+      prompt = `${collectionInfo}Analyze these fashion brands/competitors: "${trendQuery}"
+
+For EACH brand mentioned, provide:
+- "title": "Brand Name: Key Insight" (e.g., "COS: Affordable Minimalism Gap")
+- "brands": The brand + 2-3 closest competitors at same tier
+- "desc": 60-80 words — price range (real € numbers), positioning, what they do well, the gap/opportunity for the user
+- "relevance": "high" or "medium"
+
+Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
   }
 
-  return callSearch(
-    queries,
-    type === 'live-signals' ? 'month' : 'year'
-  );
+  return callSonar(prompt, type === 'live-signals' ? 'month' : 'year');
 }
+
+// ─── Search API (raw results) ───
 
 async function callSearch(
   queries: string[],
@@ -166,10 +187,7 @@ async function callSearch(
       max_results: 5,
       max_tokens_per_page: 2000,
     };
-
-    if (recency) {
-      body.search_recency_filter = recency;
-    }
+    if (recency) body.search_recency_filter = recency;
 
     const res = await fetch(SEARCH_ENDPOINT, {
       method: 'POST',
@@ -181,28 +199,78 @@ async function callSearch(
     });
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      console.error(`Perplexity Search API error: ${res.status} ${res.statusText}`, errText);
+      console.error(`Perplexity Search error: ${res.status}`, await res.text().catch(() => ''));
       return null;
     }
 
     const data = await res.json();
     const results: SearchResult[] = data.results || [];
-
     if (results.length === 0) return null;
 
-    // Combine all snippets into a single content block
-    const contentParts = results.map((r, i) =>
-      `[Source ${i + 1}: ${r.title}${r.date ? ` (${r.date})` : ''}]\n${r.snippet}`
-    );
-
     return {
-      content: contentParts.join('\n\n'),
+      content: results.map((r, i) => `[Source ${i + 1}: ${r.title}${r.date ? ` (${r.date})` : ''}]\n${r.snippet}`).join('\n\n'),
       sources: results.map(r => r.url).filter(Boolean),
       resultCount: results.length,
     };
   } catch (e) {
-    console.error('Perplexity Search API call failed:', e);
+    console.error('Perplexity Search failed:', e);
+    return null;
+  }
+}
+
+// ─── Sonar API (AI + search → structured response) ───
+
+async function callSonar(
+  prompt: string,
+  recency: 'hour' | 'day' | 'week' | 'month' | 'year' = 'year'
+): Promise<TrendResearchResponse | null> {
+  try {
+    const res = await fetch(SONAR_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a fashion industry expert. Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON. Every trend must be real, visual, and concrete — something you could see on a runway or in a store.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        search_recency_filter: recency,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`Perplexity Sonar error: ${res.status}`, await res.text().catch(() => ''));
+      return null;
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    const citations = data.citations || [];
+
+    // Parse JSON from response
+    try {
+      // Try direct parse
+      const parsed = JSON.parse(text);
+      return { results: parsed.results || [], citations };
+    } catch {
+      // Extract JSON from text
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return { results: parsed.results || [], citations };
+      }
+    }
+
+    console.error('Sonar returned non-JSON:', text.substring(0, 200));
+    return null;
+  } catch (e) {
+    console.error('Perplexity Sonar failed:', e);
     return null;
   }
 }
