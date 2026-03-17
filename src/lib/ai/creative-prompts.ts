@@ -318,41 +318,46 @@ Return:
 
     case 'trends-global':
       return {
-        temperature: 0.7,
+        temperature: 0.65,
         maxTokens: 8192,
-        system: PERSONAS.trendForecaster,
+        system: `${PERSONAS.trendForecaster}
+
+CRITICAL STYLE RULES FOR TREND NAMES AND DESCRIPTIONS:
+- Trend names must sound like VOGUE or WWD headlines, NOT like academic papers or sci-fi novels.
+- BAD examples: "Digital Enlightenment", "Regenerative Authenticity", "Neo-Sensory Paradigm", "Biomorphic Consciousness"
+- GOOD examples: "Quiet Luxury", "Sheer Everything", "The New Prep", "Barn Jacket Revival", "Ballet Flat Comeback", "Tomato Red", "Linen Suiting", "Oversized Tailoring"
+- Every trend must be something you could SEE on a runway, in a store, or on the street.
+- Write like a Vogue trend report, not like a research paper. Direct, visual, concrete.`,
         user: `${ctx}
 
-The user is researching macro-trends for their collection. They provided this context:
-
-"${input.input}"
+${input.input ? `User focus: "${input.input}"` : ''}
 
 ${input._webResearch ? `
-═══ REAL-TIME WEB RESEARCH (sourced from current fashion press & industry data) ═══
+═══ CURRENT FASHION DATA (from Vogue, WWD, BoF, WGSN, Highsnobiety) ═══
 ${input._webResearch}
 ${input._sources ? `Sources: ${input._sources}` : ''}
-═══════════════════════════════════════════════════════════════════════════════════
-USE THIS RESEARCH as your primary source of evidence. Cross-reference with your knowledge to produce expert analysis.
+═══════════════════════════════════════════════════════════════════════
+BASE YOUR ANALYSIS on this real data. These are actual trends from real fashion coverage.
 ` : ''}
-Identify 4-5 global macro-trends relevant to this season and context. These should be MACRO-level cultural/design shifts, not product-specific details.
+Identify 6-8 fashion trends for this season. These must be REAL, VISIBLE trends — things you can see on runways, in stores, on the street. NOT abstract concepts.
 
-ANALYSIS FRAMEWORK (for each trend):
-1. THE SHIFT — What is changing? From what → to what? (Not just "X is trending" but the directional movement)
-2. EVIDENCE — Which designers/collections showed this on the runway? Which cultural moments are driving it? What retail data supports it?
-3. MANIFESTATION — How does this macro-trend translate into actual design decisions? (Silhouettes, palettes, materials, details)
-4. COMMERCIAL WINDOW — Is this trend at the beginning (risky but differentiated), peak (safe but crowded), or filtering down (accessible but late)?
-5. RELEVANCE SCORE — How relevant is this specifically for the user's collection context?
+For each trend:
+1. NAME — 2-4 words that Vogue would use as a headline. Concrete and visual.
+2. WHAT IT LOOKS LIKE — Specific silhouettes, colors, materials, styling. A designer reads this and knows exactly what to sketch.
+3. WHO IS DOING IT — Name specific designers, brands, or runway shows where this appeared. Real names, real collections.
+4. HOW TO USE IT — Practical advice: how would a brand at this price point incorporate this trend? What pieces, what fabrics, what details?
+
+BANNED: Abstract concepts, philosophical language, compound buzzwords, anything that sounds like a TED talk or sci-fi novel. Every trend must pass the test: "Could I point to this in a Zara window or on a runway photo?"
 
 ${QUALITY_GATES.trendSpecificity}
-${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
   "results": [
     {
-      "title": "Trend Name (2-4 words — the industry would recognize this name)",
-      "desc": "80-120 words: the shift, evidence (name specific designers/brands/collections), manifestation in design, commercial window assessment",
+      "title": "Trend Name (2-4 words — Vogue headline style)",
+      "desc": "60-100 words: what it looks like (silhouettes, colors, materials), who is doing it (specific designers/brands/shows), how to use it (practical design advice)",
       "relevance": "high" or "medium"
     }
   ]
@@ -361,41 +366,40 @@ Return:
 
     case 'trends-deep-dive':
       return {
-        temperature: 0.7,
+        temperature: 0.65,
         maxTokens: 8192,
-        system: PERSONAS.trendForecaster,
+        system: `${PERSONAS.trendForecaster}
+
+Write like a Vogue or Highsnobiety trend report. Every trend must be VISUAL and CONCRETE — something a designer can sketch tomorrow. No abstract concepts.`,
         user: `${ctx}
 
-The user is doing a product-specific trend deep dive. Context:
-
-"${input.input}"
+The user wants to go deep on: "${input.input}"
 
 ${input._webResearch ? `
-═══ REAL-TIME WEB RESEARCH (sourced from current fashion press & industry data) ═══
+═══ CURRENT FASHION DATA ═══
 ${input._webResearch}
 ${input._sources ? `Sources: ${input._sources}` : ''}
-═══════════════════════════════════════════════════════════════════════════════════
-USE THIS RESEARCH as your primary source of evidence. Cross-reference with your knowledge to produce expert analysis.
+════════════════════════════
+BASE YOUR ANALYSIS on this real data.
 ` : ''}
-Identify 4-5 specific MICRO-TRENDS relevant to this product category and market. These should be design-level details, not macro shifts.
+Identify 6-8 specific micro-trends in this area. Design-level details — specific looks, constructions, materials, finishes.
 
-ANALYSIS FRAMEWORK (for each micro-trend):
-1. THE DETAIL — What specific design element, material, construction, or finish is gaining traction?
-2. ORIGIN — Where did it start? (Runway → street? Street → runway? Subculture → mainstream?)
-3. ADOPTION MAP — Which brands at which price tiers are adopting it? (Luxury first? Contemporary first? Streetwear first?)
-4. EXECUTION GUIDE — How would a designer execute this? Specific materials, techniques, proportions, color applications
-5. SHELF LIFE — How many seasons does this micro-trend have? Is it a flash (1 season), wave (2-3 seasons), or fundamental shift?
+For each:
+1. NAME — Concrete and visual (e.g., "Mesh Panel Sneakers", "Raw-Edge Denim", "Butter Yellow")
+2. WHAT — The specific design detail, material, or construction. What does it LOOK like?
+3. WHO — Which brands/designers are doing this? At which price tier? Name real names.
+4. HOW — How to execute: specific materials, techniques, proportions. Actionable for a designer.
+5. SHELF LIFE — Flash (1 season), wave (2-3 seasons), or here to stay?
 
 ${QUALITY_GATES.trendSpecificity}
-${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
   "results": [
     {
-      "title": "Micro-Trend Name (2-4 words)",
-      "desc": "80-120 words: the specific detail, origin, adoption map with named brands, execution guide with named materials/techniques, shelf life assessment",
+      "title": "Micro-Trend Name (2-4 words, concrete)",
+      "desc": "60-100 words: what it looks like, who is doing it (real brands), how to execute, shelf life",
       "relevance": "high" or "medium"
     }
   ]
@@ -404,41 +408,40 @@ Return:
 
     case 'trends-live-signals':
       return {
-        temperature: 0.75,
+        temperature: 0.65,
         maxTokens: 8192,
-        system: PERSONAS.trendForecaster,
+        system: `${PERSONAS.trendForecaster}
+
+Write like a Highsnobiety or Hypebeast trend alert. Short, punchy, visual. What are people ACTUALLY wearing right now? No philosophical abstractions.`,
         user: `${ctx}
 
-The user wants to know what is trending — live cultural and style signals that could inform their collection.
-
-Categories/context: "${input.input}"
+${input.input ? `Focus: "${input.input}"` : ''}
 
 ${input._webResearch ? `
-═══ REAL-TIME WEB RESEARCH (sourced from current social media, press & trend reports) ═══
+═══ WHAT'S TRENDING NOW (real data from fashion press & social media) ═══
 ${input._webResearch}
 ${input._sources ? `Sources: ${input._sources}` : ''}
-═══════════════════════════════════════════════════════════════════════════════════════════
-THIS IS REAL, CURRENT DATA. Use it as your primary source. These are actual signals happening right now.
+════════════════════════════════════════════════════════════════════════
+THIS IS REAL, CURRENT DATA. Use it as your primary source.
 ` : ''}
-Identify 4-5 LIVE SIGNALS — things happening across social media, street style, pop culture, or retail that are relevant to fashion.
+Identify 6-8 things that are trending RIGHT NOW in fashion and style. These are live signals — what people are wearing, buying, posting about.
 
-ANALYSIS FRAMEWORK (for each signal):
-1. THE SIGNAL — What specifically is happening? (Not "X is popular" but "X started appearing on TikTok after Y event/person/moment")
-2. VELOCITY — How fast is it spreading? Is it niche-viral or mass-viral?
-3. PLATFORM MAP — Where is it strongest? (TikTok = speed, Instagram = aspiration, Pinterest = intent, Street style = credibility)
-4. PRODUCT TRANSLATION — How does this cultural signal translate into a physical product decision? (Color, silhouette, detail, material, styling)
-5. RISK ASSESSMENT — Flash-in-the-pan (< 3 months) vs. sustained signal (6+ months)? Safe to develop product around, or only useful for marketing/content?
+For each:
+1. NAME — What people would call it (e.g., "Barn Jacket Everywhere", "Cherry Red Bags", "Mesh Ballet Flats")
+2. WHAT — What's the actual look/item/style? Be visual and specific.
+3. WHO — Which celebrities, influencers, street style photos, or TikTok creators are driving it?
+4. WHERE — Which platform is it strongest on? (TikTok, Instagram, Pinterest, street style)
+5. SHELF LIFE — Flash (weeks), wave (months), or staying?
 
 ${QUALITY_GATES.trendSpecificity}
-${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
   "results": [
     {
-      "title": "Signal Name (2-4 words)",
-      "desc": "80-120 words: what's happening, where/who is driving it, velocity assessment, specific product translation, risk assessment",
+      "title": "Signal Name (2-4 words, concrete)",
+      "desc": "50-80 words: what it looks like, who is wearing/posting it, where it's trending, how long it will last",
       "relevance": "high" or "medium"
     }
   ]
@@ -447,44 +450,41 @@ Return:
 
     case 'trends-competitors':
       return {
-        temperature: 0.7,
+        temperature: 0.6,
         maxTokens: 8192,
         system: `${PERSONAS.trendForecaster}
 
-You also have deep competitive intelligence expertise — you analyze brands not just aesthetically but strategically: their positioning, pricing architecture, trend adoption speed, and market gaps.`,
+You are a competitive intelligence analyst. Write like BoF (Business of Fashion) — factual, strategic, numbers-driven. No romance.`,
         user: `${ctx}
 
-The user wants competitive intelligence on these reference/competitor brands:
-
-"${input.input}"
+Brands to analyze: "${input.input}"
 
 ${input._webResearch ? `
-═══ REAL-TIME WEB RESEARCH (sourced from current industry data & brand analysis) ═══
+═══ CURRENT BRAND DATA ═══
 ${input._webResearch}
 ${input._sources ? `Sources: ${input._sources}` : ''}
-═══════════════════════════════════════════════════════════════════════════════════════
-USE THIS RESEARCH as your primary source. It contains real, current data about these brands.
+══════════════════════════
+USE THIS RESEARCH. Real, current data about these brands.
 ` : ''}
 
-For each brand or the group as a whole, provide STRATEGIC insights — not descriptions.
+For each brand mentioned, give ONE insight card with:
+1. TITLE — The key strategic takeaway (e.g., "COS: Affordable Minimalism Gap", "Sandro: Parisian Premium Sweet Spot")
+2. POSITIONING — Price range (real numbers in €), aesthetic position, target consumer
+3. WHAT THEY DO WELL — Their strongest move right now
+4. THE GAP — What they're NOT doing that the market wants. Where's the opportunity?
+5. YOUR LESSON — One specific, actionable thing to take for your collection
 
-ANALYSIS FRAMEWORK:
-1. POSITIONING MATRIX — Where does this brand sit on the axes of price (accessible ↔ luxury) and aesthetic (classic ↔ avant-garde)?
-2. TREND STRATEGY — How fast do they adopt trends? Do they lead, follow, or deliberately ignore? What's their innovation cadence?
-3. PRICE ARCHITECTURE — What's their actual price range? How do they structure good/better/best? What's their entry point product?
-4. GAP ANALYSIS — What is this brand NOT doing that the market wants? Where is the white space between competitors?
-5. LESSON — What specific, actionable lesson should the user take from this brand for their own collection?
+Be direct. Use real price ranges, real product categories, real consumer segments.
 
 ${QUALITY_GATES.trendSpecificity}
-${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
 Return:
 {
   "results": [
     {
-      "title": "Insight Title (2-4 words — the strategic takeaway)",
-      "desc": "80-120 words: positioning, trend strategy, pricing, gap analysis, and one specific actionable lesson for the user's collection",
+      "title": "Brand: Key Insight (e.g., 'COS: The Minimalism Gap')",
+      "desc": "60-100 words: positioning with real prices, what they do well, the gap/opportunity, one actionable lesson",
       "relevance": "high" or "medium"
     }
   ]

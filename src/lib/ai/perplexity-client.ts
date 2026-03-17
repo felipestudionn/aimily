@@ -70,26 +70,26 @@ export async function researchTrends(
   switch (type) {
     case 'global':
       queries.push(
-        `fashion macro trends ${seasonStr} runway collections key designers`,
-        `fashion industry trends ${seasonStr} colors materials silhouettes`,
+        `${seasonStr} runway trends Vogue "The Impression" "Tag Walk" fashion week key looks silhouettes`,
+        `${seasonStr} fashion trends "Harper's Bazaar" street style colors materials what to wear`,
       );
       break;
     case 'deep-dive':
       queries.push(
-        `${trendQuery} fashion micro trends ${seasonStr} specific design details materials`,
-        `${trendQuery} trend adoption brands price tiers ${seasonStr}`,
+        `${trendQuery} ${seasonStr} runway trends Vogue "Tag Walk" designers collections`,
+        `${trendQuery} ${seasonStr} fashion trend details street style brands styling`,
       );
       break;
     case 'live-signals':
       queries.push(
-        `fashion trending now ${seasonStr} viral social media street style`,
-        `emerging fashion trends ${seasonStr} TikTok Instagram cultural signals`,
+        `fashion trending right now ${seasonStr} street style viral looks celebrity style`,
+        `${seasonStr} most popular fashion trends TikTok Instagram what people are wearing`,
       );
       break;
     case 'competitors':
       queries.push(
-        `${trendQuery} brand analysis positioning pricing strategy`,
-        `${trendQuery} competitive landscape fashion market ${seasonStr}`,
+        `${trendQuery} brand analysis positioning pricing collections ${seasonStr}`,
+        `${trendQuery} competitive landscape fashion market strategy`,
       );
       break;
   }
