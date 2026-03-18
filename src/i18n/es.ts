@@ -892,6 +892,8 @@ export const es: Dictionary = {
     regenerate: 'Regenerar',
     entryLabel: 'Entrada',
     entryStrategyLabel: 'Estrategia de Entrada',
+    marketsSelected: 'seleccionados',
+    marketsTotal: 'total',
     // Overlay de celebraci\u00F3n
     celebrationTitle: 'Tu plan de merchandising est\u00E1',
     celebrationTitleItalic: 'completo',

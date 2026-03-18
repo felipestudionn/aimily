@@ -889,6 +889,8 @@ export const pt: Dictionary = {
     regenerate: 'Regenerar',
     entryLabel: 'Entrada',
     entryStrategyLabel: 'Estrat\u00E9gia de Entrada',
+    marketsSelected: 'selecionados',
+    marketsTotal: 'total',
     celebrationTitle: 'O seu plano de merchandising est\u00E1',
     celebrationTitleItalic: 'completo',
     celebrationBody: 'Fam\u00EDlias, pre\u00E7os, canais, or\u00E7amento \u2014 a arquitetura comercial est\u00E1 definida. A sua cole\u00E7\u00E3o tem estrutura. \u00C9 hora de constru\u00ED-la.',

@@ -454,6 +454,12 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
   type ChannelConfig = { enabled: boolean; digital: boolean; physical: boolean };
   const dtc: ChannelConfig = (data.dtc as ChannelConfig) || { enabled: false, digital: false, physical: false };
   const wholesale: ChannelConfig = (data.wholesale as ChannelConfig) || { enabled: false, digital: false, physical: false };
+  const toggleMarketSelection = (idx: number) => {
+    const updated = [...markets];
+    updated[idx] = { ...updated[idx], selected: !updated[idx].selected };
+    onChange({ ...data, markets: updated });
+  };
+
   // Legacy compat: migrate old string[] channels to new structure
   const legacyChannels = (data.channels as string[]) || [];
   if (legacyChannels.length > 0 && !data.dtc && !data.wholesale) {
@@ -469,7 +475,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
     }
   }
   type EntryPoint = { label: string; detail: string };
-  type Market = { name: string; region: string; opportunity: string; rationale: string; entryStrategy?: string; entryPoints?: EntryPoint[] };
+  type Market = { name: string; region: string; opportunity: string; rationale: string; entryStrategy?: string; entryPoints?: EntryPoint[]; selected?: boolean };
   const markets = (data.markets as Market[]) || [];
 
   const toggleDtc = () => {
@@ -586,7 +592,8 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
               const { result, error: err } = await generateMerch(apiType, { direction: (data.direction as string) || '', channelConfig: channelsSummary, ...collectionContext }, language);
               if (err) { setError(err); setGenerating(false); return; }
               const parsed = result as { markets: Market[] };
-              onChange({ ...data, markets: parsed.markets || [] });
+              const marketsWithSelection = (parsed.markets || []).map(m => ({ ...m, selected: true }));
+              onChange({ ...data, markets: marketsWithSelection });
               setGenerating(false);
             }}
             disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
@@ -597,38 +604,63 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
           {markets.length > 0 && (
-            <div className="space-y-3 pt-2">
-              {markets.map((m, i) => (
-                <div key={i} className="border border-carbon/[0.08] overflow-hidden">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 px-4 py-3 bg-carbon/[0.02]">
-                    <div className={`px-2 py-0.5 text-[10px] font-semibold uppercase shrink-0 ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
-                    <div className="text-sm font-medium text-carbon">{m.name} <span className="text-carbon/40 font-normal">{'\u00B7'} {m.region}</span></div>
-                  </div>
-                  {/* Body */}
-                  <div className="px-4 py-3 space-y-3">
-                    {/* Rationale */}
-                    <p className="text-xs text-carbon/60 leading-relaxed">{m.rationale}</p>
-                    {/* Entry points — structured */}
-                    {m.entryPoints && m.entryPoints.length > 0 ? (
-                      <div className="space-y-1.5">
-                        <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">{t.merchandising.entryStrategyLabel}</div>
-                        {m.entryPoints.map((ep, j) => (
-                          <div key={j} className="flex items-start gap-2 ml-1">
-                            <span className="text-[10px] font-semibold tracking-[0.05em] uppercase text-carbon/50 bg-carbon/[0.04] px-1.5 py-0.5 shrink-0 mt-0.5">{ep.label}</span>
-                            <span className="text-[11px] text-carbon/50">{ep.detail}</span>
+            <div className="space-y-4 pt-3">
+              {/* Selection counter */}
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-carbon/50">
+                  <span className="font-semibold text-carbon">{markets.filter(m => m.selected !== false).length}</span> {t.merchandising.marketsSelected} · {markets.length} {t.merchandising.marketsTotal}
+                </p>
+              </div>
+              {markets.map((m, i) => {
+                const isSelected = m.selected !== false;
+                const epLabel = (label: string) => {
+                  const l = label.toLowerCase();
+                  if (l.includes('dtc') || l.includes('e-commerce') || l.includes('social')) return 'bg-[#f0ebe3] text-[#8b7355] border-[#e0d5c4]';
+                  if (l.includes('wholesale') || l.includes('key account') || l.includes('boutique') || l.includes('department')) return 'bg-[#e8ecf0] text-[#5a6b7d] border-[#d0d9e3]';
+                  if (l.includes('showroom') || l.includes('flagship') || l.includes('pop-up')) return 'bg-[#eae8ef] text-[#6b5e7d] border-[#d5d0e0]';
+                  return 'bg-carbon/[0.04] text-carbon/50 border-carbon/[0.06]';
+                };
+                return (
+                  <div
+                    key={i}
+                    className={`border transition-all cursor-pointer ${isSelected ? 'border-carbon/[0.15] bg-white' : 'border-carbon/[0.06] bg-carbon/[0.01] opacity-50'}`}
+                    onClick={() => toggleMarketSelection(i)}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-carbon/[0.05]">
+                      <div className={`w-4.5 h-4.5 border flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                        {isSelected && <Check className="h-2.5 w-2.5 text-crema" />}
+                      </div>
+                      <div className={`px-2 py-0.5 text-[10px] font-semibold uppercase shrink-0 ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
+                      <div className="text-sm font-medium text-carbon">{m.name}</div>
+                      <span className="text-xs text-carbon/30">{m.region}</span>
+                    </div>
+                    {/* Body */}
+                    <div className="px-5 py-4 space-y-3.5">
+                      <p className="text-xs text-carbon/60 leading-relaxed">{m.rationale}</p>
+                      {/* Entry points */}
+                      {m.entryPoints && m.entryPoints.length > 0 ? (
+                        <div className="space-y-2">
+                          <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/30">{t.merchandising.entryStrategyLabel}</div>
+                          <div className="grid gap-2">
+                            {m.entryPoints.map((ep, j) => (
+                              <div key={j} className={`flex items-start gap-3 p-2.5 border ${epLabel(ep.label)}`}>
+                                <span className="text-[9px] font-bold tracking-[0.06em] uppercase shrink-0 mt-px whitespace-nowrap">{ep.label}</span>
+                                <span className="text-[11px] leading-relaxed opacity-80">{ep.detail}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    ) : m.entryStrategy ? (
-                      <div className="space-y-1">
-                        <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">{t.merchandising.entryStrategyLabel}</div>
-                        <p className="text-[11px] text-carbon/50 italic">{m.entryStrategy}</p>
-                      </div>
-                    ) : null}
+                        </div>
+                      ) : m.entryStrategy ? (
+                        <div className="space-y-1.5">
+                          <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/30">{t.merchandising.entryStrategyLabel}</div>
+                          <p className="text-[11px] text-carbon/50 italic leading-relaxed">{m.entryStrategy}</p>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

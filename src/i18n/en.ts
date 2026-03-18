@@ -1116,6 +1116,8 @@ export const en = {
     regenerate: 'Regenerate',
     entryLabel: 'Entry',
     entryStrategyLabel: 'Entry Strategy',
+    marketsSelected: 'selected',
+    marketsTotal: 'total',
     // Celebration overlay
     celebrationTitle: 'Your merchandising plan',
     celebrationTitleItalic: 'complete',

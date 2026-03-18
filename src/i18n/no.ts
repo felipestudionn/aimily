@@ -1032,6 +1032,8 @@ export const no: Dictionary = {
     regenerate: 'Regenerer',
     entryLabel: 'Inngang',
     entryStrategyLabel: 'Inngangsstrategi',
+    marketsSelected: 'valgt',
+    marketsTotal: 'totalt',
     celebrationTitle: 'Din merchandisingplan er',
     celebrationTitleItalic: 'komplett',
     celebrationBody: 'Familier, priser, kanaler, budsjett \u2014 den kommersielle arkitekturen er satt. Kolleksjonen din har struktur. P\u00E5 tide \u00E5 bygge.',
