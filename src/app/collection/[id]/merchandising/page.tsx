@@ -500,47 +500,43 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
 
   return (
     <div className="space-y-6">
-      {/* Channel selection with sub-options */}
+      {/* Channel selection — compact row */}
       <div>
         <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-3 block">{t.merchandising.distributionChannels}</label>
-        <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
           {/* DTC */}
-          <div className={`border transition-all ${dtc.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
-            <div className="flex items-center justify-between">
-              <button onClick={toggleDtc} className="flex items-center gap-3">
-                <div className={`w-5 h-5 border flex items-center justify-center transition-all ${dtc.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                  {dtc.enabled && <Check className="h-3 w-3 text-crema" />}
-                </div>
-                <span className={`text-sm font-medium ${dtc.enabled ? 'text-carbon' : 'text-carbon/40'}`}>DTC</span>
-              </button>
-            </div>
+          <div className={`border transition-all ${dtc.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-3`}>
+            <button onClick={toggleDtc} className="flex items-center gap-2.5 w-full">
+              <div className={`w-4 h-4 border flex items-center justify-center transition-all shrink-0 ${dtc.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                {dtc.enabled && <Check className="h-2.5 w-2.5 text-crema" />}
+              </div>
+              <span className={`text-xs font-medium ${dtc.enabled ? 'text-carbon' : 'text-carbon/40'}`}>DTC</span>
+            </button>
             {dtc.enabled && (
-              <div className="flex gap-3 mt-3 ml-8">
-                <button onClick={() => toggleSub('dtc', 'digital')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${dtc.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+              <div className="flex gap-2 mt-2.5 ml-6">
+                <button onClick={() => toggleSub('dtc', 'digital')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${dtc.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
                   {t.merchandising.digital}
                 </button>
-                <button onClick={() => toggleSub('dtc', 'physical')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${dtc.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                <button onClick={() => toggleSub('dtc', 'physical')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${dtc.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
                   {t.merchandising.physical}
                 </button>
               </div>
             )}
           </div>
           {/* Wholesale */}
-          <div className={`border transition-all ${wholesale.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
-            <div className="flex items-center justify-between">
-              <button onClick={toggleWholesale} className="flex items-center gap-3">
-                <div className={`w-5 h-5 border flex items-center justify-center transition-all ${wholesale.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                  {wholesale.enabled && <Check className="h-3 w-3 text-crema" />}
-                </div>
-                <span className={`text-sm font-medium ${wholesale.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Wholesale</span>
-              </button>
-            </div>
+          <div className={`border transition-all ${wholesale.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-3`}>
+            <button onClick={toggleWholesale} className="flex items-center gap-2.5 w-full">
+              <div className={`w-4 h-4 border flex items-center justify-center transition-all shrink-0 ${wholesale.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                {wholesale.enabled && <Check className="h-2.5 w-2.5 text-crema" />}
+              </div>
+              <span className={`text-xs font-medium ${wholesale.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Wholesale</span>
+            </button>
             {wholesale.enabled && (
-              <div className="flex gap-3 mt-3 ml-8">
-                <button onClick={() => toggleSub('wholesale', 'digital')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${wholesale.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+              <div className="flex gap-2 mt-2.5 ml-6">
+                <button onClick={() => toggleSub('wholesale', 'digital')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${wholesale.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
                   {t.merchandising.digital}
                 </button>
-                <button onClick={() => toggleSub('wholesale', 'physical')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${wholesale.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                <button onClick={() => toggleSub('wholesale', 'physical')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${wholesale.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
                   {t.merchandising.physical}
                 </button>
               </div>
@@ -613,12 +609,13 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
               </div>
               {markets.map((m, i) => {
                 const isSelected = m.selected !== false;
-                const epLabel = (label: string) => {
+                const epStyle = (label: string) => {
                   const l = label.toLowerCase();
-                  if (l.includes('dtc') || l.includes('e-commerce') || l.includes('social')) return 'bg-[#f0ebe3] text-[#8b7355] border-[#e0d5c4]';
-                  if (l.includes('wholesale') || l.includes('key account') || l.includes('boutique') || l.includes('department')) return 'bg-[#e8ecf0] text-[#5a6b7d] border-[#d0d9e3]';
-                  if (l.includes('showroom') || l.includes('flagship') || l.includes('pop-up')) return 'bg-[#eae8ef] text-[#6b5e7d] border-[#d5d0e0]';
-                  return 'bg-carbon/[0.04] text-carbon/50 border-carbon/[0.06]';
+                  if (l.includes('social') || l.includes('instagram') || l.includes('tiktok')) return { card: 'bg-[#f2ede8] border-[#e0d8ce]', badge: 'bg-[#c4a882] text-white' };
+                  if (l.includes('dtc') || l.includes('e-commerce')) return { card: 'bg-[#f5f2ed] border-[#e5ddd2]', badge: 'bg-[#8b7355] text-white' };
+                  if (l.includes('wholesale') || l.includes('key account') || l.includes('boutique') || l.includes('department')) return { card: 'bg-[#eef0f3] border-[#d5dae2]', badge: 'bg-[#5a6b7d] text-white' };
+                  if (l.includes('showroom') || l.includes('flagship') || l.includes('pop-up')) return { card: 'bg-[#eeecf2] border-[#d8d3e2]', badge: 'bg-[#6b5e7d] text-white' };
+                  return { card: 'bg-carbon/[0.03] border-carbon/[0.08]', badge: 'bg-carbon/30 text-white' };
                 };
                 return (
                   <div
@@ -642,13 +639,16 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
                       {m.entryPoints && m.entryPoints.length > 0 ? (
                         <div className="space-y-2">
                           <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/30">{t.merchandising.entryStrategyLabel}</div>
-                          <div className="grid gap-2">
-                            {m.entryPoints.map((ep, j) => (
-                              <div key={j} className={`flex items-start gap-3 p-2.5 border ${epLabel(ep.label)}`}>
-                                <span className="text-[9px] font-bold tracking-[0.06em] uppercase shrink-0 mt-px whitespace-nowrap">{ep.label}</span>
-                                <span className="text-[11px] leading-relaxed opacity-80">{ep.detail}</span>
-                              </div>
-                            ))}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {m.entryPoints.map((ep, j) => {
+                              const st = epStyle(ep.label);
+                              return (
+                                <div key={j} className={`p-3 border ${st.card}`}>
+                                  <span className={`inline-block px-2 py-0.5 text-[9px] font-bold tracking-[0.06em] uppercase mb-1.5 ${st.badge}`}>{ep.label}</span>
+                                  <p className="text-[11px] text-carbon/60 leading-relaxed">{ep.detail}</p>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ) : m.entryStrategy ? (
