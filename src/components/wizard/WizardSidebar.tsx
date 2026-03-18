@@ -179,9 +179,9 @@ export function WizardSidebar({
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
       >
         {/* Logo */}
-        <div className="px-4 h-14 flex items-center">
-          <Link href="/my-collections" className="text-white hover:text-white/80 text-xl font-light tracking-tight transition-opacity">
-            aimily
+        <div className="px-4 h-16 flex items-center">
+          <Link href="/my-collections" className="flex items-center hover:opacity-80 transition-opacity">
+            <img src="/images/aimily-logo-white.png" alt="aimily" className="h-5 w-auto" />
           </Link>
           {saving && !collapsed && (
             <Loader2 className="h-2.5 w-2.5 text-white/50 animate-spin ml-auto flex-shrink-0" />
