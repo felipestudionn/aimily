@@ -988,6 +988,8 @@ export const sv: Dictionary = {
     aiPricing: 'AI-prissättning',
     pricingThesisLabel: 'Prispositionering',
     distributionChannels: 'Distributionskanaler',
+    digital: 'Digital',
+    physical: 'Fysisk',
     customChannelPlaceholder: 'Anpassad kanal...',
     targetMarkets: 'Målmarknader',
     marketNamePlaceholder: 'Marknadsnamn...',

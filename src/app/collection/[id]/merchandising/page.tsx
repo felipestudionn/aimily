@@ -451,40 +451,95 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
   const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const channels = (data.channels as string[]) || [];
-  const customChannels = (data.customChannels as string[]) || [];
+  type ChannelConfig = { enabled: boolean; digital: boolean; physical: boolean };
+  const dtc: ChannelConfig = (data.dtc as ChannelConfig) || { enabled: false, digital: false, physical: false };
+  const wholesale: ChannelConfig = (data.wholesale as ChannelConfig) || { enabled: false, digital: false, physical: false };
+  // Legacy compat: migrate old string[] channels to new structure
+  const legacyChannels = (data.channels as string[]) || [];
+  if (legacyChannels.length > 0 && !data.dtc && !data.wholesale) {
+    const hasDtc = legacyChannels.includes('DTC');
+    const hasWholesale = legacyChannels.includes('Wholesale');
+    if (hasDtc || hasWholesale) {
+      onChange({
+        ...data,
+        dtc: { enabled: hasDtc, digital: hasDtc, physical: false },
+        wholesale: { enabled: hasWholesale, digital: hasWholesale, physical: false },
+        channels: [],
+      });
+    }
+  }
   type Market = { name: string; region: string; opportunity: string; rationale: string; entryStrategy?: string };
   const markets = (data.markets as Market[]) || [];
 
-  const toggleChannel = (ch: string) => {
-    onChange({ ...data, channels: channels.includes(ch) ? channels.filter(c => c !== ch) : [...channels, ch] });
+  const toggleDtc = () => {
+    const next = !dtc.enabled;
+    onChange({ ...data, dtc: { enabled: next, digital: next, physical: false } });
   };
+  const toggleWholesale = () => {
+    const next = !wholesale.enabled;
+    onChange({ ...data, wholesale: { enabled: next, digital: next, physical: false } });
+  };
+  const toggleSub = (channel: 'dtc' | 'wholesale', sub: 'digital' | 'physical') => {
+    const current = channel === 'dtc' ? dtc : wholesale;
+    const updated = { ...current, [sub]: !current[sub] };
+    onChange({ ...data, [channel]: updated });
+  };
+
+  // Build channels string for API
+  const channelsSummary = [
+    dtc.enabled ? `DTC (${[dtc.digital ? 'Digital' : '', dtc.physical ? 'Physical' : ''].filter(Boolean).join(' + ') || 'TBD'})` : '',
+    wholesale.enabled ? `Wholesale (${[wholesale.digital ? 'Digital' : '', wholesale.physical ? 'Physical' : ''].filter(Boolean).join(' + ') || 'TBD'})` : '',
+  ].filter(Boolean).join(', ');
 
   return (
     <div className="space-y-6">
-      {/* Channels — always manual selection */}
+      {/* Channel selection with sub-options */}
       <div>
         <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-3 block">{t.merchandising.distributionChannels}</label>
-        <div className="flex gap-3">
-          {['DTC', 'Wholesale'].map(ch => (
-            <button key={ch} onClick={() => toggleChannel(ch)} className={`px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border transition-all ${channels.includes(ch) ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.08] text-carbon/50 hover:border-carbon/20'}`}>
-              {ch}
-            </button>
-          ))}
-          <button
-            onClick={() => onChange({ ...data, customChannels: [...customChannels, ''] })}
-            className="px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        {customChannels.map((ch, i) => (
-          <div key={i} className="flex items-center gap-2 mt-2">
-            <input value={ch} onChange={(e) => { const u = [...customChannels]; u[i] = e.target.value; onChange({ ...data, customChannels: u }); }}
-              placeholder={t.merchandising.customChannelPlaceholder} className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
-            <button onClick={() => onChange({ ...data, customChannels: customChannels.filter((_, j) => j !== i) })} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
+        <div className="space-y-3">
+          {/* DTC */}
+          <div className={`border transition-all ${dtc.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
+            <div className="flex items-center justify-between">
+              <button onClick={toggleDtc} className="flex items-center gap-3">
+                <div className={`w-5 h-5 border flex items-center justify-center transition-all ${dtc.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                  {dtc.enabled && <Check className="h-3 w-3 text-crema" />}
+                </div>
+                <span className={`text-sm font-medium ${dtc.enabled ? 'text-carbon' : 'text-carbon/40'}`}>DTC</span>
+              </button>
+            </div>
+            {dtc.enabled && (
+              <div className="flex gap-3 mt-3 ml-8">
+                <button onClick={() => toggleSub('dtc', 'digital')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${dtc.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                  {t.merchandising.digital}
+                </button>
+                <button onClick={() => toggleSub('dtc', 'physical')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${dtc.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                  {t.merchandising.physical}
+                </button>
+              </div>
+            )}
           </div>
-        ))}
+          {/* Wholesale */}
+          <div className={`border transition-all ${wholesale.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
+            <div className="flex items-center justify-between">
+              <button onClick={toggleWholesale} className="flex items-center gap-3">
+                <div className={`w-5 h-5 border flex items-center justify-center transition-all ${wholesale.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                  {wholesale.enabled && <Check className="h-3 w-3 text-crema" />}
+                </div>
+                <span className={`text-sm font-medium ${wholesale.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Wholesale</span>
+              </button>
+            </div>
+            {wholesale.enabled && (
+              <div className="flex gap-3 mt-3 ml-8">
+                <button onClick={() => toggleSub('wholesale', 'digital')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${wholesale.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                  {t.merchandising.digital}
+                </button>
+                <button onClick={() => toggleSub('wholesale', 'physical')} className={`px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase border transition-all ${wholesale.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                  {t.merchandising.physical}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Markets — depends on mode */}
@@ -527,10 +582,10 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
             onClick={async () => {
               setGenerating(true); setError(null);
               const apiType = mode === 'assisted' ? 'channels-assisted' : 'channels-proposals';
-              const { result, error: err } = await generateMerch(apiType, { direction: (data.direction as string) || '', ...collectionContext }, language);
+              const { result, error: err } = await generateMerch(apiType, { direction: (data.direction as string) || '', channelConfig: channelsSummary, ...collectionContext }, language);
               if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { channels: string[]; customChannels: string[]; markets: Market[] };
-              onChange({ ...data, channels: parsed.channels || channels, customChannels: parsed.customChannels || [], markets: parsed.markets || [] });
+              const parsed = result as { markets: Market[] };
+              onChange({ ...data, markets: parsed.markets || [] });
               setGenerating(false);
             }}
             disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
@@ -870,7 +925,14 @@ export default function MerchandisingPage() {
   const familiesData = (cardData.families?.data?.families as Family[]) || [];
   const familiesStr = familiesData.map(f => `${f.name}: ${f.subcategories.join(', ')}`).join(' | ');
   const pricingStr = JSON.stringify(cardData.pricing?.data?.pricing || []);
-  const channelsStr = ((cardData.channels?.data?.channels as string[]) || []).join(', ') + ' | Markets: ' + ((cardData.channels?.data?.markets as Array<{ name: string }>) || []).map(m => m.name).join(', ');
+  const chData = cardData.channels?.data || {};
+  const dtcConf = chData.dtc as { enabled?: boolean; digital?: boolean; physical?: boolean } | undefined;
+  const wsConf = chData.wholesale as { enabled?: boolean; digital?: boolean; physical?: boolean } | undefined;
+  const channelParts = [
+    dtcConf?.enabled ? `DTC (${[dtcConf.digital ? 'Digital' : '', dtcConf.physical ? 'Physical' : ''].filter(Boolean).join('+') || 'TBD'})` : '',
+    wsConf?.enabled ? `Wholesale (${[wsConf.digital ? 'Digital' : '', wsConf.physical ? 'Physical' : ''].filter(Boolean).join('+') || 'TBD'})` : '',
+  ].filter(Boolean);
+  const channelsStr = (channelParts.length ? channelParts.join(', ') : (chData.channels as string[] || []).join(', ')) + ' | Markets: ' + ((chData.markets as Array<{ name: string }>) || []).map(m => m.name).join(', ');
 
   if (persistLoading) {
     return (

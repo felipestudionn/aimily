@@ -258,20 +258,24 @@ Return:
 You also have deep expertise in fashion distribution strategy — you understand the economics, logistics, and brand implications of each channel model.`,
         user: `${ctx}
 
-The user has given this direction about channels and markets:
+The user has selected these distribution channels: ${input.channelConfig || 'Not specified'}
+
+The user has given this direction about markets:
 
 "${input.direction}"
 
-CHANNEL ANALYSIS:
-For DTC: What infrastructure is needed? (E-commerce platform, fulfillment, customer service, returns)
-For Wholesale: What type of wholesale? (Department stores, multi-brand boutiques, showrooms, online wholesale platforms like Joor/NuOrder)
-For any custom channels: What's the strategic rationale?
+CRITICAL CHANNEL FILTERING RULES:
+- If the user selected "Digital" only (no Physical): Do NOT recommend flagships, pop-ups, showrooms, or physical retail. Focus on e-commerce platforms, online marketplaces, social commerce, digital wholesale (Joor, NuOrder, FAIRE).
+- If the user selected "Physical" only (no Digital): Do NOT recommend e-commerce or online marketplaces. Focus on retail stores, showrooms, department stores, multi-brand boutiques.
+- If BOTH Digital + Physical: Recommend a mix of both, but specify which markets are better for digital-first vs physical-first entry.
 
 MARKET ANALYSIS:
 For each recommended market, provide:
 1. WHY this market — specific consumer presence, brand fit, competitive density
-2. ENTRY STRATEGY — how would the brand enter? (Online first? Showroom? Agent?)
+2. ENTRY STRATEGY — must be consistent with the channel selection above (digital-only = online entry, physical-only = retail entry, both = specify)
 3. MARKET SIZE signal — is this a "test" market, "growth" market, or "core" market?
+
+Recommend 4-6 markets ordered by opportunity.
 
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
@@ -279,15 +283,13 @@ ${OUTPUT_RULES}
 
 Return:
 {
-  "channels": ["DTC", "Wholesale"],
-  "customChannels": [],
   "markets": [
     {
       "name": "Market Name (city or country)",
       "region": "Region",
       "opportunity": "high" or "medium",
       "rationale": "20-35 words: WHY this market for this brand — specific reasons, not generic",
-      "entryStrategy": "10-20 words: how to enter"
+      "entryStrategy": "15-25 words: how to enter — MUST match the channel config (digital/physical/both)"
     }
   ]
 }`,
@@ -301,13 +303,20 @@ Return:
 You also have deep expertise in fashion distribution strategy and international market entry.`,
         user: `${ctx}
 
-Based on all available context (consumer, brand positioning, pricing, product families), recommend the optimal distribution strategy.
+The user has selected these distribution channels: ${input.channelConfig || 'Not specified'}
+
+Based on all available context (consumer, brand positioning, pricing, product families) and the channel configuration above, recommend target markets.
+
+CRITICAL CHANNEL FILTERING RULES:
+- If "Digital" only: No flagships, no physical retail, no showrooms. E-commerce, online wholesale, social commerce only.
+- If "Physical" only: No e-commerce recommendations. Retail stores, showrooms, department stores, boutiques.
+- If both: Specify per market whether digital-first or physical-first entry makes more sense.
 
 ANALYSIS:
-1. Channel mix — DTC/Wholesale/Hybrid? What percentage of revenue from each? Why?
-2. Geographic prioritization — Recommend 4-6 markets ordered by opportunity
-3. Include at least one "discovery" market that's non-obvious but strategically smart
-4. Consider the season: SS collections have different market dynamics than FW
+1. Geographic prioritization — Recommend 4-6 markets ordered by opportunity
+2. Include at least one "discovery" market that's non-obvious but strategically smart
+3. Consider the season: SS collections have different market dynamics than FW
+4. Entry strategies MUST match the channel config
 
 For each market, explain the SPECIFIC opportunity — not "large market" but "growing appetite for Mediterranean-inspired brands in the €150-400 range, underserved by current retail mix."
 
@@ -317,16 +326,13 @@ ${OUTPUT_RULES}
 
 Return:
 {
-  "channels": ["DTC", "Wholesale"],
-  "customChannels": [],
-  "channelRationale": "30-50 words: why this channel mix for this brand",
   "markets": [
     {
       "name": "Market Name",
       "region": "Region",
       "opportunity": "high" or "medium",
       "rationale": "20-35 words: specific opportunity description",
-      "entryStrategy": "10-20 words: recommended entry approach"
+      "entryStrategy": "15-25 words: recommended entry approach — consistent with channel config"
     }
   ]
 }`,

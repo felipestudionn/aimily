@@ -988,6 +988,8 @@ export const no: Dictionary = {
     aiPricing: 'AI-priser',
     pricingThesisLabel: 'Prisposisjonering',
     distributionChannels: 'Distribusjonskanaler',
+    digital: 'Digital',
+    physical: 'Fysisk',
     customChannelPlaceholder: 'Tilpasset kanal...',
     targetMarkets: 'Målmarkeder',
     marketNamePlaceholder: 'Markedsnavn...',

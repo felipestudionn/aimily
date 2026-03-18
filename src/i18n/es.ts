@@ -844,6 +844,8 @@ export const es: Dictionary = {
     pricingThesisLabel: 'Posicionamiento de Precio',
     // Contenido de Canales
     distributionChannels: 'Canales de Distribuci\u00F3n',
+    digital: 'Digital',
+    physical: 'F\u00EDsico',
     customChannelPlaceholder: 'Canal personalizado...',
     targetMarkets: 'Mercados Objetivo',
     marketNamePlaceholder: 'Nombre del mercado...',

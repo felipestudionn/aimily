@@ -1070,6 +1070,8 @@ export const nl: Dictionary = {
     pricingThesisLabel: 'Prijspositionering',
     // Channels content
     distributionChannels: 'Distributiekanalen',
+    digital: 'Digitaal',
+    physical: 'Fysiek',
     customChannelPlaceholder: 'Eigen kanaal...',
     targetMarkets: 'Doelmarkten',
     marketNamePlaceholder: 'Marktnaam...',

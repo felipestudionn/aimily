@@ -1069,6 +1069,8 @@ export const en = {
     pricingThesisLabel: 'Pricing Positioning',
     // Channels content
     distributionChannels: 'Distribution Channels',
+    digital: 'Digital',
+    physical: 'Physical',
     customChannelPlaceholder: 'Custom channel...',
     targetMarkets: 'Target Markets',
     marketNamePlaceholder: 'Market name...',
