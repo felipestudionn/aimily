@@ -64,23 +64,55 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
         collectionPlanId={plan.id}
       />
 
-      {/* Confirm Draft CTA */}
+      {/* What's Next — educational + CTA */}
       {skus.length > 0 && (
-        <div className="mt-8 bg-white border border-carbon/[0.06] p-6 sm:p-8 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-light text-carbon tracking-tight">
-              Ready to start <span className="italic">designing</span>?
-            </h3>
-            <p className="text-xs text-carbon/35 mt-1">
-              Confirm your draft range plan to unlock Design & Development.
-            </p>
+        <div className="mt-8 bg-white border border-carbon/[0.06] p-6 sm:p-8">
+          <h2 className="text-xl font-light text-carbon tracking-tight mb-1">
+            What&apos;s <span className="italic">next</span>?
+          </h2>
+          <p className="text-xs text-carbon/30 mb-6">Your range plan is a living document — here&apos;s how it evolves.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 bg-carbon flex items-center justify-center text-[10px] font-medium text-crema">1</span>
+                <span className="text-xs font-medium text-carbon">Confirm draft</span>
+              </div>
+              <p className="text-[11px] text-carbon/40 leading-relaxed pl-7">
+                Send this range plan to Design & Development as your starting point. You can still edit everything.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 bg-carbon/20 flex items-center justify-center text-[10px] font-medium text-carbon/60">2</span>
+                <span className="text-xs font-medium text-carbon/50">Design develops</span>
+              </div>
+              <p className="text-[11px] text-carbon/30 leading-relaxed pl-7">
+                Each SKU gets sketches, materials, colorways, and tech packs. Real production costs replace estimates.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 bg-carbon/10 flex items-center justify-center text-[10px] font-medium text-carbon/30">3</span>
+                <span className="text-xs font-medium text-carbon/35">Refine together</span>
+              </div>
+              <p className="text-[11px] text-carbon/25 leading-relaxed pl-7">
+                Strategy and design collaborate. SKUs are added, adjusted, or cut. The final collection emerges from this dialogue.
+              </p>
+            </div>
           </div>
-          <button
-            onClick={handleConfirmDraft}
-            className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors shrink-0"
-          >
-            Confirm Draft Range Plan <ArrowRight className="h-4 w-4" />
-          </button>
+
+          <div className="flex items-center justify-between pt-5 border-t border-carbon/[0.05]">
+            <p className="text-xs text-carbon/25 italic max-w-sm">
+              This is a draft — not a final commitment. Design decisions will shape the final range.
+            </p>
+            <button
+              onClick={handleConfirmDraft}
+              className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors shrink-0"
+            >
+              Confirm Draft Range Plan <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -96,14 +128,13 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
               {displayName} · {plan.season}
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
-              Your draft range plan<br />is <span className="italic">confirmed</span>.
+              Draft range plan<br /><span className="italic">confirmed</span>.
             </h2>
-            <p className="text-sm sm:text-base font-light text-crema/60 leading-relaxed max-w-lg mx-auto mb-4" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
-              {skus.length} SKUs across {setupData.productFamilies.length} families.
-              Your collection has a plan now. Time to bring it to life.
+            <p className="text-sm sm:text-base font-light text-crema/50 leading-relaxed max-w-lg mx-auto mb-3" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
+              {skus.length} SKUs across {setupData.productFamilies.length} families are now ready for Design & Development.
             </p>
-            <p className="text-xs text-crema/30 italic mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
-              Design & Development is now unlocked.
+            <p className="text-xs text-crema/30 leading-relaxed max-w-md mx-auto mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
+              From here, design and strategy work as one. Sketches, materials, and production details will refine your range plan into a final collection. Every decision flows both ways.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease-out 1.8s both' }}>
               <button

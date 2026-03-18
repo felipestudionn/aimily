@@ -477,33 +477,37 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
     }
   };
 
-  // ── Auto-generation overlay (wow moment) ──
+  // ── Auto-generation overlay (wow moment + educational context) ──
   if (autoGenerating) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-center max-w-lg px-6" style={{ animation: 'fadeIn 0.6s ease-out forwards' }}>
-          {/* Animated logo */}
-          <div className="w-16 h-16 mx-auto mb-8 border border-carbon/20 flex items-center justify-center" style={{ animation: 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}>
-            <Loader2 className="h-6 w-6 text-carbon/40 animate-spin" />
+        <div className="text-center max-w-xl px-6" style={{ animation: 'fadeIn 0.6s ease-out forwards' }}>
+          {/* Animated icon */}
+          <div className="w-14 h-14 mx-auto mb-6 border border-carbon/15 flex items-center justify-center" style={{ animation: 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}>
+            <Loader2 className="h-5 w-5 text-carbon/40 animate-spin" />
           </div>
 
-          <div className="text-[10px] font-medium tracking-[0.35em] uppercase text-carbon/25 mb-6" style={{ animation: 'fadeIn 0.6s ease-out 0.5s both' }}>
-            {t.plannerSections.aiBuilding || 'Aimily is building your collection'}
-          </div>
+          <h2 className="text-xl font-light text-carbon tracking-tight mb-2" style={{ animation: 'fadeIn 0.6s ease-out 0.5s both' }}>
+            Aimily is building your <span className="italic">range plan</span>
+          </h2>
+
+          <p className="text-xs text-carbon/35 mb-8 max-w-sm mx-auto leading-relaxed" style={{ animation: 'fadeIn 0.6s ease-out 0.7s both' }}>
+            Using your creative direction, product families, pricing architecture, and market strategy to generate a complete draft collection.
+          </p>
 
           {/* Steps */}
-          <div className="space-y-3 mb-8">
+          <div className="space-y-2.5 mb-8">
             {autoGenSteps.map((step, i) => (
               <div
                 key={i}
                 className={`text-sm transition-all duration-700 ${
-                  i < autoGenStep ? 'text-carbon/30' :
-                  i === autoGenStep ? 'text-carbon font-medium' :
+                  i < autoGenStep ? 'text-carbon/25' :
+                  i === autoGenStep ? 'text-carbon font-light' :
                   'text-carbon/10'
                 }`}
-                style={i <= autoGenStep ? { animation: `slideUp 0.5s ease-out ${0.8 + i * 0.3}s both` } : { opacity: 0 }}
+                style={i <= autoGenStep ? { animation: `slideUp 0.5s ease-out ${0.9 + i * 0.3}s both` } : { opacity: 0 }}
               >
-                {i < autoGenStep && <span className="text-carbon/30 mr-2">&#10003;</span>}
+                {i < autoGenStep && <span className="text-carbon/25 mr-2">&#10003;</span>}
                 {i === autoGenStep && <span className="inline-block w-1.5 h-1.5 bg-carbon rounded-full mr-2 animate-pulse" />}
                 {step}
               </div>
@@ -512,10 +516,26 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
           {/* Progress bar */}
           <div className="w-48 h-[2px] bg-carbon/[0.06] mx-auto overflow-hidden">
-            <div
-              className="h-full bg-carbon transition-all duration-1000 ease-out"
-              style={{ width: `${((autoGenStep + 1) / autoGenSteps.length) * 100}%` }}
-            />
+            <div className="h-full bg-carbon transition-all duration-1000 ease-out" style={{ width: `${((autoGenStep + 1) / autoGenSteps.length) * 100}%` }} />
+          </div>
+
+          {/* What happens next — educational */}
+          <div className="mt-10 pt-6 border-t border-carbon/[0.06] max-w-sm mx-auto" style={{ animation: 'fadeIn 0.6s ease-out 2s both' }}>
+            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/20 mb-3">What happens next</p>
+            <div className="space-y-2 text-left">
+              <div className="flex items-start gap-2.5">
+                <span className="text-[10px] text-carbon/20 mt-0.5 font-medium">1</span>
+                <p className="text-[11px] text-carbon/35 leading-relaxed">Review and adjust your range plan — names, prices, units, families</p>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-[10px] text-carbon/20 mt-0.5 font-medium">2</span>
+                <p className="text-[11px] text-carbon/35 leading-relaxed">Confirm the draft to unlock Design & Development</p>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-[10px] text-carbon/20 mt-0.5 font-medium">3</span>
+                <p className="text-[11px] text-carbon/35 leading-relaxed">Design and strategy work together — adjustments flow both ways</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
