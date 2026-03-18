@@ -871,21 +871,18 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               {skus.map((sku) => (
                 <div
                   key={sku.id}
-                  className="border border-carbon/[0.06] overflow-hidden hover:border-carbon/15 transition-all cursor-pointer bg-white"
+                  className="border border-carbon/[0.06] overflow-hidden hover:border-carbon/15 transition-all cursor-pointer bg-white group"
                   onClick={() => openSkuDetail(sku)}
                 >
-                  {/* Image Area with name overlay */}
-                  <div className="aspect-[4/3] bg-carbon/[0.03] relative flex items-center justify-center">
+                  {/* Image / Name area */}
+                  <div className="aspect-square bg-carbon/[0.02] relative flex items-center justify-center">
                     {sku.reference_image_url ? (
-                      <img
-                        src={sku.reference_image_url}
-                        alt={sku.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={sku.reference_image_url} alt={sku.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="px-4 text-center">
-                        <p className="text-sm font-light text-carbon leading-tight">{sku.name}</p>
-                        <p className="text-[10px] text-carbon/30 mt-1 italic">{sku.family}</p>
+                        <ImagePlus className="h-6 w-6 text-carbon/10 mx-auto mb-2" />
+                        <p className="text-[13px] font-light text-carbon leading-snug">{sku.name}</p>
+                        <p className="text-[10px] text-carbon/25 mt-1 italic">{sku.family}</p>
                       </div>
                     )}
                     {/* Type Badge */}
@@ -897,21 +894,29 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     </span>
                   </div>
 
-                  {/* Compact metrics */}
-                  <div className="px-3 py-2.5 border-t border-carbon/[0.04]">
-                    <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                  {/* Metrics */}
+                  <div className="px-3 py-3 border-t border-carbon/[0.04] space-y-2">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                       <div>
-                        <span className="text-carbon/30 uppercase tracking-wider">PVP</span>
-                        <p className="font-medium text-carbon text-xs">€{sku.pvp}</p>
+                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">PVP</p>
+                        <p className="text-sm font-light text-carbon">€{sku.pvp}</p>
                       </div>
                       <div>
-                        <span className="text-carbon/30 uppercase tracking-wider">COGS</span>
-                        <p className="font-medium text-carbon text-xs">€{sku.cost}</p>
+                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">COGS</p>
+                        <p className="text-sm font-light text-carbon">€{sku.cost}</p>
                       </div>
                       <div>
-                        <span className="text-carbon/30 uppercase tracking-wider">{t.plannerSections.units}</span>
-                        <p className="font-medium text-carbon text-xs">{sku.buy_units}</p>
+                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Units</p>
+                        <p className="text-sm font-light text-carbon">{sku.buy_units}</p>
                       </div>
+                      <div>
+                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Margin</p>
+                        <p className="text-sm font-light text-carbon">{Math.round(sku.margin)}%</p>
+                      </div>
+                    </div>
+                    <div className="pt-1.5 border-t border-carbon/[0.03]">
+                      <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Expected Sales</p>
+                      <p className="text-sm font-light text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
