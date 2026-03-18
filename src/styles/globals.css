@@ -32,7 +32,7 @@
     --border: 0 0% 85%;             /* gris */
     --input: 0 0% 85%;
     --ring: 156 4% 16%;             /* carbon */
-    --radius: 2px;                  /* subtle rounding — editorial but modern */
+    --radius: 4px;                  /* subtle rounding — editorial but modern */
   }
 }
 
@@ -46,7 +46,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
+  /* Global subtle rounding — buttons, inputs, and bordered containers */
+  button, [role="button"],
+  input, textarea, select {
+    border-radius: var(--radius);
+  }
+  /* Cards/containers that use Tailwind's `border` class (not border-t, border-b dividers) */
+  [class~="border"] {
+    border-radius: var(--radius);
+  }
 }
 
 /* ── Global font size boost ──
