@@ -47,7 +47,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [selectedImports, setSelectedImports] = useState<Set<string>>(new Set());
   const [importingSkus, setImportingSkus] = useState(false);
 
-  const { skus, addSku, updateSku, deleteSku, loading } = useSkus(collectionPlanId);
+  const { skus, addSku, updateSku, deleteSku, loading, refetch } = useSkus(collectionPlanId);
 
   // ── Auto-generate SKUs on first load (wow moment) ──
   const autoGenSteps = [
@@ -173,12 +173,12 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
           });
         }
 
-        // Show final step
+        // Show final step, then refetch SKUs (no reload)
         setAutoGenStep(autoGenSteps.length - 1);
+        await refetch();
         setTimeout(() => {
           setAutoGenerating(false);
           setAutoGenDone(true);
-          window.location.reload();
         }, 2000);
       } catch (err) {
         console.error('Auto-generate failed:', err);
