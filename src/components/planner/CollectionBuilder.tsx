@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download } from 'lucide-react';
+import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download, ChevronDown } from 'lucide-react';
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,7 +37,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [autoGenStep, setAutoGenStep] = useState(0);
   const [autoGenDone, setAutoGenDone] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
+  const [showAddForm, setShowAddForm] = useState(false);
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
   const [editingNotes, setEditingNotes] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -702,13 +703,18 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         </Card>
       )}
 
-      {/* Add SKU Form */}
+      {/* Add SKU Form — collapsible */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t.plannerSections.addNewSku}</CardTitle>
-          <CardDescription>{t.plannerSections.createSkuDesc}</CardDescription>
+        <CardHeader className="cursor-pointer" onClick={() => setShowAddForm(!showAddForm)}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Plus className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base">{t.plannerSections.addNewSku}</CardTitle>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showAddForm ? '' : '-rotate-90'}`} />
+          </div>
         </CardHeader>
-        <CardContent>
+        {showAddForm && <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div className="col-span-2">
               <Label className="text-xs">{t.plannerSections.productName}</Label>
@@ -860,14 +866,19 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </Button>
             </div>
           </div>
-        </CardContent>
+        </CardContent>}
       </Card>
 
       {/* SKU List with View Toggle */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>{t.plannerSections.skuList} ({skus.length})</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>{t.plannerSections.skuList} ({skus.length})</CardTitle>
+              <Button variant="outline" size="sm" className="h-7 px-2 text-[10px]" onClick={() => setShowAddForm(!showAddForm)}>
+                <Plus className="h-3 w-3 mr-1" /> {t.plannerSections.addNewSku}
+              </Button>
+            </div>
             <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <Button
                 variant={viewMode === 'list' ? 'secondary' : 'ghost'}
@@ -958,7 +969,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             </div>
           ) : (
             /* Cards View */
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {skus.map((sku) => (
                 <div
                   key={sku.id}
