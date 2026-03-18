@@ -84,6 +84,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
     (async () => {
       try {
+        console.log('[AutoGen] Starting — expectedSkus:', setupData.expectedSkus, 'salesTarget:', setupData.totalSalesTarget);
+
         // Fetch creative context for SKU naming
         const creativeRes = await fetch(`/api/workspace-data?planId=${collectionPlanId}&workspace=creative`);
         const creativeWs = creativeRes.ok ? await creativeRes.json() : null;
@@ -127,17 +129,25 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             totalSalesTarget: Math.round(remainingSalesTarget * (batchCount / remainingCount)),
           };
 
+          console.log(`[AutoGen] Batch ${batch + 1}/${batches} — generating ${batchCount} SKUs, salesTarget: €${batchSetup.totalSalesTarget}`);
+
           const response = await fetch('/api/ai/generate-skus', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ setupData: batchSetup, count: batchCount, language, creativeContext }),
           });
 
-          if (!response.ok) throw new Error(`Batch ${batch + 1} failed`);
+          if (!response.ok) {
+            const errBody = await response.text().catch(() => '');
+            console.error(`[AutoGen] Batch ${batch + 1} failed:`, response.status, errBody);
+            throw new Error(`Batch ${batch + 1} failed: ${response.status} ${errBody}`);
+          }
 
-          const { skus: batchSkus } = await response.json();
+          const responseData = await response.json();
+          const batchSkus = responseData.skus || [];
+          console.log(`[AutoGen] Batch ${batch + 1} returned ${batchSkus.length} SKUs`);
 
-          for (const suggested of (batchSkus || [])) {
+          for (const suggested of batchSkus) {
             const margin = ((suggested.pvp - suggested.cost) / suggested.pvp) * 100;
             allGeneratedSkus.push({
               collection_plan_id: collectionPlanId,
@@ -165,12 +175,20 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         }
 
         // Batch insert ALL generated SKUs at once
+        console.log(`[AutoGen] Inserting ${allGeneratedSkus.length} SKUs via batch endpoint`);
         if (allGeneratedSkus.length > 0) {
-          await fetch('/api/skus/batch', {
+          const batchRes = await fetch('/api/skus/batch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ skus: allGeneratedSkus }),
           });
+          if (!batchRes.ok) {
+            const batchErr = await batchRes.text().catch(() => '');
+            console.error('[AutoGen] Batch insert failed:', batchRes.status, batchErr);
+          } else {
+            const batchResult = await batchRes.json();
+            console.log('[AutoGen] Batch insert success:', batchResult.count, 'SKUs');
+          }
         }
 
         // Show final step, then refetch SKUs (no reload)
@@ -181,7 +199,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
           setAutoGenDone(true);
         }, 2000);
       } catch (err) {
-        console.error('Auto-generate failed:', err);
+        console.error('[AutoGen] FAILED:', err);
+        alert(`SKU generation failed: ${err instanceof Error ? err.message : 'Unknown error'}. Check browser console for details.`);
         setAutoGenerating(false);
         setAutoGenDone(true);
       } finally {
