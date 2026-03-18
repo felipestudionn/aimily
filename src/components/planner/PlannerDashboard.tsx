@@ -104,7 +104,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
 
           <div className="flex items-center justify-between pt-5 border-t border-carbon/[0.05]">
             <p className="text-xs text-carbon/25 italic max-w-sm">
-              This is a draft — not a final commitment. Design decisions will shape the final range.
+              You&apos;ve built the foundation. Design will bring it to life — and together, you&apos;ll refine it into your strongest collection yet.
             </p>
             <button
               onClick={handleConfirmDraft}
