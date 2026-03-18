@@ -575,124 +575,100 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         </CardContent>
       </Card>
 
-      {/* Framework Validation */}
+      {/* Strategy Overview — how Aimily landed your plan */}
       {skus.length > 0 && (
-        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base text-blue-900">Framework Validation</CardTitle>
-            <CardDescription>How your collection aligns with the AI-generated strategy</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {/* Family Distribution */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.familyMix}</h4>
-                <div className="space-y-1">
-                  {frameworkValidation.familyDistribution.map((fam) => (
-                    <div key={fam.name} className="flex items-center justify-between text-xs">
-                      <span className="truncate max-w-[100px]">{fam.name}</span>
-                      <span className={`font-medium ${Math.abs(fam.actual - fam.target) <= 10 ? 'text-green-600' : 'text-orange-600'}`}>
-                        {fam.actual}% / {fam.target}%
-                      </span>
+        <div className="border border-carbon/[0.08] bg-white p-6">
+          <div className="mb-5">
+            <h3 className="text-lg font-light text-carbon tracking-tight">How Aimily built your collection</h3>
+            <p className="text-xs text-carbon/40 mt-1">{skus.length} SKUs · €{Math.round(totalExpectedSales).toLocaleString()} expected revenue · {marginPercentage.toFixed(0)}% margin</p>
+          </div>
+
+          {/* Key metrics as visual circles */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {/* Margin */}
+            <div className="flex flex-col items-center text-center">
+              <svg width="64" height="64" className="transform -rotate-90">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="3" />
+                <circle cx="32" cy="32" r="28" fill="none" stroke={marginPercentage >= frameworkValidation.marginTarget - 5 ? '#2d6a4f' : '#c77000'} strokeWidth="3"
+                  strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - Math.min(marginPercentage, 100) / 100)} strokeLinecap="round" className="transition-all duration-700" />
+                <text x="32" y="32" textAnchor="middle" dominantBaseline="central" className="text-[11px] font-semibold fill-carbon" transform="rotate(90 32 32)">{marginPercentage.toFixed(0)}%</text>
+              </svg>
+              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">Margin</span>
+              <span className="text-[9px] text-carbon/25">target {frameworkValidation.marginTarget}%</span>
+            </div>
+
+            {/* Avg Price */}
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full border-[3px] border-carbon/[0.06] flex items-center justify-center">
+                <span className="text-[13px] font-semibold text-carbon">€{frameworkValidation.avgPrice}</span>
+              </div>
+              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">Avg Price</span>
+              <span className="text-[9px] text-carbon/25">target €{frameworkValidation.avgPriceTarget}</span>
+            </div>
+
+            {/* SKU Count */}
+            <div className="flex flex-col items-center text-center">
+              <svg width="64" height="64" className="transform -rotate-90">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="3" />
+                <circle cx="32" cy="32" r="28" fill="none" stroke="#2d6a4f" strokeWidth="3"
+                  strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - Math.min(skus.length / (setupData.expectedSkus || 1), 1))} strokeLinecap="round" className="transition-all duration-700" />
+                <text x="32" y="32" textAnchor="middle" dominantBaseline="central" className="text-[11px] font-semibold fill-carbon" transform="rotate(90 32 32)">{skus.length}</text>
+              </svg>
+              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">SKUs</span>
+              <span className="text-[9px] text-carbon/25">of {setupData.expectedSkus} planned</span>
+            </div>
+
+            {/* Sales vs Target */}
+            <div className="flex flex-col items-center text-center">
+              <svg width="64" height="64" className="transform -rotate-90">
+                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="3" />
+                <circle cx="32" cy="32" r="28" fill="none" stroke={Math.abs(totalExpectedSales - setupData.totalSalesTarget) / setupData.totalSalesTarget < 0.05 ? '#2d6a4f' : '#c77000'} strokeWidth="3"
+                  strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - Math.min(totalExpectedSales / (setupData.totalSalesTarget || 1), 1))} strokeLinecap="round" className="transition-all duration-700" />
+                <text x="32" y="32" textAnchor="middle" dominantBaseline="central" className="text-[9px] font-semibold fill-carbon" transform="rotate(90 32 32)">€{Math.round(totalExpectedSales / 1000)}K</text>
+              </svg>
+              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">Revenue</span>
+              <span className="text-[9px] text-carbon/25">target €{Math.round(setupData.totalSalesTarget / 1000)}K</span>
+            </div>
+          </div>
+
+          {/* Distribution bars */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5 border-t border-carbon/[0.05]">
+            {/* Family mix */}
+            <div>
+              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-2">{t.plannerSections.familyMix}</h4>
+              <div className="space-y-1.5">
+                {frameworkValidation.familyDistribution.map((fam) => (
+                  <div key={fam.name} className="flex items-center gap-2">
+                    <span className="text-[11px] text-carbon/60 w-24 truncate">{fam.name}</span>
+                    <div className="flex-1 h-1.5 bg-carbon/[0.04] overflow-hidden">
+                      <div className="h-full bg-carbon/30 transition-all duration-500" style={{ width: `${fam.actual}%` }} />
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Type Distribution */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.typeMix}</h4>
-                <div className="space-y-1">
-                  {frameworkValidation.typeDistribution.map((t) => (
-                    <div key={t.name} className="flex items-center justify-between text-xs">
-                      <span>{t.name}</span>
-                      <span className={`font-medium ${Math.abs(t.actual - t.target) <= 10 ? 'text-green-600' : 'text-orange-600'}`}>
-                        {t.actual}% / {t.target}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Average Price */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">Avg Price</h4>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Current</span>
-                    <span className="font-medium">€{frameworkValidation.avgPrice}</span>
+                    <span className={`text-[10px] tabular-nums w-10 text-right ${Math.abs(fam.actual - fam.target) <= 10 ? 'text-carbon/40' : 'text-amber-600'}`}>{fam.actual}%</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Target</span>
-                    <span className="font-medium">€{frameworkValidation.avgPriceTarget}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Diff</span>
-                    <span className={`font-medium ${Math.abs(frameworkValidation.avgPriceDiff) <= 15 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {frameworkValidation.avgPriceDiff > 0 ? '+' : ''}{frameworkValidation.avgPriceDiff}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Margin */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.margin}</h4>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Current</span>
-                    <span className="font-medium">{marginPercentage.toFixed(1)}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Target</span>
-                    <span className="font-medium">{frameworkValidation.marginTarget}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span>Diff</span>
-                    <span className={`font-medium ${frameworkValidation.marginDiff >= -5 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {frameworkValidation.marginDiff > 0 ? '+' : ''}{frameworkValidation.marginDiff}%
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Second row: Role + Origin distribution */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 mt-4 pt-4 border-t border-blue-200">
-              {/* Role Distribution */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.productRoleMix}</h4>
-                <div className="space-y-1">
-                  {frameworkValidation.roleDistribution.map((r) => (
-                    <div key={r.name} className="flex items-center justify-between text-xs">
-                      <span>{r.name}</span>
-                      <span className="font-medium">{r.actual}%</span>
+            {/* Type mix */}
+            <div>
+              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-2">{t.plannerSections.typeMix}</h4>
+              <div className="space-y-1.5">
+                {frameworkValidation.typeDistribution.map((td) => {
+                  const colors: Record<string, string> = { REVENUE: 'bg-carbon/40', IMAGEN: 'bg-carbon/25', ENTRY: 'bg-carbon/15' };
+                  return (
+                    <div key={td.name} className="flex items-center gap-2">
+                      <span className="text-[11px] text-carbon/60 w-24">{td.name}</span>
+                      <div className="flex-1 h-1.5 bg-carbon/[0.04] overflow-hidden">
+                        <div className={`h-full ${colors[td.name] || 'bg-carbon/20'} transition-all duration-500`} style={{ width: `${td.actual}%` }} />
+                      </div>
+                      <span className={`text-[10px] tabular-nums w-10 text-right ${Math.abs(td.actual - td.target) <= 10 ? 'text-carbon/40' : 'text-amber-600'}`}>{td.actual}%</span>
                     </div>
-                  ))}
-                </div>
-                {(() => {
-                  const carryPct = (frameworkValidation.roleDistribution.find(r => r.name === 'Bestseller')?.actual || 0) + (frameworkValidation.roleDistribution.find(r => r.name === 'Carry-over')?.actual || 0);
-                  return carryPct > 0 && carryPct < 50 ? (
-                    <p className="text-[10px] text-orange-600 mt-1">Tip: aim for 60-70% carry-over + bestseller for lower risk</p>
-                  ) : null;
-                })()}
-              </div>
-
-              {/* Origin Distribution */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-blue-900">{t.plannerSections.originMix}</h4>
-                <div className="space-y-1">
-                  {frameworkValidation.originDistribution.filter(o => o.actual > 0).map((o) => (
-                    <div key={o.name} className="flex items-center justify-between text-xs">
-                      <span>{o.name}</span>
-                      <span className="font-medium">{o.actual}%</span>
-                    </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Add SKU Form — collapsible */}
