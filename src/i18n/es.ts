@@ -824,6 +824,10 @@ export const es: Dictionary = {
     select: 'Seleccionar',
     editFamilies: 'Editar familias',
     chooseAnother: '\u2190 Elegir otra',
+    // Etiquetas de prioridad
+    priorityCore: 'Familia Clave',
+    priorityStrategic: 'Estrat\u00E9gica',
+    priorityComplementary: 'Opcional',
     // Contenido de Precios
     minPrice: 'M\u00EDn \u20AC',
     maxPrice: 'M\u00E1x \u20AC',
@@ -867,6 +871,27 @@ export const es: Dictionary = {
     allCardsValidated: 'Todas las tarjetas validadas \u2014 construye tu colecci\u00F3n de SKUs',
     validateAllCards: 'Valida las 4 tarjetas de arriba para desbloquear',
     openBuilder: 'Abrir Builder',
+    // Error
+    // Copy de AI Proposal
+    aiProposalFamilies: 'Aimily analizar\u00E1 tu brief creativo \u2014 perfiles de consumidor, vibe de colecci\u00F3n, ADN de marca, investigaci\u00F3n de mercado y tendencias \u2014 para proponer',
+    aiProposalFamiliesBold: 'familias de producto ordenadas por oportunidad de mercado',
+    aiProposalPricing: 'Aimily analizar\u00E1 tus familias de producto validadas, el poder adquisitivo del consumidor, posicionamiento de marca y panorama competitivo para generar una',
+    aiProposalPricingBold: 'arquitectura de precios con rangos m\u00EDn/m\u00E1x por subcategor\u00EDa',
+    aiProposalChannels: 'Aimily analizar\u00E1 el posicionamiento de tu marca, perfiles de consumidor, rango de precios y panorama competitivo para recomendar los',
+    aiProposalChannelsBold: 'canales de distribuci\u00F3n y mercados objetivo ordenados por oportunidad',
+    aiProposalBudget: 'Aimily analizar\u00E1 tus familias de producto, arquitectura de precios, canales de distribuci\u00F3n y alcance de mercado para construir un',
+    aiProposalBudgetBold: 'plan financiero completo con objetivos de venta, m\u00E1rgenes y segmentaci\u00F3n',
+    proposeFamilies: 'Proponer Familias',
+    regenerate: 'Regenerar',
+    entryLabel: 'Entrada',
+    // Overlay de celebraci\u00F3n
+    celebrationTitle: 'Tu plan de merchandising est\u00E1',
+    celebrationTitleItalic: 'completo',
+    celebrationBody: 'Familias, precios, canales, presupuesto \u2014 la arquitectura comercial est\u00E1 definida. Tu colecci\u00F3n tiene estructura. Es hora de construirla.',
+    celebrationQuote: 'Estrategia sin ejecuci\u00F3n es un sue\u00F1o. T\u00FA tienes ambas.',
+    celebrationCta: 'Abrir Collection Builder',
+    celebrationBack: 'Volver al Dashboard',
+    celebrationDismiss: 'Quedarme aqu\u00ED y seguir editando',
     // Error
     networkError: 'Error de red',
     aiGenerationFailed: 'La generaci\u00F3n IA ha fallado',

@@ -1049,6 +1049,10 @@ export const en = {
     select: 'Select',
     editFamilies: 'Edit families',
     chooseAnother: '\u2190 Choose another',
+    // Priority labels
+    priorityCore: 'Key Family',
+    priorityStrategic: 'Strategic',
+    priorityComplementary: 'Nice to have',
     // Pricing content
     minPrice: 'Min \u20AC',
     maxPrice: 'Max \u20AC',
@@ -1092,6 +1096,26 @@ export const en = {
     allCardsValidated: 'All cards validated \u2014 build your SKU collection',
     validateAllCards: 'Validate all 4 cards above to unlock',
     openBuilder: 'Open Builder',
+    // AI Proposal copy
+    aiProposalFamilies: 'Aimily will analyze your creative brief \u2014 consumer profiles, collection vibe, brand DNA, market research, and seasonal trends \u2014 to propose',
+    aiProposalFamiliesBold: 'product families ranked by market opportunity',
+    aiProposalPricing: 'Aimily will analyze your validated product families, consumer purchasing power, brand positioning, and competitive landscape to generate a',
+    aiProposalPricingBold: 'price architecture with min/max ranges per subcategory',
+    aiProposalChannels: 'Aimily will analyze your brand positioning, consumer profiles, pricing tier, and competitive landscape to recommend the',
+    aiProposalChannelsBold: 'optimal distribution channels and target markets ranked by opportunity',
+    aiProposalBudget: 'Aimily will analyze your product families, pricing architecture, distribution channels, and market scope to build a',
+    aiProposalBudgetBold: 'complete financial plan with sales targets, margins, and collection segmentation',
+    proposeFamilies: 'Propose Families',
+    regenerate: 'Regenerate',
+    entryLabel: 'Entry',
+    // Celebration overlay
+    celebrationTitle: 'Your merchandising plan',
+    celebrationTitleItalic: 'complete',
+    celebrationBody: 'Families, pricing, channels, budget \u2014 the commercial architecture is set. Your collection has structure now. Time to build it.',
+    celebrationQuote: 'Strategy without execution is a daydream. You have both.',
+    celebrationCta: 'Open Collection Builder',
+    celebrationBack: 'Back to Dashboard',
+    celebrationDismiss: 'Stay here and keep editing',
     // Error
     networkError: 'Network error',
     aiGenerationFailed: 'AI generation failed',

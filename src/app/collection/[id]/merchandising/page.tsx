@@ -78,26 +78,34 @@ interface Family {
 }
 
 /* ─── Priority badge + selector ─── */
-const PRIORITY_CONFIG = {
-  core: { label: 'Core', bg: 'bg-carbon text-crema' },
-  strategic: { label: 'Strategic', bg: 'bg-carbon/[0.15] text-carbon' },
-  complementary: { label: 'Nice to have', bg: 'bg-carbon/[0.06] text-carbon/50' },
+const PRIORITY_STYLES = {
+  core: 'bg-carbon text-crema',
+  strategic: 'bg-carbon/[0.15] text-carbon',
+  complementary: 'bg-carbon/[0.06] text-carbon/50',
+} as const;
+
+const PRIORITY_KEYS = {
+  core: 'priorityCore',
+  strategic: 'priorityStrategic',
+  complementary: 'priorityComplementary',
 } as const;
 
 type Priority = 'core' | 'strategic' | 'complementary';
 
 function PriorityBadge({ priority, onCycle }: { priority?: Priority | string; onCycle: () => void }) {
+  const t = useTranslation();
   const validPriorities: Priority[] = ['core', 'strategic', 'complementary'];
   const p: Priority = validPriorities.includes(priority as Priority) ? (priority as Priority) : 'core';
-  const config = PRIORITY_CONFIG[p];
+  const style = PRIORITY_STYLES[p];
+  const label = t.merchandising[PRIORITY_KEYS[p] as keyof typeof t.merchandising] as string;
   return (
     <button
       type="button"
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCycle(); }}
-      className={`px-2.5 py-1 text-[10px] font-semibold tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${config.bg}`}
+      className={`px-2.5 py-1 text-[10px] font-semibold tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${style}`}
       title="Click to change priority"
     >
-      {config.label}
+      {label}
     </button>
   );
 }
@@ -244,7 +252,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
       {mode === 'ai' && (
         <div className="space-y-4">
           <p className="text-sm text-carbon/60 leading-relaxed">
-            Aimily will analyze your creative brief — consumer profiles, collection vibe, brand DNA, market research, and seasonal trends — to propose <strong>product families ranked by market opportunity</strong>.
+            {t.merchandising.aiProposalFamilies} <strong>{t.merchandising.aiProposalFamiliesBold}</strong>.
           </p>
           <button
             onClick={async () => {
@@ -259,7 +267,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {families.length > 0 ? 'Regenerate' : 'Propose Families'}
+            {families.length > 0 ? t.merchandising.regenerate : t.merchandising.proposeFamilies}
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
           {/* Editable result — same as Assisted */}
@@ -350,7 +358,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
         <div className="space-y-4">
           {mode === 'ai' && !pricing.length && (
             <p className="text-sm text-carbon/60 leading-relaxed">
-              Aimily will analyze your validated product families, consumer purchasing power, brand positioning, and competitive landscape to generate a <strong>price architecture with min/max ranges per subcategory</strong>.
+              {t.merchandising.aiProposalPricing} <strong>{t.merchandising.aiProposalPricingBold}</strong>.
             </p>
           )}
           {mode === 'assisted' && (
@@ -477,7 +485,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
         <div className="space-y-4">
           {mode === 'ai' && !markets.length && (
             <p className="text-sm text-carbon/60 leading-relaxed">
-              Aimily will analyze your brand positioning, consumer profiles, pricing tier, and competitive landscape to recommend the <strong>optimal distribution channels and target markets ranked by opportunity</strong>.
+              {t.merchandising.aiProposalChannels} <strong>{t.merchandising.aiProposalChannelsBold}</strong>.
             </p>
           )}
           {mode === 'assisted' && (
@@ -516,7 +524,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
                   <div className="flex-1">
                     <div className="text-sm font-medium text-carbon">{m.name} <span className="text-carbon/40 font-normal">{'\u00B7'} {m.region}</span></div>
                     <div className="text-xs text-carbon/60 mt-0.5">{m.rationale}</div>
-                    {m.entryStrategy && <div className="text-[11px] text-carbon/40 mt-1 italic">Entry: {m.entryStrategy}</div>}
+                    {m.entryStrategy && <div className="text-[11px] text-carbon/40 mt-1 italic">{t.merchandising.entryLabel}: {m.entryStrategy}</div>}
                   </div>
                 </div>
               ))}
@@ -595,7 +603,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
         <div className="space-y-4">
           {mode === 'ai' && !(data.salesTarget as number) && (
             <p className="text-sm text-carbon/60 leading-relaxed">
-              Aimily will analyze your product families, pricing architecture, distribution channels, and market scope to build a <strong>complete financial plan with sales targets, margins, and collection segmentation</strong>.
+              {t.merchandising.aiProposalBudget} <strong>{t.merchandising.aiProposalBudgetBold}</strong>.
             </p>
           )}
           {mode === 'assisted' && (
@@ -1056,16 +1064,15 @@ export default function MerchandisingPage() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
-              Your merchandising plan<br />is <span className="italic">complete</span>.
+              {t.merchandising.celebrationTitle}<br /><span className="italic">{t.merchandising.celebrationTitleItalic}</span>.
             </h2>
 
             <p className="text-sm sm:text-base font-light text-crema/60 leading-relaxed max-w-lg mx-auto mb-4" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
-              Families, pricing, channels, budget — the commercial architecture is set.
-              Your collection has structure now. Time to build it.
+              {t.merchandising.celebrationBody}
             </p>
 
             <p className="text-xs text-crema/30 italic mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
-              Strategy without execution is a daydream. You have both.
+              {t.merchandising.celebrationQuote}
             </p>
 
             {/* CTAs */}
@@ -1074,13 +1081,13 @@ export default function MerchandisingPage() {
                 onClick={() => router.push(`/collection/${collectionId}/product`)}
                 className="flex items-center gap-3 px-8 py-3.5 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-white transition-colors"
               >
-                Open Collection Builder <ArrowRight className="h-4 w-4" />
+                {t.merchandising.celebrationCta} <ArrowRight className="h-4 w-4" />
               </button>
               <button
                 onClick={() => router.push(`/collection/${collectionId}`)}
                 className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/50 border border-crema/15 hover:text-crema/80 hover:border-crema/30 transition-colors"
               >
-                Back to Dashboard
+                {t.merchandising.celebrationBack}
               </button>
             </div>
 
@@ -1089,7 +1096,7 @@ export default function MerchandisingPage() {
               onClick={() => setShowCelebration(false)}
               className="mt-8 text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 transition-colors"
             >
-              Stay here and keep editing
+              {t.merchandising.celebrationDismiss}
             </button>
           </div>
         </div>
