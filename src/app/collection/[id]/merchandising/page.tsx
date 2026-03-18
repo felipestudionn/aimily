@@ -74,6 +74,36 @@ const INPUT_MODE_KEYS: Record<InputMode, { label: string; desc: string }> = {
 interface Family {
   name: string;
   subcategories: string[];
+  priority?: 'core' | 'strategic' | 'complementary';
+}
+
+/* ─── Priority badge + selector ─── */
+const PRIORITY_CONFIG = {
+  core: { label: 'Core', bg: 'bg-carbon text-crema' },
+  strategic: { label: 'Strategic', bg: 'bg-carbon/[0.15] text-carbon' },
+  complementary: { label: 'Nice to have', bg: 'bg-carbon/[0.06] text-carbon/50' },
+} as const;
+
+type Priority = 'core' | 'strategic' | 'complementary';
+
+function PriorityBadge({ priority, onCycle }: { priority?: Priority; onCycle: () => void }) {
+  const p = priority || 'core';
+  const config = PRIORITY_CONFIG[p];
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onCycle(); }}
+      className={`px-2 py-0.5 text-[10px] font-medium tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${config.bg}`}
+      title="Click to cycle priority"
+    >
+      {config.label}
+    </button>
+  );
+}
+
+function cyclePriority(current?: Priority): Priority {
+  const order: Priority[] = ['core', 'strategic', 'complementary'];
+  const idx = order.indexOf(current || 'core');
+  return order[(idx + 1) % order.length];
 }
 
 /* ─── Content Components ─── */
@@ -88,7 +118,12 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
   const [error, setError] = useState<string | null>(null);
   const families = (data.families as Family[]) || [];
 
-  const addFamily = () => onChange({ ...data, families: [...families, { name: '', subcategories: [''] }] });
+  const addFamily = () => onChange({ ...data, families: [...families, { name: '', subcategories: [''], priority: 'core' as Priority }] });
+  const cycleFamilyPriority = (i: number) => {
+    const updated = [...families];
+    updated[i] = { ...updated[i], priority: cyclePriority(updated[i].priority) };
+    onChange({ ...data, families: updated });
+  };
   const removeFamily = (i: number) => onChange({ ...data, families: families.filter((_, j) => j !== i) });
   const updateFamilyName = (i: number, name: string) => {
     const updated = [...families];
@@ -120,6 +155,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
           {families.map((fam, fi) => (
             <div key={fi} className="border border-carbon/[0.08] p-5 space-y-3">
               <div className="flex items-center gap-3">
+                <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
                 <input
                   value={fam.name}
                   onChange={(e) => updateFamilyName(fi, e.target.value)}
@@ -184,7 +220,10 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.aiSuggestion} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
               {families.map((fam, fi) => (
                 <div key={fi} className="border border-carbon/[0.08] p-4 space-y-2">
-                  <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="w-full px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                  <div className="flex items-center gap-3">
+                    <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
+                    <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                  </div>
                   {fam.subcategories.map((sub, si) => (
                     <div key={si} className="flex items-center gap-2 ml-4">
                       <span className="text-carbon/20 text-xs">{'\u2514'}</span>
@@ -228,6 +267,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               {families.map((fam, fi) => (
                 <div key={fi} className="border border-carbon/[0.08] p-4 space-y-2">
                   <div className="flex items-center gap-3">
+                    <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
                     <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
                     <button onClick={() => removeFamily(fi)} className="text-carbon/30 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                   </div>
@@ -871,7 +911,7 @@ export default function MerchandisingPage() {
               </div>
 
               {/* Expanded content */}
-              <div className="flex-1 bg-white border border-carbon/[0.06] overflow-hidden flex flex-col" style={{ animation: 'expandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards', minHeight: 'calc(100vh - 260px)' }}>
+              <div className="flex-1 bg-white border border-carbon/[0.06] overflow-visible flex flex-col" style={{ animation: 'expandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards', minHeight: 'calc(100vh - 260px)' }}>
                 {(() => {
                   const card = MERCH_CARDS.find((c) => c.id === expandedCard);
                   if (!card) return null;
@@ -1056,9 +1096,8 @@ export default function MerchandisingPage() {
       {/* Animations */}
       <style jsx>{`
         @keyframes expandIn {
-          0% { opacity: 0; transform: scale(0.92) translateY(-8px); max-height: 400px; }
-          40% { opacity: 1; transform: scale(1) translateY(0); max-height: 400px; }
-          100% { opacity: 1; transform: scale(1) translateY(0); max-height: 2000px; }
+          0% { opacity: 0; transform: scale(0.92) translateY(-8px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
         }
         @keyframes gridIn {
           0% { opacity: 0; transform: scale(1.02); }

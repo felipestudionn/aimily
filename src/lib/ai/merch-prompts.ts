@@ -74,10 +74,16 @@ Return:
     {
       "name": "Family Name (industry-standard naming)",
       "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
+      "priority": "core" or "strategic" or "complementary",
       "rationale": "15-25 words: why this family and these subcategories for this specific collection"
     }
   ]
-}`,
+}
+
+Priority levels:
+- "core": Essential families — highest revenue potential, must-have for the collection to work commercially
+- "strategic": Important differentiators — builds brand identity, attracts the target consumer, may not be the highest volume
+- "complementary": Nice-to-have — completes the offering, enables cross-selling, can be cut if budget is tight`,
       };
 
     case 'families-proposals':
@@ -117,10 +123,18 @@ Return:
     {
       "name": "Family Name (industry-standard naming: Shirts, Trousers, Knitwear, Footwear, etc.)",
       "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
+      "priority": "core" or "strategic" or "complementary",
       "rationale": "15-25 words: why this family and these subcategories for this specific collection"
     }
   ]
-}`,
+}
+
+Priority levels:
+- "core": Essential families — highest revenue potential, must-have for the collection to work commercially
+- "strategic": Important differentiators — builds brand identity, attracts the target consumer, may not be the highest volume
+- "complementary": Nice-to-have — completes the offering, enables cross-selling, can be cut if budget is tight
+
+Order families from highest to lowest priority.`,
       };
 
     // ═══════════════════════════════════════════════════
