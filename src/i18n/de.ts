@@ -1067,6 +1067,7 @@ export const de: Dictionary = {
     suggestPricing: 'Preise vorschlagen',
     generatePricingMatrix: 'Preismatrix generieren',
     aiPricing: 'KI-Pricing',
+    pricingThesisLabel: 'Preispositionierung',
     // Channels content
     distributionChannels: 'Vertriebskanäle',
     customChannelPlaceholder: 'Eigener Kanal...',

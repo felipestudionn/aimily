@@ -840,6 +840,7 @@ export const pt: Dictionary = {
     suggestPricing: 'Sugerir Preços',
     generatePricingMatrix: 'Gerar Matriz de Preços',
     aiPricing: 'Preços IA',
+    pricingThesisLabel: 'Posicionamento de Preço',
     // Conteúdo de Canais
     distributionChannels: 'Canais de Distribuição',
     customChannelPlaceholder: 'Canal personalizado...',

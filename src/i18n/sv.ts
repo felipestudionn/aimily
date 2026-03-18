@@ -986,6 +986,7 @@ export const sv: Dictionary = {
     suggestPricing: 'Föreslå prissättning',
     generatePricingMatrix: 'Generera prismatris',
     aiPricing: 'AI-prissättning',
+    pricingThesisLabel: 'Prispositionering',
     distributionChannels: 'Distributionskanaler',
     customChannelPlaceholder: 'Anpassad kanal...',
     targetMarkets: 'Målmarknader',

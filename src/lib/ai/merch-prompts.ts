@@ -207,21 +207,29 @@ ${input.families}
 
 Generate a complete pricing matrix. The user hasn't given specific direction — you must deduce the optimal price architecture entirely from the inherited context.
 
-PRICING METHODOLOGY:
-1. START FROM THE BRAND DNA — Read the brand identity carefully. What tier is this brand? What are the reference brands mentioned in the brand DNA or competitive landscape? Price accordingly — do NOT default to accessible-premium if the brand DNA suggests a higher positioning.
-2. CONSUMER PURCHASING POWER — What does the consumer profile say about income, shopping behavior, basket size? A consumer who shops at Jacquemus, Loewe, or Isabel Marant has a different price tolerance than one who shops at COS or Mango.
-3. TREND POSITIONING — If the selected trends reference premium or luxury brands, the pricing should reflect that tier, not a generic mid-range.
-4. PRICE ARCHITECTURE — Build a clear price ladder WITHIN each family (entry subcategory → core → premium subcategory)
-5. CROSS-FAMILY LOGIC — Accessories can be accessible entry points, hero categories command premium
-6. All prices in EUR, rounded to clean retail numbers
+STEP 1 — SYNTHESIZE A PRICING THESIS (include this in your response as "pricingThesis"):
+Before generating ANY prices, analyze all available data and write a clear positioning statement:
+a) List the SPECIFIC competitor price ranges mentioned in the competitive landscape above. Calculate the average price range across all selected competitors.
+b) Cross-reference with consumer basket sizes from the consumer profiles. What's the weighted average basket?
+c) Determine WHERE this collection sits relative to the competitors. Between which two brands? Closer to which one?
+d) State the target ASP (Average Selling Price) range in one sentence. Example: "Positioning between Aimé Leon Dore (€200-700) and Ralph Lauren premium (€150-800), targeting ASP €180-450 per piece."
 
-CRITICAL: Do NOT anchor to any default price range. Let the brand DNA, consumer profile, and competitive references in the creative brief determine the tier. If the brief mentions luxury references, price at luxury. If it mentions accessible brands, price accessible.
+STEP 2 — GENERATE PRICES ANCHORED TO THE THESIS:
+Every price must be consistent with the thesis from Step 1. If your thesis says ASP €180-450, no core item should be priced at €89.
+
+PRICING RULES:
+1. COMPETITIVE ANCHORING — For each subcategory, reference the SPECIFIC competitor whose pricing you're benchmarking against. If competitors sell shirts at €150-€400, your shirts should be in that range, not €89-€129.
+2. PRICE ARCHITECTURE — Clear ladder within each family: entry → core → premium subcategory
+3. CROSS-FAMILY LOGIC — Accessories as accessible entry points, hero categories command premium
+4. CONSUMER ALIGNMENT — Prices within the consumer basket range. If basket is €220-420, individual items should make sense within that spend.
+5. All prices in EUR, rounded to clean retail numbers
 
 ${QUALITY_GATES.merchSpecificity}
 ${OUTPUT_RULES}
 
 Return:
 {
+  "pricingThesis": "2-3 sentences: your positioning analysis — which competitors you're benchmarking against, the target price range, and why. Include specific price references from the competitive data.",
   "pricing": [
     {
       "family": "Family Name",
@@ -230,7 +238,7 @@ Return:
           "name": "Subcategory",
           "minPrice": 0,
           "maxPrice": 0,
-          "rationale": "10-20 words: pricing logic"
+          "rationale": "10-20 words: vs [Competitor] at €X — positioned [above/below/at parity] because [reason]"
         }
       ]
     }

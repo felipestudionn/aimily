@@ -986,6 +986,7 @@ export const no: Dictionary = {
     suggestPricing: 'Foreslå priser',
     generatePricingMatrix: 'Generer prismatrise',
     aiPricing: 'AI-priser',
+    pricingThesisLabel: 'Prisposisjonering',
     distributionChannels: 'Distribusjonskanaler',
     customChannelPlaceholder: 'Tilpasset kanal...',
     targetMarkets: 'Målmarkeder',

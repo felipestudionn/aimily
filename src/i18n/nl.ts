@@ -1067,6 +1067,7 @@ export const nl: Dictionary = {
     suggestPricing: 'Prijzen voorstellen',
     generatePricingMatrix: 'Prijsmatrix genereren',
     aiPricing: 'AI-pricing',
+    pricingThesisLabel: 'Prijspositionering',
     // Channels content
     distributionChannels: 'Distributiekanalen',
     customChannelPlaceholder: 'Eigen kanaal...',

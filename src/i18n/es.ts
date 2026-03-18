@@ -841,6 +841,7 @@ export const es: Dictionary = {
     suggestPricing: 'Sugerir Precios',
     generatePricingMatrix: 'Generar Matriz de Precios',
     aiPricing: 'Precios IA',
+    pricingThesisLabel: 'Posicionamiento de Precio',
     // Contenido de Canales
     distributionChannels: 'Canales de Distribuci\u00F3n',
     customChannelPlaceholder: 'Canal personalizado...',

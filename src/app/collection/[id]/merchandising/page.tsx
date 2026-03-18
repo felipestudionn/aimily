@@ -310,7 +310,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
   const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  type PricingRow = { family: string; subcategories: { name: string; minPrice: number; maxPrice: number }[] };
+  type PricingRow = { family: string; subcategories: { name: string; minPrice: number; maxPrice: number; rationale?: string }[] };
   const pricing = (data.pricing as PricingRow[]) || [];
 
   const familiesStr = familiesData.map(f => `${f.name}: ${f.subcategories.join(', ')}`).join(' | ');
@@ -396,8 +396,8 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                 ...collectionContext,
               }, language);
               if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { pricing: PricingRow[] };
-              onChange({ ...data, pricing: parsed.pricing || [] });
+              const parsed = result as { pricing: PricingRow[]; pricingThesis?: string };
+              onChange({ ...data, pricing: parsed.pricing || [], pricingThesis: parsed.pricingThesis || '' });
               setGenerating(false);
             }}
             disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
@@ -411,16 +411,26 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
           {pricing.length > 0 && (
             <div className="space-y-4 pt-2">
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.aiPricing} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
+              {/* Pricing Thesis */}
+              {(data.pricingThesis as string) && (
+                <div className="p-4 bg-carbon/[0.03] border border-carbon/[0.08]">
+                  <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.merchandising.pricingThesisLabel}</div>
+                  <p className="text-sm text-carbon/70 leading-relaxed italic">{data.pricingThesis as string}</p>
+                </div>
+              )}
               {pricing.map((fam, fi) => (
                 <div key={fi} className="space-y-2">
                   <div className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon">{fam.family}</div>
                   {fam.subcategories.map((sub, si) => (
-                    <div key={si} className="flex items-center gap-3 ml-4">
-                      <span className="text-sm text-carbon/60 w-40 truncate">{sub.name}</span>
-                      <span className="text-xs text-carbon/30">{t.merchandising.minPrice}</span>
-                      <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
-                      <span className="text-xs text-carbon/30">{t.merchandising.maxPrice}</span>
-                      <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                    <div key={si} className="ml-4 space-y-0.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-carbon/60 w-40 truncate" title={sub.name}>{sub.name}</span>
+                        <span className="text-xs text-carbon/30">{t.merchandising.minPrice}</span>
+                        <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                        <span className="text-xs text-carbon/30">{t.merchandising.maxPrice}</span>
+                        <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                      </div>
+                      {sub.rationale && <div className="text-[10px] text-carbon/40 italic ml-0.5">{sub.rationale}</div>}
                     </div>
                   ))}
                 </div>

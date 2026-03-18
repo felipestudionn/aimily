@@ -1066,6 +1066,7 @@ export const en = {
     suggestPricing: 'Suggest Pricing',
     generatePricingMatrix: 'Generate Pricing Matrix',
     aiPricing: 'AI Pricing',
+    pricingThesisLabel: 'Pricing Positioning',
     // Channels content
     distributionChannels: 'Distribution Channels',
     customChannelPlaceholder: 'Custom channel...',
