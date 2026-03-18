@@ -921,14 +921,18 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   onClick={() => openSkuDetail(sku)}
                 >
                   {/* Image / Name area */}
-                  <div className="aspect-square bg-carbon/[0.02] relative flex items-center justify-center">
+                  <div className="aspect-square bg-carbon/[0.02] relative">
                     {sku.reference_image_url ? (
                       <img src={sku.reference_image_url} alt={sku.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="px-4 text-center">
-                        <p className="text-[13px] font-light text-carbon leading-snug mb-2">{sku.name}</p>
-                        <ImagePlus className="h-5 w-5 text-carbon/10 mx-auto" />
-                        <p className="text-[9px] text-carbon/15 mt-1">No image yet</p>
+                      <div className="w-full h-full flex flex-col justify-between p-3">
+                        {/* Name top-left */}
+                        <p className="text-[13px] font-light text-carbon leading-snug pr-16">{sku.name}</p>
+                        {/* No image bottom-right */}
+                        <div className="flex items-center gap-1 self-end">
+                          <ImagePlus className="h-3.5 w-3.5 text-carbon/10" />
+                          <span className="text-[9px] text-carbon/15">No image yet</span>
+                        </div>
                       </div>
                     )}
                     {/* Type Badge */}
