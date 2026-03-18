@@ -847,7 +847,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       <td className="py-2 px-2 text-right font-medium">€{Math.round(sku.expected_sales).toLocaleString()}</td>
                       <td className="py-2 px-2 text-right">
                         <span className={sku.margin >= 50 ? 'text-carbon' : 'text-carbon/40'}>
-                          {sku.margin.toFixed(1)}%
+                          {Math.round(sku.margin)}%
                         </span>
                       </td>
                       <td className="py-2 px-2 text-right">
@@ -871,11 +871,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               {skus.map((sku) => (
                 <div
                   key={sku.id}
-                  className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow cursor-pointer bg-white"
+                  className="border border-carbon/[0.06] overflow-hidden hover:border-carbon/15 transition-all cursor-pointer bg-white"
                   onClick={() => openSkuDetail(sku)}
                 >
-                  {/* Image Area */}
-                  <div className="aspect-square bg-gray-100 relative">
+                  {/* Image Area with name overlay */}
+                  <div className="aspect-[4/3] bg-carbon/[0.03] relative flex items-center justify-center">
                     {sku.reference_image_url ? (
                       <img
                         src={sku.reference_image_url}
@@ -883,9 +883,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                        <ImagePlus className="h-12 w-12 mb-2" />
-                        <span className="text-xs">No image</span>
+                      <div className="px-4 text-center">
+                        <p className="text-sm font-light text-carbon leading-tight">{sku.name}</p>
+                        <p className="text-[10px] text-carbon/30 mt-1 italic">{sku.family}</p>
                       </div>
                     )}
                     {/* Type Badge */}
@@ -896,38 +896,23 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
                     </span>
                   </div>
-                  
-                  {/* Content */}
-                  <div className="p-4">
-                    <h3 className="font-semibold text-sm mb-1 truncate">{sku.name}</h3>
-                    <p className="text-xs text-muted-foreground mb-3">{sku.family}</p>
-                    
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+
+                  {/* Compact metrics */}
+                  <div className="px-3 py-2.5 border-t border-carbon/[0.04]">
+                    <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                       <div>
-                        <span className="text-muted-foreground">PVP</span>
-                        <p className="font-semibold">€{sku.pvp}</p>
+                        <span className="text-carbon/30 uppercase tracking-wider">PVP</span>
+                        <p className="font-medium text-carbon text-xs">€{sku.pvp}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">{t.plannerSections.cost}</span>
-                        <p className="font-semibold">€{sku.cost}</p>
+                        <span className="text-carbon/30 uppercase tracking-wider">COGS</span>
+                        <p className="font-medium text-carbon text-xs">€{sku.cost}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">{t.plannerSections.units}</span>
-                        <p className="font-semibold">{sku.buy_units}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">{t.plannerSections.margin}</span>
-                        <p className={`font-semibold ${sku.margin >= 50 ? 'text-carbon' : 'text-carbon/40'}`}>
-                          {sku.margin.toFixed(1)}%
-                        </p>
+                        <span className="text-carbon/30 uppercase tracking-wider">{t.plannerSections.units}</span>
+                        <p className="font-medium text-carbon text-xs">{sku.buy_units}</p>
                       </div>
                     </div>
-                    
-                    {sku.notes && (
-                      <p className="text-xs text-muted-foreground mt-3 line-clamp-2 italic">
-                        "{sku.notes}"
-                      </p>
-                    )}
                   </div>
                 </div>
               ))}
@@ -1046,7 +1031,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   <div>
                     <span className="text-muted-foreground">{t.plannerSections.margin}</span>
                     <p className={`font-semibold text-lg ${selectedSku.margin >= 50 ? 'text-carbon' : 'text-carbon/40'}`}>
-                      {selectedSku.margin.toFixed(1)}%
+                      {Math.round(selectedSku.margin)}%
                     </p>
                   </div>
                   <div>
