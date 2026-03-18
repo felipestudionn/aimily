@@ -881,15 +881,15 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             </div>
           ) : (
             /* Cards View — grouped by family */
-            <div className="space-y-8">
+            <div className="space-y-6">
               {(() => {
                 const cardFamilies = Array.from(new Set(skus.map(s => s.family)));
-                return cardFamilies.map(fam => {
+                return cardFamilies.map((fam, fIdx) => {
                   const famSkus = skus.filter(s => s.family === fam);
                   return (
                     <div key={fam}>
                       {/* Family pill header */}
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className={`flex items-center gap-3 mb-3 ${fIdx > 0 ? 'pt-2' : ''}`}>
                         <span className="px-4 py-1.5 text-xs font-medium text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
                         <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
@@ -906,9 +906,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       <img src={sku.reference_image_url} alt={sku.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="px-4 text-center">
-                        <ImagePlus className="h-6 w-6 text-carbon/10 mx-auto mb-2" />
-                        <p className="text-[13px] font-light text-carbon leading-snug">{sku.name}</p>
-                        <p className="text-[10px] text-carbon/25 mt-1 italic">{sku.family}</p>
+                        <p className="text-[13px] font-light text-carbon leading-snug mb-2">{sku.name}</p>
+                        <ImagePlus className="h-5 w-5 text-carbon/10 mx-auto" />
+                        <p className="text-[9px] text-carbon/15 mt-1">No image yet</p>
                       </div>
                     )}
                     {/* Type Badge */}
