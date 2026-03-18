@@ -925,15 +925,16 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     {sku.reference_image_url ? (
                       <img src={sku.reference_image_url} alt={sku.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex flex-col justify-between p-3">
-                        {/* Name top-left */}
-                        <p className="text-[13px] font-light text-carbon leading-snug pr-16">{sku.name}</p>
-                        {/* No image bottom-right */}
-                        <div className="flex items-center gap-1 self-end">
-                          <ImagePlus className="h-3.5 w-3.5 text-carbon/10" />
-                          <span className="text-[9px] text-carbon/15">No image yet</span>
+                      <>
+                        {/* Name centered */}
+                        <div className="absolute inset-0 flex items-center justify-center px-4">
+                          <p className="text-[13px] font-light text-carbon leading-snug text-center">{sku.name}</p>
                         </div>
-                      </div>
+                        {/* Add image — bottom right */}
+                        <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                          <ImagePlus className="h-5 w-5 text-carbon/[0.08]" />
+                        </div>
+                      </>
                     )}
                     {/* Type Badge */}
                     <span className={`absolute top-2 right-2 px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] uppercase text-white ${
