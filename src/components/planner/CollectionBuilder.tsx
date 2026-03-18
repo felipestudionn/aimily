@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [salePercentage, setSalePercentage] = useState(60);
   const [discount, setDiscount] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [autoGenerating, setAutoGenerating] = useState(false);
+  const [autoGenStep, setAutoGenStep] = useState(0);
+  const [autoGenDone, setAutoGenDone] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
   const [editingNotes, setEditingNotes] = useState('');
@@ -45,6 +48,90 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [importingSkus, setImportingSkus] = useState(false);
 
   const { skus, addSku, updateSku, deleteSku, loading } = useSkus(collectionPlanId);
+
+  // ── Auto-generate SKUs on first load (wow moment) ──
+  const autoGenSteps = [
+    t.plannerSections.autoGenStep1 || 'Reading your creative direction...',
+    t.plannerSections.autoGenStep2 || 'Analyzing product families & pricing...',
+    t.plannerSections.autoGenStep3 || 'Building SKU architecture...',
+    t.plannerSections.autoGenStep4 || 'Balancing revenue targets...',
+    t.plannerSections.autoGenStep5 || 'Your collection is ready.',
+  ];
+
+  useEffect(() => {
+    if (loading || autoGenDone || autoGenerating) return;
+    if (skus.length > 0) { setAutoGenDone(true); return; }
+    if (!setupData.totalSalesTarget || setupData.totalSalesTarget <= 0) return;
+    if (!setupData.expectedSkus || setupData.expectedSkus <= 0) return;
+
+    // Trigger auto-generation
+    setAutoGenerating(true);
+    setAutoGenStep(0);
+
+    // Step animation interval
+    const stepInterval = setInterval(() => {
+      setAutoGenStep(prev => {
+        if (prev < autoGenSteps.length - 2) return prev + 1;
+        return prev;
+      });
+    }, 2500);
+
+    // Actually generate
+    (async () => {
+      try {
+        const response = await fetch('/api/ai/generate-skus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            setupData,
+            count: setupData.expectedSkus,
+            language,
+          }),
+        });
+
+        if (!response.ok) throw new Error('Generation failed');
+
+        const { skus: suggestedSkus } = await response.json();
+
+        for (const suggested of suggestedSkus) {
+          const margin = ((suggested.pvp - suggested.cost) / suggested.pvp) * 100;
+          await addSku({
+            collection_plan_id: collectionPlanId,
+            name: suggested.name,
+            family: suggested.family || setupData.families?.[0] || 'General',
+            category: (setupData.productCategory || 'ROPA') as 'CALZADO' | 'ROPA' | 'ACCESORIOS',
+            type: suggested.type || 'REVENUE',
+            channel: 'DTC',
+            drop_number: suggested.drop || 1,
+            pvp: suggested.pvp,
+            cost: suggested.cost,
+            discount: 0,
+            final_price: suggested.pvp,
+            buy_units: suggested.suggestedUnits,
+            sale_percentage: 60,
+            expected_sales: suggested.expectedSales,
+            margin: Math.round(margin * 100) / 100,
+            launch_date: new Date().toISOString().split('T')[0],
+          });
+        }
+
+        // Show final step
+        setAutoGenStep(autoGenSteps.length - 1);
+        setTimeout(() => {
+          setAutoGenerating(false);
+          setAutoGenDone(true);
+        }, 2000);
+      } catch (err) {
+        console.error('Auto-generate failed:', err);
+        setAutoGenerating(false);
+        setAutoGenDone(true);
+      } finally {
+        clearInterval(stepInterval);
+      }
+    })();
+
+    return () => clearInterval(stepInterval);
+  }, [loading, skus.length, setupData.totalSalesTarget, setupData.expectedSkus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Carry-over: fetch SKUs from other collections
   const handleOpenCarryOver = async () => {
@@ -305,6 +392,51 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       setIsGenerating(false);
     }
   };
+
+  // ── Auto-generation overlay (wow moment) ──
+  if (autoGenerating) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center max-w-lg px-6" style={{ animation: 'fadeIn 0.6s ease-out forwards' }}>
+          {/* Animated logo */}
+          <div className="w-16 h-16 mx-auto mb-8 border border-carbon/20 flex items-center justify-center" style={{ animation: 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}>
+            <Loader2 className="h-6 w-6 text-carbon/40 animate-spin" />
+          </div>
+
+          <div className="text-[10px] font-medium tracking-[0.35em] uppercase text-carbon/25 mb-6" style={{ animation: 'fadeIn 0.6s ease-out 0.5s both' }}>
+            {t.plannerSections.aiBuilding || 'Aimily is building your collection'}
+          </div>
+
+          {/* Steps */}
+          <div className="space-y-3 mb-8">
+            {autoGenSteps.map((step, i) => (
+              <div
+                key={i}
+                className={`text-sm transition-all duration-700 ${
+                  i < autoGenStep ? 'text-carbon/30' :
+                  i === autoGenStep ? 'text-carbon font-medium' :
+                  'text-carbon/10'
+                }`}
+                style={i <= autoGenStep ? { animation: `slideUp 0.5s ease-out ${0.8 + i * 0.3}s both` } : { opacity: 0 }}
+              >
+                {i < autoGenStep && <span className="text-carbon/30 mr-2">&#10003;</span>}
+                {i === autoGenStep && <span className="inline-block w-1.5 h-1.5 bg-carbon rounded-full mr-2 animate-pulse" />}
+                {step}
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-48 h-[2px] bg-carbon/[0.06] mx-auto overflow-hidden">
+            <div
+              className="h-full bg-carbon transition-all duration-1000 ease-out"
+              style={{ width: `${((autoGenStep + 1) / autoGenSteps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
