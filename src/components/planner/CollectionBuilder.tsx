@@ -165,7 +165,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               sale_percentage: 60,
               expected_sales: suggested.expectedSales,
               margin: Math.round(margin * 100) / 100,
-              sku_role: 'NEW',
+              // sku_role not in DB schema
               launch_date: new Date().toISOString().split('T')[0],
             });
           }
