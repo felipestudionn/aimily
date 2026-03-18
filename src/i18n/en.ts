@@ -2215,6 +2215,31 @@ export const en = {
     cta_titleItalic: 'on the market.',
     cta_desc: 'From a spark of inspiration to a sold-out launch. One assistant. Every step. aimily is here to make your next collection the best one yet.',
   },
+
+  // ─── Range Plan ───
+  rangePlan: {
+    label: 'Range Plan',
+    collection: 'Collection',
+    familiesCount: 'families',
+    skusPlanned: 'SKUs planned',
+    whatsNextTitle: 'next',
+    whatsNextSubtitle: 'Your range plan is a living document — here\'s how it evolves.',
+    step1Title: 'Confirm draft',
+    step1Desc: 'Send this range plan to Design & Development as your starting point. You can still edit everything.',
+    step2Title: 'Design develops',
+    step2Desc: 'Each SKU gets sketches, materials, colorways, and tech packs. Real production costs replace estimates.',
+    step3Title: 'Refine together',
+    step3Desc: 'Strategy and design collaborate. SKUs are added, adjusted, or cut. The final collection emerges from this dialogue.',
+    motivational: 'You\'ve built the foundation. Design will bring it to life — and together, you\'ll refine it into your strongest collection yet.',
+    confirmDraftCta: 'Confirm Draft Range Plan',
+    celebrationTitle: 'confirmed',
+    celebrationDraftLabel: 'Draft range plan',
+    celebrationReadyDesc: 'SKUs across {families} families are now ready for Design & Development.',
+    celebrationFlowDesc: 'From here, design and strategy work as one. Sketches, materials, and production details will refine your range plan into a final collection. Every decision flows both ways.',
+    startDesign: 'Start Design & Development',
+    backToDashboard: 'Back to Dashboard',
+    stayEditing: 'Stay here and keep editing',
+  },
 };
 
 export type Dictionary = typeof en;

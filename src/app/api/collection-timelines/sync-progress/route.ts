@@ -37,7 +37,9 @@ const MILESTONE_MAP: Record<string, MilestoneMapping> = {
   'cr-1': { workspace: 'creative', check: hasBlock('consumer') },
   'cr-2': { workspace: 'creative', check: hasBlock('moodboard') },
   'br-1': { workspace: 'creative', check: hasBlock('brand-dna') },
+  'br-2': { workspace: 'creative', check: hasBlock('brand-dna') }, // Logo & Visual Identity — part of Brand DNA
   'br-3': { workspace: 'creative', check: hasBlock('vibe') },
+  'br-4': { workspace: 'creative', check: hasBlock('vibe') }, // Packaging Design — follows collection vibe
 
   // ── Merchandising & Planning ──
   'rp-1': { workspace: 'merchandising', check: hasBlock('families') },

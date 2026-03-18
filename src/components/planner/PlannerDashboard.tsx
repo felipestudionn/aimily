@@ -7,6 +7,7 @@ import type { CollectionPlan, SetupData } from "@/types/planner";
 import { CollectionBuilder } from './CollectionBuilder';
 import { useTranslation } from '@/i18n';
 import { useSkus } from '@/hooks/useSkus';
+import { useTimeline } from '@/contexts/TimelineContext';
 
 interface PlannerDashboardProps {
   plan: CollectionPlan;
@@ -32,6 +33,7 @@ const EMPTY_SETUP: SetupData = {
 export function PlannerDashboard({ plan }: PlannerDashboardProps) {
   const t = useTranslation();
   const router = useRouter();
+  const { updateMilestoneStatus } = useTimeline();
   const [setupData] = useState<SetupData>({ ...EMPTY_SETUP, ...plan.setup_data });
   const [showCelebration, setShowCelebration] = useState(false);
   const { skus } = useSkus(plan.id);
@@ -40,6 +42,9 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
   const displayName = plan.name.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   const handleConfirmDraft = () => {
+    // Mark Range Planning milestones as completed → unlocks Design block
+    updateMilestoneStatus('rp-5', 'completed'); // SKU Definition
+    updateMilestoneStatus('rp-6', 'completed'); // Go-to-Market Strategy → Design unlockWhen
     setShowCelebration(true);
   };
 
@@ -48,13 +53,13 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
       {/* Header */}
       <div className="mb-8">
         <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/25 mb-3">
-          Range Plan
+          {t.rangePlan.label}
         </p>
         <h1 className="text-2xl sm:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
-          {displayName} <span className="italic">Collection</span>
+          {displayName} <span className="italic">{t.rangePlan.collection}</span>
         </h1>
         <p className="text-xs text-carbon/35 mt-2 font-light">
-          {plan.season} · {setupData.productFamilies.length} families · {setupData.expectedSkus} SKUs planned
+          {plan.season} · {setupData.productFamilies.length} {t.rangePlan.familiesCount} · {setupData.expectedSkus} {t.rangePlan.skusPlanned}
         </p>
       </div>
 
@@ -68,49 +73,49 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
       {skus.length > 0 && (
         <div className="mt-8 bg-white border border-carbon/[0.06] p-6 sm:p-8">
           <h2 className="text-xl font-light text-carbon tracking-tight mb-1">
-            What&apos;s <span className="italic">next</span>?
+            What&apos;s <span className="italic">{t.rangePlan.whatsNextTitle}</span>?
           </h2>
-          <p className="text-xs text-carbon/30 mb-6">Your range plan is a living document — here&apos;s how it evolves.</p>
+          <p className="text-xs text-carbon/30 mb-6">{t.rangePlan.whatsNextSubtitle}</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 bg-carbon flex items-center justify-center text-[10px] font-medium text-crema">1</span>
-                <span className="text-xs font-medium text-carbon">Confirm draft</span>
+                <span className="text-xs font-medium text-carbon">{t.rangePlan.step1Title}</span>
               </div>
               <p className="text-[11px] text-carbon/40 leading-relaxed pl-7">
-                Send this range plan to Design & Development as your starting point. You can still edit everything.
+                {t.rangePlan.step1Desc}
               </p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 bg-carbon/20 flex items-center justify-center text-[10px] font-medium text-carbon/60">2</span>
-                <span className="text-xs font-medium text-carbon/50">Design develops</span>
+                <span className="text-xs font-medium text-carbon/50">{t.rangePlan.step2Title}</span>
               </div>
               <p className="text-[11px] text-carbon/30 leading-relaxed pl-7">
-                Each SKU gets sketches, materials, colorways, and tech packs. Real production costs replace estimates.
+                {t.rangePlan.step2Desc}
               </p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 bg-carbon/10 flex items-center justify-center text-[10px] font-medium text-carbon/30">3</span>
-                <span className="text-xs font-medium text-carbon/35">Refine together</span>
+                <span className="text-xs font-medium text-carbon/35">{t.rangePlan.step3Title}</span>
               </div>
               <p className="text-[11px] text-carbon/25 leading-relaxed pl-7">
-                Strategy and design collaborate. SKUs are added, adjusted, or cut. The final collection emerges from this dialogue.
+                {t.rangePlan.step3Desc}
               </p>
             </div>
           </div>
 
           <div className="flex items-center justify-between pt-5 border-t border-carbon/[0.05]">
             <p className="text-xs text-carbon/25 italic max-w-sm">
-              You&apos;ve built the foundation. Design will bring it to life — and together, you&apos;ll refine it into your strongest collection yet.
+              {t.rangePlan.motivational}
             </p>
             <button
               onClick={handleConfirmDraft}
               className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors shrink-0"
             >
-              Confirm Draft Range Plan <ArrowRight className="h-4 w-4" />
+              {t.rangePlan.confirmDraftCta} <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -128,33 +133,33 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
               {displayName} · {plan.season}
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
-              Draft range plan<br /><span className="italic">confirmed</span>.
+              {t.rangePlan.celebrationDraftLabel}<br /><span className="italic">{t.rangePlan.celebrationTitle}</span>.
             </h2>
             <p className="text-sm sm:text-base font-light text-crema/50 leading-relaxed max-w-lg mx-auto mb-3" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
-              {skus.length} SKUs across {setupData.productFamilies.length} families are now ready for Design & Development.
+              {skus.length} {t.rangePlan.celebrationReadyDesc.replace('{families}', String(setupData.productFamilies.length))}
             </p>
             <p className="text-xs text-crema/30 leading-relaxed max-w-md mx-auto mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
-              From here, design and strategy work as one. Sketches, materials, and production details will refine your range plan into a final collection. Every decision flows both ways.
+              {t.rangePlan.celebrationFlowDesc}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease-out 1.8s both' }}>
               <button
                 onClick={() => router.push(`/collection/${collectionId}/design`)}
                 className="flex items-center gap-3 px-8 py-3.5 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-white transition-colors"
               >
-                Start Design & Development <ArrowRight className="h-4 w-4" />
+                {t.rangePlan.startDesign} <ArrowRight className="h-4 w-4" />
               </button>
               <button
                 onClick={() => router.push(`/collection/${collectionId}`)}
                 className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/50 border border-crema/15 hover:text-crema/80 hover:border-crema/30 transition-colors"
               >
-                Back to Dashboard
+                {t.rangePlan.backToDashboard}
               </button>
             </div>
             <button
               onClick={() => setShowCelebration(false)}
               className="mt-8 text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 transition-colors"
             >
-              Stay here and keep editing
+              {t.rangePlan.stayEditing}
             </button>
           </div>
         </div>
