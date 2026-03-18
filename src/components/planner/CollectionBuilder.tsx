@@ -565,7 +565,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 {(() => {
                   const r = 50; const circ = 2 * Math.PI * r;
                   const segments = frameworkValidation.typeDistribution;
-                  const opacities = ['1', '0.45', '0.18'];
+                  const segColors = ['#8b7355', '#6b5e7d', '#5a6b7d'];
                   let cumulative = 0;
                   return (
                     <svg width="120" height="120" className="transform -rotate-90 shrink-0">
@@ -575,7 +575,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         const length = circ * (seg.actual / 100);
                         cumulative += seg.actual;
                         return (
-                          <circle key={seg.name} cx="60" cy="60" r={r} fill="none" stroke="#282A29" strokeWidth="8" opacity={opacities[i] || '0.3'}
+                          <circle key={seg.name} cx="60" cy="60" r={r} fill="none" stroke={segColors[i] || '#999'} strokeWidth="8"
                             strokeDasharray={`${length} ${circ - length}`} strokeDashoffset={offset}
                             className="transition-all duration-700" />
                         );
@@ -587,7 +587,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 <div className="space-y-3">
                   {frameworkValidation.typeDistribution.map((td) => {
                     const labels: Record<string, string> = { REVENUE: 'Revenue', IMAGEN: 'Image', ENTRY: 'Entry' };
-                    const dots: Record<string, string> = { REVENUE: 'bg-carbon', IMAGEN: 'bg-carbon/45', ENTRY: 'bg-carbon/[0.18]' };
+                    const dots: Record<string, string> = { REVENUE: 'bg-[#8b7355]', IMAGEN: 'bg-[#6b5e7d]', ENTRY: 'bg-[#5a6b7d]' };
                     return (
                       <div key={td.name} className="flex items-center gap-2.5">
                         <div className={`w-2.5 h-2.5 shrink-0 ${dots[td.name] || 'bg-carbon/30'}`} />
@@ -818,7 +818,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <Badge variant="outline" className="text-xs">{sku.family}</Badge>
                       </td>
                       <td className="py-2 px-2">
-                        <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white ${sku.type === 'REVENUE' ? 'bg-carbon' : sku.type === 'IMAGEN' ? 'bg-carbon/50' : 'bg-carbon/25'}`}>
+                        <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#8b7355]' : sku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'}`}>
                           {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
                         </span>
                       </td>
@@ -875,8 +875,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     )}
                     {/* Type Badge */}
                     <span className={`absolute top-2 right-2 px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] uppercase text-white ${
-                      sku.type === 'REVENUE' ? 'bg-carbon' :
-                      sku.type === 'IMAGEN' ? 'bg-carbon/50' : 'bg-carbon/25'
+                      sku.type === 'REVENUE' ? 'bg-[#8b7355]' :
+                      sku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'
                     }`}>
                       {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
                     </span>
@@ -984,8 +984,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{t.plannerSections.type}</Label>
                   <span className={`w-full flex justify-center px-2 py-1 text-[10px] font-semibold tracking-[0.06em] uppercase text-white ${
-                    selectedSku.type === 'REVENUE' ? 'bg-carbon' :
-                    selectedSku.type === 'IMAGEN' ? 'bg-carbon/50' : 'bg-carbon/25'
+                    selectedSku.type === 'REVENUE' ? 'bg-[#8b7355]' :
+                    selectedSku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'
                   }`}>
                     {selectedSku.type === 'IMAGEN' ? 'IMAGE' : selectedSku.type}
                   </span>
@@ -1209,7 +1209,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                                 <p className="text-xs text-muted-foreground">{sku.family} · €{sku.pvp}</p>
                               </div>
                               <div className="text-right">
-                                <span className={`px-2 py-0.5 text-[9px] font-semibold uppercase text-white ${sku.type === 'REVENUE' ? 'bg-carbon' : sku.type === 'IMAGEN' ? 'bg-carbon/50' : 'bg-carbon/25'}`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
+                                <span className={`px-2 py-0.5 text-[9px] font-semibold uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#8b7355]' : sku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'}`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
                                 <p className="text-xs text-muted-foreground mt-0.5">€{Math.round(sku.expected_sales).toLocaleString()}</p>
                               </div>
                             </label>
