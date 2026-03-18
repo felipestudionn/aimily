@@ -80,37 +80,32 @@ Return:
 }`,
       };
 
-    case 'families-proposals': {
-      const existingTitles = input.existingProposals;
-      const count = existingTitles ? parseInt(input.count || '1') : 5;
-      const existingClause = existingTitles
-        ? `\n\nEXISTING PROPOSALS (do NOT repeat these — generate something DIFFERENT):\n${existingTitles}\n\nGenerate ${count} NEW proposal(s) with a completely different strategic angle.`
-        : '';
-
+    case 'families-proposals':
       return {
-        temperature: 0.8,
+        temperature: 0.65,
         system: PERSONAS.merchPlanner,
         user: `${ctx}
 
-You have the COMPLETE creative direction above: consumer profiles, collection vibe, brand DNA, selected trends, and season context. Use ALL of it.
+You have the COMPLETE creative direction above. The user has NOT given any direction about product families — you must deduce the optimal family structure entirely from the creative brief.
 
-YOUR TASK: Analyze the creative brief and propose ${count} product family structure${count > 1 ? 's' : ''} — each ranked and justified by MARKET OPPORTUNITY. Include a "fit" percentage (0-100%) indicating how well this structure matches the creative brief. The user doesn't know what categories to build. You are the expert. Be proactive: tell them where the commercial opportunity is based on their specific creative direction.
-${existingClause}
+STEP 1 — SYNTHESIZE A DIRECTION (do this internally):
+Read the consumer profiles, collection vibe, brand DNA, trends, and season. Ask yourself:
+- What does this consumer actually buy? What product categories are in their wardrobe?
+- What does the vibe imply in terms of product types? (e.g., "Vacation Archaeology" implies resort shirting, relaxed bottoms, layering pieces)
+- What does the brand DNA suggest about category focus? (e.g., a footwear brand DNA → footwear as hero family)
+- What does the season demand? (SS = lighter categories, FW = layering/outerwear)
 
-ANALYSIS PROCESS (do this internally before generating):
-1. What product categories does the consumer profile actually shop for? (Don't guess — infer from their lifestyle, price sensitivity, and shopping behavior described in the brief)
-2. What categories align with the collection vibe and trend direction? (A "Quiet Luxury" vibe with nautical references suggests different categories than an "Urban Edge" vibe)
-3. What's the competitive white space? (Based on the brands mentioned in trends/competitors — where are they NOT playing?)
-4. What does the season demand? (SS needs different weight/category mix than FW)
+STEP 2 — BUILD THE FAMILY HIERARCHY:
+Based on your synthesized direction, suggest a structured product family hierarchy — exactly as if a senior merchandiser had briefed you.
 
-STRATEGIC DIVERSITY — each proposal should represent a genuinely different approach:
-- FOCUSED — Fewer families (2-3), deeper subcategory range. The specialist play.
-- BROAD — More families (4-5), balanced depth. The lifestyle brand play.
-- STRATEGIC — Asymmetric depth — one dominant hero family with supporting categories. The pyramid play.
-- NICHE — Target an underserved segment visible in the trends/competitive data.
-- HYBRID — Combine elements from the above in a unique way justified by the brief.
+ANALYSIS FRAMEWORK:
+1. FAMILY LOGIC — Why these families? Tie each one to the consumer profile and collection vibe
+2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real product types this brand would actually produce
+3. SEASONAL FIT — Subcategories must make sense for the specific season (no heavy boots in SS unless there's a strategic reason)
+4. COMMERCIAL BALANCE — Include both high-volume commercial categories and lower-volume differentiating categories
+5. PRODUCTION REALITY — Consider that each subcategory implies a different supply chain (don't suggest 15 subcategories for a startup)
 
-Order proposals from highest to lowest fit percentage. For each structure, your description MUST answer: "Why is THIS structure the best commercial bet for THIS specific creative brief?" Reference specific elements from the brief (consumer name, vibe keywords, trend names, brand DNA traits).
+Use INDUSTRY-STANDARD family and subcategory names. These are real product categories a buyer or production manager would recognize: "Shirts", "Trousers", "Knitwear", "Outerwear", "Footwear", "Bags", "Accessories" — NOT conceptual names like "Resort Lifestyle Pyramid" or "Intellectual Provocation Edit".
 
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
@@ -118,23 +113,15 @@ ${OUTPUT_RULES}
 
 Return:
 {
-  "proposals": [
+  "families": [
     {
-      "title": "Strategy Name (2-3 words)",
-      "fit": 85,
-      "description": "30-50 words: the strategic thesis — why this structure wins for this brand/consumer/season. Reference specific elements from the creative brief.",
-      "families": [
-        {
-          "name": "Family Name",
-          "subcategories": ["Sub1", "Sub2", "Sub3"],
-          "rationale": "15-25 words: why this family exists in this structure — tied to consumer behavior or trend opportunity"
-        }
-      ]
+      "name": "Family Name (industry-standard naming: Shirts, Trousers, Knitwear, Footwear, etc.)",
+      "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
+      "rationale": "15-25 words: why this family and these subcategories for this specific collection"
     }
   ]
 }`,
       };
-    }
 
     // ═══════════════════════════════════════════════════
     // PRICING
