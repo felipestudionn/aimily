@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { setupData, count, language } = body;
+    const { setupData, count, language, creativeContext } = body;
 
     if (!setupData) {
       return NextResponse.json({ error: 'setupData is required' }, { status: 400 });
@@ -27,21 +27,33 @@ export async function POST(req: NextRequest) {
     const targetMargin = setupData.targetMargin;
     const salePercentage = 60;
 
-    const system = `You are a senior fashion merchandiser who builds SKU assortments for brands like Zara, COS, and Massimo Dutti.
+    // Build creative context block if provided
+    const creativeBlock = creativeContext
+      ? `\n── CREATIVE DIRECTION (use this for naming, materials, and product concepts) ──
+Collection Vibe: ${creativeContext.vibe || 'Not specified'}
+Brand DNA: ${creativeContext.brandDNA || 'Not specified'}
+Target Consumer: ${creativeContext.consumer || 'Not specified'}
+Key Trends: ${creativeContext.trends || 'Not specified'}
+── END CREATIVE DIRECTION ──\n`
+      : '';
 
-You create product names that feel real and commercially viable — not generic placeholders. Each SKU name should sound like something you'd see on a retail website: specific silhouette + material + distinguishing detail (e.g., "Oversized Linen Blazer," "Cropped Wide-Leg Trouser," "Leather Chelsea Boot").
+    const system = `You are a senior fashion merchandiser who builds SKU assortments. You DON'T create generic products — every SKU must feel like it belongs to THIS specific collection.
+
+You create product names that feel real and commercially viable. Each name should sound like something on a luxury/premium retail website: specific silhouette + material + distinguishing detail.
 
 NAMING RULES:
-- Every name must be unique and descriptive enough to visualize the product
-- Use actual fashion product naming conventions: [Fit/Detail] + [Material if relevant] + [Core Item]
-- REVENUE items: commercial bestseller names (classic, wearable)
-- IMAGEN items: editorial, statement names (distinctive, press-worthy)
-- ENTRY items: accessible, hook names (easy to buy, gift-worthy)
+- Every name must reflect the collection's creative direction (vibe, materials, aesthetic)
+- Use actual fashion naming conventions: [Fit/Detail] + [Material if relevant] + [Core Item]
+- Materials and details should reference the brand DNA and vibe (e.g., if vibe mentions "washed linen" or "terracotta", use those in names)
+- REVENUE items: commercial bestseller names that embody the collection's core aesthetic
+- IMAGEN items: editorial statement pieces that capture the vibe's most distinctive elements
+- ENTRY items: accessible pieces that introduce the collection's world at an approachable price
+- Names must feel cohesive as a collection — they should all live in the same visual universe
 
 Return ONLY raw JSON, no markdown.`;
 
     const userPrompt = `Generate EXACTLY ${exactSkuCount} SKUs for this collection.
-
+${creativeBlock}
 COLLECTION FRAMEWORK:
 - Total Sales Target: €${totalSalesTarget}
 - Product Families: ${JSON.stringify(setupData.productFamilies)}
@@ -52,10 +64,12 @@ COLLECTION FRAMEWORK:
 - Price Segments: ${JSON.stringify(setupData.priceSegments)}
 - Drops: ${setupData.dropsCount}
 
+IMPORTANT: Product names, materials, and details MUST be inspired by the creative direction above. If the vibe mentions "1970s resort" and "terracotta", the SKUs should reflect that — not generic fashion items.
+
 Return a JSON array with EXACTLY ${exactSkuCount} items:
 [
   {
-    "name": "Specific Product Name",
+    "name": "Specific Product Name (reflecting the collection vibe)",
     "family": "Family from productFamilies",
     "type": "REVENUE" | "IMAGEN" | "ENTRY",
     "pvp": number,

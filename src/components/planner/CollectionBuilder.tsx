@@ -84,6 +84,30 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
     (async () => {
       try {
+        // Fetch creative context for SKU naming
+        const creativeRes = await fetch(`/api/workspace-data?planId=${collectionPlanId}&workspace=creative`);
+        const creativeWs = creativeRes.ok ? await creativeRes.json() : null;
+        const bd = creativeWs?.data?.blockData || {};
+
+        // Build creative context summary
+        const vibeData = bd.vibe?.data;
+        const brandData = bd['brand-dna']?.data;
+        const consumerProposals = (bd.consumer?.data?.proposals as Array<{ title: string; desc: string; status: string }>) || [];
+        const likedConsumers = consumerProposals.filter(p => p.status === 'liked');
+
+        const trendParts: string[] = [];
+        for (const blockId of ['global-trends', 'deep-dive', 'live-signals']) {
+          const results = (bd[blockId]?.data?.results as Array<{ title: string; selected?: boolean }>) || [];
+          results.filter(r => r.selected).forEach(r => trendParts.push(r.title));
+        }
+
+        const creativeContext = {
+          vibe: vibeData ? `${vibeData.vibeTitle || ''}: ${vibeData.vibe || ''}. Keywords: ${vibeData.keywords || ''}` : '',
+          brandDNA: brandData ? `${brandData.brandName || ''}. Colors: ${(brandData.colors as string[])?.join(', ') || ''}. Tone: ${brandData.tone || ''}. Style: ${brandData.style || ''}` : '',
+          consumer: likedConsumers.map(c => `${c.title}: ${c.desc.substring(0, 150)}`).join(' | '),
+          trends: trendParts.join(', '),
+        };
+
         const allGeneratedSkus: Array<Record<string, unknown>> = [];
         let remainingCount = totalCount;
         let remainingSalesTarget = setupData.totalSalesTarget;
@@ -106,7 +130,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
           const response = await fetch('/api/ai/generate-skus', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ setupData: batchSetup, count: batchCount, language }),
+            body: JSON.stringify({ setupData: batchSetup, count: batchCount, language, creativeContext }),
           });
 
           if (!response.ok) throw new Error(`Batch ${batch + 1} failed`);
