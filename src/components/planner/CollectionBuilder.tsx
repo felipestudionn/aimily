@@ -511,157 +511,89 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
   return (
     <div className="space-y-6">
-      {/* Financial Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Financial Overview</CardTitle>
-          <CardDescription>{t.plannerSections.collectionBudgetDesc}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Total Cost</p>
-              <p className="text-2xl font-bold">€{totalCost.toLocaleString()}</p>
+      {/* Financial Overview — editorial dashboard */}
+      <div className="border border-carbon/[0.08] bg-white">
+        <div className="p-5 pb-4">
+          <div className="grid grid-cols-5 gap-4">
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Expected Revenue</p>
+              <p className="text-xl font-light text-carbon tracking-tight">€{Math.round(totalExpectedSales / 1000).toLocaleString()}K</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Expected Sales</p>
-              <p className="text-2xl font-bold">€{Math.round(totalExpectedSales).toLocaleString()}</p>
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Total Cost</p>
+              <p className="text-xl font-light text-carbon tracking-tight">€{Math.round(totalCost / 1000).toLocaleString()}K</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Total Margin</p>
-              <p className="text-2xl font-bold text-green-600">€{Math.round(totalMargin).toLocaleString()}</p>
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Margin</p>
+              <p className="text-xl font-light text-carbon tracking-tight">{marginPercentage.toFixed(0)}%</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">{t.plannerSections.marginPercent}</p>
-              <p className="text-2xl font-bold">{marginPercentage.toFixed(1)}%</p>
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Avg Selling Price</p>
+              <p className="text-xl font-light text-carbon tracking-tight">€{frameworkValidation.avgPrice}</p>
             </div>
-          </div>
-          <div className="mt-4 pt-4 border-t">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">SKUs Created</span>
-                <Badge variant="secondary">{skus.length} / {setupData.expectedSkus}</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleOpenCarryOver}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Import Bestsellers
-                </Button>
-                <Button
-                  onClick={handleGenerateSkus}
-                  disabled={isGenerating || skus.length >= setupData.expectedSkus}
-                  variant="outline"
-                  size="sm"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Generate with AI
-                    </>
-                  )}
-                </Button>
-              </div>
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">SKUs</p>
+              <p className="text-xl font-light text-carbon tracking-tight">{skus.length} <span className="text-sm text-carbon/30">/ {setupData.expectedSkus}</span></p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="px-5 py-3 border-t border-carbon/[0.05] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button onClick={handleOpenCarryOver} variant="outline" size="sm" className="h-7 text-[10px] tracking-[0.05em] uppercase">
+              <Download className="h-3 w-3 mr-1.5" /> Import Bestsellers
+            </Button>
+            <Button onClick={handleGenerateSkus} disabled={isGenerating || skus.length >= setupData.expectedSkus} variant="outline" size="sm" className="h-7 text-[10px] tracking-[0.05em] uppercase">
+              {isGenerating ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
+              Generate with AI
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      {/* Strategy Overview — how Aimily landed your plan */}
+      {/* How Aimily built your collection — circles for Family + Type mix */}
       {skus.length > 0 && (
-        <div className="border border-carbon/[0.08] bg-white p-6">
-          <div className="mb-5">
-            <h3 className="text-lg font-light text-carbon tracking-tight">How Aimily built your collection</h3>
-            <p className="text-xs text-carbon/40 mt-1">{skus.length} SKUs · €{Math.round(totalExpectedSales).toLocaleString()} expected revenue · {marginPercentage.toFixed(0)}% margin</p>
-          </div>
+        <div className="border border-carbon/[0.08] bg-white p-5">
+          <h3 className="text-sm font-light text-carbon tracking-tight mb-4">How Aimily built your collection</h3>
 
-          {/* Key metrics as visual circles */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {/* Margin */}
-            <div className="flex flex-col items-center text-center">
-              <svg width="64" height="64" className="transform -rotate-90">
-                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="3" />
-                <circle cx="32" cy="32" r="28" fill="none" stroke={marginPercentage >= frameworkValidation.marginTarget - 5 ? '#2d6a4f' : '#c77000'} strokeWidth="3"
-                  strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - Math.min(marginPercentage, 100) / 100)} strokeLinecap="round" className="transition-all duration-700" />
-                <text x="32" y="32" textAnchor="middle" dominantBaseline="central" className="text-[11px] font-semibold fill-carbon" transform="rotate(90 32 32)">{marginPercentage.toFixed(0)}%</text>
-              </svg>
-              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">Margin</span>
-              <span className="text-[9px] text-carbon/25">target {frameworkValidation.marginTarget}%</span>
-            </div>
-
-            {/* Avg Price */}
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full border-[3px] border-carbon/[0.06] flex items-center justify-center">
-                <span className="text-[13px] font-semibold text-carbon">€{frameworkValidation.avgPrice}</span>
-              </div>
-              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">Avg Price</span>
-              <span className="text-[9px] text-carbon/25">target €{frameworkValidation.avgPriceTarget}</span>
-            </div>
-
-            {/* SKU Count */}
-            <div className="flex flex-col items-center text-center">
-              <svg width="64" height="64" className="transform -rotate-90">
-                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="3" />
-                <circle cx="32" cy="32" r="28" fill="none" stroke="#2d6a4f" strokeWidth="3"
-                  strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - Math.min(skus.length / (setupData.expectedSkus || 1), 1))} strokeLinecap="round" className="transition-all duration-700" />
-                <text x="32" y="32" textAnchor="middle" dominantBaseline="central" className="text-[11px] font-semibold fill-carbon" transform="rotate(90 32 32)">{skus.length}</text>
-              </svg>
-              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">SKUs</span>
-              <span className="text-[9px] text-carbon/25">of {setupData.expectedSkus} planned</span>
-            </div>
-
-            {/* Sales vs Target */}
-            <div className="flex flex-col items-center text-center">
-              <svg width="64" height="64" className="transform -rotate-90">
-                <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="3" />
-                <circle cx="32" cy="32" r="28" fill="none" stroke={Math.abs(totalExpectedSales - setupData.totalSalesTarget) / setupData.totalSalesTarget < 0.05 ? '#2d6a4f' : '#c77000'} strokeWidth="3"
-                  strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - Math.min(totalExpectedSales / (setupData.totalSalesTarget || 1), 1))} strokeLinecap="round" className="transition-all duration-700" />
-                <text x="32" y="32" textAnchor="middle" dominantBaseline="central" className="text-[9px] font-semibold fill-carbon" transform="rotate(90 32 32)">€{Math.round(totalExpectedSales / 1000)}K</text>
-              </svg>
-              <span className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mt-1">Revenue</span>
-              <span className="text-[9px] text-carbon/25">target €{Math.round(setupData.totalSalesTarget / 1000)}K</span>
-            </div>
-          </div>
-
-          {/* Distribution bars */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-5 border-t border-carbon/[0.05]">
-            {/* Family mix */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Family mix — circles */}
             <div>
-              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-2">{t.plannerSections.familyMix}</h4>
-              <div className="space-y-1.5">
-                {frameworkValidation.familyDistribution.map((fam) => (
-                  <div key={fam.name} className="flex items-center gap-2">
-                    <span className="text-[11px] text-carbon/60 w-24 truncate">{fam.name}</span>
-                    <div className="flex-1 h-1.5 bg-carbon/[0.04] overflow-hidden">
-                      <div className="h-full bg-carbon/30 transition-all duration-500" style={{ width: `${fam.actual}%` }} />
-                    </div>
-                    <span className={`text-[10px] tabular-nums w-10 text-right ${Math.abs(fam.actual - fam.target) <= 10 ? 'text-carbon/40' : 'text-amber-600'}`}>{fam.actual}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Type mix */}
-            <div>
-              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-2">{t.plannerSections.typeMix}</h4>
-              <div className="space-y-1.5">
-                {frameworkValidation.typeDistribution.map((td) => {
-                  const colors: Record<string, string> = { REVENUE: 'bg-carbon/40', IMAGEN: 'bg-carbon/25', ENTRY: 'bg-carbon/15' };
+              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-3">{t.plannerSections.familyMix}</h4>
+              <div className="flex flex-wrap gap-4">
+                {frameworkValidation.familyDistribution.map((fam) => {
+                  const r = 22; const circ = 2 * Math.PI * r;
                   return (
-                    <div key={td.name} className="flex items-center gap-2">
-                      <span className="text-[11px] text-carbon/60 w-24">{td.name}</span>
-                      <div className="flex-1 h-1.5 bg-carbon/[0.04] overflow-hidden">
-                        <div className={`h-full ${colors[td.name] || 'bg-carbon/20'} transition-all duration-500`} style={{ width: `${td.actual}%` }} />
-                      </div>
-                      <span className={`text-[10px] tabular-nums w-10 text-right ${Math.abs(td.actual - td.target) <= 10 ? 'text-carbon/40' : 'text-amber-600'}`}>{td.actual}%</span>
+                    <div key={fam.name} className="flex flex-col items-center">
+                      <svg width="52" height="52" className="transform -rotate-90">
+                        <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="2.5" />
+                        <circle cx="26" cy="26" r={r} fill="none" stroke={Math.abs(fam.actual - fam.target) <= 10 ? '#2d6a4f' : '#c77000'} strokeWidth="2.5"
+                          strokeDasharray={circ} strokeDashoffset={circ * (1 - fam.actual / 100)} strokeLinecap="round" className="transition-all duration-700" />
+                        <text x="26" y="26" textAnchor="middle" dominantBaseline="central" className="text-[9px] font-semibold fill-carbon" transform="rotate(90 26 26)">{fam.actual}%</text>
+                      </svg>
+                      <span className="text-[9px] text-carbon/50 mt-1 max-w-[52px] text-center truncate">{fam.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Type mix — circles */}
+            <div>
+              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-3">{t.plannerSections.typeMix}</h4>
+              <div className="flex flex-wrap gap-4">
+                {frameworkValidation.typeDistribution.map((td) => {
+                  const r = 22; const circ = 2 * Math.PI * r;
+                  const strokeColors: Record<string, string> = { REVENUE: '#1a1a1a', IMAGEN: '#666', ENTRY: '#aaa' };
+                  return (
+                    <div key={td.name} className="flex flex-col items-center">
+                      <svg width="52" height="52" className="transform -rotate-90">
+                        <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="2.5" />
+                        <circle cx="26" cy="26" r={r} fill="none" stroke={strokeColors[td.name] || '#999'} strokeWidth="2.5"
+                          strokeDasharray={circ} strokeDashoffset={circ * (1 - td.actual / 100)} strokeLinecap="round" className="transition-all duration-700" />
+                        <text x="26" y="26" textAnchor="middle" dominantBaseline="central" className="text-[9px] font-semibold fill-carbon" transform="rotate(90 26 26)">{td.actual}%</text>
+                      </svg>
+                      <span className="text-[9px] text-carbon/50 mt-1">{td.name}</span>
+                      <span className="text-[8px] text-carbon/25">target {td.target}%</span>
                     </div>
                   );
                 })}
@@ -671,18 +603,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         </div>
       )}
 
-      {/* Add SKU Form — collapsible */}
-      <Card>
-        <CardHeader className="cursor-pointer" onClick={() => setShowAddForm(!showAddForm)}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Plus className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base">{t.plannerSections.addNewSku}</CardTitle>
-            </div>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showAddForm ? '' : '-rotate-90'}`} />
-          </div>
-        </CardHeader>
-        {showAddForm && <CardContent>
+      {/* Add SKU Form — shown when showAddForm is true */}
+      {showAddForm && (
+        <div className="border border-carbon/[0.08] bg-white p-5">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div className="col-span-2">
               <Label className="text-xs">{t.plannerSections.productName}</Label>
@@ -834,38 +757,26 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </Button>
             </div>
           </div>
-        </CardContent>}
-      </Card>
+        </div>
+      )}
 
-      {/* SKU List with View Toggle */}
+      {/* Range Plan */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CardTitle>{t.plannerSections.skuList} ({skus.length})</CardTitle>
-              <Button variant="outline" size="sm" className="h-7 px-2 text-[10px]" onClick={() => setShowAddForm(!showAddForm)}>
-                <Plus className="h-3 w-3 mr-1" /> {t.plannerSections.addNewSku}
-              </Button>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-sm font-light tracking-tight">Range Plan</CardTitle>
+              <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.1] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors">
+                <Plus className="h-2.5 w-2.5" /> Add SKU
+              </button>
             </div>
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="h-8 px-3"
-              >
-                <List className="h-4 w-4 mr-1" />
-                {t.plannerSections.listView}
-              </Button>
-              <Button
-                variant={viewMode === 'cards' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('cards')}
-                className="h-8 px-3"
-              >
-                <LayoutGrid className="h-4 w-4 mr-1" />
-                {t.plannerSections.cardsView}
-              </Button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 text-[10px] font-medium tracking-[0.06em] uppercase transition-colors ${viewMode === 'list' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'}`}>
+                <List className="h-3 w-3 inline mr-1" />List
+              </button>
+              <button onClick={() => setViewMode('cards')} className={`px-2.5 py-1 text-[10px] font-medium tracking-[0.06em] uppercase transition-colors ${viewMode === 'cards' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'}`}>
+                <LayoutGrid className="h-3 w-3 inline mr-1" />Cards
+              </button>
             </div>
           </div>
         </CardHeader>
