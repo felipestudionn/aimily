@@ -740,14 +740,49 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
             </p>
           )}
           {mode === 'assisted' && (
-            <div>
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.financialDirection}</label>
-              <textarea
-                value={(data.direction as string) || ''}
-                onChange={(e) => onChange({ ...data, direction: e.target.value })}
-                placeholder={t.merchandising.financialDirectionPlaceholder}
-                className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed placeholder:text-carbon/40"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-3 block">{t.merchandising.growthModelLabel}</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K Y1', mix: '80%+ DTC', margin: '65%', desc: 'Drop model, community-driven, low fixed costs. Scale online before physical.' },
+                    { id: 'wholesale-led', name: 'Wholesale-Led Launch', ref: 'Jacquemus (early)', revenue: '€200K–500K Y1', mix: '60%+ wholesale', margin: '50%', desc: 'Showroom-driven, multi-brand retailers, trade shows. Volume from day one.' },
+                    { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K Y1', mix: '50/50 DTC+WS', margin: '60%', desc: 'Event marketing, scandi hype, 60% CAGR. Balanced growth.' },
+                    { id: 'quiet-luxury', name: 'Quiet Luxury', ref: 'COS / The Row', revenue: '€300K–800K Y1', mix: 'Controlled', margin: '70%', desc: 'High ASP, limited distribution, editorial press. Quality over quantity.' },
+                    { id: 'collab-hype', name: 'Collab & Hype Engine', ref: 'Aimé Leon Dore', revenue: '€200K–600K Y1', mix: 'DTC + collabs', margin: '60%', desc: 'Limited drops, brand collabs drive traffic and press coverage.' },
+                    { id: 'digital-native', name: 'Digital Native Scale', ref: 'Pangaia / Reformation', revenue: '€150K–500K Y1', mix: '90%+ digital', margin: '65%', desc: 'Content-led, social-first, sustainability narrative. Low overhead.' },
+                    { id: 'accessible-premium', name: 'Accessible Premium', ref: 'Sandro / Maje', revenue: '€400K–1M Y1', mix: 'Omnichannel', margin: '55%', desc: 'Department store anchored, city-center retail, data-driven.' },
+                    { id: 'artisan-craft', name: 'Artisan Craft Story', ref: 'HEREU / Loewe Craft', revenue: '€80K–250K Y1', mix: 'Selective', margin: '70%', desc: 'High margin, low volume, press & editorial driven. Heritage narrative.' },
+                    { id: 'marketplace-first', name: 'Marketplace Accelerator', ref: 'SSENSE / Farfetch', revenue: '€100K–400K Y1', mix: '70%+ marketplace', margin: '45%', desc: 'Marketplace-first, low fixed costs, global reach from day one.' },
+                    { id: 'investor-blitz', name: 'Investor-Backed Blitz', ref: 'Holzweiler + Sequoia', revenue: '€500K–2M Y1', mix: 'Aggressive', margin: '55%', desc: 'VC-funded rapid expansion, store rollouts, international from launch.' },
+                  ].map(scenario => {
+                    const selected = (data.growthModel as string) === scenario.id;
+                    return (
+                      <button
+                        key={scenario.id}
+                        onClick={() => onChange({ ...data, growthModel: selected ? '' : scenario.id, direction: selected ? '' : `Growth model: ${scenario.name} (ref: ${scenario.ref}). ${scenario.desc} Target: ${scenario.revenue}, channel mix: ${scenario.mix}, margin: ${scenario.margin}.` })}
+                        className={`text-left p-3.5 border transition-all ${selected ? 'border-carbon bg-carbon/[0.03]' : 'border-carbon/[0.06] hover:border-carbon/15'}`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className={`w-3.5 h-3.5 border flex items-center justify-center shrink-0 ${selected ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                            {selected && <Check className="h-2 w-2 text-crema" />}
+                          </div>
+                          <span className="text-xs font-medium text-carbon">{scenario.name}</span>
+                        </div>
+                        <div className="ml-5.5 pl-0.5">
+                          <div className="text-[10px] text-carbon/40 italic mb-1">{scenario.ref}</div>
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-carbon/50 mb-1.5">
+                            <span>{scenario.revenue}</span>
+                            <span>{scenario.mix}</span>
+                            <span>{t.merchandising.targetMargin}: {scenario.margin}</span>
+                          </div>
+                          <p className="text-[11px] text-carbon/50 leading-relaxed">{scenario.desc}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
           <button
@@ -759,7 +794,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                 direction: (data.direction as string) || '', ...collectionContext,
               }, language);
               if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { salesTarget: number; targetMargin: number; avgDiscount: number; sellThroughMonths: number; segmentation: { type: Seg[]; newness: Seg[] }; rationale?: string };
+              const parsed = result as { salesTarget: number; targetMargin: number; avgDiscount: number; sellThroughMonths: number; segmentation: { type: Seg[]; newness: Seg[] }; rationale?: string; selectedModel?: string; selectedModelRef?: string; whyThisModel?: string; risks?: string[]; advantages?: string[]; fineTuning?: string };
               onChange({
                 ...data,
                 salesTarget: parsed.salesTarget, targetMargin: parsed.targetMargin,
@@ -767,10 +802,12 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                 typeSegmentation: parsed.segmentation?.type || typeSeg,
                 newnessSegmentation: parsed.segmentation?.newness || newnessSeg,
                 rationale: parsed.rationale,
+                selectedModel: parsed.selectedModel, selectedModelRef: parsed.selectedModelRef,
+                whyThisModel: parsed.whyThisModel, risks: parsed.risks, advantages: parsed.advantages, fineTuning: parsed.fineTuning,
               });
               setGenerating(false);
             }}
-            disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
+            disabled={generating || (mode === 'assisted' && !(data.growthModel as string))}
             className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
@@ -779,6 +816,41 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
           {error && <p className="text-xs text-red-600">{error}</p>}
           {(data.salesTarget as number) > 0 && (
             <div className="space-y-4 pt-2 border-t border-carbon/[0.06]">
+              {/* Growth model analysis (from AI Proposal) */}
+              {(data.selectedModel as string) && (
+                <div className="p-4 bg-carbon/[0.03] border border-carbon/[0.08] space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 text-[10px] font-bold tracking-[0.06em] uppercase bg-carbon text-crema">{data.selectedModel as string}</span>
+                    <span className="text-[11px] text-carbon/40 italic">{data.selectedModelRef as string}</span>
+                  </div>
+                  {(data.whyThisModel as string) && <p className="text-xs text-carbon/60 leading-relaxed">{data.whyThisModel as string}</p>}
+                  {(data.fineTuning as string) && <p className="text-[11px] text-carbon/50 italic">{data.fineTuning as string}</p>}
+                  <div className="grid grid-cols-2 gap-3">
+                    {(data.advantages as string[])?.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#4a7c59] mb-1.5">{t.merchandising.advantagesLabel}</div>
+                        {(data.advantages as string[]).map((a, i) => (
+                          <div key={i} className="flex items-start gap-1.5 mb-1">
+                            <span className="text-[10px] text-[#4a7c59] mt-0.5">+</span>
+                            <span className="text-[11px] text-carbon/60">{a}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {(data.risks as string[])?.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#9c6644] mb-1.5">{t.merchandising.risksLabel}</div>
+                        {(data.risks as string[]).map((r, i) => (
+                          <div key={i} className="flex items-start gap-1.5 mb-1">
+                            <span className="text-[10px] text-[#9c6644] mt-0.5">!</span>
+                            <span className="text-[11px] text-carbon/60">{r}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon">{t.merchandising.aiFinancialPlan} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
               {(data.rationale as string) && (
                 <textarea

@@ -424,17 +424,29 @@ Validated data from previous cards:
 - Channels: ${input.channels || 'not yet defined'}
 - Markets: ${input.markets || 'not yet defined'}
 
-Generate a complete financial plan. No user direction — use all available context to build the most realistic financial framework.
+STEP 1 — ANALYZE GROWTH MODELS:
+Consider these 10 real fashion growth models and determine which ONE best fits this specific brand based on the creative brief, channel config, pricing tier, and market selection:
 
-METHODOLOGY:
-1. Estimate total SKU count from validated families (each subcategory typically produces 3-8 SKUs)
-2. Apply the pricing matrix to estimate average selling price
-3. Model sell-through based on channel mix (DTC: 60-75% at full price, Wholesale: shipped = sold at wholesale price)
-4. Gross margin should reflect the actual material/construction costs implied by the product families and price tier
-5. Segmentation should reflect the brand's strategic intent:
-   - Emerging brands: 60-70% Revenue, 15-25% Entry, 10-20% Image
-   - Established brands: 50-60% Revenue, 10-15% Entry, 25-35% Image
-   - First collection: 70%+ Newness (limited carryover possible)
+1. DTC-First Bootstrap (ref: Axel Arigato) — €100K-300K Y1, 80%+ DTC, 65% margin, drop model
+2. Wholesale-Led Launch (ref: Jacquemus early) — €200K-500K Y1, 60%+ wholesale, 50% margin, showroom-driven
+3. Community-Driven (ref: Holzweiler/Ganni) — €150K-400K Y1, 50/50 mix, 60% margin, event marketing
+4. Quiet Luxury (ref: COS/The Row) — €300K-800K Y1, controlled distribution, 70% margin
+5. Collab & Hype Engine (ref: Aimé Leon Dore) — €200K-600K Y1, DTC + collabs, 60% margin
+6. Digital Native Scale (ref: Pangaia/Reformation) — €150K-500K Y1, 90%+ digital, 65% margin
+7. Accessible Premium (ref: Sandro/Maje) — €400K-1M Y1, omnichannel, 55% margin
+8. Artisan Craft Story (ref: HEREU/Loewe Craft) — €80K-250K Y1, selective, 70% margin
+9. Marketplace Accelerator (ref: SSENSE/Farfetch) — €100K-400K Y1, 70%+ marketplace, 45% margin
+10. Investor-Backed Blitz (ref: Holzweiler+Sequoia) — €500K-2M Y1, aggressive, 55% margin
+
+STEP 2 — SELECT AND JUSTIFY:
+Pick the model that best matches the data. Explain:
+- WHY this model fits (reference specific elements: brand DNA, consumer profiles, channel config, pricing tier)
+- RISKS of this model (2-3 specific risks)
+- ADVANTAGES of this model (2-3 specific advantages)
+- Any FINE-TUNING needed to adapt the model to this specific brand
+
+STEP 3 — GENERATE FINANCIAL PLAN:
+Build the numbers based on the selected model, fine-tuned to this brand's actual data.
 
 Percentages must sum to 100 within each segmentation dimension.
 
@@ -443,6 +455,12 @@ ${OUTPUT_RULES}
 
 Return:
 {
+  "selectedModel": "Model name (e.g. 'Artisan Craft Story')",
+  "selectedModelRef": "Reference brand (e.g. 'HEREU / Loewe Craft')",
+  "whyThisModel": "30-50 words: why this model is the best fit for this specific brand — reference elements from the brief",
+  "risks": ["Risk 1 (15-20 words)", "Risk 2", "Risk 3"],
+  "advantages": ["Advantage 1 (15-20 words)", "Advantage 2", "Advantage 3"],
+  "fineTuning": "20-40 words: what adjustments were made to adapt the model to this brand",
   "salesTarget": 0,
   "currency": "EUR",
   "targetMargin": 0,
@@ -459,7 +477,7 @@ Return:
       { "name": "Carry-Over", "percentage": 0 }
     ]
   },
-  "rationale": "60-100 words: complete financial thesis — why these numbers, key assumptions, industry benchmarks referenced"
+  "rationale": "60-100 words: complete financial thesis — the numbers, key assumptions, and how they connect to the selected growth model"
 }`,
       };
 
