@@ -86,16 +86,22 @@ Return:
         system: PERSONAS.merchPlanner,
         user: `${ctx}
 
-The user gave this minimal reference: "${input.reference}"
+You have the COMPLETE creative direction above: consumer profiles, collection vibe, brand DNA, selected trends, and season context. Use ALL of it.
 
-Generate 3 different product family structures — each representing a different STRATEGIC APPROACH to building this collection.
+YOUR TASK: Analyze the creative brief and propose 3 product family structures — each ranked and justified by MARKET OPPORTUNITY. The user doesn't know what categories to build. You are the expert. Be proactive: tell them where the commercial opportunity is based on their specific creative direction.
 
-DIFFERENTIATION STRATEGY:
-- Structure 1: FOCUSED — Fewer families, deeper subcategory range within each. The specialist play. (e.g., a brand that does footwear exceptionally well rather than everything adequately)
-- Structure 2: BROAD — More families, balanced subcategory depth. The lifestyle brand play. (e.g., covering wardrobe needs across categories for coherent brand experience)
-- Structure 3: STRATEGIC — Asymmetric depth — one dominant hero family with supporting categories. The pyramid play. (e.g., outerwear-led brand with selective accessories and basics)
+ANALYSIS PROCESS (do this internally before generating):
+1. What product categories does the consumer profile actually shop for? (Don't guess — infer from their lifestyle, price sensitivity, and shopping behavior described in the brief)
+2. What categories align with the collection vibe and trend direction? (A "Quiet Luxury" vibe with nautical references suggests different categories than an "Urban Edge" vibe)
+3. What's the competitive white space? (Based on the brands mentioned in trends/competitors — where are they NOT playing?)
+4. What does the season demand? (SS needs different weight/category mix than FW)
 
-For each structure, explain the commercial logic: who buys it, how the categories support each other (cross-selling, basket building), and what the competitive advantage is.
+THREE STRATEGIC STRUCTURES:
+- Structure 1: FOCUSED — Fewer families (2-3), deeper subcategory range. The specialist play. Best when the creative direction has a strong product-specific identity. Explain WHICH category is the hero and why.
+- Structure 2: BROAD — More families (4-5), balanced depth. The lifestyle brand play. Best when the consumer profile suggests a complete wardrobe need. Explain the cross-selling logic.
+- Structure 3: STRATEGIC — Asymmetric depth — one dominant hero family with lean supporting categories. The pyramid play. Best when one category clearly dominates the competitive opportunity. Explain the basket-building strategy.
+
+For each structure, your description MUST answer: "Why is THIS structure the best commercial bet for THIS specific creative brief?" Reference specific elements from the brief (consumer name, vibe keywords, trend names, brand DNA traits).
 
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
@@ -106,12 +112,12 @@ Return:
   "proposals": [
     {
       "title": "Strategy Name (2-3 words)",
-      "description": "30-50 words: the strategic thesis — why this structure wins for this brand/consumer/season",
+      "description": "30-50 words: the strategic thesis — why this structure wins for this brand/consumer/season. Reference specific elements from the creative brief.",
       "families": [
         {
           "name": "Family Name",
           "subcategories": ["Sub1", "Sub2", "Sub3"],
-          "rationale": "15-25 words: why this family exists in this structure"
+          "rationale": "15-25 words: why this family exists in this structure — tied to consumer behavior or trend opportunity"
         }
       ]
     }

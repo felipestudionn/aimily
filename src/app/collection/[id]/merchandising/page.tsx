@@ -202,31 +202,28 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
 
       {mode === 'ai' && (
         <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.minimalReference}</label>
-            <input
-              type="text"
-              value={(data.reference as string) || ''}
-              onChange={(e) => onChange({ ...data, reference: e.target.value })}
-              placeholder={t.merchandising.referencePlaceholder}
-              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/40"
-            />
-          </div>
-          <button
-            onClick={async () => {
-              setGenerating(true); setError(null);
-              const { result, error: err } = await generateMerch('families-proposals', { reference: (data.reference as string) || '', ...collectionContext }, language);
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { proposals: Array<{ title: string; description: string; families: Family[] }> };
-              onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null, editingProposal: false });
-              setGenerating(false);
-            }}
-            disabled={generating || !(data.reference as string)?.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {t.merchandising.generateFamilyStructures}
-          </button>
+          {!(data.proposals as Array<unknown>)?.length && (data.selectedProposal as number | null) === null && (
+            <div className="space-y-4">
+              <p className="text-sm text-carbon/60 leading-relaxed">
+                Based on your creative direction — consumer profiles, vibe, brand DNA, trends, and seasonality — we&apos;ll propose three strategic family structures ranked by market opportunity.
+              </p>
+              <button
+                onClick={async () => {
+                  setGenerating(true); setError(null);
+                  const { result, error: err } = await generateMerch('families-proposals', { reference: '', ...collectionContext }, language);
+                  if (err) { setError(err); setGenerating(false); return; }
+                  const parsed = result as { proposals: Array<{ title: string; description: string; families: Family[] }> };
+                  onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null, editingProposal: false });
+                  setGenerating(false);
+                }}
+                disabled={generating}
+                className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                Propose Family Structures
+              </button>
+            </div>
+          )}
           {error && <p className="text-xs text-red-600">{error}</p>}
 
           {/* Proposals — pick one */}
@@ -425,7 +422,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
   const [error, setError] = useState<string | null>(null);
   const channels = (data.channels as string[]) || [];
   const customChannels = (data.customChannels as string[]) || [];
-  type Market = { name: string; region: string; opportunity: string; rationale: string };
+  type Market = { name: string; region: string; opportunity: string; rationale: string; entryStrategy?: string };
   const markets = (data.markets as Market[]) || [];
 
   const toggleChannel = (ch: string) => {
@@ -511,10 +508,11 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
             <div className="space-y-2 pt-2">
               {markets.map((m, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 border border-carbon/[0.08]">
-                  <div className={`px-2 py-0.5 text-xs font-medium uppercase ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
+                  <div className={`px-2 py-0.5 text-xs font-medium uppercase shrink-0 ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-carbon">{m.name} <span className="text-carbon/40 font-normal">{'\u00B7'} {m.region}</span></div>
                     <div className="text-xs text-carbon/60 mt-0.5">{m.rationale}</div>
+                    {m.entryStrategy && <div className="text-[11px] text-carbon/40 mt-1 italic">Entry: {m.entryStrategy}</div>}
                   </div>
                 </div>
               ))}
@@ -632,7 +630,14 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
           {(data.salesTarget as number) > 0 && (
             <div className="space-y-4 pt-2 border-t border-carbon/[0.06]">
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon">{t.merchandising.aiFinancialPlan} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
-              {(data.rationale as string) && <p className="text-xs text-carbon/60 italic">{data.rationale as string}</p>}
+              {(data.rationale as string) && (
+                <textarea
+                  value={data.rationale as string}
+                  onChange={(e) => onChange({ ...data, rationale: e.target.value })}
+                  className="w-full text-xs text-carbon/60 italic bg-transparent border border-transparent hover:border-carbon/[0.08] focus:border-carbon/[0.12] focus:outline-none resize-none leading-relaxed px-2 py-1.5 -mx-2 transition-colors"
+                  rows={3}
+                />
+              )}
               <div className="grid grid-cols-2 gap-4">
                 {fields.map(f => (
                   <div key={f.key}>
@@ -700,6 +705,7 @@ export default function MerchandisingPage() {
   const { language } = useLanguage();
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '' });
 
   // Persist card data to Supabase (auto-save with 1s debounce)
@@ -802,8 +808,15 @@ export default function MerchandisingPage() {
 
   const handleConfirm = useCallback((cardId: string) => {
     updateCardData(cardId, { confirmed: true });
+    // Check if all cards will be validated after this confirmation
+    const willAllBeValidated = MERCH_CARDS.every((c) =>
+      c.id === cardId ? true : (cardData[c.id]?.confirmed ?? false)
+    );
+    if (willAllBeValidated) {
+      setShowCelebration(true);
+    }
     handleCollapse();
-  }, [updateCardData, handleCollapse]);
+  }, [updateCardData, handleCollapse, cardData]);
 
   function isLocked(card: MerchCard): boolean {
     if (!card.lockedBy) return false;
@@ -1013,6 +1026,65 @@ export default function MerchandisingPage() {
           </div>
         )}
       </div>
+
+      {/* Celebration Overlay */}
+      {showCelebration && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center"
+          style={{ animation: 'fadeIn 0.6s ease-out forwards' }}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-carbon/95" style={{ animation: 'fadeIn 0.4s ease-out forwards' }} />
+
+          {/* Content */}
+          <div className="relative z-10 text-center px-6 max-w-2xl" style={{ animation: 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}>
+            <div className="w-16 h-16 mx-auto mb-8 border border-crema/20 flex items-center justify-center" style={{ animation: 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both' }}>
+              <Check className="h-7 w-7 text-crema/80" />
+            </div>
+
+            <div className="text-[10px] font-medium tracking-[0.4em] uppercase text-crema/30 mb-4" style={{ animation: 'fadeIn 0.6s ease-out 0.8s both' }}>
+              {collectionContext.collectionName} · {collectionContext.season}
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
+              Your merchandising plan<br />is <span className="italic">complete</span>.
+            </h2>
+
+            <p className="text-sm sm:text-base font-light text-crema/60 leading-relaxed max-w-lg mx-auto mb-4" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
+              Families, pricing, channels, budget — the commercial architecture is set.
+              Your collection has structure now. Time to build it.
+            </p>
+
+            <p className="text-xs text-crema/30 italic mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
+              Strategy without execution is a daydream. You have both.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease-out 1.8s both' }}>
+              <button
+                onClick={() => router.push(`/collection/${collectionId}/product`)}
+                className="flex items-center gap-3 px-8 py-3.5 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-white transition-colors"
+              >
+                Open Collection Builder <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => router.push(`/collection/${collectionId}`)}
+                className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/50 border border-crema/15 hover:text-crema/80 hover:border-crema/30 transition-colors"
+              >
+                Back to Dashboard
+              </button>
+            </div>
+
+            {/* Dismiss */}
+            <button
+              onClick={() => setShowCelebration(false)}
+              className="mt-8 text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 transition-colors"
+            >
+              Stay here and keep editing
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Animations */}
       <style jsx>{`
