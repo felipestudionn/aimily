@@ -827,13 +827,13 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   const famRevenue = famSkus.reduce((s, sk) => s + sk.expected_sales, 0);
                   return (
                     <div key={fam}>
-                      {/* Family header */}
-                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-carbon/[0.08]">
+                      {/* Family header with pill */}
+                      <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-carbon">{fam}</span>
-                          <span className="text-[10px] text-carbon/30">{famSkus.length} SKUs</span>
+                          <span className="px-4 py-1.5 text-xs font-medium text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
+                          <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs</span>
                         </div>
-                        <span className="text-xs text-carbon/40">€{Math.round(famRevenue).toLocaleString()}</span>
+                        <span className="text-xs text-carbon/30 font-light">€{Math.round(famRevenue).toLocaleString()}</span>
                       </div>
                       {/* SKU rows */}
                       <div className="overflow-x-auto">
@@ -880,9 +880,21 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               })()}
             </div>
           ) : (
-            /* Cards View */
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {skus.map((sku) => (
+            /* Cards View — grouped by family */
+            <div className="space-y-8">
+              {(() => {
+                const cardFamilies = Array.from(new Set(skus.map(s => s.family)));
+                return cardFamilies.map(fam => {
+                  const famSkus = skus.filter(s => s.family === fam);
+                  return (
+                    <div key={fam}>
+                      {/* Family pill header */}
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="px-4 py-1.5 text-xs font-medium text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
+                        <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
+                      </div>
+                      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {famSkus.map((sku) => (
                 <div
                   key={sku.id}
                   className="border border-carbon/[0.06] overflow-hidden hover:border-carbon/15 transition-all cursor-pointer bg-white group"
@@ -935,6 +947,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   </div>
                 </div>
               ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
         </div>
