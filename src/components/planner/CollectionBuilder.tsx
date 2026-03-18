@@ -76,15 +76,18 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       });
     }, 2500);
 
-    // Actually generate
+    // Actually generate — cap at 25 SKUs for reliable AI generation
+    const skuCount = Math.min(setupData.expectedSkus, 25);
+    const adjustedSetup = { ...setupData, expectedSkus: skuCount };
+
     (async () => {
       try {
         const response = await fetch('/api/ai/generate-skus', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            setupData,
-            count: setupData.expectedSkus,
+            setupData: adjustedSetup,
+            count: skuCount,
             language,
           }),
         });
@@ -93,13 +96,14 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
         const { skus: suggestedSkus } = await response.json();
 
-        for (const suggested of suggestedSkus) {
+        // Batch insert via API
+        const skusToCreate = (suggestedSkus || []).map((suggested: { name: string; family?: string; type?: string; pvp: number; cost: number; suggestedUnits: number; drop?: number; expectedSales: number }) => {
           const margin = ((suggested.pvp - suggested.cost) / suggested.pvp) * 100;
-          await addSku({
+          return {
             collection_plan_id: collectionPlanId,
             name: suggested.name,
             family: suggested.family || setupData.families?.[0] || 'General',
-            category: (setupData.productCategory || 'ROPA') as 'CALZADO' | 'ROPA' | 'ACCESORIOS',
+            category: setupData.productCategory || 'ROPA',
             type: suggested.type || 'REVENUE',
             channel: 'DTC',
             drop_number: suggested.drop || 1,
@@ -111,7 +115,17 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             sale_percentage: 60,
             expected_sales: suggested.expectedSales,
             margin: Math.round(margin * 100) / 100,
+            sku_role: 'NEW',
             launch_date: new Date().toISOString().split('T')[0],
+          };
+        });
+
+        // Insert all at once via batch endpoint
+        if (skusToCreate.length > 0) {
+          await fetch('/api/skus/batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skus: skusToCreate }),
           });
         }
 
@@ -120,6 +134,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         setTimeout(() => {
           setAutoGenerating(false);
           setAutoGenDone(true);
+          window.location.reload(); // Reload to show generated SKUs
         }, 2000);
       } catch (err) {
         console.error('Auto-generate failed:', err);
