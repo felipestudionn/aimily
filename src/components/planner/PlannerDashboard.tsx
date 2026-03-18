@@ -11,11 +11,28 @@ interface PlannerDashboardProps {
   plan: CollectionPlan;
 }
 
+const EMPTY_SETUP: SetupData = {
+  totalSalesTarget: 0,
+  monthlyDistribution: [8, 8, 10, 10, 12, 10, 8, 8, 8, 6, 6, 6],
+  expectedSkus: 0,
+  families: [],
+  dropsCount: 1,
+  avgPriceTarget: 0,
+  targetMargin: 0,
+  plannedDiscounts: 0,
+  productCategory: '',
+  productFamilies: [],
+  priceSegments: [],
+  productTypeSegments: [],
+  minPrice: 0,
+  maxPrice: 0,
+};
+
 export function PlannerDashboard({ plan }: PlannerDashboardProps) {
   const t = useTranslation();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("builder");
-  const [setupData] = useState<SetupData>(plan.setup_data);
+  const [setupData] = useState<SetupData>({ ...EMPTY_SETUP, ...plan.setup_data });
 
   return (
     <div className="max-w-5xl mx-auto px-4 pt-10 pb-16">

@@ -188,7 +188,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
     const familyDistribution = availableFamilies.map(familyName => {
       const familySkus = skus.filter(s => s.family === familyName);
       const actual = skus.length > 0 ? (familySkus.length / skus.length) * 100 : 0;
-      const target = setupData.productFamilies.find(f => f.name === familyName)?.percentage || 0;
+      const target = (setupData.productFamilies || []).find(f => f.name === familyName)?.percentage || 0;
       return { name: familyName, actual: Math.round(actual), target };
     });
 
@@ -196,7 +196,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
     const typeDistribution = (['REVENUE', 'IMAGEN', 'ENTRY'] as const).map(typeName => {
       const typeSkus = skus.filter(s => s.type === typeName);
       const actual = skus.length > 0 ? (typeSkus.length / skus.length) * 100 : 0;
-      const target = setupData.productTypeSegments.find(t => t.type === typeName)?.percentage || 0;
+      const target = (setupData.productTypeSegments || []).find(t => t.type === typeName)?.percentage || 0;
       return { name: typeName, actual: Math.round(actual), target };
     });
 
