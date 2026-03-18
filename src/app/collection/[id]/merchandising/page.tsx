@@ -120,7 +120,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
   const [error, setError] = useState<string | null>(null);
   const families = (data.families as Family[]) || [];
 
-  const addFamily = () => { if (families.length >= 5) return; onChange({ ...data, families: [...families, { name: '', subcategories: [''], priority: 'core' as Priority }] }); };
+  const addFamily = () => onChange({ ...data, families: [...families, { name: '', subcategories: [''], priority: 'core' as Priority }] });
   const cycleFamilyPriority = (i: number) => {
     const updated = [...families];
     updated[i] = { ...updated[i], priority: cyclePriority(updated[i].priority) };
@@ -183,11 +183,9 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               </button>
             </div>
           ))}
-          {families.length < 5 && (
-            <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
-              <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
-            </button>
-          )}
+          <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
+            <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
+          </button>
         </div>
       )}
 
