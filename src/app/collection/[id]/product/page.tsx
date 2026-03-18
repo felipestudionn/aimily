@@ -119,7 +119,7 @@ async function bridgeMerchToSetup(planId: string, plan: CollectionPlan): Promise
     maxPrice,
   };
 
-  // Persist back to collection_plans so it's available next time
+  // Persist setup_data back to collection_plans
   await supabaseAdmin
     .from('collection_plans')
     .update({ setup_data: setupData })
