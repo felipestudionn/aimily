@@ -1115,6 +1115,7 @@ export const it: Dictionary = {
     proposeFamilies: 'Proponi Famiglie',
     regenerate: 'Rigenera',
     entryLabel: 'Ingresso',
+    entryStrategyLabel: 'Strategia di Ingresso',
     celebrationTitle: 'Il tuo piano merchandising \u00E8',
     celebrationTitleItalic: 'completo',
     celebrationBody: 'Famiglie, prezzi, canali, budget \u2014 l\u0027architettura commerciale \u00E8 definita. La tua collezione ha struttura. \u00C8 il momento di costruirla.',

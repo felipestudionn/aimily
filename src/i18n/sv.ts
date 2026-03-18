@@ -1031,6 +1031,7 @@ export const sv: Dictionary = {
     proposeFamilies: 'F\u00F6resl\u00E5 Familjer',
     regenerate: '\u00C5tergenerera',
     entryLabel: 'Intr\u00E4de',
+    entryStrategyLabel: 'Intr\u00E4desstrategi',
     celebrationTitle: 'Din merchandisingplan \u00E4r',
     celebrationTitleItalic: 'komplett',
     celebrationBody: 'Familjer, priser, kanaler, budget \u2014 den kommersiella arkitekturen \u00E4r satt. Din kollektion har struktur. Dags att bygga.',

@@ -1115,6 +1115,7 @@ export const nl: Dictionary = {
     proposeFamilies: 'Families Voorstellen',
     regenerate: 'Opnieuw genereren',
     entryLabel: 'Toegang',
+    entryStrategyLabel: 'Toegangsstrategie',
     celebrationTitle: 'Je merchandisingplan is',
     celebrationTitleItalic: 'compleet',
     celebrationBody: 'Families, prijzen, kanalen, budget \u2014 de commerci\u00EBle architectuur staat. Je collectie heeft structuur. Tijd om te bouwen.',

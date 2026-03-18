@@ -289,10 +289,23 @@ Return:
       "region": "Region",
       "opportunity": "high" or "medium",
       "rationale": "20-35 words: WHY this market for this brand — specific reasons, not generic",
-      "entryStrategy": "15-25 words: how to enter — MUST match the channel config (digital/physical/both)"
+      "entryPoints": [
+        {
+          "label": "Channel type label (e.g. DTC E-commerce, Wholesale Digital, Key Accounts, Flagship, Showroom, Pop-Up, Multi-brand Boutiques)",
+          "detail": "10-20 words: specific recommendation — name actual platforms, retailers, neighborhoods, or strategies"
+        }
+      ]
     }
   ]
-}`,
+}
+
+ENTRY POINTS RULES:
+- Each market should have 2-4 entry points, matching the user's channel config
+- Labels must be specific channel types: "DTC E-commerce", "Social Commerce", "Wholesale Digital (Joor/NuOrder)", "Key Accounts", "Multi-brand Boutiques", "Department Stores", "Flagship Store", "Showroom", "Pop-Up"
+- Details must name SPECIFIC retailers, platforms, neighborhoods, or strategies — not generic advice
+- If Digital only: entry points should be "DTC E-commerce", "Social Commerce", "Online Wholesale" etc.
+- If Physical only: entry points should be "Key Accounts", "Flagship", "Showroom", "Multi-brand Boutiques" etc.
+- If both: mix of digital and physical entry points`,
       };
 
     case 'channels-proposals':
@@ -332,10 +345,17 @@ Return:
       "region": "Region",
       "opportunity": "high" or "medium",
       "rationale": "20-35 words: specific opportunity description",
-      "entryStrategy": "15-25 words: recommended entry approach — consistent with channel config"
+      "entryPoints": [
+        {
+          "label": "Channel type (DTC E-commerce, Key Accounts, Showroom, etc.)",
+          "detail": "10-20 words: specific recommendation with named platforms/retailers/neighborhoods"
+        }
+      ]
     }
   ]
-}`,
+}
+
+ENTRY POINTS: 2-4 per market, matching user's channel config. Labels = specific channel types. Details = name actual retailers, platforms, neighborhoods.`,
       };
 
     // ═══════════════════════════════════════════════════

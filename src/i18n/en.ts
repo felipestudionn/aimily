@@ -1115,6 +1115,7 @@ export const en = {
     proposeFamilies: 'Propose Families',
     regenerate: 'Regenerate',
     entryLabel: 'Entry',
+    entryStrategyLabel: 'Entry Strategy',
     // Celebration overlay
     celebrationTitle: 'Your merchandising plan',
     celebrationTitleItalic: 'complete',

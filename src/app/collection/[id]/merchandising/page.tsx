@@ -468,7 +468,8 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
       });
     }
   }
-  type Market = { name: string; region: string; opportunity: string; rationale: string; entryStrategy?: string };
+  type EntryPoint = { label: string; detail: string };
+  type Market = { name: string; region: string; opportunity: string; rationale: string; entryStrategy?: string; entryPoints?: EntryPoint[] };
   const markets = (data.markets as Market[]) || [];
 
   const toggleDtc = () => {
@@ -596,14 +597,35 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
           {markets.length > 0 && (
-            <div className="space-y-2 pt-2">
+            <div className="space-y-3 pt-2">
               {markets.map((m, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 border border-carbon/[0.08]">
-                  <div className={`px-2 py-0.5 text-xs font-medium uppercase shrink-0 ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
-                  <div className="flex-1">
+                <div key={i} className="border border-carbon/[0.08] overflow-hidden">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 px-4 py-3 bg-carbon/[0.02]">
+                    <div className={`px-2 py-0.5 text-[10px] font-semibold uppercase shrink-0 ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
                     <div className="text-sm font-medium text-carbon">{m.name} <span className="text-carbon/40 font-normal">{'\u00B7'} {m.region}</span></div>
-                    <div className="text-xs text-carbon/60 mt-0.5">{m.rationale}</div>
-                    {m.entryStrategy && <div className="text-[11px] text-carbon/40 mt-1 italic">{t.merchandising.entryLabel}: {m.entryStrategy}</div>}
+                  </div>
+                  {/* Body */}
+                  <div className="px-4 py-3 space-y-3">
+                    {/* Rationale */}
+                    <p className="text-xs text-carbon/60 leading-relaxed">{m.rationale}</p>
+                    {/* Entry points — structured */}
+                    {m.entryPoints && m.entryPoints.length > 0 ? (
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">{t.merchandising.entryStrategyLabel}</div>
+                        {m.entryPoints.map((ep, j) => (
+                          <div key={j} className="flex items-start gap-2 ml-1">
+                            <span className="text-[10px] font-semibold tracking-[0.05em] uppercase text-carbon/50 bg-carbon/[0.04] px-1.5 py-0.5 shrink-0 mt-0.5">{ep.label}</span>
+                            <span className="text-[11px] text-carbon/50">{ep.detail}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : m.entryStrategy ? (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">{t.merchandising.entryStrategyLabel}</div>
+                        <p className="text-[11px] text-carbon/50 italic">{m.entryStrategy}</p>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ))}
