@@ -206,14 +206,9 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
           {!((data.selectedProposal as number | null) !== null && (data.editingProposal as boolean)) && (
             <div className="space-y-5">
               {!(data.proposals as Array<unknown>)?.length && (
-                <div className="space-y-2">
-                  <p className="text-sm text-carbon/80 leading-relaxed">
-                    Aimily will analyze your entire creative brief — consumer profiles, collection vibe, brand DNA, market research, and seasonal trends — to propose <strong>product family structures ranked by market opportunity</strong>.
-                  </p>
-                  <p className="text-xs text-carbon/50 leading-relaxed">
-                    Each structure is a different strategic approach to your collection, showing which categories have the highest potential for commercial success based on your creative direction.
-                  </p>
-                </div>
+                <p className="text-sm text-carbon/60 leading-relaxed">
+                  Aimily will analyze your creative brief — consumer profiles, collection vibe, brand DNA, market research, and seasonal trends — to propose <strong>product family structures ranked by market opportunity</strong>.
+                </p>
               )}
               {!(data.proposals as Array<unknown>)?.length && (
                 <button
@@ -400,6 +395,11 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
 
       {(mode === 'assisted' || mode === 'ai') && (
         <div className="space-y-4">
+          {mode === 'ai' && !pricing.length && (
+            <p className="text-sm text-carbon/60 leading-relaxed">
+              Aimily will analyze your validated product families, consumer purchasing power, brand positioning, and competitive landscape to generate a <strong>price architecture with min/max ranges per subcategory</strong>.
+            </p>
+          )}
           {mode === 'assisted' && (
             <div>
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.pricingDirection}</label>
@@ -522,6 +522,11 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
 
       {(mode === 'assisted' || mode === 'ai') && (
         <div className="space-y-4">
+          {mode === 'ai' && !markets.length && (
+            <p className="text-sm text-carbon/60 leading-relaxed">
+              Aimily will analyze your brand positioning, consumer profiles, pricing tier, and competitive landscape to recommend the <strong>optimal distribution channels and target markets ranked by opportunity</strong>.
+            </p>
+          )}
           {mode === 'assisted' && (
             <div>
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.marketDirection}</label>
@@ -635,6 +640,11 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
 
       {(mode === 'assisted' || mode === 'ai') && (
         <div className="space-y-4">
+          {mode === 'ai' && !(data.salesTarget as number) && (
+            <p className="text-sm text-carbon/60 leading-relaxed">
+              Aimily will analyze your product families, pricing architecture, distribution channels, and market scope to build a <strong>complete financial plan with sales targets, margins, and collection segmentation</strong>.
+            </p>
+          )}
           {mode === 'assisted' && (
             <div>
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.financialDirection}</label>
