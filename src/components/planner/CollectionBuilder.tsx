@@ -797,73 +797,87 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             ))}
           </div>
         </div>
+        {/* Family filter pills */}
+        {viewMode === 'list' && skus.length > 0 && (
+          <div className="px-6 sm:px-8 pb-3 flex flex-wrap gap-1.5">
+            <button onClick={() => setFamily('')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.08em] uppercase transition-colors ${!family ? 'bg-carbon text-crema' : 'text-carbon/35 hover:text-carbon/60'}`}>
+              All
+            </button>
+            {availableFamilies.map((f) => (
+              <button key={f} onClick={() => setFamily(family === f ? '' : f)} className={`px-3 py-1 text-[10px] font-medium tracking-[0.08em] uppercase transition-colors ${family === f ? 'bg-carbon text-crema' : 'text-carbon/35 hover:text-carbon/60'}`}>
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="px-6 sm:px-8 pb-6 sm:pb-8">
           {loading ? (
-            <p className="text-sm text-muted-foreground">{t.plannerSections.loadingSkus}</p>
+            <p className="text-sm text-carbon/40">{t.plannerSections.loadingSkus}</p>
           ) : skus.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t.plannerSections.noSkusYet}</p>
+            <p className="text-sm text-carbon/40">{t.plannerSections.noSkusYet}</p>
           ) : viewMode === 'list' ? (
-            /* List View */
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-2">{t.plannerSections.productName}</th>
-                    <th className="text-left py-2 px-2">{t.plannerSections.family}</th>
-                    <th className="text-left py-2 px-2">{t.plannerSections.type}</th>
-                    <th className="text-left py-2 px-2">{t.plannerSections.role}</th>
-                    <th className="text-left py-2 px-2">{t.plannerSections.origin}</th>
-                    <th className="text-right py-2 px-2">{t.plannerSections.cost}</th>
-                    <th className="text-right py-2 px-2">PVP</th>
-                    <th className="text-right py-2 px-2">{t.plannerSections.units}</th>
-                    <th className="text-right py-2 px-2">{t.plannerSections.sales}</th>
-                    <th className="text-right py-2 px-2">{t.plannerSections.marginPercent}</th>
-                    <th className="text-right py-2 px-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {skus.map((sku) => (
-                    <tr 
-                      key={sku.id} 
-                      className="border-b hover:bg-muted/50 cursor-pointer"
-                      onClick={() => openSkuDetail(sku)}
-                    >
-                      <td className="py-2 px-2 font-medium">{sku.name}</td>
-                      <td className="py-2 px-2">
-                        <Badge variant="outline" className="text-xs">{sku.family}</Badge>
-                      </td>
-                      <td className="py-2 px-2">
-                        <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>
-                          {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2">
-                        {sku.sku_role && <Badge variant="outline" className={`text-xs ${sku.sku_role === 'BESTSELLER_REINVENTION' ? 'border-carbon/30 text-carbon/60' : sku.sku_role === 'CARRYOVER' ? 'border-carbon/20 text-carbon/40' : sku.sku_role === 'CAPSULE' ? 'border-carbon/20 text-carbon/40' : ''}`}>{sku.sku_role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : sku.sku_role === 'CARRYOVER' ? 'Carry-over' : sku.sku_role || 'New'}</Badge>}
-                      </td>
-                      <td className="py-2 px-2 text-xs text-muted-foreground">{sku.origin || '—'}</td>
-                      <td className="py-2 px-2 text-right">€{sku.cost}</td>
-                      <td className="py-2 px-2 text-right">€{sku.pvp}</td>
-                      <td className="py-2 px-2 text-right">{sku.buy_units}</td>
-                      <td className="py-2 px-2 text-right font-medium">€{Math.round(sku.expected_sales).toLocaleString()}</td>
-                      <td className="py-2 px-2 text-right">
-                        <span className={sku.margin >= 50 ? 'text-carbon' : 'text-carbon/40'}>
-                          {Math.round(sku.margin)}%
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); deleteSku(sku.id); }}
-                          className="h-7 w-7 p-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            /* List View — grouped by family */
+            <div className="space-y-6">
+              {(() => {
+                const filteredSkus = family ? skus.filter(s => s.family === family) : skus;
+                const families = Array.from(new Set(filteredSkus.map(s => s.family)));
+                return families.map(fam => {
+                  const famSkus = filteredSkus.filter(s => s.family === fam);
+                  const famRevenue = famSkus.reduce((s, sk) => s + sk.expected_sales, 0);
+                  return (
+                    <div key={fam}>
+                      {/* Family header */}
+                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-carbon/[0.08]">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-carbon">{fam}</span>
+                          <span className="text-[10px] text-carbon/30">{famSkus.length} SKUs</span>
+                        </div>
+                        <span className="text-xs text-carbon/40">€{Math.round(famRevenue).toLocaleString()}</span>
+                      </div>
+                      {/* SKU rows */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr>
+                              <th className="text-left py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">Product</th>
+                              <th className="text-left py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">Type</th>
+                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">COGS</th>
+                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">PVP</th>
+                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">Units</th>
+                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">Sales</th>
+                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">Margin</th>
+                              <th className="w-8"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {famSkus.map((sku) => (
+                              <tr key={sku.id} className="border-t border-carbon/[0.04] hover:bg-carbon/[0.02] cursor-pointer" onClick={() => openSkuDetail(sku)}>
+                                <td className="py-2.5 px-2 font-light text-carbon">{sku.name}</td>
+                                <td className="py-2.5 px-2">
+                                  <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>
+                                    {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-2 text-right text-carbon/60">€{sku.cost}</td>
+                                <td className="py-2.5 px-2 text-right text-carbon">€{sku.pvp}</td>
+                                <td className="py-2.5 px-2 text-right text-carbon/60">{sku.buy_units}</td>
+                                <td className="py-2.5 px-2 text-right font-light text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</td>
+                                <td className="py-2.5 px-2 text-right text-carbon/50">{Math.round(sku.margin)}%</td>
+                                <td className="py-2.5 px-2 text-right">
+                                  <button onClick={(e) => { e.stopPropagation(); deleteSku(sku.id); }} className="text-carbon/15 hover:text-carbon/40 transition-colors">
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           ) : (
             /* Cards View */
