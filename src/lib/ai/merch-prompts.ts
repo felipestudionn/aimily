@@ -205,14 +205,17 @@ Return:
 The validated product families are:
 ${input.families}
 
-Generate a complete pricing matrix. The user hasn't given specific direction — use the inherited context (consumer profile, brand DNA, channel strategy, competitive landscape) to determine the optimal price architecture.
+Generate a complete pricing matrix. The user hasn't given specific direction — you must deduce the optimal price architecture entirely from the inherited context.
 
 PRICING METHODOLOGY:
-1. Start from the consumer: what is their "comfortable" price range? What feels aspirational but reachable?
-2. Analyze the brand positioning: where does this brand sit between accessible-premium (COS, & Other Stories) and entry-luxury (A.P.C., Sandro)?
-3. Build internal logic: there should be a clear price ladder WITHIN each family (entry subcategory → core → premium subcategory)
-4. Build cross-family logic: accessories should be accessible entry points, hero categories command premium
-5. All prices in EUR, rounded to clean retail numbers
+1. START FROM THE BRAND DNA — Read the brand identity carefully. What tier is this brand? What are the reference brands mentioned in the brand DNA or competitive landscape? Price accordingly — do NOT default to accessible-premium if the brand DNA suggests a higher positioning.
+2. CONSUMER PURCHASING POWER — What does the consumer profile say about income, shopping behavior, basket size? A consumer who shops at Jacquemus, Loewe, or Isabel Marant has a different price tolerance than one who shops at COS or Mango.
+3. TREND POSITIONING — If the selected trends reference premium or luxury brands, the pricing should reflect that tier, not a generic mid-range.
+4. PRICE ARCHITECTURE — Build a clear price ladder WITHIN each family (entry subcategory → core → premium subcategory)
+5. CROSS-FAMILY LOGIC — Accessories can be accessible entry points, hero categories command premium
+6. All prices in EUR, rounded to clean retail numbers
+
+CRITICAL: Do NOT anchor to any default price range. Let the brand DNA, consumer profile, and competitive references in the creative brief determine the tier. If the brief mentions luxury references, price at luxury. If it mentions accessible brands, price accessible.
 
 ${QUALITY_GATES.merchSpecificity}
 ${OUTPUT_RULES}
