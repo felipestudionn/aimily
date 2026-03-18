@@ -511,66 +511,63 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
   return (
     <div className="space-y-6">
-      {/* Financial Overview — editorial dashboard */}
-      <div className="border border-carbon/[0.08] bg-white">
-        <div className="p-5 pb-4">
-          <div className="grid grid-cols-5 gap-4">
-            <div>
-              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Expected Revenue</p>
-              <p className="text-xl font-light text-carbon tracking-tight">€{Math.round(totalExpectedSales / 1000).toLocaleString()}K</p>
+      {/* ── Financial Overview ── */}
+      <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+        <h2 className="text-xl sm:text-2xl font-light text-carbon tracking-tight leading-[1.15] mb-6">
+          Collection <span className="italic">Overview</span>
+        </h2>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8">
+          {[
+            { label: 'Expected Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
+            { label: 'Total Cost', value: `€${Math.round(totalCost / 1000).toLocaleString()}K` },
+            { label: 'Margin', value: `${marginPercentage.toFixed(0)}%` },
+            { label: 'Avg Selling Price', value: `€${frameworkValidation.avgPrice}` },
+            { label: 'SKUs', value: `${skus.length}` },
+          ].map((metric) => (
+            <div key={metric.label}>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{metric.label}</p>
+              <p className="text-2xl font-light text-carbon tracking-tight">{metric.value}</p>
             </div>
-            <div>
-              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Total Cost</p>
-              <p className="text-xl font-light text-carbon tracking-tight">€{Math.round(totalCost / 1000).toLocaleString()}K</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Margin</p>
-              <p className="text-xl font-light text-carbon tracking-tight">{marginPercentage.toFixed(0)}%</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">Avg Selling Price</p>
-              <p className="text-xl font-light text-carbon tracking-tight">€{frameworkValidation.avgPrice}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/35 mb-1">SKUs</p>
-              <p className="text-xl font-light text-carbon tracking-tight">{skus.length} <span className="text-sm text-carbon/30">/ {setupData.expectedSkus}</span></p>
-            </div>
-          </div>
+          ))}
         </div>
-        <div className="px-5 py-3 border-t border-carbon/[0.05] flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button onClick={handleOpenCarryOver} variant="outline" size="sm" className="h-7 text-[10px] tracking-[0.05em] uppercase">
-              <Download className="h-3 w-3 mr-1.5" /> Import Bestsellers
-            </Button>
-            <Button onClick={handleGenerateSkus} disabled={isGenerating || skus.length >= setupData.expectedSkus} variant="outline" size="sm" className="h-7 text-[10px] tracking-[0.05em] uppercase">
-              {isGenerating ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
-              Generate with AI
-            </Button>
-          </div>
+
+        {/* Actions */}
+        <div className="mt-6 pt-5 border-t border-carbon/[0.05] flex items-center gap-3">
+          <button onClick={handleOpenCarryOver} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors">
+            <Download className="h-3 w-3" /> Import Bestsellers
+          </button>
+          <button onClick={handleGenerateSkus} disabled={isGenerating || skus.length >= setupData.expectedSkus} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+            {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            Generate with AI
+          </button>
         </div>
       </div>
 
-      {/* How Aimily built your collection — circles for Family + Type mix */}
+      {/* ── How Aimily built your collection ── */}
       {skus.length > 0 && (
-        <div className="border border-carbon/[0.08] bg-white p-5">
-          <h3 className="text-sm font-light text-carbon tracking-tight mb-4">How Aimily built your collection</h3>
+        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+          <h2 className="text-lg font-light text-carbon tracking-tight leading-[1.15] mb-1">
+            How Aimily <span className="italic">built</span> your collection
+          </h2>
+          <p className="text-xs text-carbon/30 mb-6">Product architecture derived from your creative direction and merchandising strategy.</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Family mix — circles */}
             <div>
-              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-3">{t.plannerSections.familyMix}</h4>
-              <div className="flex flex-wrap gap-4">
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-4">Family Mix</p>
+              <div className="flex flex-wrap gap-5">
                 {frameworkValidation.familyDistribution.map((fam) => {
-                  const r = 22; const circ = 2 * Math.PI * r;
+                  const r = 24; const circ = 2 * Math.PI * r;
                   return (
                     <div key={fam.name} className="flex flex-col items-center">
-                      <svg width="52" height="52" className="transform -rotate-90">
-                        <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="2.5" />
-                        <circle cx="26" cy="26" r={r} fill="none" stroke={Math.abs(fam.actual - fam.target) <= 10 ? '#2d6a4f' : '#c77000'} strokeWidth="2.5"
+                      <svg width="56" height="56" className="transform -rotate-90">
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(40,42,41,0.06)" strokeWidth="2" />
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="#282A29" strokeWidth="2"
                           strokeDasharray={circ} strokeDashoffset={circ * (1 - fam.actual / 100)} strokeLinecap="round" className="transition-all duration-700" />
-                        <text x="26" y="26" textAnchor="middle" dominantBaseline="central" className="text-[9px] font-semibold fill-carbon" transform="rotate(90 26 26)">{fam.actual}%</text>
+                        <text x="28" y="28" textAnchor="middle" dominantBaseline="central" className="text-[10px] font-light fill-carbon" transform="rotate(90 28 28)">{fam.actual}%</text>
                       </svg>
-                      <span className="text-[9px] text-carbon/50 mt-1 max-w-[52px] text-center truncate">{fam.name}</span>
+                      <span className="text-[10px] text-carbon/50 mt-1.5 max-w-[56px] text-center truncate leading-tight">{fam.name}</span>
                     </div>
                   );
                 })}
@@ -579,21 +576,21 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
             {/* Type mix — circles */}
             <div>
-              <h4 className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-3">{t.plannerSections.typeMix}</h4>
-              <div className="flex flex-wrap gap-4">
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-4">Segmentation Mix</p>
+              <div className="flex flex-wrap gap-5">
                 {frameworkValidation.typeDistribution.map((td) => {
-                  const r = 22; const circ = 2 * Math.PI * r;
-                  const strokeColors: Record<string, string> = { REVENUE: '#1a1a1a', IMAGEN: '#666', ENTRY: '#aaa' };
+                  const r = 24; const circ = 2 * Math.PI * r;
+                  const opacities: Record<string, string> = { REVENUE: '1', IMAGEN: '0.5', ENTRY: '0.25' };
                   return (
                     <div key={td.name} className="flex flex-col items-center">
-                      <svg width="52" height="52" className="transform -rotate-90">
-                        <circle cx="26" cy="26" r={r} fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="2.5" />
-                        <circle cx="26" cy="26" r={r} fill="none" stroke={strokeColors[td.name] || '#999'} strokeWidth="2.5"
+                      <svg width="56" height="56" className="transform -rotate-90">
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(40,42,41,0.06)" strokeWidth="2" />
+                        <circle cx="28" cy="28" r={r} fill="none" stroke="#282A29" strokeWidth="2" opacity={opacities[td.name] || '0.5'}
                           strokeDasharray={circ} strokeDashoffset={circ * (1 - td.actual / 100)} strokeLinecap="round" className="transition-all duration-700" />
-                        <text x="26" y="26" textAnchor="middle" dominantBaseline="central" className="text-[9px] font-semibold fill-carbon" transform="rotate(90 26 26)">{td.actual}%</text>
+                        <text x="28" y="28" textAnchor="middle" dominantBaseline="central" className="text-[10px] font-light fill-carbon" transform="rotate(90 28 28)">{td.actual}%</text>
                       </svg>
-                      <span className="text-[9px] text-carbon/50 mt-1">{td.name}</span>
-                      <span className="text-[8px] text-carbon/25">target {td.target}%</span>
+                      <span className="text-[10px] text-carbon/50 mt-1.5">{td.name}</span>
+                      <span className="text-[9px] text-carbon/20 italic">target {td.target}%</span>
                     </div>
                   );
                 })}
@@ -603,9 +600,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         </div>
       )}
 
-      {/* Add SKU Form — shown when showAddForm is true */}
+      {/* ── Add SKU Form (collapsible) ── */}
       {showAddForm && (
-        <div className="border border-carbon/[0.08] bg-white p-5">
+        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
             <div className="col-span-2">
               <Label className="text-xs">{t.plannerSections.productName}</Label>
@@ -760,27 +757,26 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         </div>
       )}
 
-      {/* Range Plan */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CardTitle className="text-sm font-light tracking-tight">Range Plan</CardTitle>
-              <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.1] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors">
-                <Plus className="h-2.5 w-2.5" /> Add SKU
-              </button>
-            </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setViewMode('list')} className={`px-2.5 py-1 text-[10px] font-medium tracking-[0.06em] uppercase transition-colors ${viewMode === 'list' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'}`}>
-                <List className="h-3 w-3 inline mr-1" />List
-              </button>
-              <button onClick={() => setViewMode('cards')} className={`px-2.5 py-1 text-[10px] font-medium tracking-[0.06em] uppercase transition-colors ${viewMode === 'cards' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'}`}>
-                <LayoutGrid className="h-3 w-3 inline mr-1" />Cards
-              </button>
-            </div>
+      {/* ── Range Plan ── */}
+      <div className="bg-white border border-carbon/[0.06]">
+        <div className="px-6 sm:px-8 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-light text-carbon tracking-tight">
+              Range <span className="italic">Plan</span>
+            </h2>
+            <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors">
+              <Plus className="h-2.5 w-2.5" /> Add SKU
+            </button>
           </div>
-        </CardHeader>
-        <CardContent>
+          <div className="flex items-center">
+            {(['list', 'cards'] as const).map((mode) => (
+              <button key={mode} onClick={() => setViewMode(mode)} className={`px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-colors ${viewMode === mode ? 'bg-carbon text-crema' : 'text-carbon/30 hover:text-carbon/60'}`}>
+                {mode === 'list' ? <List className="h-3 w-3 inline mr-1" /> : <LayoutGrid className="h-3 w-3 inline mr-1" />}{mode}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="px-6 sm:px-8 pb-6 sm:pb-8">
           {loading ? (
             <p className="text-sm text-muted-foreground">{t.plannerSections.loadingSkus}</p>
           ) : skus.length === 0 ? (
@@ -916,8 +912,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* SKU Detail Modal */}
       {selectedSku && (

@@ -35,14 +35,14 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
   const [setupData] = useState<SetupData>({ ...EMPTY_SETUP, ...plan.setup_data });
 
   return (
-    <div className="max-w-5xl mx-auto px-4 pt-10 pb-16">
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 md:px-12 pt-8 pb-16">
       {/* Header */}
-      <div className="mb-10">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+      <div className="mb-8">
+        <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/25 mb-3">
           {t.plannerSections.productAndPlanning}
         </p>
-        <h1 className="text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-          {plan.name}
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+          {plan.name.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
         </h1>
         <p className="text-sm font-light text-carbon/40 mt-2">
           {t.plannerSections.season}: {plan.season || t.plannerSections.na}
