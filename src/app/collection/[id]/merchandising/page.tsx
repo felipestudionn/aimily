@@ -202,11 +202,17 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
 
       {mode === 'ai' && (
         <div className="space-y-4">
-          {!(data.proposals as Array<unknown>)?.length && (data.selectedProposal as number | null) === null && (
-            <div className="space-y-4">
-              <p className="text-sm text-carbon/60 leading-relaxed">
-                Based on your creative direction — consumer profiles, vibe, brand DNA, trends, and seasonality — we&apos;ll propose three strategic family structures ranked by market opportunity.
-              </p>
+          {/* Copy + Generate button — hidden only when editing a selected proposal */}
+          {!((data.selectedProposal as number | null) !== null && (data.editingProposal as boolean)) && (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <p className="text-sm text-carbon/80 leading-relaxed">
+                  Aimily will analyze your entire creative brief — consumer profiles, collection vibe, brand DNA, market research, and seasonal trends — to propose <strong>three product family structures</strong> ranked by market opportunity.
+                </p>
+                <p className="text-xs text-carbon/50 leading-relaxed">
+                  Each structure is a different strategic approach to your collection, showing which categories have the highest potential for commercial success based on your creative direction.
+                </p>
+              </div>
               <button
                 onClick={async () => {
                   setGenerating(true); setError(null);
@@ -220,7 +226,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
                 className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                Propose Family Structures
+                {(data.proposals as Array<unknown>)?.length ? 'Regenerate Proposals' : 'Propose Family Structures'}
               </button>
             </div>
           )}
