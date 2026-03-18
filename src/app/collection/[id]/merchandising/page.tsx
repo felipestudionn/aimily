@@ -205,55 +205,95 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
           {/* Copy + Generate button — hidden only when editing a selected proposal */}
           {!((data.selectedProposal as number | null) !== null && (data.editingProposal as boolean)) && (
             <div className="space-y-5">
-              <div className="space-y-2">
-                <p className="text-sm text-carbon/80 leading-relaxed">
-                  Aimily will analyze your entire creative brief — consumer profiles, collection vibe, brand DNA, market research, and seasonal trends — to propose <strong>three product family structures</strong> ranked by market opportunity.
-                </p>
-                <p className="text-xs text-carbon/50 leading-relaxed">
-                  Each structure is a different strategic approach to your collection, showing which categories have the highest potential for commercial success based on your creative direction.
-                </p>
-              </div>
-              <button
-                onClick={async () => {
-                  setGenerating(true); setError(null);
-                  const { result, error: err } = await generateMerch('families-proposals', { reference: '', ...collectionContext }, language);
-                  if (err) { setError(err); setGenerating(false); return; }
-                  const parsed = result as { proposals: Array<{ title: string; description: string; families: Family[] }> };
-                  onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null, editingProposal: false });
-                  setGenerating(false);
-                }}
-                disabled={generating}
-                className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                {(data.proposals as Array<unknown>)?.length ? 'Regenerate Proposals' : 'Propose Family Structures'}
-              </button>
-            </div>
-          )}
-          {error && <p className="text-xs text-red-600">{error}</p>}
-
-          {/* Proposals — pick one */}
-          {(data.proposals as Array<{ title: string; description: string; families: Family[] }>)?.length > 0 && (data.selectedProposal as number | null) === null && (
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{t.merchandising.selectOneStructure}</p>
-              {(data.proposals as Array<{ title: string; description: string; families: Family[] }>).map((p, i) => (
+              {!(data.proposals as Array<unknown>)?.length && (
+                <div className="space-y-2">
+                  <p className="text-sm text-carbon/80 leading-relaxed">
+                    Aimily will analyze your entire creative brief — consumer profiles, collection vibe, brand DNA, market research, and seasonal trends — to propose <strong>product family structures ranked by market opportunity</strong>.
+                  </p>
+                  <p className="text-xs text-carbon/50 leading-relaxed">
+                    Each structure is a different strategic approach to your collection, showing which categories have the highest potential for commercial success based on your creative direction.
+                  </p>
+                </div>
+              )}
+              {!(data.proposals as Array<unknown>)?.length && (
                 <button
-                  key={i}
-                  onClick={() => onChange({ ...data, selectedProposal: i, families: p.families, editingProposal: true })}
-                  className="w-full text-left p-5 border border-carbon/[0.08] hover:border-carbon/30 transition-all group"
+                  onClick={async () => {
+                    setGenerating(true); setError(null);
+                    const { result, error: err } = await generateMerch('families-proposals', { reference: '', ...collectionContext }, language);
+                    if (err) { setError(err); setGenerating(false); return; }
+                    const parsed = result as { proposals: Array<{ title: string; description: string; families: Family[] }> };
+                    onChange({ ...data, proposals: parsed.proposals || [], selectedProposal: null, editingProposal: false });
+                    setGenerating(false);
+                  }}
+                  disabled={generating}
+                  className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-carbon">{p.title}</span>
-                    <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">{t.merchandising.select}</span>
-                  </div>
-                  <div className="text-xs text-carbon/70 mb-2">{p.description}</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {p.families.map((f, j) => (
-                      <span key={j} className="px-2 py-0.5 text-xs bg-carbon/[0.04] text-carbon/60">{f.name} ({f.subcategories.length})</span>
-                    ))}
-                  </div>
+                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  Propose Family Structures
                 </button>
-              ))}
+              )}
+              {error && <p className="text-xs text-red-600">{error}</p>}
+
+              {/* Proposals — pick one */}
+              {(data.proposals as Array<{ title: string; fit?: number; description: string; families: Family[] }>)?.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">{t.merchandising.selectOneStructure}</p>
+                  {(data.proposals as Array<{ title: string; fit?: number; description: string; families: Family[] }>).map((p, i) => (
+                    <div key={i} className="relative group">
+                      <button
+                        onClick={() => onChange({ ...data, selectedProposal: i, families: p.families, editingProposal: true })}
+                        className="w-full text-left p-5 border border-carbon/[0.08] hover:border-carbon/30 transition-all"
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2.5">
+                            {p.fit != null && (
+                              <span className={`px-2 py-0.5 text-[10px] font-semibold tracking-[0.05em] ${p.fit >= 80 ? 'bg-carbon text-crema' : p.fit >= 60 ? 'bg-carbon/[0.08] text-carbon/70' : 'bg-carbon/[0.04] text-carbon/40'}`}>
+                                {p.fit}%
+                              </span>
+                            )}
+                            <span className="text-sm font-medium text-carbon">{p.title}</span>
+                          </div>
+                          <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">{t.merchandising.select}</span>
+                        </div>
+                        <div className="text-xs text-carbon/70 mb-2">{p.description}</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {p.families.map((f, j) => (
+                            <span key={j} className="px-2 py-0.5 text-xs bg-carbon/[0.04] text-carbon/60">{f.name} ({f.subcategories.length})</span>
+                          ))}
+                        </div>
+                      </button>
+                      {/* Delete proposal */}
+                      <button
+                        onClick={() => {
+                          const updated = (data.proposals as Array<unknown>).filter((_, j) => j !== i);
+                          onChange({ ...data, proposals: updated });
+                        }}
+                        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center text-carbon/15 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {/* Add another proposal */}
+                  <button
+                    onClick={async () => {
+                      setGenerating(true); setError(null);
+                      const existing = (data.proposals as Array<{ title: string }>).map(p => p.title).join(', ');
+                      const { result, error: err } = await generateMerch('families-proposals', { reference: '', existingProposals: existing, count: '1', ...collectionContext }, language);
+                      if (err) { setError(err); setGenerating(false); return; }
+                      const parsed = result as { proposals: Array<{ title: string; fit?: number; description: string; families: Family[] }> };
+                      const newProposals = [...(data.proposals as Array<{ title: string; fit?: number; description: string; families: Family[] }>), ...(parsed.proposals || [])];
+                      onChange({ ...data, proposals: newProposals });
+                      setGenerating(false);
+                    }}
+                    disabled={generating}
+                    className="flex items-center gap-2 w-full justify-center py-3 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors disabled:opacity-30"
+                  >
+                    {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                    Generate another proposal
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

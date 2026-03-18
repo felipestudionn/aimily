@@ -80,7 +80,13 @@ Return:
 }`,
       };
 
-    case 'families-proposals':
+    case 'families-proposals': {
+      const existingTitles = input.existingProposals;
+      const count = existingTitles ? parseInt(input.count || '1') : 5;
+      const existingClause = existingTitles
+        ? `\n\nEXISTING PROPOSALS (do NOT repeat these — generate something DIFFERENT):\n${existingTitles}\n\nGenerate ${count} NEW proposal(s) with a completely different strategic angle.`
+        : '';
+
       return {
         temperature: 0.8,
         system: PERSONAS.merchPlanner,
@@ -88,7 +94,8 @@ Return:
 
 You have the COMPLETE creative direction above: consumer profiles, collection vibe, brand DNA, selected trends, and season context. Use ALL of it.
 
-YOUR TASK: Analyze the creative brief and propose 3 product family structures — each ranked and justified by MARKET OPPORTUNITY. The user doesn't know what categories to build. You are the expert. Be proactive: tell them where the commercial opportunity is based on their specific creative direction.
+YOUR TASK: Analyze the creative brief and propose ${count} product family structure${count > 1 ? 's' : ''} — each ranked and justified by MARKET OPPORTUNITY. Include a "fit" percentage (0-100%) indicating how well this structure matches the creative brief. The user doesn't know what categories to build. You are the expert. Be proactive: tell them where the commercial opportunity is based on their specific creative direction.
+${existingClause}
 
 ANALYSIS PROCESS (do this internally before generating):
 1. What product categories does the consumer profile actually shop for? (Don't guess — infer from their lifestyle, price sensitivity, and shopping behavior described in the brief)
@@ -96,12 +103,14 @@ ANALYSIS PROCESS (do this internally before generating):
 3. What's the competitive white space? (Based on the brands mentioned in trends/competitors — where are they NOT playing?)
 4. What does the season demand? (SS needs different weight/category mix than FW)
 
-THREE STRATEGIC STRUCTURES:
-- Structure 1: FOCUSED — Fewer families (2-3), deeper subcategory range. The specialist play. Best when the creative direction has a strong product-specific identity. Explain WHICH category is the hero and why.
-- Structure 2: BROAD — More families (4-5), balanced depth. The lifestyle brand play. Best when the consumer profile suggests a complete wardrobe need. Explain the cross-selling logic.
-- Structure 3: STRATEGIC — Asymmetric depth — one dominant hero family with lean supporting categories. The pyramid play. Best when one category clearly dominates the competitive opportunity. Explain the basket-building strategy.
+STRATEGIC DIVERSITY — each proposal should represent a genuinely different approach:
+- FOCUSED — Fewer families (2-3), deeper subcategory range. The specialist play.
+- BROAD — More families (4-5), balanced depth. The lifestyle brand play.
+- STRATEGIC — Asymmetric depth — one dominant hero family with supporting categories. The pyramid play.
+- NICHE — Target an underserved segment visible in the trends/competitive data.
+- HYBRID — Combine elements from the above in a unique way justified by the brief.
 
-For each structure, your description MUST answer: "Why is THIS structure the best commercial bet for THIS specific creative brief?" Reference specific elements from the brief (consumer name, vibe keywords, trend names, brand DNA traits).
+Order proposals from highest to lowest fit percentage. For each structure, your description MUST answer: "Why is THIS structure the best commercial bet for THIS specific creative brief?" Reference specific elements from the brief (consumer name, vibe keywords, trend names, brand DNA traits).
 
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
@@ -112,6 +121,7 @@ Return:
   "proposals": [
     {
       "title": "Strategy Name (2-3 words)",
+      "fit": 85,
       "description": "30-50 words: the strategic thesis — why this structure wins for this brand/consumer/season. Reference specific elements from the creative brief.",
       "families": [
         {
@@ -124,6 +134,7 @@ Return:
   ]
 }`,
       };
+    }
 
     // ═══════════════════════════════════════════════════
     // PRICING
