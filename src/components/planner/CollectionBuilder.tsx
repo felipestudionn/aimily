@@ -249,21 +249,34 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
     return skus.reduce((acc, sku) => acc + sku.expected_sales, 0);
   }, [skus]);
 
-  const totalCost = useMemo(() => {
-    // Cost of units expected to sell (not all bought units)
+  // COGS = production cost (materials + labor + packaging)
+  const totalCOGS = useMemo(() => {
     return skus.reduce((acc, sku) => {
       const soldUnits = Math.round(sku.buy_units * (sku.sale_percentage || 60) / 100);
       return acc + (sku.cost * soldUnits);
     }, 0);
   }, [skus]);
 
-  const totalMargin = useMemo(() => {
-    return totalExpectedSales - totalCost;
-  }, [totalExpectedSales, totalCost]);
+  // Wholesale value (COGS × 2.5 industry standard)
+  const totalWholesaleValue = useMemo(() => {
+    return skus.reduce((acc, sku) => {
+      const soldUnits = Math.round(sku.buy_units * (sku.sale_percentage || 60) / 100);
+      return acc + (Math.round(sku.cost * 2.5) * soldUnits);
+    }, 0);
+  }, [skus]);
 
-  const marginPercentage = useMemo(() => {
-    return totalExpectedSales > 0 ? (totalMargin / totalExpectedSales) * 100 : 0;
-  }, [totalMargin, totalExpectedSales]);
+  // DTC Margin = (Revenue - COGS) / Revenue
+  const dtcMargin = useMemo(() => {
+    return totalExpectedSales > 0 ? ((totalExpectedSales - totalCOGS) / totalExpectedSales) * 100 : 0;
+  }, [totalExpectedSales, totalCOGS]);
+
+  // Wholesale Margin = (WS Revenue - COGS) / WS Revenue
+  const wsMargin = useMemo(() => {
+    return totalWholesaleValue > 0 ? ((totalWholesaleValue - totalCOGS) / totalWholesaleValue) * 100 : 0;
+  }, [totalWholesaleValue, totalCOGS]);
+
+  // Use DTC margin as primary (most brands start DTC)
+  const marginPercentage = dtcMargin;
 
   const handleAddSku = async () => {
     if (!name || pvp <= 0 || cost <= 0) return;
@@ -514,17 +527,19 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       {/* ── Financial Overview — dark card ── */}
       <div className="bg-carbon p-6 sm:p-8">
         <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-white/30 mb-5">Collection Overview</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-5 sm:gap-6">
           {[
             { label: 'Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
-            { label: 'Cost', value: `€${Math.round(totalCost / 1000).toLocaleString()}K` },
-            { label: 'Margin', value: `${marginPercentage.toFixed(0)}%` },
+            { label: 'COGS', value: `€${Math.round(totalCOGS / 1000).toLocaleString()}K` },
+            { label: 'WS Value', value: `€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K` },
+            { label: 'DTC Margin', value: `${dtcMargin.toFixed(0)}%` },
+            { label: 'WS Margin', value: `${wsMargin.toFixed(0)}%` },
             { label: 'Avg Price', value: `€${frameworkValidation.avgPrice}` },
             { label: 'SKUs', value: `${skus.length}` },
           ].map((metric) => (
             <div key={metric.label}>
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-white/30 mb-1.5">{metric.label}</p>
-              <p className="text-2xl font-light text-crema tracking-tight">{metric.value}</p>
+              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-white/25 mb-1.5">{metric.label}</p>
+              <p className="text-xl font-light text-crema tracking-tight">{metric.value}</p>
             </div>
           ))}
         </div>
@@ -565,7 +580,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 {(() => {
                   const r = 50; const circ = 2 * Math.PI * r;
                   const segments = frameworkValidation.typeDistribution;
-                  const segColors = ['#8b7355', '#6b5e7d', '#5a6b7d'];
+                  const segColors = ['#9c7c4c', '#7d5a8c', '#4c7c6c'];
                   let cumulative = 0;
                   return (
                     <svg width="120" height="120" className="transform -rotate-90 shrink-0">
@@ -587,7 +602,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 <div className="space-y-3">
                   {frameworkValidation.typeDistribution.map((td) => {
                     const labels: Record<string, string> = { REVENUE: 'Revenue', IMAGEN: 'Image', ENTRY: 'Entry' };
-                    const dots: Record<string, string> = { REVENUE: 'bg-[#8b7355]', IMAGEN: 'bg-[#6b5e7d]', ENTRY: 'bg-[#5a6b7d]' };
+                    const dots: Record<string, string> = { REVENUE: 'bg-[#9c7c4c]', IMAGEN: 'bg-[#7d5a8c]', ENTRY: 'bg-[#4c7c6c]' };
                     return (
                       <div key={td.name} className="flex items-center gap-2.5">
                         <div className={`w-2.5 h-2.5 shrink-0 ${dots[td.name] || 'bg-carbon/30'}`} />
@@ -818,7 +833,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <Badge variant="outline" className="text-xs">{sku.family}</Badge>
                       </td>
                       <td className="py-2 px-2">
-                        <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#8b7355]' : sku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'}`}>
+                        <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>
                           {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
                         </span>
                       </td>
@@ -875,8 +890,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     )}
                     {/* Type Badge */}
                     <span className={`absolute top-2 right-2 px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] uppercase text-white ${
-                      sku.type === 'REVENUE' ? 'bg-[#8b7355]' :
-                      sku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'
+                      sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' :
+                      sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                     }`}>
                       {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
                     </span>
@@ -984,8 +999,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{t.plannerSections.type}</Label>
                   <span className={`w-full flex justify-center px-2 py-1 text-[10px] font-semibold tracking-[0.06em] uppercase text-white ${
-                    selectedSku.type === 'REVENUE' ? 'bg-[#8b7355]' :
-                    selectedSku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'
+                    selectedSku.type === 'REVENUE' ? 'bg-[#9c7c4c]' :
+                    selectedSku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                   }`}>
                     {selectedSku.type === 'IMAGEN' ? 'IMAGE' : selectedSku.type}
                   </span>
@@ -1209,7 +1224,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                                 <p className="text-xs text-muted-foreground">{sku.family} · €{sku.pvp}</p>
                               </div>
                               <div className="text-right">
-                                <span className={`px-2 py-0.5 text-[9px] font-semibold uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#8b7355]' : sku.type === 'IMAGEN' ? 'bg-[#6b5e7d]' : 'bg-[#5a6b7d]'}`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
+                                <span className={`px-2 py-0.5 text-[9px] font-semibold uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
                                 <p className="text-xs text-muted-foreground mt-0.5">€{Math.round(sku.expected_sales).toLocaleString()}</p>
                               </div>
                             </label>

@@ -66,14 +66,20 @@ COLLECTION FRAMEWORK:
 
 IMPORTANT: Product names, materials, and details MUST be inspired by the creative direction above. If the vibe mentions "1970s resort" and "terracotta", the SKUs should reflect that — not generic fashion items.
 
+PRICING MODEL (fashion industry standard):
+- "pvp" = Retail Price (what the end consumer pays)
+- "cogs" = Production Cost (materials + labor + packaging). This is the REAL cost to manufacture.
+- For premium/contemporary brands: COGS is typically 15-25% of PVP (markup chain: COGS ×2.5 = Wholesale, Wholesale ×2.2 = PVP)
+- Example: PVP €185 → Wholesale €84 → COGS €34
+
 Return a JSON array with EXACTLY ${exactSkuCount} items:
 [
   {
     "name": "Specific Product Name (reflecting the collection vibe)",
     "family": "Family from productFamilies",
     "type": "REVENUE" | "IMAGEN" | "ENTRY",
-    "pvp": number,
-    "cost": number,
+    "pvp": number (retail price),
+    "cogs": number (production cost — materials + labor + packaging, typically 15-25% of PVP),
     "suggestedUnits": number,
     "drop": number (1 to ${setupData.dropsCount}),
     "salesWeight": number (all must sum to 100)
@@ -83,7 +89,7 @@ Return a JSON array with EXACTLY ${exactSkuCount} items:
 RULES:
 1. EXACTLY ${exactSkuCount} SKUs — no more, no less
 2. Distribute across families proportionally
-3. margin = (pvp - cost) / pvp ≈ ${targetMargin}%
+3. COGS should be realistic production costs (15-25% of PVP for premium)
 4. salesWeight must sum to exactly 100`;
 
     const { data: rawSkus } = await generateJSON<unknown[]>({
@@ -120,18 +126,24 @@ RULES:
     }));
 
     // 3. Calculate units to achieve EXACT sales target
+    // COGS = real production cost (materials + labor + packaging)
+    // Industry standard: COGS ≈ PVP / (2.5 × 2.2) ≈ PVP / 5.5 for premium
     const processedSkus = parsedSkus.map((sku: unknown) => {
       const s = sku as Record<string, number>;
       const skuSalesTarget = (s.salesWeight / 100) * totalSalesTarget;
       const pvp = s.pvp || setupData.avgPriceTarget;
-      const cost = s.cost || pvp * (1 - targetMargin / 100);
+      // Use AI-provided COGS, or calculate from industry markup (PVP / 5.5 for premium)
+      const cogs = s.cogs || s.cost || Math.round(pvp / 5.5);
+      // Wholesale price = COGS × 2.5
+      const wholesalePrice = Math.round(cogs * 2.5);
       const unitsNeeded = Math.round(skuSalesTarget / ((salePercentage / 100) * pvp));
       const expectedSales = unitsNeeded * (salePercentage / 100) * pvp;
 
       return {
         ...(sku as Record<string, unknown>),
         pvp: Math.round(pvp * 100) / 100,
-        cost: Math.round(cost * 100) / 100,
+        cost: Math.round(cogs), // COGS = production cost
+        wholesalePrice,
         suggestedUnits: Math.max(1, unitsNeeded),
         expectedSales: Math.round(expectedSales * 100) / 100,
         targetSales: skuSalesTarget,
