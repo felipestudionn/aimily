@@ -180,7 +180,7 @@ export function WizardSidebar({
       >
         {/* Logo */}
         <div className="px-4 h-14 flex items-center">
-          <Link href="/my-collections" className="text-white hover:text-white/80 text-lg font-light tracking-tight transition-opacity">
+          <Link href="/my-collections" className="text-white hover:text-white/80 text-xl font-light tracking-tight transition-opacity">
             aimily
           </Link>
           {saving && !collapsed && (

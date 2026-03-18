@@ -511,89 +511,95 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
   return (
     <div className="space-y-6">
-      {/* ── Financial Overview ── */}
-      <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-        <h2 className="text-xl sm:text-2xl font-light text-carbon tracking-tight leading-[1.15] mb-6">
-          Collection <span className="italic">Overview</span>
-        </h2>
-
+      {/* ── Financial Overview — dark card ── */}
+      <div className="bg-carbon p-6 sm:p-8">
+        <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-white/30 mb-5">Collection Overview</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8">
           {[
-            { label: 'Expected Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
-            { label: 'Total Cost', value: `€${Math.round(totalCost / 1000).toLocaleString()}K` },
+            { label: 'Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
+            { label: 'Cost', value: `€${Math.round(totalCost / 1000).toLocaleString()}K` },
             { label: 'Margin', value: `${marginPercentage.toFixed(0)}%` },
-            { label: 'Avg Selling Price', value: `€${frameworkValidation.avgPrice}` },
+            { label: 'Avg Price', value: `€${frameworkValidation.avgPrice}` },
             { label: 'SKUs', value: `${skus.length}` },
           ].map((metric) => (
             <div key={metric.label}>
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{metric.label}</p>
-              <p className="text-2xl font-light text-carbon tracking-tight">{metric.value}</p>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-white/30 mb-1.5">{metric.label}</p>
+              <p className="text-2xl font-light text-crema tracking-tight">{metric.value}</p>
             </div>
           ))}
-        </div>
-
-        {/* Actions */}
-        <div className="mt-6 pt-5 border-t border-carbon/[0.05] flex items-center gap-3">
-          <button onClick={handleOpenCarryOver} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors">
-            <Download className="h-3 w-3" /> Import Bestsellers
-          </button>
-          <button onClick={handleGenerateSkus} disabled={isGenerating || skus.length >= setupData.expectedSkus} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-            {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-            Generate with AI
-          </button>
         </div>
       </div>
 
       {/* ── How Aimily built your collection ── */}
       {skus.length > 0 && (
         <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-          <h2 className="text-lg font-light text-carbon tracking-tight leading-[1.15] mb-1">
+          <h2 className="text-xl sm:text-2xl font-light text-carbon tracking-tight leading-[1.15] mb-1">
             How Aimily <span className="italic">built</span> your collection
           </h2>
-          <p className="text-xs text-carbon/30 mb-6">Product architecture derived from your creative direction and merchandising strategy.</p>
+          <p className="text-xs text-carbon/30 mb-8">Product architecture derived from your creative direction and merchandising strategy.</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Family mix — circles */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Family mix — horizontal bars */}
             <div>
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-4">Family Mix</p>
-              <div className="flex flex-wrap gap-5">
-                {frameworkValidation.familyDistribution.map((fam) => {
-                  const r = 24; const circ = 2 * Math.PI * r;
-                  return (
-                    <div key={fam.name} className="flex flex-col items-center">
-                      <svg width="56" height="56" className="transform -rotate-90">
-                        <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(40,42,41,0.06)" strokeWidth="2" />
-                        <circle cx="28" cy="28" r={r} fill="none" stroke="#282A29" strokeWidth="2"
-                          strokeDasharray={circ} strokeDashoffset={circ * (1 - fam.actual / 100)} strokeLinecap="round" className="transition-all duration-700" />
-                        <text x="28" y="28" textAnchor="middle" dominantBaseline="central" className="text-[10px] font-light fill-carbon" transform="rotate(90 28 28)">{fam.actual}%</text>
-                      </svg>
-                      <span className="text-[10px] text-carbon/50 mt-1.5 max-w-[56px] text-center truncate leading-tight">{fam.name}</span>
+              <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">Family Mix</p>
+              <div className="space-y-3">
+                {frameworkValidation.familyDistribution.map((fam) => (
+                  <div key={fam.name}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-light text-carbon">{fam.name}</span>
+                      <span className="text-sm font-light text-carbon/50">{fam.actual}%</span>
                     </div>
-                  );
-                })}
+                    <div className="h-1.5 bg-carbon/[0.06] overflow-hidden">
+                      <div className="h-full bg-carbon transition-all duration-700" style={{ width: `${fam.actual}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Type mix — circles */}
+            {/* Type mix — single donut */}
             <div>
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-4">Segmentation Mix</p>
-              <div className="flex flex-wrap gap-5">
-                {frameworkValidation.typeDistribution.map((td) => {
-                  const r = 24; const circ = 2 * Math.PI * r;
-                  const opacities: Record<string, string> = { REVENUE: '1', IMAGEN: '0.5', ENTRY: '0.25' };
+              <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">Segmentation Mix</p>
+              <div className="flex items-center gap-8">
+                {/* Donut chart */}
+                {(() => {
+                  const r = 50; const circ = 2 * Math.PI * r;
+                  const segments = frameworkValidation.typeDistribution;
+                  const opacities = ['1', '0.45', '0.18'];
+                  let cumulative = 0;
                   return (
-                    <div key={td.name} className="flex flex-col items-center">
-                      <svg width="56" height="56" className="transform -rotate-90">
-                        <circle cx="28" cy="28" r={r} fill="none" stroke="rgba(40,42,41,0.06)" strokeWidth="2" />
-                        <circle cx="28" cy="28" r={r} fill="none" stroke="#282A29" strokeWidth="2" opacity={opacities[td.name] || '0.5'}
-                          strokeDasharray={circ} strokeDashoffset={circ * (1 - td.actual / 100)} strokeLinecap="round" className="transition-all duration-700" />
-                        <text x="28" y="28" textAnchor="middle" dominantBaseline="central" className="text-[10px] font-light fill-carbon" transform="rotate(90 28 28)">{td.actual}%</text>
-                      </svg>
-                      <span className="text-[10px] text-carbon/50 mt-1.5">{td.name}</span>
-                      <span className="text-[9px] text-carbon/20 italic">target {td.target}%</span>
-                    </div>
+                    <svg width="120" height="120" className="transform -rotate-90 shrink-0">
+                      <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(40,42,41,0.04)" strokeWidth="8" />
+                      {segments.map((seg, i) => {
+                        const offset = circ * (1 - cumulative / 100);
+                        const length = circ * (seg.actual / 100);
+                        cumulative += seg.actual;
+                        return (
+                          <circle key={seg.name} cx="60" cy="60" r={r} fill="none" stroke="#282A29" strokeWidth="8" opacity={opacities[i] || '0.3'}
+                            strokeDasharray={`${length} ${circ - length}`} strokeDashoffset={offset}
+                            className="transition-all duration-700" />
+                        );
+                      })}
+                    </svg>
                   );
-                })}
+                })()}
+                {/* Legend */}
+                <div className="space-y-3">
+                  {frameworkValidation.typeDistribution.map((td) => {
+                    const labels: Record<string, string> = { REVENUE: 'Revenue', IMAGEN: 'Image', ENTRY: 'Entry' };
+                    const dots: Record<string, string> = { REVENUE: 'bg-carbon', IMAGEN: 'bg-carbon/45', ENTRY: 'bg-carbon/[0.18]' };
+                    return (
+                      <div key={td.name} className="flex items-center gap-2.5">
+                        <div className={`w-2.5 h-2.5 shrink-0 ${dots[td.name] || 'bg-carbon/30'}`} />
+                        <div>
+                          <span className="text-sm font-light text-carbon">{labels[td.name] || td.name}</span>
+                          <span className="text-sm font-light text-carbon/40 ml-2">{td.actual}%</span>
+                          <span className="text-[9px] text-carbon/20 italic ml-1">target {td.target}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -759,13 +765,13 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
       {/* ── Range Plan ── */}
       <div className="bg-white border border-carbon/[0.06]">
-        <div className="px-6 sm:px-8 py-5 flex items-center justify-between">
+        <div className="px-6 sm:px-8 py-5 flex items-center justify-between border-b border-carbon/[0.04]">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-light text-carbon tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-light text-carbon tracking-tight">
               Range <span className="italic">Plan</span>
             </h2>
-            <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors">
-              <Plus className="h-2.5 w-2.5" /> Add SKU
+            <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors">
+              <Plus className="h-3 w-3" /> Add SKU
             </button>
           </div>
           <div className="flex items-center">
