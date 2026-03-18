@@ -745,29 +745,26 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                 <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-3 block">{t.merchandising.growthModelLabel}</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {[
-                    { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K Y1', mix: '80%+ DTC', margin: '65%', desc: 'Drop model, community-driven, low fixed costs. Scale online before physical.' },
-                    { id: 'wholesale-led', name: 'Wholesale-Led Launch', ref: 'Jacquemus (early)', revenue: '€200K–500K Y1', mix: '60%+ wholesale', margin: '50%', desc: 'Showroom-driven, multi-brand retailers, trade shows. Volume from day one.' },
-                    { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K Y1', mix: '50/50 DTC+WS', margin: '60%', desc: 'Event marketing, scandi hype, 60% CAGR. Balanced growth.' },
+                    { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K Y1', mix: '80% DTC', margin: '65%', desc: 'Drop model, community-driven, low fixed costs. Scale online before physical.' },
+                    { id: 'wholesale-led', name: 'Wholesale-Led Launch', ref: 'Jacquemus (early)', revenue: '€200K–500K Y1', mix: '60% Wholesale', margin: '50%', desc: 'Showroom-driven, multi-brand retailers, trade shows. Volume from day one.' },
+                    { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K Y1', mix: '50/50 DTC & WS', margin: '60%', desc: 'Event marketing, scandi hype, 60% CAGR. Balanced growth.' },
                     { id: 'quiet-luxury', name: 'Quiet Luxury', ref: 'COS / The Row', revenue: '€300K–800K Y1', mix: 'Controlled', margin: '70%', desc: 'High ASP, limited distribution, editorial press. Quality over quantity.' },
-                    { id: 'collab-hype', name: 'Collab & Hype Engine', ref: 'Aimé Leon Dore', revenue: '€200K–600K Y1', mix: 'DTC + collabs', margin: '60%', desc: 'Limited drops, brand collabs drive traffic and press coverage.' },
-                    { id: 'digital-native', name: 'Digital Native Scale', ref: 'Pangaia / Reformation', revenue: '€150K–500K Y1', mix: '90%+ digital', margin: '65%', desc: 'Content-led, social-first, sustainability narrative. Low overhead.' },
+                    { id: 'collab-hype', name: 'Collab & Hype Engine', ref: 'Aim\u00E9 Leon Dore', revenue: '€200K–600K Y1', mix: 'DTC & Collabs', margin: '60%', desc: 'Limited drops, brand collabs drive traffic and press coverage.' },
+                    { id: 'digital-native', name: 'Digital Native Scale', ref: 'Pangaia / Reformation', revenue: '€150K–500K Y1', mix: '90% Digital', margin: '65%', desc: 'Content-led, social-first, sustainability narrative. Low overhead.' },
                     { id: 'accessible-premium', name: 'Accessible Premium', ref: 'Sandro / Maje', revenue: '€400K–1M Y1', mix: 'Omnichannel', margin: '55%', desc: 'Department store anchored, city-center retail, data-driven.' },
                     { id: 'artisan-craft', name: 'Artisan Craft Story', ref: 'HEREU / Loewe Craft', revenue: '€80K–250K Y1', mix: 'Selective', margin: '70%', desc: 'High margin, low volume, press & editorial driven. Heritage narrative.' },
-                    { id: 'marketplace-first', name: 'Marketplace Accelerator', ref: 'SSENSE / Farfetch', revenue: '€100K–400K Y1', mix: '70%+ marketplace', margin: '45%', desc: 'Marketplace-first, low fixed costs, global reach from day one.' },
+                    { id: 'marketplace-first', name: 'Marketplace Accelerator', ref: 'SSENSE / Farfetch', revenue: '€100K–400K Y1', mix: '70% Marketplace', margin: '45%', desc: 'Marketplace-first, low fixed costs, global reach from day one.' },
                     { id: 'investor-blitz', name: 'Investor-Backed Blitz', ref: 'Holzweiler + Sequoia', revenue: '€500K–2M Y1', mix: 'Aggressive', margin: '55%', desc: 'VC-funded rapid expansion, store rollouts, international from launch.' },
                   ].map((scenario, idx) => {
                     const selected = (data.growthModel as string) === scenario.id;
-                    const isEven = idx % 2 === 0;
                     return (
                       <button
                         key={scenario.id}
                         onClick={() => onChange({ ...data, growthModel: selected ? '' : scenario.id, direction: selected ? '' : `Growth model: ${scenario.name} (ref: ${scenario.ref}). ${scenario.desc} Target: ${scenario.revenue}, channel mix: ${scenario.mix}, margin: ${scenario.margin}.` })}
                         className={`text-left border transition-all overflow-hidden ${selected ? 'border-carbon ring-1 ring-carbon/10' : 'border-carbon/[0.06] hover:border-carbon/15'}`}
                       >
-                        {/* Top accent bar */}
-                        <div className={`h-[3px] ${selected ? 'bg-carbon' : isEven ? 'bg-[#e8dfd3]' : 'bg-[#d5dae2]'}`} />
+                        <div className={`h-[3px] ${selected ? 'bg-carbon' : 'bg-[#e8dfd3]'}`} />
                         <div className="p-4">
-                          {/* Header row */}
                           <div className="flex items-start justify-between mb-2.5">
                             <div className="flex items-center gap-2.5">
                               <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ${selected ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
@@ -778,18 +775,15 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                                 <span className="text-[10px] text-carbon/35 italic">{scenario.ref}</span>
                               </div>
                             </div>
-                            {/* Revenue badge */}
-                            <span className={`px-2.5 py-1 text-[11px] font-semibold tracking-tight shrink-0 ${isEven ? 'bg-[#f5f0e8] text-[#8b7355]' : 'bg-[#eef0f3] text-[#5a6b7d]'}`}>
+                            <span className="px-2.5 py-1 text-[11px] font-semibold tracking-tight shrink-0 bg-[#f5f0e8] text-[#8b7355]">
                               {scenario.revenue.replace(' Y1', '')}
                             </span>
                           </div>
-                          {/* Metrics row */}
-                          <div className="flex items-center gap-1.5 mb-2.5 ml-6.5">
-                            <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase ${isEven ? 'bg-[#f5f0e8]/60 text-[#8b7355]' : 'bg-[#eef0f3]/60 text-[#5a6b7d]'}`}>{scenario.mix}</span>
-                            <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase ${isEven ? 'bg-[#f5f0e8]/60 text-[#8b7355]' : 'bg-[#eef0f3]/60 text-[#5a6b7d]'}`}>{scenario.margin} margin</span>
+                          <div className="flex items-center gap-1.5 mb-2.5 ml-[26px]">
+                            <span className="px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase bg-[#f5f0e8]/70 text-[#8b7355]">{scenario.mix}</span>
+                            <span className="px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase bg-[#f5f0e8]/70 text-[#8b7355]">{scenario.margin} margin</span>
                           </div>
-                          {/* Description */}
-                          <p className="text-[11px] text-carbon/45 leading-relaxed ml-6.5">{scenario.desc}</p>
+                          <p className="text-[11px] text-carbon/45 leading-relaxed ml-[26px]">{scenario.desc}</p>
                         </div>
                       </button>
                     );
