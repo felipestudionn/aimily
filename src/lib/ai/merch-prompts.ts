@@ -57,6 +57,8 @@ The user has given this direction about their product families:
 
 Based on this direction and the inherited context (consumer, vibe, season, trends), suggest a structured product family hierarchy.
 
+HARD LIMIT: Maximum 5 families. Choose the most impactful ones.
+
 ANALYSIS FRAMEWORK:
 1. FAMILY LOGIC — Why these families? Tie each one to the consumer profile and collection vibe
 2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real product types this brand would actually produce
@@ -103,6 +105,8 @@ Read the consumer profiles, collection vibe, brand DNA, trends, and season. Ask 
 
 STEP 2 — BUILD THE FAMILY HIERARCHY:
 Based on your synthesized direction, suggest a structured product family hierarchy — exactly as if a senior merchandiser had briefed you.
+
+HARD LIMIT: Maximum 5 families. Choose the most impactful ones.
 
 ANALYSIS FRAMEWORK:
 1. FAMILY LOGIC — Why these families? Tie each one to the consumer profile and collection vibe

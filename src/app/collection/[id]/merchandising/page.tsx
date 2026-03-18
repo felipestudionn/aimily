@@ -86,14 +86,16 @@ const PRIORITY_CONFIG = {
 
 type Priority = 'core' | 'strategic' | 'complementary';
 
-function PriorityBadge({ priority, onCycle }: { priority?: Priority; onCycle: () => void }) {
-  const p = priority || 'core';
+function PriorityBadge({ priority, onCycle }: { priority?: Priority | string; onCycle: () => void }) {
+  const validPriorities: Priority[] = ['core', 'strategic', 'complementary'];
+  const p: Priority = validPriorities.includes(priority as Priority) ? (priority as Priority) : 'core';
   const config = PRIORITY_CONFIG[p];
   return (
     <button
-      onClick={(e) => { e.stopPropagation(); onCycle(); }}
-      className={`px-2 py-0.5 text-[10px] font-medium tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${config.bg}`}
-      title="Click to cycle priority"
+      type="button"
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCycle(); }}
+      className={`px-2.5 py-1 text-[10px] font-semibold tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${config.bg}`}
+      title="Click to change priority"
     >
       {config.label}
     </button>
@@ -118,7 +120,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
   const [error, setError] = useState<string | null>(null);
   const families = (data.families as Family[]) || [];
 
-  const addFamily = () => onChange({ ...data, families: [...families, { name: '', subcategories: [''], priority: 'core' as Priority }] });
+  const addFamily = () => { if (families.length >= 5) return; onChange({ ...data, families: [...families, { name: '', subcategories: [''], priority: 'core' as Priority }] }); };
   const cycleFamilyPriority = (i: number) => {
     const updated = [...families];
     updated[i] = { ...updated[i], priority: cyclePriority(updated[i].priority) };
@@ -181,9 +183,11 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               </button>
             </div>
           ))}
-          <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
-            <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
-          </button>
+          {families.length < 5 && (
+            <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
+              <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
+            </button>
+          )}
         </div>
       )}
 
