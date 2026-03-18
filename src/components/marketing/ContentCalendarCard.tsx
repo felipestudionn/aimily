@@ -492,7 +492,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Button
                       onClick={() => handleAiGenerate('asistido')}
                       disabled={isGenerating || drops.length === 0}
-                      className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase"
+                      className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase"
                     >
                       {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
                     </Button>
@@ -528,7 +528,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Button
                       onClick={() => handleAiGenerate('propuesta')}
                       disabled={isGenerating || !propuestaStartDate || !propuestaEndDate}
-                      className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase"
+                      className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase"
                     >
                       {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
                     </Button>
@@ -706,7 +706,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     className="w-full h-20 border border-carbon/[0.08] p-3 text-sm font-light resize-none focus:outline-none focus:border-carbon/20"
                   />
                 </div>
-                <Button onClick={handleAddEntry} disabled={!newEntry.title || !newEntry.scheduled_date} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+                <Button onClick={handleAddEntry} disabled={!newEntry.title || !newEntry.scheduled_date} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
                   <Plus className="h-4 w-4 mr-2" /> {t.common.create}
                 </Button>
               </div>
@@ -933,7 +933,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Button
                       variant="outline"
                       onClick={() => { deleteEntry(selectedEntry.id); setSelectedEntry(null); }}
-                      className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase text-red-500 border-red-200 hover:bg-red-50"
+                      className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase text-red-500 border-red-200 hover:bg-red-50"
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-1.5" /> {t.common.delete}
                     </Button>
@@ -1000,7 +1000,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Input value={newContact.notes} onChange={e => setNewContact(p => ({ ...p, notes: e.target.value }))} className="h-9" />
                   </div>
                 </div>
-                <Button onClick={handleAddContact} disabled={!newContact.name} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+                <Button onClick={handleAddContact} disabled={!newContact.name} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
                   <Plus className="h-4 w-4 mr-2" /> {t.common.create}
                 </Button>
               </div>

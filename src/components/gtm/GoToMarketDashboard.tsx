@@ -276,7 +276,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
             <Button
               onClick={handleSavePlan}
               disabled={isSaving}
-              className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase"
+              className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase"
             >
               {isSaving ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.saving}</>
@@ -296,7 +296,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
                 </Button>
               </div>
             ) : (
-              <Button variant="outline" onClick={() => setShowAuthModal(true)} className="rounded-none">
+              <Button variant="outline" onClick={() => setShowAuthModal(true)} className="rounded-sm">
                 <User className="h-4 w-4 mr-2" />
                 {t.marketingPage.signIn}
               </Button>
@@ -328,7 +328,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
 
       {/* Visual Timeline */}
       {drops.length > 0 && (
-        <Card className="border-carbon/[0.06] rounded-none shadow-none">
+        <Card className="border-carbon/[0.06] rounded-sm shadow-none">
           <CardHeader className="pb-2">
             <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">{t.marketingPage.launchTimeline}</p>
             <p className="text-sm font-light text-carbon/40">{t.marketingPage.dropsAndActions}</p>
@@ -433,7 +433,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       )}
 
       {/* Drops Section */}
-      <Card className="border-carbon/[0.06] rounded-none shadow-none">
+      <Card className="border-carbon/[0.06] rounded-sm shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.drops}</p><p className="text-sm font-light text-carbon/40">{t.marketingPage.dragProducts}</p></div>
@@ -487,7 +487,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       </Card>
 
       {/* Commercial Actions */}
-      <Card className="border-carbon/[0.06] rounded-none shadow-none">
+      <Card className="border-carbon/[0.06] rounded-sm shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.commercialActions}</p><p className="text-sm font-light text-carbon/40">{t.marketingPage.commercialActionsDesc}</p></div>
@@ -518,7 +518,7 @@ export function GoToMarketDashboard({ plan, initialSkus }: GoToMarketDashboardPr
       </Card>
 
       {/* AI Validation */}
-      <Card className="border-carbon/[0.06] rounded-none shadow-none">
+      <Card className="border-carbon/[0.06] rounded-sm shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div><p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.aiMarketValidation}</p><p className="text-sm font-light text-carbon/40">{t.marketingPage.compareWithMarket}</p></div>

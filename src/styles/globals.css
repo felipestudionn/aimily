@@ -32,7 +32,7 @@
     --border: 0 0% 85%;             /* gris */
     --input: 0 0% 85%;
     --ring: 156 4% 16%;             /* carbon */
-    --radius: 0px;                  /* sharp corners — no border-radius */
+    --radius: 2px;                  /* subtle rounding — editorial but modern */
   }
 }
 

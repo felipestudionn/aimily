@@ -396,7 +396,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                 <Input value={assistedDirection} onChange={e => setAssistedDirection(e.target.value)} placeholder={t.marketingPage.directionPlaceholderPaid} className="h-9" />
               </div>
               <div className="flex items-end">
-                <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+                <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
                   {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
                 </Button>
               </div>
@@ -425,7 +425,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                 <Input value={propuestaPlatforms} onChange={e => setPropuestaPlatforms(e.target.value)} placeholder={t.marketingPage.platformsPlaceholderPaid} className="h-9" />
               </div>
               <div className="flex items-end">
-                <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+                <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
                   {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
                 </Button>
               </div>
@@ -541,7 +541,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
             </p>
             <Button
               onClick={() => setShowAddCampaign(true)}
-              className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase h-9"
+              className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase h-9"
             >
               <Plus className="h-3.5 w-3.5 mr-1.5" />
               {t.marketingPage.addCampaign}
@@ -611,7 +611,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   </Select>
                 </div>
                 <div className="flex items-end">
-                  <Button onClick={handleAddCampaign} disabled={!newCampaign.name} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+                  <Button onClick={handleAddCampaign} disabled={!newCampaign.name} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
                     {t.common.create}
                   </Button>
                 </div>

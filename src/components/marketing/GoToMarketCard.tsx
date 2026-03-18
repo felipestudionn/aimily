@@ -431,7 +431,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 <Input value={assistedDates} onChange={e => setAssistedDates(e.target.value)} placeholder={t.marketingPage.datePlaceholderGtm} className="h-9" />
               </div>
               <div className="flex items-end">
-                <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+                <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
                   {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generatePlan}</>}
                 </Button>
               </div>
@@ -459,7 +459,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 <Input value={propuestaChannels} onChange={e => setPropuestaChannels(e.target.value)} placeholder={t.marketingPage.channelsPlaceholderGtm} className="h-9" />
               </div>
               <div className="flex items-end">
-                <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating || !propuestaLaunchDate} className="bg-carbon hover:bg-carbon/90 rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+                <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating || !propuestaLaunchDate} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
                   {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generateFullPlan}</>}
                 </Button>
               </div>
@@ -604,7 +604,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.drops}</p>
               <p className="text-sm font-light text-carbon/40">{t.marketingPage.dragProducts}</p>
             </div>
-            <Button size="sm" onClick={() => setShowAddDrop(true)} className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+            <Button size="sm" onClick={() => setShowAddDrop(true)} className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
               <Plus className="h-4 w-4 mr-1" />{t.marketingPage.addDrop}
             </Button>
           </div>
@@ -615,8 +615,8 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <div><Label className="text-xs">{t.marketingPage.launchDate}</Label><Input type="date" value={newDrop.launch_date} onChange={e => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.weeksActive}</Label><Input type="number" value={newDrop.weeks_active} onChange={e => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
               <div className="flex items-end gap-2">
-                <Button size="sm" onClick={handleAddDrop} className="rounded-none">{t.common.add}</Button>
-                <Button size="sm" variant="outline" onClick={() => setShowAddDrop(false)} className="rounded-none">{t.common.cancel}</Button>
+                <Button size="sm" onClick={handleAddDrop} className="rounded-sm">{t.common.add}</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowAddDrop(false)} className="rounded-sm">{t.common.cancel}</Button>
               </div>
             </div>
           )}
@@ -682,7 +682,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.commercialActions}</p>
               <p className="text-sm font-light text-carbon/40">{t.marketingPage.commercialActionsDesc}</p>
             </div>
-            <Button size="sm" onClick={() => setShowAddAction(true)} className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+            <Button size="sm" onClick={() => setShowAddAction(true)} className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
               <Plus className="h-4 w-4 mr-1" />{t.marketingPage.addAction}
             </Button>
           </div>
@@ -717,8 +717,8 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 </Select>
               </div>
               <div className="flex items-end gap-2">
-                <Button size="sm" onClick={handleAddAction} className="rounded-none">{t.common.add}</Button>
-                <Button size="sm" variant="outline" onClick={() => setShowAddAction(false)} className="rounded-none">{t.common.cancel}</Button>
+                <Button size="sm" onClick={handleAddAction} className="rounded-sm">{t.common.add}</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowAddAction(false)} className="rounded-sm">{t.common.cancel}</Button>
               </div>
             </div>
           )}
@@ -747,7 +747,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.aiMarketValidation}</p>
               <p className="text-sm font-light text-carbon/40">{t.marketingPage.compareWithMarket}</p>
             </div>
-            <Button onClick={handleGeneratePrediction} disabled={isGenerating || drops.length === 0} className="rounded-none text-[11px] font-medium tracking-[0.08em] uppercase">
+            <Button onClick={handleGeneratePrediction} disabled={isGenerating || drops.length === 0} className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
               {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.analyzing}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.validateWithAi}</>}
             </Button>
           </div>
