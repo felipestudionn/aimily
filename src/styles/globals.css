@@ -46,15 +46,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  /* Global subtle rounding — buttons, inputs, and bordered containers */
-  button, [role="button"],
-  input, textarea, select {
-    border-radius: var(--radius);
-  }
-  /* Cards/containers that use Tailwind's `border` class (not border-t, border-b dividers) */
-  [class~="border"] {
-    border-radius: var(--radius);
-  }
+}
+
+/* ── Global subtle rounding (outside @layer for higher specificity) ── */
+button, [role="button"],
+input, textarea, select {
+  border-radius: 4px !important;
+}
+[class~="border"] {
+  border-radius: 4px;
 }
 
 /* ── Global font size boost ──
