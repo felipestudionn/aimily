@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 
+export type DesignPhase = 'range_plan' | 'sketch' | 'prototyping' | 'production' | 'completed';
+
+export interface ProtoIteration {
+  id: string;
+  images: string[];
+  notes: string;
+  status: 'pending' | 'issues' | 'approved' | 'rejected';
+  created_at: string;
+}
+
 export interface SKU {
   id: string;
   collection_plan_id: string;
@@ -18,12 +28,18 @@ export interface SKU {
   margin: number;
   channel: 'DTC' | 'WHOLESALE' | 'BOTH';
   origin?: 'LOCAL' | 'CHINA' | 'EUROPE' | 'OTHER';
-  size_run?: Record<string, number>; // e.g. { "36": 10, "37": 20, "38": 30, ... }
+  size_run?: Record<string, number>;
   sku_role?: 'NEW' | 'BESTSELLER_REINVENTION' | 'CARRYOVER' | 'CAPSULE';
   launch_date: string;
   notes?: string;
   reference_image_url?: string;
-  source_sku_id?: string; // Reference to original SKU if carry-over/reinvention
+  source_sku_id?: string;
+  // ── Design lifecycle ──
+  design_phase: DesignPhase;
+  sketch_url?: string;
+  proto_iterations: ProtoIteration[];
+  production_sample_url?: string;
+  production_approved: boolean;
   created_at?: string;
   updated_at?: string;
 }

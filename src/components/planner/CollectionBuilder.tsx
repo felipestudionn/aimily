@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download, ChevronDown } from 'lucide-react';
-import { useSkus, type SKU } from '@/hooks/useSkus';
+import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download, ChevronDown, Kanban } from 'lucide-react';
+import { useSkus, type SKU, type DesignPhase } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/i18n';
+import { SkuDetailView } from './SkuDetailView';
 
 interface CollectionBuilderProps {
   setupData: SetupData;
@@ -37,7 +38,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [autoGenStep, setAutoGenStep] = useState(0);
   const [autoGenDone, setAutoGenDone] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
+  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'pipeline'>('cards');
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
   const [editingNotes, setEditingNotes] = useState('');
@@ -304,6 +305,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       expected_sales: expectedSales,
       margin,
       launch_date: new Date().toISOString().split('T')[0],
+      design_phase: 'range_plan' as DesignPhase,
+      proto_iterations: [],
+      production_approved: false,
     };
 
     await addSku(newSku);
@@ -318,25 +322,17 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
   const availableFamilies = setupData.productFamilies?.map(f => f.name) || [];
 
-  // Handle image upload for SKU
-  const handleImageUpload = async (skuId: string, file: File) => {
-    setUploadingImage(true);
-    try {
-      // Convert to base64 for now (in production, upload to storage)
+  // Generic image upload for any SKU field
+  const handleImageUpload = async (skuId: string, file: File, field: 'reference_image_url' | 'sketch_url' | 'production_sample_url' = 'reference_image_url'): Promise<string | null> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = async () => {
+      reader.onloadend = () => {
         const base64 = reader.result as string;
-        await updateSku(skuId, { reference_image_url: base64 });
-        if (selectedSku?.id === skuId) {
-          setSelectedSku(prev => prev ? { ...prev, reference_image_url: base64 } : null);
-        }
+        resolve(base64);
       };
+      reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-    } finally {
-      setUploadingImage(false);
-    }
+    });
   };
 
   // Handle notes update
@@ -467,6 +463,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
           expected_sales: suggested.expectedSales, // Use EXACT value from API
           margin: Math.round(margin * 100) / 100,
           launch_date: new Date().toISOString().split('T')[0],
+          design_phase: 'range_plan' as DesignPhase,
+          proto_iterations: [],
+          production_approved: false,
         });
       }
     } catch (error) {
@@ -810,9 +809,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             </button>
           </div>
           <div className="flex items-center">
-            {(['list', 'cards'] as const).map((mode) => (
+            {(['pipeline', 'list', 'cards'] as const).map((mode) => (
               <button key={mode} onClick={() => setViewMode(mode)} className={`px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-colors ${viewMode === mode ? 'bg-carbon text-crema' : 'text-carbon/30 hover:text-carbon/60'}`}>
-                {mode === 'list' ? <List className="h-3 w-3 inline mr-1" /> : <LayoutGrid className="h-3 w-3 inline mr-1" />}{mode}
+                {mode === 'pipeline' ? <Kanban className="h-3 w-3 inline mr-1" /> : mode === 'list' ? <List className="h-3 w-3 inline mr-1" /> : <LayoutGrid className="h-3 w-3 inline mr-1" />}{mode}
               </button>
             ))}
           </div>
@@ -836,6 +835,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             <p className="text-sm text-carbon/40">{t.plannerSections.loadingSkus}</p>
           ) : skus.length === 0 ? (
             <p className="text-sm text-carbon/40">{t.plannerSections.noSkusYet}</p>
+          ) : viewMode === 'pipeline' ? (
+            /* Pipeline View — SKUs grouped by design phase */
+            <PipelineView skus={skus} onSkuClick={openSkuDetail} t={t} />
           ) : viewMode === 'list' ? (
             /* List View — grouped by family */
             <div className="space-y-6">
@@ -982,218 +984,21 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         </div>
       </div>
 
-      {/* SKU Detail Modal */}
+      {/* SKU Detail View — 4-phase design lifecycle */}
       {selectedSku && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <CardTitle>{selectedSku.name}</CardTitle>
-                <CardDescription>{selectedSku.family} · Drop {selectedSku.drop_number}</CardDescription>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedSku(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Image Section */}
-              <div className="space-y-2">
-                <Label>Reference Image / Sketch</Label>
-                <div className="border-2 border-dashed rounded-lg overflow-hidden">
-                  {selectedSku.reference_image_url ? (
-                    <div className="relative">
-                      <img
-                        src={selectedSku.reference_image_url}
-                        alt={selectedSku.name}
-                        className="w-full max-h-64 object-contain bg-gray-50"
-                      />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="absolute bottom-2 right-2"
-                        onClick={() => updateSku(selectedSku.id, { reference_image_url: undefined })}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center h-48 cursor-pointer hover:bg-muted/50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(selectedSku.id, file);
-                        }}
-                      />
-                      {uploadingImage ? (
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      ) : (
-                        <>
-                          <ImagePlus className="h-8 w-8 text-muted-foreground mb-2" />
-                          <span className="text-sm text-muted-foreground">Click to upload image or sketch</span>
-                        </>
-                      )}
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              {/* Attributes Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{t.plannerSections.type}</Label>
-                  <span className={`w-full flex justify-center px-2 py-1 text-[10px] font-semibold tracking-[0.06em] uppercase text-white ${
-                    selectedSku.type === 'REVENUE' ? 'bg-[#9c7c4c]' :
-                    selectedSku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
-                  }`}>
-                    {selectedSku.type === 'IMAGEN' ? 'IMAGE' : selectedSku.type}
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{t.plannerSections.channel}</Label>
-                  <p className="font-semibold text-sm">{selectedSku.channel}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{t.plannerSections.origin}</Label>
-                  <p className="font-semibold text-sm">{selectedSku.origin || '—'}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{t.plannerSections.role}</Label>
-                  <p className="font-semibold text-sm">{selectedSku.sku_role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : selectedSku.sku_role === 'CARRYOVER' ? 'Carry-over' : selectedSku.sku_role || 'New'}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Category</Label>
-                  <p className="font-semibold text-sm">{selectedSku.category}</p>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Launch Date</Label>
-                  <p className="font-semibold text-sm">{selectedSku.launch_date || 'TBD'}</p>
-                </div>
-              </div>
-
-              {/* Financial Details */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <h4 className="font-semibold text-sm mb-3">Financial Details</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">{t.plannerSections.cost}</span>
-                    <p className="font-semibold text-lg">€{selectedSku.cost}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">PVP</span>
-                    <p className="font-semibold text-lg">€{selectedSku.pvp}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t.plannerSections.buyUnits}</span>
-                    <p className="font-semibold text-lg">{selectedSku.buy_units}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t.plannerSections.margin}</span>
-                    <p className={`font-semibold text-lg ${selectedSku.margin >= 50 ? 'text-carbon' : 'text-carbon/40'}`}>
-                      {Math.round(selectedSku.margin)}%
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t.plannerSections.discount}</span>
-                    <p className="font-semibold">{selectedSku.discount}%</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Final Price</span>
-                    <p className="font-semibold">€{selectedSku.final_price}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">{t.plannerSections.salePercent}</span>
-                    <p className="font-semibold">{selectedSku.sale_percentage}%</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Expected Sales</span>
-                    <p className="font-semibold text-carbon">€{Math.round(selectedSku.expected_sales).toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Size Run */}
-              <div className="space-y-2">
-                <Label>Size Run (units per size)</Label>
-                <div className="flex flex-wrap gap-2">
-                  {(() => {
-                    const category = selectedSku.category;
-                    const sizes = category === 'CALZADO'
-                      ? ['35','36','37','38','39','40','41','42','43','44','45']
-                      : category === 'ROPA'
-                      ? ['XXS','XS','S','M','L','XL','XXL']
-                      : ['ONE'];
-                    const currentRun = selectedSku.size_run || {};
-                    return sizes.map(size => (
-                      <div key={size} className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground">{size}</span>
-                        <Input
-                          type="number"
-                          min={0}
-                          className="h-8 w-14 text-center text-xs"
-                          value={currentRun[size] || ''}
-                          placeholder="0"
-                          onChange={(e) => {
-                            const val = Number(e.target.value) || 0;
-                            const newRun = { ...currentRun, [size]: val };
-                            if (val === 0) delete newRun[size];
-                            updateSku(selectedSku.id, { size_run: newRun } as any);
-                            setSelectedSku(prev => prev ? { ...prev, size_run: newRun } : null);
-                          }}
-                        />
-                      </div>
-                    ));
-                  })()}
-                </div>
-                {selectedSku.size_run && Object.keys(selectedSku.size_run).length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Total: {Object.values(selectedSku.size_run).reduce((a: number, b: number) => a + b, 0)} units
-                  </p>
-                )}
-              </div>
-
-              {/* Notes Section */}
-              <div className="space-y-2">
-                <Label>Notes & Concept Description</Label>
-                <textarea
-                  value={editingNotes}
-                  onChange={(e) => setEditingNotes(e.target.value)}
-                  placeholder={t.plannerSections.skuNotesPlaceholder}
-                  className="w-full h-24 p-3 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <div className="flex justify-end">
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleNotesUpdate(selectedSku.id)}
-                    disabled={editingNotes === (selectedSku.notes || '')}
-                  >
-                    Save Notes
-                  </Button>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex justify-between pt-4 border-t">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    deleteSku(selectedSku.id);
-                    setSelectedSku(null);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete SKU
-                </Button>
-                <Button onClick={() => setSelectedSku(null)}>
-                  Close
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <SkuDetailView
+          sku={selectedSku}
+          onClose={() => { setSelectedSku(null); refetch(); }}
+          onUpdate={updateSku}
+          onDelete={deleteSku}
+          onImageUpload={async (skuId, file, field) => {
+            const url = await handleImageUpload(skuId, file, field);
+            if (url) {
+              await updateSku(skuId, { [field]: url } as Partial<SKU>);
+            }
+            return url;
+          }}
+        />
       )}
 
       {/* Carry-Over Import Modal */}
@@ -1310,6 +1115,91 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
           </Card>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Pipeline View ── */
+function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: SKU) => void; t: ReturnType<typeof useTranslation> }) {
+  const phases: { id: DesignPhase; label: string; count: number }[] = [
+    { id: 'range_plan', label: t.skuPhases?.rangePlan || 'Range Plan', count: 0 },
+    { id: 'sketch', label: t.skuPhases?.sketch || 'Sketch', count: 0 },
+    { id: 'prototyping', label: t.skuPhases?.prototyping || 'Prototyping', count: 0 },
+    { id: 'production', label: t.skuPhases?.production || 'Production', count: 0 },
+    { id: 'completed', label: t.skuPhases?.completed || 'Completed', count: 0 },
+  ];
+
+  const grouped: Record<string, SKU[]> = {};
+  for (const p of phases) {
+    grouped[p.id] = [];
+  }
+  for (const sku of skus) {
+    const phase = sku.design_phase || 'range_plan';
+    if (grouped[phase]) grouped[phase].push(sku);
+    else grouped['range_plan'].push(sku);
+  }
+  phases.forEach(p => { p.count = grouped[p.id].length; });
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-4">
+      {phases.map((phase) => (
+        <div key={phase.id} className="shrink-0 w-56 flex flex-col">
+          {/* Column header */}
+          <div className="flex items-center justify-between px-3 py-2.5 bg-carbon/[0.03] border border-carbon/[0.06] mb-2">
+            <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
+              {phase.label}
+            </span>
+            <span className="text-[10px] text-carbon/25 tabular-nums">{phase.count}</span>
+          </div>
+
+          {/* SKU cards */}
+          <div className="space-y-2 min-h-[120px]">
+            {grouped[phase.id].map((sku) => (
+              <button
+                key={sku.id}
+                onClick={() => onSkuClick(sku)}
+                className="w-full text-left border border-carbon/[0.06] bg-white hover:border-carbon/15 transition-all p-3 space-y-2"
+              >
+                {/* Image thumbnail */}
+                <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden relative">
+                  {(phase.id === 'completed' || phase.id === 'production') && sku.production_sample_url ? (
+                    <img src={sku.production_sample_url} alt="" className="w-full h-full object-cover" />
+                  ) : phase.id === 'prototyping' && sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] ? (
+                    <img src={sku.proto_iterations[sku.proto_iterations.length - 1].images[0]} alt="" className="w-full h-full object-cover" />
+                  ) : phase.id === 'sketch' && sku.sketch_url ? (
+                    <img src={sku.sketch_url} alt="" className="w-full h-full object-cover" />
+                  ) : sku.reference_image_url ? (
+                    <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <p className="text-[11px] font-light text-carbon/30 text-center px-2">{sku.name}</p>
+                    </div>
+                  )}
+                  {/* Type badge */}
+                  <span className={`absolute top-1 right-1 px-1.5 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white ${
+                    sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
+                  }`}>
+                    {sku.type === 'IMAGEN' ? 'IMG' : sku.type === 'REVENUE' ? 'REV' : 'ENT'}
+                  </span>
+                </div>
+                {/* Name + price */}
+                <div>
+                  <p className="text-[11px] font-light text-carbon leading-snug line-clamp-1">{sku.name}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] text-carbon/30">{sku.family}</span>
+                    <span className="text-[10px] font-light text-carbon/50">€{sku.pvp}</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+            {grouped[phase.id].length === 0 && (
+              <div className="border border-dashed border-carbon/[0.08] p-4 flex items-center justify-center min-h-[80px]">
+                <p className="text-[10px] text-carbon/15">{t.skuPhases?.noSkus || 'No SKUs'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
