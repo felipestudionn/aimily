@@ -206,6 +206,69 @@ ${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"..
   return callSonar(prompt, 'year');
 }
 
+// ─── Brand Pricing Research (Sonar → text for Claude) ───
+
+export async function researchBrandPricing(
+  brands: string[],
+  productCategories?: string
+): Promise<string | null> {
+  if (!PERPLEXITY_API_KEY || brands.length === 0) return null;
+
+  const brandList = brands.join(', ');
+  const categoryClause = productCategories
+    ? `Focus specifically on these product categories: ${productCategories}.`
+    : '';
+
+  const prompt = `Research the RETAIL PRICING (in EUR) of these fashion brands: ${brandList}.
+
+${categoryClause}
+
+For EACH brand, find:
+1. Price ranges by product category (e.g., shirts €X-€Y, trousers €X-€Y, accessories €X-€Y)
+2. Their market positioning (accessible-premium, premium, entry-luxury, luxury)
+3. Their pricing strategy (full-price focused, heavy markdowns, outlet channels)
+
+Use real prices from their official e-commerce, Farfetch, SSENSE, Net-a-Porter, or retail press. Be specific — actual price points, not vague ranges.
+
+Return a structured text summary. Do NOT return JSON. Be concise — 3-5 lines per brand with real numbers.`;
+
+  try {
+    const body: Record<string, unknown> = {
+      model: 'sonar',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a fashion retail pricing analyst. Provide real, specific price points in EUR from current retail data. Be precise and concise.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      search_recency_filter: 'year',
+    };
+
+    const res = await fetch(SONAR_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      console.error(`Perplexity pricing research error: ${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content || '';
+    // Clean citation references
+    return text.replace(/\[\d+\]/g, '').replace(/\s{2,}/g, ' ').trim() || null;
+  } catch (e) {
+    console.error('Brand pricing research failed:', e);
+    return null;
+  }
+}
+
 // ─── Search API (raw results) ───
 
 async function callSearch(

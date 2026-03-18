@@ -145,7 +145,11 @@ Order families from highest to lowest priority.`,
     // PRICING
     // ═══════════════════════════════════════════════════
 
-    case 'pricing-assisted':
+    case 'pricing-assisted': {
+      const pricingResearchBlock = input.pricingResearch
+        ? `\n── REAL PRICING DATA FROM REFERENCE BRANDS (researched from web) ──\n${input.pricingResearch}\n── END PRICING RESEARCH ──\n\nUSE THIS DATA: The pricing research above contains REAL retail prices from the reference brands. Your pricing recommendations MUST be informed by these real benchmarks. Position the collection's prices relative to these references based on the user's direction.\n`
+        : '';
+
       return {
         temperature: 0.5,
         system: PERSONAS.merchPlanner,
@@ -157,11 +161,12 @@ ${input.families}
 The user has given this pricing direction:
 
 "${input.direction}"
-
+${input.referenceBrands ? `\nReference brands for pricing benchmarking: ${input.referenceBrands}` : ''}
+${pricingResearchBlock}
 Assign min/max price ranges (EUR) for each family and subcategory.
 
 PRICING METHODOLOGY:
-1. COMPETITIVE BENCHMARKING — Base prices on real European market benchmarks for this brand tier. Reference comparable brands when setting ranges.
+1. COMPETITIVE BENCHMARKING — ${input.pricingResearch ? 'Use the REAL pricing data above from the reference brands. Position prices relative to these real benchmarks.' : 'Base prices on real European market benchmarks for this brand tier. Reference comparable brands when setting ranges.'}
 2. PRICE ARCHITECTURE — Ensure clear separation between entry, core, and premium price points within each family
 3. CHANNEL MATH — If the brand sells wholesale, the retail price must support a 2.5-2.8x markup from wholesale cost. Factor this in.
 4. CONSUMER ALIGNMENT — Prices must match the validated consumer profile's purchasing power and price sensitivity
@@ -189,6 +194,7 @@ Return:
   ]
 }`,
       };
+    }
 
     case 'pricing-proposals':
       return {

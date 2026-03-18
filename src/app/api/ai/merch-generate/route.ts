@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildMerchPrompt } from '@/lib/ai/merch-prompts';
+import { researchBrandPricing } from '@/lib/ai/perplexity-client';
 
 /* ═══════════════════════════════════════════════════════════
    Merchandising Block — AI Generation Endpoint
    8 prompt types · Claude Haiku primary, Gemini fallback
+   Pricing-assisted: optional Perplexity research for reference brands
    ═══════════════════════════════════════════════════════════ */
 
 type GenerationType =
@@ -33,6 +35,17 @@ export async function POST(req: NextRequest) {
   const type = body.type as GenerationType;
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
+
+  // If pricing-assisted has reference brands, research their pricing first
+  if (type === 'pricing-assisted' && input.referenceBrands) {
+    const brands = input.referenceBrands.split(',').map(b => b.trim()).filter(Boolean);
+    if (brands.length > 0) {
+      const pricingResearch = await researchBrandPricing(brands, input.families);
+      if (pricingResearch) {
+        input.pricingResearch = pricingResearch;
+      }
+    }
+  }
 
   const prompt = buildMerchPrompt(type, input);
   if (!prompt) {

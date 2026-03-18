@@ -362,14 +362,27 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
             </p>
           )}
           {mode === 'assisted' && (
-            <div>
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.pricingDirection}</label>
-              <textarea
-                value={(data.direction as string) || ''}
-                onChange={(e) => onChange({ ...data, direction: e.target.value })}
-                placeholder={t.merchandising.pricingDirectionPlaceholder}
-                className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed placeholder:text-carbon/40"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.pricingDirection}</label>
+                <textarea
+                  value={(data.direction as string) || ''}
+                  onChange={(e) => onChange({ ...data, direction: e.target.value })}
+                  placeholder={t.merchandising.pricingDirectionPlaceholder}
+                  className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed placeholder:text-carbon/40"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.referenceBrands} <span className="text-carbon/40 normal-case tracking-normal font-normal">({t.merchandising.optional})</span></label>
+                <input
+                  type="text"
+                  value={(data.referenceBrands as string) || ''}
+                  onChange={(e) => onChange({ ...data, referenceBrands: e.target.value })}
+                  placeholder={t.merchandising.referenceBrandsPlaceholder}
+                  className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/40"
+                />
+                <p className="text-[10px] text-carbon/40 mt-1.5">{t.merchandising.referenceBrandsHint}</p>
+              </div>
             </div>
           )}
           <button
@@ -379,6 +392,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
               const { result, error: err } = await generateMerch(apiType, {
                 families: familiesStr,
                 direction: (data.direction as string) || '',
+                referenceBrands: (data.referenceBrands as string) || '',
                 ...collectionContext,
               }, language);
               if (err) { setError(err); setGenerating(false); return; }
