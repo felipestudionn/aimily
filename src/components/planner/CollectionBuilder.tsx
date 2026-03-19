@@ -557,19 +557,22 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       {/* ── Financial Overview — dark card ── */}
       <div className="bg-carbon p-6 sm:p-8">
         <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-white/30 mb-5">Collection Overview</p>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-5 sm:gap-6">
+        <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-10 gap-4 sm:gap-5">
           {[
             { label: 'Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
             { label: 'COGS', value: `€${Math.round(totalCOGS / 1000).toLocaleString()}K` },
+            { label: 'Gross Profit', value: `€${Math.round((totalExpectedSales - totalCOGS) / 1000).toLocaleString()}K` },
             { label: 'WS Value', value: `€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K` },
             { label: 'DTC Margin', value: `${dtcMargin.toFixed(0)}%` },
             { label: 'WS Margin', value: `${wsMargin.toFixed(0)}%` },
             { label: 'Avg Price', value: `€${frameworkValidation.avgPrice}` },
             { label: 'SKUs', value: `${skus.length}` },
+            { label: 'Families', value: `${new Set(skus.map(s => s.family)).size}` },
+            { label: 'Total Units', value: `${skus.reduce((s, sk) => s + sk.buy_units, 0).toLocaleString()}` },
           ].map((metric) => (
             <div key={metric.label}>
-              <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-white/25 mb-1.5">{metric.label}</p>
-              <p className="text-xl font-light text-crema tracking-tight">{metric.value}</p>
+              <p className="text-[9px] font-medium tracking-[0.12em] uppercase text-white/25 mb-1">{metric.label}</p>
+              <p className="text-lg font-light text-crema tracking-tight">{metric.value}</p>
             </div>
           ))}
         </div>
@@ -926,7 +929,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <span className="px-4 py-1.5 text-xs font-medium text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
                         <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
-                      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                      <div className="grid gap-3 grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
                 const displayImage = sku.production_sample_url
