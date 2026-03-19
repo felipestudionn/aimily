@@ -12,7 +12,12 @@ import { useSkus, type SKU, type DesignPhase } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/i18n';
+import { useColorways } from '@/hooks/useColorways';
+import { useSampleReviews } from '@/hooks/useSampleReviews';
+import { useWorkspaceData } from '@/hooks/useWorkspaceData';
+import { useProductionOrders } from '@/hooks/useProductionOrders';
 import { SkuDetailView } from './SkuDetailView';
+import { SkuLifecycleProvider, EMPTY_DESIGN_DATA, type DesignWorkspaceData } from './sku-phases/SkuLifecycleContext';
 
 interface CollectionBuilderProps {
   setupData: SetupData;
@@ -50,6 +55,12 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [importingSkus, setImportingSkus] = useState(false);
 
   const { skus, addSku, updateSku, deleteSku, loading, refetch } = useSkus(collectionPlanId);
+
+  // ── Lifecycle hooks (for SKU detail modal) ──
+  const { colorways, addColorway, updateColorway, deleteColorway } = useColorways(collectionPlanId);
+  const { reviews, addReview, updateReview, deleteReview } = useSampleReviews(collectionPlanId);
+  const { data: designData, save: saveDesignData } = useWorkspaceData<DesignWorkspaceData>(collectionPlanId, 'design', EMPTY_DESIGN_DATA);
+  const { orders } = useProductionOrders(collectionPlanId);
 
   // ── Auto-generate SKUs on first load (wow moment) ──
   const autoGenSteps = [
@@ -986,19 +997,27 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
       {/* SKU Detail View — 4-phase design lifecycle */}
       {selectedSku && (
-        <SkuDetailView
-          sku={selectedSku}
-          onClose={() => { setSelectedSku(null); refetch(); }}
-          onUpdate={updateSku}
-          onDelete={deleteSku}
-          onImageUpload={async (skuId, file, field) => {
-            const url = await handleImageUpload(skuId, file, field);
-            if (url) {
-              await updateSku(skuId, { [field]: url } as Partial<SKU>);
-            }
-            return url;
-          }}
-        />
+        <SkuLifecycleProvider value={{
+          colorways, addColorway, updateColorway, deleteColorway,
+          reviews, addReview, updateReview, deleteReview,
+          designData, saveDesignData,
+          orders,
+          collectionPlanId,
+        }}>
+          <SkuDetailView
+            sku={selectedSku}
+            onClose={() => { setSelectedSku(null); refetch(); }}
+            onUpdate={updateSku}
+            onDelete={deleteSku}
+            onImageUpload={async (skuId, file, field) => {
+              const url = await handleImageUpload(skuId, file, field as 'reference_image_url');
+              if (url) {
+                await updateSku(skuId, { [field]: url } as Partial<SKU>);
+              }
+              return url;
+            }}
+          />
+        </SkuLifecycleProvider>
       )}
 
       {/* Carry-Over Import Modal */}
