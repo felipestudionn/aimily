@@ -128,17 +128,22 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const isCompleted = localSku.design_phase === 'completed';
 
   return (
-    <div className="fixed inset-0 z-[60] bg-crema overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ animation: 'fadeIn 0.2s ease-out forwards' }}>
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-carbon/70" onClick={onClose} />
+
+      {/* Modal — 80% centered */}
+      <div className="relative w-[90vw] max-w-6xl h-[88vh] bg-crema flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-crema border-b border-carbon/[0.06]">
-          <div className="flex items-center justify-between px-6 sm:px-10 py-5">
+        <div className="shrink-0 border-b border-carbon/[0.06]">
+          <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4 min-w-0">
               <button onClick={onClose} className="flex items-center gap-1.5 text-carbon/40 hover:text-carbon transition-colors shrink-0">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="text-[10px] font-medium tracking-[0.1em] uppercase hidden sm:inline">{t.skuPhases?.back || 'Back'}</span>
               </button>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl font-light text-carbon tracking-tight truncate">
+                <h1 className="text-lg font-light text-carbon tracking-tight truncate">
                   {localSku.name}
                 </h1>
                 <p className="text-[11px] text-carbon/35 mt-0.5">
@@ -158,7 +163,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
           </div>
 
           {/* ── Phase Timeline ── */}
-          <div className="px-6 sm:px-10 pb-5">
+          <div className="px-6 pb-3">
             <div className="flex items-center gap-0">
               {PHASES.map((phase, idx) => {
                 const isActive = activePhase === phase.id;
@@ -219,7 +224,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         </div>
 
         {/* ── Phase Content ── */}
-        <div className="px-6 sm:px-10 py-8 space-y-6">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {/* ═══ RANGE PLAN PHASE ═══ */}
           {activePhase === 'range_plan' && (
             <>
@@ -235,7 +240,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
                     placeholder={t.skuPhases?.uploadReference || 'Upload reference image'}
                     onUpload={(file) => handleImageUploadForField(file, 'reference_image_url')}
                     onRemove={() => update({ reference_image_url: undefined })}
-                    aspectClass="aspect-square"
+                    aspectClass="aspect-[4/3]"
                   />
                 </div>
 
@@ -460,7 +465,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
                     placeholder={t.skuPhases?.uploadProductionSample || 'Upload production sample photo'}
                     onUpload={(file) => handleImageUploadForField(file, 'production_sample_url')}
                     onRemove={() => update({ production_sample_url: undefined })}
-                    aspectClass="aspect-square"
+                    aspectClass="aspect-[4/3]"
                   />
                 </div>
 
@@ -545,7 +550,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         </div>
 
         {/* ── Footer Actions ── */}
-        <div className="sticky bottom-0 bg-crema border-t border-carbon/[0.06] px-6 sm:px-10 py-4 flex items-center justify-between">
+        <div className="shrink-0 border-t border-carbon/[0.06] px-6 py-3 flex items-center justify-between">
           <button
             onClick={async () => {
               await onDelete(localSku.id);
@@ -573,6 +578,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
           )}
         </div>
       </div>
+    </div>
   );
 }
 

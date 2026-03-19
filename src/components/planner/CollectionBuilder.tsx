@@ -913,6 +913,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       {/* Family pill header */}
                       <div className={`flex items-center gap-3 mb-3 ${fIdx > 0 ? 'pt-2' : ''}`}>
                         <span className="px-4 py-1.5 text-xs font-medium text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
+                        <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {famSkus.map((sku) => (
