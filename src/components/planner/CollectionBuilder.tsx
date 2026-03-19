@@ -982,9 +982,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   onClick={() => openSkuDetail(sku)}
                 >
                   {/* Image / Name area */}
-                  <div className="aspect-square bg-carbon/[0.02] relative">
+                  <div className="aspect-square bg-carbon/[0.02] relative overflow-hidden">
                     {displayImage ? (
-                      <img src={displayImage as string} alt={sku.name} className="w-full h-full object-cover" />
+                      <img src={displayImage as string} alt={sku.name} className={`w-full h-full ${
+                        (displayImage === sku.sketch_url) ? 'object-contain p-2 bg-white' : 'object-cover'
+                      }`} />
                     ) : (
                       <>
                         <div className="absolute inset-0 flex items-center justify-center px-4">
