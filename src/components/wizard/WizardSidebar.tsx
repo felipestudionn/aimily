@@ -174,19 +174,21 @@ export function WizardSidebar({
       )}
 
       <aside
-        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-all duration-300 flex flex-col ${
+        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-all duration-300 flex flex-col overflow-hidden ${
           collapsed ? 'w-[52px]' : 'w-48'
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
       >
         {/* Logo — hidden when collapsed */}
-        <div className="px-4 h-16 flex items-center">
-          {!collapsed && (
-            <Link href="/my-collections" className="flex items-center hover:opacity-80 transition-opacity">
-              <img src="/images/aimily-logo-white.png" alt="aimily" className="h-7 w-auto" />
-            </Link>
-          )}
-          {saving && !collapsed && (
-            <Loader2 className="h-2.5 w-2.5 text-white/50 animate-spin ml-auto flex-shrink-0" />
+        <div className={`h-16 flex items-center ${collapsed ? 'justify-center' : 'px-4'}`}>
+          {collapsed ? null : (
+            <>
+              <Link href="/my-collections" className="flex items-center hover:opacity-80 transition-opacity">
+                <img src="/images/aimily-logo-white.png" alt="aimily" className="h-7 w-auto" />
+              </Link>
+              {saving && (
+                <Loader2 className="h-2.5 w-2.5 text-white/50 animate-spin ml-auto flex-shrink-0" />
+              )}
+            </>
           )}
           <button onClick={onMobileClose} className="md:hidden ml-auto w-6 h-6 flex items-center justify-center text-white/60 hover:text-white" aria-label="Close">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
