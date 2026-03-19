@@ -2369,6 +2369,13 @@ export const en = {
     aiMaterialDesc: 'Aimily will suggest a complete bill of materials with trade names and sustainability notes.',
     proposeMaterials: 'Propose Materials',
     generateSketch: 'Generate Sketch',
+    ctaAddReference: 'Add Reference Image',
+    ctaStartSketch: 'Start Sketch',
+    ctaUploadSketch: 'Upload Sketch',
+    ctaDefineColors: 'Define Colorways',
+    ctaReviewProto: 'Review Proto',
+    ctaValidate: 'Validate Sample',
+    ctaCompleted: 'View Details',
     // Prototyping
     protoDesc: 'Upload photos of each prototype you receive. Compare with the design reference and mark as approved or request corrections.',
     protoApproved: 'approved',

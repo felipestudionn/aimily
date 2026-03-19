@@ -957,7 +957,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <span className="px-4 py-1.5 text-xs font-medium text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
                         <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
-                      <div className="grid gap-3 grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+                      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
                 const displayImage = sku.production_sample_url
@@ -1019,6 +1019,18 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       <span className={`px-2 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white rounded ${
                         sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                       }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
+                    </div>
+                  </div>
+                  {/* CTA — dynamic per phase */}
+                  <div className="px-3 pb-3">
+                    <div className="w-full py-2 bg-carbon text-crema text-[9px] font-medium tracking-[0.12em] uppercase text-center hover:bg-carbon/90 transition-colors">
+                      {(sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url && (t.skuPhases?.ctaAddReference || 'Add Reference Image')}
+                      {(sku.design_phase || 'range_plan') === 'range_plan' && sku.reference_image_url && (t.skuPhases?.ctaStartSketch || 'Start Sketch')}
+                      {sku.design_phase === 'sketch' && !sku.sketch_url && (t.skuPhases?.ctaUploadSketch || 'Upload Sketch')}
+                      {sku.design_phase === 'sketch' && sku.sketch_url && (t.skuPhases?.ctaDefineColors || 'Define Colorways')}
+                      {sku.design_phase === 'prototyping' && (t.skuPhases?.ctaReviewProto || 'Review Proto')}
+                      {sku.design_phase === 'production' && (t.skuPhases?.ctaValidate || 'Validate Sample')}
+                      {sku.design_phase === 'completed' && (t.skuPhases?.ctaCompleted || 'View Details')}
                     </div>
                   </div>
                 </div>
