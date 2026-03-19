@@ -129,12 +129,9 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   return (
     <div className="fixed inset-0 z-[60] flex" style={{ animation: 'fadeIn 0.3s ease-out forwards' }}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-carbon/60" onClick={onClose} />
-
-      {/* Panel — takes ~80% width */}
-      <div className="relative ml-auto w-full max-w-5xl bg-crema overflow-y-auto"
-        style={{ animation: 'slideInRight 0.3s ease-out forwards' }}>
+      {/* Panel — full screen */}
+      <div className="relative w-full bg-crema overflow-y-auto"
+        style={{ animation: 'fadeIn 0.2s ease-out forwards' }}>
         {/* Header */}
         <div className="sticky top-0 z-10 bg-crema border-b border-carbon/[0.06]">
           <div className="flex items-center justify-between px-6 sm:px-10 py-5">
@@ -149,7 +146,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
                 </h1>
                 <p className="text-[11px] text-carbon/35 mt-0.5">
                   {localSku.family} · Drop {localSku.drop_number} ·{' '}
-                  <span className={`inline-block px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.05em] uppercase text-white ${
+                  <span className={`inline-block px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.05em] uppercase text-white rounded ${
                     localSku.type === 'REVENUE' ? 'bg-[#9c7c4c]' :
                     localSku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                   }`}>

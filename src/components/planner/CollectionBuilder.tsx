@@ -877,7 +877,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                               <tr key={sku.id} className="border-t border-carbon/[0.04] hover:bg-carbon/[0.02] cursor-pointer" onClick={() => openSkuDetail(sku)}>
                                 <td className="py-2.5 px-2 font-light text-carbon">{sku.name}</td>
                                 <td className="py-2.5 px-2">
-                                  <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>
+                                  <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white rounded ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>
                                     {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
                                   </span>
                                 </td>
@@ -939,7 +939,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       </>
                     )}
                     {/* Type Badge */}
-                    <span className={`absolute top-2 right-2 px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] uppercase text-white ${
+                    <span className={`absolute top-2 right-2 px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] uppercase text-white rounded ${
                       sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' :
                       sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                     }`}>
@@ -1075,7 +1075,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                                 <p className="text-xs text-muted-foreground">{sku.family} · €{sku.pvp}</p>
                               </div>
                               <div className="text-right">
-                                <span className={`px-2 py-0.5 text-[9px] font-semibold uppercase text-white ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
+                                <span className={`px-2 py-0.5 text-[9px] font-semibold uppercase text-white rounded ${sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'}`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
                                 <p className="text-xs text-muted-foreground mt-0.5">€{Math.round(sku.expected_sales).toLocaleString()}</p>
                               </div>
                             </label>
@@ -1176,7 +1176,7 @@ function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: 
                     </div>
                   )}
                   {/* Type badge */}
-                  <span className={`absolute top-1 right-1 px-1.5 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white ${
+                  <span className={`absolute top-1 right-1 px-1.5 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white rounded ${
                     sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                   }`}>
                     {sku.type === 'IMAGEN' ? 'IMG' : sku.type === 'REVENUE' ? 'REV' : 'ENT'}
