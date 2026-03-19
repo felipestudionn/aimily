@@ -178,11 +178,13 @@ export function WizardSidebar({
           collapsed ? 'w-[52px]' : 'w-48'
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
       >
-        {/* Logo */}
+        {/* Logo — hidden when collapsed */}
         <div className="px-4 h-16 flex items-center">
-          <Link href="/my-collections" className="flex items-center hover:opacity-80 transition-opacity">
-            <img src="/images/aimily-logo-white.png" alt="aimily" className="h-7 w-auto" />
-          </Link>
+          {!collapsed && (
+            <Link href="/my-collections" className="flex items-center hover:opacity-80 transition-opacity">
+              <img src="/images/aimily-logo-white.png" alt="aimily" className="h-7 w-auto" />
+            </Link>
+          )}
           {saving && !collapsed && (
             <Loader2 className="h-2.5 w-2.5 text-white/50 animate-spin ml-auto flex-shrink-0" />
           )}
