@@ -1,236 +1,281 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image as ImageIcon, ClipboardCheck, FileText, Plus, Trash2, Check } from 'lucide-react';
+import { Camera, ArrowLeftRight, RefreshCw, Check, X, Plus, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import type { SKU } from '@/hooks/useSkus';
-import type { SampleReview, ReviewIssue } from '@/types/prototyping';
-import { useSkuLifecycle } from './SkuLifecycleContext';
-import { PhaseAccordion } from './PhaseAccordion';
-import { StarRating, SeverityBadge } from './shared';
+import type { SKU, ProtoIteration } from '@/hooks/useSkus';
+import { ImageUploadArea } from './shared';
 
 interface PrototypingPhaseProps {
   sku: SKU;
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
-  onImageUpload: (file: File, field: 'sketch_url') => void;
+  onImageUpload: (file: File, field: string) => void;
   uploading: string | null;
 }
 
+type ProtoStatus = 'waiting' | 'received' | 'reviewing' | 'approved' | 'rejected';
+
 export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: PrototypingPhaseProps) {
   const t = useTranslation();
-  const { reviews, addReview, updateReview, deleteReview, collectionPlanId } = useSkuLifecycle();
+  const iterations = sku.proto_iterations || [];
+  const [newNotes, setNewNotes] = useState('');
 
-  const protoReviews = reviews.filter(r => r.sku_id === sku.id && r.review_type === 'white_proto');
-  const latestReview = protoReviews[protoReviews.length - 1];
+  const latestIteration = iterations[iterations.length - 1];
+  const hasApproved = iterations.some(it => it.status === 'approved');
+
+  /* ── Add new proto iteration ── */
+  const addIteration = async () => {
+    const newIter: ProtoIteration = {
+      id: crypto.randomUUID(),
+      images: [],
+      notes: newNotes,
+      status: 'pending',
+      created_at: new Date().toISOString().split('T')[0],
+    };
+    await onUpdate({ proto_iterations: [...iterations, newIter] });
+    setNewNotes('');
+  };
+
+  /* ── Update iteration status ── */
+  const updateIterationStatus = async (iterId: string, status: ProtoIteration['status']) => {
+    const updated = iterations.map(it => it.id === iterId ? { ...it, status } : it);
+    await onUpdate({ proto_iterations: updated });
+  };
+
+  /* ── Update iteration notes ── */
+  const updateIterationNotes = async (iterId: string, notes: string) => {
+    const updated = iterations.map(it => it.id === iterId ? { ...it, notes } : it);
+    await onUpdate({ proto_iterations: updated });
+  };
+
+  /* ── Add image to iteration ── */
+  const addImageToIteration = async (iterId: string, imageUrl: string) => {
+    const updated = iterations.map(it =>
+      it.id === iterId ? { ...it, images: [...it.images, imageUrl] } : it
+    );
+    await onUpdate({ proto_iterations: updated });
+  };
+
+  /* ── Remove image from iteration ── */
+  const removeImage = async (iterId: string, imgIdx: number) => {
+    const updated = iterations.map(it =>
+      it.id === iterId ? { ...it, images: it.images.filter((_, i) => i !== imgIdx) } : it
+    );
+    await onUpdate({ proto_iterations: updated });
+  };
 
   return (
-    <div className="space-y-4">
-      {/* ── Sketch Reference ── */}
-      <PhaseAccordion title={t.skuPhases?.sketchReference || 'Sketch Reference'} icon={ImageIcon}>
-        <div className="flex gap-4">
-          {sku.sketch_url ? (
-            <div className="w-48 border border-carbon/[0.06] overflow-hidden">
-              <img src={sku.sketch_url} alt="Sketch" className="w-full object-contain bg-white" />
-            </div>
-          ) : sku.reference_image_url ? (
-            <div className="w-48 border border-carbon/[0.06] overflow-hidden">
-              <img src={sku.reference_image_url} alt="Reference" className="w-full object-contain bg-white" />
-            </div>
-          ) : (
-            <div className="w-48 border border-carbon/[0.06] bg-white aspect-[3/4] flex items-center justify-center">
-              <p className="text-xs text-carbon/20">{t.skuPhases?.noSketch || 'No sketch'}</p>
-            </div>
-          )}
-          <div className="flex-1 text-xs text-carbon/30">
-            <p>{sku.name} · {sku.family} · {sku.category}</p>
-            {sku.notes && <p className="mt-2 text-carbon/40 italic line-clamp-3">{sku.notes}</p>}
+    <div className="space-y-5">
+      {/* ── Header: design reference ── */}
+      <div className="flex items-start gap-5">
+        {/* Sketch / Reference for comparison */}
+        <div className="w-36 shrink-0 space-y-2">
+          <p className="text-[9px] text-carbon/30 uppercase tracking-wider">
+            {t.skuPhases?.sketchReference || 'Design Reference'}
+          </p>
+          <div className="border border-carbon/[0.06] overflow-hidden aspect-[3/4] bg-white">
+            {sku.sketch_url ? (
+              <img src={sku.sketch_url} alt="Sketch" className="w-full h-full object-contain" />
+            ) : sku.reference_image_url ? (
+              <img src={sku.reference_image_url} alt="Reference" className="w-full h-full object-contain" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <p className="text-[10px] text-carbon/15">{t.skuPhases?.noSketch || 'No sketch'}</p>
+              </div>
+            )}
           </div>
         </div>
-      </PhaseAccordion>
 
-      {/* ── Proto Reviews ── */}
-      <PhaseAccordion
-        title={t.skuPhases?.protoReview || 'Proto Reviews'}
-        icon={ClipboardCheck}
-        badge={protoReviews.length > 0 ? `${protoReviews.filter(r => r.status === 'approved').length}/${protoReviews.length}` : undefined}
-        defaultOpen
-      >
-        <div className="space-y-4">
-          {protoReviews.map((review) => (
-            <ProtoReviewCard key={review.id} review={review} onUpdate={updateReview} onDelete={deleteReview} t={t} />
-          ))}
+        {/* Status summary */}
+        <div className="flex-1 pt-6">
+          <p className="text-sm font-light text-carbon/60 leading-relaxed">
+            {t.skuPhases?.protoDesc || 'Upload photos of each prototype you receive. Compare with the design reference and mark as approved or request corrections.'}
+          </p>
+          <div className="flex items-center gap-4 mt-4">
+            <div className="text-center">
+              <p className="text-2xl font-light text-carbon">{iterations.length}</p>
+              <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.iterations || 'iterations'}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-light text-carbon">{iterations.filter(it => it.status === 'approved').length}</p>
+              <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.protoApproved || 'approved'}</p>
+            </div>
+            {hasApproved && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2d6a4f]/10 text-[#2d6a4f]">
+                <Check className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-medium uppercase tracking-wider">{t.skuPhases?.protoReady || 'Ready'}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-          {/* Add review */}
-          <button
-            onClick={async () => {
-              await addReview({
-                collection_plan_id: collectionPlanId,
-                sku_id: sku.id,
-                review_type: 'white_proto',
-                status: 'pending',
-                overall_rating: null,
-                fit_notes: null,
-                construction_notes: null,
-                material_notes: null,
-                color_notes: null,
-                measurements_ok: null,
-                photos: [],
-                issues: [],
-                rectification_notes: null,
-                reviewed_by: null,
-                reviewed_at: null,
-              });
+      {/* ── Proto Iterations ── */}
+      <div className="space-y-4">
+        {iterations.map((iter, idx) => (
+          <IterationCard
+            key={iter.id}
+            iteration={iter}
+            index={idx}
+            sketchUrl={sku.sketch_url || sku.reference_image_url}
+            onStatusChange={(status) => updateIterationStatus(iter.id, status)}
+            onNotesChange={(notes) => updateIterationNotes(iter.id, notes)}
+            onAddImage={async (file) => {
+              // Convert to base64 for now
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64 = reader.result as string;
+                addImageToIteration(iter.id, base64);
+              };
+              reader.readAsDataURL(file);
             }}
-            className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center"
-          >
-            <Plus className="h-3 w-3" /> {t.skuPhases?.startReview || 'Start Review'}
-          </button>
-        </div>
-      </PhaseAccordion>
+            onRemoveImage={(imgIdx) => removeImage(iter.id, imgIdx)}
+            t={t}
+          />
+        ))}
+      </div>
 
-      {/* ── Tech Pack Status ── */}
-      <PhaseAccordion title={t.skuPhases?.techPackStatus || 'Tech Pack'} icon={FileText}>
-        {latestReview?.status === 'approved' ? (
-          <div className="flex items-center gap-3 p-4 bg-[#2d6a4f]/5 border border-[#2d6a4f]/10">
-            <Check className="h-5 w-5 text-[#2d6a4f]" />
-            <div>
-              <p className="text-[11px] font-medium text-carbon">{t.skuPhases?.techPackReady || 'Proto approved — tech pack available'}</p>
-              <p className="text-[10px] text-carbon/35 mt-0.5">{t.skuPhases?.techPackDesc || 'Auto-compiled from sketch, SKU data, and proto review notes.'}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06]">
-            <p className="text-[11px] text-carbon/35">{t.skuPhases?.techPackPending || 'Tech pack will be available when a proto review is approved.'}</p>
-          </div>
-        )}
-      </PhaseAccordion>
+      {/* ── Request new proto ── */}
+      <div className="border border-dashed border-carbon/[0.1] bg-white p-5 space-y-3">
+        <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
+          {iterations.length === 0
+            ? (t.skuPhases?.firstProto || 'Register first prototype')
+            : (t.skuPhases?.requestNewProto || 'Request new prototype iteration')}
+        </p>
+        <textarea
+          value={newNotes}
+          onChange={(e) => setNewNotes(e.target.value)}
+          placeholder={t.skuPhases?.protoRequestNotes || 'Notes for this iteration (corrections requested, factory instructions...)'}
+          className="w-full h-16 p-3 border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors"
+        />
+        <button
+          onClick={addIteration}
+          className="flex items-center gap-2 px-5 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
+        >
+          <Plus className="h-3 w-3" />
+          {iterations.length === 0
+            ? (t.skuPhases?.registerProto || 'Register Proto')
+            : (t.skuPhases?.newIteration || 'New Iteration')}
+        </button>
+      </div>
     </div>
   );
 }
 
-/* ── Proto Review Card ── */
-function ProtoReviewCard({ review, onUpdate, onDelete, t }: {
-  review: SampleReview;
-  onUpdate: (id: string, u: Partial<SampleReview>) => Promise<SampleReview | null>;
-  onDelete: (id: string) => Promise<boolean>;
+/* ── Iteration Card ── */
+function IterationCard({ iteration, index, sketchUrl, onStatusChange, onNotesChange, onAddImage, onRemoveImage, t }: {
+  iteration: ProtoIteration;
+  index: number;
+  sketchUrl?: string;
+  onStatusChange: (status: ProtoIteration['status']) => void;
+  onNotesChange: (notes: string) => void;
+  onAddImage: (file: File) => void;
+  onRemoveImage: (imgIdx: number) => void;
   t: ReturnType<typeof useTranslation>;
 }) {
-  const [showAddIssue, setShowAddIssue] = useState(false);
-  const [newArea, setNewArea] = useState('');
-  const [newSeverity, setNewSeverity] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
-  const [newDesc, setNewDesc] = useState('');
+  const [notes, setNotes] = useState(iteration.notes);
 
-  const issues = review.issues || [];
-  const unresolvedCount = issues.filter(i => !i.resolved).length;
-
-  const addIssue = () => {
-    if (!newArea || !newDesc) return;
-    const issue: ReviewIssue = {
-      id: crypto.randomUUID(),
-      area: newArea,
-      severity: newSeverity,
-      description: newDesc,
-      resolved: false,
-    };
-    onUpdate(review.id, { issues: [...issues, issue] });
-    setNewArea(''); setNewDesc(''); setShowAddIssue(false);
+  const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+    pending: { bg: 'bg-carbon/[0.06]', text: 'text-carbon/50', label: t.skuPhases?.statusWaiting || 'Waiting for proto' },
+    issues: { bg: 'bg-[#c77000]/10', text: 'text-[#c77000]', label: t.skuPhases?.statusIssues || 'Issues found' },
+    approved: { bg: 'bg-[#2d6a4f]/10', text: 'text-[#2d6a4f]', label: t.skuPhases?.statusApproved || 'Approved' },
+    rejected: { bg: 'bg-[#A0463C]/10', text: 'text-[#A0463C]', label: t.skuPhases?.statusRejected || 'Rejected — new proto needed' },
   };
-
-  const toggleResolved = (issueId: string) => {
-    const updated = issues.map(i => i.id === issueId ? { ...i, resolved: !i.resolved } : i);
-    onUpdate(review.id, { issues: updated });
-  };
-
-  const removeIssue = (issueId: string) => {
-    onUpdate(review.id, { issues: issues.filter(i => i.id !== issueId) });
-  };
+  const sc = statusConfig[iteration.status] || statusConfig.pending;
 
   return (
-    <div className="border border-carbon/[0.06] bg-white p-5 space-y-4">
-      {/* Header: status + rating + delete */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <select
-          value={review.status}
-          onChange={(e) => onUpdate(review.id, { status: e.target.value as SampleReview['status'] })}
-          className="text-[10px] font-medium tracking-[0.06em] uppercase bg-transparent border border-carbon/[0.08] px-2 py-1 text-carbon/60 focus:outline-none"
-        >
-          <option value="pending">Pending</option>
-          <option value="issues_found">Issues Found</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-        <StarRating value={review.overall_rating} onChange={(v) => onUpdate(review.id, { overall_rating: v })} />
-        {unresolvedCount > 0 && (
-          <span className="text-[10px] text-[#c77000]">{unresolvedCount} {t.skuPhases?.openIssues || 'open issues'}</span>
-        )}
-        <button onClick={() => onDelete(review.id)} className="ml-auto text-carbon/20 hover:text-[#A0463C]/60 text-[10px] tracking-[0.1em] uppercase">
-          <Trash2 className="h-3 w-3" />
-        </button>
+    <div className="border border-carbon/[0.06] bg-white overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-carbon/[0.04]">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/40">
+            Proto {index + 1}
+          </span>
+          <span className="text-[10px] text-carbon/25">{iteration.created_at}</span>
+        </div>
+        {/* Status pills */}
+        <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5">
+          {(['pending', 'issues', 'approved', 'rejected'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => onStatusChange(s)}
+              className={`px-3 py-1 text-[9px] font-medium tracking-[0.08em] uppercase transition-all rounded-full ${
+                iteration.status === s
+                  ? `${statusConfig[s].bg} ${statusConfig[s].text} shadow-sm`
+                  : 'text-carbon/25 hover:text-carbon/40'
+              }`}
+            >
+              {s === 'pending' ? (t.skuPhases?.waiting || 'Waiting') :
+               s === 'issues' ? (t.skuPhases?.issues || 'Issues') :
+               s === 'approved' ? (t.skuPhases?.approved || 'Approved') :
+               (t.skuPhases?.rejected || 'Rejected')}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* 4 note fields */}
-      <div className="grid grid-cols-2 gap-3">
-        {(['fit_notes', 'construction_notes', 'material_notes', 'rectification_notes'] as const).map((field) => (
-          <div key={field}>
-            <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">
-              {field === 'fit_notes' ? (t.skuPhases?.fitNotes || 'Fit') :
-               field === 'construction_notes' ? (t.skuPhases?.constructionNotes || 'Construction') :
-               field === 'material_notes' ? (t.skuPhases?.materialNotes || 'Material') :
-               (t.skuPhases?.rectificationNotes || 'Rectification')}
-            </p>
-            <textarea
-              value={(review[field] as string) || ''}
-              onChange={(e) => onUpdate(review.id, { [field]: e.target.value })}
-              className="w-full h-14 p-2 text-[12px] font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.06] resize-none focus:outline-none focus:border-carbon/[0.15]"
-            />
+      {/* Content: photos + comparison */}
+      <div className="p-5">
+        <div className="flex gap-4">
+          {/* Proto photos */}
+          <div className="flex-1 space-y-3">
+            <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.protoPhotos || 'Proto Photos'}</p>
+            <div className="flex gap-2 flex-wrap">
+              {iteration.images.map((img, imgIdx) => (
+                <div key={imgIdx} className="relative w-24 h-24 border border-carbon/[0.06] overflow-hidden group">
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => onRemoveImage(imgIdx)}
+                    className="absolute top-1 right-1 w-5 h-5 bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              ))}
+              {/* Add photo */}
+              <label className="w-24 h-24 border border-dashed border-carbon/[0.1] flex flex-col items-center justify-center cursor-pointer hover:border-carbon/20 transition-colors">
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) onAddImage(file);
+                }} />
+                <Camera className="h-4 w-4 text-carbon/15" />
+                <span className="text-[8px] text-carbon/20 mt-1">{t.skuPhases?.addPhoto || 'Add photo'}</span>
+              </label>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Issues */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.issues || 'Issues'} ({issues.length})</p>
-          <button onClick={() => setShowAddIssue(!showAddIssue)} className="text-[9px] text-carbon/40 hover:text-carbon/60 uppercase tracking-wider">
-            <Plus className="h-3 w-3 inline" /> {t.skuPhases?.addIssue || 'Add'}
-          </button>
+          {/* Comparison: sketch vs proto */}
+          {sketchUrl && iteration.images.length > 0 && (
+            <div className="w-48 shrink-0 space-y-2">
+              <p className="text-[9px] text-carbon/30 uppercase tracking-wider flex items-center gap-1">
+                <ArrowLeftRight className="h-3 w-3" /> {t.skuPhases?.comparison || 'Compare'}
+              </p>
+              <div className="grid grid-cols-2 gap-1">
+                <div className="border border-carbon/[0.06] overflow-hidden aspect-square">
+                  <img src={sketchUrl} alt="Sketch" className="w-full h-full object-contain bg-white" />
+                </div>
+                <div className="border border-carbon/[0.06] overflow-hidden aspect-square">
+                  <img src={iteration.images[iteration.images.length - 1]} alt="Proto" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              <div className="flex justify-between text-[8px] text-carbon/20 uppercase tracking-wider">
+                <span>{t.skuPhases?.design || 'Design'}</span>
+                <span>Proto</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {issues.map((issue) => (
-          <div key={issue.id} className={`flex items-start gap-2 p-2 border border-carbon/[0.04] ${issue.resolved ? 'opacity-40' : ''}`}>
-            <input type="checkbox" checked={issue.resolved} onChange={() => toggleResolved(issue.id)} className="mt-1 shrink-0" />
-            <SeverityBadge severity={issue.severity} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-medium text-carbon/60">{issue.area}</p>
-              <p className={`text-[11px] text-carbon/40 ${issue.resolved ? 'line-through' : ''}`}>{issue.description}</p>
-            </div>
-            <button onClick={() => removeIssue(issue.id)} className="text-carbon/15 hover:text-[#A0463C]/50 shrink-0">
-              <Trash2 className="h-3 w-3" />
-            </button>
-          </div>
-        ))}
-
-        {showAddIssue && (
-          <div className="p-3 border border-dashed border-carbon/[0.1] bg-carbon/[0.02] space-y-2">
-            <div className="flex gap-2">
-              <input value={newArea} onChange={(e) => setNewArea(e.target.value)} placeholder={t.skuPhases?.issueArea || 'Area (e.g. Heel stiffness)'}
-                className="flex-1 text-[11px] text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none pb-1" />
-              <select value={newSeverity} onChange={(e) => setNewSeverity(e.target.value as typeof newSeverity)}
-                className="text-[10px] bg-transparent border border-carbon/[0.08] px-2 py-1 focus:outline-none">
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
-            </div>
-            <textarea value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder={t.skuPhases?.issueDescription || 'Description...'}
-              className="w-full h-12 p-2 text-[11px] text-carbon bg-transparent border border-carbon/[0.06] resize-none focus:outline-none focus:border-carbon/[0.15]" />
-            <div className="flex gap-2">
-              <button onClick={addIssue} className="px-3 py-1.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.1em] uppercase">{t.skuPhases?.addIssue || 'Add'}</button>
-              <button onClick={() => setShowAddIssue(false)} className="px-3 py-1.5 text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase">{t.skuPhases?.cancel || 'Cancel'}</button>
-            </div>
-          </div>
-        )}
+        {/* Notes */}
+        <div className="mt-4">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={() => { if (notes !== iteration.notes) onNotesChange(notes); }}
+            placeholder={t.skuPhases?.protoNotes || 'Review notes, corrections needed, observations...'}
+            className="w-full h-14 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors"
+          />
+        </div>
       </div>
     </div>
   );

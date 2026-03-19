@@ -1,333 +1,337 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Palette, Ruler, ShieldCheck, Package, AlertCircle, Check, Plus, Trash2 } from 'lucide-react';
+import { Palette, Ruler, ShieldCheck, Package, Check, AlertCircle, Camera, X } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
-import type { SampleReview } from '@/types/prototyping';
 import { useSkuLifecycle } from './SkuLifecycleContext';
-import { PhaseAccordion } from './PhaseAccordion';
-import { ImageUploadArea, MetricCell, SizeRunEditor, StarRating } from './shared';
+import { ImageUploadArea, MetricCell, SizeRunEditor } from './shared';
 
 interface ProductionPhaseProps {
   sku: SKU;
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
-  onImageUpload: (file: File, field: 'production_sample_url') => void;
+  onImageUpload: (file: File, field: string) => void;
   uploading: string | null;
 }
 
-/* ── Measurement defaults ── */
-const DEFAULT_MEASUREMENTS = [
-  { point: 'Length (outsole)', tolerance: '±2mm' },
-  { point: 'Width (ball)', tolerance: '±1.5mm' },
-  { point: 'Heel height', tolerance: '±1mm' },
-  { point: 'Shaft height', tolerance: '±3mm' },
-  { point: 'Opening circumference', tolerance: '±3mm' },
-];
+type ValidationStatus = 'pending' | 'approved' | 'issues';
 
 export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: ProductionPhaseProps) {
   const t = useTranslation();
-  const { reviews, addReview, updateReview, deleteReview, colorways, orders, collectionPlanId } = useSkuLifecycle();
-
-  const colorReviews = reviews.filter(r => r.sku_id === sku.id && r.review_type === 'color_sample');
-  const fittingReviews = reviews.filter(r => r.sku_id === sku.id && r.review_type === 'fitting_sample');
+  const { colorways } = useSkuLifecycle();
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
 
-  const latestColor = colorReviews[colorReviews.length - 1];
-  const latestFitting = fittingReviews[fittingReviews.length - 1];
-  const colorApproved = latestColor?.status === 'approved';
-  const fittingApproved = latestFitting?.status === 'approved';
-  const bothApproved = colorApproved && fittingApproved;
+  // Simple validation state stored in designData or as local state
+  // For now, derive from existing data
+  const [colorStatus, setColorStatus] = useState<ValidationStatus>('pending');
+  const [fitStatus, setFitStatus] = useState<ValidationStatus>('pending');
+  const [colorNotes, setColorNotes] = useState('');
+  const [fitNotes, setFitNotes] = useState('');
+  const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [confirmedSteps, setConfirmedSteps] = useState<Set<string>>(new Set());
 
-  // Find production orders that include this SKU
-  const skuOrders = orders.filter(o =>
-    o.line_items?.some(li => li.sku_id === sku.id)
-  );
+  const bothApproved = colorStatus === 'approved' && fitStatus === 'approved';
+
+  const confirmStep = (stepId: string) => {
+    setConfirmedSteps(prev => { const n = new Set(prev); n.add(stepId); return n; });
+    setExpandedStep(null);
+  };
+
+  const steps = [
+    { id: 'color', icon: Palette, name: t.skuPhases?.colorValidation || 'Color Validation', desc: t.skuPhases?.colorValidationDesc || 'Compare production colors with approved colorways' },
+    { id: 'fit', icon: Ruler, name: t.skuPhases?.fitValidation || 'Fit Validation', desc: t.skuPhases?.fitValidationDesc || 'Verify measurements and fit match specifications' },
+    { id: 'sample', icon: Package, name: t.skuPhases?.productionSample || 'Production Sample', desc: t.skuPhases?.prodSampleDesc || 'Final sample photo, size run, and financial recap' },
+    { id: 'signoff', icon: ShieldCheck, name: t.skuPhases?.finalSignOff || 'Final Sign-off', desc: t.skuPhases?.signOffDesc || 'Approve this SKU for production' },
+  ];
 
   return (
-    <div className="space-y-4">
-      {/* ── Color Sample Review ── */}
-      <PhaseAccordion
-        title={t.skuPhases?.colorSampleReview || 'Color Sample Review'}
-        icon={Palette}
-        badge={colorApproved ? 'Approved' : colorReviews.length > 0 ? 'In Review' : undefined}
-        defaultOpen
-      >
-        {/* Colorway strip */}
-        {skuColorways.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {skuColorways.map(cw => (
-              <div key={cw.id} className="flex items-center gap-1.5 px-2 py-1 bg-carbon/[0.03] border border-carbon/[0.06]">
-                <div className="w-4 h-4" style={{ backgroundColor: cw.hex_primary }} />
-                <span className="text-[10px] text-carbon/50">{cw.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
+    <div className="space-y-3">
+      {steps.map((step) => {
+        const isExpanded = expandedStep === step.id;
+        const isConfirmed = confirmedSteps.has(step.id);
+        const Icon = step.icon;
 
-        <div className="space-y-3">
-          {colorReviews.map(review => (
-            <ReviewCard key={review.id} review={review} onUpdate={updateReview} onDelete={deleteReview}
-              noteFields={['color_notes', 'material_notes']} t={t} />
-          ))}
-          <button
-            onClick={() => addReview({
-              collection_plan_id: collectionPlanId, sku_id: sku.id, review_type: 'color_sample',
-              status: 'pending', overall_rating: null, color_notes: null, material_notes: null,
-              fit_notes: null, construction_notes: null, measurements_ok: null,
-              photos: [], issues: [], rectification_notes: null, reviewed_by: null, reviewed_at: null,
-            })}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center"
-          >
-            <Plus className="h-3 w-3" /> {t.skuPhases?.addColorReview || 'Add Color Review'}
-          </button>
-        </div>
-      </PhaseAccordion>
-
-      {/* ── Fitting Review with Measurements ── */}
-      <PhaseAccordion
-        title={t.skuPhases?.fittingReview || 'Fitting Review'}
-        icon={Ruler}
-        badge={fittingApproved ? 'Approved' : fittingReviews.length > 0 ? 'In Review' : undefined}
-      >
-        <div className="space-y-3">
-          {fittingReviews.map(review => (
-            <FittingReviewCard key={review.id} review={review} onUpdate={updateReview} onDelete={deleteReview} t={t} />
-          ))}
-          <button
-            onClick={() => addReview({
-              collection_plan_id: collectionPlanId, sku_id: sku.id, review_type: 'fitting_sample',
-              status: 'pending', overall_rating: null, fit_notes: null, construction_notes: null,
-              color_notes: null, material_notes: null,
-              measurements_ok: null, photos: [], issues: [], rectification_notes: null,
-              reviewed_by: null, reviewed_at: null,
-            })}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center"
-          >
-            <Plus className="h-3 w-3" /> {t.skuPhases?.addFittingReview || 'Add Fitting Review'}
-          </button>
-        </div>
-      </PhaseAccordion>
-
-      {/* ── Approval Gate ── */}
-      <PhaseAccordion title={t.skuPhases?.finalApproval || 'Final Approval'} icon={ShieldCheck}>
-        {bothApproved ? (
-          <div className="flex items-center gap-3 p-4 bg-[#2d6a4f]/5 border border-[#2d6a4f]/10">
-            <Check className="h-5 w-5 text-[#2d6a4f]" />
-            <div>
-              <p className="text-[11px] font-medium text-carbon">{t.skuPhases?.readyForProduction || 'Ready for production'}</p>
-              <p className="text-[10px] text-carbon/35 mt-0.5">{t.skuPhases?.bothApproved || 'Color and fitting samples both approved.'}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06] space-y-2">
-            <div className="flex items-center gap-2">
-              {colorApproved ? <Check className="h-3 w-3 text-[#2d6a4f]" /> : <AlertCircle className="h-3 w-3 text-carbon/25" />}
-              <span className={`text-[11px] ${colorApproved ? 'text-[#2d6a4f]' : 'text-carbon/35'}`}>
-                {t.skuPhases?.colorSampleStatus || 'Color sample'}: {colorApproved ? 'Approved' : 'Pending'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {fittingApproved ? <Check className="h-3 w-3 text-[#2d6a4f]" /> : <AlertCircle className="h-3 w-3 text-carbon/25" />}
-              <span className={`text-[11px] ${fittingApproved ? 'text-[#2d6a4f]' : 'text-carbon/35'}`}>
-                {t.skuPhases?.fittingSampleStatus || 'Fitting sample'}: {fittingApproved ? 'Approved' : 'Pending'}
-              </span>
-            </div>
-          </div>
-        )}
-      </PhaseAccordion>
-
-      {/* ── Production Sample + Size Run ── */}
-      <PhaseAccordion title={t.skuPhases?.productionSample || 'Production Sample & Size Run'} icon={Package} defaultOpen>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.productionSample || 'Sample'}</p>
-            <ImageUploadArea
-              imageUrl={sku.production_sample_url}
-              uploading={uploading === 'production_sample_url'}
-              placeholder={t.skuPhases?.uploadProductionSample || 'Upload production sample'}
-              onUpload={(file) => onImageUpload(file, 'production_sample_url')}
-              onRemove={() => onUpdate({ production_sample_url: undefined })}
-              aspectClass="aspect-[4/3]"
-            />
-          </div>
-          <div className="space-y-4">
-            <div>
-              <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.sizeRunFinal || 'Size Run'}</p>
-              <div className="bg-white border border-carbon/[0.06] p-4">
-                <SizeRunEditor
-                  category={sku.category}
-                  sizeRun={sku.size_run || {}}
-                  buyUnits={sku.buy_units}
-                  onUpdate={(sr) => onUpdate({ size_run: sr } as Partial<SKU>)}
-                />
-              </div>
-            </div>
-            <div className="bg-white border border-carbon/[0.06] p-4">
-              <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.financialRecap || 'Financial Recap'}</p>
-              <div className="grid grid-cols-3 gap-3">
-                <MetricCell label="PVP" value={`€${sku.pvp}`} />
-                <MetricCell label="COGS" value={`€${sku.cost}`} />
-                <MetricCell label={t.skuPhases?.margin || 'Margin'} value={`${Math.round(sku.margin)}%`} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </PhaseAccordion>
-
-      {/* ── Production Orders ── */}
-      {skuOrders.length > 0 && (
-        <PhaseAccordion title={t.skuPhases?.productionOrders || 'Production Orders'} icon={Package} badge={`${skuOrders.length}`}>
-          <div className="space-y-2">
-            {skuOrders.map(order => (
-              <div key={order.id} className="p-3 bg-carbon/[0.02] border border-carbon/[0.04] flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-medium text-carbon">{order.order_number || order.factory_name || 'Order'}</p>
-                  <p className="text-[10px] text-carbon/35">{order.status} · {order.estimated_delivery || 'No ETA'}</p>
+        if (isExpanded) {
+          return (
+            <div key={step.id} className="bg-white border border-carbon/[0.06] overflow-hidden" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-carbon/[0.06]">
+                <div className="flex items-center gap-3">
+                  <Icon className="h-4 w-4 text-carbon/40" />
+                  <div>
+                    <h3 className="text-lg font-light text-carbon tracking-tight">{step.name}</h3>
+                    <p className="text-[11px] text-carbon/40 mt-0.5">{step.desc}</p>
+                  </div>
                 </div>
-                <span className="text-[10px] text-carbon/25">
-                  {order.line_items?.find(li => li.sku_id === sku.id)?.units || 0} units
-                </span>
+                <button onClick={() => setExpandedStep(null)} className="w-8 h-8 flex items-center justify-center text-carbon/30 hover:text-carbon/60">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="px-6 py-5">
+                {step.id === 'color' && (
+                  <ColorValidationContent
+                    colorways={skuColorways}
+                    status={colorStatus}
+                    onStatusChange={setColorStatus}
+                    notes={colorNotes}
+                    onNotesChange={setColorNotes}
+                    t={t}
+                  />
+                )}
+                {step.id === 'fit' && (
+                  <FitValidationContent
+                    sku={sku}
+                    status={fitStatus}
+                    onStatusChange={setFitStatus}
+                    notes={fitNotes}
+                    onNotesChange={setFitNotes}
+                    t={t}
+                  />
+                )}
+                {step.id === 'sample' && (
+                  <ProductionSampleContent sku={sku} onUpdate={onUpdate} onImageUpload={onImageUpload} uploading={uploading} t={t} />
+                )}
+                {step.id === 'signoff' && (
+                  <SignOffContent sku={sku} colorStatus={colorStatus} fitStatus={fitStatus} bothApproved={bothApproved} t={t} />
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-carbon/[0.06] flex items-center justify-between">
+                <button onClick={() => setExpandedStep(null)} className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/40 hover:text-carbon transition-colors">
+                  {t.skuPhases?.backToGrid || 'Back'}
+                </button>
+                <button onClick={() => confirmStep(step.id)} className="flex items-center gap-2 px-6 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors">
+                  <Check className="h-3.5 w-3.5" /> {t.skuPhases?.validateContinue || 'Validate & Continue'}
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // Collapsed card
+        return (
+          <button key={step.id} onClick={() => setExpandedStep(step.id)}
+            className={`w-full text-left bg-white border p-5 flex items-center gap-4 transition-all hover:border-carbon/15 ${isConfirmed ? 'border-carbon/[0.12]' : 'border-carbon/[0.06]'}`}>
+            <div className={`w-10 h-10 flex items-center justify-center shrink-0 ${isConfirmed ? 'bg-carbon text-crema' : 'bg-carbon/[0.04] text-carbon/30'}`}>
+              {isConfirmed ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-light text-carbon tracking-tight">{step.name}</h3>
+              <p className="text-[11px] text-carbon/35 mt-0.5 truncate">{step.desc}</p>
+            </div>
+            {isConfirmed && <span className="text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/25">{t.skuPhases?.confirmed || 'Confirmed'}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Color Validation ── */
+function ColorValidationContent({ colorways, status, onStatusChange, notes, onNotesChange, t }: {
+  colorways: { id: string; name: string; hex_primary: string }[];
+  status: ValidationStatus; onStatusChange: (s: ValidationStatus) => void;
+  notes: string; onNotesChange: (n: string) => void;
+  t: ReturnType<typeof useTranslation>;
+}) {
+  return (
+    <div className="space-y-5">
+      {/* Approved colorways reference */}
+      {colorways.length > 0 && (
+        <div>
+          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.approvedColorways || 'Approved Colorways'}</p>
+          <div className="flex flex-wrap gap-3">
+            {colorways.map(cw => (
+              <div key={cw.id} className="flex items-center gap-2 px-3 py-2 bg-carbon/[0.02] border border-carbon/[0.06]">
+                <div className="w-6 h-6 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_primary }} />
+                <span className="text-[11px] text-carbon/60">{cw.name}</span>
               </div>
             ))}
           </div>
-        </PhaseAccordion>
+        </div>
       )}
-    </div>
-  );
-}
 
-/* ── Generic Review Card (for color sample) ── */
-function ReviewCard({ review, onUpdate, onDelete, noteFields, t }: {
-  review: SampleReview;
-  onUpdate: (id: string, u: Partial<SampleReview>) => Promise<SampleReview | null>;
-  onDelete: (id: string) => Promise<boolean>;
-  noteFields: ('color_notes' | 'material_notes' | 'fit_notes' | 'construction_notes')[];
-  t: ReturnType<typeof useTranslation>;
-}) {
-  const fieldLabels: Record<string, string> = {
-    color_notes: t.skuPhases?.colorNotes || 'Color Notes',
-    material_notes: t.skuPhases?.materialNotes || 'Material Notes',
-    fit_notes: t.skuPhases?.fitNotes || 'Fit Notes',
-    construction_notes: t.skuPhases?.constructionNotes || 'Construction',
-  };
-
-  return (
-    <div className="border border-carbon/[0.06] bg-white p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <select value={review.status} onChange={(e) => onUpdate(review.id, { status: e.target.value as SampleReview['status'] })}
-          className="text-[10px] font-medium tracking-[0.06em] uppercase bg-transparent border border-carbon/[0.08] px-2 py-1 text-carbon/60 focus:outline-none">
-          <option value="pending">Pending</option>
-          <option value="issues_found">Issues</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-        <StarRating value={review.overall_rating} onChange={(v) => onUpdate(review.id, { overall_rating: v })} />
-        <button onClick={() => onDelete(review.id)} className="ml-auto text-carbon/20 hover:text-[#A0463C]/60"><Trash2 className="h-3 w-3" /></button>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        {noteFields.map(field => (
-          <div key={field}>
-            <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{fieldLabels[field]}</p>
-            <textarea value={(review[field] as string) || ''} onChange={(e) => onUpdate(review.id, { [field]: e.target.value })}
-              className="w-full h-14 p-2 text-[12px] font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.06] resize-none focus:outline-none focus:border-carbon/[0.15]" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── Fitting Review with Measurement Table ── */
-function FittingReviewCard({ review, onUpdate, onDelete, t }: {
-  review: SampleReview;
-  onUpdate: (id: string, u: Partial<SampleReview>) => Promise<SampleReview | null>;
-  onDelete: (id: string) => Promise<boolean>;
-  t: ReturnType<typeof useTranslation>;
-}) {
-  // Parse measurements from review or use defaults
-  const measurements = (review as unknown as { measurements?: { point: string; spec: string; actual: string; tolerance: string; pass: boolean | null }[] }).measurements || DEFAULT_MEASUREMENTS.map(m => ({ ...m, spec: '', actual: '', pass: null as boolean | null }));
-
-  const updateMeasurement = (idx: number, updates: Record<string, unknown>) => {
-    const updated = measurements.map((m, i) => i === idx ? { ...m, ...updates } : m);
-    const allChecked = updated.every(m => m.pass !== null);
-    const allPass = allChecked && updated.every(m => m.pass === true);
-    onUpdate(review.id, { measurements: updated, measurements_ok: allChecked ? allPass : null } as unknown as Partial<SampleReview>);
-  };
-
-  return (
-    <div className="border border-carbon/[0.06] bg-white p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <select value={review.status} onChange={(e) => onUpdate(review.id, { status: e.target.value as SampleReview['status'] })}
-          className="text-[10px] font-medium tracking-[0.06em] uppercase bg-transparent border border-carbon/[0.08] px-2 py-1 text-carbon/60 focus:outline-none">
-          <option value="pending">Pending</option>
-          <option value="issues_found">Issues</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-        </select>
-        <StarRating value={review.overall_rating} onChange={(v) => onUpdate(review.id, { overall_rating: v })} />
-        <button onClick={() => onDelete(review.id)} className="ml-auto text-carbon/20 hover:text-[#A0463C]/60"><Trash2 className="h-3 w-3" /></button>
-      </div>
-
-      {/* Measurement table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]">
-          <thead>
-            <tr className="border-b border-carbon/[0.06]">
-              <th className="text-left text-[9px] text-carbon/30 uppercase tracking-wider py-2 pr-3">{t.skuPhases?.measurementPoint || 'Point'}</th>
-              <th className="text-left text-[9px] text-carbon/30 uppercase tracking-wider py-2 px-2">Spec</th>
-              <th className="text-left text-[9px] text-carbon/30 uppercase tracking-wider py-2 px-2">Actual</th>
-              <th className="text-left text-[9px] text-carbon/30 uppercase tracking-wider py-2 px-2">{t.skuPhases?.tolerance || 'Tol.'}</th>
-              <th className="text-center text-[9px] text-carbon/30 uppercase tracking-wider py-2 pl-2">{t.skuPhases?.pass || 'Pass'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {measurements.map((m, idx) => (
-              <tr key={idx} className="border-b border-carbon/[0.03]">
-                <td className="py-2 pr-3 text-carbon/60 font-light">{m.point}</td>
-                <td className="py-2 px-2">
-                  <input value={m.spec || ''} onChange={(e) => updateMeasurement(idx, { spec: e.target.value })}
-                    className="w-16 text-[11px] text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none" />
-                </td>
-                <td className="py-2 px-2">
-                  <input value={m.actual || ''} onChange={(e) => updateMeasurement(idx, { actual: e.target.value })}
-                    className="w-16 text-[11px] text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none" />
-                </td>
-                <td className="py-2 px-2 text-carbon/30">{m.tolerance}</td>
-                <td className="py-2 pl-2 text-center">
-                  <button
-                    onClick={() => {
-                      const next = m.pass === null ? true : m.pass === true ? false : null;
-                      updateMeasurement(idx, { pass: next });
-                    }}
-                    className={`w-6 h-6 flex items-center justify-center text-[10px] font-bold ${
-                      m.pass === true ? 'bg-[#2d6a4f]/10 text-[#2d6a4f]' :
-                      m.pass === false ? 'bg-[#A0463C]/10 text-[#A0463C]' :
-                      'bg-carbon/[0.04] text-carbon/20'
-                    }`}
-                  >
-                    {m.pass === true ? '✓' : m.pass === false ? '✗' : '·'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Status */}
+      <div>
+        <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.colorMatchStatus || 'Color Match'}</p>
+        <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5 w-fit">
+          {(['pending', 'issues', 'approved'] as const).map(s => (
+            <button key={s} onClick={() => onStatusChange(s)}
+              className={`px-5 py-2 text-[10px] font-medium tracking-[0.1em] uppercase transition-all rounded-full ${
+                status === s
+                  ? s === 'approved' ? 'bg-[#2d6a4f] text-white shadow-sm' : s === 'issues' ? 'bg-[#c77000] text-white shadow-sm' : 'bg-carbon text-crema shadow-sm'
+                  : 'text-carbon/35 hover:text-carbon/50'
+              }`}>
+              {s === 'pending' ? (t.skuPhases?.pendingReview || 'Pending') : s === 'issues' ? (t.skuPhases?.issues || 'Issues') : (t.skuPhases?.approved || 'Approved')}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Notes */}
-      <div className="grid grid-cols-2 gap-3 pt-2">
-        <div>
-          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.fitNotes || 'Fit Notes'}</p>
-          <textarea value={review.fit_notes || ''} onChange={(e) => onUpdate(review.id, { fit_notes: e.target.value })}
-            className="w-full h-14 p-2 text-[12px] font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.06] resize-none focus:outline-none focus:border-carbon/[0.15]" />
-        </div>
-        <div>
-          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.constructionNotes || 'Construction'}</p>
-          <textarea value={review.construction_notes || ''} onChange={(e) => onUpdate(review.id, { construction_notes: e.target.value })}
-            className="w-full h-14 p-2 text-[12px] font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.06] resize-none focus:outline-none focus:border-carbon/[0.15]" />
+      <textarea value={notes} onChange={(e) => onNotesChange(e.target.value)}
+        placeholder={t.skuPhases?.colorValidationNotes || 'Color accuracy notes, deviations observed...'}
+        className="w-full h-20 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors" />
+    </div>
+  );
+}
+
+/* ── Fit Validation ── */
+function FitValidationContent({ sku, status, onStatusChange, notes, onNotesChange, t }: {
+  sku: SKU; status: ValidationStatus; onStatusChange: (s: ValidationStatus) => void;
+  notes: string; onNotesChange: (n: string) => void;
+  t: ReturnType<typeof useTranslation>;
+}) {
+  return (
+    <div className="space-y-5">
+      {/* Status */}
+      <div>
+        <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.fitMatchStatus || 'Fit & Measurements'}</p>
+        <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5 w-fit">
+          {(['pending', 'issues', 'approved'] as const).map(s => (
+            <button key={s} onClick={() => onStatusChange(s)}
+              className={`px-5 py-2 text-[10px] font-medium tracking-[0.1em] uppercase transition-all rounded-full ${
+                status === s
+                  ? s === 'approved' ? 'bg-[#2d6a4f] text-white shadow-sm' : s === 'issues' ? 'bg-[#c77000] text-white shadow-sm' : 'bg-carbon text-crema shadow-sm'
+                  : 'text-carbon/35 hover:text-carbon/50'
+              }`}>
+              {s === 'pending' ? (t.skuPhases?.pendingReview || 'Pending') : s === 'issues' ? (t.skuPhases?.issues || 'Issues') : (t.skuPhases?.approved || 'Approved')}
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* Size run reference */}
+      <div>
+        <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.sizeRunReference || 'Size Run'}</p>
+        <div className="bg-carbon/[0.02] border border-carbon/[0.06] p-4">
+          <SizeRunEditor category={sku.category} sizeRun={sku.size_run || {}} buyUnits={sku.buy_units}
+            onUpdate={(sr) => {}} />
+        </div>
+      </div>
+
+      {/* Notes */}
+      <textarea value={notes} onChange={(e) => onNotesChange(e.target.value)}
+        placeholder={t.skuPhases?.fitValidationNotes || 'Fit notes, measurement deviations, corrections needed...'}
+        className="w-full h-20 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors" />
+    </div>
+  );
+}
+
+/* ── Production Sample ── */
+function ProductionSampleContent({ sku, onUpdate, onImageUpload, uploading, t }: {
+  sku: SKU; onUpdate: (u: Partial<SKU>) => Promise<void>;
+  onImageUpload: (file: File, field: string) => void; uploading: string | null;
+  t: ReturnType<typeof useTranslation>;
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="space-y-3">
+        <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.finalSample || 'Final Sample'}</p>
+        <ImageUploadArea
+          imageUrl={sku.production_sample_url}
+          uploading={uploading === 'production_sample_url'}
+          placeholder={t.skuPhases?.uploadProductionSample || 'Upload production sample'}
+          onUpload={(file) => onImageUpload(file, 'production_sample_url')}
+          onRemove={() => onUpdate({ production_sample_url: undefined })}
+          aspectClass="aspect-[4/3]"
+        />
+        {/* Visual evolution: reference → sketch → proto → production */}
+        {(sku.reference_image_url || sku.sketch_url) && (
+          <div>
+            <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.evolution || 'Evolution'}</p>
+            <div className="flex gap-1">
+              {sku.reference_image_url && (
+                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
+                  <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+              {sku.sketch_url && (
+                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
+                  <img src={sku.sketch_url} alt="" className="w-full h-full object-contain bg-white" />
+                </div>
+              )}
+              {sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] && (
+                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
+                  <img src={sku.proto_iterations[sku.proto_iterations.length - 1].images[0]} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+              {sku.production_sample_url && (
+                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
+                  <img src={sku.production_sample_url} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+            <div className="flex gap-1 mt-1">
+              {sku.reference_image_url && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Ref</span>}
+              {sku.sketch_url && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Sketch</span>}
+              {sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Proto</span>}
+              {sku.production_sample_url && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Final</span>}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="space-y-4">
+        <div>
+          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.sizeRunFinal || 'Final Size Run'}</p>
+          <div className="bg-white border border-carbon/[0.06] p-4">
+            <SizeRunEditor category={sku.category} sizeRun={sku.size_run || {}} buyUnits={sku.buy_units}
+              onUpdate={(sr) => onUpdate({ size_run: sr } as Partial<SKU>)} />
+          </div>
+        </div>
+        <div className="bg-white border border-carbon/[0.06] p-4">
+          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.financialRecap || 'Financial Recap'}</p>
+          <div className="grid grid-cols-3 gap-3">
+            <MetricCell label="PVP" value={`€${sku.pvp}`} />
+            <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => {
+              const val = Number(v.replace(/[^0-9.]/g, ''));
+              if (!isNaN(val)) onUpdate({ cost: val, margin: sku.pvp > 0 ? Math.round(((sku.pvp - val) / sku.pvp) * 10000) / 100 : 0 });
+            }} />
+            <MetricCell label={t.skuPhases?.margin || 'Margin'} value={`${Math.round(sku.margin)}%`} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Final Sign-off ── */
+function SignOffContent({ sku, colorStatus, fitStatus, bothApproved, t }: {
+  sku: SKU; colorStatus: ValidationStatus; fitStatus: ValidationStatus;
+  bothApproved: boolean; t: ReturnType<typeof useTranslation>;
+}) {
+  return (
+    <div className="space-y-5">
+      {/* Checklist */}
+      <div className="space-y-2">
+        {[
+          { label: t.skuPhases?.colorValidation || 'Color Validation', ok: colorStatus === 'approved' },
+          { label: t.skuPhases?.fitValidation || 'Fit Validation', ok: fitStatus === 'approved' },
+          { label: t.skuPhases?.productionSample || 'Production Sample', ok: !!sku.production_sample_url },
+        ].map((item, idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            {item.ok ? <Check className="h-3.5 w-3.5 text-[#2d6a4f]" /> : <AlertCircle className="h-3.5 w-3.5 text-carbon/20" />}
+            <span className={`text-[11px] ${item.ok ? 'text-carbon' : 'text-carbon/30'}`}>{item.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {bothApproved && sku.production_sample_url ? (
+        <div className="p-5 bg-[#2d6a4f]/5 border border-[#2d6a4f]/10 flex items-center gap-3">
+          <Check className="h-6 w-6 text-[#2d6a4f]" />
+          <div>
+            <p className="text-sm font-light text-carbon">{t.skuPhases?.readyForProduction || 'Ready for production'}</p>
+            <p className="text-[10px] text-carbon/35 mt-0.5">{t.skuPhases?.signOffComplete || 'All validations passed. This SKU can be included in a production order.'}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06]">
+          <p className="text-[11px] text-carbon/35">{t.skuPhases?.signOffPending || 'Complete all validations above to approve this SKU for production.'}</p>
+        </div>
+      )}
     </div>
   );
 }

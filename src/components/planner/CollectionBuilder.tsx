@@ -927,7 +927,29 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {famSkus.map((sku) => (
+              {famSkus.map((sku) => {
+                // Dynamic image: show most advanced phase image
+                const displayImage = sku.production_sample_url
+                  || (sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0])
+                  || sku.sketch_url
+                  || sku.reference_image_url;
+                // Phase label for pill
+                const phaseLabels: Record<string, string> = {
+                  range_plan: 'Concept',
+                  sketch: 'Sketch',
+                  prototyping: 'Proto',
+                  production: 'Production',
+                  completed: 'Complete',
+                };
+                const phaseLabel = phaseLabels[sku.design_phase || 'range_plan'] || 'Concept';
+                const phaseColors: Record<string, string> = {
+                  range_plan: 'bg-carbon/[0.06] text-carbon/40',
+                  sketch: 'bg-carbon/[0.1] text-carbon/50',
+                  prototyping: 'bg-[#c77000]/10 text-[#c77000]',
+                  production: 'bg-[#7d5a8c]/10 text-[#7d5a8c]',
+                  completed: 'bg-[#2d6a4f]/10 text-[#2d6a4f]',
+                };
+                return (
                 <div
                   key={sku.id}
                   className="border border-carbon/[0.06] overflow-hidden hover:border-carbon/15 transition-all cursor-pointer bg-white group"
@@ -935,26 +957,21 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 >
                   {/* Image / Name area */}
                   <div className="aspect-square bg-carbon/[0.02] relative">
-                    {sku.reference_image_url ? (
-                      <img src={sku.reference_image_url} alt={sku.name} className="w-full h-full object-cover" />
+                    {displayImage ? (
+                      <img src={displayImage as string} alt={sku.name} className="w-full h-full object-cover" />
                     ) : (
                       <>
-                        {/* Name centered */}
                         <div className="absolute inset-0 flex items-center justify-center px-4">
                           <p className="text-[13px] font-light text-carbon leading-snug text-center">{sku.name}</p>
                         </div>
-                        {/* Add image — bottom right */}
-                        <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                        <div className="absolute bottom-2 right-2">
                           <ImagePlus className="h-5 w-5 text-carbon/[0.08]" />
                         </div>
                       </>
                     )}
-                    {/* Type Badge */}
-                    <span className={`absolute top-2 right-2 px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] uppercase text-white rounded ${
-                      sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' :
-                      sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
-                    }`}>
-                      {sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}
+                    {/* Phase Status Pill — top right */}
+                    <span className={`absolute top-2 right-2 px-2 py-0.5 text-[8px] font-semibold tracking-[0.06em] uppercase rounded ${phaseColors[sku.design_phase || 'range_plan']}`}>
+                      {phaseLabel}
                     </span>
                   </div>
 
@@ -978,13 +995,20 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <p className="text-sm font-light text-carbon">{Math.round(sku.margin)}%</p>
                       </div>
                     </div>
-                    <div className="pt-1.5 border-t border-carbon/[0.03]">
-                      <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Expected Sales</p>
-                      <p className="text-sm font-light text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
+                    {/* Expected Sales + Type Badge */}
+                    <div className="pt-1.5 border-t border-carbon/[0.03] flex items-end justify-between">
+                      <div>
+                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Expected Sales</p>
+                        <p className="text-sm font-light text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white rounded ${
+                        sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
+                      }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
                       </div>
                     </div>
                   );
