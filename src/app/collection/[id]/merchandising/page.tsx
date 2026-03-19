@@ -1159,15 +1159,17 @@ export default function MerchandisingPage() {
                         <button onClick={handleCollapse} className="w-9 h-9 flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:bg-carbon/[0.04] transition-all"><X className="h-4 w-4" /></button>
                       </div>
 
-                      {/* Mode Pills */}
-                      <div className="flex flex-wrap items-center gap-2 mb-6 sm:mb-8">
-                        {INPUT_MODE_IDS.map((modeId) => (
-                          <button key={modeId} onClick={() => updateCardData(card.id, { mode: modeId })}
-                            className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border transition-all ${state.mode === modeId ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'}`}>
-                            {t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}
-                          </button>
-                        ))}
-                        <span className="hidden sm:inline text-xs text-carbon/60 ml-2">{t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}</span>
+                      {/* Mode Pills — Alfred-style pill toggle */}
+                      <div className="flex items-center gap-3 mb-6 sm:mb-8">
+                        <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
+                          {INPUT_MODE_IDS.map((modeId) => (
+                            <button key={modeId} onClick={() => updateCardData(card.id, { mode: modeId })}
+                              className={`px-4 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase transition-all rounded-full ${state.mode === modeId ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/40 hover:text-carbon/60'}`}>
+                              {t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}
+                            </button>
+                          ))}
+                        </div>
+                        <span className="hidden sm:inline text-xs text-carbon/40 italic">{t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}</span>
                       </div>
 
                       <div className="flex-1">
@@ -1219,10 +1221,12 @@ export default function MerchandisingPage() {
                     </div>
                     <p className="text-sm text-carbon/70 leading-relaxed flex-1">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
                     {!locked && (
-                      <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-2">
-                        {INPUT_MODE_IDS.map((modeId) => (
-                          <span key={modeId} className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50">{t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}</span>
-                        ))}
+                      <div className="mt-4 sm:mt-6 flex items-center">
+                        <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
+                          {INPUT_MODE_IDS.map((modeId) => (
+                            <span key={modeId} className="px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 rounded-full">{t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     <div className={`mt-4 sm:mt-6 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] transition-colors ${

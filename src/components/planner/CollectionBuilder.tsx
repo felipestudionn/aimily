@@ -808,10 +808,10 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               <Plus className="h-3 w-3" /> Add SKU
             </button>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
             {(['pipeline', 'list', 'cards'] as const).map((mode) => (
-              <button key={mode} onClick={() => setViewMode(mode)} className={`px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-colors ${viewMode === mode ? 'bg-carbon text-crema' : 'text-carbon/30 hover:text-carbon/60'}`}>
-                {mode === 'pipeline' ? <Kanban className="h-3 w-3 inline mr-1" /> : mode === 'list' ? <List className="h-3 w-3 inline mr-1" /> : <LayoutGrid className="h-3 w-3 inline mr-1" />}{mode}
+              <button key={mode} onClick={() => setViewMode(mode)} className={`flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-all rounded-full ${viewMode === mode ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/40 hover:text-carbon/60'}`}>
+                {mode === 'pipeline' ? <Kanban className="h-3 w-3" /> : mode === 'list' ? <List className="h-3 w-3" /> : <LayoutGrid className="h-3 w-3" />}{mode}
               </button>
             ))}
           </div>
@@ -913,7 +913,6 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       {/* Family pill header */}
                       <div className={`flex items-center gap-3 mb-3 ${fIdx > 0 ? 'pt-2' : ''}`}>
                         <span className="px-4 py-1.5 text-xs font-medium text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
-                        <span className="text-[10px] text-carbon/25">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {famSkus.map((sku) => (
