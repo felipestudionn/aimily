@@ -964,27 +964,12 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         </div>
                       </>
                     )}
-                    {/* Phase Progress Circle — top right */}
-                    <div className="absolute top-2 right-2">
-                      {(() => {
-                        const size = 36;
-                        const strokeWidth = 2.5;
-                        const r = (size - strokeWidth * 2) / 2;
-                        const circumference = 2 * Math.PI * r;
-                        const offset = circumference - (progress / 100) * circumference;
-                        return (
-                          <svg width={size} height={size} className="transform -rotate-90 drop-shadow-sm">
-                            <circle cx={size / 2} cy={size / 2} r={r} fill="rgba(255,255,255,0.85)" stroke="rgba(40,42,41,0.08)" strokeWidth={strokeWidth} />
-                            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={phaseStrokeColor} strokeWidth={strokeWidth}
-                              strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-500" />
-                            <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central"
-                              className="text-[7px] font-semibold tracking-[0.04em] uppercase" fill="#282A29" fillOpacity={0.5}
-                              transform={`rotate(90 ${size / 2} ${size / 2})`}>
-                              {phaseLabel}
-                            </text>
-                          </svg>
-                        );
-                      })()}
+                    {/* Phase Progress Bar — bottom overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-white/90 px-3 py-2">
+                      <div className="w-full h-1 bg-carbon/[0.06] mb-1.5">
+                        <div className="h-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: phaseStrokeColor }} />
+                      </div>
+                      <p className="text-[8px] font-semibold tracking-[0.1em] uppercase" style={{ color: phaseStrokeColor }}>{phaseLabel}</p>
                     </div>
                   </div>
 
