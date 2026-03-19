@@ -960,10 +960,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
-                const displayImage = sku.production_sample_url
-                  || (sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0])
-                  || sku.sketch_url
-                  || sku.reference_image_url;
+                const protoImg = sku.proto_iterations?.length > 0 ? sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] : undefined;
+                const displayImage = sku.production_sample_url || protoImg || sku.sketch_url || sku.reference_image_url;
+                const isSketchImage = !sku.production_sample_url && !protoImg && !!sku.sketch_url;
                 // Phase progress
                 const phaseProgress: Record<string, number> = {
                   range_plan: 0, sketch: 25, prototyping: 50, production: 75, completed: 100,
@@ -985,7 +984,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   <div className="aspect-square bg-carbon/[0.02] relative overflow-hidden">
                     {displayImage ? (
                       <img src={displayImage as string} alt={sku.name} className={`w-full h-full ${
-                        (displayImage === sku.sketch_url) ? 'object-contain p-2 bg-white' : 'object-cover'
+                        isSketchImage ? 'object-contain p-3 bg-white' : 'object-cover'
                       }`} />
                     ) : (
                       <>
