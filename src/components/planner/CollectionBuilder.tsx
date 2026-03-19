@@ -586,7 +586,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
           </h2>
           <p className="text-xs text-carbon/30 mb-8">Product architecture derived from your creative direction and merchandising strategy.</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Family mix — horizontal bars */}
             <div>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">Family Mix</p>
@@ -608,22 +608,21 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             {/* Type mix — single donut */}
             <div>
               <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">Segmentation Mix</p>
-              <div className="flex items-center gap-8">
-                {/* Donut chart */}
+              <div className="flex items-center gap-6">
                 {(() => {
                   const r = 50; const circ = 2 * Math.PI * r;
                   const segments = frameworkValidation.typeDistribution;
                   const segColors = ['#9c7c4c', '#7d5a8c', '#4c7c6c'];
                   let cumulative = 0;
                   return (
-                    <svg width="120" height="120" className="transform -rotate-90 shrink-0">
-                      <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(40,42,41,0.04)" strokeWidth="8" />
+                    <svg width="110" height="110" className="transform -rotate-90 shrink-0">
+                      <circle cx="55" cy="55" r={r} fill="none" stroke="rgba(40,42,41,0.04)" strokeWidth="8" />
                       {segments.map((seg, i) => {
                         const offset = circ * (1 - cumulative / 100);
                         const length = circ * (seg.actual / 100);
                         cumulative += seg.actual;
                         return (
-                          <circle key={seg.name} cx="60" cy="60" r={r} fill="none" stroke={segColors[i] || '#999'} strokeWidth="8"
+                          <circle key={seg.name} cx="55" cy="55" r={r} fill="none" stroke={segColors[i] || '#999'} strokeWidth="8"
                             strokeDasharray={`${length} ${circ - length}`} strokeDashoffset={offset}
                             className="transition-all duration-700" />
                         );
@@ -631,23 +630,52 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     </svg>
                   );
                 })()}
-                {/* Legend */}
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {frameworkValidation.typeDistribution.map((td) => {
                     const labels: Record<string, string> = { REVENUE: 'Revenue', IMAGEN: 'Image', ENTRY: 'Entry' };
                     const dots: Record<string, string> = { REVENUE: 'bg-[#9c7c4c]', IMAGEN: 'bg-[#7d5a8c]', ENTRY: 'bg-[#4c7c6c]' };
                     return (
-                      <div key={td.name} className="flex items-center gap-2.5">
+                      <div key={td.name} className="flex items-center gap-2">
                         <div className={`w-2.5 h-2.5 shrink-0 ${dots[td.name] || 'bg-carbon/30'}`} />
-                        <div>
-                          <span className="text-sm font-light text-carbon">{labels[td.name] || td.name}</span>
-                          <span className="text-sm font-light text-carbon/40 ml-2">{td.actual}%</span>
-                          <span className="text-[9px] text-carbon/20 italic ml-1">target {td.target}%</span>
-                        </div>
+                        <span className="text-sm font-light text-carbon">{labels[td.name] || td.name}</span>
+                        <span className="text-sm font-light text-carbon/40">{td.actual}%</span>
+                        <span className="text-[9px] text-carbon/20 italic">target {td.target}%</span>
                       </div>
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            {/* Design Progress — SKUs by phase */}
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">Design Progress</p>
+              <div className="space-y-3">
+                {(() => {
+                  const phases: { id: string; label: string; color: string }[] = [
+                    { id: 'range_plan', label: 'Concept', color: '#282A29' },
+                    { id: 'sketch', label: 'Sketch', color: '#9c7c4c' },
+                    { id: 'prototyping', label: 'Proto', color: '#7d5a8c' },
+                    { id: 'production', label: 'Production', color: '#4c7c6c' },
+                    { id: 'completed', label: 'Complete', color: '#2d6a4f' },
+                  ];
+                  const total = skus.length || 1;
+                  return phases.map((phase) => {
+                    const count = skus.filter(s => (s.design_phase || 'range_plan') === phase.id).length;
+                    const pct = Math.round((count / total) * 100);
+                    return (
+                      <div key={phase.id}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-light text-carbon">{phase.label}</span>
+                          <span className="text-sm font-light text-carbon/50">{count}</span>
+                        </div>
+                        <div className="h-1.5 bg-carbon/[0.06] overflow-hidden">
+                          <div className="h-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: phase.color }} />
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
