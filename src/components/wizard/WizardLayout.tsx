@@ -28,7 +28,7 @@ export function WizardLayout({
   setupData,
 }: WizardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
