@@ -1,16 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Image as ImageIcon, Palette, Footprints, Scissors, Sparkles, Plus, Trash2, ExternalLink, GripVertical } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import {
+  PenTool, Palette, Layers, FileText, Sparkles, Loader2, Plus, Trash2,
+  Check, X, Upload, GripVertical, ExternalLink, ImagePlus,
+} from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { SKU } from '@/hooks/useSkus';
 import type { SkuColorway } from '@/types/design';
-import { useSkuLifecycle, type DesignWorkspaceData } from './SkuLifecycleContext';
-import { PhaseAccordion } from './PhaseAccordion';
-import { ImageUploadArea, StatusBadge } from './shared';
-import { AiGenerateButton } from './AiGenerateButton';
+import { useSkuLifecycle } from './SkuLifecycleContext';
+import { ImageUploadArea } from './shared';
 
+/* ── Types ── */
+type InputMode = 'free' | 'assisted' | 'ai';
+
+interface StepConfig {
+  id: string;
+  icon: React.ElementType;
+  nameKey: string;
+  descKey: string;
+}
+
+const STEPS: StepConfig[] = [
+  { id: 'sketch', icon: PenTool, nameKey: 'sketchStep', descKey: 'sketchStepDesc' },
+  { id: 'colorways', icon: Palette, nameKey: 'colorwaysStep', descKey: 'colorwaysStepDesc' },
+  { id: 'materials', icon: Layers, nameKey: 'materialsStep', descKey: 'materialsStepDesc' },
+  { id: 'techpack', icon: FileText, nameKey: 'techPackStep', descKey: 'techPackStepDesc' },
+];
+
+/* ── Props ── */
 interface SketchPhaseProps {
   sku: SKU;
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
@@ -21,46 +40,209 @@ interface SketchPhaseProps {
 export function SketchPhase({ sku, onUpdate, onImageUpload, uploading }: SketchPhaseProps) {
   const t = useTranslation();
   const { language } = useLanguage();
-  const { colorways, addColorway, updateColorway, deleteColorway, designData, saveDesignData } = useSkuLifecycle();
-  const [notes, setNotes] = useState(sku.notes || '');
+  const { colorways, addColorway, updateColorway, deleteColorway, designData, saveDesignData, collectionPlanId } = useSkuLifecycle();
 
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
-  const designFiles = designData.designFiles[sku.id] || [];
-  const formSpec = designData.formSpecs[sku.id] || { lastType: '', lastCode: '', factoryLink: '', notes: '' };
-  const patterns = designData.patterns[sku.id] || [];
+  const materials = (designData.patterns[sku.id] || []) as { name: string; url: string; fileType: string; gradingNotes: string }[];
 
-  /* ── Design files helpers ── */
-  const updateDesignFiles = (files: typeof designFiles) => {
-    saveDesignData({ ...designData, designFiles: { ...designData.designFiles, [sku.id]: files } });
+  // Step state: which is expanded, confirmed status per step
+  const [expandedStep, setExpandedStep] = useState<string | null>(null);
+  const [confirmedSteps, setConfirmedSteps] = useState<Set<string>>(() => {
+    const s = new Set<string>();
+    if (sku.sketch_url) s.add('sketch');
+    if (skuColorways.length > 0) s.add('colorways');
+    if (materials.length > 0) s.add('materials');
+    return s;
+  });
+  const [modes, setModes] = useState<Record<string, InputMode>>({
+    sketch: 'free', colorways: 'free', materials: 'free', techpack: 'free',
+  });
+
+  const confirmStep = (stepId: string) => {
+    setConfirmedSteps(prev => { const n = new Set(prev); n.add(stepId); return n; });
+    setExpandedStep(null);
   };
-  const updateFormSpec = (spec: typeof formSpec) => {
-    saveDesignData({ ...designData, formSpecs: { ...designData.formSpecs, [sku.id]: spec } });
-  };
-  const updatePatterns = (pats: typeof patterns) => {
-    saveDesignData({ ...designData, patterns: { ...designData.patterns, [sku.id]: pats } });
+
+  const stepLabel = (key: string): string => {
+    return (t.skuPhases as Record<string, string>)?.[key] || key;
   };
 
   return (
-    <div className="space-y-4">
-      {/* ── Sketch + Reference ── */}
-      <PhaseAccordion title={t.skuPhases?.designSketch || 'Design Sketch'} icon={ImageIcon} defaultOpen>
+    <div className="space-y-3">
+      {/* ── Step Grid ── */}
+      {STEPS.map((step) => {
+        const isExpanded = expandedStep === step.id;
+        const isConfirmed = confirmedSteps.has(step.id);
+        const Icon = step.icon;
+        const mode = modes[step.id] || 'free';
+
+        if (isExpanded) {
+          return (
+            <div key={step.id} className="bg-white border border-carbon/[0.06] overflow-hidden" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+              {/* Expanded header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-carbon/[0.06]">
+                <div className="flex items-center gap-3">
+                  <Icon className="h-4 w-4 text-carbon/40" />
+                  <div>
+                    <h3 className="text-lg font-light text-carbon tracking-tight">{stepLabel(step.nameKey)}</h3>
+                    <p className="text-[11px] text-carbon/40 mt-0.5">{stepLabel(step.descKey)}</p>
+                  </div>
+                </div>
+                <button onClick={() => setExpandedStep(null)} className="w-8 h-8 flex items-center justify-center text-carbon/30 hover:text-carbon/60">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Mode pills — Alfred style */}
+              {step.id !== 'techpack' && (
+                <div className="px-6 pt-4">
+                  <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5 w-fit">
+                    {(['free', 'assisted', 'ai'] as const).map((m) => (
+                      <button key={m} onClick={() => setModes(prev => ({ ...prev, [step.id]: m }))}
+                        className={`px-5 py-2 text-[10px] font-medium tracking-[0.1em] uppercase transition-all rounded-full ${mode === m ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/40 hover:text-carbon/60'}`}>
+                        {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step content */}
+              <div className="px-6 py-5">
+                {step.id === 'sketch' && (
+                  <SketchStepContent sku={sku} mode={mode} onUpdate={onUpdate} onImageUpload={onImageUpload} uploading={uploading} collectionPlanId={collectionPlanId} language={language} t={t} />
+                )}
+                {step.id === 'colorways' && (
+                  <ColorwaysStepContent sku={sku} mode={mode} colorways={skuColorways} addColorway={addColorway} updateColorway={updateColorway} deleteColorway={deleteColorway} language={language} t={t} />
+                )}
+                {step.id === 'materials' && (
+                  <MaterialsStepContent sku={sku} mode={mode} materials={materials} onUpdate={(mats) => saveDesignData({ ...designData, patterns: { ...designData.patterns, [sku.id]: mats } })} language={language} t={t} />
+                )}
+                {step.id === 'techpack' && (
+                  <TechPackStepContent sku={sku} skuColorways={skuColorways} materials={materials} confirmedSteps={confirmedSteps} t={t} />
+                )}
+              </div>
+
+              {/* Footer: confirm */}
+              <div className="px-6 py-4 border-t border-carbon/[0.06] flex items-center justify-between">
+                <button onClick={() => setExpandedStep(null)} className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/40 hover:text-carbon transition-colors">
+                  {stepLabel('backToGrid') || 'Back'}
+                </button>
+                <button onClick={() => confirmStep(step.id)} className="flex items-center gap-2 px-6 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors">
+                  <Check className="h-3.5 w-3.5" /> {stepLabel('validateContinue') || 'Validate & Continue'}
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        // Collapsed card
+        return (
+          <button key={step.id} onClick={() => setExpandedStep(step.id)}
+            className={`w-full text-left bg-white border p-5 flex items-center gap-4 transition-all hover:border-carbon/15 ${
+              isConfirmed ? 'border-carbon/[0.12]' : 'border-carbon/[0.06]'
+            }`}
+          >
+            <div className={`w-10 h-10 flex items-center justify-center shrink-0 ${
+              isConfirmed ? 'bg-carbon text-crema' : 'bg-carbon/[0.04] text-carbon/30'
+            }`}>
+              {isConfirmed ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-light text-carbon tracking-tight">{stepLabel(step.nameKey)}</h3>
+              <p className="text-[11px] text-carbon/35 mt-0.5 truncate">{stepLabel(step.descKey)}</p>
+            </div>
+            {isConfirmed && (
+              <span className="text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/25">{stepLabel('confirmed') || 'Confirmed'}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   STEP 1: SKETCH
+   ═══════════════════════════════════════════════════════ */
+function SketchStepContent({ sku, mode, onUpdate, onImageUpload, uploading, collectionPlanId, language, t }: {
+  sku: SKU; mode: InputMode; onUpdate: (u: Partial<SKU>) => Promise<void>;
+  onImageUpload: (file: File, field: 'sketch_url') => void; uploading: string | null;
+  collectionPlanId: string; language: string; t: ReturnType<typeof useTranslation>;
+}) {
+  const [generating, setGenerating] = useState(false);
+  const [generatedSketch, setGeneratedSketch] = useState<string | null>(null);
+  const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string }[] | null>(null);
+  const [notes, setNotes] = useState(sku.notes || '');
+
+  // Assisted: photo → flat sketch via OpenAI
+  const generateFromPhoto = useCallback(async () => {
+    if (!sku.reference_image_url) return;
+    setGenerating(true);
+    try {
+      const base64 = sku.reference_image_url.startsWith('data:')
+        ? sku.reference_image_url.split(',')[1]
+        : sku.reference_image_url;
+      const res = await fetch('/api/ai/generate-sketch-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          images: [{ base64, mimeType: 'image/png', instructions: '' }],
+          garmentType: sku.category,
+          season: '',
+          styleName: sku.name,
+          fabric: '',
+          additionalNotes: sku.notes || '',
+          collectionPlanId,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const sketch = data.sketchOptions?.[0]?.frontImageBase64;
+        if (sketch) {
+          setGeneratedSketch(sketch);
+          await onUpdate({ sketch_url: sketch });
+        }
+      }
+    } finally { setGenerating(false); }
+  }, [sku, collectionPlanId, onUpdate]);
+
+  // AI Proposal: sketch direction suggestions
+  const generateProposals = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/ai/design-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'sketch-suggest',
+          input: { productType: sku.category, family: sku.family, concept: sku.notes || '', priceRange: `€${sku.pvp}` },
+          language,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiProposals(data.result?.proposals || []);
+      }
+    } finally { setGenerating(false); }
+  }, [sku, language]);
+
+  return (
+    <div className="space-y-5">
+      {mode === 'free' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="space-y-2">
-            <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.designSketch || 'Sketch'}</p>
-            <ImageUploadArea
-              imageUrl={sku.sketch_url}
-              uploading={uploading === 'sketch_url'}
-              placeholder={t.skuPhases?.uploadSketch || 'Upload design sketch'}
+            <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.designSketch || 'Your Sketch'}</p>
+            <ImageUploadArea imageUrl={sku.sketch_url} uploading={uploading === 'sketch_url'}
+              placeholder={t.skuPhases?.uploadSketch || 'Upload your sketch'}
               onUpload={(file) => onImageUpload(file, 'sketch_url')}
-              onRemove={() => onUpdate({ sketch_url: undefined })}
-              aspectClass="aspect-[3/4]"
-            />
+              onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[3/4]" />
           </div>
           <div className="space-y-2">
             <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.referenceComparison || 'Reference'}</p>
             {sku.reference_image_url ? (
               <div className="border border-carbon/[0.06] overflow-hidden aspect-[3/4]">
-                <img src={sku.reference_image_url} alt="Reference" className="w-full h-full object-contain bg-white" />
+                <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain bg-white" />
               </div>
             ) : (
               <div className="border border-carbon/[0.06] bg-white aspect-[3/4] flex items-center justify-center">
@@ -69,209 +251,382 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading }: SketchP
             )}
           </div>
         </div>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
-          placeholder={t.skuPhases?.sketchNotesPlaceholder || 'Materials, construction details, key design decisions...'}
-          className="w-full h-16 p-3 mt-4 bg-carbon/[0.02] border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors"
-        />
-      </PhaseAccordion>
+      )}
 
-      {/* ── Design Iterations (from DesignReviewHub) ── */}
-      <PhaseAccordion
-        title={t.skuPhases?.designIterations || 'Design Iterations'}
-        icon={ImageIcon}
-        badge={designFiles.length > 0 ? `${designFiles.filter(f => f.status === 'approved').length}/${designFiles.length}` : undefined}
-      >
-        <div className="space-y-3">
-          {designFiles.map((file, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-3 bg-carbon/[0.02] border border-carbon/[0.04]">
-              {/* Thumbnail */}
-              <div className="w-10 h-10 bg-white border border-carbon/[0.06] flex items-center justify-center shrink-0 overflow-hidden">
-                {file.url ? <img src={file.url} alt="" className="w-full h-full object-cover" /> : <ImageIcon className="h-4 w-4 text-carbon/15" />}
-              </div>
-              {/* Name */}
-              <input
-                value={file.name}
-                onChange={(e) => { const f = [...designFiles]; f[idx] = { ...f[idx], name: e.target.value }; updateDesignFiles(f); }}
-                className="flex-1 text-sm font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none"
-              />
-              {/* Status */}
-              <select
-                value={file.status}
-                onChange={(e) => { const f = [...designFiles]; f[idx] = { ...f[idx], status: e.target.value as typeof file.status }; updateDesignFiles(f); }}
-                className="text-[10px] font-medium tracking-[0.06em] uppercase bg-transparent border border-carbon/[0.08] px-2 py-1 text-carbon/60 focus:outline-none"
-              >
-                <option value="draft">Draft</option>
-                <option value="review">Review</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              {/* URL input */}
-              <input
-                value={file.url}
-                onChange={(e) => { const f = [...designFiles]; f[idx] = { ...f[idx], url: e.target.value }; updateDesignFiles(f); }}
-                placeholder="Image URL"
-                className="w-32 text-[10px] text-carbon/40 bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.15] focus:outline-none"
-              />
-              {/* Delete */}
-              <button onClick={() => updateDesignFiles(designFiles.filter((_, i) => i !== idx))} className="text-carbon/20 hover:text-[#A0463C]/60">
-                <Trash2 className="h-3 w-3" />
+      {mode === 'assisted' && (
+        <div className="space-y-4">
+          <p className="text-sm font-light text-carbon/60">
+            {t.skuPhases?.assistedSketchDesc || 'Upload a reference photo and Aimily will generate a technical flat sketch for your tech pack.'}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.referencePhoto || 'Reference Photo'}</p>
+              {sku.reference_image_url ? (
+                <div className="border border-carbon/[0.06] overflow-hidden aspect-[3/4]">
+                  <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain bg-white" />
+                </div>
+              ) : (
+                <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
+                  placeholder={t.skuPhases?.uploadReference || 'Upload reference photo'}
+                  onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
+                  onRemove={() => {}} aspectClass="aspect-[3/4]" />
+              )}
+              <button onClick={generateFromPhoto} disabled={generating || !sku.reference_image_url}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-40">
+                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {t.skuPhases?.generateFlat || 'Generate Flat Sketch'}
               </button>
             </div>
-          ))}
-          <button
-            onClick={() => updateDesignFiles([...designFiles, { name: `Shot ${designFiles.length + 1}`, url: '', status: 'draft' }])}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center"
-          >
-            <Plus className="h-3 w-3" /> {t.skuPhases?.addIteration || 'Add Iteration'}
-          </button>
-        </div>
-      </PhaseAccordion>
-
-      {/* ── Colorways (from ColorwayManager) ── */}
-      <PhaseAccordion
-        title={t.skuPhases?.colorways || 'Colorways'}
-        icon={Palette}
-        badge={skuColorways.length > 0 ? `${skuColorways.filter(c => c.status === 'approved').length}/${skuColorways.length}` : undefined}
-      >
-        <div className="space-y-3">
-          {skuColorways.map((cw) => (
-            <div key={cw.id} className="flex items-center gap-3 p-3 bg-carbon/[0.02] border border-carbon/[0.04]">
-              <GripVertical className="h-3 w-3 text-carbon/15 shrink-0" />
-              {/* Color swatches */}
-              <div className="flex gap-1 shrink-0">
-                <div className="w-6 h-6 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_primary }} title={cw.hex_primary} />
-                {cw.hex_secondary && <div className="w-6 h-6 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_secondary }} />}
-                {cw.hex_accent && <div className="w-6 h-6 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_accent }} />}
-              </div>
-              {/* Name */}
-              <input
-                value={cw.name}
-                onChange={(e) => updateColorway(cw.id, { name: e.target.value })}
-                className="flex-1 text-sm font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none"
-              />
-              {/* Pantone */}
-              <input
-                value={cw.pantone_primary || ''}
-                onChange={(e) => updateColorway(cw.id, { pantone_primary: e.target.value })}
-                placeholder="Pantone"
-                className="w-24 text-[10px] text-carbon/40 bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.15] focus:outline-none text-right"
-              />
-              {/* Status */}
-              <select
-                value={cw.status}
-                onChange={(e) => updateColorway(cw.id, { status: e.target.value as SkuColorway['status'] })}
-                className="text-[10px] font-medium tracking-[0.06em] uppercase bg-transparent border border-carbon/[0.08] px-2 py-1 text-carbon/60 focus:outline-none"
-              >
-                <option value="proposed">Proposed</option>
-                <option value="sampled">Sampled</option>
-                <option value="approved">Approved</option>
-                <option value="production">Production</option>
-              </select>
-              {/* Delete */}
-              <button onClick={() => deleteColorway(cw.id)} className="text-carbon/20 hover:text-[#A0463C]/60">
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={() => addColorway({ sku_id: sku.id, name: 'New Colorway', hex_primary: '#4ECDC4', hex_secondary: null as unknown as string, hex_accent: null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length })}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center"
-          >
-            <Plus className="h-3 w-3" /> {t.skuPhases?.addColorway || 'Add Colorway'}
-          </button>
-        </div>
-      </PhaseAccordion>
-
-      {/* ── Form Specs / Last (from LastFormSection) ── */}
-      <PhaseAccordion title={t.skuPhases?.formSpecs || 'Form / Last Specs'} icon={Footprints} badge={formSpec.lastType || undefined}>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.lastType || 'Last Type'}</p>
-              <input value={formSpec.lastType} onChange={(e) => updateFormSpec({ ...formSpec, lastType: e.target.value })}
-                className="w-full text-sm font-light text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none pb-1" placeholder="e.g. Mondor 5000" />
-            </div>
-            <div>
-              <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.lastCode || 'Last Code'}</p>
-              <input value={formSpec.lastCode} onChange={(e) => updateFormSpec({ ...formSpec, lastCode: e.target.value })}
-                className="w-full text-sm font-light text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none pb-1" placeholder="e.g. MON-5000" />
-            </div>
-          </div>
-          <div>
-            <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.factoryLink || 'Factory Catalog Link'}</p>
-            <div className="flex gap-2">
-              <input value={formSpec.factoryLink} onChange={(e) => updateFormSpec({ ...formSpec, factoryLink: e.target.value })}
-                className="flex-1 text-sm font-light text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none pb-1" placeholder="https://..." />
-              {formSpec.factoryLink && (
-                <a href={formSpec.factoryLink} target="_blank" rel="noopener noreferrer" className="text-carbon/30 hover:text-carbon">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+            <div className="space-y-2">
+              <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.generatedSketch || 'Generated Sketch'}</p>
+              {sku.sketch_url || generatedSketch ? (
+                <div className="border border-carbon/[0.06] overflow-hidden aspect-[3/4]">
+                  <img src={sku.sketch_url || generatedSketch || ''} alt="" className="w-full h-full object-contain bg-white" />
+                </div>
+              ) : (
+                <div className="border border-dashed border-carbon/[0.1] bg-carbon/[0.02] aspect-[3/4] flex items-center justify-center">
+                  <p className="text-xs text-carbon/20 text-center px-4">{t.skuPhases?.sketchWillAppear || 'Your flat sketch will appear here'}</p>
+                </div>
               )}
             </div>
           </div>
-          <div>
-            <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.formNotes || 'Notes'}</p>
-            <textarea value={formSpec.notes} onChange={(e) => updateFormSpec({ ...formSpec, notes: e.target.value })}
-              className="w-full h-14 p-2 text-sm font-light text-carbon bg-carbon/[0.02] border border-carbon/[0.06] resize-none focus:outline-none focus:border-carbon/[0.15]" />
-          </div>
         </div>
-      </PhaseAccordion>
+      )}
 
-      {/* ── Patterns (from PatternSection) ── */}
-      <PhaseAccordion title={t.skuPhases?.patterns || 'Patterns / CAD'} icon={Scissors} badge={patterns.length > 0 ? `${patterns.length} files` : undefined}>
+      {mode === 'ai' && (
+        <div className="space-y-4">
+          <p className="text-sm font-light text-carbon/60">
+            {t.skuPhases?.aiSketchDesc || 'Aimily will analyze your creative direction and propose sketch directions for this SKU.'}
+          </p>
+          {!aiProposals && (
+            <button onClick={generateProposals} disabled={generating}
+              className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-40">
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {t.skuPhases?.proposeDirections || 'Propose Sketch Directions'}
+            </button>
+          )}
+          {aiProposals && (
+            <div className="space-y-3">
+              {aiProposals.map((proposal, idx) => (
+                <div key={idx} className="border border-carbon/[0.06] bg-white p-5 space-y-2">
+                  <h4 className="text-sm font-light text-carbon">{proposal.title}</h4>
+                  <p className="text-[12px] text-carbon/50 leading-relaxed">{proposal.description}</p>
+                  <p className="text-[10px] text-carbon/30 italic">{proposal.silhouette}</p>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {proposal.keyFeatures.map((f, i) => (
+                      <span key={i} className="px-2 py-0.5 text-[9px] bg-carbon/[0.04] text-carbon/50 rounded">{f}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <button onClick={generateProposals} disabled={generating}
+                className="text-[10px] text-carbon/40 hover:text-carbon/60 tracking-[0.1em] uppercase">
+                {generating ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
+                {t.skuPhases?.regenerate || 'Regenerate'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Notes — always visible */}
+      <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+        onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
+        placeholder={t.skuPhases?.sketchNotesPlaceholder || 'Materials, construction details, key design decisions...'}
+        className="w-full h-16 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors" />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   STEP 2: COLORWAYS
+   ═══════════════════════════════════════════════════════ */
+function ColorwaysStepContent({ sku, mode, colorways, addColorway, updateColorway, deleteColorway, language, t }: {
+  sku: SKU; mode: InputMode; colorways: SkuColorway[];
+  addColorway: (c: Omit<SkuColorway, 'id' | 'created_at'>) => Promise<SkuColorway | null>;
+  updateColorway: (id: string, u: Partial<SkuColorway>) => Promise<SkuColorway | null>;
+  deleteColorway: (id: string) => Promise<boolean>;
+  language: string; t: ReturnType<typeof useTranslation>;
+}) {
+  const [generating, setGenerating] = useState(false);
+  const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
+
+  const generateColorways = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/ai/design-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'color-suggest',
+          input: { productType: sku.category, family: sku.family, concept: sku.notes || '' },
+          language,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiColorways(data.result?.colorways || []);
+      }
+    } finally { setGenerating(false); }
+  }, [sku, language]);
+
+  const acceptAiColorway = async (cw: { name: string; colors: string[]; primary: string }) => {
+    await addColorway({
+      sku_id: sku.id, name: cw.name, hex_primary: cw.primary,
+      hex_secondary: cw.colors[1] || null as unknown as string,
+      hex_accent: cw.colors[2] || null as unknown as string,
+      pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string,
+      material_swatch_url: null as unknown as string, status: 'proposed', position: colorways.length,
+    });
+  };
+
+  return (
+    <div className="space-y-5">
+      {(mode === 'free' || colorways.length > 0) && (
         <div className="space-y-3">
-          {patterns.map((pat, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-3 bg-carbon/[0.02] border border-carbon/[0.04]">
-              <input value={pat.name} onChange={(e) => { const p = [...patterns]; p[idx] = { ...p[idx], name: e.target.value }; updatePatterns(p); }}
-                className="flex-1 text-sm font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none" placeholder="File name" />
-              <select value={pat.fileType} onChange={(e) => { const p = [...patterns]; p[idx] = { ...p[idx], fileType: e.target.value }; updatePatterns(p); }}
-                className="text-[10px] font-medium bg-transparent border border-carbon/[0.08] px-2 py-1 text-carbon/60 focus:outline-none">
-                <option>PDF</option><option>AI</option><option>DXF</option><option>PLT</option><option>Other</option>
+          {colorways.map((cw) => (
+            <div key={cw.id} className="flex items-center gap-3 p-3 bg-carbon/[0.02] border border-carbon/[0.04]">
+              <GripVertical className="h-3 w-3 text-carbon/15 shrink-0" />
+              <div className="flex gap-1 shrink-0">
+                <div className="w-7 h-7 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_primary }} />
+                {cw.hex_secondary && <div className="w-7 h-7 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_secondary }} />}
+                {cw.hex_accent && <div className="w-7 h-7 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_accent }} />}
+              </div>
+              <input value={cw.name} onChange={(e) => updateColorway(cw.id, { name: e.target.value })}
+                className="flex-1 text-sm font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none" />
+              <input value={cw.pantone_primary || ''} onChange={(e) => updateColorway(cw.id, { pantone_primary: e.target.value })}
+                placeholder="Pantone" className="w-24 text-[10px] text-carbon/40 bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.15] focus:outline-none text-right" />
+              <select value={cw.status} onChange={(e) => updateColorway(cw.id, { status: e.target.value as SkuColorway['status'] })}
+                className="text-[10px] font-medium tracking-[0.06em] uppercase bg-transparent border border-carbon/[0.08] px-2 py-1 text-carbon/60 focus:outline-none">
+                <option value="proposed">Proposed</option><option value="sampled">Sampled</option>
+                <option value="approved">Approved</option><option value="production">Production</option>
               </select>
-              <input value={pat.url} onChange={(e) => { const p = [...patterns]; p[idx] = { ...p[idx], url: e.target.value }; updatePatterns(p); }}
-                placeholder="URL" className="w-28 text-[10px] text-carbon/40 bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.15] focus:outline-none" />
-              {pat.url && <a href={pat.url} target="_blank" rel="noopener noreferrer" className="text-carbon/30 hover:text-carbon"><ExternalLink className="h-3 w-3" /></a>}
-              <button onClick={() => updatePatterns(patterns.filter((_, i) => i !== idx))} className="text-carbon/20 hover:text-[#A0463C]/60"><Trash2 className="h-3 w-3" /></button>
+              <button onClick={() => deleteColorway(cw.id)} className="text-carbon/20 hover:text-[#A0463C]/60"><Trash2 className="h-3 w-3" /></button>
             </div>
           ))}
-          <button
-            onClick={() => updatePatterns([...patterns, { name: '', url: '', fileType: 'PDF', gradingNotes: '' }])}
-            className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center"
-          >
-            <Plus className="h-3 w-3" /> {t.skuPhases?.addPattern || 'Add Pattern File'}
-          </button>
+          {mode === 'free' && (
+            <button onClick={() => addColorway({ sku_id: sku.id, name: 'New Colorway', hex_primary: '#4ECDC4', hex_secondary: null as unknown as string, hex_accent: null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: colorways.length })}
+              className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center">
+              <Plus className="h-3 w-3" /> {t.skuPhases?.addColorway || 'Add Colorway'}
+            </button>
+          )}
         </div>
-      </PhaseAccordion>
+      )}
 
-      {/* ── AI Suggestions ── */}
-      <PhaseAccordion title={t.skuPhases?.aiSuggestions || 'AI Suggestions'} icon={Sparkles}>
-        <div className="flex flex-wrap gap-3">
-          <AiGenerateButton
-            label={t.skuPhases?.suggestSketchDirections || 'Sketch Directions'}
-            type="sketch-suggest"
-            input={{ productType: sku.category, family: sku.family, concept: sku.notes || '', priceRange: `€${sku.pvp}` }}
-            onResult={(data) => console.log('Sketch suggestions:', data)}
-            language={language}
-          />
-          <AiGenerateButton
-            label={t.skuPhases?.suggestColorways || 'Colorway Ideas'}
-            type="color-suggest"
-            input={{ productType: sku.category, family: sku.family, concept: sku.notes || '' }}
-            onResult={(data) => console.log('Color suggestions:', data)}
-            language={language}
-          />
-          <AiGenerateButton
-            label={t.skuPhases?.suggestMaterials || 'Material BOM'}
-            type="materials-suggest"
-            input={{ productType: sku.category, family: sku.family, concept: sku.notes || '', priceRange: `€${sku.pvp}` }}
-            onResult={(data) => console.log('Material suggestions:', data)}
-            language={language}
-          />
+      {(mode === 'assisted' || mode === 'ai') && (
+        <div className="space-y-4">
+          <p className="text-sm font-light text-carbon/60">
+            {mode === 'assisted'
+              ? (t.skuPhases?.assistedColorDesc || 'Aimily will propose colorways based on your design direction and brand DNA.')
+              : (t.skuPhases?.aiColorDesc || 'Aimily will analyze the full creative context and propose a complete color palette.')}
+          </p>
+          {!aiColorways && (
+            <button onClick={generateColorways} disabled={generating}
+              className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-40">
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {t.skuPhases?.proposeColorways || 'Propose Colorways'}
+            </button>
+          )}
+          {aiColorways && (
+            <div className="space-y-3">
+              {aiColorways.map((cw, idx) => (
+                <div key={idx} className="border border-carbon/[0.06] bg-white p-4 flex items-center gap-4">
+                  <div className="flex gap-1 shrink-0">
+                    {cw.colors.map((hex, i) => (
+                      <div key={i} className="w-8 h-8 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />
+                    ))}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-light text-carbon">{cw.name}</p>
+                    <p className="text-[11px] text-carbon/40 mt-0.5">{cw.description}</p>
+                    <span className="text-[9px] text-carbon/25 uppercase tracking-wider">{cw.commercialRole}</span>
+                  </div>
+                  <button onClick={() => acceptAiColorway(cw)}
+                    className="px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.1] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors shrink-0">
+                    {t.skuPhases?.accept || 'Accept'}
+                  </button>
+                </div>
+              ))}
+              <button onClick={generateColorways} disabled={generating}
+                className="text-[10px] text-carbon/40 hover:text-carbon/60 tracking-[0.1em] uppercase">
+                {generating ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
+                {t.skuPhases?.regenerate || 'Regenerate'}
+              </button>
+            </div>
+          )}
         </div>
-      </PhaseAccordion>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   STEP 3: MATERIALS
+   ═══════════════════════════════════════════════════════ */
+function MaterialsStepContent({ sku, mode, materials, onUpdate, language, t }: {
+  sku: SKU; mode: InputMode;
+  materials: { name: string; url: string; fileType: string; gradingNotes: string }[];
+  onUpdate: (m: typeof materials) => void;
+  language: string; t: ReturnType<typeof useTranslation>;
+}) {
+  const [generating, setGenerating] = useState(false);
+  const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
+
+  const generateMaterials = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/ai/design-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'materials-suggest',
+          input: { productType: sku.category, family: sku.family, concept: sku.notes || '', priceRange: `€${sku.pvp}` },
+          language,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiMaterials(data.result?.materials || []);
+      }
+    } finally { setGenerating(false); }
+  }, [sku, language]);
+
+  const acceptMaterial = (mat: { name: string; type: string; description: string }) => {
+    onUpdate([...materials, { name: `${mat.type}: ${mat.name}`, url: '', fileType: 'Other', gradingNotes: mat.description }]);
+  };
+
+  return (
+    <div className="space-y-5">
+      {(mode === 'free' || materials.length > 0) && (
+        <div className="space-y-3">
+          {materials.map((mat, idx) => (
+            <div key={idx} className="flex items-center gap-3 p-3 bg-carbon/[0.02] border border-carbon/[0.04]">
+              <input value={mat.name} onChange={(e) => { const m = [...materials]; m[idx] = { ...m[idx], name: e.target.value }; onUpdate(m); }}
+                className="flex-1 text-sm font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.08] focus:border-carbon/[0.15] focus:outline-none" placeholder="Material name" />
+              <input value={mat.gradingNotes} onChange={(e) => { const m = [...materials]; m[idx] = { ...m[idx], gradingNotes: e.target.value }; onUpdate(m); }}
+                placeholder="Description" className="flex-1 text-[11px] text-carbon/40 bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.15] focus:outline-none" />
+              <button onClick={() => onUpdate(materials.filter((_, i) => i !== idx))} className="text-carbon/20 hover:text-[#A0463C]/60"><Trash2 className="h-3 w-3" /></button>
+            </div>
+          ))}
+          {mode === 'free' && (
+            <button onClick={() => onUpdate([...materials, { name: '', url: '', fileType: 'Other', gradingNotes: '' }])}
+              className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-carbon/[0.1] text-carbon/40 text-[10px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors w-full justify-center">
+              <Plus className="h-3 w-3" /> {t.skuPhases?.addMaterial || 'Add Material'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {(mode === 'assisted' || mode === 'ai') && (
+        <div className="space-y-4">
+          <p className="text-sm font-light text-carbon/60">
+            {t.skuPhases?.aiMaterialDesc || 'Aimily will suggest a complete bill of materials with trade names and sustainability notes.'}
+          </p>
+          {!aiMaterials && (
+            <button onClick={generateMaterials} disabled={generating}
+              className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-40">
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {t.skuPhases?.proposeMaterials || 'Propose Materials'}
+            </button>
+          )}
+          {aiMaterials && (
+            <div className="space-y-3">
+              {aiMaterials.map((mat, idx) => (
+                <div key={idx} className="border border-carbon/[0.06] bg-white p-4 flex items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-semibold tracking-[0.1em] uppercase text-carbon/30">{mat.type}</span>
+                      {mat.priceImpact === 'high' && <span className="text-[8px] text-[#c77000]">$$</span>}
+                    </div>
+                    <p className="text-sm font-light text-carbon mt-1">{mat.name}</p>
+                    <p className="text-[11px] text-carbon/40 mt-1">{mat.description}</p>
+                    {mat.sustainability && <p className="text-[10px] text-[#2d6a4f]/60 mt-1 italic">{mat.sustainability}</p>}
+                  </div>
+                  <button onClick={() => acceptMaterial(mat)}
+                    className="px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.1] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors shrink-0">
+                    {t.skuPhases?.accept || 'Accept'}
+                  </button>
+                </div>
+              ))}
+              <button onClick={generateMaterials} disabled={generating}
+                className="text-[10px] text-carbon/40 hover:text-carbon/60 tracking-[0.1em] uppercase">
+                {generating ? <Loader2 className="h-3 w-3 animate-spin inline mr-1" /> : null}
+                {t.skuPhases?.regenerate || 'Regenerate'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   STEP 4: TECH PACK (auto-generated summary)
+   ═══════════════════════════════════════════════════════ */
+function TechPackStepContent({ sku, skuColorways, materials, confirmedSteps, t }: {
+  sku: SKU; skuColorways: SkuColorway[];
+  materials: { name: string; gradingNotes: string }[];
+  confirmedSteps: Set<string>; t: ReturnType<typeof useTranslation>;
+}) {
+  const sketchReady = confirmedSteps.has('sketch');
+  const colorsReady = confirmedSteps.has('colorways');
+  const materialsReady = confirmedSteps.has('materials');
+  const allReady = sketchReady && colorsReady && materialsReady;
+
+  return (
+    <div className="space-y-4">
+      {/* Status checklist */}
+      <div className="space-y-2">
+        {[
+          { key: 'sketch', ready: sketchReady, label: t.skuPhases?.sketchStep || 'Sketch' },
+          { key: 'colorways', ready: colorsReady, label: t.skuPhases?.colorwaysStep || 'Colorways' },
+          { key: 'materials', ready: materialsReady, label: t.skuPhases?.materialsStep || 'Materials' },
+        ].map(item => (
+          <div key={item.key} className="flex items-center gap-2">
+            {item.ready ? <Check className="h-3.5 w-3.5 text-[#2d6a4f]" /> : <div className="w-3.5 h-3.5 border border-carbon/[0.15]" />}
+            <span className={`text-[11px] ${item.ready ? 'text-carbon' : 'text-carbon/30'}`}>{item.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {allReady ? (
+        <div className="p-5 bg-carbon/[0.03] border border-carbon/[0.06] space-y-4">
+          <h4 className="text-sm font-light text-carbon">{sku.name}</h4>
+          <div className="grid grid-cols-3 gap-4 text-[11px]">
+            <div><span className="text-carbon/30 uppercase tracking-wider text-[9px]">Category</span><p className="text-carbon mt-0.5">{sku.category}</p></div>
+            <div><span className="text-carbon/30 uppercase tracking-wider text-[9px]">Family</span><p className="text-carbon mt-0.5">{sku.family}</p></div>
+            <div><span className="text-carbon/30 uppercase tracking-wider text-[9px]">PVP / COGS</span><p className="text-carbon mt-0.5">€{sku.pvp} / €{sku.cost}</p></div>
+          </div>
+          {skuColorways.length > 0 && (
+            <div>
+              <span className="text-carbon/30 uppercase tracking-wider text-[9px]">{t.skuPhases?.colorways || 'Colorways'}</span>
+              <div className="flex gap-2 mt-1">
+                {skuColorways.map(cw => (
+                  <div key={cw.id} className="flex items-center gap-1.5">
+                    <div className="w-4 h-4" style={{ backgroundColor: cw.hex_primary }} />
+                    <span className="text-[10px] text-carbon/50">{cw.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {materials.length > 0 && (
+            <div>
+              <span className="text-carbon/30 uppercase tracking-wider text-[9px]">{t.skuPhases?.materialsStep || 'Materials'}</span>
+              <div className="mt-1 space-y-1">
+                {materials.map((m, i) => (
+                  <p key={i} className="text-[11px] text-carbon/50">{m.name}{m.gradingNotes ? ` — ${m.gradingNotes}` : ''}</p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06]">
+          <p className="text-[11px] text-carbon/35">{t.skuPhases?.techPackPending || 'Complete Sketch, Colorways and Materials to generate the tech pack.'}</p>
+        </div>
+      )}
     </div>
   );
 }
