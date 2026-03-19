@@ -973,33 +973,17 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     </div>
                   </div>
 
-                  {/* Metrics */}
-                  <div className="px-3 py-3 border-t border-carbon/[0.04] space-y-2">
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                      <div>
-                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">PVP</p>
-                        <p className="text-sm font-light text-carbon">€{sku.pvp}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">COGS</p>
-                        <p className="text-sm font-light text-carbon">€{sku.cost}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Units</p>
-                        <p className="text-sm font-light text-carbon">{sku.buy_units}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Margin</p>
-                        <p className="text-sm font-light text-carbon">{Math.round(sku.margin)}%</p>
-                      </div>
+                  {/* Metrics — compact */}
+                  <div className="px-3 py-2 border-t border-carbon/[0.04]">
+                    <div className="grid grid-cols-4 gap-1 mb-1.5">
+                      <div><p className="text-[8px] text-carbon/20 uppercase">PVP</p><p className="text-[12px] font-light text-carbon">€{sku.pvp}</p></div>
+                      <div><p className="text-[8px] text-carbon/20 uppercase">COGS</p><p className="text-[12px] font-light text-carbon">€{sku.cost}</p></div>
+                      <div><p className="text-[8px] text-carbon/20 uppercase">Units</p><p className="text-[12px] font-light text-carbon">{sku.buy_units}</p></div>
+                      <div><p className="text-[8px] text-carbon/20 uppercase">Margin</p><p className="text-[12px] font-light text-carbon">{Math.round(sku.margin)}%</p></div>
                     </div>
-                    {/* Expected Sales + Type Badge */}
-                    <div className="pt-1.5 border-t border-carbon/[0.03] flex items-end justify-between">
-                      <div>
-                        <p className="text-[9px] text-carbon/25 uppercase tracking-wider">Expected Sales</p>
-                        <p className="text-sm font-light text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
-                      </div>
-                      <span className={`px-2 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white rounded ${
+                    <div className="flex items-center justify-between pt-1.5 border-t border-carbon/[0.03]">
+                      <p className="text-[12px] font-light text-carbon">€{Math.round(sku.expected_sales).toLocaleString()} <span className="text-[8px] text-carbon/20 uppercase">sales</span></p>
+                      <span className={`px-1.5 py-0.5 text-[7px] font-semibold tracking-[0.04em] uppercase text-white rounded ${
                         sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                       }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
                     </div>
