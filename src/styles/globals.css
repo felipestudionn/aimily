@@ -56,6 +56,10 @@ input, textarea, select {
 [class~="border"] {
   border-radius: 4px;
 }
+/* Preserve full pills — override global rounding */
+[class~="rounded-full"] {
+  border-radius: 9999px !important;
+}
 
 /* ── Global font size boost ──
    Bump everything up ~1px for better readability.
