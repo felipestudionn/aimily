@@ -1023,7 +1023,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   </div>
                   {/* CTA — dynamic per phase */}
                   <div className="px-3 pb-3">
-                    <div className="w-full py-2 bg-carbon text-crema text-[9px] font-medium tracking-[0.12em] uppercase text-center hover:bg-carbon/90 transition-colors">
+                    <div className="w-full py-1.5 bg-carbon text-crema text-[7px] font-medium tracking-[0.1em] uppercase text-center hover:bg-carbon/90 transition-colors rounded-full">
                       {(sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url && (t.skuPhases?.ctaAddReference || 'Add Reference Image')}
                       {(sku.design_phase || 'range_plan') === 'range_plan' && sku.reference_image_url && (t.skuPhases?.ctaStartSketch || 'Start Sketch')}
                       {sku.design_phase === 'sketch' && !sku.sketch_url && (t.skuPhases?.ctaUploadSketch || 'Upload Sketch')}
