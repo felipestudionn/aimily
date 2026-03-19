@@ -128,10 +128,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const isCompleted = localSku.design_phase === 'completed';
 
   return (
-    <div className="fixed inset-0 z-[60] flex" style={{ animation: 'fadeIn 0.3s ease-out forwards' }}>
-      {/* Panel — full screen */}
-      <div className="relative w-full bg-crema overflow-y-auto"
-        style={{ animation: 'fadeIn 0.2s ease-out forwards' }}>
+    <div className="fixed inset-0 z-[60] bg-crema overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-crema border-b border-carbon/[0.06]">
           <div className="flex items-center justify-between px-6 sm:px-10 py-5">
@@ -576,7 +573,6 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
           )}
         </div>
       </div>
-    </div>
   );
 }
 
