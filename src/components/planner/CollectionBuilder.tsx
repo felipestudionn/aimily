@@ -933,22 +933,17 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   || (sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0])
                   || sku.sketch_url
                   || sku.reference_image_url;
-                // Phase label for pill
+                // Phase progress
+                const phaseProgress: Record<string, number> = {
+                  range_plan: 0, sketch: 25, prototyping: 50, production: 75, completed: 100,
+                };
                 const phaseLabels: Record<string, string> = {
-                  range_plan: 'Concept',
-                  sketch: 'Sketch',
-                  prototyping: 'Proto',
-                  production: 'Production',
-                  completed: 'Complete',
+                  range_plan: 'Concept', sketch: 'Sketch', prototyping: 'Proto', production: 'Prod', completed: 'Done',
                 };
+                const progress = phaseProgress[sku.design_phase || 'range_plan'] || 0;
                 const phaseLabel = phaseLabels[sku.design_phase || 'range_plan'] || 'Concept';
-                const phaseColors: Record<string, string> = {
-                  range_plan: 'bg-carbon/[0.06] text-carbon/40',
-                  sketch: 'bg-carbon/[0.1] text-carbon/50',
-                  prototyping: 'bg-[#c77000]/10 text-[#c77000]',
-                  production: 'bg-[#7d5a8c]/10 text-[#7d5a8c]',
-                  completed: 'bg-[#2d6a4f]/10 text-[#2d6a4f]',
-                };
+                // Circle colors per segment: gold (0-25), plum (25-50), sage (50-75), carbon (75-100)
+                const phaseStrokeColor = progress <= 25 ? '#9c7c4c' : progress <= 50 ? '#7d5a8c' : progress <= 75 ? '#4c7c6c' : '#282A29';
                 return (
                 <div
                   key={sku.id}
@@ -969,10 +964,28 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         </div>
                       </>
                     )}
-                    {/* Phase Status Pill — top right */}
-                    <span className={`absolute top-2 right-2 px-2 py-0.5 text-[8px] font-semibold tracking-[0.06em] uppercase rounded ${phaseColors[sku.design_phase || 'range_plan']}`}>
-                      {phaseLabel}
-                    </span>
+                    {/* Phase Progress Circle — top right */}
+                    <div className="absolute top-2 right-2">
+                      {(() => {
+                        const size = 36;
+                        const strokeWidth = 2.5;
+                        const r = (size - strokeWidth * 2) / 2;
+                        const circumference = 2 * Math.PI * r;
+                        const offset = circumference - (progress / 100) * circumference;
+                        return (
+                          <svg width={size} height={size} className="transform -rotate-90 drop-shadow-sm">
+                            <circle cx={size / 2} cy={size / 2} r={r} fill="rgba(255,255,255,0.85)" stroke="rgba(40,42,41,0.08)" strokeWidth={strokeWidth} />
+                            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={phaseStrokeColor} strokeWidth={strokeWidth}
+                              strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-500" />
+                            <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central"
+                              className="text-[7px] font-semibold tracking-[0.04em] uppercase" fill="#282A29" fillOpacity={0.5}
+                              transform={`rotate(90 ${size / 2} ${size / 2})`}>
+                              {phaseLabel}
+                            </text>
+                          </svg>
+                        );
+                      })()}
+                    </div>
                   </div>
 
                   {/* Metrics */}
