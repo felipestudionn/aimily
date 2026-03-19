@@ -2234,5 +2234,6 @@ export const no: Dictionary = {
     addMaterial: 'Legg til Materiale',
     aiMaterialDesc: 'Aimily foreslår en materialliste med handelsnavn.',
     proposeMaterials: 'Foreslå Materialer',
+    generateSketch: 'Generer Skisse',
   },
 };

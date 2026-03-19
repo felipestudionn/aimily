@@ -2360,5 +2360,6 @@ export const de: Dictionary = {
     addMaterial: 'Material Hinzufügen',
     aiMaterialDesc: 'Aimily schlägt eine Materialliste mit Handelsnamen vor.',
     proposeMaterials: 'Materialien Vorschlagen',
+    generateSketch: 'Skizze Generieren',
   },
 };

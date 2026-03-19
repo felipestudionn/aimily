@@ -2346,5 +2346,6 @@ export const es: Dictionary = {
     addMaterial: 'Añadir Material',
     aiMaterialDesc: 'Aimily sugerirá una lista completa de materiales con nombres comerciales y notas de sostenibilidad.',
     proposeMaterials: 'Proponer Materiales',
+    generateSketch: 'Generar Sketch',
   },
 };

@@ -2368,6 +2368,7 @@ export const en = {
     addMaterial: 'Add Material',
     aiMaterialDesc: 'Aimily will suggest a complete bill of materials with trade names and sustainability notes.',
     proposeMaterials: 'Propose Materials',
+    generateSketch: 'Generate Sketch',
   },
 };
 

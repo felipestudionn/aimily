@@ -171,8 +171,9 @@ function SketchStepContent({ sku, mode, onUpdate, onImageUpload, uploading, coll
   collectionPlanId: string; language: string; t: ReturnType<typeof useTranslation>;
 }) {
   const [generating, setGenerating] = useState(false);
+  const [generatingSketchFor, setGeneratingSketchFor] = useState<number | null>(null);
   const [generatedSketch, setGeneratedSketch] = useState<string | null>(null);
-  const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string }[] | null>(null);
+  const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [notes, setNotes] = useState(sku.notes || '');
 
   // Assisted: photo → flat sketch via OpenAI
@@ -207,7 +208,7 @@ function SketchStepContent({ sku, mode, onUpdate, onImageUpload, uploading, coll
     } finally { setGenerating(false); }
   }, [sku, collectionPlanId, onUpdate]);
 
-  // AI Proposal: sketch direction suggestions
+  // AI Proposal: sketch direction suggestions (text) → then generate visual sketch
   const generateProposals = useCallback(async () => {
     setGenerating(true);
     try {
@@ -222,10 +223,51 @@ function SketchStepContent({ sku, mode, onUpdate, onImageUpload, uploading, coll
       });
       if (res.ok) {
         const data = await res.json();
-        setAiProposals(data.result?.proposals || []);
+        setAiProposals((data.result?.proposals || []).map((p: Record<string, unknown>) => ({ ...p, sketchUrl: undefined })));
       }
     } finally { setGenerating(false); }
   }, [sku, language]);
+
+  // Generate visual flat sketch from a proposal description using fal.ai
+  const generateSketchFromProposal = useCallback(async (proposalIdx: number) => {
+    if (!aiProposals?.[proposalIdx]) return;
+    const proposal = aiProposals[proposalIdx];
+    setGeneratingSketchFor(proposalIdx);
+    try {
+      const res = await fetch('/api/ai/fal/sketch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: `${proposal.title}: ${proposal.description}. Silhouette: ${proposal.silhouette}. Key features: ${proposal.keyFeatures.join(', ')}`,
+          productType: sku.category,
+          family: sku.family,
+          concept: sku.notes || '',
+          skuName: sku.name,
+          collectionPlanId,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const sketchUrl = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
+        if (sketchUrl) {
+          setAiProposals(prev => prev?.map((p, i) => i === proposalIdx ? { ...p, sketchUrl } : p) || null);
+        }
+      }
+    } finally { setGeneratingSketchFor(null); }
+  }, [aiProposals, sku, collectionPlanId]);
+
+  // Accept a proposal: save its sketch as the SKU sketch
+  const acceptProposal = useCallback(async (proposalIdx: number) => {
+    if (!aiProposals?.[proposalIdx]) return;
+    const proposal = aiProposals[proposalIdx];
+    const updates: Partial<SKU> = {
+      notes: `${proposal.title}\n${proposal.description}\n\nSilhouette: ${proposal.silhouette}\nKey features: ${proposal.keyFeatures.join(', ')}`,
+    };
+    if (proposal.sketchUrl) {
+      updates.sketch_url = proposal.sketchUrl;
+    }
+    await onUpdate(updates);
+  }, [aiProposals, onUpdate]);
 
   return (
     <div className="space-y-5">
@@ -296,7 +338,7 @@ function SketchStepContent({ sku, mode, onUpdate, onImageUpload, uploading, coll
       {mode === 'ai' && (
         <div className="space-y-4">
           <p className="text-sm font-light text-carbon/60">
-            {t.skuPhases?.aiSketchDesc || 'Aimily will analyze your creative direction and propose sketch directions for this SKU.'}
+            {t.skuPhases?.aiSketchDesc || 'Aimily will analyze your creative direction, propose sketch directions, and generate visual flat sketches.'}
           </p>
           {!aiProposals && (
             <button onClick={generateProposals} disabled={generating}
@@ -306,16 +348,51 @@ function SketchStepContent({ sku, mode, onUpdate, onImageUpload, uploading, coll
             </button>
           )}
           {aiProposals && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {aiProposals.map((proposal, idx) => (
-                <div key={idx} className="border border-carbon/[0.06] bg-white p-5 space-y-2">
-                  <h4 className="text-sm font-light text-carbon">{proposal.title}</h4>
-                  <p className="text-[12px] text-carbon/50 leading-relaxed">{proposal.description}</p>
-                  <p className="text-[10px] text-carbon/30 italic">{proposal.silhouette}</p>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {proposal.keyFeatures.map((f, i) => (
-                      <span key={i} className="px-2 py-0.5 text-[9px] bg-carbon/[0.04] text-carbon/50 rounded">{f}</span>
-                    ))}
+                <div key={idx} className="border border-carbon/[0.06] bg-white p-5 space-y-3">
+                  <div className="flex items-start gap-5">
+                    {/* Sketch image (or generate button) */}
+                    <div className="w-40 shrink-0">
+                      {proposal.sketchUrl ? (
+                        <div className="border border-carbon/[0.06] overflow-hidden aspect-square">
+                          <img src={proposal.sketchUrl} alt={proposal.title} className="w-full h-full object-contain bg-white" />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => generateSketchFromProposal(idx)}
+                          disabled={generatingSketchFor !== null}
+                          className="w-full border border-dashed border-carbon/[0.1] bg-carbon/[0.02] aspect-square flex flex-col items-center justify-center gap-2 hover:border-carbon/20 transition-colors disabled:opacity-40"
+                        >
+                          {generatingSketchFor === idx ? (
+                            <Loader2 className="h-5 w-5 text-carbon/30 animate-spin" />
+                          ) : (
+                            <>
+                              <Sparkles className="h-5 w-5 text-carbon/20" />
+                              <span className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.generateSketch || 'Generate Sketch'}</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    {/* Description */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <h4 className="text-sm font-light text-carbon">{proposal.title}</h4>
+                      <p className="text-[12px] text-carbon/50 leading-relaxed">{proposal.description}</p>
+                      <p className="text-[10px] text-carbon/30 italic">{proposal.silhouette}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {proposal.keyFeatures.map((f, i) => (
+                          <span key={i} className="px-2 py-0.5 text-[9px] bg-carbon/[0.04] text-carbon/50 rounded">{f}</span>
+                        ))}
+                      </div>
+                      {/* Accept button */}
+                      <div className="pt-2">
+                        <button onClick={() => acceptProposal(idx)}
+                          className="px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.1] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors">
+                          {t.skuPhases?.accept || 'Accept'}{proposal.sketchUrl ? ' + Sketch' : ''}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

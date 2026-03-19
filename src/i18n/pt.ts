@@ -2342,5 +2342,6 @@ export const pt: Dictionary = {
     addMaterial: 'Adicionar Material',
     aiMaterialDesc: 'Aimily sugerirá uma lista de materiais com nomes comerciais.',
     proposeMaterials: 'Propor Materiais',
+    generateSketch: 'Gerar Esboço',
   },
 };

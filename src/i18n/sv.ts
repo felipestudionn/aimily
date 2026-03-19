@@ -2234,5 +2234,6 @@ export const sv: Dictionary = {
     addMaterial: 'Lägg till Material',
     aiMaterialDesc: 'Aimily föreslår en materiallista med handelsnamn.',
     proposeMaterials: 'Föreslå Material',
+    generateSketch: 'Generera Skiss',
   },
 } as Dictionary;
