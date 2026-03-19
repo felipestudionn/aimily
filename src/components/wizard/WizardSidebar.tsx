@@ -115,7 +115,7 @@ export function WizardSidebar({
   const pathname = usePathname();
   const { milestones, saving } = useTimeline();
   const { phases, overallProgress } = useWizardState(milestones);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const [expandedBlocks, setExpandedBlocks] = useState<Set<TimelinePhase>>(
     new Set(SIDEBAR_BLOCKS.map((b) => b.id))

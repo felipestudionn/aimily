@@ -49,7 +49,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-8 md:px-12 pt-8 pb-16">
+    <div className="px-6 sm:px-10 md:px-14 lg:px-20 pt-8 pb-16">
       {/* Header */}
       <div className="mb-8">
         <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/25 mb-3">
