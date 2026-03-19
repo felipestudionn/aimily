@@ -28,7 +28,8 @@ type DesignPromptType =
   | 'sketch-suggest'
   | 'color-suggest'
   | 'materials-suggest'
-  | 'catalog-description';
+  | 'catalog-description'
+  | 'sourcing-suggest';
 
 export function buildDesignPrompt(
   type: DesignPromptType,
@@ -198,6 +199,77 @@ Return:
   "fullDescription": "Full catalog description (60-100 words): connects product to the collection world, then covers materials, design, fit, occasion",
   "bulletPoints": ["Benefit-led feature 1", "Benefit-led feature 2", "Benefit-led feature 3", "Benefit-led feature 4"],
   "imageDirection": "35-50 words: setting, lighting mood, styling approach, camera angle, model direction"
+}`,
+      };
+
+    case 'sourcing-suggest':
+      return {
+        temperature: 0.65,
+        system: `${PERSONAS.designConsultant}
+
+You are also an expert in fashion supply chain and manufacturing sourcing. You have deep knowledge of global production hubs, factory capabilities, trade shows, and minimum order requirements across all fashion product categories.`,
+        user: `${ctx}
+
+The user needs sourcing recommendations for producing a specific product:
+- Product type: ${input.productType || 'not specified'}
+- Family: ${input.family || 'not specified'}
+- Materials: ${input.materials || 'not specified'}
+- Target COGS: ${input.targetCogs || 'not specified'}
+- Target PVP: ${input.targetPvp || 'not specified'}
+- Estimated units: ${input.units || 'not specified'}
+- Quality level: ${input.qualityLevel || 'mid-to-premium'}
+
+Generate a comprehensive sourcing recommendation:
+
+1. FACTORY TYPE — What kind of factory is ideal? (artisan workshop, semi-industrial, full industrial, vertical manufacturer). Be specific about capabilities needed.
+
+2. RECOMMENDED REGIONS — 3-4 production regions ranked by fit. For each:
+   - Country/region name
+   - Why it fits (specialization, price point, quality, lead times)
+   - Typical MOQs (minimum order quantities) for this product type
+   - Approximate lead times (proto + production)
+   - Price range for COGS
+
+3. TRADE SHOWS — 2-3 relevant trade shows where the user can find suppliers:
+   - Show name + location + typical dates
+   - What to look for there
+   - Whether it's for discovery, sourcing, or both
+
+4. SOURCING TIPS — 3-4 practical tips specific to this product:
+   - What to ask for in a first meeting
+   - Red flags to watch
+   - How to evaluate quality from a first sample
+   - Typical payment terms in this segment
+
+${QUALITY_GATES.designSpecificity}
+${QUALITY_GATES.antiGeneric}
+${OUTPUT_RULES}
+
+Return:
+{
+  "factoryType": {
+    "recommended": "Factory type name",
+    "description": "30-50 words: why this type, what capabilities to look for",
+    "capabilities": ["Capability 1", "Capability 2", "Capability 3"]
+  },
+  "regions": [
+    {
+      "name": "Country/Region",
+      "fit": "Why it fits (20-30 words)",
+      "moq": "Typical MOQ range",
+      "leadTime": "Proto + production timeline",
+      "cogsRange": "€XX-€XX per unit"
+    }
+  ],
+  "tradeShows": [
+    {
+      "name": "Show Name",
+      "location": "City, Country",
+      "dates": "Typical month/period",
+      "focus": "What to look for (15-20 words)"
+    }
+  ],
+  "tips": ["Practical tip 1", "Practical tip 2", "Practical tip 3"]
 }`,
       };
 

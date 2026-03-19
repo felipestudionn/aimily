@@ -12,7 +12,8 @@ type GenerationType =
   | 'sketch-suggest'
   | 'color-suggest'
   | 'materials-suggest'
-  | 'catalog-description';
+  | 'catalog-description'
+  | 'sourcing-suggest';
 
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();

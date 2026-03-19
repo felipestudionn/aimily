@@ -2408,6 +2408,23 @@ export const en = {
     evolution: 'Evolution',
     signOffComplete: 'All validations passed. This SKU can be included in a production order.',
     signOffPending: 'Complete all validations above to approve this SKU for production.',
+    // Sourcing
+    sourcingStep: 'Sourcing',
+    sourcingStepDesc: 'Find the right factory and production origin',
+    protoTrackingStep: 'Proto Tracking',
+    protoTrackingStepDesc: 'Track prototype iterations and approve',
+    sourcingFreeDesc: 'Add your factory and production origin details.',
+    factoryName: 'Factory / Supplier',
+    factoryOrigin: 'Origin / Country',
+    factoryContact: 'Contact',
+    sourcingNotes: 'Notes',
+    sourcingNotesPlaceholder: 'MOQ discussed, lead times, payment terms...',
+    sourcingAiDesc: 'Aimily will analyze your product specs, materials, and price point to recommend the best sourcing strategy.',
+    proposeSourcing: 'Propose Sourcing Strategy',
+    recommendedFactory: 'Recommended Factory Type',
+    recommendedRegions: 'Recommended Regions',
+    tradeShows: 'Trade Shows',
+    sourcingTips: 'Sourcing Tips',
   },
 };
 
