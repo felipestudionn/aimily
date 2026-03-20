@@ -99,7 +99,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   }, [language]);
 
   return (
-    <div className="space-y-5">
+    <div className="h-full flex flex-col gap-4">
       {/* ── Sub-stepper: numbered steps with connecting line ── */}
       <div className="flex items-center gap-0">
         {STEPS.map((step, idx) => {
@@ -158,7 +158,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
       )}
 
       {/* ── Step Content ── */}
-      <div className="min-h-[280px]">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {/* ═══ STEP 1: SKETCH ═══ */}
         {activeStep === 0 && (
           <div className="space-y-4">
@@ -169,16 +169,16 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <ImageUploadArea imageUrl={sku.sketch_url} uploading={uploading === 'sketch_url'}
                     placeholder={stepLabel('uploadSketch') || 'Upload your sketch'}
                     onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[3/4]" />
+                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[4/5] max-h-[55vh]" />
                 </div>
                 <div className="space-y-2">
                   <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referenceComparison') || 'Reference'}</p>
                   {sku.reference_image_url ? (
-                    <div className="border border-carbon/[0.06] overflow-hidden aspect-[3/4] bg-white">
+                    <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
                       <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
                     </div>
                   ) : (
-                    <div className="border border-carbon/[0.06] bg-white aspect-[3/4] flex items-center justify-center">
+                    <div className="border border-carbon/[0.06] bg-white aspect-[4/5] max-h-[55vh] flex items-center justify-center">
                       <p className="text-[11px] text-carbon/15">{stepLabel('noReference') || 'No reference image'}</p>
                     </div>
                   )}
@@ -192,14 +192,14 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <div className="space-y-2">
                     <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referencePhoto') || 'Reference'}</p>
                     {sku.reference_image_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[3/4] bg-white">
+                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
                         <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
                       </div>
                     ) : (
                       <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
                         placeholder={stepLabel('uploadReference') || 'Upload reference'}
                         onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
-                        onRemove={() => {}} aspectClass="aspect-[3/4]" />
+                        onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[55vh]" />
                     )}
                     <button onClick={async () => {
                       if (!sku.reference_image_url) return;
@@ -221,9 +221,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <div className="space-y-2">
                     <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('generatedSketch') || 'Generated'}</p>
                     {sku.sketch_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[3/4] bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
+                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
                     ) : (
-                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[3/4] flex items-center justify-center">
+                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[55vh] flex items-center justify-center">
                         <p className="text-[11px] text-carbon/15 text-center px-4">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
                       </div>
                     )}

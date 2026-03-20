@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Loader2, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import type { SKU, DesignPhase } from '@/hooks/useSkus';
@@ -56,6 +56,12 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     setClosing(true);
     setTimeout(() => onClose(), 250);
   }, [onClose]);
+
+  /* ── Lock background scroll ── */
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
 
   /* ── Update helper ── */
   const update = useCallback(async (updates: Partial<SKU>) => {
@@ -198,9 +204,9 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         </div>
       </div>
 
-      {/* ── Content — scrollable, generous padding ── */}
-      <div className="flex-1 overflow-y-auto px-6 sm:px-10 lg:px-16 py-6 sm:py-8">
-        <div className="max-w-5xl mx-auto">
+      {/* ── Content — fit viewport, no scroll ── */}
+      <div className="flex-1 min-h-0 px-6 sm:px-10 lg:px-16 py-4 sm:py-6 overflow-hidden">
+        <div className="max-w-5xl mx-auto h-full">
           {activePhase === 'range_plan' && (
             <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
