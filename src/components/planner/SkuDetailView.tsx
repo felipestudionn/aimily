@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { X, Loader2, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { Loader2, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import type { SKU, DesignPhase } from '@/hooks/useSkus';
 import { RangePlanPhase } from './sku-phases/RangePlanPhase';
@@ -26,7 +26,7 @@ function phaseIndex(phase: DesignPhase): number {
 export interface FooterAction {
   label: string;
   action: () => void;
-  isPhaseAdvance?: boolean; // true = "Send to Prototyping" etc, uses bg-carbon
+  isPhaseAdvance?: boolean;
 }
 
 /* ── Props ── */
@@ -46,9 +46,16 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const [savingPhase, setSavingPhase] = useState(false);
   const [showSuccess, setShowSuccess] = useState<{ from: DesignPhase; to: DesignPhase } | null>(null);
   const [childFooterAction, setChildFooterAction] = useState<FooterAction | null>(null);
+  const [closing, setClosing] = useState(false);
 
   const currentPhaseIdx = phaseIndex(localSku.design_phase || 'range_plan');
   const isCompleted = localSku.design_phase === 'completed';
+
+  /* ── Close with zoom-out ── */
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(() => onClose(), 250);
+  }, [onClose]);
 
   /* ── Update helper ── */
   const update = useCallback(async (updates: Partial<SKU>) => {
@@ -90,7 +97,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const phaseLabel = (phase: DesignPhase): string => {
     const labels: Record<DesignPhase, string> = {
       range_plan: t.skuPhases?.rangePlan || 'Range Plan',
-      sketch: t.skuPhases?.sketch || 'Sketch',
+      sketch: t.skuPhases?.sketch || 'Design',
       prototyping: t.skuPhases?.prototyping || 'Prototyping',
       production: t.skuPhases?.production || 'Production',
       completed: t.skuPhases?.completed || 'Completed',
@@ -121,7 +128,6 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   };
 
   /* ── Footer CTA logic ── */
-  // If a child phase provides a footer action, use it. Otherwise use the phase advance.
   const footerAction = childFooterAction || {
     label: advanceLabel(),
     action: advancePhase,
@@ -129,36 +135,35 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center" style={{ animation: 'fadeIn 0.2s ease-out forwards' }}>
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-carbon/70" onClick={onClose} />
+    <div
+      className={`fixed inset-0 z-[60] bg-crema flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
+    >
+      {/* ── Top bar ── */}
+      <div className="shrink-0 border-b border-carbon/[0.06]">
+        {/* Row 1: Back + SKU name + phase breadcrumb */}
+        <div className="flex items-center gap-4 px-6 sm:px-10 py-3">
+          {/* Back */}
+          <button onClick={handleClose} className="flex items-center gap-1.5 text-carbon/35 hover:text-carbon transition-colors shrink-0 group">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-[10px] font-medium tracking-[0.08em] uppercase hidden sm:inline group-hover:text-carbon">{t.skuPhases?.back || 'Back'}</span>
+          </button>
 
-      {/* Modal */}
-      <div className="relative w-[96vw] max-w-[1400px] h-[94vh] bg-crema flex flex-col overflow-hidden rounded-[12px]">
-        {/* Header — compact */}
-        <div className="shrink-0 border-b border-carbon/[0.06]">
-          <div className="flex items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <button onClick={onClose} className="text-carbon/30 hover:text-carbon transition-colors shrink-0">
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-              <div className="min-w-0">
-                <h1 className="text-base font-light text-carbon tracking-tight truncate">{localSku.name}</h1>
-                <p className="text-[10px] text-carbon/30 mt-0">
-                  {localSku.family} · Drop {localSku.drop_number} ·{' '}
-                  <span className={`inline-block px-1.5 py-0.5 text-[8px] font-semibold tracking-[0.05em] uppercase text-white rounded-sm ${
-                    localSku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : localSku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
-                  }`}>{localSku.type === 'IMAGEN' ? 'IMAGE' : localSku.type}</span>
-                </p>
-              </div>
+          {/* Divider */}
+          <div className="w-px h-5 bg-carbon/[0.08]" />
+
+          {/* SKU identity */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="min-w-0">
+              <h1 className="text-base font-light text-carbon tracking-tight truncate">{localSku.name}</h1>
             </div>
-            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-carbon/25 hover:text-carbon transition-colors shrink-0">
-              <X className="h-4 w-4" />
-            </button>
+            <span className="text-[10px] text-carbon/25 hidden sm:inline">{localSku.family} · Drop {localSku.drop_number}</span>
+            <span className={`inline-block px-1.5 py-0.5 text-[8px] font-semibold tracking-[0.05em] uppercase text-white rounded-sm shrink-0 ${
+              localSku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : localSku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
+            }`}>{localSku.type === 'IMAGEN' ? 'IMAGE' : localSku.type}</span>
           </div>
 
-          {/* Phase breadcrumb — minimal */}
-          <div className="px-6 pb-2.5 flex items-center gap-0">
+          {/* Phase breadcrumb — right side */}
+          <div className="hidden md:flex items-center gap-0 shrink-0">
             {PHASES.map((phase, idx) => {
               const isActive = activePhase === phase.id;
               const isReached = idx <= currentPhaseIdx;
@@ -166,26 +171,22 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
               const isDone = idx < currentPhaseIdx || isCompleted;
               return (
                 <React.Fragment key={phase.id}>
-                  {idx > 0 && <div className={`w-6 h-px mx-0.5 ${isDone ? 'bg-carbon/30' : 'bg-carbon/[0.08]'}`} />}
+                  {idx > 0 && <div className={`w-5 h-px mx-0.5 ${isDone ? 'bg-carbon/25' : 'bg-carbon/[0.06]'}`} />}
                   <button
                     onClick={() => isReached && setActivePhase(phase.id)}
                     disabled={!isReached}
-                    className={`flex items-center gap-1.5 py-1 transition-colors ${
-                      isActive
-                        ? 'text-carbon'
-                        : isDone
-                          ? 'text-carbon/40 hover:text-carbon/60'
-                          : 'text-carbon/20 cursor-default'
+                    className={`flex items-center gap-1 py-1 transition-colors ${
+                      isActive ? 'text-carbon' : isDone ? 'text-carbon/35 hover:text-carbon/55' : 'text-carbon/15 cursor-default'
                     }`}
                   >
                     {isDone && !isActive ? (
-                      <Check className="h-3 w-3 text-carbon/40" />
+                      <Check className="h-2.5 w-2.5" />
                     ) : (
-                      <span className={`text-[9px] font-medium ${isActive ? 'text-carbon' : ''}`}>{phase.stepNumber}</span>
+                      <span className="text-[9px] font-medium">{phase.stepNumber}</span>
                     )}
-                    <span className={`text-[10px] tracking-[0.06em] uppercase whitespace-nowrap ${
-                      isActive ? 'font-semibold' : 'font-medium'
-                    }`}>{phaseLabel(phase.id)}</span>
+                    <span className={`text-[9px] tracking-[0.05em] uppercase whitespace-nowrap ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                      {phaseLabel(phase.id)}
+                    </span>
                     {isCurrentPhase && !isCompleted && isActive && (
                       <span className="w-1 h-1 bg-carbon rounded-full animate-pulse" />
                     )}
@@ -193,20 +194,13 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
                 </React.Fragment>
               );
             })}
-            {isCompleted && (
-              <>
-                <div className="w-6 h-px mx-0.5 bg-carbon/30" />
-                <div className="flex items-center gap-1.5 py-1 text-carbon/40">
-                  <Check className="h-3 w-3" />
-                  <span className="text-[10px] font-medium tracking-[0.06em] uppercase">{phaseLabel('completed')}</span>
-                </div>
-              </>
-            )}
           </div>
         </div>
+      </div>
 
-        {/* Phase Content — scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+      {/* ── Content — scrollable, generous padding ── */}
+      <div className="flex-1 overflow-y-auto px-6 sm:px-10 lg:px-16 py-6 sm:py-8">
+        <div className="max-w-5xl mx-auto">
           {activePhase === 'range_plan' && (
             <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
@@ -221,9 +215,11 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
             <ProductionPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
         </div>
+      </div>
 
-        {/* Footer — contextual CTA */}
-        <div className="shrink-0 border-t border-carbon/[0.06] px-6 py-2.5 flex items-center justify-between">
+      {/* ── Footer ── */}
+      <div className="shrink-0 border-t border-carbon/[0.06] px-6 sm:px-10 lg:px-16 py-2.5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
           <button
             onClick={async () => { await onDelete(localSku.id); onClose(); }}
             className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/20 hover:text-red-600/50 transition-colors"
@@ -234,54 +230,50 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
             <button
               onClick={footerAction.action}
               disabled={savingPhase}
-              className={`flex items-center gap-2 px-5 py-2.5 text-[10px] font-medium tracking-[0.12em] uppercase transition-colors disabled:opacity-50 ${
-                footerAction.isPhaseAdvance
-                  ? 'bg-carbon text-crema hover:bg-carbon/90'
-                  : 'bg-carbon text-crema hover:bg-carbon/90'
-              }`}
+              className="flex items-center gap-2 px-5 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
             >
               {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : <>{footerAction.label} <ArrowRight className="h-3.5 w-3.5" /></>}
             </button>
           )}
         </div>
+      </div>
 
-        {/* ── Success overlay ── */}
-        {showSuccess && (
-          <div className="absolute inset-0 z-10 bg-carbon/95 flex items-center justify-center" style={{ animation: 'fadeIn 0.3s ease-out forwards' }}>
-            <div className="text-center space-y-6 max-w-md px-8" style={{ animation: 'slideUp 0.4s ease-out 0.15s both' }}>
-              <div className="inline-flex items-center justify-center w-14 h-14 border border-white/[0.12]">
-                <Check className="h-7 w-7 text-crema" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-xl font-light text-crema tracking-tight">
-                  {phaseLabel(showSuccess.from)} <span className="italic">completed</span>
-                </h2>
-                <p className="text-[12px] text-white/40 leading-relaxed">
-                  {localSku.name} — {showSuccess.to === 'completed'
-                    ? (t.skuPhases?.skuFullyCompleted || 'This SKU has completed its full lifecycle.')
-                    : (t.skuPhases?.phaseAdvancedTo || 'Ready for') + ' ' + phaseLabel(showSuccess.to).toLowerCase() + '.'}
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-3 pt-2">
+      {/* ── Success overlay ── */}
+      {showSuccess && (
+        <div className="absolute inset-0 z-10 bg-carbon/95 flex items-center justify-center" style={{ animation: 'fadeIn 0.3s ease-out forwards' }}>
+          <div className="text-center space-y-6 max-w-md px-8" style={{ animation: 'slideUp 0.4s ease-out 0.15s both' }}>
+            <div className="inline-flex items-center justify-center w-14 h-14 border border-white/[0.12]">
+              <Check className="h-7 w-7 text-crema" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-light text-crema tracking-tight">
+                {phaseLabel(showSuccess.from)} <span className="italic">completed</span>
+              </h2>
+              <p className="text-[12px] text-white/40 leading-relaxed">
+                {localSku.name} — {showSuccess.to === 'completed'
+                  ? (t.skuPhases?.skuFullyCompleted || 'This SKU has completed its full lifecycle.')
+                  : (t.skuPhases?.phaseAdvancedTo || 'Ready for') + ' ' + phaseLabel(showSuccess.to).toLowerCase() + '.'}
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                onClick={handleSuccessBack}
+                className="px-5 py-2.5 border border-white/[0.1] text-[10px] font-medium tracking-[0.12em] uppercase text-white/50 hover:text-white/80 hover:border-white/20 transition-colors"
+              >
+                {t.skuPhases?.backToCollection || 'Back to Collection'}
+              </button>
+              {showSuccess.to !== 'completed' && (
                 <button
-                  onClick={handleSuccessBack}
-                  className="px-5 py-2.5 border border-white/[0.1] text-[10px] font-medium tracking-[0.12em] uppercase text-white/50 hover:text-white/80 hover:border-white/20 transition-colors"
+                  onClick={handleSuccessContinue}
+                  className="px-5 py-2.5 bg-crema text-carbon text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-crema/90 transition-colors"
                 >
-                  {t.skuPhases?.backToCollection || 'Back to Collection'}
+                  {t.skuPhases?.continueToPhase || 'Continue to'} {phaseLabel(showSuccess.to)}
                 </button>
-                {showSuccess.to !== 'completed' && (
-                  <button
-                    onClick={handleSuccessContinue}
-                    className="px-5 py-2.5 bg-crema text-carbon text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-crema/90 transition-colors"
-                  >
-                    {t.skuPhases?.continueToPhase || 'Continue to'} {phaseLabel(showSuccess.to)}
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

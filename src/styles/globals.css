@@ -170,6 +170,23 @@ input, textarea, select {
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* SKU detail: zoom-in / zoom-out takeover */
+@keyframes skuZoomIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes skuZoomOut {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
+}
+.sku-zoom-in {
+  animation: skuZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.sku-zoom-out {
+  animation: skuZoomOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
 /* Thin scrollbar for wizard sidebar */
 .scrollbar-thin::-webkit-scrollbar {
   width: 3px;
