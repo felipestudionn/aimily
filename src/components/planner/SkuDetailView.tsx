@@ -134,7 +134,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
       <div className="absolute inset-0 bg-carbon/70" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-[90vw] max-w-6xl h-[88vh] bg-crema flex flex-col overflow-hidden rounded-[12px]">
+      <div className="relative w-[96vw] max-w-[1400px] h-[94vh] bg-crema flex flex-col overflow-hidden rounded-[12px]">
         {/* Header — compact */}
         <div className="shrink-0 border-b border-carbon/[0.06]">
           <div className="flex items-center justify-between px-6 py-3">
