@@ -2301,5 +2301,6 @@ export const no: Dictionary = {
     skuFullyCompleted: 'Denne SKU har fullført hele livssyklusen.',
     mode: 'Modus',
     sketchConfirmed: 'Sketch bekreftet',
+    next: 'Neste',
   },
 };

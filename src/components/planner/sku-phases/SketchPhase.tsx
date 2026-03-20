@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Sparkles, Loader2, Plus, Trash2,
   Check, X, GripVertical, ArrowRight,
@@ -11,6 +11,7 @@ import type { SKU } from '@/hooks/useSkus';
 import type { SkuColorway } from '@/types/design';
 import { useSkuLifecycle } from './SkuLifecycleContext';
 import { ImageUploadArea } from './shared';
+import type { FooterAction } from '../SkuDetailView';
 
 type InputMode = 'free' | 'assisted' | 'ai';
 
@@ -26,9 +27,11 @@ interface SketchPhaseProps {
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
   onImageUpload: (file: File, field: 'sketch_url' | 'reference_image_url') => void;
   uploading: string | null;
+  onFooterAction?: (action: FooterAction | null) => void;
+  onAdvancePhase?: () => void;
 }
 
-export function SketchPhase({ sku, onUpdate, onImageUpload, uploading }: SketchPhaseProps) {
+export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterAction, onAdvancePhase }: SketchPhaseProps) {
   const t = useTranslation();
   const { language } = useLanguage();
   const { colorways, addColorway, updateColorway, deleteColorway, designData, saveDesignData, collectionPlanId } = useSkuLifecycle();
@@ -55,13 +58,37 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading }: SketchP
     return s;
   });
 
-  const confirmAndNext = () => {
+  const confirmAndNext = useCallback(() => {
     setConfirmedSteps(prev => { const n = new Set(prev); n.add(activeStep); return n; });
     if (activeStep < STEPS.length - 1) setActiveStep(activeStep + 1);
-  };
+  }, [activeStep]);
 
   const mode = modes[STEPS[activeStep]?.id] || 'free';
   const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
+
+  // Sync footer CTA with parent
+  useEffect(() => {
+    if (!onFooterAction) return;
+
+    if (activeStep < STEPS.length - 1) {
+      // Not on last step → "Next: [step name]"
+      const nextStepLabel = STEPS[activeStep + 1].label;
+      onFooterAction({
+        label: `${stepLabel('next') || 'Next'}: ${nextStepLabel}`,
+        action: confirmAndNext,
+        isPhaseAdvance: false,
+      });
+    } else {
+      // On tech pack → "Send to Prototyping" (phase advance)
+      onFooterAction({
+        label: t.skuPhases?.advanceToProto || 'Send to Prototyping',
+        action: () => onAdvancePhase?.(),
+        isPhaseAdvance: true,
+      });
+    }
+
+    return () => onFooterAction(null);
+  }, [activeStep, onFooterAction, confirmAndNext, onAdvancePhase, t.skuPhases]);
 
   const callDesignAI = useCallback(async (type: string, input: Record<string, string>) => {
     const res = await fetch('/api/ai/design-generate', {
@@ -72,48 +99,52 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading }: SketchP
   }, [language]);
 
   return (
-    <div className="space-y-4">
-      {/* ── Tab navigation with underline ── */}
-      <div className="flex items-center gap-0 border-b border-carbon/[0.06]">
+    <div className="space-y-5">
+      {/* ── Sub-stepper: connected pill flow ── */}
+      <div className="flex items-center justify-center gap-0 py-1">
         {STEPS.map((step, idx) => {
           const isActive = idx === activeStep;
           const isConfirmed = confirmedSteps.has(idx);
+          const isPast = idx < activeStep;
           return (
-            <button
-              key={step.id}
-              onClick={() => setActiveStep(idx)}
-              className={`relative flex items-center gap-1.5 px-4 py-2.5 transition-colors ${
-                isActive
-                  ? 'text-carbon'
-                  : isConfirmed
-                    ? 'text-carbon/45 hover:text-carbon/60'
-                    : 'text-carbon/25 hover:text-carbon/35'
-              }`}
-            >
-              {isConfirmed && !isActive && <Check className="h-2.5 w-2.5" />}
-              <span className="text-[10px] font-medium tracking-[0.06em] uppercase">{step.label}</span>
-              {isActive && <span className="absolute bottom-0 left-2 right-2 h-[1.5px] bg-carbon" />}
-            </button>
+            <React.Fragment key={step.id}>
+              {idx > 0 && (
+                <div className={`w-8 h-px ${isConfirmed || isPast ? 'bg-carbon/25' : 'bg-carbon/[0.08]'}`} />
+              )}
+              <button
+                onClick={() => setActiveStep(idx)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-carbon text-crema'
+                    : isConfirmed
+                      ? 'border border-carbon/[0.15] text-carbon/60 hover:border-carbon/30'
+                      : 'border border-carbon/[0.08] text-carbon/25 hover:border-carbon/[0.15] hover:text-carbon/35'
+                }`}
+              >
+                {isConfirmed && !isActive ? (
+                  <Check className="h-2.5 w-2.5" />
+                ) : (
+                  <span className="text-[9px] font-semibold">{idx + 1}</span>
+                )}
+                <span className="text-[9px] font-medium tracking-[0.06em] uppercase">{step.label}</span>
+              </button>
+            </React.Fragment>
           );
         })}
       </div>
 
-      {/* ── Mode selector — inline, compact ── */}
+      {/* ── Mode pills (not for tech pack) ── */}
       {activeStep < 3 && (
-        <div className="flex items-center gap-3">
-          <span className="text-[9px] text-carbon/25 uppercase tracking-wider">{stepLabel('mode') || 'Mode'}:</span>
-          {(['free', 'assisted', 'ai'] as const).map((m, i) => (
-            <React.Fragment key={m}>
-              {i > 0 && <span className="text-carbon/10">·</span>}
-              <button
-                onClick={() => setModes(prev => ({ ...prev, [STEPS[activeStep].id]: m }))}
-                className={`text-[10px] tracking-[0.06em] uppercase transition-colors ${
-                  mode === m ? 'text-carbon font-semibold' : 'text-carbon/30 hover:text-carbon/50 font-medium'
-                }`}
-              >
-                {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
-              </button>
-            </React.Fragment>
+        <div className="flex items-center justify-center gap-1.5">
+          {(['free', 'assisted', 'ai'] as const).map((m) => (
+            <button key={m} onClick={() => setModes(prev => ({ ...prev, [STEPS[activeStep].id]: m }))}
+              className={`px-4 py-1.5 rounded-full text-[9px] font-medium tracking-[0.06em] uppercase transition-all ${
+                mode === m
+                  ? 'bg-carbon text-crema'
+                  : 'border border-carbon/[0.08] text-carbon/30 hover:border-carbon/[0.15] hover:text-carbon/45'
+              }`}>
+              {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
+            </button>
           ))}
         </div>
       )}
@@ -390,20 +421,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading }: SketchP
             )}
           </div>
         )}
-      </div>
-
-      {/* ── Footer: subtle confirm ── */}
-      <div className="flex items-center justify-between pt-3 border-t border-carbon/[0.06]">
-        {activeStep > 0 ? (
-          <button onClick={() => setActiveStep(activeStep - 1)} className="text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/30 hover:text-carbon/50">
-            {stepLabel('backToGrid') || 'Back'}
-          </button>
-        ) : <div />}
-        <button onClick={confirmAndNext} className="flex items-center gap-1.5 px-4 py-2 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors">
-          <Check className="h-3 w-3" />
-          {activeStep < STEPS.length - 1 ? (stepLabel('validateContinue') || 'Confirm & Next') : (stepLabel('confirmed') || 'Confirm Tech Pack')}
-          {activeStep < STEPS.length - 1 && <ArrowRight className="h-3 w-3" />}
-        </button>
       </div>
     </div>
   );

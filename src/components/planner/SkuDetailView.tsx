@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { X, Loader2, Trash2, ArrowRight, ArrowLeft, Check, PartyPopper } from 'lucide-react';
+import { X, Loader2, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import type { SKU, DesignPhase } from '@/hooks/useSkus';
 import { RangePlanPhase } from './sku-phases/RangePlanPhase';
@@ -22,6 +22,13 @@ function phaseIndex(phase: DesignPhase): number {
   return idx >= 0 ? idx : 0;
 }
 
+/* ── Footer action type ── */
+export interface FooterAction {
+  label: string;
+  action: () => void;
+  isPhaseAdvance?: boolean; // true = "Send to Prototyping" etc, uses bg-carbon
+}
+
 /* ── Props ── */
 interface SkuDetailViewProps {
   sku: SKU;
@@ -38,6 +45,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const [uploading, setUploading] = useState<string | null>(null);
   const [savingPhase, setSavingPhase] = useState(false);
   const [showSuccess, setShowSuccess] = useState<{ from: DesignPhase; to: DesignPhase } | null>(null);
+  const [childFooterAction, setChildFooterAction] = useState<FooterAction | null>(null);
 
   const currentPhaseIdx = phaseIndex(localSku.design_phase || 'range_plan');
   const isCompleted = localSku.design_phase === 'completed';
@@ -110,6 +118,14 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const handleSuccessBack = () => {
     setShowSuccess(null);
     onClose();
+  };
+
+  /* ── Footer CTA logic ── */
+  // If a child phase provides a footer action, use it. Otherwise use the phase advance.
+  const footerAction = childFooterAction || {
+    label: advanceLabel(),
+    action: advancePhase,
+    isPhaseAdvance: true,
   };
 
   return (
@@ -195,7 +211,8 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
             <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
           {activePhase === 'sketch' && (
-            <SketchPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
+            <SketchPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading}
+              onFooterAction={setChildFooterAction} onAdvancePhase={advancePhase} />
           )}
           {activePhase === 'prototyping' && (
             <PrototypingPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
@@ -205,7 +222,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
           )}
         </div>
 
-        {/* Footer — single CTA */}
+        {/* Footer — contextual CTA */}
         <div className="shrink-0 border-t border-carbon/[0.06] px-6 py-2.5 flex items-center justify-between">
           <button
             onClick={async () => { await onDelete(localSku.id); onClose(); }}
@@ -215,11 +232,15 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
           </button>
           {!isCompleted && (
             <button
-              onClick={advancePhase}
+              onClick={footerAction.action}
               disabled={savingPhase}
-              className="flex items-center gap-2 px-5 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
+              className={`flex items-center gap-2 px-5 py-2.5 text-[10px] font-medium tracking-[0.12em] uppercase transition-colors disabled:opacity-50 ${
+                footerAction.isPhaseAdvance
+                  ? 'bg-carbon text-crema hover:bg-carbon/90'
+                  : 'bg-carbon text-crema hover:bg-carbon/90'
+              }`}
             >
-              {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : <>{advanceLabel()} <ArrowRight className="h-3.5 w-3.5" /></>}
+              {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : <>{footerAction.label} <ArrowRight className="h-3.5 w-3.5" /></>}
             </button>
           )}
         </div>
@@ -264,9 +285,3 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     </div>
   );
 }
-
-/* ── Keyframe animations (used inline) ── */
-const _styles = `
-@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
-`;

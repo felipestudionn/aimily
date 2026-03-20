@@ -2301,5 +2301,6 @@ export const sv: Dictionary = {
     skuFullyCompleted: 'Denna SKU har slutfört sin fullständiga livscykel.',
     mode: 'Läge',
     sketchConfirmed: 'Sketch bekräftad',
+    next: 'Nästa',
   },
 } as Dictionary;

@@ -2427,5 +2427,6 @@ export const nl: Dictionary = {
     skuFullyCompleted: 'Deze SKU heeft zijn volledige levenscyclus voltooid.',
     mode: 'Modus',
     sketchConfirmed: 'Sketch bevestigd',
+    next: 'Volgende',
   },
 };

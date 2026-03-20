@@ -2413,5 +2413,6 @@ export const es: Dictionary = {
     skuFullyCompleted: 'Este SKU ha completado todo su ciclo de vida.',
     mode: 'Modo',
     sketchConfirmed: 'Sketch confirmado',
+    next: 'Siguiente',
   },
 };

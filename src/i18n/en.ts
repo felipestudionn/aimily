@@ -2439,6 +2439,7 @@ export const en = {
     skuFullyCompleted: 'This SKU has completed its full lifecycle.',
     mode: 'Mode',
     sketchConfirmed: 'Sketch confirmed',
+    next: 'Next',
   },
 };
 
