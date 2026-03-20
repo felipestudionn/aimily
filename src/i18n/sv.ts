@@ -2295,5 +2295,11 @@ export const sv: Dictionary = {
     recommendedRegions: 'Rekommenderade Regioner',
     tradeShows: 'Mässor',
     sourcingTips: 'Sourcing-tips',
+    backToCollection: 'Tillbaka till Kollektion',
+    continueToPhase: 'Fortsätt till',
+    phaseAdvancedTo: 'Redo för',
+    skuFullyCompleted: 'Denna SKU har slutfört sin fullständiga livscykel.',
+    mode: 'Läge',
+    sketchConfirmed: 'Sketch bekräftad',
   },
 } as Dictionary;

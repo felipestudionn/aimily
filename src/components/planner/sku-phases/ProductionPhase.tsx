@@ -21,8 +21,6 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
   const { colorways } = useSkuLifecycle();
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
 
-  // Simple validation state stored in designData or as local state
-  // For now, derive from existing data
   const [colorStatus, setColorStatus] = useState<ValidationStatus>('pending');
   const [fitStatus, setFitStatus] = useState<ValidationStatus>('pending');
   const [colorNotes, setColorNotes] = useState('');
@@ -36,6 +34,8 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
     setConfirmedSteps(prev => { const n = new Set(prev); n.add(stepId); return n; });
     setExpandedStep(null);
   };
+
+  const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
 
   const steps = [
     { id: 'color', icon: Palette, name: t.skuPhases?.colorValidation || 'Color Validation', desc: t.skuPhases?.colorValidationDesc || 'Compare production colors with approved colorways' },
@@ -54,41 +54,25 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
         if (isExpanded) {
           return (
             <div key={step.id} className="bg-white border border-carbon/[0.06] overflow-hidden" style={{ animation: 'fadeIn 0.2s ease-out' }}>
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-carbon/[0.06]">
-                <div className="flex items-center gap-3">
-                  <Icon className="h-4 w-4 text-carbon/40" />
+              <div className="flex items-center justify-between px-5 py-3 border-b border-carbon/[0.04]">
+                <div className="flex items-center gap-2.5">
+                  <Icon className="h-3.5 w-3.5 text-carbon/30" />
                   <div>
-                    <h3 className="text-lg font-light text-carbon tracking-tight">{step.name}</h3>
-                    <p className="text-[11px] text-carbon/40 mt-0.5">{step.desc}</p>
+                    <h3 className="text-sm font-light text-carbon tracking-tight">{step.name}</h3>
+                    <p className="text-[10px] text-carbon/30 mt-0">{step.desc}</p>
                   </div>
                 </div>
-                <button onClick={() => setExpandedStep(null)} className="w-8 h-8 flex items-center justify-center text-carbon/30 hover:text-carbon/60">
-                  <X className="h-4 w-4" />
+                <button onClick={() => setExpandedStep(null)} className="w-6 h-6 flex items-center justify-center text-carbon/20 hover:text-carbon/50">
+                  <X className="h-3.5 w-3.5" />
                 </button>
               </div>
 
-              {/* Content */}
-              <div className="px-6 py-5">
+              <div className="px-5 py-4">
                 {step.id === 'color' && (
-                  <ColorValidationContent
-                    colorways={skuColorways}
-                    status={colorStatus}
-                    onStatusChange={setColorStatus}
-                    notes={colorNotes}
-                    onNotesChange={setColorNotes}
-                    t={t}
-                  />
+                  <ColorValidationContent colorways={skuColorways} status={colorStatus} onStatusChange={setColorStatus} notes={colorNotes} onNotesChange={setColorNotes} t={t} />
                 )}
                 {step.id === 'fit' && (
-                  <FitValidationContent
-                    sku={sku}
-                    status={fitStatus}
-                    onStatusChange={setFitStatus}
-                    notes={fitNotes}
-                    onNotesChange={setFitNotes}
-                    t={t}
-                  />
+                  <FitValidationContent sku={sku} status={fitStatus} onStatusChange={setFitStatus} notes={fitNotes} onNotesChange={setFitNotes} t={t} />
                 )}
                 {step.id === 'sample' && (
                   <ProductionSampleContent sku={sku} onUpdate={onUpdate} onImageUpload={onImageUpload} uploading={uploading} t={t} />
@@ -98,31 +82,29 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
                 )}
               </div>
 
-              {/* Footer */}
-              <div className="px-6 py-4 border-t border-carbon/[0.06] flex items-center justify-between">
-                <button onClick={() => setExpandedStep(null)} className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/40 hover:text-carbon transition-colors">
+              <div className="px-5 py-3 border-t border-carbon/[0.04] flex items-center justify-between">
+                <button onClick={() => setExpandedStep(null)} className="text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/30 hover:text-carbon/50 transition-colors">
                   {t.skuPhases?.backToGrid || 'Back'}
                 </button>
-                <button onClick={() => confirmStep(step.id)} className="flex items-center gap-2 px-6 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors">
-                  <Check className="h-3.5 w-3.5" /> {t.skuPhases?.validateContinue || 'Validate & Continue'}
+                <button onClick={() => confirmStep(step.id)} className="flex items-center gap-1.5 px-4 py-2 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors">
+                  <Check className="h-3 w-3" /> {stepLabel('validateContinue') || 'Validate & Continue'}
                 </button>
               </div>
             </div>
           );
         }
 
-        // Collapsed card
         return (
           <button key={step.id} onClick={() => setExpandedStep(step.id)}
-            className={`w-full text-left bg-white border p-5 flex items-center gap-4 transition-all hover:border-carbon/15 ${isConfirmed ? 'border-carbon/[0.12]' : 'border-carbon/[0.06]'}`}>
-            <div className={`w-10 h-10 flex items-center justify-center shrink-0 ${isConfirmed ? 'bg-carbon text-crema' : 'bg-carbon/[0.04] text-carbon/30'}`}>
-              {isConfirmed ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+            className={`w-full text-left bg-white border p-4 flex items-center gap-3 transition-all hover:border-carbon/[0.12] ${isConfirmed ? 'border-carbon/[0.1]' : 'border-carbon/[0.04]'}`}>
+            <div className={`w-8 h-8 flex items-center justify-center shrink-0 ${isConfirmed ? 'bg-carbon text-crema' : 'bg-carbon/[0.03] text-carbon/25'}`}>
+              {isConfirmed ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-light text-carbon tracking-tight">{step.name}</h3>
-              <p className="text-[11px] text-carbon/35 mt-0.5 truncate">{step.desc}</p>
+              <h3 className="text-[12px] font-light text-carbon tracking-tight">{step.name}</h3>
+              <p className="text-[10px] text-carbon/30 mt-0 truncate">{step.desc}</p>
             </div>
-            {isConfirmed && <span className="text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/25">{t.skuPhases?.confirmed || 'Confirmed'}</span>}
+            {isConfirmed && <span className="text-[8px] font-medium tracking-[0.08em] uppercase text-carbon/20">{stepLabel('confirmed') || 'Confirmed'}</span>}
           </button>
         );
       })}
@@ -138,32 +120,30 @@ function ColorValidationContent({ colorways, status, onStatusChange, notes, onNo
   t: ReturnType<typeof useTranslation>;
 }) {
   return (
-    <div className="space-y-5">
-      {/* Approved colorways reference */}
+    <div className="space-y-4">
       {colorways.length > 0 && (
         <div>
-          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.approvedColorways || 'Approved Colorways'}</p>
-          <div className="flex flex-wrap gap-3">
+          <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{t.skuPhases?.approvedColorways || 'Approved Colorways'}</p>
+          <div className="flex flex-wrap gap-2">
             {colorways.map(cw => (
-              <div key={cw.id} className="flex items-center gap-2 px-3 py-2 bg-carbon/[0.02] border border-carbon/[0.06]">
-                <div className="w-6 h-6 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_primary }} />
-                <span className="text-[11px] text-carbon/60">{cw.name}</span>
+              <div key={cw.id} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-carbon/[0.02] border border-carbon/[0.04]">
+                <div className="w-5 h-5 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_primary }} />
+                <span className="text-[10px] text-carbon/50">{cw.name}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Status */}
       <div>
-        <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.colorMatchStatus || 'Color Match'}</p>
-        <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5 w-fit">
+        <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{t.skuPhases?.colorMatchStatus || 'Color Match'}</p>
+        <div className="flex items-center gap-0.5">
           {(['pending', 'issues', 'approved'] as const).map(s => (
             <button key={s} onClick={() => onStatusChange(s)}
-              className={`px-5 py-2 text-[10px] font-medium tracking-[0.1em] uppercase transition-all rounded-full ${
+              className={`px-3 py-1.5 text-[9px] font-medium tracking-[0.06em] uppercase transition-colors ${
                 status === s
-                  ? s === 'approved' ? 'bg-[#2d6a4f] text-white shadow-sm' : s === 'issues' ? 'bg-[#c77000] text-white shadow-sm' : 'bg-carbon text-crema shadow-sm'
-                  : 'text-carbon/35 hover:text-carbon/50'
+                  ? s === 'approved' ? 'text-[#2d6a4f] bg-[#2d6a4f]/8' : s === 'issues' ? 'text-[#c77000] bg-[#c77000]/8' : 'text-carbon bg-carbon/[0.06]'
+                  : 'text-carbon/25 hover:text-carbon/40'
               }`}>
               {s === 'pending' ? (t.skuPhases?.pendingReview || 'Pending') : s === 'issues' ? (t.skuPhases?.issues || 'Issues') : (t.skuPhases?.approved || 'Approved')}
             </button>
@@ -171,10 +151,9 @@ function ColorValidationContent({ colorways, status, onStatusChange, notes, onNo
         </div>
       </div>
 
-      {/* Notes */}
       <textarea value={notes} onChange={(e) => onNotesChange(e.target.value)}
         placeholder={t.skuPhases?.colorValidationNotes || 'Color accuracy notes, deviations observed...'}
-        className="w-full h-20 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors" />
+        className="w-full h-16 p-2.5 bg-carbon/[0.02] border border-carbon/[0.04] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.1] transition-colors" />
     </div>
   );
 }
@@ -186,17 +165,16 @@ function FitValidationContent({ sku, status, onStatusChange, notes, onNotesChang
   t: ReturnType<typeof useTranslation>;
 }) {
   return (
-    <div className="space-y-5">
-      {/* Status */}
+    <div className="space-y-4">
       <div>
-        <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.fitMatchStatus || 'Fit & Measurements'}</p>
-        <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5 w-fit">
+        <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{t.skuPhases?.fitMatchStatus || 'Fit & Measurements'}</p>
+        <div className="flex items-center gap-0.5">
           {(['pending', 'issues', 'approved'] as const).map(s => (
             <button key={s} onClick={() => onStatusChange(s)}
-              className={`px-5 py-2 text-[10px] font-medium tracking-[0.1em] uppercase transition-all rounded-full ${
+              className={`px-3 py-1.5 text-[9px] font-medium tracking-[0.06em] uppercase transition-colors ${
                 status === s
-                  ? s === 'approved' ? 'bg-[#2d6a4f] text-white shadow-sm' : s === 'issues' ? 'bg-[#c77000] text-white shadow-sm' : 'bg-carbon text-crema shadow-sm'
-                  : 'text-carbon/35 hover:text-carbon/50'
+                  ? s === 'approved' ? 'text-[#2d6a4f] bg-[#2d6a4f]/8' : s === 'issues' ? 'text-[#c77000] bg-[#c77000]/8' : 'text-carbon bg-carbon/[0.06]'
+                  : 'text-carbon/25 hover:text-carbon/40'
               }`}>
               {s === 'pending' ? (t.skuPhases?.pendingReview || 'Pending') : s === 'issues' ? (t.skuPhases?.issues || 'Issues') : (t.skuPhases?.approved || 'Approved')}
             </button>
@@ -204,19 +182,17 @@ function FitValidationContent({ sku, status, onStatusChange, notes, onNotesChang
         </div>
       </div>
 
-      {/* Size run reference */}
       <div>
-        <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.sizeRunReference || 'Size Run'}</p>
-        <div className="bg-carbon/[0.02] border border-carbon/[0.06] p-4">
+        <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{t.skuPhases?.sizeRunReference || 'Size Run'}</p>
+        <div className="bg-carbon/[0.02] border border-carbon/[0.04] p-3">
           <SizeRunEditor category={sku.category} sizeRun={sku.size_run || {}} buyUnits={sku.buy_units}
             onUpdate={(sr) => {}} />
         </div>
       </div>
 
-      {/* Notes */}
       <textarea value={notes} onChange={(e) => onNotesChange(e.target.value)}
         placeholder={t.skuPhases?.fitValidationNotes || 'Fit notes, measurement deviations, corrections needed...'}
-        className="w-full h-20 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors" />
+        className="w-full h-16 p-2.5 bg-carbon/[0.02] border border-carbon/[0.04] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.1] transition-colors" />
     </div>
   );
 }
@@ -228,9 +204,9 @@ function ProductionSampleContent({ sku, onUpdate, onImageUpload, uploading, t }:
   t: ReturnType<typeof useTranslation>;
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-3">
-        <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{t.skuPhases?.finalSample || 'Final Sample'}</p>
+        <p className="text-[8px] text-carbon/25 uppercase tracking-wider">{t.skuPhases?.finalSample || 'Final Sample'}</p>
         <ImageUploadArea
           imageUrl={sku.production_sample_url}
           uploading={uploading === 'production_sample_url'}
@@ -239,52 +215,51 @@ function ProductionSampleContent({ sku, onUpdate, onImageUpload, uploading, t }:
           onRemove={() => onUpdate({ production_sample_url: undefined })}
           aspectClass="aspect-[4/3]"
         />
-        {/* Visual evolution: reference → sketch → proto → production */}
         {(sku.reference_image_url || sku.sketch_url) && (
           <div>
-            <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.evolution || 'Evolution'}</p>
-            <div className="flex gap-1">
+            <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1.5">{t.skuPhases?.evolution || 'Evolution'}</p>
+            <div className="flex gap-0.5">
               {sku.reference_image_url && (
-                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
+                <div className="flex-1 border border-carbon/[0.04] overflow-hidden aspect-square bg-white">
                   <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
                 </div>
               )}
               {sku.sketch_url && (
-                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
-                  <img src={sku.sketch_url} alt="" className="w-full h-full object-contain bg-white" />
+                <div className="flex-1 border border-carbon/[0.04] overflow-hidden aspect-square bg-white">
+                  <img src={sku.sketch_url} alt="" className="w-full h-full object-contain" />
                 </div>
               )}
               {sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] && (
-                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
+                <div className="flex-1 border border-carbon/[0.04] overflow-hidden aspect-square">
                   <img src={sku.proto_iterations[sku.proto_iterations.length - 1].images[0]} alt="" className="w-full h-full object-cover" />
                 </div>
               )}
               {sku.production_sample_url && (
-                <div className="flex-1 border border-carbon/[0.06] overflow-hidden aspect-square">
+                <div className="flex-1 border border-carbon/[0.04] overflow-hidden aspect-square">
                   <img src={sku.production_sample_url} alt="" className="w-full h-full object-cover" />
                 </div>
               )}
             </div>
-            <div className="flex gap-1 mt-1">
-              {sku.reference_image_url && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Ref</span>}
-              {sku.sketch_url && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Sketch</span>}
-              {sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Proto</span>}
-              {sku.production_sample_url && <span className="flex-1 text-[7px] text-carbon/20 text-center uppercase">Final</span>}
+            <div className="flex gap-0.5 mt-0.5">
+              {sku.reference_image_url && <span className="flex-1 text-[6px] text-carbon/15 text-center uppercase">Ref</span>}
+              {sku.sketch_url && <span className="flex-1 text-[6px] text-carbon/15 text-center uppercase">Sketch</span>}
+              {sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] && <span className="flex-1 text-[6px] text-carbon/15 text-center uppercase">Proto</span>}
+              {sku.production_sample_url && <span className="flex-1 text-[6px] text-carbon/15 text-center uppercase">Final</span>}
             </div>
           </div>
         )}
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div>
-          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.sizeRunFinal || 'Final Size Run'}</p>
-          <div className="bg-white border border-carbon/[0.06] p-4">
+          <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1.5">{t.skuPhases?.sizeRunFinal || 'Final Size Run'}</p>
+          <div className="bg-white border border-carbon/[0.04] p-3">
             <SizeRunEditor category={sku.category} sizeRun={sku.size_run || {}} buyUnits={sku.buy_units}
               onUpdate={(sr) => onUpdate({ size_run: sr } as Partial<SKU>)} />
           </div>
         </div>
-        <div className="bg-white border border-carbon/[0.06] p-4">
-          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-2">{t.skuPhases?.financialRecap || 'Financial Recap'}</p>
-          <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white border border-carbon/[0.04] p-3">
+          <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1.5">{t.skuPhases?.financialRecap || 'Financial Recap'}</p>
+          <div className="grid grid-cols-3 gap-2">
             <MetricCell label="PVP" value={`€${sku.pvp}`} />
             <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => {
               const val = Number(v.replace(/[^0-9.]/g, ''));
@@ -304,32 +279,31 @@ function SignOffContent({ sku, colorStatus, fitStatus, bothApproved, t }: {
   bothApproved: boolean; t: ReturnType<typeof useTranslation>;
 }) {
   return (
-    <div className="space-y-5">
-      {/* Checklist */}
-      <div className="space-y-2">
+    <div className="space-y-4">
+      <div className="space-y-1.5">
         {[
           { label: t.skuPhases?.colorValidation || 'Color Validation', ok: colorStatus === 'approved' },
           { label: t.skuPhases?.fitValidation || 'Fit Validation', ok: fitStatus === 'approved' },
           { label: t.skuPhases?.productionSample || 'Production Sample', ok: !!sku.production_sample_url },
         ].map((item, idx) => (
-          <div key={idx} className="flex items-center gap-2">
-            {item.ok ? <Check className="h-3.5 w-3.5 text-[#2d6a4f]" /> : <AlertCircle className="h-3.5 w-3.5 text-carbon/20" />}
-            <span className={`text-[11px] ${item.ok ? 'text-carbon' : 'text-carbon/30'}`}>{item.label}</span>
+          <div key={idx} className="flex items-center gap-1.5">
+            {item.ok ? <Check className="h-3 w-3 text-[#2d6a4f]" /> : <AlertCircle className="h-3 w-3 text-carbon/15" />}
+            <span className={`text-[10px] ${item.ok ? 'text-carbon' : 'text-carbon/25'}`}>{item.label}</span>
           </div>
         ))}
       </div>
 
       {bothApproved && sku.production_sample_url ? (
-        <div className="p-5 bg-[#2d6a4f]/5 border border-[#2d6a4f]/10 flex items-center gap-3">
-          <Check className="h-6 w-6 text-[#2d6a4f]" />
+        <div className="p-4 bg-[#2d6a4f]/5 border border-[#2d6a4f]/8 flex items-center gap-3">
+          <Check className="h-5 w-5 text-[#2d6a4f]" />
           <div>
-            <p className="text-sm font-light text-carbon">{t.skuPhases?.readyForProduction || 'Ready for production'}</p>
-            <p className="text-[10px] text-carbon/35 mt-0.5">{t.skuPhases?.signOffComplete || 'All validations passed. This SKU can be included in a production order.'}</p>
+            <p className="text-[12px] font-light text-carbon">{t.skuPhases?.readyForProduction || 'Ready for production'}</p>
+            <p className="text-[9px] text-carbon/30 mt-0.5">{t.skuPhases?.signOffComplete || 'All validations passed. This SKU can be included in a production order.'}</p>
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06]">
-          <p className="text-[11px] text-carbon/35">{t.skuPhases?.signOffPending || 'Complete all validations above to approve this SKU for production.'}</p>
+        <div className="p-3 bg-carbon/[0.02] border border-carbon/[0.04]">
+          <p className="text-[10px] text-carbon/30">{t.skuPhases?.signOffPending || 'Complete all validations above to approve this SKU for production.'}</p>
         </div>
       )}
     </div>

@@ -2432,6 +2432,13 @@ export const en = {
     recommendedRegions: 'Recommended Regions',
     tradeShows: 'Trade Shows',
     sourcingTips: 'Sourcing Tips',
+    // Success overlay
+    backToCollection: 'Back to Collection',
+    continueToPhase: 'Continue to',
+    phaseAdvancedTo: 'Ready for',
+    skuFullyCompleted: 'This SKU has completed its full lifecycle.',
+    mode: 'Mode',
+    sketchConfirmed: 'Sketch confirmed',
   },
 };
 

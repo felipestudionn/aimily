@@ -2407,5 +2407,11 @@ export const es: Dictionary = {
     recommendedRegions: 'Regiones Recomendadas',
     tradeShows: 'Ferias',
     sourcingTips: 'Consejos de Sourcing',
+    backToCollection: 'Volver a Colección',
+    continueToPhase: 'Continuar a',
+    phaseAdvancedTo: 'Listo para',
+    skuFullyCompleted: 'Este SKU ha completado todo su ciclo de vida.',
+    mode: 'Modo',
+    sketchConfirmed: 'Sketch confirmado',
   },
 };

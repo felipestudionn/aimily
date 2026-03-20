@@ -2295,5 +2295,11 @@ export const no: Dictionary = {
     recommendedRegions: 'Anbefalte Regioner',
     tradeShows: 'Messer',
     sourcingTips: 'Sourcing-tips',
+    backToCollection: 'Tilbake til Kolleksjon',
+    continueToPhase: 'Fortsett til',
+    phaseAdvancedTo: 'Klar for',
+    skuFullyCompleted: 'Denne SKU har fullført hele livssyklusen.',
+    mode: 'Modus',
+    sketchConfirmed: 'Sketch bekreftet',
   },
 };

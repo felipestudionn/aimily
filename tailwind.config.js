@@ -21,7 +21,7 @@ module.exports = {
       },
       colors: {
         /* Alfred palette */
-        crema: "#FAEFE0",
+        crema: "#F5F1E8",
         carbon: "#282A29",
         texto: "#191919",
         gris: "#D8D8D8",

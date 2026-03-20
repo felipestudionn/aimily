@@ -2421,5 +2421,11 @@ export const fr: Dictionary = {
     recommendedRegions: 'Régions Recommandées',
     tradeShows: 'Salons',
     sourcingTips: 'Conseils Sourcing',
+    backToCollection: 'Retour à la Collection',
+    continueToPhase: 'Continuer vers',
+    phaseAdvancedTo: 'Prêt pour',
+    skuFullyCompleted: 'Ce SKU a terminé son cycle de vie complet.',
+    mode: 'Mode',
+    sketchConfirmed: 'Sketch confirmé',
   },
 };

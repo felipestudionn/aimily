@@ -2421,5 +2421,11 @@ export const nl: Dictionary = {
     recommendedRegions: 'Aanbevolen Regio\'s',
     tradeShows: 'Beurzen',
     sourcingTips: 'Sourcing Tips',
+    backToCollection: 'Terug naar Collectie',
+    continueToPhase: 'Doorgaan naar',
+    phaseAdvancedTo: 'Klaar voor',
+    skuFullyCompleted: 'Deze SKU heeft zijn volledige levenscyclus voltooid.',
+    mode: 'Modus',
+    sketchConfirmed: 'Sketch bevestigd',
   },
 };
