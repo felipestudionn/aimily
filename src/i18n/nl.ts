@@ -2240,7 +2240,7 @@ export const nl: Dictionary = {
   // ─── SKU Phases ───
   skuPhases: {
     rangePlan: 'Collectieplan',
-    sketch: 'Schets',
+    sketch: 'Ontwerp',
     prototyping: 'Prototyping',
     production: 'Productie',
     completed: 'Voltooid',
@@ -2283,7 +2283,7 @@ export const nl: Dictionary = {
     pendingApproval: 'Bekijk het productiemonster en keur goed wanneer klaar.',
     protoHistory: 'Prototype Geschiedenis',
     deleteSku: 'SKU Verwijderen',
-    advanceToSketch: 'Naar Schets',
+    advanceToSketch: 'Start Ontwerp',
     advanceToProto: 'Naar Prototyping',
     advanceToProduction: 'Goedkeuren voor Productie',
     markCompleted: 'Markeren als Voltooid',

@@ -2114,7 +2114,7 @@ export const sv: Dictionary = {
   // ─── SKU Phases ───
   skuPhases: {
     rangePlan: 'Kollektionsplan',
-    sketch: 'Skiss',
+    sketch: 'Design',
     prototyping: 'Prototypning',
     production: 'Produktion',
     completed: 'Slutförd',
@@ -2157,7 +2157,7 @@ export const sv: Dictionary = {
     pendingApproval: 'Granska produktionsprovet och godkänn när redo.',
     protoHistory: 'Prototyphistorik',
     deleteSku: 'Radera SKU',
-    advanceToSketch: 'Gå till Skiss',
+    advanceToSketch: 'Starta Design',
     advanceToProto: 'Skicka till Prototypning',
     advanceToProduction: 'Godkänn för Produktion',
     markCompleted: 'Markera som Slutförd',

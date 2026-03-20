@@ -2222,7 +2222,7 @@ export const pt: Dictionary = {
   // ─── SKU Phases ───
   skuPhases: {
     rangePlan: 'Plano de Coleção',
-    sketch: 'Esboço',
+    sketch: 'Design',
     prototyping: 'Prototipagem',
     production: 'Produção',
     completed: 'Concluído',
@@ -2265,7 +2265,7 @@ export const pt: Dictionary = {
     pendingApproval: 'Revise a amostra de produção e aprove quando estiver pronto.',
     protoHistory: 'Histórico de Protótipos',
     deleteSku: 'Excluir SKU',
-    advanceToSketch: 'Avançar para Esboço',
+    advanceToSketch: 'Iniciar Design',
     advanceToProto: 'Enviar para Prototipagem',
     advanceToProduction: 'Aprovar para Produção',
     markCompleted: 'Marcar como Concluído',

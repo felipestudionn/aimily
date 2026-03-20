@@ -82,21 +82,19 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
                 </button>
               </div>
 
-              {/* Mode pills for sourcing — inline */}
+              {/* Mode selector — segmented control (matches merchandising) */}
               {step.id === 'sourcing' && (
-                <div className="px-5 pt-3 flex items-center gap-3">
-                  <span className="text-[9px] text-carbon/25 uppercase tracking-wider">{stepLabel('mode') || 'Mode'}:</span>
-                  {(['free', 'assisted', 'ai'] as const).map((m, i) => (
-                    <React.Fragment key={m}>
-                      {i > 0 && <span className="text-carbon/10">·</span>}
-                      <button onClick={() => setModes(prev => ({ ...prev, [step.id]: m }))}
-                        className={`text-[10px] tracking-[0.06em] uppercase transition-colors ${
-                          mode === m ? 'text-carbon font-semibold' : 'text-carbon/30 hover:text-carbon/50 font-medium'
+                <div className="px-5 pt-3">
+                  <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5 w-fit">
+                    {(['free', 'assisted', 'ai'] as const).map((m) => (
+                      <button key={m} onClick={() => setModes(prev => ({ ...prev, [step.id]: m }))}
+                        className={`px-4 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-all rounded-full ${
+                          mode === m ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/40 hover:text-carbon/60'
                         }`}>
                         {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
                       </button>
-                    </React.Fragment>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
 

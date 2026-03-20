@@ -100,7 +100,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   const advanceLabel = (): string => {
     const labels: Record<string, string> = {
-      range_plan: t.skuPhases?.advanceToSketch || 'Send to Sketch',
+      range_plan: t.skuPhases?.advanceToSketch || 'Start Design',
       sketch: t.skuPhases?.advanceToProto || 'Send to Prototyping',
       prototyping: t.skuPhases?.advanceToProduction || 'Approve for Production',
       production: t.skuPhases?.markCompleted || 'Mark as Completed',

@@ -2244,7 +2244,7 @@ export const en = {
   // ─── SKU Design Phases ───
   skuPhases: {
     rangePlan: 'Range Plan',
-    sketch: 'Sketch',
+    sketch: 'Design',
     prototyping: 'Prototyping',
     production: 'Production',
     completed: 'Completed',
@@ -2287,7 +2287,7 @@ export const en = {
     pendingApproval: 'Review the production sample and approve when ready.',
     protoHistory: 'Prototype History',
     deleteSku: 'Delete SKU',
-    advanceToSketch: 'Advance to Sketch',
+    advanceToSketch: 'Start Design',
     advanceToProto: 'Send to Prototyping',
     advanceToProduction: 'Approve for Production',
     markCompleted: 'Mark as Completed',

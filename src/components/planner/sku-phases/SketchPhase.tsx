@@ -16,7 +16,7 @@ import type { FooterAction } from '../SkuDetailView';
 type InputMode = 'free' | 'assisted' | 'ai';
 
 const STEPS = [
-  { id: 'sketch', label: 'Sketch' },
+  { id: 'sketch', label: 'Drawing' },
   { id: 'colorways', label: 'Colorways' },
   { id: 'materials', label: 'Materials' },
   { id: 'techpack', label: 'Tech Pack' },
@@ -100,8 +100,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
   return (
     <div className="space-y-5">
-      {/* ── Sub-stepper: connected pill flow ── */}
-      <div className="flex items-center justify-center gap-0 py-1">
+      {/* ── Sub-stepper: numbered steps with connecting line ── */}
+      <div className="flex items-center gap-0">
         {STEPS.map((step, idx) => {
           const isActive = idx === activeStep;
           const isConfirmed = confirmedSteps.has(idx);
@@ -109,43 +109,51 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           return (
             <React.Fragment key={step.id}>
               {idx > 0 && (
-                <div className={`w-8 h-px ${isConfirmed || isPast ? 'bg-carbon/25' : 'bg-carbon/[0.08]'}`} />
+                <div className={`flex-1 h-px ${isConfirmed || isPast ? 'bg-carbon/20' : 'bg-carbon/[0.06]'}`} />
               )}
               <button
                 onClick={() => setActiveStep(idx)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
+                  isActive
+                    ? 'text-carbon'
+                    : isConfirmed
+                      ? 'text-carbon/50 hover:text-carbon/70'
+                      : 'text-carbon/20 hover:text-carbon/30'
+                }`}
+              >
+                <span className={`w-5 h-5 flex items-center justify-center text-[9px] font-semibold rounded-full shrink-0 ${
                   isActive
                     ? 'bg-carbon text-crema'
                     : isConfirmed
-                      ? 'border border-carbon/[0.15] text-carbon/60 hover:border-carbon/30'
-                      : 'border border-carbon/[0.08] text-carbon/25 hover:border-carbon/[0.15] hover:text-carbon/35'
-                }`}
-              >
-                {isConfirmed && !isActive ? (
-                  <Check className="h-2.5 w-2.5" />
-                ) : (
-                  <span className="text-[9px] font-semibold">{idx + 1}</span>
-                )}
-                <span className="text-[9px] font-medium tracking-[0.06em] uppercase">{step.label}</span>
+                      ? 'bg-carbon/15 text-carbon/60'
+                      : 'bg-carbon/[0.05] text-carbon/25'
+                }`}>
+                  {isConfirmed && !isActive ? <Check className="h-2.5 w-2.5" /> : idx + 1}
+                </span>
+                <span className={`text-[10px] tracking-[0.06em] uppercase whitespace-nowrap ${
+                  isActive ? 'font-semibold' : 'font-medium'
+                }`}>{step.label}</span>
               </button>
             </React.Fragment>
           );
         })}
       </div>
 
-      {/* ── Mode pills (not for tech pack) ── */}
+      {/* ── Mode selector: segmented control (matches merchandising pattern) ── */}
       {activeStep < 3 && (
-        <div className="flex items-center justify-center gap-1.5">
-          {(['free', 'assisted', 'ai'] as const).map((m) => (
-            <button key={m} onClick={() => setModes(prev => ({ ...prev, [STEPS[activeStep].id]: m }))}
-              className={`px-4 py-1.5 rounded-full text-[9px] font-medium tracking-[0.06em] uppercase transition-all ${
-                mode === m
-                  ? 'bg-carbon text-crema'
-                  : 'border border-carbon/[0.08] text-carbon/30 hover:border-carbon/[0.15] hover:text-carbon/45'
-              }`}>
-              {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
+            {(['free', 'assisted', 'ai'] as const).map((m) => (
+              <button key={m} onClick={() => setModes(prev => ({ ...prev, [STEPS[activeStep].id]: m }))}
+                className={`px-4 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-all rounded-full ${
+                  mode === m
+                    ? 'bg-carbon text-crema shadow-sm'
+                    : 'text-carbon/40 hover:text-carbon/60'
+                }`}>
+                {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
