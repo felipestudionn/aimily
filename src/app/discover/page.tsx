@@ -6,13 +6,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Sparkles,
-  Calendar,
   Palette,
   TrendingUp,
   Camera,
-  ShoppingBag,
   Factory,
-  Rocket,
   ArrowRight,
   ChevronDown,
   Layers,
@@ -22,15 +19,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { PublicNav } from '@/components/layout/PublicNav';
 import { useTranslation } from '@/i18n';
-import { useLanguage, type Language } from '@/contexts/LanguageContext';
 
 export default function DiscoverPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
   const t = useTranslation();
-  const { language, setLanguage } = useLanguage();
 
   const CAPABILITIES = [
     {
@@ -81,75 +77,7 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-carbon">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5 bg-carbon/80 backdrop-blur-sm">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/images/aimily-logo-white.png"
-              alt="aimily"
-              width={774}
-              height={96}
-              className="object-contain h-5 w-auto brightness-[0.95] sepia-[0.15]"
-              priority
-              unoptimized
-            />
-          </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/discover" className="text-crema text-xs font-medium tracking-widest uppercase">
-              {t.common.discover}
-            </Link>
-            <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              {t.common.howAimilyWorks}
-            </Link>
-
-            <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              {t.common.contact}
-            </Link>
-          </div>
-        </div>
-        <div className="flex items-center gap-6">
-          {/* Language Toggle */}
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Language)}
-            className="bg-transparent text-[10px] font-medium tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-2.5 py-1 text-crema transition-colors focus:outline-none [&>option]:bg-carbon [&>option]:text-crema"
-          >
-            <option value="en">EN</option>
-            <option value="es">ES</option>
-            <option value="fr">FR</option>
-            <option value="it">IT</option>
-            <option value="de">DE</option>
-      <option value="pt">PT</option>
-      <option value="nl">NL</option>
-      <option value="sv">SV</option>
-      <option value="no">NO</option>
-          </select>
-          {user ? (
-            <Link
-              href="/my-collections"
-              className="text-crema text-xs font-medium tracking-widest uppercase hover:text-crema/70 transition-colors"
-            >
-              {t.common.myCollections}
-            </Link>
-          ) : (
-            <>
-              <button
-                onClick={() => setAuthOpen(true)}
-                className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
-              >
-                {t.common.logIn}
-              </button>
-              <button
-                onClick={() => setAuthOpen(true)}
-                className="btn-primary px-5 py-2 text-[11px] tracking-[0.15em]"
-              >
-                {t.common.startFreeTrialUpper}
-              </button>
-            </>
-          )}
-        </div>
-      </nav>
+      <PublicNav onAuth={() => setAuthOpen(true)} />
 
       {/* ─── HERO ─── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20">

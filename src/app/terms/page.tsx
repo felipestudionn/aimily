@@ -1,64 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import Image from 'next/image';
 import { useTranslation } from '@/i18n';
-import { useLanguage, type Language } from '@/contexts/LanguageContext';
+import { PublicNav } from '@/components/layout/PublicNav';
 
 export default function TermsPage() {
   const t = useTranslation();
-  const { language, setLanguage } = useLanguage();
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5 bg-white/80 backdrop-blur-sm border-b border-gray-100">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/images/aimily-logo-black.png"
-              alt="aimily"
-              width={774}
-              height={96}
-              className="object-contain h-5 w-auto"
-              priority
-              unoptimized
-            />
-          </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/discover" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
-              {t.common.discover}
-            </Link>
-            <Link href="/how-it-works" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
-              {t.common.howAimilyWorks}
-            </Link>
-            <Link href="/contact" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
-              {t.common.contact}
-            </Link>
-          </div>
-        </div>
-        <div className="flex items-center gap-6">
-          {/* Language toggle */}
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Language)}
-            className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gray-200 rounded px-2 py-1 text-gray-700 transition-colors focus:outline-none"
-          >
-            <option value="en">EN</option>
-            <option value="es">ES</option>
-            <option value="fr">FR</option>
-            <option value="it">IT</option>
-            <option value="de">DE</option>
-      <option value="pt">PT</option>
-      <option value="nl">NL</option>
-      <option value="sv">SV</option>
-      <option value="no">NO</option>
-          </select>
-          <Link href="/" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">
-            {t.common.home}
-          </Link>
-        </div>
-      </nav>
+      <PublicNav variant="light" />
 
       {/* Content */}
       <div className="pt-28 pb-16 px-4 sm:px-6 lg:px-8">

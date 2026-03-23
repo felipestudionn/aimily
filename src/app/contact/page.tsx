@@ -4,11 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Phone, MapPin, Linkedin, Instagram, ArrowUpRight } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import { useLanguage, type Language } from '@/contexts/LanguageContext';
+import { PublicNav } from '@/components/layout/PublicNav';
 
 export default function ContactPage() {
   const t = useTranslation();
-  const { language, setLanguage } = useLanguage();
 
   const TEAM = [
     {
@@ -27,51 +26,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-carbon">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5 bg-carbon/80 backdrop-blur-sm">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center">
-            <Image
-              src="/images/aimily-logo-white.png"
-              alt="aimily"
-              width={774}
-              height={96}
-              className="object-contain h-5 w-auto brightness-[0.95] sepia-[0.15]"
-              priority
-              unoptimized
-            />
-          </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              {t.common.discover}
-            </Link>
-            <Link href="/contact" className="text-crema text-xs font-medium tracking-widest uppercase">
-              {t.common.contact}
-            </Link>
-          </div>
-        </div>
-        <div className="flex items-center gap-6">
-          {/* Language toggle */}
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as Language)}
-            className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-2 py-1 text-crema transition-colors focus:outline-none [&>option]:bg-carbon [&>option]:text-crema"
-          >
-            <option value="en">EN</option>
-            <option value="es">ES</option>
-            <option value="fr">FR</option>
-            <option value="it">IT</option>
-            <option value="de">DE</option>
-      <option value="pt">PT</option>
-      <option value="nl">NL</option>
-      <option value="sv">SV</option>
-      <option value="no">NO</option>
-          </select>
-          <Link href="/" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-            {t.common.home}
-          </Link>
-        </div>
-      </nav>
+      <PublicNav />
 
       {/* ─── HERO ─── */}
       <section className="relative pt-32 pb-20 px-6">

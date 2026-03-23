@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/i18n';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { PublicNav } from '@/components/layout/PublicNav';
 import { Check, X, Rocket, Building2, Crown, ArrowRight, ChevronDown, Clock } from 'lucide-react';
 
 export default function LandingPage() {
@@ -16,8 +16,6 @@ export default function LandingPage() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [annual, setAnnual] = useState(true);
-  const [mobileNav, setMobileNav] = useState(false);
-  const { language, setLanguage } = useLanguage();
   const t = useTranslation();
 
   // If already authenticated, redirect to collections
@@ -102,131 +100,7 @@ export default function LandingPage() {
           }}
         />
 
-        {/* Discrete top navigation */}
-        <nav className="absolute top-0 left-0 right-0 z-20 px-6 md:px-10 py-5 animate-fade-in-up">
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.discover}
-              </Link>
-              <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.howAimilyWorks}
-              </Link>
-
-              <Link href="/contact" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.contact}
-              </Link>
-              <a href="#pricing" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.pricing}
-              </a>
-              <Link href="/trust" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {((t as Record<string, Record<string, string>>).trust || {}).navLabel || 'Trust'}
-              </Link>
-            </div>
-            <div className="flex items-center gap-6">
-              {/* Language toggle */}
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-                className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-2 py-1 text-crema transition-colors focus:outline-none [&>option]:bg-carbon [&>option]:text-crema"
-              >
-                <option value="en">EN</option>
-                <option value="es">ES</option>
-                <option value="fr">FR</option>
-                <option value="it">IT</option>
-                <option value="de">DE</option>
-      <option value="pt">PT</option>
-      <option value="nl">NL</option>
-      <option value="sv">SV</option>
-      <option value="no">NO</option>
-              </select>
-              <button
-                onClick={() => openAuth('signin')}
-                className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors"
-              >
-                {t.common.logIn}
-              </button>
-              <button
-                onClick={() => openAuth('signup')}
-                className="bg-crema text-carbon text-xs font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors"
-              >
-                {t.common.startFreeTrial}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile nav */}
-          <div className="md:hidden flex items-center justify-between">
-            <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-              {t.common.discover}
-            </Link>
-            <button
-              onClick={() => setMobileNav(!mobileNav)}
-              className="text-gris/60 hover:text-crema transition-colors p-1"
-              aria-label={t.common.toggleMenu}
-            >
-              {mobileNav ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" />
-                </svg>
-              )}
-            </button>
-          </div>
-
-          {/* Mobile dropdown */}
-          {mobileNav && (
-            <div className="md:hidden mt-4 bg-carbon/95 backdrop-blur-sm border border-gris/20 rounded-xl p-5 flex flex-col gap-4">
-              <Link href="/discover" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.discover}
-              </Link>
-              <Link href="/how-it-works" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.howAimilyWorks}
-              </Link>
-              <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.howAimilyWorks}
-              </Link>
-              <Link href="/contact" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.contact}
-              </Link>
-              <a href="#pricing" onClick={() => setMobileNav(false)} className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors">
-                {t.common.pricing}
-              </a>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-                className="bg-transparent text-xs font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-3 py-1.5 text-crema transition-colors focus:outline-none self-start [&>option]:bg-carbon [&>option]:text-crema"
-              >
-                <option value="en">EN</option>
-                <option value="es">ES</option>
-                <option value="fr">FR</option>
-                <option value="it">IT</option>
-                <option value="de">DE</option>
-      <option value="pt">PT</option>
-      <option value="nl">NL</option>
-      <option value="sv">SV</option>
-      <option value="no">NO</option>
-              </select>
-              <hr className="border-gris/20" />
-              <button
-                onClick={() => { openAuth('signin'); setMobileNav(false); }}
-                className="text-gris/60 text-sm font-medium tracking-widest uppercase hover:text-crema transition-colors text-left"
-              >
-                {t.common.logIn}
-              </button>
-              <button
-                onClick={() => { openAuth('signup'); setMobileNav(false); }}
-                className="bg-crema text-carbon text-sm font-medium tracking-widest uppercase px-5 py-2.5 hover:bg-crema/90 transition-colors text-center"
-              >
-                {t.common.startFreeTrial}
-              </button>
-            </div>
-          )}
-        </nav>
+        <PublicNav onAuth={openAuth} />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl">

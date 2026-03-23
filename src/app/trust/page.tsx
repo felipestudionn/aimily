@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Shield, EyeOff, Lock, Fingerprint, Server, FileCheck, Eye, ArrowRight, Check } from 'lucide-react';
+import { EyeOff, Lock, Fingerprint, Server, FileCheck, Eye, ArrowRight, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
-import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { PublicNav } from '@/components/layout/PublicNav';
 
 const SHIELD_LAYERS = [
   { icon: EyeOff, titleKey: 'trustShield1Title', descKey: 'trustShield1Desc' },
@@ -32,7 +32,6 @@ export default function TrustPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
-  const { language, setLanguage } = useLanguage();
   const t = useTranslation();
   const trust = (t as Record<string, Record<string, string>>).trust || {};
 
@@ -40,25 +39,7 @@ export default function TrustPage() {
 
   return (
     <div className="bg-carbon">
-      {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-10 py-5">
-        <div className="hidden md:flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">{t.common.discover}</Link>
-            <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">{t.common.howAimilyWorks}</Link>
-            <Link href="/trust" className="text-crema text-xs font-medium tracking-widest uppercase">{trust.navLabel || 'Trust'}</Link>
-          </div>
-          <div className="flex items-center gap-6">
-            <select value={language} onChange={(e) => setLanguage(e.target.value as Language)}
-              className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-2 py-1 text-crema focus:outline-none [&>option]:bg-carbon [&>option]:text-crema">
-              <option value="en">EN</option><option value="es">ES</option><option value="fr">FR</option>
-              <option value="it">IT</option><option value="de">DE</option><option value="pt">PT</option>
-              <option value="nl">NL</option><option value="sv">SV</option><option value="no">NO</option>
-            </select>
-            <Link href="/" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">{t.common.home}</Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav onAuth={() => setAuthOpen(true)} />
 
       {/* ── Hero ── */}
       <section className="relative min-h-[80vh] flex flex-col items-center justify-center px-6 text-center overflow-hidden">
