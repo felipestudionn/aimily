@@ -67,7 +67,7 @@ export default function TrustPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {['whyCard1', 'whyCard2', 'whyCard3'].map((key, i) => (
               <div key={i} className="border border-gris/10 px-5 py-3 max-w-xs">
-                <p className="text-[12px] font-light text-gris/40 leading-relaxed">
+                <p className="text-[12px] font-light text-gris/55 leading-relaxed">
                   {trust[key] || ''}
                 </p>
               </div>
@@ -79,7 +79,7 @@ export default function TrustPage() {
       {/* ── 6 Layers ── */}
       <section className="py-20 sm:py-28 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/25 mb-4">
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/40 mb-4">
             {trust.howTitle || 'How Aimily protects you'}
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-crema tracking-tight leading-[1.1] mb-16 max-w-xl">
@@ -98,7 +98,7 @@ export default function TrustPage() {
                     <h3 className="text-[13px] font-medium text-crema/80 mb-1.5 tracking-wide">
                       {trust[layer.titleKey] || ''}
                     </h3>
-                    <p className="text-[12px] font-light text-gris/35 leading-relaxed">
+                    <p className="text-[12px] font-light text-gris/55 leading-relaxed">
                       {trust[layer.descKey] || ''}
                     </p>
                   </div>
@@ -161,13 +161,13 @@ export default function TrustPage() {
       {/* ── AI Partners ── */}
       <section className="py-20 sm:py-28 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/25 mb-4">
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/40 mb-4">
             {trust.providersTitle || 'Our AI partners'}
           </p>
           <h2 className="text-2xl sm:text-3xl font-light text-crema tracking-tight leading-[1.15] mb-4 max-w-xl">
             {trust.providersHeadline || 'We only work with providers that guarantee zero training on your data'}
           </h2>
-          <p className="text-[13px] font-light text-gris/35 mb-12 max-w-xl leading-relaxed">
+          <p className="text-[13px] font-light text-gris/55 mb-12 max-w-xl leading-relaxed">
             {trust.providersDesc || ''}
           </p>
 
@@ -180,7 +180,7 @@ export default function TrustPage() {
             ].map((provider) => (
               <div key={provider.name} className="bg-carbon p-5">
                 <p className="text-[11px] font-medium text-crema/60 mb-1">{provider.name}</p>
-                <p className="text-[10px] font-light text-gris/25 leading-relaxed">{trust[provider.detailKey] || ''}</p>
+                <p className="text-[10px] font-light text-gris/45 leading-relaxed">{trust[provider.detailKey] || ''}</p>
               </div>
             ))}
           </div>
@@ -193,7 +193,7 @@ export default function TrustPage() {
           <h2 className="text-3xl sm:text-4xl font-light text-crema tracking-tight leading-[1.1] mb-4">
             {trust.ctaTitle || 'Ready to design with confidence?'}
           </h2>
-          <p className="text-[14px] font-light text-gris/40 mb-10 leading-relaxed max-w-lg mx-auto">
+          <p className="text-[14px] font-light text-gris/55 mb-10 leading-relaxed max-w-lg mx-auto">
             {trust.ctaDesc || 'Your next collection deserves the best AI tools with the strongest protection.'}
           </p>
           <button
