@@ -224,10 +224,10 @@ export function WizardSidebar({
                     )}
 
                     <Icon className={`h-[17px] w-[17px] transition-colors ${
-                      allLocked ? 'text-white/20'
-                        : allCompleted ? 'text-white/60'
+                      allLocked ? 'text-white/30'
+                        : allCompleted ? 'text-white/70'
                         : blockActive ? 'text-white'
-                        : 'text-white/45 group-hover:text-white/70'
+                        : 'text-white/50 group-hover:text-white/75'
                     }`} />
                   </Link>
                 ) : (
