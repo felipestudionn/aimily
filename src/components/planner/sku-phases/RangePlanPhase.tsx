@@ -65,13 +65,13 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading }: Rang
             {t.skuPhases?.financials || 'Financial Details'}
           </p>
           <div className="bg-white border border-carbon/[0.06] p-5 space-y-4">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <MetricCell label="PVP" value={`€${sku.pvp}`} editable onChange={(v) => handleFinancialChange('pvp', v)} />
               <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => handleFinancialChange('cost', v)} />
               <MetricCell label={t.skuPhases?.units || 'Units'} value={String(sku.buy_units)} editable onChange={(v) => handleFinancialChange('buy_units', v)} />
               <MetricCell label={t.skuPhases?.margin || 'Margin'} value={`${Math.round(sku.margin)}%`} />
             </div>
-            <div className="border-t border-carbon/[0.05] pt-3 grid grid-cols-4 gap-4">
+            <div className="border-t border-carbon/[0.05] pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <MetricCell label={t.skuPhases?.discount || 'Discount'} value={`${sku.discount}%`} editable onChange={(v) => handleFinancialChange('discount', v)} secondary />
               <MetricCell label={t.skuPhases?.finalPrice || 'Final Price'} value={`€${sku.final_price}`} secondary />
               <MetricCell label={t.skuPhases?.sellThrough || 'Sell-through'} value={`${sku.sale_percentage}%`} editable onChange={(v) => handleFinancialChange('sale_percentage', v)} secondary />
@@ -81,7 +81,7 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading }: Rang
 
           {/* Attributes */}
           <div className="bg-white border border-carbon/[0.06] p-5">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
                 <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.channel || 'Channel'}</p>
                 <p className="text-sm font-light text-carbon">{sku.channel}</p>

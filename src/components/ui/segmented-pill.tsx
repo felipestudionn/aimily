@@ -44,8 +44,8 @@ export function SegmentedPill<T extends string = string>({
   }, [activeIdx, options.length, preview]);
 
   const textClass = size === 'sm'
-    ? 'text-[10px] tracking-[0.08em] px-4 py-1.5'
-    : 'text-xs tracking-[0.08em] px-5 py-2';
+    ? 'text-[10px] tracking-[0.08em] px-2.5 sm:px-4 py-1.5'
+    : 'text-[10px] sm:text-xs tracking-[0.08em] px-3 sm:px-5 py-1.5 sm:py-2';
 
   /* ── Preview mode: static labels, no interaction ── */
   if (preview) {

@@ -247,7 +247,7 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
                   <p className="text-[9px] font-semibold tracking-[0.1em] uppercase text-carbon/30">{t.skuPhases?.tradeShows || 'Trade Shows'}</p>
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {aiResult.tradeShows.map((show, i) => (
-                      <div key={i} className="shrink-0 w-52 border border-carbon/[0.04] bg-white p-3 space-y-1">
+                      <div key={i} className="shrink-0 w-40 sm:w-52 border border-carbon/[0.04] bg-white p-2.5 sm:p-3 space-y-1">
                         <p className="text-[12px] font-light text-carbon">{show.name}</p>
                         <p className="text-[9px] text-carbon/30">{show.location} · {show.dates}</p>
                         <p className="text-[10px] text-carbon/40 leading-relaxed">{show.focus}</p>
@@ -381,7 +381,7 @@ function ProtoTrackingContent({ sku, iterations, onUpdate, t }: {
                 </div>
               </div>
               {(sku.sketch_url || sku.reference_image_url) && iter.images.length > 0 && (
-                <div className="w-32 shrink-0 space-y-1">
+                <div className="hidden sm:block w-32 shrink-0 space-y-1">
                   <p className="text-[8px] text-carbon/25 uppercase tracking-wider flex items-center gap-1"><ArrowLeftRight className="h-2.5 w-2.5" /> {t.skuPhases?.comparison || 'Compare'}</p>
                   <div className="grid grid-cols-2 gap-0.5">
                     <div className="border border-carbon/[0.04] overflow-hidden aspect-square bg-white">

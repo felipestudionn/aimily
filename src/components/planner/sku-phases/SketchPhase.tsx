@@ -165,16 +165,16 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <ImageUploadArea imageUrl={sku.sketch_url} uploading={uploading === 'sketch_url'}
                     placeholder={stepLabel('uploadSketch') || 'Upload your sketch'}
                     onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[4/5] max-h-[55vh]" />
+                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[4/5] max-h-[40vh] sm:max-h-[55vh]" />
                 </div>
                 <div className="space-y-2">
                   <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referenceComparison') || 'Reference'}</p>
                   {sku.reference_image_url ? (
-                    <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
+                    <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] bg-white">
                       <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
                     </div>
                   ) : (
-                    <div className="border border-carbon/[0.06] bg-white aspect-[4/5] max-h-[55vh] flex items-center justify-center">
+                    <div className="border border-carbon/[0.06] bg-white aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] flex items-center justify-center">
                       <p className="text-[11px] text-carbon/15">{stepLabel('noReference') || 'No reference image'}</p>
                     </div>
                   )}
@@ -188,14 +188,14 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <div className="space-y-2">
                     <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referencePhoto') || 'Reference'}</p>
                     {sku.reference_image_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
+                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] bg-white">
                         <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
                       </div>
                     ) : (
                       <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
                         placeholder={stepLabel('uploadReference') || 'Upload reference'}
                         onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
-                        onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[55vh]" />
+                        onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[40vh] sm:max-h-[55vh]" />
                     )}
                     <button onClick={async () => {
                       if (!sku.reference_image_url) return;
@@ -217,9 +217,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <div className="space-y-2">
                     <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('generatedSketch') || 'Generated'}</p>
                     {sku.sketch_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
+                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
                     ) : (
-                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[55vh] flex items-center justify-center">
+                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] flex items-center justify-center">
                         <p className="text-[11px] text-carbon/15 text-center px-4">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
                       </div>
                     )}
@@ -242,8 +242,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   </button>
                 )}
                 {aiProposals?.map((p, idx) => (
-                  <div key={idx} className="border border-carbon/[0.06] bg-white p-4 flex items-start gap-4">
-                    <div className="w-28 shrink-0">
+                  <div key={idx} className="border border-carbon/[0.06] bg-white p-3 sm:p-4 flex items-start gap-3 sm:gap-4">
+                    <div className="w-20 sm:w-28 shrink-0">
                       {p.sketchUrl ? (
                         <div className="border border-carbon/[0.06] aspect-square overflow-hidden bg-white"><img src={p.sketchUrl} alt="" className="w-full h-full object-contain" /></div>
                       ) : (
@@ -391,7 +391,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           <div className="space-y-4">
             <div className="p-5 bg-white border border-carbon/[0.06] space-y-4">
               <h4 className="text-sm font-light text-carbon">{sku.name}</h4>
-              <div className="grid grid-cols-3 gap-4 text-[11px]">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-[11px]">
                 <div><span className="text-carbon/25 uppercase tracking-wider text-[8px]">Category</span><p className="text-carbon mt-0.5">{sku.category}</p></div>
                 <div><span className="text-carbon/25 uppercase tracking-wider text-[8px]">Family</span><p className="text-carbon mt-0.5">{sku.family}</p></div>
                 <div><span className="text-carbon/25 uppercase tracking-wider text-[8px]">PVP / COGS</span><p className="text-carbon mt-0.5">€{sku.pvp} / €{sku.cost}</p></div>

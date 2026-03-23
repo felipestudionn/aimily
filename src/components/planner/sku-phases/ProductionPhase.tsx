@@ -259,7 +259,7 @@ function ProductionSampleContent({ sku, onUpdate, onImageUpload, uploading, t }:
         </div>
         <div className="bg-white border border-carbon/[0.04] p-3">
           <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1.5">{t.skuPhases?.financialRecap || 'Financial Recap'}</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
             <MetricCell label="PVP" value={`€${sku.pvp}`} />
             <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => {
               const val = Number(v.replace(/[^0-9.]/g, ''));

@@ -205,7 +205,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
       </div>
 
       {/* ── Content — fit viewport, no scroll ── */}
-      <div className="flex-1 min-h-0 px-6 sm:px-10 lg:px-16 py-4 sm:py-6 overflow-hidden">
+      <div className="flex-1 min-h-0 px-3.5 sm:px-10 lg:px-16 py-3 sm:py-6 overflow-hidden">
         <div className="max-w-5xl mx-auto h-full">
           {activePhase === 'range_plan' && (
             <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
