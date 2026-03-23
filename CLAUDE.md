@@ -36,5 +36,7 @@ src/
 - Auth: `useAuth()` from `@/contexts/AuthContext`, Supabase session
 - Bilingual: all milestones have `name` (EN) + `nameEs` (ES), UI has EN/ES toggle
 
-## Timeline System
-See [ALFRED.md](ALFRED.md) for detailed milestone data model and integration guide.
+## Security
+- ALL API routes MUST use `getAuthenticatedUser()` from `@/lib/auth-guard`
+- Verify collection ownership before data access: `user_id === collection.user_id`
+- Never use `supabaseAdmin` where user-scoped access is sufficient

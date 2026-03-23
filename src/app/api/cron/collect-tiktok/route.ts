@@ -38,7 +38,7 @@ const RESULTS_PER_SEARCH = 30;
 function verifyCronAuth(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET}`;
-  return !process.env.CRON_SECRET || (!!authHeader && authHeader === expected);
+  return !!process.env.CRON_SECRET && !!authHeader && authHeader === expected;
 }
 
 function getWeekString(date: Date): string {
@@ -55,13 +55,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('Starting TikTok keyword search scraping...');
     const results: { query: string; city: string; posts: number }[] = [];
     const currentWeek = getWeekString(new Date());
     
     for (const search of TIKTOK_SEARCHES) {
       try {
-        console.log(`Searching TikTok: "${search.query}" (${search.city})...`);
         
         // Use TikTok Keyword Search Scraper
         const run = await apifyClient.actor('sociavault/tiktok-keyword-search-scraper').call({
@@ -136,7 +134,6 @@ export async function GET(req: NextRequest) {
         }
         
         results.push({ query: search.query, city: search.city, posts: insertedCount });
-        console.log(`✓ "${search.query}": ${insertedCount} posts, ${(totalPlays/1000000).toFixed(1)}M plays`);
         
       } catch (error) {
         console.error(`Error searching "${search.query}":`, error);

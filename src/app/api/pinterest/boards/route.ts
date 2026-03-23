@@ -7,7 +7,6 @@ export async function GET(req: NextRequest) {
   const accessToken = req.cookies.get('pinterest_access_token')?.value;
 
   if (!accessToken) {
-    console.log('Pinterest boards request - no access token found');
     return NextResponse.json(
       { error: 'Not authenticated with Pinterest', code: 'NO_TOKEN' },
       { status: 401 }
@@ -15,7 +14,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('Fetching Pinterest boards with token:', accessToken.substring(0, 10) + '...');
     
     const response = await fetch('https://api.pinterest.com/v5/boards', {
       headers: {
@@ -24,8 +22,6 @@ export async function GET(req: NextRequest) {
     });
 
     const responseText = await response.text();
-    console.log('Pinterest boards response status:', response.status);
-    console.log('Pinterest boards response:', responseText.substring(0, 500));
 
     if (!response.ok) {
       // Parse error details
@@ -38,7 +34,6 @@ export async function GET(req: NextRequest) {
       
       // Check if token expired
       if (response.status === 401) {
-        console.log('Pinterest token expired or invalid');
         return NextResponse.json(
           { 
             error: 'Pinterest session expired. Please reconnect.', 
@@ -60,7 +55,6 @@ export async function GET(req: NextRequest) {
     }
 
     const data = JSON.parse(responseText);
-    console.log('Pinterest boards fetched successfully:', data.items?.length || 0, 'boards');
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching Pinterest boards:', error);

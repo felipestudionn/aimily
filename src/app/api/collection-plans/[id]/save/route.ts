@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 /**
  * Save/assign a collection plan to a user
@@ -9,21 +10,19 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: planId } = await params;
-    const { userId } = await req.json();
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
-    }
+    const { id: planId } = await params;
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     // Update the collection plan with the user_id
     const { data, error } = await supabaseAdmin
       .from('collection_plans')
-      .update({ 
-        user_id: userId,
+      .update({
+        user_id: user.id,
         updated_at: new Date().toISOString()
       })
       .eq('id', planId)
@@ -38,8 +37,8 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       plan: data,
       message: 'Plan saved successfully'
     });

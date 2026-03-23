@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/commercial-actions?planId=xxx - Get all commercial actions for a plan
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const planId = req.nextUrl.searchParams.get('planId');
-    
+
     if (!planId) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('commercial_actions')
@@ -31,10 +38,13 @@ export async function GET(req: NextRequest) {
 // POST /api/commercial-actions - Create a new commercial action
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
-    const { 
-      collection_plan_id, 
-      name, 
+    const {
+      collection_plan_id,
+      name,
       action_type,
       start_date,
       end_date,
@@ -45,7 +55,7 @@ export async function POST(req: NextRequest) {
       expected_traffic_boost,
       expected_sales_boost,
       channels,
-      position 
+      position
     } = body;
 
     if (!collection_plan_id || !name || !action_type || !start_date) {
@@ -54,6 +64,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, collection_plan_id);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('commercial_actions')

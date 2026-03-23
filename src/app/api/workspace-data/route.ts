@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/workspace-data?planId=xxx&workspace=creative
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { searchParams } = new URL(req.url);
     const planId = searchParams.get('planId');
     const workspace = searchParams.get('workspace');
@@ -11,6 +15,9 @@ export async function GET(req: NextRequest) {
     if (!planId || !workspace) {
       return NextResponse.json({ error: 'planId and workspace are required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('collection_workspace_data')
@@ -39,12 +46,18 @@ export async function GET(req: NextRequest) {
 // POST /api/workspace-data — Upsert workspace data
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
     const { planId, workspace, data } = body;
 
     if (!planId || !workspace || data === undefined) {
       return NextResponse.json({ error: 'planId, workspace, and data are required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data: result, error } = await supabaseAdmin
       .from('collection_workspace_data')

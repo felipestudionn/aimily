@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // PATCH /api/commercial-actions/[id] - Update a commercial action
 export async function PATCH(
@@ -7,7 +8,23 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    // Verify ownership
+    const { data: existing } = await supabaseAdmin
+      .from('commercial_actions')
+      .select('collection_plan_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      if (!authorized) return ownerError;
+    }
+
     const body = await req.json();
 
     const { data, error } = await supabaseAdmin
@@ -35,7 +52,22 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    // Verify ownership
+    const { data: existing } = await supabaseAdmin
+      .from('commercial_actions')
+      .select('collection_plan_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      if (!authorized) return ownerError;
+    }
 
     const { error } = await supabaseAdmin
       .from('commercial_actions')

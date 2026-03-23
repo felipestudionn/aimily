@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 /**
- * Milestone ↔ Workspace Data mapping
+ * Milestone - Workspace Data mapping
  *
  * Each milestone ID maps to a workspace + a function that checks
  * if the relevant data exists and is non-empty.
@@ -33,7 +34,7 @@ interface MilestoneMapping {
 }
 
 const MILESTONE_MAP: Record<string, MilestoneMapping> = {
-  // ── Creative & Brand ──
+  // -- Creative & Brand --
   'cr-1': { workspace: 'creative', check: hasBlock('consumer') },
   'cr-2': { workspace: 'creative', check: hasBlock('moodboard') },
   'br-1': { workspace: 'creative', check: hasBlock('brand-dna') },
@@ -41,13 +42,13 @@ const MILESTONE_MAP: Record<string, MilestoneMapping> = {
   'br-3': { workspace: 'creative', check: hasBlock('vibe') },
   'br-4': { workspace: 'creative', check: hasBlock('vibe') }, // Packaging Design — follows collection vibe
 
-  // ── Merchandising & Planning ──
+  // -- Merchandising & Planning --
   'rp-1': { workspace: 'merchandising', check: hasBlock('families') },
   'rp-3': { workspace: 'merchandising', check: hasBlock('budget') },
   'rp-2': { workspace: 'merchandising', check: hasBlock('channels') },
   'rp-4': { workspace: 'merchandising', check: hasBlock('pricing') },
 
-  // ── Design ──
+  // -- Design --
   'dd-1': { workspace: 'design', check: hasKey('sketches') },
   'dd-2': { workspace: 'design', check: hasKey('lasts') },
   'dd-6': { workspace: 'design', check: hasKey('colorways') },
@@ -57,10 +58,16 @@ const MILESTONE_MAP: Record<string, MilestoneMapping> = {
 // POST /api/collection-timelines/sync-progress
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { planId } = await req.json();
     if (!planId) {
       return NextResponse.json({ error: 'planId required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     // 1. Fetch current timeline
     const { data: timeline, error: tlError } = await supabaseAdmin

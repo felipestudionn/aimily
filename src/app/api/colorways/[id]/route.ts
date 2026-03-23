@@ -1,5 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
+
+// Helper to verify colorway ownership via SKU -> collection_plan
+async function verifyColorwayOwnership(userId: string, colorwayId: string) {
+  const { data: colorway } = await supabaseAdmin
+    .from('sku_colorways')
+    .select('sku_id')
+    .eq('id', colorwayId)
+    .single();
+
+  if (colorway?.sku_id) {
+    const { data: sku } = await supabaseAdmin
+      .from('collection_skus')
+      .select('collection_plan_id')
+      .eq('id', colorway.sku_id)
+      .single();
+
+    if (sku?.collection_plan_id) {
+      return verifyCollectionOwnership(userId, sku.collection_plan_id);
+    }
+  }
+
+  return { authorized: true as const, error: null };
+}
 
 // PATCH /api/colorways/[id] — Update a colorway
 export async function PATCH(
@@ -7,7 +31,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    const { authorized, error: ownerError } = await verifyColorwayOwnership(user.id, id);
+    if (!authorized) return ownerError;
+
     const updates = await req.json();
 
     const { data, error } = await supabaseAdmin
@@ -29,11 +60,17 @@ export async function PATCH(
 
 // DELETE /api/colorways/[id] — Delete a colorway
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    const { authorized, error: ownerError } = await verifyColorwayOwnership(user.id, id);
+    if (!authorized) return ownerError;
 
     const { error } = await supabaseAdmin
       .from('sku_colorways')

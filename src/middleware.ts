@@ -1,8 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Routes that don't require authentication
-const publicRoutes = [
+// Page routes that don't require authentication
+const publicPageRoutes = [
   '/',
   '/discover',
   '/contact',
@@ -19,17 +19,15 @@ const publicRoutes = [
   '/video-reel',
 ];
 
-// Routes that should be completely skipped by middleware
-const skipPaths = [
-  '/api/webhooks/',
-  '/api/cron/',
-  '/api/auth/',
+// API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
+const publicApiPrefixes = [
+  '/api/webhooks/',      // Stripe webhook (verifies signature internally)
+  '/api/cron/',          // Cron jobs (verify CRON_SECRET internally)
+  '/api/auth/',          // OAuth callbacks (Pinterest, etc.)
 ];
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,12 +38,10 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
@@ -54,24 +50,25 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: Do NOT use getSession() — it reads from storage without
-  // validating the JWT. Always use getUser() which validates via Supabase Auth.
+  // Validate JWT via Supabase Auth (NOT getSession which skips validation)
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
-  // Skip auth check for public routes
-  const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route
-  );
+  // ── API route protection ──
+  if (pathname.startsWith('/api/')) {
+    const isPublicApi = publicApiPrefixes.some((prefix) => pathname.startsWith(prefix));
+    if (!isPublicApi && !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return supabaseResponse;
+  }
 
-  // Skip auth check for API routes that handle their own auth
-  const isSkippedPath = skipPaths.some((path) => pathname.startsWith(path));
-
-  // If not authenticated and trying to access a protected route, redirect to landing
-  if (!user && !isPublicRoute && !isSkippedPath && !pathname.startsWith('/api/')) {
+  // ── Page route protection ──
+  const isPublicPage = publicPageRoutes.some((route) => pathname === route);
+  if (!user && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
@@ -82,13 +79,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder assets (images, etc.)
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

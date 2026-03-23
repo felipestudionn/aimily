@@ -18,7 +18,6 @@ export async function GET(
   }
 
   try {
-    console.log('Fetching pins for board:', boardId);
     
     // Pinterest API v5 endpoint for board pins
     const response = await fetch(
@@ -31,7 +30,6 @@ export async function GET(
     );
 
     const responseText = await response.text();
-    console.log('Pinterest pins response status:', response.status);
 
     if (!response.ok) {
       let errorData;
@@ -70,7 +68,6 @@ export async function GET(
       dominantColor: pin.dominant_color || null,
     })).filter((pin: any) => pin.imageUrl); // Only return pins with images
 
-    console.log('Fetched', pins.length, 'pins with images');
     
     return NextResponse.json({ 
       items: pins,

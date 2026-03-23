@@ -17,7 +17,7 @@ const POSTS_PER_LOCATION = 150;
 function verifyCronAuth(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET}`;
-  return !process.env.CRON_SECRET || (!!authHeader && authHeader === expected);
+  return !!process.env.CRON_SECRET && !!authHeader && authHeader === expected;
 }
 
 function extractHashtags(caption: string): string[] {
@@ -32,12 +32,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('Starting Instagram scraping (Batch 1: London, Paris)...');
     const results: { city: string; neighborhood: string; posts: number }[] = [];
     
     for (const location of CITY_LOCATIONS) {
       try {
-        console.log(`Scraping Instagram: ${location.city} - ${location.neighborhood}...`);
         
         const run = await apifyClient.actor('apify/instagram-scraper').call({
           search: location.locationQuery,
@@ -89,7 +87,6 @@ export async function GET(req: NextRequest) {
           posts: insertedCount,
         });
         
-        console.log(`✓ ${location.city}: ${insertedCount} posts saved`);
         
       } catch (error) {
         console.error(`Error scraping ${location.city}:`, error);

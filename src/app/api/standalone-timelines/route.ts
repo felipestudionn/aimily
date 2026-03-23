@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser } from '@/lib/api-auth';
 
-// GET /api/standalone-timelines?userId=xxx
+// GET /api/standalone-timelines
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get('userId');
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
 
+    // Use authenticated user's id instead of query param
     const { data, error } = await supabaseAdmin
       .from('standalone_timelines')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
 
     if (error) {
@@ -29,21 +29,25 @@ export async function GET(req: NextRequest) {
 // POST /api/standalone-timelines — Upsert a standalone timeline
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { user_id, collection_name, season, launch_date, milestones } = body;
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
 
-    if (!user_id || !collection_name || !launch_date || !milestones) {
+    const body = await req.json();
+    const { collection_name, season, launch_date, milestones } = body;
+
+    if (!collection_name || !launch_date || !milestones) {
       return NextResponse.json(
-        { error: 'user_id, collection_name, launch_date, and milestones are required' },
+        { error: 'collection_name, launch_date, and milestones are required' },
         { status: 400 }
       );
     }
 
+    // Use authenticated user's id
     const { data, error } = await supabaseAdmin
       .from('standalone_timelines')
       .upsert(
         {
-          user_id,
+          user_id: user.id,
           collection_name,
           season: season || null,
           launch_date,

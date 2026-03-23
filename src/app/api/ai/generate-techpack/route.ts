@@ -141,17 +141,13 @@ export async function POST(req: NextRequest) {
 
     // Primary: Claude Sonnet
     try {
-      console.log('Generating tech pack with Claude Sonnet...');
       result = await generateWithClaude(body);
-      console.log('Claude generation successful');
     } catch (claudeError) {
       console.error('Claude failed, trying Gemini fallback:', claudeError);
 
       // Fallback: Gemini
       try {
-        console.log('Generating tech pack with Gemini fallback...');
         result = await generateWithGemini(body);
-        console.log('Gemini fallback successful');
       } catch (geminiError) {
         console.error('Gemini fallback also failed:', geminiError);
         return NextResponse.json(

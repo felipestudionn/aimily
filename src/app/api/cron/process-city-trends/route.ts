@@ -18,7 +18,7 @@ function getWeekString(date: Date): string {
 function verifyCronAuth(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET}`;
-  return !process.env.CRON_SECRET || (!!authHeader && authHeader === expected);
+  return !!process.env.CRON_SECRET && !!authHeader && authHeader === expected;
 }
 
 interface TrendExtraction {
@@ -95,7 +95,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('🧠 Processing TikTok trends with Gemini AI...');
     const currentWeek = getWeekString(new Date());
     const previousWeek = getWeekString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
     
@@ -111,7 +110,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch raw data' }, { status: 500 });
     }
     
-    console.log(`📊 Found ${rawData.length} TikTok posts to analyze`);
     
     // Group by neighborhood (not city)
     const neighborhoodData: Record<string, { 
@@ -156,11 +154,9 @@ export async function GET(req: NextRequest) {
     
     for (const [neighborhood, data] of Object.entries(neighborhoodData)) {
       if (data.captions.length < 20) {
-        console.log(`⏭️ Skipping ${neighborhood}: not enough data (${data.captions.length} posts)`);
         continue;
       }
       
-      console.log(`\n🔍 Analyzing ${neighborhood} (${data.captions.length} posts, ${(data.totalViews/1000000).toFixed(1)}M views)...`);
       
       const trends = await extractTrendsWithAI(data.captions, neighborhood, data.city);
       const avgEngagement = data.captions.length > 0 ? data.totalLikes / data.captions.length : 0;
@@ -278,9 +274,7 @@ export async function GET(req: NextRequest) {
       }
       
       results[neighborhood] = { trends: insertedCount, microTrends: microTrendNames };
-      console.log(`✅ ${neighborhood}: ${insertedCount} trends extracted`);
       if (microTrendNames.length > 0) {
-        console.log(`   🌱 Micro-trends: ${microTrendNames.join(', ')}`);
       }
     }
     

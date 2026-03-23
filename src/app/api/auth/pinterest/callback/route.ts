@@ -32,10 +32,6 @@ export async function GET(req: NextRequest) {
     const clientId = process.env.NEXT_PUBLIC_PINTEREST_CLIENT_ID || '';
     const clientSecret = process.env.PINTEREST_CLIENT_SECRET || '';
     
-    console.log('Pinterest OAuth callback - exchanging code for token');
-    console.log('Redirect URI:', redirectUri);
-    console.log('Client ID exists:', !!clientId);
-    console.log('Client Secret exists:', !!clientSecret);
     
     // Pinterest API v5 requires Basic Auth header for token exchange
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
@@ -55,8 +51,6 @@ export async function GET(req: NextRequest) {
     });
 
     const responseText = await tokenResponse.text();
-    console.log('Pinterest token response status:', tokenResponse.status);
-    console.log('Pinterest token response:', responseText);
 
     if (!tokenResponse.ok) {
       console.error('Pinterest token exchange failed:', responseText);

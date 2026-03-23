@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { user, error: authError } = await getAuthenticatedUser();
+  if (authError) return authError;
+
   const { id } = await params;
+
+  const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, id);
+  if (!authorized) return ownerError;
+
   const body = await req.json();
 
   const updateFields: Record<string, any> = {};

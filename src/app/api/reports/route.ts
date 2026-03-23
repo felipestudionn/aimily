@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser } from '@/lib/api-auth';
 
 export async function GET() {
+  const { user, error: authError } = await getAuthenticatedUser();
+  if (authError) return authError;
+
   const { data, error } = await supabaseAdmin
     .from('reports')
     .select('*')

@@ -14,6 +14,24 @@ export async function getAuthenticatedUser() {
   return { user, error: null };
 }
 
+/**
+ * Verify the authenticated user owns the collection plan.
+ * Use this in every API route that accesses collection-scoped data.
+ */
+export async function verifyCollectionOwnership(userId: string, collectionPlanId: string) {
+  const { data } = await supabaseAdmin
+    .from('collection_plans')
+    .select('user_id')
+    .eq('id', collectionPlanId)
+    .single();
+
+  if (!data || data.user_id !== userId) {
+    return { authorized: false as const, error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+
+  return { authorized: true as const, error: null };
+}
+
 export async function checkAIUsage(userId: string, userEmail: string) {
   // Admin bypass
   if (ADMIN_EMAILS.includes(userEmail)) {

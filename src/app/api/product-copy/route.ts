@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const planId = req.nextUrl.searchParams.get('planId');
     const skuId = req.nextUrl.searchParams.get('skuId');
     const copyType = req.nextUrl.searchParams.get('copyType');
+
+    if (planId) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+      if (!authorized) return ownerError;
+    }
 
     let query = supabaseAdmin
       .from('product_copy')
@@ -29,6 +38,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
 
     if (!body.collection_plan_id || !body.copy_type || !body.title) {
@@ -37,6 +49,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('product_copy')

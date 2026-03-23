@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/colorways?skuId=xxx — Get all colorways for a SKU
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { searchParams } = new URL(req.url);
     const skuId = searchParams.get('skuId');
     const planId = searchParams.get('planId');
@@ -12,7 +16,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'skuId or planId is required' }, { status: 400 });
     }
 
+    if (planId) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+      if (!authorized) return ownerError;
+    }
+
     if (skuId) {
+      // If no planId provided, look up the SKU to verify ownership
+      if (!planId) {
+        const { data: sku } = await supabaseAdmin
+          .from('collection_skus')
+          .select('collection_plan_id')
+          .eq('id', skuId)
+          .single();
+
+        if (sku?.collection_plan_id) {
+          const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, sku.collection_plan_id);
+          if (!authorized) return ownerError;
+        }
+      }
+
       const { data, error } = await supabaseAdmin
         .from('sku_colorways')
         .select('*')
@@ -59,6 +82,9 @@ export async function GET(req: NextRequest) {
 // POST /api/colorways — Create a new colorway
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
     const { sku_id, name, hex_primary } = body;
 
@@ -67,6 +93,18 @@ export async function POST(req: NextRequest) {
         { error: 'sku_id, name, and hex_primary are required' },
         { status: 400 }
       );
+    }
+
+    // Verify ownership via SKU
+    const { data: sku } = await supabaseAdmin
+      .from('collection_skus')
+      .select('collection_plan_id')
+      .eq('id', sku_id)
+      .single();
+
+    if (sku?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, sku.collection_plan_id);
+      if (!authorized) return ownerError;
     }
 
     const { data, error } = await supabaseAdmin

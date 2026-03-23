@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const planId = req.nextUrl.searchParams.get('planId');
     const type = req.nextUrl.searchParams.get('type');
     const status = req.nextUrl.searchParams.get('status');
     const storyId = req.nextUrl.searchParams.get('storyId');
     const skuId = req.nextUrl.searchParams.get('skuId');
+
+    if (planId) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+      if (!authorized) return ownerError;
+    }
 
     let query = supabaseAdmin
       .from('ai_generations')
@@ -19,6 +28,11 @@ export async function GET(req: NextRequest) {
     if (status) query = query.eq('status', status);
     if (storyId) query = query.eq('story_id', storyId);
     if (skuId) query = query.contains('input_data', { sku_id: skuId });
+
+    // If no planId, filter by user_id to only return user's own generations
+    if (!planId) {
+      query = query.eq('user_id', user.id);
+    }
 
     const { data, error } = await query;
     if (error) throw error;
@@ -33,13 +47,24 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
 
-    if (!body.user_id || !body.generation_type || !body.prompt) {
+    if (!body.generation_type || !body.prompt) {
       return NextResponse.json(
-        { error: 'user_id, generation_type, and prompt are required' },
+        { error: 'generation_type and prompt are required' },
         { status: 400 }
       );
+    }
+
+    // Use authenticated user's id
+    body.user_id = user.id;
+
+    if (body.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
+      if (!authorized) return ownerError;
     }
 
     const { data, error } = await supabaseAdmin

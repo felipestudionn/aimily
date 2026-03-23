@@ -120,7 +120,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`[Moodboard] Received ${images.length} images for analysis`);
 
     // Split images into batches
     const batches: ImageData[][] = [];
@@ -128,12 +127,10 @@ export async function POST(req: NextRequest) {
       batches.push(images.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`[Moodboard] Split into ${batches.length} batches of max ${BATCH_SIZE} images`);
 
     // Analyze each batch
     const batchResults: AnalysisResult[] = [];
     for (let i = 0; i < batches.length; i++) {
-      console.log(`[Moodboard] Analyzing batch ${i + 1}/${batches.length}...`);
       const result = await analyzeBatch(batches[i], language);
       if (result) {
         batchResults.push(result);
@@ -153,7 +150,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Merge results from multiple batches using AI
-    console.log(`[Moodboard] Merging ${batchResults.length} batch results...`);
     const mergedResult = await mergeAnalysisResults(batchResults, language);
     return NextResponse.json(mergedResult);
 
@@ -178,7 +174,6 @@ async function analyzeBatch(imageBatch: ImageData[], language?: 'en' | 'es'): Pr
     try {
       const result = await analyzeBatchSonnet(imageBatch, systemPrompt);
       if (result) {
-        console.log('[Moodboard] Batch analyzed with Sonnet');
         return result;
       }
     } catch (err) {
@@ -191,7 +186,6 @@ async function analyzeBatch(imageBatch: ImageData[], language?: 'en' | 'es'): Pr
     try {
       const result = await analyzeBatchGemini(imageBatch, systemPrompt);
       if (result) {
-        console.log('[Moodboard] Batch analyzed with Gemini Flash (fallback)');
         return result;
       }
     } catch (err) {

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/sample-reviews?planId=xxx&reviewType=xxx
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { searchParams } = new URL(req.url);
     const planId = searchParams.get('planId');
     const reviewType = searchParams.get('reviewType');
@@ -12,6 +16,9 @@ export async function GET(req: NextRequest) {
     if (!planId) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     let query = supabaseAdmin
       .from('sample_reviews')
@@ -41,6 +48,9 @@ export async function GET(req: NextRequest) {
 // POST /api/sample-reviews
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
     const { collection_plan_id, review_type } = body;
 
@@ -50,6 +60,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, collection_plan_id);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('sample_reviews')

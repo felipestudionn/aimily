@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/brand-profiles?planId=xxx - Get or create brand profile for a collection
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { searchParams } = new URL(req.url);
     const planId = searchParams.get('planId');
 
     if (!planId) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     // Try to find existing profile
     const { data, error } = await supabaseAdmin
@@ -49,11 +56,26 @@ export async function GET(req: NextRequest) {
 // PATCH /api/brand-profiles - Update brand profile
 export async function PATCH(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
     const { id, ...updates } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    // Look up the brand profile to get collection_plan_id for ownership check
+    const { data: profile } = await supabaseAdmin
+      .from('brand_profiles')
+      .select('collection_plan_id')
+      .eq('id', id)
+      .single();
+
+    if (profile?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, profile.collection_plan_id);
+      if (!authorized) return ownerError;
     }
 
     const { data, error } = await supabaseAdmin

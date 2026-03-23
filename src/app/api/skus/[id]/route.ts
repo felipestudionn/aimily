@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -8,6 +9,9 @@ interface RouteParams {
 // GET /api/skus/[id] - Get a single SKU
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
 
     const { data, error } = await supabaseAdmin
@@ -25,6 +29,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'SKU not found' }, { status: 404 });
     }
 
+    // Verify ownership via the SKU's collection_plan_id
+    if (data.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, data.collection_plan_id);
+      if (!authorized) return ownerError;
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('GET SKU error:', error);
@@ -38,7 +48,23 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 // PATCH /api/skus/[id] - Update a SKU
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    // Fetch existing SKU to verify ownership
+    const { data: existing } = await supabaseAdmin
+      .from('collection_skus')
+      .select('collection_plan_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      if (!authorized) return ownerError;
+    }
+
     const body = await req.json();
 
     // Remove fields that shouldn't be updated directly
@@ -69,7 +95,22 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 // DELETE /api/skus/[id] - Delete a SKU
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    // Fetch existing SKU to verify ownership
+    const { data: existing } = await supabaseAdmin
+      .from('collection_skus')
+      .select('collection_plan_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      if (!authorized) return ownerError;
+    }
 
     const { error } = await supabaseAdmin
       .from('collection_skus')

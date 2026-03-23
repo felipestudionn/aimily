@@ -13,6 +13,33 @@ const BUCKET = 'collection-assets';
 
 export type AssetType = 'moodboard' | 'render' | 'lifestyle' | 'tryon' | 'sketch' | 'video' | 'model';
 
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml',
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'application/pdf',
+];
+
+/* Magic bytes for common image formats */
+const MAGIC_BYTES: Record<string, number[]> = {
+  'image/png': [0x89, 0x50, 0x4E, 0x47],
+  'image/jpeg': [0xFF, 0xD8, 0xFF],
+  'image/gif': [0x47, 0x49, 0x46],
+  'image/webp': [0x52, 0x49, 0x46, 0x46], // RIFF
+};
+
+function validateFileType(buffer: Buffer | Uint8Array, declaredMime: string): boolean {
+  if (!ALLOWED_MIME_TYPES.some((t) => declaredMime.startsWith(t))) return false;
+  // For images, verify magic bytes match declared type
+  const magic = MAGIC_BYTES[declaredMime];
+  if (magic) {
+    for (let i = 0; i < magic.length; i++) {
+      if (buffer[i] !== magic[i]) return false;
+    }
+  }
+  return true;
+}
+
 export interface UploadResult {
   storagePath: string;
   publicUrl: string;
@@ -43,7 +70,19 @@ export async function uploadToStorage(
   fileBuffer: Buffer | Uint8Array,
   contentType: string
 ): Promise<UploadResult> {
-  const storagePath = `${collectionPlanId}/${assetType}/${fileName}`;
+  // Validate file size
+  if (fileBuffer.length > MAX_FILE_SIZE) {
+    throw new Error(`File too large: ${(fileBuffer.length / 1024 / 1024).toFixed(1)}MB exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`);
+  }
+
+  // Validate file type (MIME + magic bytes)
+  if (!validateFileType(fileBuffer instanceof Buffer ? fileBuffer : Buffer.from(fileBuffer), contentType)) {
+    throw new Error(`Invalid file type: ${contentType}`);
+  }
+
+  // Sanitize filename (prevent path traversal)
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const storagePath = `${collectionPlanId}/${assetType}/${safeName}`;
 
   const { error } = await supabaseAdmin.storage
     .from(BUCKET)

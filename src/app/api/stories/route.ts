@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/stories?planId=xxx
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const planId = req.nextUrl.searchParams.get('planId');
     if (!planId) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('collection_stories')
@@ -30,6 +37,9 @@ export async function GET(req: NextRequest) {
 // POST /api/stories — create one or many stories (bulk for AI)
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
 
     // Support bulk insert: { stories: [...] } or single: { collection_plan_id, name, ... }
@@ -43,6 +53,11 @@ export async function POST(req: NextRequest) {
         );
       }
     }
+
+    // Verify ownership for the collection_plan_id
+    const planId = rows[0].collection_plan_id;
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('collection_stories')

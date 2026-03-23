@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 function verifyCronAuth(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET}`;
-  return !process.env.CRON_SECRET || (!!authHeader && authHeader === expected);
+  return !!process.env.CRON_SECRET && !!authHeader && authHeader === expected;
 }
 
 async function callEndpoint(path: string, secret: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
@@ -41,23 +41,17 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET || '';
   const results: Record<string, unknown> = {};
 
-  console.log('Starting social data collection orchestration...');
 
   // Call Instagram collectors sequentially
-  console.log('Collecting Instagram Batch 1 (London, Paris)...');
   results.instagram1 = await callEndpoint('/api/cron/collect-instagram', secret);
   
-  console.log('Collecting Instagram Batch 2 (NYC, Tokyo)...');
   results.instagram2 = await callEndpoint('/api/cron/collect-instagram-2', secret);
   
-  console.log('Collecting Instagram Batch 3 (Berlin, Seoul)...');
   results.instagram3 = await callEndpoint('/api/cron/collect-instagram-3', secret);
   
   // Call TikTok collector
-  console.log('Collecting TikTok data...');
   results.tiktok = await callEndpoint('/api/cron/collect-tiktok', secret);
 
-  console.log('Social data collection completed');
 
   return NextResponse.json({
     success: true,

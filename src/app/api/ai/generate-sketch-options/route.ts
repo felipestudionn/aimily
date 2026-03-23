@@ -60,7 +60,6 @@ async function generateSketchWithOpenAI(
   formData.append('size', '1024x1024');
   formData.append('quality', 'high');
 
-  console.log('Generating sketch with OpenAI gpt-image-1...');
   const response = await fetch('https://api.openai.com/v1/images/edits', {
     method: 'POST',
     headers: {
@@ -118,13 +117,11 @@ export async function POST(req: NextRequest) {
     const primaryPhoto = body.images[0];
     const prompt = buildSketchPrompt(body.garmentType, body.fabric, body.additionalNotes);
 
-    console.log('Generating fashion flat with OpenAI...');
     const sketchImage = await generateSketchWithOpenAI(
       prompt,
       primaryPhoto.base64,
       primaryPhoto.mimeType
     );
-    console.log('Sketch generated successfully');
 
     // Auto-persist to Supabase Storage if collectionPlanId provided
     let persistedUrl: string | null = null;

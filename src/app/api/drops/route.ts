@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/drops?planId=xxx - Get all drops for a collection plan
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const planId = req.nextUrl.searchParams.get('planId');
-    
+
     if (!planId) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('drops')
@@ -31,18 +38,21 @@ export async function GET(req: NextRequest) {
 // POST /api/drops - Create a new drop
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
-    const { 
-      collection_plan_id, 
-      drop_number, 
-      name, 
+    const {
+      collection_plan_id,
+      drop_number,
+      name,
       launch_date,
       end_date,
       weeks_active,
       story_name,
       story_description,
       channels,
-      position 
+      position
     } = body;
 
     if (!collection_plan_id || !name || !launch_date) {
@@ -51,6 +61,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, collection_plan_id);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('drops')

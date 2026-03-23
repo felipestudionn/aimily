@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/skus?planId=xxx - List SKUs for a collection plan
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { searchParams } = new URL(req.url);
     const planId = searchParams.get('planId');
 
@@ -13,6 +17,9 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('collection_skus')
@@ -38,6 +45,9 @@ export async function GET(req: NextRequest) {
 // POST /api/skus - Create a new SKU
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
     const {
       collection_plan_id,
@@ -70,6 +80,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, collection_plan_id);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('collection_skus')

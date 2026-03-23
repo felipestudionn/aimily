@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser } from '@/lib/api-auth';
 
 /**
- * GET /api/notifications?user_id=xxx
+ * GET /api/notifications
  *
  * Returns in-app notifications computed from timeline milestones:
  * - Overdue milestones
@@ -12,10 +13,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
  */
 export async function GET(req: NextRequest) {
   try {
-    const userId = req.nextUrl.searchParams.get('user_id');
-    if (!userId) {
-      return NextResponse.json({ error: 'user_id query parameter is required' }, { status: 400 });
-    }
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
+    // Use authenticated user's id instead of query param
+    const userId = user.id;
 
     // Get all collection plans
     const { data: plans, error: plansError } = await supabaseAdmin

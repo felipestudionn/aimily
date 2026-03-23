@@ -57,7 +57,6 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = promptParts.join('. ');
 
-    console.log('[Sketch Gen] Generating flat sketch with fal.ai Flux...');
 
     const result = await fal.subscribe('fal-ai/flux-2-pro', {
       input: {
@@ -70,7 +69,6 @@ export async function POST(req: NextRequest) {
 
     const falImages = result.data?.images || [];
 
-    console.log(`[Sketch Gen] Generated ${falImages.length} sketches`);
 
     // Auto-persist if collectionPlanId provided
     if (collectionPlanId && falImages.length > 0) {

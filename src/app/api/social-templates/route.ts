@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const planId = req.nextUrl.searchParams.get('planId');
     if (!planId) return NextResponse.json({ error: 'planId required' }, { status: 400 });
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     let query = supabaseAdmin
       .from('social_templates')
@@ -30,10 +37,20 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
 
     // Support bulk insert
     if (Array.isArray(body.templates)) {
+      // Verify ownership for the first template's planId
+      const firstPlanId = body.templates[0]?.collection_plan_id;
+      if (firstPlanId) {
+        const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, firstPlanId);
+        if (!authorized) return ownerError;
+      }
+
       const { data, error } = await supabaseAdmin
         .from('social_templates')
         .insert(body.templates)
@@ -45,6 +62,9 @@ export async function POST(req: NextRequest) {
     if (!body.collection_plan_id || !body.platform || !body.type) {
       return NextResponse.json({ error: 'collection_plan_id, platform, and type required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('social_templates')

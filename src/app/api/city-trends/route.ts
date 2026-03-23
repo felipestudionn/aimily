@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser } from '@/lib/api-auth';
 
 // Get current week string
 function getWeekString(date: Date): string {
@@ -12,8 +13,11 @@ function getWeekString(date: Date): string {
 
 export async function GET() {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const currentWeek = getWeekString(new Date());
-    
+
     // Get processed trends by city
     const { data: processedTrends, error: processedError } = await supabaseAdmin
       .from('city_trends_processed')
@@ -22,24 +26,24 @@ export async function GET() {
       .order('city')
       .order('trend_type')
       .order('rank');
-    
+
     // Get raw data stats by city (for when processed data isn't available yet)
     const { data: rawStats, error: rawError } = await supabaseAdmin
       .from('city_trends_raw')
       .select('city, neighborhood, platform, hashtags, likes, comments')
       .gte('collected_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-    
+
     // Get TikTok hashtag trends
     const { data: tiktokTrends, error: tiktokError } = await supabaseAdmin
       .from('tiktok_hashtag_trends')
       .select('*')
       .eq('period', currentWeek)
       .order('total_plays', { ascending: false });
-    
+
     if (processedError || rawError || tiktokError) {
       console.error('Error fetching city trends:', { processedError, rawError, tiktokError });
     }
-    
+
     // If we have processed data, use it
     if (processedTrends && processedTrends.length > 0) {
       // Group by neighborhood (not city) for more granular data
@@ -52,7 +56,7 @@ export async function GET() {
         localSpots: Array<{ name: string; mentions: number }>;
         microTrends: Array<{ name: string; description: string; confidence: number }>;
       }> = {};
-      
+
       for (const trend of processedTrends) {
         const key = trend.neighborhood || trend.city;
         if (!neighborhoodsMap[key]) {
@@ -66,9 +70,9 @@ export async function GET() {
             microTrends: [],
           };
         }
-        
+
         const metadata = trend.metadata || {};
-        
+
         if (trend.trend_type === 'garment') {
           neighborhoodsMap[key].garments.push({
             name: trend.trend_name,
@@ -101,7 +105,7 @@ export async function GET() {
           });
         }
       }
-      
+
       return NextResponse.json({
         neighborhoods: Object.values(neighborhoodsMap),
         tiktokTrends: tiktokTrends || [],
@@ -109,7 +113,7 @@ export async function GET() {
         hasProcessedData: true,
       });
     }
-    
+
     // Fallback: aggregate raw data if no processed data
     if (rawStats && rawStats.length > 0) {
       const cityStats: Record<string, {
@@ -119,10 +123,10 @@ export async function GET() {
         totalEngagement: number;
         topHashtags: Record<string, number>;
       }> = {};
-      
+
       for (const post of rawStats) {
         if (post.city === 'Global') continue; // Skip TikTok global posts
-        
+
         if (!cityStats[post.city]) {
           cityStats[post.city] = {
             city: post.city,
@@ -132,10 +136,10 @@ export async function GET() {
             topHashtags: {},
           };
         }
-        
+
         cityStats[post.city].postCount++;
         cityStats[post.city].totalEngagement += (post.likes || 0) + (post.comments || 0);
-        
+
         // Count hashtags
         if (post.hashtags) {
           for (const tag of post.hashtags) {
@@ -143,7 +147,7 @@ export async function GET() {
           }
         }
       }
-      
+
       // Convert to response format
       const cities = Object.values(cityStats).map(city => ({
         city: city.city,
@@ -155,7 +159,7 @@ export async function GET() {
           .slice(0, 10)
           .map(([tag, count]) => ({ tag, count })),
       }));
-      
+
       return NextResponse.json({
         cities,
         tiktokTrends: tiktokTrends || [],
@@ -164,7 +168,7 @@ export async function GET() {
         message: 'Raw data aggregated. Run process-city-trends for full analysis.',
       });
     }
-    
+
     // No data at all
     return NextResponse.json({
       cities: [],
@@ -173,7 +177,7 @@ export async function GET() {
       hasProcessedData: false,
       message: 'No data available. Run collect-city-trends first.',
     });
-    
+
   } catch (error) {
     console.error('Error in city trends API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

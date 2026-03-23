@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser } from '@/lib/api-auth';
 
 export async function GET(request: Request) {
+  const { user, error: authError } = await getAuthenticatedUser();
+  if (authError) return authError;
+
   const { searchParams } = new URL(request.url);
   const location = searchParams.get('location') || 'Shoreditch';
   const limit = parseInt(searchParams.get('limit') || '10', 10);

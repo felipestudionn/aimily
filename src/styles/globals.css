@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Alfred Design System */
+    /* Aimily Design System */
     --crema: #FAEFE0;
     --carbon: #282A29;
     --texto: #191919;
@@ -12,7 +12,7 @@
     --blanco: #FFFFFF;
     --error: #A0463C;
 
-    /* shadcn/ui mappings → Alfred palette */
+    /* shadcn/ui mappings → Aimily palette */
     --background: 37 71% 93%;       /* crema #FAEFE0 */
     --foreground: 160 3% 10%;       /* texto #191919 */
     --card: 0 0% 100%;              /* blanco */
@@ -74,7 +74,7 @@ input, textarea, select {
 .text-xl       { font-size: 1.3125rem !important; } /* 20→21px */
 .text-2xl      { font-size: 1.5625rem !important; } /* 24→25px */
 
-/* Alfred Button Styles */
+/* Aimily Button Styles */
 .btn-primary {
   @apply inline-flex items-center justify-center px-8 py-3 text-sm font-medium tracking-wide uppercase transition-colors;
   background-color: var(--carbon);

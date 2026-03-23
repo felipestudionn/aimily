@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 interface RouteParams { params: Promise<{ id: string }> }
 
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    const { data: existing } = await supabaseAdmin
+      .from('brand_models')
+      .select('collection_plan_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      if (!authorized) return ownerError;
+    }
+
     const updates = await req.json();
 
     const { data, error } = await supabaseAdmin
@@ -27,7 +43,21 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const { id } = await params;
+
+    const { data: existing } = await supabaseAdmin
+      .from('brand_models')
+      .select('collection_plan_id')
+      .eq('id', id)
+      .single();
+
+    if (existing?.collection_plan_id) {
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      if (!authorized) return ownerError;
+    }
 
     const { error } = await supabaseAdmin
       .from('brand_models')

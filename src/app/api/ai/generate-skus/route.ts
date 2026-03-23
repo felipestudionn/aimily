@@ -181,7 +181,6 @@ RULES:
     });
 
     const finalTotal = finalSkus.reduce((sum: number, sku) => sum + (sku.expectedSales as number), 0);
-    console.log(`Generated ${finalSkus.length} SKUs: €${finalTotal.toFixed(2)} (target: €${totalSalesTarget})`);
 
     return NextResponse.json({
       skus: finalSkus,

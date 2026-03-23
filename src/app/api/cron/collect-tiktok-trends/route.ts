@@ -28,7 +28,7 @@ const POSTS_PER_HASHTAG = 150; // 18 hashtags × 150 = 2,700 posts = ~$0.81
 function verifyCronAuth(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
   const expected = `Bearer ${process.env.CRON_SECRET}`;
-  return !process.env.CRON_SECRET || (!!authHeader && authHeader === expected);
+  return !!process.env.CRON_SECRET && !!authHeader && authHeader === expected;
 }
 
 function getWeekString(date: Date): string {
@@ -57,14 +57,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('🚀 Starting TikTok neighborhood trends collection...');
     const currentWeek = getWeekString(new Date());
     const results: Array<{ neighborhood: string; hashtag: string; posts: number; topHashtags: string[] }> = [];
     
     for (const location of NEIGHBORHOOD_SEARCHES) {
       for (const hashtag of location.hashtags) {
         try {
-          console.log(`📍 Scraping #${hashtag} (${location.neighborhood})...`);
           
           // Use clockworks TikTok scraper - reliable and includes all data we need
           const run = await apifyClient.actor('clockworks/tiktok-scraper').call({
@@ -156,8 +154,6 @@ export async function GET(req: NextRequest) {
             topHashtags: topHashtags.slice(0, 5),
           });
           
-          console.log(`✅ #${hashtag}: ${insertedCount} posts, ${(totalViews/1000).toFixed(0)}K views`);
-          console.log(`   📊 Top hashtags: ${topHashtags.slice(0, 5).join(', ')}`);
           
         } catch (error) {
           console.error(`❌ Error scraping #${hashtag}:`, error);
@@ -169,7 +165,6 @@ export async function GET(req: NextRequest) {
     const totalPosts = results.reduce((sum, r) => sum + r.posts, 0);
     const estimatedCost = (totalPosts / 1000) * 0.30;
     
-    console.log(`\n🎯 Collection complete: ${totalPosts} posts (~$${estimatedCost.toFixed(2)})`);
     
     return NextResponse.json({
       success: true,
