@@ -1092,20 +1092,35 @@ export default function MerchandisingPage() {
           </p>
         </div>
 
-        {/* Validation Progress */}
-        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mb-8 sm:mb-10 overflow-x-auto max-w-full">
+        {/* Validation Progress — pill stepper (matches Creative) */}
+        <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] w-fit overflow-x-auto max-w-full">
           {MERCH_CARDS.map((card, idx) => {
             const state = getCardState(card.id);
+            const locked = isLocked(card);
+            const isActive = expandedCard === card.id;
             return (
-              <div key={card.id} className="flex items-center gap-2">
-                <div className={`w-6 h-6 flex items-center justify-center text-xs font-medium transition-all ${
-                  state.confirmed ? 'bg-carbon text-crema' : isLocked(card) ? 'bg-carbon/[0.04] text-carbon/20' : 'bg-carbon/[0.06] text-carbon/40'
+              <button
+                key={card.id}
+                onClick={() => { if (!locked && !expandedCard) setExpandedCard(card.id); }}
+                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
+                  isActive
+                    ? 'bg-carbon text-crema'
+                    : state.confirmed
+                      ? 'bg-white text-carbon/70'
+                      : locked
+                        ? 'bg-white text-carbon/15 cursor-not-allowed'
+                        : expandedCard
+                          ? 'bg-white text-carbon/15 cursor-not-allowed'
+                          : 'bg-white text-carbon/40 hover:text-carbon/60'
+                }`}
+              >
+                <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 ${
+                  isActive ? 'bg-white/20' : state.confirmed ? 'bg-carbon text-crema' : 'bg-carbon/[0.06]'
                 }`}>
-                  {state.confirmed ? '✓' : isLocked(card) ? <Lock className="h-2.5 w-2.5" /> : idx + 1}
-                </div>
-                <span className={`text-[10px] sm:text-[11px] font-medium tracking-[0.05em] uppercase ${state.confirmed ? 'text-carbon' : 'text-carbon/30'}`}>{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</span>
-                {idx < MERCH_CARDS.length - 1 && <ArrowRight className="h-3 w-3 text-carbon/15 ml-2" />}
-              </div>
+                  {state.confirmed ? <Check className="h-3 w-3" /> : locked ? <Lock className="h-2.5 w-2.5" /> : idx + 1}
+                </span>
+                <span className="whitespace-nowrap">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</span>
+              </button>
             );
           })}
         </div>

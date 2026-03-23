@@ -200,7 +200,10 @@ export function WizardSidebar({
             const blockActive = isBlockActive(block);
             const blockProgress = getBlockProgress(block);
             const blockPhases = block.phaseIds.map((id) => phaseMap.get(id)).filter(Boolean) as WizardPhaseStatus[];
-            const allLocked = blockPhases.every((p) => p.state === 'locked');
+            // Builder unlocks when merchandising is done (rp-6), not when all sub-phases unlock individually
+            const allLocked = block.id === 'development'
+              ? !(phaseMap.get('merchandising')?.state === 'completed' || blockPhases.some((p) => p.state !== 'locked'))
+              : blockPhases.every((p) => p.state === 'locked');
             const allCompleted = blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
             const blockHref = `${basePath}/${block.route}`;
             const Icon = block.icon;
