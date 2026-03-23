@@ -2836,15 +2836,13 @@ export default function CreativeBrandPage() {
 
                       {/* Input Mode Pills (preview) — only for vision blocks that use modes */}
                       {!['moodboard', 'brand-dna', 'global-trends', 'deep-dive', 'live-signals', 'competitors'].includes(block.id) && (
-                        <div className="mt-4 sm:mt-6 flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                          {INPUT_MODES.map((mode) => (
-                            <span
-                              key={mode.id}
-                              className="px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50"
-                            >
-                              {modeNameMap[mode.id] || mode.label}
-                            </span>
-                          ))}
+                        <div className="mt-4 sm:mt-6">
+                          <SegmentedPill
+                            preview
+                            options={INPUT_MODES.map((m) => ({ id: m.id, label: modeNameMap[m.id] || m.label }))}
+                            value={state.mode}
+                            onChange={() => {}}
+                          />
                         </div>
                       )}
 

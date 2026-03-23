@@ -21,10 +21,11 @@ interface SegmentedPillProps<T extends string = string> {
   onChange: (value: T) => void;
   description?: string;
   size?: 'sm' | 'md';
+  preview?: boolean;
 }
 
 export function SegmentedPill<T extends string = string>({
-  options, value, onChange, description, size = 'sm',
+  options, value, onChange, description, size = 'sm', preview = false,
 }: SegmentedPillProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -32,6 +33,7 @@ export function SegmentedPill<T extends string = string>({
 
   /* Measure active button position for sliding indicator */
   useEffect(() => {
+    if (preview) return;
     const container = containerRef.current;
     if (!container) return;
     const buttons = container.querySelectorAll<HTMLButtonElement>('[data-seg-btn]');
@@ -39,11 +41,27 @@ export function SegmentedPill<T extends string = string>({
     if (btn) {
       setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
     }
-  }, [activeIdx, options.length]);
+  }, [activeIdx, options.length, preview]);
 
   const textClass = size === 'sm'
     ? 'text-[10px] tracking-[0.08em] px-4 py-1.5'
     : 'text-xs tracking-[0.08em] px-5 py-2';
+
+  /* ── Preview mode: static labels, no interaction ── */
+  if (preview) {
+    return (
+      <div className="flex items-center gap-1.5">
+        {options.map((opt) => (
+          <span
+            key={opt.id}
+            className={`${textClass} font-medium uppercase border border-carbon/[0.06] rounded-full text-carbon/30`}
+          >
+            {opt.label}
+          </span>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3">

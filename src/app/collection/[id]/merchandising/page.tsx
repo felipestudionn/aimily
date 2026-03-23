@@ -1223,12 +1223,16 @@ export default function MerchandisingPage() {
                     </div>
                     <p className="text-sm text-carbon/70 leading-relaxed flex-1">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
                     {!locked && (
-                      <div className="mt-4 sm:mt-6 flex items-center">
-                        <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
-                          {INPUT_MODE_IDS.map((modeId) => (
-                            <span key={modeId} className="px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 rounded-full">{t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}</span>
-                          ))}
-                        </div>
+                      <div className="mt-4 sm:mt-6">
+                        <SegmentedPill
+                          preview
+                          options={INPUT_MODE_IDS.map((modeId) => ({
+                            id: modeId,
+                            label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
+                          }))}
+                          value={state.mode}
+                          onChange={() => {}}
+                        />
                       </div>
                     )}
                     <div className={`mt-4 sm:mt-6 flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 text-[10px] sm:text-[11px] font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] transition-colors ${
