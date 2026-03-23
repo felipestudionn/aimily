@@ -11,6 +11,7 @@ import type { SKU } from '@/hooks/useSkus';
 import type { SkuColorway } from '@/types/design';
 import { useSkuLifecycle } from './SkuLifecycleContext';
 import { ImageUploadArea } from './shared';
+import { SegmentedPill } from '@/components/ui/segmented-pill';
 import type { FooterAction } from '../SkuDetailView';
 
 type InputMode = 'free' | 'assisted' | 'ai';
@@ -139,22 +140,17 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         })}
       </div>
 
-      {/* ── Mode selector: segmented control (matches merchandising pattern) ── */}
+      {/* ── Mode selector ── */}
       {activeStep < 3 && (
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
-            {(['free', 'assisted', 'ai'] as const).map((m) => (
-              <button key={m} onClick={() => setModes(prev => ({ ...prev, [STEPS[activeStep].id]: m }))}
-                className={`px-4 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-all rounded-full ${
-                  mode === m
-                    ? 'bg-carbon text-crema shadow-sm'
-                    : 'text-carbon/40 hover:text-carbon/60'
-                }`}>
-                {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
-              </button>
-            ))}
-          </div>
-        </div>
+        <SegmentedPill
+          options={[
+            { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Free' },
+            { id: 'assisted' as InputMode, label: stepLabel('assisted') || 'Assisted' },
+            { id: 'ai' as InputMode, label: stepLabel('aiProposal') || 'AI Proposal' },
+          ]}
+          value={mode}
+          onChange={(m) => setModes(prev => ({ ...prev, [STEPS[activeStep].id]: m }))}
+        />
       )}
 
       {/* ── Step Content ── */}

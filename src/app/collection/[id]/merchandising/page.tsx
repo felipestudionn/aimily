@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SegmentedPill } from '@/components/ui/segmented-pill';
 
 /* ─── AI generation helper ─── */
 async function generateMerch(
@@ -1159,17 +1160,18 @@ export default function MerchandisingPage() {
                         <button onClick={handleCollapse} className="w-9 h-9 flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:bg-carbon/[0.04] transition-all"><X className="h-4 w-4" /></button>
                       </div>
 
-                      {/* Mode Pills — Alfred-style pill toggle */}
-                      <div className="flex items-center gap-3 mb-6 sm:mb-8">
-                        <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
-                          {INPUT_MODE_IDS.map((modeId) => (
-                            <button key={modeId} onClick={() => updateCardData(card.id, { mode: modeId })}
-                              className={`px-4 sm:px-5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase transition-all rounded-full ${state.mode === modeId ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/40 hover:text-carbon/60'}`}>
-                              {t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string}
-                            </button>
-                          ))}
-                        </div>
-                        <span className="hidden sm:inline text-xs text-carbon/40 italic">{t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}</span>
+                      {/* Mode Pills — unified segmented control */}
+                      <div className="mb-6 sm:mb-8">
+                        <SegmentedPill
+                          options={INPUT_MODE_IDS.map((modeId) => ({
+                            id: modeId,
+                            label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
+                          }))}
+                          value={state.mode}
+                          onChange={(modeId) => updateCardData(card.id, { mode: modeId })}
+                          description={t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}
+                          size="md"
+                        />
                       </div>
 
                       <div className="flex-1">

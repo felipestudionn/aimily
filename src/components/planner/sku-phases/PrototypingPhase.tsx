@@ -9,6 +9,7 @@ import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { SKU, ProtoIteration } from '@/hooks/useSkus';
 import { ImageUploadArea } from './shared';
+import { SegmentedPill } from '@/components/ui/segmented-pill';
 
 interface PrototypingPhaseProps {
   sku: SKU;
@@ -82,19 +83,18 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
                 </button>
               </div>
 
-              {/* Mode selector — segmented control (matches merchandising) */}
+              {/* Mode selector */}
               {step.id === 'sourcing' && (
                 <div className="px-5 pt-3">
-                  <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5 w-fit">
-                    {(['free', 'assisted', 'ai'] as const).map((m) => (
-                      <button key={m} onClick={() => setModes(prev => ({ ...prev, [step.id]: m }))}
-                        className={`px-4 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-all rounded-full ${
-                          mode === m ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/40 hover:text-carbon/60'
-                        }`}>
-                        {m === 'free' ? 'Free' : m === 'assisted' ? (stepLabel('assisted') || 'Assisted') : (stepLabel('aiProposal') || 'AI Proposal')}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedPill
+                    options={[
+                      { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Free' },
+                      { id: 'assisted' as InputMode, label: stepLabel('assisted') || 'Assisted' },
+                      { id: 'ai' as InputMode, label: stepLabel('aiProposal') || 'AI Proposal' },
+                    ]}
+                    value={mode}
+                    onChange={(m) => setModes(prev => ({ ...prev, [step.id]: m }))}
+                  />
                 </div>
               )}
 

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SegmentedPill } from '@/components/ui/segmented-pill';
 
 /* ─── AI generation helper ─── */
 async function generateCreative(
@@ -2740,23 +2741,17 @@ export default function CreativeBrandPage() {
 
                         {/* Mode Pills (not for moodboard) */}
                         {!hideModePills && (
-                          <div className="flex items-center gap-2 mb-6 sm:mb-8 flex-wrap">
-                            {INPUT_MODES.map((m) => (
-                              <button
-                                key={m.id}
-                                onClick={() => updateBlockData(block.id, { mode: m.id })}
-                                className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium tracking-[0.1em] uppercase border transition-all ${
-                                  state.mode === m.id
-                                    ? 'border-carbon bg-carbon text-crema'
-                                    : 'border-carbon/[0.08] text-carbon/50 hover:text-carbon/70 hover:border-carbon/20'
-                                }`}
-                              >
-                                {modeNameMap[m.id] || m.label}
-                              </button>
-                            ))}
-                            <span className="hidden sm:inline text-xs text-carbon/60 ml-2">
-                              {modeDescMap[state.mode] || INPUT_MODES.find((m) => m.id === state.mode)?.description}
-                            </span>
+                          <div className="mb-6 sm:mb-8">
+                            <SegmentedPill
+                              options={INPUT_MODES.map((m) => ({
+                                id: m.id,
+                                label: modeNameMap[m.id] || m.label,
+                              }))}
+                              value={state.mode}
+                              onChange={(modeId) => updateBlockData(block.id, { mode: modeId })}
+                              description={modeDescMap[state.mode] || INPUT_MODES.find((m) => m.id === state.mode)?.description}
+                              size="md"
+                            />
                           </div>
                         )}
 
