@@ -66,8 +66,8 @@ export default function TrustPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {['whyCard1', 'whyCard2', 'whyCard3'].map((key, i) => (
-              <div key={i} className="border border-gris/10 px-5 py-3 max-w-xs">
-                <p className="text-[12px] font-light text-gris/55 leading-relaxed">
+              <div key={i} className="border border-gris/15 px-5 py-3 max-w-xs">
+                <p className="text-[12px] font-light text-crema/60 leading-relaxed">
                   {trust[key] || ''}
                 </p>
               </div>
