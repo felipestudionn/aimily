@@ -143,7 +143,7 @@ export function WizardSidebar({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-all duration-300 ease-out flex flex-col ${
+        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-[width,transform] duration-200 ease-out flex flex-col ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
@@ -200,10 +200,8 @@ export function WizardSidebar({
             const blockActive = isBlockActive(block);
             const blockProgress = getBlockProgress(block);
             const blockPhases = block.phaseIds.map((id) => phaseMap.get(id)).filter(Boolean) as WizardPhaseStatus[];
-            // Builder unlocks when merchandising is done (rp-6), not when all sub-phases unlock individually
-            const allLocked = block.id === 'development'
-              ? !(phaseMap.get('merchandising')?.state === 'completed' || blockPhases.some((p) => p.state !== 'locked'))
-              : blockPhases.every((p) => p.state === 'locked');
+            // Builder is never locked from sidebar — the page itself handles empty state
+            const allLocked = block.id === 'development' ? false : blockPhases.every((p) => p.state === 'locked');
             const allCompleted = blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
             const blockHref = `${basePath}/${block.route}`;
             const Icon = block.icon;
