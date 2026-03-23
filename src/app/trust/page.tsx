@@ -1,48 +1,22 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Shield, Lock, Eye, EyeOff, Server, FileCheck, Fingerprint, ArrowRight } from 'lucide-react';
+import { Shield, EyeOff, Lock, Fingerprint, Server, FileCheck, Eye, ArrowRight, Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 const SHIELD_LAYERS = [
-  {
-    icon: EyeOff,
-    titleKey: 'trustShield1Title',
-    descKey: 'trustShield1Desc',
-    color: 'bg-[#282A29]',
-  },
-  {
-    icon: Lock,
-    titleKey: 'trustShield2Title',
-    descKey: 'trustShield2Desc',
-    color: 'bg-[#282A29]',
-  },
-  {
-    icon: Fingerprint,
-    titleKey: 'trustShield3Title',
-    descKey: 'trustShield3Desc',
-    color: 'bg-[#282A29]',
-  },
-  {
-    icon: Server,
-    titleKey: 'trustShield4Title',
-    descKey: 'trustShield4Desc',
-    color: 'bg-[#282A29]',
-  },
-  {
-    icon: FileCheck,
-    titleKey: 'trustShield5Title',
-    descKey: 'trustShield5Desc',
-    color: 'bg-[#282A29]',
-  },
-  {
-    icon: Eye,
-    titleKey: 'trustShield6Title',
-    descKey: 'trustShield6Desc',
-    color: 'bg-[#282A29]',
-  },
+  { icon: EyeOff, titleKey: 'trustShield1Title', descKey: 'trustShield1Desc' },
+  { icon: Lock, titleKey: 'trustShield2Title', descKey: 'trustShield2Desc' },
+  { icon: Fingerprint, titleKey: 'trustShield3Title', descKey: 'trustShield3Desc' },
+  { icon: Server, titleKey: 'trustShield4Title', descKey: 'trustShield4Desc' },
+  { icon: FileCheck, titleKey: 'trustShield5Title', descKey: 'trustShield5Desc' },
+  { icon: Eye, titleKey: 'trustShield6Title', descKey: 'trustShield6Desc' },
 ];
 
 const COMPARISON_ROWS = [
@@ -55,68 +29,68 @@ const COMPARISON_ROWS = [
 ];
 
 export default function TrustPage() {
-  const t = useTranslation();
+  const { user } = useAuth();
+  const router = useRouter();
+  const [authOpen, setAuthOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
+  const t = useTranslation();
   const trust = (t as Record<string, Record<string, string>>).trust || {};
 
+  if (user) { router.push('/my-collections'); return null; }
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-10 py-5 bg-white/80 backdrop-blur-sm border-b border-gray-100">
-        <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center">
-            <Image src="/images/aimily-logo-black.png" alt="aimily" width={774} height={96} className="object-contain h-5 w-auto" priority unoptimized />
-          </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/discover" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">{t.common.discover}</Link>
-            <Link href="/how-it-works" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">{t.common.howAimilyWorks}</Link>
-            <Link href="/trust" className="text-gray-900 text-xs font-medium tracking-widest uppercase">{trust.navLabel || 'Trust'}</Link>
+    <div className="bg-carbon">
+      {/* ── Nav ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-10 py-5">
+        <div className="hidden md:flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link href="/discover" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">{t.common.discover}</Link>
+            <Link href="/how-it-works" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">{t.common.howAimilyWorks}</Link>
+            <Link href="/trust" className="text-crema text-xs font-medium tracking-widest uppercase">{trust.navLabel || 'Trust'}</Link>
           </div>
-        </div>
-        <div className="flex items-center gap-6">
-          <select value={language} onChange={(e) => setLanguage(e.target.value as Language)}
-            className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gray-200 rounded px-2 py-1 text-gray-700 transition-colors focus:outline-none">
-            <option value="en">EN</option><option value="es">ES</option><option value="fr">FR</option>
-            <option value="it">IT</option><option value="de">DE</option><option value="pt">PT</option>
-            <option value="nl">NL</option><option value="sv">SV</option><option value="no">NO</option>
-          </select>
-          <Link href="/" className="text-gray-400 text-xs font-medium tracking-widest uppercase hover:text-gray-900 transition-colors">{t.common.home}</Link>
+          <div className="flex items-center gap-6">
+            <select value={language} onChange={(e) => setLanguage(e.target.value as Language)}
+              className="bg-transparent text-[10px] font-semibold tracking-[0.12em] uppercase cursor-pointer border border-gris/20 rounded px-2 py-1 text-crema focus:outline-none [&>option]:bg-carbon [&>option]:text-crema">
+              <option value="en">EN</option><option value="es">ES</option><option value="fr">FR</option>
+              <option value="it">IT</option><option value="de">DE</option><option value="pt">PT</option>
+              <option value="nl">NL</option><option value="sv">SV</option><option value="no">NO</option>
+            </select>
+            <Link href="/" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">{t.common.home}</Link>
+          </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="pt-32 sm:pt-40 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex justify-center mb-6">
-            <div className="w-14 h-14 bg-[#282A29] rounded-full flex items-center justify-center">
-              <Shield className="h-7 w-7 text-[#FAEFE0]" />
-            </div>
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-light text-[#282A29] tracking-tight leading-[1.1] mb-6">
-            {trust.heroTitle || 'Your creative strategy is safe with us'}
-          </h1>
-          <p className="text-lg sm:text-xl font-light text-[#282A29]/50 leading-relaxed max-w-2xl mx-auto">
-            {trust.heroSubtitle || 'When you use AI through Aimily, your data is automatically protected by multiple security layers that you would not have if using AI tools directly.'}
-          </p>
-        </div>
-      </section>
+      {/* ── Hero ── */}
+      <section className="relative min-h-[80vh] flex flex-col items-center justify-center px-6 text-center overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }} />
 
-      {/* The Problem — Why this matters */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#FAFAF8]">
-        <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#282A29]/30 mb-4">
+        <div className="relative z-10 max-w-3xl mx-auto">
+          <div className="flex justify-center mb-8">
+            <Link href="/">
+              <Image src="/images/aimily-logo-white.png" alt="aimily" width={200} height={50} className="object-contain h-8 w-auto brightness-[0.95] sepia-[0.15]" priority />
+            </Link>
+          </div>
+
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/30 mb-6">
             {trust.whyTitle || 'Why this matters'}
           </p>
-          <h2 className="text-2xl sm:text-3xl font-light text-[#282A29] mb-8 leading-snug max-w-2xl">
-            {trust.whyHeadline || 'Your collection plans contain some of the most sensitive data in your business'}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light text-crema tracking-tight leading-[1.08] mb-8">
+            {trust.heroTitle || 'Your creative strategy is safe with us'}
+          </h1>
+
+          <p className="text-lg sm:text-xl font-light text-gris/60 leading-relaxed max-w-2xl mx-auto mb-12">
+            {trust.heroSubtitle || 'When you use AI through Aimily, your data is automatically protected by multiple security layers that you would not have if using AI tools directly.'}
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {['whyCard1', 'whyCard2', 'whyCard3'].map((key, i) => (
-              <div key={i} className="bg-white p-6 border border-[#282A29]/[0.06]">
-                <p className="text-sm font-light text-[#282A29]/70 leading-relaxed">
-                  {trust[key] || ['Pricing strategies, margins, and cost structures that define your market position.',
-                    'Design directions, moodboards, and creative concepts months before launch.',
-                    'Go-to-market timelines, distribution channels, and competitive intelligence.'][i]}
+              <div key={i} className="border border-gris/10 px-5 py-3 max-w-xs">
+                <p className="text-[12px] font-light text-gris/40 leading-relaxed">
+                  {trust[key] || ''}
                 </p>
               </div>
             ))}
@@ -124,29 +98,30 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* How Aimily Protects You — 6 Layers */}
-      <section className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
+      {/* ── 6 Layers ── */}
+      <section className="py-20 sm:py-28 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#282A29]/30 mb-4">
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/25 mb-4">
             {trust.howTitle || 'How Aimily protects you'}
           </p>
-          <h2 className="text-2xl sm:text-3xl font-light text-[#282A29] mb-12 leading-snug max-w-2xl">
+          <h2 className="text-3xl sm:text-4xl font-light text-crema tracking-tight leading-[1.1] mb-16 max-w-xl">
             {trust.howHeadline || 'Six layers of protection, active on every AI interaction'}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-gris/[0.06]">
             {SHIELD_LAYERS.map((layer, i) => {
               const Icon = layer.icon;
               return (
-                <div key={i} className="flex gap-4 p-5 border border-[#282A29]/[0.06] hover:border-[#282A29]/[0.12] transition-colors">
-                  <div className={`${layer.color} w-10 h-10 flex items-center justify-center shrink-0`}>
-                    <Icon className="h-5 w-5 text-[#FAEFE0]" />
+                <div key={i} className="bg-carbon p-8 flex gap-5 group hover:bg-white/[0.02] transition-colors">
+                  <div className="w-10 h-10 border border-crema/15 flex items-center justify-center shrink-0 group-hover:border-crema/30 transition-colors">
+                    <Icon className="h-[18px] w-[18px] text-crema/50 group-hover:text-crema/80 transition-colors" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#282A29] mb-1">
-                      {trust[layer.titleKey] || `Protection Layer ${i + 1}`}
+                    <h3 className="text-[13px] font-medium text-crema/80 mb-1.5 tracking-wide">
+                      {trust[layer.titleKey] || ''}
                     </h3>
-                    <p className="text-[13px] font-light text-[#282A29]/50 leading-relaxed">
-                      {trust[layer.descKey] || 'Description'}
+                    <p className="text-[12px] font-light text-gris/35 leading-relaxed">
+                      {trust[layer.descKey] || ''}
                     </p>
                   </div>
                 </div>
@@ -156,52 +131,47 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* Comparison Table — Aimily vs Direct AI */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#282A29]">
+      {/* ── Comparison: "Con Aimily" vs "Sin Aimily" ── */}
+      <section className="py-20 sm:py-28 px-6 bg-crema">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/30 mb-4">
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-carbon/25 mb-4">
             {trust.compareTitle || 'The difference'}
           </p>
-          <h2 className="text-2xl sm:text-3xl font-light text-white mb-12 leading-snug max-w-2xl">
+          <h2 className="text-3xl sm:text-4xl font-light text-carbon tracking-tight leading-[1.1] mb-14 max-w-xl">
             {trust.compareHeadline || 'What happens when you use AI through Aimily vs. on your own'}
           </h2>
 
-          <div className="border border-white/[0.1]">
+          <div className="border border-carbon/[0.08]">
             {/* Header */}
-            <div className="grid grid-cols-3 border-b border-white/[0.1]">
-              <div className="p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-white/30">
+            <div className="grid grid-cols-12 border-b border-carbon/[0.08]">
+              <div className="col-span-6 p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon/30">
                 {trust.compareFeature || 'Protection'}
               </div>
-              <div className="p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-white/80 text-center border-l border-white/[0.1]">
+              <div className="col-span-3 p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon text-center border-l border-carbon/[0.08]">
                 {trust.compareAimily || 'Via Aimily'}
               </div>
-              <div className="p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-white/30 text-center border-l border-white/[0.1]">
+              <div className="col-span-3 p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon/25 text-center border-l border-carbon/[0.08]">
                 {trust.compareDirect || 'Direct AI use'}
               </div>
             </div>
 
-            {/* Rows */}
             {COMPARISON_ROWS.map((row, i) => (
-              <div key={i} className={`grid grid-cols-3 ${i < COMPARISON_ROWS.length - 1 ? 'border-b border-white/[0.06]' : ''}`}>
-                <div className="p-4 text-[13px] font-light text-white/60">
-                  {trust[row.featureKey] || `Feature ${i + 1}`}
+              <div key={i} className={`grid grid-cols-12 ${i < COMPARISON_ROWS.length - 1 ? 'border-b border-carbon/[0.05]' : ''}`}>
+                <div className="col-span-6 p-4 text-[13px] font-light text-carbon/60">
+                  {trust[row.featureKey] || ''}
                 </div>
-                <div className="p-4 text-center border-l border-white/[0.1]">
+                <div className="col-span-3 p-4 text-center border-l border-carbon/[0.08] flex items-center justify-center">
                   {row.aimily ? (
-                    <span className="inline-flex items-center justify-center w-6 h-6 bg-white/10 rounded-full">
-                      <span className="text-white text-sm">✓</span>
-                    </span>
+                    <div className="w-5 h-5 bg-carbon flex items-center justify-center"><Check className="h-3 w-3 text-crema" /></div>
                   ) : (
-                    <span className="text-white/20">—</span>
+                    <span className="text-carbon/15">—</span>
                   )}
                 </div>
-                <div className="p-4 text-center border-l border-white/[0.1]">
+                <div className="col-span-3 p-4 text-center border-l border-carbon/[0.08] flex items-center justify-center">
                   {row.direct ? (
-                    <span className="inline-flex items-center justify-center w-6 h-6 bg-white/10 rounded-full">
-                      <span className="text-white text-sm">✓</span>
-                    </span>
+                    <div className="w-5 h-5 bg-carbon/10 flex items-center justify-center"><Check className="h-3 w-3 text-carbon/40" /></div>
                   ) : (
-                    <span className="text-white/20">—</span>
+                    <span className="text-carbon/15">—</span>
                   )}
                 </div>
               </div>
@@ -210,63 +180,66 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* Providers we work with */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+      {/* ── AI Partners ── */}
+      <section className="py-20 sm:py-28 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-[#282A29]/30 mb-4">
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/25 mb-4">
             {trust.providersTitle || 'Our AI partners'}
           </p>
-          <h2 className="text-2xl sm:text-3xl font-light text-[#282A29] mb-4 leading-snug max-w-2xl">
+          <h2 className="text-2xl sm:text-3xl font-light text-crema tracking-tight leading-[1.15] mb-4 max-w-xl">
             {trust.providersHeadline || 'We only work with providers that guarantee zero training on your data'}
           </h2>
-          <p className="text-sm font-light text-[#282A29]/50 mb-10 max-w-2xl leading-relaxed">
-            {trust.providersDesc || 'Every AI provider we partner with has signed a Data Processing Agreement (DPA) that contractually prohibits using your data for model training. Your creative strategies never leave the secure pipeline.'}
+          <p className="text-[13px] font-light text-gris/35 mb-12 max-w-xl leading-relaxed">
+            {trust.providersDesc || ''}
           </p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gris/[0.06]">
             {[
-              { name: 'Anthropic', detail: trust.providerAnthropicDetail || 'Zero training on API data. 7-day auto-deletion.' },
-              { name: 'Google AI', detail: trust.providerGoogleDetail || 'Paid API excluded from training. EU data processing available.' },
-              { name: 'Fal.ai', detail: trust.providerFalDetail || '24-hour data lifecycle. No training on enterprise data.' },
-              { name: 'Perplexity', detail: trust.providerPerplexityDetail || 'Zero data retention. SOC 2 Type II certified.' },
+              { name: 'Anthropic', detailKey: 'providerAnthropicDetail' },
+              { name: 'Google AI', detailKey: 'providerGoogleDetail' },
+              { name: 'Fal.ai', detailKey: 'providerFalDetail' },
+              { name: 'Perplexity', detailKey: 'providerPerplexityDetail' },
             ].map((provider) => (
-              <div key={provider.name} className="p-4 border border-[#282A29]/[0.06]">
-                <p className="text-xs font-medium text-[#282A29] mb-1">{provider.name}</p>
-                <p className="text-[11px] font-light text-[#282A29]/40 leading-relaxed">{provider.detail}</p>
+              <div key={provider.name} className="bg-carbon p-5">
+                <p className="text-[11px] font-medium text-crema/60 mb-1">{provider.name}</p>
+                <p className="text-[10px] font-light text-gris/25 leading-relaxed">{trust[provider.detailKey] || ''}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-[#FAFAF8] text-center">
+      {/* ── CTA ── */}
+      <section className="py-20 sm:py-28 px-6 text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-light text-[#282A29] mb-4">
+          <h2 className="text-3xl sm:text-4xl font-light text-crema tracking-tight leading-[1.1] mb-4">
             {trust.ctaTitle || 'Ready to design with confidence?'}
           </h2>
-          <p className="text-sm font-light text-[#282A29]/50 mb-8 leading-relaxed">
-            {trust.ctaDesc || 'Your next collection deserves the best AI tools with the strongest protection. Start your free trial today.'}
+          <p className="text-[14px] font-light text-gris/40 mb-10 leading-relaxed max-w-lg mx-auto">
+            {trust.ctaDesc || 'Your next collection deserves the best AI tools with the strongest protection.'}
           </p>
-          <Link href="/discover" className="inline-flex items-center gap-2 bg-[#282A29] text-[#FAEFE0] px-8 py-3.5 text-xs font-medium tracking-[0.15em] uppercase hover:bg-[#282A29]/90 transition-colors">
+          <button
+            onClick={() => setAuthOpen(true)}
+            className="btn-primary px-10 py-4 text-sm tracking-[0.15em]"
+          >
             {trust.ctaButton || 'Start free trial'}
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+            <ArrowRight className="inline-block ml-2 h-4 w-4" />
+          </button>
         </div>
       </section>
 
-      {/* Footer note */}
-      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-gray-100">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[11px] text-gray-400">
-            {trust.footerNote || 'Last updated: March 2026. For security inquiries, contact security@aimily.app'}
-          </p>
-          <div className="flex items-center gap-4">
-            <Link href="/privacy" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">{t.common.privacy}</Link>
-            <Link href="/terms" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">{t.common.terms}</Link>
-          </div>
+      {/* ── Footer ── */}
+      <div className="relative z-20 pb-6">
+        <div className="flex items-center justify-center gap-6 py-5">
+          <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">{t.common.terms}</Link>
+          <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">{t.common.privacy}</Link>
         </div>
-      </footer>
+        <p className="text-center text-gris/15 text-[10px] tracking-wide">
+          {trust.footerNote || 'Last updated: March 2026'}
+        </p>
+      </div>
+
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onSuccess={() => router.push('/my-collections')} defaultMode="signup" />
     </div>
   );
 }

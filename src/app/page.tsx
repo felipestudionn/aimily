@@ -120,6 +120,9 @@ export default function LandingPage() {
               <a href="#pricing" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
                 {t.common.pricing}
               </a>
+              <Link href="/trust" className="text-gris/60 text-xs font-medium tracking-widest uppercase hover:text-crema transition-colors">
+                {((t as Record<string, Record<string, string>>).trust || {}).navLabel || 'Trust'}
+              </Link>
             </div>
             <div className="flex items-center gap-6">
               {/* Language toggle */}
@@ -418,6 +421,9 @@ export default function LandingPage() {
         <div className="flex items-center justify-center gap-6 py-5">
           <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
             {t.common.terms}
+          </Link>
+          <Link href="/trust" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
+            {((t as Record<string, Record<string, string>>).trust || {}).navLabel || 'Trust'}
           </Link>
           <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
             {t.common.privacy}
