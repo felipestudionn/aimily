@@ -38,7 +38,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   { id: 'go_to_market', label: 'Marketing & Digital', shortLabel: 'Marketing', icon: Megaphone, route: 'marketing/creation', phaseIds: ['marketing-creation', 'marketing-distribution'], showSubItems: true },
 ];
 
-const COLLAPSED_W = 56;
+const COLLAPSED_W = 52;
 const EXPANDED_W = 200;
 
 interface WizardSidebarProps {
@@ -53,61 +53,6 @@ interface WizardSidebarProps {
   onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-/* ── Icon with progress ring ── */
-function IconWithRing({
-  Icon, progress, size = 32, iconSize = 16, active = false, locked = false, completed = false,
-}: {
-  Icon: React.ElementType; progress: number; size?: number; iconSize?: number;
-  active?: boolean; locked?: boolean; completed?: boolean;
-}) {
-  const r = (size - 3) / 2;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference - (progress / 100) * circumference;
-  const hasProgress = progress > 0 && !locked;
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      {/* Progress ring */}
-      {hasProgress && (
-        <svg width={size} height={size} className="absolute inset-0 -rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} />
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-            stroke={completed ? 'rgba(255,255,255,0.5)' : active ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)'}
-            strokeWidth={1.5} strokeDasharray={circumference} strokeDashoffset={offset}
-            strokeLinecap="round" className="transition-all duration-700" />
-        </svg>
-      )}
-
-      {/* Icon */}
-      <Icon style={{ width: iconSize, height: iconSize }} className={
-        locked ? 'text-white/15' : active ? 'text-white' : 'text-white/45'
-      } />
-
-      {/* Completed check badge */}
-      {completed && !locked && (
-        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-white rounded-full flex items-center justify-center">
-          <Check className="h-2 w-2 text-carbon" strokeWidth={3} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Overall progress ring (logo area) ── */
-function OverallRing({ value, size = 36 }: { value: number; size?: number }) {
-  const r = (size - 3) / 2;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference - (value / 100) * circumference;
-  return (
-    <svg width={size} height={size} className="-rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1.5}
-        strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-        className="transition-all duration-700" />
-    </svg>
-  );
-}
-
 export function WizardSidebar({
   collectionId,
   collectionName,
@@ -119,7 +64,7 @@ export function WizardSidebar({
 }: WizardSidebarProps) {
   const pathname = usePathname();
   const { milestones, saving } = useTimeline();
-  const { phases, overallProgress } = useWizardState(milestones);
+  const { phases } = useWizardState(milestones);
   const [pinned, setPinned] = useState(false);
   const [hoverExpanded, setHoverExpanded] = useState(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,7 +85,6 @@ export function WizardSidebar({
   const weeksLeft = daysUntilLaunch !== null && daysUntilLaunch > 0 ? Math.floor(daysUntilLaunch / 7) : 0;
   const daysLeft = daysUntilLaunch !== null && daysUntilLaunch > 0 ? daysUntilLaunch % 7 : 0;
 
-  // Capitalize collection name
   const displayName = collectionName
     ? collectionName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
     : '';
@@ -171,7 +115,7 @@ export function WizardSidebar({
     });
   }
 
-  /* ── Hover expand with delay ── */
+  /* ── Hover expand ── */
   const handleMouseEnter = useCallback(() => {
     if (pinned) return;
     hoverTimer.current = setTimeout(() => setHoverExpanded(true), 300);
@@ -191,7 +135,6 @@ export function WizardSidebar({
 
   return (
     <>
-      {/* Mobile backdrop */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={onMobileClose} />
       )}
@@ -200,31 +143,29 @@ export function WizardSidebar({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-all duration-300 ease-out flex flex-col overflow-hidden ${
+        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-all duration-300 ease-out flex flex-col ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
-        {/* ── Logo area ── */}
-        <div className="h-14 flex items-center justify-center relative shrink-0">
-          <Link href="/my-collections" className="flex items-center justify-center hover:opacity-80 transition-opacity">
+        {/* ── Logo ── */}
+        <div className="shrink-0 flex items-center justify-center overflow-hidden" style={{ height: collapsed ? 120 : 56 }}>
+          <Link href="/my-collections" className="flex items-center justify-center hover:opacity-70 transition-opacity">
             {collapsed ? (
-              /* Rotated "aimily" wordmark — vertical */
-              <div className="relative">
-                <OverallRing value={overallProgress} size={34} />
-                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white/70 tracking-wider">
-                  {overallProgress}
-                </span>
-              </div>
+              /* Logo rotated -90° (reads bottom-to-top) */
+              <img
+                src="/images/aimily-logo-white.png"
+                alt="aimily"
+                className="h-5 w-auto -rotate-90"
+              />
             ) : (
-              <div className="flex items-center gap-3 px-4 w-full">
-                <img src="/images/aimily-logo-white.png" alt="aimily" className="h-6 w-auto" />
-                {saving && <Loader2 className="h-2.5 w-2.5 text-white/40 animate-spin ml-auto" />}
+              <div className="flex items-center gap-3 px-5 w-full">
+                <img src="/images/aimily-logo-white.png" alt="aimily" className="h-5 w-auto" />
+                {saving && <Loader2 className="h-2.5 w-2.5 text-white/30 animate-spin ml-auto" />}
               </div>
             )}
           </Link>
 
-          {/* Mobile close */}
-          <button onClick={onMobileClose} className="md:hidden absolute right-2 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white" aria-label="Close">
+          <button onClick={onMobileClose} className="md:hidden absolute right-2 top-4 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white" aria-label="Close">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -233,16 +174,16 @@ export function WizardSidebar({
 
         {/* ── Collection header (expanded only) ── */}
         {!collapsed && (
-          <div className="px-4 pb-3 border-b border-white/[0.06] shrink-0">
-            <h2 className="text-[12px] font-medium text-white tracking-tight leading-tight truncate">
+          <div className="px-5 pb-4 shrink-0">
+            <h2 className="text-[11px] font-medium text-white/80 tracking-tight leading-tight truncate">
               {displayName}
             </h2>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-0.5">
               {season && (
-                <span className="text-[10px] text-white/35 tracking-[0.12em] uppercase">{season}</span>
+                <span className="text-[10px] text-white/25 tracking-[0.1em] uppercase">{season}</span>
               )}
               {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
-                <span className="text-[10px] text-white/25">
+                <span className="text-[10px] text-white/20">
                   {weeksLeft > 0 && <>{weeksLeft}w </>}{daysLeft}d
                 </span>
               )}
@@ -250,8 +191,11 @@ export function WizardSidebar({
           </div>
         )}
 
+        {/* ── Separator ── */}
+        <div className="mx-3 border-t border-white/[0.06] shrink-0" />
+
         {/* ── Block Navigation ── */}
-        <nav className="flex-1 overflow-y-auto py-3 scrollbar-thin">
+        <nav className="flex-1 overflow-y-auto py-4 scrollbar-thin">
           {SIDEBAR_BLOCKS.map((block) => {
             const blockActive = isBlockActive(block);
             const blockProgress = getBlockProgress(block);
@@ -263,56 +207,49 @@ export function WizardSidebar({
             const isExpanded = expandedBlocks.has(block.id);
 
             return (
-              <div key={block.id} className="mb-1">
-                {/* ── Collapsed: icon only ── */}
+              <div key={block.id} className="mb-0.5">
                 {collapsed ? (
+                  /* ── Collapsed: icon only ── */
                   <Link
                     href={allLocked ? '#' : blockHref}
                     onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                    className={`flex items-center justify-center py-2.5 mx-auto transition-all group relative ${
-                      allLocked ? 'cursor-not-allowed' : ''
+                    className={`relative flex items-center justify-center h-10 transition-all ${
+                      allLocked ? 'cursor-not-allowed' : 'group'
                     }`}
                     title={block.shortLabel}
                   >
-                    {/* Active indicator bar */}
+                    {/* Active indicator — thin left bar */}
                     {blockActive && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-white rounded-r-full" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-white/80 rounded-r-full" />
                     )}
-                    <IconWithRing
-                      Icon={Icon}
-                      progress={blockProgress}
-                      active={blockActive}
-                      locked={allLocked}
-                      completed={allCompleted}
-                      size={30}
-                      iconSize={15}
-                    />
+
+                    <Icon className={`h-[17px] w-[17px] transition-colors ${
+                      allLocked ? 'text-white/20'
+                        : allCompleted ? 'text-white/60'
+                        : blockActive ? 'text-white'
+                        : 'text-white/45 group-hover:text-white/70'
+                    }`} />
                   </Link>
                 ) : (
                   /* ── Expanded: full row ── */
                   <>
-                    <div className={`flex items-center gap-2.5 px-4 py-2 transition-all ${
-                      blockActive ? 'text-white' : allLocked ? 'text-white/20' : 'text-white/55 hover:text-white/75'
+                    <div className={`relative flex items-center gap-3 px-5 py-2 transition-all ${
+                      blockActive ? 'text-white' : allLocked ? 'text-white/25' : 'text-white/55 hover:text-white/75'
                     }`}>
-                      {/* Active bar */}
                       {blockActive && (
-                        <div className="absolute left-0 w-[2px] h-5 bg-white rounded-r-full" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-white/80 rounded-r-full" />
                       )}
 
-                      <IconWithRing
-                        Icon={Icon}
-                        progress={blockProgress}
-                        active={blockActive}
-                        locked={allLocked}
-                        completed={allCompleted}
-                        size={26}
-                        iconSize={13}
-                      />
+                      <Icon className={`h-[15px] w-[15px] shrink-0 ${
+                        allLocked ? 'text-white/20'
+                          : allCompleted ? 'text-white/60'
+                          : blockActive ? 'text-white' : ''
+                      }`} />
 
                       <Link
                         href={allLocked ? '#' : blockHref}
                         onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                        className="text-[11px] font-medium tracking-[0.06em] uppercase flex-1 truncate hover:text-white transition-colors"
+                        className="text-[11px] font-medium tracking-[0.04em] uppercase flex-1 truncate hover:text-white transition-colors"
                       >
                         {block.shortLabel}
                       </Link>
@@ -321,9 +258,13 @@ export function WizardSidebar({
                         <span className="text-[9px] text-white/20 tabular-nums">{blockProgress}%</span>
                       )}
 
-                      {block.showSubItems && (
-                        <button onClick={() => toggleBlock(block.id)} className="p-0.5 hover:bg-white/[0.06] rounded transition-colors">
-                          <ChevronDown className={`h-2.5 w-2.5 text-white/20 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                      {allCompleted && (
+                        <Check className="h-3 w-3 text-white/40" strokeWidth={2} />
+                      )}
+
+                      {block.showSubItems && !allCompleted && (
+                        <button onClick={() => toggleBlock(block.id)} className="p-0.5 hover:bg-white/[0.05] rounded transition-colors">
+                          <ChevronDown className={`h-2.5 w-2.5 text-white/15 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
                         </button>
                       )}
                     </div>
@@ -342,17 +283,17 @@ export function WizardSidebar({
                               key={ps.phase.id}
                               href={isLocked ? '#' : phasePath}
                               onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                              className={`flex items-center gap-2 pl-12 pr-4 py-1.5 transition-all text-[11px] tracking-wide ${
-                                isActive ? 'text-white' : isLocked ? 'text-white/15' : 'text-white/35 hover:text-white/60'
+                              className={`flex items-center gap-2 pl-[52px] pr-5 py-1.5 transition-all text-[10px] tracking-wide ${
+                                isActive ? 'text-white/80' : isLocked ? 'text-white/20' : 'text-white/40 hover:text-white/60'
                               }`}
                             >
-                              <div className="flex-shrink-0 w-3 flex justify-center">
+                              <div className="flex-shrink-0 w-2 flex justify-center">
                                 {isLocked ? (
                                   <Lock className="h-2 w-2" />
                                 ) : isCompleted ? (
-                                  <Check className="h-2.5 w-2.5 text-white/50" />
+                                  <Check className="h-2.5 w-2.5" strokeWidth={2} />
                                 ) : (
-                                  <div className={`h-1 w-1 rounded-full ${isActive ? 'bg-white' : 'bg-white/30'}`} />
+                                  <div className={`h-[3px] w-[3px] rounded-full ${isActive ? 'bg-white/80' : 'bg-current'}`} />
                                 )}
                               </div>
                               <span className="truncate">{ps.phase.name}</span>
@@ -369,37 +310,40 @@ export function WizardSidebar({
         </nav>
 
         {/* ── Bottom: Calendar + Overview ── */}
-        <div className="border-t border-white/[0.06] py-2 shrink-0">
-          {[
-            { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
-            { id: 'overview', path: '', label: 'Overview', Icon: LayoutDashboard },
-          ].map((item) => {
-            const fullPath = `${basePath}${item.path}`;
-            const isActive = item.path === '' ? pathname === basePath || pathname === `${basePath}/` : pathname?.startsWith(fullPath);
-            return (
-              <Link key={item.id} href={fullPath}
-                className={`flex items-center ${collapsed ? 'justify-center py-2.5' : 'gap-2.5 px-4 py-2'} transition-all text-[11px] tracking-wide relative ${
-                  isActive ? 'text-white' : 'text-white/40 hover:text-white/65'
-                }`}
-                title={collapsed ? item.label : undefined}
-              >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 bg-white rounded-r-full" />
-                )}
-                <item.Icon className={`${collapsed ? 'h-4 w-4' : 'h-3.5 w-3.5'} flex-shrink-0`} />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+        <div className="shrink-0">
+          <div className="mx-3 border-t border-white/[0.06]" />
+          <div className="py-2">
+            {[
+              { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
+              { id: 'overview', path: '', label: 'Overview', Icon: LayoutDashboard },
+            ].map((item) => {
+              const fullPath = `${basePath}${item.path}`;
+              const isActive = item.path === '' ? pathname === basePath || pathname === `${basePath}/` : pathname?.startsWith(fullPath);
+              return (
+                <Link key={item.id} href={fullPath}
+                  className={`relative flex items-center ${collapsed ? 'justify-center h-10' : 'gap-3 px-5 py-2'} transition-all text-[11px] tracking-wide ${
+                    isActive ? 'text-white/80' : 'text-white/40 hover:text-white/60'
+                  }`}
+                  title={collapsed ? item.label : undefined}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-4 bg-white/80 rounded-r-full" />
+                  )}
+                  <item.Icon className={`${collapsed ? 'h-[17px] w-[17px]' : 'h-[15px] w-[15px]'} shrink-0`} />
+                  {!collapsed && <span className="font-medium tracking-[0.04em] uppercase">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
-        {/* ── Pin toggle (expanded only, bottom) ── */}
+        {/* ── Pin toggle (expanded only) ── */}
         {!collapsed && (
           <button
             onClick={handleTogglePin}
-            className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 border-t border-white/[0.06] text-[10px] text-white/25 hover:text-white/50 tracking-[0.1em] uppercase transition-colors"
+            className="shrink-0 py-3 text-[9px] text-white/15 hover:text-white/35 tracking-[0.12em] uppercase transition-colors border-t border-white/[0.04]"
           >
-            {pinned ? 'Unpin sidebar' : 'Pin sidebar'}
+            {pinned ? 'Unpin' : 'Pin'}
           </button>
         )}
       </aside>

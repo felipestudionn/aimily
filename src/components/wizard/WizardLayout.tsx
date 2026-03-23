@@ -54,7 +54,7 @@ export function WizardLayout({
       </button>
 
       <main className={`ml-0 min-h-screen transition-all duration-300 ${
-        sidebarCollapsed ? 'md:ml-[56px]' : 'md:ml-[200px]'
+        sidebarCollapsed ? 'md:ml-[52px]' : 'md:ml-[200px]'
       }`}>
         {children}
       </main>
