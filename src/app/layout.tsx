@@ -5,6 +5,7 @@ import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { CookieConsent } from '@/components/CookieConsent';
+import { GlobalNav } from '@/components/layout/GlobalNav';
 import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default function RootLayout({
           <LanguageProvider>
             <SubscriptionProvider>
               <ServiceWorkerRegistrar />
+              <GlobalNav />
               <main className="relative min-h-screen">{children}</main>
               <CookieConsent />
               <Analytics />

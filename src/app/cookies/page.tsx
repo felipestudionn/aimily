@@ -1,15 +1,12 @@
 'use client';
 
 import { useTranslation } from '@/i18n';
-import { PublicNav } from '@/components/layout/PublicNav';
 
 export default function CookiesPage() {
   const t = useTranslation();
 
   return (
     <div className="min-h-screen bg-white">
-      <PublicNav variant="light" />
-
       {/* Content */}
       <div className="pt-28 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">

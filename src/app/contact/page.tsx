@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Phone, MapPin, Linkedin, Instagram, ArrowUpRight } from 'lucide-react';
 import { useTranslation } from '@/i18n';
-import { PublicNav } from '@/components/layout/PublicNav';
 
 export default function ContactPage() {
   const t = useTranslation();
@@ -26,8 +25,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-carbon">
-      <PublicNav />
-
       {/* ─── HERO ─── */}
       <section className="relative pt-32 pb-20 px-6">
         <div

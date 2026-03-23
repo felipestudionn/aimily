@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { PublicNav } from '@/components/layout/PublicNav';
 import { Check, X, Rocket, Building2, Crown, ArrowRight, ChevronDown, Clock } from 'lucide-react';
 
 export default function LandingPage() {
@@ -99,8 +98,6 @@ export default function LandingPage() {
             backgroundSize: '60px 60px',
           }}
         />
-
-        <PublicNav onAuth={openAuth} />
 
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl">

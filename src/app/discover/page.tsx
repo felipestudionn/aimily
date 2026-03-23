@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { PublicNav } from '@/components/layout/PublicNav';
 import { useTranslation } from '@/i18n';
 
 export default function DiscoverPage() {
@@ -77,8 +76,6 @@ export default function DiscoverPage() {
 
   return (
     <div className="min-h-screen bg-carbon">
-      <PublicNav onAuth={() => setAuthOpen(true)} />
-
       {/* ─── HERO ─── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-20">
         {/* Grid texture */}

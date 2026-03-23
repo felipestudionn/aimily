@@ -8,7 +8,6 @@ import { EyeOff, Lock, Fingerprint, Server, FileCheck, Eye, ArrowRight, Check } 
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { PublicNav } from '@/components/layout/PublicNav';
 
 const SHIELD_LAYERS = [
   { icon: EyeOff, titleKey: 'trustShield1Title', descKey: 'trustShield1Desc' },
@@ -39,8 +38,6 @@ export default function TrustPage() {
 
   return (
     <div className="bg-carbon">
-      <PublicNav onAuth={() => setAuthOpen(true)} />
-
       {/* ── Hero ── */}
       <section className="relative min-h-[80vh] flex flex-col items-center justify-center px-6 text-center overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{
