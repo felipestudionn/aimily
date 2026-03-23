@@ -3,7 +3,13 @@ import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 
-fal.config({ credentials: process.env.FAL_KEY || '' });
+fal.config({
+  credentials: process.env.FAL_KEY || '',
+  requestMiddleware: async (request) => ({
+    ...request,
+    headers: { ...request.headers, 'X-Fal-Object-Lifecycle-Preference': 'delete-after-24h' },
+  }),
+});
 
 export async function POST(req: NextRequest) {
   try {

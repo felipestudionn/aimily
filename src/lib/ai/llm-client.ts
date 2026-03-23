@@ -10,6 +10,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { shieldPrompt, unshieldResponse, needsShielding, type ShieldContext, type RedactionEntry } from './prompt-shield';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -24,7 +25,8 @@ export interface LLMRequest {
   temperature?: number;       // 0-1, default 0.7
   maxTokens?: number;         // default 4096
   jsonMode?: boolean;         // hint to prefer JSON output
-  language?: string;  // output language code (default: 'en')
+  language?: string;          // output language code (default: 'en')
+  shield?: ShieldContext;     // optional: pseudonymize brand/competitor data
 }
 
 export interface LLMResponse {
@@ -36,6 +38,15 @@ export interface LLMResponse {
 // ─── Main entry point ───
 
 export async function generateWithAI(req: LLMRequest): Promise<LLMResponse> {
+  // ── Prompt Shield: pseudonymize sensitive identifiers ──
+  let redactionMap: RedactionEntry[] = [];
+  if (req.shield && needsShielding(req.shield)) {
+    const sSystem = shieldPrompt(req.system, req.shield);
+    const sUser = shieldPrompt(req.user, req.shield);
+    redactionMap = [...sSystem.redactionMap, ...sUser.redactionMap];
+    req = { ...req, system: sSystem.shieldedText, user: sUser.shieldedText };
+  }
+
   // Inject language instruction into system prompt
   const LANG_NAMES: Record<string, string> = {
     es: 'Spanish (Castilian)', fr: 'French', it: 'Italian', de: 'German',
@@ -49,28 +60,40 @@ export async function generateWithAI(req: LLMRequest): Promise<LLMResponse> {
     };
   }
 
+  let responseText = '';
+  let model: 'haiku' | 'gemini' = 'haiku';
+  let fallback = false;
+
   // Try Haiku first
   if (ANTHROPIC_API_KEY) {
     try {
-      const text = await callHaiku(req);
-      return { text, model: 'haiku', fallback: false };
-    } catch (err) {
-      console.warn('[LLM] Haiku failed, falling back to Gemini:', (err as Error).message);
+      responseText = await callHaiku(req);
+    } catch {
+      // Will try Gemini fallback
     }
   }
 
   // Fallback to Gemini
-  if (GEMINI_API_KEY) {
+  if (!responseText && GEMINI_API_KEY) {
     try {
-      const text = await callGemini(req);
-      return { text, model: 'gemini', fallback: true };
-    } catch (err) {
-      console.error('[LLM] Gemini fallback also failed:', (err as Error).message);
+      responseText = await callGemini(req);
+      model = 'gemini';
+      fallback = true;
+    } catch {
       throw new Error('Both AI providers failed. Please try again.');
     }
   }
 
-  throw new Error('No AI provider configured (ANTHROPIC_API_KEY or GEMINI_API_KEY required)');
+  if (!responseText) {
+    throw new Error('No AI provider configured (ANTHROPIC_API_KEY or GEMINI_API_KEY required)');
+  }
+
+  // ── Prompt Shield: re-identify placeholders in response ──
+  if (redactionMap.length > 0) {
+    responseText = unshieldResponse(responseText, redactionMap);
+  }
+
+  return { text: responseText, model, fallback };
 }
 
 /**

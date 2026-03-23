@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser } from '@/lib/api-auth';
 
-fal.config({ credentials: process.env.FAL_KEY || '' });
+fal.config({
+  credentials: process.env.FAL_KEY || '',
+  requestMiddleware: async (request) => ({
+    ...request,
+    headers: { ...request.headers, 'X-Fal-Object-Lifecycle-Preference': 'delete-after-24h' },
+  }),
+});
 
 export async function GET(req: NextRequest) {
   try {

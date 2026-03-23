@@ -17,6 +17,7 @@ const publicPageRoutes = [
   '/meet-aimily',
   '/how-it-works',
   '/video-reel',
+  '/trust',
 ];
 
 // API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
