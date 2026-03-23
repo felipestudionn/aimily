@@ -12,7 +12,7 @@ import {
   Loader2,
   Palette,
   ShoppingBag,
-  PenTool,
+  Grid3X3,
   Megaphone,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
@@ -34,8 +34,8 @@ interface SidebarBlock {
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   { id: 'creative', label: 'Creative & Brand', shortLabel: 'Creative', icon: Palette, route: 'creative', phaseIds: ['product', 'brand'], showSubItems: false },
   { id: 'planning', label: 'Merchandising & Planning', shortLabel: 'Merch', icon: ShoppingBag, route: 'merchandising', phaseIds: ['merchandising'], showSubItems: false },
-  { id: 'development', label: 'Design & Development', shortLabel: 'Design', icon: PenTool, route: 'development', phaseIds: ['design', 'prototyping', 'sampling', 'production'], showSubItems: true },
-  { id: 'go_to_market', label: 'Marketing & Digital', shortLabel: 'Marketing', icon: Megaphone, route: 'marketing/creation', phaseIds: ['marketing-creation', 'marketing-distribution'], showSubItems: true },
+  { id: 'development', label: 'Collection Builder', shortLabel: 'Builder', icon: Grid3X3, route: 'product', phaseIds: ['design', 'prototyping', 'sampling', 'production'], showSubItems: false },
+  { id: 'go_to_market', label: 'Marketing & Digital', shortLabel: 'Marketing', icon: Megaphone, route: 'marketing/creation', phaseIds: ['marketing-creation', 'marketing-distribution'], showSubItems: false },
 ];
 
 const COLLAPSED_W = 52;

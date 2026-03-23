@@ -82,7 +82,7 @@ const BLOCK_DEFS: BlockDef[] = [
     titleKey: 'devTitle',
     titleItalicKey: 'devItalic',
     subtitleKey: 'devSub',
-    route: 'development',
+    route: 'product',
     steps: [
       { nameKey: 'sketchColor', icon: Pencil },
       { nameKey: 'prototyping', icon: Package },
