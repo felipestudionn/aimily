@@ -23,6 +23,7 @@ import {
   Megaphone,
   Target,
   Rocket,
+  Check,
 } from 'lucide-react';
 import { PHASES, PHASE_ORDER } from '@/lib/timeline-template';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
@@ -122,10 +123,12 @@ function BlockCard({
   block,
   milestones,
   collectionId,
+  allBlockProgress,
 }: {
   block: BlockDef;
   milestones: TimelineMilestone[];
   collectionId: string;
+  allBlockProgress: Record<TimelinePhase, number>;
 }) {
   const t = useTranslation();
   const phaseMilestones = milestones.filter((m) => m.phase === block.phase);
@@ -133,10 +136,38 @@ function BlockCard({
   const total = phaseMilestones.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
   const isStarted = progress > 0;
+  const isComplete = progress === 100;
+
+  /* ── Smart CTA logic ── */
+  const merchDone = allBlockProgress.planning === 100;
+
+  const getCtaLabel = (): string => {
+    if (isComplete) return (t.overview as Record<string, string>).completed || 'Completed';
+
+    // Merch done → CTA becomes "Open Builder"
+    if (block.phase === 'planning' && merchDone) {
+      return (t.overview as Record<string, string>).openBuilder || 'Open Builder';
+    }
+    // Design block → always "Open Builder"
+    if (block.phase === 'development') {
+      return (t.overview as Record<string, string>).openBuilder || 'Open Builder';
+    }
+
+    if (isStarted) return t.common.continue;
+    return t.overview.start;
+  };
+
+  const getCtaRoute = (): string => {
+    // When merch is done, CTA links to builder
+    if (block.phase === 'planning' && merchDone) {
+      return `/collection/${collectionId}/product`;
+    }
+    return `/collection/${collectionId}/${block.route}`;
+  };
 
   return (
     <Link
-      href={`/collection/${collectionId}/${block.route}`}
+      href={getCtaRoute()}
       className="group relative bg-white p-4 sm:p-6 md:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col min-h-[180px] sm:min-h-[280px] md:min-h-[420px]"
     >
       {/* Progress bar top */}
@@ -204,12 +235,17 @@ function BlockCard({
 
       {/* CTA bar */}
       <div className={`relative mt-auto pt-8`}>
-        <div className="flex items-center justify-center gap-3 bg-carbon text-crema py-3.5 px-6 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors overflow-hidden">
-          {isStarted ? t.common.continue : t.overview.start}
-          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+        <div className={`flex items-center justify-center gap-3 py-3.5 px-6 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors overflow-hidden ${
+          isComplete
+            ? 'bg-carbon/[0.06] text-carbon/40'
+            : 'bg-carbon text-crema group-hover:bg-carbon/90'
+        }`}>
+          {getCtaLabel()}
+          {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
+          {isComplete && <Check className="h-3.5 w-3.5" />}
 
           {/* Shimmer effect for unstarted blocks */}
-          {!isStarted && (
+          {!isStarted && !isComplete && (
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/10 to-transparent" />
           )}
         </div>
@@ -224,6 +260,14 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const milestones = timeline?.milestones || [];
   const [view, setView] = useState<ViewMode>('blocks');
   const t = useTranslation();
+
+  // Compute progress for all blocks so cards can make smart CTA decisions
+  const allBlockProgress = BLOCK_DEFS.reduce((acc, block) => {
+    const pm = milestones.filter((m) => m.phase === block.phase);
+    const done = pm.filter((m) => m.status === 'completed').length;
+    acc[block.phase] = pm.length > 0 ? Math.round((done / pm.length) * 100) : 0;
+    return acc;
+  }, {} as Record<TimelinePhase, number>);
 
   return (
     <div className="min-h-[80vh]">
@@ -274,6 +318,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                 block={block}
                 milestones={milestones}
                 collectionId={collectionId}
+                allBlockProgress={allBlockProgress}
               />
             ))}
           </div>

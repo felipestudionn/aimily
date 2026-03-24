@@ -321,6 +321,8 @@ export const no: Dictionary = {
     contentStrategy: 'Innholdsstrategi',
     goToMarket: 'Go-To-Market',
     launchGrowth: 'Lansering og vekst',
+    openBuilder: 'Åpne Builder',
+    completed: 'Fullført',
   },
 
   // ─── Collection Sidebar ───

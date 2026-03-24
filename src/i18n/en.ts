@@ -327,6 +327,8 @@ export const en = {
     contentStrategy: 'Content Strategy',
     goToMarket: 'Go-To-Market',
     launchGrowth: 'Launch & Growth',
+    openBuilder: 'Open Builder',
+    completed: 'Completed',
   },
 
   // ─── Collection Sidebar ───

@@ -329,6 +329,8 @@ export const nl: Dictionary = {
     contentStrategy: 'Contentstrategie',
     goToMarket: 'Go-to-market',
     launchGrowth: 'Lancering & groei',
+    openBuilder: 'Open Builder',
+    completed: 'Voltooid',
   },
 
   // ─── Collection Sidebar ───

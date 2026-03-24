@@ -329,6 +329,8 @@ export const it: Dictionary = {
     contentStrategy: 'Strategia dei Contenuti',
     goToMarket: 'Go-To-Market',
     launchGrowth: 'Lancio e Crescita',
+    openBuilder: 'Apri Builder',
+    completed: 'Completato',
   },
 
   // ─── Collection Sidebar ───
