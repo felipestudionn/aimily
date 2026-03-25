@@ -25,9 +25,9 @@ import {
   Rocket,
   Check,
 } from 'lucide-react';
-import { PHASES, PHASE_ORDER } from '@/lib/timeline-template';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
+import { computeWizardState } from '@/lib/wizard-phases';
 import InlineTimeline from './InlineTimeline';
 import { useTranslation } from '@/i18n';
 
@@ -121,20 +121,17 @@ interface CollectionOverviewProps {
 
 function BlockCard({
   block,
-  milestones,
   collectionId,
+  blockProgress,
   allBlockProgress,
 }: {
   block: BlockDef;
-  milestones: TimelineMilestone[];
   collectionId: string;
+  blockProgress: number;
   allBlockProgress: Record<TimelinePhase, number>;
 }) {
   const t = useTranslation();
-  const phaseMilestones = milestones.filter((m) => m.phase === block.phase);
-  const completed = phaseMilestones.filter((m) => m.status === 'completed').length;
-  const total = phaseMilestones.length;
-  const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const progress = blockProgress;
   const isStarted = progress > 0;
   const isComplete = progress === 100;
 
@@ -261,11 +258,19 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const [view, setView] = useState<ViewMode>('blocks');
   const t = useTranslation();
 
-  // Compute progress for all blocks so cards can make smart CTA decisions
-  const allBlockProgress = BLOCK_DEFS.reduce((acc, block) => {
-    const pm = milestones.filter((m) => m.phase === block.phase);
-    const done = pm.filter((m) => m.status === 'completed').length;
-    acc[block.phase] = pm.length > 0 ? Math.round((done / pm.length) * 100) : 0;
+  // Use computeWizardState (same as sidebar) to get accurate per-block progress
+  const wizardPhases = computeWizardState(milestones);
+  const BLOCK_TO_PHASE_IDS: Record<TimelinePhase, string[]> = {
+    creative: ['product', 'brand'],
+    planning: ['merchandising'],
+    development: ['design', 'prototyping', 'sampling', 'production'],
+    go_to_market: ['marketing-creation', 'marketing-distribution'],
+  };
+  const allBlockProgress = Object.entries(BLOCK_TO_PHASE_IDS).reduce((acc, [block, phaseIds]) => {
+    const blockPhases = phaseIds.map(id => wizardPhases.find(p => p.phase.id === id)).filter(Boolean) as typeof wizardPhases;
+    const total = blockPhases.reduce((s, p) => s + p.totalCount, 0);
+    const done = blockPhases.reduce((s, p) => s + p.completedCount, 0);
+    acc[block as TimelinePhase] = total > 0 ? Math.round((done / total) * 100) : 0;
     return acc;
   }, {} as Record<TimelinePhase, number>);
 
@@ -316,8 +321,8 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               <BlockCard
                 key={block.phase}
                 block={block}
-                milestones={milestones}
                 collectionId={collectionId}
+                blockProgress={allBlockProgress[block.phase] || 0}
                 allBlockProgress={allBlockProgress}
               />
             ))}
