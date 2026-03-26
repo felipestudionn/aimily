@@ -83,7 +83,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             alt="aimily"
             width={774}
             height={96}
-            className="object-contain h-7 w-auto"
+            className="object-contain h-8 w-auto"
             priority
             unoptimized
           />
@@ -93,13 +93,6 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
-                <Link
-                  href="/pricing"
-                  className="inline-flex items-center justify-center px-4 py-2 text-texto/40 text-[11px] font-medium tracking-[0.08em] uppercase transition-all hover:text-texto/70"
-                >
-                  <Zap className="mr-1.5 h-3.5 w-3.5" />
-                  {t.common.pricing}
-                </Link>
                 <NotificationBell />
                 <Link
                   href="/account"
@@ -108,13 +101,6 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
                 >
                   {user.email?.charAt(0).toUpperCase()}
                 </Link>
-                <button
-                  onClick={() => signOut()}
-                  className="p-1.5 text-texto/30 hover:text-texto/60 transition-colors"
-                  title={t.common.signOut}
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                </button>
               </>
             ) : (
               <>

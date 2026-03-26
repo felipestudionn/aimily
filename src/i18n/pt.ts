@@ -213,6 +213,9 @@ export const pt: Dictionary = {
     dToLaunch: 'd para lançar',
     deleteConfirm: 'Tem certeza de que deseja excluir esta coleção?',
     deleteCollection: 'Excluir coleção',
+    howToStart: 'How do you want to start?',
+    buildStepByStep: 'Build step by step',
+    buildStepByStepDesc: 'Create your collection from scratch with Aimily guiding you through each phase.',
   },
 
   // ─── Página de Conta ───
@@ -2508,5 +2511,7 @@ export const pt: Dictionary = {
     errorCreate: 'Não foi possível criar a coleção. Tente novamente.',
     tellYourIdea: 'Ou conte-me a sua ideia',
     tellYourIdeaDesc: 'Descreva a sua visão e a Aimily construirá a sua coleção',
+    modeDesc: 'Describe your idea and Aimily builds a complete collection proposal for you to refine.',
+    backToCollections: 'Collections',
   },
 };

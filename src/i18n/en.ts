@@ -211,6 +211,9 @@ export const en = {
     dToLaunch: 'd to launch',
     deleteConfirm: 'Are you sure you want to delete this collection?',
     deleteCollection: 'Delete collection',
+    howToStart: 'How do you want to start?',
+    buildStepByStep: 'Build step by step',
+    buildStepByStepDesc: 'Create your collection from scratch with Aimily guiding you through each phase.',
   },
 
   // ─── Account Page ───
@@ -2536,8 +2539,10 @@ export const en = {
     errorScenarios: 'Could not generate scenarios. Please try again.',
     errorGenerate: 'Could not generate collection. Please try again.',
     errorCreate: 'Could not create collection. Please try again.',
-    tellYourIdea: 'Or tell me your idea',
+    tellYourIdea: 'Tell me your vision',
     tellYourIdeaDesc: 'Describe your vision and Aimily will build your collection',
+    modeDesc: 'Describe your idea and Aimily builds a complete collection proposal for you to refine.',
+    backToCollections: 'Collections',
   },
 };
 

@@ -213,6 +213,9 @@ export const nl: Dictionary = {
     dToLaunch: 'd tot lancering',
     deleteConfirm: 'Weet u zeker dat u deze collectie wilt verwijderen?',
     deleteCollection: 'Collectie verwijderen',
+    howToStart: 'How do you want to start?',
+    buildStepByStep: 'Build step by step',
+    buildStepByStepDesc: 'Create your collection from scratch with Aimily guiding you through each phase.',
   },
 
   // ─── Account Page ───
@@ -2526,5 +2529,7 @@ export const nl: Dictionary = {
     errorCreate: 'De collectie kon niet worden aangemaakt. Probeer het opnieuw.',
     tellYourIdea: 'Of vertel me je idee',
     tellYourIdeaDesc: 'Beschrijf je visie en Aimily bouwt je collectie',
+    modeDesc: 'Describe your idea and Aimily builds a complete collection proposal for you to refine.',
+    backToCollections: 'Collections',
   },
 };

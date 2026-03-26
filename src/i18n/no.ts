@@ -207,6 +207,9 @@ export const no: Dictionary = {
     dToLaunch: 'd til lansering',
     deleteConfirm: 'Er du sikker på at du vil slette denne kolleksjonen?',
     deleteCollection: 'Slett kolleksjon',
+    howToStart: 'How do you want to start?',
+    buildStepByStep: 'Build step by step',
+    buildStepByStepDesc: 'Create your collection from scratch with Aimily guiding you through each phase.',
   },
 
   // ─── Account Page ───
@@ -2400,5 +2403,7 @@ export const no: Dictionary = {
     errorCreate: 'Kunne ikke opprette kolleksjonen. Prøv igjen.',
     tellYourIdea: 'Eller fortell meg ideen din',
     tellYourIdeaDesc: 'Beskriv visjonen din og Aimily bygger kolleksjonen din',
+    modeDesc: 'Describe your idea and Aimily builds a complete collection proposal for you to refine.',
+    backToCollections: 'Collections',
   },
 };
