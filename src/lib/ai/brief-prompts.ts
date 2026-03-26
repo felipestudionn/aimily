@@ -180,45 +180,10 @@ ${Object.entries(answers).map(([q, a]) => `${q}: ${a}`).join('\n')}
 MARKET RESEARCH (from Perplexity — real, current data):
 ${marketResearch}
 
-Based on all this information, propose 3 scenarios. Return JSON:
-{
-  "marketInsights": {
-    "competitorLandscape": "string — key competitors and their positioning",
-    "priceBenchmarks": "string — real prices found for comparable products",
-    "trendContext": "string — relevant trend data from research",
-    "marketOpportunity": "string — the whitespace/opportunity you see"
-  },
-  "scenarios": [
-    {
-      "id": "conservative | balanced | ambitious",
-      "name": "string — a catchy scenario name",
-      "description": "string — 2-3 sentence strategic narrative",
-      "skuCount": number,
-      "families": [
-        { "name": "string", "count": number, "description": "string — style direction" }
-      ],
-      "priceArchitecture": {
-        "min": number,
-        "max": number,
-        "avg": number,
-        "pricePoints": [
-          { "family": "string", "retail": number, "cogs": number, "margin": number }
-        ]
-      },
-      "financials": {
-        "productionBudget": number,
-        "marketingBudget": number,
-        "totalInvestment": number,
-        "firstYearSalesTarget": number,
-        "breakEvenUnits": number
-      },
-      "timeline": "string — key milestones from now to launch",
-      "risks": ["string — 1-2 key risks for this scenario"],
-      "bestFor": "string — what type of founder/situation this scenario suits"
-    }
-  ],
-  "recommendation": "string — which scenario you'd recommend and why"
-}`;
+Based on all this information, propose 3 scenarios. Return ONLY valid JSON (no markdown, no explanation):
+{"marketInsights":{"competitorLandscape":"string","priceBenchmarks":"string","trendContext":"string","marketOpportunity":"string"},"scenarios":[{"id":"conservative","name":"string","description":"string","skuCount":10,"families":[{"name":"string","count":5,"description":"string"}],"priceArchitecture":{"min":25,"max":45,"avg":35},"financials":{"totalInvestment":30000,"firstYearSalesTarget":100000},"timeline":"string","bestFor":"string"},{"id":"balanced","name":"string","description":"string","skuCount":18,"families":[{"name":"string","count":9,"description":"string"}],"priceArchitecture":{"min":25,"max":45,"avg":35},"financials":{"totalInvestment":60000,"firstYearSalesTarget":200000},"timeline":"string","bestFor":"string"},{"id":"ambitious","name":"string","description":"string","skuCount":30,"families":[{"name":"string","count":15,"description":"string"}],"priceArchitecture":{"min":25,"max":45,"avg":35},"financials":{"totalInvestment":120000,"firstYearSalesTarget":400000},"timeline":"string","bestFor":"string"}],"recommendation":"string"}
+
+Replace ALL string values with real content. Replace ALL numbers with real calculated values. Keep the exact JSON structure.`;
 
   return { system, user };
 }

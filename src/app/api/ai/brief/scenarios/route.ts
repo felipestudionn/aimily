@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
     const { data } = await generateJSON({
       system,
       user: userPrompt,
-      temperature: 0.8,
-      maxTokens: 4096,
+      temperature: 0.7,
+      maxTokens: 8192,
       language,
     });
 
