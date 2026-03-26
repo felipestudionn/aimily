@@ -85,6 +85,9 @@ interface SkuRow {
   expected_sales: number;
   design_phase: string;
   notes?: string;
+  sketch_url?: string | null;
+  reference_image_url?: string | null;
+  production_sample_url?: string | null;
 }
 
 interface PlanRow {
@@ -193,131 +196,203 @@ function buildRangePlanSheet(wb: ExcelJS.Workbook, skus: SkuRow[]) {
     views: [{ state: 'frozen', ySplit: 1 }],
   });
 
-  // Column config
-  ws.columns = [
-    { header: '#', key: 'num', width: 5 },
-    { header: 'Name', key: 'name', width: 28 },
-    { header: 'Family', key: 'family', width: 16 },
-    { header: 'Subcategory', key: 'category', width: 14 },
-    { header: 'Drop', key: 'drop', width: 7 },
-    { header: 'Type', key: 'type', width: 12 },
-    { header: 'Channel', key: 'channel', width: 11 },
-    { header: 'PVP (\u20AC)', key: 'pvp', width: 11 },
-    { header: 'COGS (\u20AC)', key: 'cost', width: 11 },
-    { header: 'Margin (%)', key: 'margin', width: 11 },
-    { header: 'Units', key: 'units', width: 9 },
-    { header: 'Expected Sales (\u20AC)', key: 'sales', width: 18 },
-    { header: 'Design Phase', key: 'phase', width: 14 },
-    { header: 'Notes', key: 'notes', width: 30 },
-  ];
+  // ── Columns match Builder's List View: Product | Type | COGS | PVP | Units | Sales | Margin ──
+  // Plus extra columns useful in Excel: Family, Channel, Drop, Phase, Notes
+  const COL = {
+    product: 1, type: 2, cogs: 3, pvp: 4, units: 5, sales: 6, margin: 7,
+    family: 8, channel: 9, drop: 10, phase: 11, notes: 12,
+  };
+  const TOTAL_COLS = 12;
 
-  // ── Header row styling ──
+  ws.getColumn(COL.product).width = 30;
+  ws.getColumn(COL.type).width = 12;
+  ws.getColumn(COL.cogs).width = 12;
+  ws.getColumn(COL.pvp).width = 12;
+  ws.getColumn(COL.units).width = 10;
+  ws.getColumn(COL.sales).width = 16;
+  ws.getColumn(COL.margin).width = 10;
+  ws.getColumn(COL.family).width = 16;
+  ws.getColumn(COL.channel).width = 11;
+  ws.getColumn(COL.drop).width = 7;
+  ws.getColumn(COL.phase).width = 14;
+  ws.getColumn(COL.notes).width = 30;
+
+  // Type badge colors (match Builder exactly)
+  const TYPE_BADGE: Record<string, string> = {
+    REVENUE: 'FF9c7c4c', IMAGE: 'FF7d5a8c', IMAGEN: 'FF7d5a8c', ENTRY: 'FF4c7c6c',
+  };
+
+  // ── Header row (same order as Builder) ──
+  const headers = ['Product', 'Type', 'COGS', 'PVP', 'Units', 'Sales', 'Margin', 'Family', 'Channel', 'Drop', 'Phase', 'Notes'];
   const headerRow = ws.getRow(1);
-  headerRow.height = 22;
-  headerRow.eachCell((cell) => {
-    cell.font = HEADER_FONT;
+  headerRow.height = 24;
+  headers.forEach((h, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = h;
+    cell.font = { bold: true, size: 9, color: { argb: 'FFFFFFFF' } };
     cell.fill = DARK_FILL;
-    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    cell.alignment = {
+      vertical: 'middle',
+      horizontal: i >= COL.cogs - 1 && i <= COL.margin - 1 ? 'right' : 'left',
+    };
     cell.border = THIN_BORDER_BOTTOM;
   });
 
-  // ── Data rows ──
-  let prevFamily = '';
-  skus.forEach((sku, i) => {
-    const row = ws.addRow({
-      num: i + 1,
-      name: sku.name,
-      family: sku.family || '',
-      category: sku.category || '',
-      drop: sku.drop_number || '',
-      type: sku.type || '',
-      channel: sku.channel || '',
-      pvp: sku.pvp || 0,
-      cost: sku.cost || 0,
-      margin: (sku.margin || 0) / 100,
-      units: sku.buy_units || 0,
-      sales: sku.expected_sales || 0,
-      phase: DESIGN_PHASE_LABELS[sku.design_phase] || sku.design_phase || 'Range Plan',
-      notes: sku.notes || '',
-    });
+  // ── AutoFilter on all columns (enables filtering in Excel) ──
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: TOTAL_COLS } };
 
-    // Alternating row colors
-    const fill = i % 2 === 0 ? WHITE_FILL : CREAM_FILL;
-    row.eachCell((cell) => {
-      cell.font = BODY_FONT;
-      cell.fill = fill;
-      cell.alignment = { vertical: 'middle' };
-    });
+  // ── Data rows grouped by family (like Builder) ──
+  const families = Array.from(new Set(skus.map(s => s.family)));
+  let rowNum = 2;
+  let globalIdx = 0;
 
-    // Family group separator
-    if (prevFamily && sku.family !== prevFamily) {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FF999999' } },
-        };
-      });
+  for (const fam of families) {
+    const famSkus = skus.filter(s => s.family === fam);
+    const famRevenue = famSkus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
+
+    // ── Family header row (like Builder's pill + count + revenue) ──
+    const famRow = ws.getRow(rowNum);
+    famRow.height = 26;
+    ws.mergeCells(rowNum, COL.product, rowNum, COL.type);
+    const famCell = famRow.getCell(COL.product);
+    famCell.value = `${fam}`;
+    famCell.font = { bold: true, size: 11, color: { argb: 'FF282A29' } };
+    famCell.alignment = { vertical: 'middle' };
+    famCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F1E8' } };
+
+    const countCell = famRow.getCell(COL.cogs);
+    countCell.value = `${famSkus.length} SKUs`;
+    countCell.font = { size: 9, color: { argb: 'FF999999' } };
+    countCell.alignment = { vertical: 'middle' };
+    countCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F1E8' } };
+
+    const revCell = famRow.getCell(COL.sales);
+    revCell.value = famRevenue;
+    revCell.numFmt = '€#,##0';
+    revCell.font = { size: 9, color: { argb: 'FF999999' } };
+    revCell.alignment = { vertical: 'middle', horizontal: 'right' };
+    revCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F1E8' } };
+
+    // Fill remaining cells with family bg
+    for (let c = 1; c <= TOTAL_COLS; c++) {
+      const cell = famRow.getCell(c);
+      if (!cell.fill || (cell.fill as ExcelJS.FillPattern).fgColor === undefined) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F1E8' } };
+      }
     }
-    prevFamily = sku.family;
+    rowNum++;
 
-    // Number formats
-    row.getCell('pvp').numFmt = '#,##0.00 "\u20AC"';
-    row.getCell('cost').numFmt = '#,##0.00 "\u20AC"';
-    row.getCell('margin').numFmt = '0.0%';
-    row.getCell('units').numFmt = '#,##0';
-    row.getCell('sales').numFmt = '#,##0.00 "\u20AC"';
-    row.getCell('num').alignment = { horizontal: 'center', vertical: 'middle' };
-    row.getCell('drop').alignment = { horizontal: 'center', vertical: 'middle' };
-    row.getCell('type').alignment = { horizontal: 'center', vertical: 'middle' };
-    row.getCell('channel').alignment = { horizontal: 'center', vertical: 'middle' };
-    row.getCell('pvp').alignment = { horizontal: 'right', vertical: 'middle' };
-    row.getCell('cost').alignment = { horizontal: 'right', vertical: 'middle' };
-    row.getCell('margin').alignment = { horizontal: 'center', vertical: 'middle' };
-    row.getCell('units').alignment = { horizontal: 'right', vertical: 'middle' };
-    row.getCell('sales').alignment = { horizontal: 'right', vertical: 'middle' };
-  });
+    // ── SKU rows ──
+    famSkus.forEach((sku) => {
+      const row = ws.getRow(rowNum);
+      row.height = 22;
+      const isEven = globalIdx % 2 === 0;
+      const fill = isEven ? WHITE_FILL : CREAM_FILL;
 
-  // ── Summary row ──
+      // Product name
+      row.getCell(COL.product).value = sku.name;
+      row.getCell(COL.product).font = { size: 10, color: { argb: 'FF282A29' } };
+      row.getCell(COL.product).alignment = { vertical: 'middle' };
+
+      // Type badge with color
+      const typeLabel = (sku.type === 'IMAGEN' ? 'IMAGE' : sku.type || 'REVENUE').toUpperCase();
+      row.getCell(COL.type).value = typeLabel;
+      row.getCell(COL.type).font = { bold: true, size: 9, color: { argb: TYPE_BADGE[typeLabel] || 'FF9c7c4c' } };
+      row.getCell(COL.type).alignment = { vertical: 'middle' };
+
+      // COGS
+      row.getCell(COL.cogs).value = sku.cost || 0;
+      row.getCell(COL.cogs).numFmt = '€#,##0.00';
+      row.getCell(COL.cogs).font = { size: 10, color: { argb: 'FF666666' } };
+      row.getCell(COL.cogs).alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // PVP
+      row.getCell(COL.pvp).value = sku.pvp || 0;
+      row.getCell(COL.pvp).numFmt = '€#,##0.00';
+      row.getCell(COL.pvp).font = { size: 10, color: { argb: 'FF282A29' } };
+      row.getCell(COL.pvp).alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // Units
+      row.getCell(COL.units).value = sku.buy_units || 0;
+      row.getCell(COL.units).numFmt = '#,##0';
+      row.getCell(COL.units).font = { size: 10, color: { argb: 'FF666666' } };
+      row.getCell(COL.units).alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // Sales
+      row.getCell(COL.sales).value = sku.expected_sales || 0;
+      row.getCell(COL.sales).numFmt = '€#,##0';
+      row.getCell(COL.sales).font = { size: 10, color: { argb: 'FF282A29' } };
+      row.getCell(COL.sales).alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // Margin
+      row.getCell(COL.margin).value = (sku.margin || 0) / 100;
+      row.getCell(COL.margin).numFmt = '0%';
+      row.getCell(COL.margin).font = { size: 10, color: { argb: 'FF666666' } };
+      row.getCell(COL.margin).alignment = { vertical: 'middle', horizontal: 'right' };
+
+      // Extra columns
+      row.getCell(COL.family).value = sku.family || '';
+      row.getCell(COL.family).font = BODY_FONT;
+      row.getCell(COL.channel).value = sku.channel || '';
+      row.getCell(COL.channel).font = BODY_FONT;
+      row.getCell(COL.channel).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(COL.drop).value = sku.drop_number || '';
+      row.getCell(COL.drop).font = BODY_FONT;
+      row.getCell(COL.drop).alignment = { vertical: 'middle', horizontal: 'center' };
+      row.getCell(COL.phase).value = DESIGN_PHASE_LABELS[sku.design_phase] || sku.design_phase || 'Range Plan';
+      row.getCell(COL.phase).font = BODY_FONT;
+      row.getCell(COL.notes).value = sku.notes || '';
+      row.getCell(COL.notes).font = { size: 9, color: { argb: 'FF999999' } };
+
+      // Apply row fill
+      for (let c = 1; c <= TOTAL_COLS; c++) {
+        const cell = row.getCell(c);
+        if (!cell.fill || (cell.fill as ExcelJS.FillPattern).fgColor === undefined) {
+          cell.fill = fill;
+        }
+        cell.alignment = { ...cell.alignment, vertical: 'middle' };
+      }
+
+      // Bottom border (subtle divider like Builder)
+      for (let c = 1; c <= TOTAL_COLS; c++) {
+        row.getCell(c).border = {
+          bottom: { style: 'hair', color: { argb: 'FFEEEEEE' } },
+        };
+      }
+
+      rowNum++;
+      globalIdx++;
+    });
+  }
+
+  // ── Grand total row ──
   if (skus.length > 0) {
-    ws.addRow([]); // blank separator
-
+    rowNum++; // blank separator
     const avgPvp = skus.reduce((s, sk) => s + (sk.pvp || 0), 0) / skus.length;
     const avgMargin = skus.reduce((s, sk) => s + (sk.margin || 0), 0) / skus.length;
     const totalUnits = skus.reduce((s, sk) => s + (sk.buy_units || 0), 0);
     const totalSales = skus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
 
-    const summaryRow = ws.addRow({
-      num: '',
-      name: `TOTAL (${skus.length} SKUs)`,
-      family: '',
-      category: '',
-      drop: '',
-      type: '',
-      channel: '',
-      pvp: avgPvp,
-      cost: '',
-      margin: avgMargin / 100,
-      units: totalUnits,
-      sales: totalSales,
-      phase: '',
-      notes: '',
-    });
+    const totalRow = ws.getRow(rowNum);
+    totalRow.height = 26;
 
-    summaryRow.eachCell((cell) => {
+    totalRow.getCell(COL.product).value = `TOTAL (${skus.length} SKUs)`;
+    totalRow.getCell(COL.pvp).value = avgPvp;
+    totalRow.getCell(COL.pvp).numFmt = '€#,##0.00';
+    totalRow.getCell(COL.margin).value = avgMargin / 100;
+    totalRow.getCell(COL.margin).numFmt = '0%';
+    totalRow.getCell(COL.units).value = totalUnits;
+    totalRow.getCell(COL.units).numFmt = '#,##0';
+    totalRow.getCell(COL.sales).value = totalSales;
+    totalRow.getCell(COL.sales).numFmt = '€#,##0';
+
+    for (let c = 1; c <= TOTAL_COLS; c++) {
+      const cell = totalRow.getCell(c);
       cell.font = { bold: true, size: 10, color: { argb: 'FF282A29' } };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE8E4DA' },
-      };
-      cell.border = {
-        top: { style: 'medium', color: { argb: 'FF282A29' } },
-      };
-    });
-
-    summaryRow.getCell('pvp').numFmt = '#,##0.00 "\u20AC"';
-    summaryRow.getCell('margin').numFmt = '0.0%';
-    summaryRow.getCell('units').numFmt = '#,##0';
-    summaryRow.getCell('sales').numFmt = '#,##0.00 "\u20AC"';
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E4DA' } };
+      cell.border = { top: { style: 'medium', color: { argb: 'FF282A29' } } };
+      cell.alignment = { ...cell.alignment, vertical: 'middle' };
+    }
   }
 }
 
@@ -781,11 +856,11 @@ function buildSummarySheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[], 
 // SHEET 4: Cards View
 // ══════════════════════════════════════════════════════════════
 
-const CARD_COLS = 4;   // each card spans 4 columns
-const CARD_ROWS = 8;   // each card spans 8 rows
-const CARDS_PER_ROW = 3;
-const GAP_COL = 1;     // 1 empty column between cards
-const GAP_ROW = 1;     // 1 empty row between card rows
+const CARD_COLS = 3;   // each card spans 3 columns (matches Builder: PVP/COGS, Units/Margin, Sales/Type)
+const CARD_ROWS = 12;  // image(5) + phase(1) + name(1) + metrics(3) + family+cta(2)
+const CARDS_PER_ROW = 6; // 6 cards per row like the Builder
+const GAP_COL = 1;
+const GAP_ROW = 1;
 
 const CARD_IMAGE_FILL: ExcelJS.Fill = {
   type: 'pattern',
@@ -808,123 +883,160 @@ function buildCardsSheet(wb: ExcelJS.Workbook, skus: SkuRow[]) {
   if (skus.length === 0) return;
 
   const ws = wb.addWorksheet('Cards View');
+  const LABEL_FONT: Partial<ExcelJS.Font> = { size: 8, color: { argb: 'FF999999' } };
+  const VALUE_FONT: Partial<ExcelJS.Font> = { size: 10, color: { argb: 'FF282A29' } };
+  const PHASE_COLORS: Record<string, string> = {
+    range_plan: 'FF9c7c4c', sketch: 'FF7d5a8c', prototyping: 'FF4c7c6c',
+    production: 'FF282A29', completed: 'FF282A29',
+  };
+  const PHASE_LABELS: Record<string, string> = {
+    range_plan: 'CONCEPT', sketch: 'SKETCH', prototyping: 'PROTO',
+    production: 'PRODUCTION', completed: 'COMPLETE',
+  };
 
-  // Set all possible column widths — each card block is 4 cols, gaps are 1 col
-  const totalGridCols = CARDS_PER_ROW * CARD_COLS + (CARDS_PER_ROW - 1) * GAP_COL;
-  for (let c = 1; c <= totalGridCols; c++) {
-    ws.getColumn(c).width = 14;
-  }
-  // Make gap columns narrower
+  // Column widths: 6 cards × 2 cols each + 5 gap cols = 17 cols
+  const colsPerCard = 2;
+  const totalCols = CARDS_PER_ROW * colsPerCard + (CARDS_PER_ROW - 1) * GAP_COL;
+  for (let c = 1; c <= totalCols; c++) { ws.getColumn(c).width = 12; }
   for (let g = 0; g < CARDS_PER_ROW - 1; g++) {
-    const gapCol = (g + 1) * CARD_COLS + g * GAP_COL + 1;
-    ws.getColumn(gapCol).width = 3;
+    ws.getColumn((g + 1) * colsPerCard + g * GAP_COL + 1).width = 1.5;
   }
 
-  skus.forEach((sku, idx) => {
-    const gridCol = idx % CARDS_PER_ROW;           // 0, 1, or 2
-    const gridRow = Math.floor(idx / CARDS_PER_ROW); // 0, 1, 2, ...
+  // Group SKUs by family for header rows
+  const families = Array.from(new Set(skus.map(s => s.family)));
+  let currentRow = 1;
 
-    // Top-left cell of this card
-    const startCol = gridCol * (CARD_COLS + GAP_COL) + 1;
-    const startRow = gridRow * (CARD_ROWS + GAP_ROW) + 1;
+  for (const fam of families) {
+    const famSkus = skus.filter(s => s.family === fam);
+    const totalSales = famSkus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
 
-    // ── Card border (thin border around entire 4×8 block) ──
-    for (let r = startRow; r < startRow + CARD_ROWS; r++) {
-      for (let c = startCol; c < startCol + CARD_COLS; c++) {
-        const cell = ws.getRow(r).getCell(c);
-        const border: Partial<ExcelJS.Borders> = {};
-        if (r === startRow) border.top = CARD_THIN_BORDER;
-        if (r === startRow + CARD_ROWS - 1) border.bottom = CARD_THIN_BORDER;
-        if (c === startCol) border.left = CARD_THIN_BORDER;
-        if (c === startCol + CARD_COLS - 1) border.right = CARD_THIN_BORDER;
-        cell.border = border;
+    // Family header row
+    ws.mergeCells(currentRow, 1, currentRow, 4);
+    const famCell = ws.getRow(currentRow).getCell(1);
+    famCell.value = fam;
+    famCell.font = { bold: true, size: 11, color: { argb: 'FF282A29' } };
+    famCell.alignment = { vertical: 'middle' };
+
+    const countCell = ws.getRow(currentRow).getCell(5);
+    countCell.value = `${famSkus.length} SKUs · €${totalSales.toLocaleString()}`;
+    countCell.font = { size: 9, color: { argb: 'FF999999' } };
+    countCell.alignment = { vertical: 'middle' };
+    ws.getRow(currentRow).height = 22;
+    currentRow += 1;
+
+    // Cards for this family
+    for (let i = 0; i < famSkus.length; i++) {
+      const sku = famSkus[i];
+      const col = i % CARDS_PER_ROW;
+      const row = Math.floor(i / CARDS_PER_ROW);
+      const c1 = col * (colsPerCard + GAP_COL) + 1;
+      const r1 = currentRow + row * (CARD_ROWS + GAP_ROW);
+
+      // Set card borders on all cells
+      for (let r = r1; r < r1 + CARD_ROWS; r++) {
+        for (let c = c1; c < c1 + colsPerCard; c++) {
+          const cell = ws.getRow(r).getCell(c);
+          const b: Partial<ExcelJS.Borders> = {};
+          if (r === r1) b.top = CARD_THIN_BORDER;
+          if (r === r1 + CARD_ROWS - 1) b.bottom = CARD_THIN_BORDER;
+          if (c === c1) b.left = CARD_THIN_BORDER;
+          if (c === c1 + colsPerCard - 1) b.right = CARD_THIN_BORDER;
+          cell.border = b;
+        }
       }
+
+      // Row 1-5: Image area (5 rows, crema bg)
+      ws.mergeCells(r1, c1, r1 + 4, c1 + colsPerCard - 1);
+      const imgCell = ws.getRow(r1).getCell(c1);
+      imgCell.fill = CARD_IMAGE_FILL;
+      imgCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      if (sku.sketch_url) {
+        imgCell.value = sku.name;
+        imgCell.font = { size: 9, color: { argb: 'FF999999' }, italic: true };
+      } else {
+        imgCell.value = '';
+      }
+      for (let r = r1; r < r1 + 5; r++) ws.getRow(r).height = 24;
+
+      // Row 6: Phase bar
+      const phaseRow = r1 + 5;
+      ws.mergeCells(phaseRow, c1, phaseRow, c1 + colsPerCard - 1);
+      const phaseCell = ws.getRow(phaseRow).getCell(c1);
+      const phase = sku.design_phase || 'range_plan';
+      phaseCell.value = PHASE_LABELS[phase] || 'CONCEPT';
+      phaseCell.font = { bold: true, size: 8, color: { argb: PHASE_COLORS[phase] || 'FF9c7c4c' } };
+      phaseCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      ws.getRow(phaseRow).height = 16;
+
+      // Row 7: SKU name
+      const nameRow = r1 + 6;
+      ws.mergeCells(nameRow, c1, nameRow, c1 + colsPerCard - 1);
+      const nameCell = ws.getRow(nameRow).getCell(c1);
+      nameCell.value = sku.name;
+      nameCell.font = { size: 10, color: { argb: 'FF282A29' } };
+      nameCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      ws.getRow(nameRow).height = 18;
+
+      // Row 8: PVP | COGS
+      const r8 = r1 + 7;
+      const pvpLabel = ws.getRow(r8).getCell(c1);
+      pvpLabel.value = 'PVP';
+      pvpLabel.font = LABEL_FONT;
+      pvpLabel.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      const cogsLabel = ws.getRow(r8).getCell(c1 + 1);
+      cogsLabel.value = 'COGS';
+      cogsLabel.font = LABEL_FONT;
+      cogsLabel.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r8).height = 11;
+
+      // Row 9: PVP value | COGS value
+      const r9 = r1 + 8;
+      const pvpVal = ws.getRow(r9).getCell(c1);
+      pvpVal.value = `€${sku.pvp}`;
+      pvpVal.font = VALUE_FONT;
+      pvpVal.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      const cogsVal = ws.getRow(r9).getCell(c1 + 1);
+      cogsVal.value = `€${sku.cost}`;
+      cogsVal.font = VALUE_FONT;
+      cogsVal.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r9).height = 15;
+
+      // Row 10: UNITS | MARGIN labels
+      const r10 = r1 + 9;
+      ws.getRow(r10).getCell(c1).value = 'UNITS';
+      ws.getRow(r10).getCell(c1).font = LABEL_FONT;
+      ws.getRow(r10).getCell(c1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r10).getCell(c1 + 1).value = 'MARGIN';
+      ws.getRow(r10).getCell(c1 + 1).font = LABEL_FONT;
+      ws.getRow(r10).getCell(c1 + 1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r10).height = 11;
+
+      // Row 11: Units value | Margin value + SALES + Type badge
+      const r11 = r1 + 10;
+      ws.getRow(r11).getCell(c1).value = String(sku.buy_units || 0);
+      ws.getRow(r11).getCell(c1).font = VALUE_FONT;
+      ws.getRow(r11).getCell(c1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r11).getCell(c1 + 1).value = `${Math.round(sku.margin || 0)}%`;
+      ws.getRow(r11).getCell(c1 + 1).font = VALUE_FONT;
+      ws.getRow(r11).getCell(c1 + 1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r11).height = 15;
+
+      // Row 12: SALES value | Type badge
+      const r12 = r1 + 11;
+      ws.getRow(r12).getCell(c1).value = `€${(sku.expected_sales || 0).toLocaleString()}`;
+      ws.getRow(r12).getCell(c1).font = { size: 9, color: { argb: 'FF666666' } };
+      ws.getRow(r12).getCell(c1).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+
+      const typeLabel = (sku.type || 'REVENUE').toUpperCase();
+      const badgeColor = TYPE_BADGE_COLORS[typeLabel] || 'FF9c7c4c';
+      ws.getRow(r12).getCell(c1 + 1).value = typeLabel;
+      ws.getRow(r12).getCell(c1 + 1).font = { bold: true, size: 8, color: { argb: badgeColor } };
+      ws.getRow(r12).getCell(c1 + 1).alignment = { vertical: 'middle', horizontal: 'right' };
+      ws.getRow(r12).height = 16;
     }
 
-    // ── Row 1-4: Image placeholder (merged 4 cols × 4 rows) ──
-    ws.mergeCells(startRow, startCol, startRow + 3, startCol + CARD_COLS - 1);
-    const imgCell = ws.getRow(startRow).getCell(startCol);
-    imgCell.value = '\u{1F4F7}';
-    imgCell.fill = CARD_IMAGE_FILL;
-    imgCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    imgCell.font = { size: 24 };
-    // Ensure merged area gets the border
-    imgCell.border = {
-      top: CARD_THIN_BORDER,
-      left: CARD_THIN_BORDER,
-      right: CARD_THIN_BORDER,
-    };
-    // Set row heights for image area
-    for (let r = startRow; r < startRow + 4; r++) {
-      ws.getRow(r).height = 22;
-    }
-
-    // ── Row 5: SKU name (bold, merged 4 cols) ──
-    const nameRow = startRow + 4;
-    ws.mergeCells(nameRow, startCol, nameRow, startCol + CARD_COLS - 1);
-    const nameCell = ws.getRow(nameRow).getCell(startCol);
-    nameCell.value = sku.name || 'Unnamed SKU';
-    nameCell.font = { bold: true, size: 12, color: { argb: 'FF282A29' } };
-    nameCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-    nameCell.border = { left: CARD_THIN_BORDER, right: CARD_THIN_BORDER };
-    ws.getRow(nameRow).height = 20;
-
-    // ── Row 6: Family name (italic, lighter color) ──
-    const familyRow = startRow + 5;
-    ws.mergeCells(familyRow, startCol, familyRow, startCol + CARD_COLS - 1);
-    const familyCell = ws.getRow(familyRow).getCell(startCol);
-    familyCell.value = sku.family || 'No Family';
-    familyCell.font = { italic: true, size: 10, color: { argb: 'FF666666' } };
-    familyCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-    familyCell.border = { left: CARD_THIN_BORDER, right: CARD_THIN_BORDER };
-    ws.getRow(familyRow).height = 18;
-
-    // ── Row 7: PVP | COGS | Margin (3 cells, last col merged with col before if needed) ──
-    const metricsRow = startRow + 6;
-    const pvpCell = ws.getRow(metricsRow).getCell(startCol);
-    pvpCell.value = `PVP \u20AC${(sku.pvp || 0).toFixed(0)}`;
-    pvpCell.font = { size: 9, color: { argb: 'FF333333' } };
-    pvpCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    pvpCell.border = { left: CARD_THIN_BORDER };
-
-    const cogsCell = ws.getRow(metricsRow).getCell(startCol + 1);
-    cogsCell.value = `COGS \u20AC${(sku.cost || 0).toFixed(0)}`;
-    cogsCell.font = { size: 9, color: { argb: 'FF333333' } };
-    cogsCell.alignment = { vertical: 'middle', horizontal: 'center' };
-
-    // Merge last two columns for margin
-    ws.mergeCells(metricsRow, startCol + 2, metricsRow, startCol + CARD_COLS - 1);
-    const marginCell = ws.getRow(metricsRow).getCell(startCol + 2);
-    marginCell.value = `Margin ${(sku.margin || 0).toFixed(0)}%`;
-    marginCell.font = { size: 9, color: { argb: 'FF333333' } };
-    marginCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    marginCell.border = { right: CARD_THIN_BORDER };
-    ws.getRow(metricsRow).height = 16;
-
-    // ── Row 8: Type badge + Units + Drop ──
-    const badgeRow = startRow + 7;
-    const typeLabel = (sku.type || 'REVENUE').toUpperCase();
-    const badgeColor = TYPE_BADGE_COLORS[typeLabel] || 'FF9c7c4c';
-
-    const typeCell = ws.getRow(badgeRow).getCell(startCol);
-    typeCell.value = typeLabel;
-    typeCell.font = { bold: true, size: 9, color: { argb: badgeColor } };
-    typeCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    typeCell.border = { left: CARD_THIN_BORDER, bottom: CARD_THIN_BORDER };
-
-    const unitsCell = ws.getRow(badgeRow).getCell(startCol + 1);
-    unitsCell.value = `${sku.buy_units || 0} units`;
-    unitsCell.font = { size: 9, color: { argb: 'FF333333' } };
-    unitsCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    unitsCell.border = { bottom: CARD_THIN_BORDER };
-
-    // Merge last two columns for drop
-    ws.mergeCells(badgeRow, startCol + 2, badgeRow, startCol + CARD_COLS - 1);
-    const dropCell = ws.getRow(badgeRow).getCell(startCol + 2);
-    dropCell.value = sku.drop_number ? `Drop ${sku.drop_number}` : '';
-    dropCell.font = { size: 9, color: { argb: 'FF333333' } };
-    dropCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    dropCell.border = { right: CARD_THIN_BORDER, bottom: CARD_THIN_BORDER };
-    ws.getRow(badgeRow).height = 16;
-  });
+    // Advance currentRow past all card rows for this family
+    const familyCardRows = Math.ceil(famSkus.length / CARDS_PER_ROW);
+    currentRow += familyCardRows * (CARD_ROWS + GAP_ROW) + 1;
+  }
 }
