@@ -849,13 +849,26 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors">
               <Plus className="h-3 w-3" /> Add SKU
             </button>
-            <a
-              href={`/api/collection-export?planId=${collectionPlanId}`}
-              download
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch(`/api/collection-export?planId=${collectionPlanId}`);
+                  if (!res.ok) throw new Error('Export failed');
+                  const blob = await res.blob();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `collection_export.xlsx`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                } catch { /* silently fail */ }
+              }}
               className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors"
             >
               <Download className="h-3 w-3" /> Excel
-            </a>
+            </button>
           </div>
           <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
             {(['pipeline', 'list', 'cards'] as const).map((mode) => (
