@@ -163,14 +163,16 @@ export async function GET(req: NextRequest) {
 
     // ── Return as download ──
 
-    const buffer = await wb.xlsx.writeBuffer();
+    const arrayBuffer = await wb.xlsx.writeBuffer();
+    const uint8 = new Uint8Array(arrayBuffer as ArrayBuffer);
     const safeName = plan.name.replace(/[^a-zA-Z0-9 _-]/g, '_');
 
-    return new NextResponse(buffer as unknown as Buffer, {
+    return new Response(uint8, {
+      status: 200,
       headers: {
-        'Content-Type':
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${safeName}_collection.xlsx"`,
+        'Cache-Control': 'no-cache',
       },
     });
   } catch (error) {
