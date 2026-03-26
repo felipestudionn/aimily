@@ -850,10 +850,16 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               <Plus className="h-3 w-3" /> Add SKU
             </button>
             <button
-              onClick={async () => {
+              onClick={async (e) => {
+                const btn = e.currentTarget;
+                btn.textContent = '...';
                 try {
                   const res = await fetch(`/api/collection-export?planId=${collectionPlanId}`);
-                  if (!res.ok) throw new Error('Export failed');
+                  if (!res.ok) {
+                    const text = await res.text();
+                    alert(`Export error: ${res.status} ${text.slice(0, 100)}`);
+                    return;
+                  }
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement('a');
@@ -863,7 +869,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   a.click();
                   document.body.removeChild(a);
                   URL.revokeObjectURL(url);
-                } catch { /* silently fail */ }
+                } catch (err) {
+                  alert(`Export failed: ${err instanceof Error ? err.message : err}`);
+                } finally {
+                  btn.innerHTML = '<svg class="h-3 w-3" />' + ' Excel';
+                }
               }}
               className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors"
             >
