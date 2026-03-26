@@ -184,12 +184,14 @@ export default function BriefToCollectionPage() {
           language,
         }),
       });
-      if (!res.ok) throw new Error('Scenarios failed');
-      const { result } = await res.json();
-      setScenariosResult(result);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Scenarios failed');
+      if (!data.result?.scenarios) throw new Error('No scenarios in response');
+      setScenariosResult(data.result);
       setStep(2);
-    } catch {
-      setError(bt.errorScenarios || 'Could not generate scenarios. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      setError(`${bt.errorScenarios || 'Could not generate scenarios.'} ${msg}`);
     } finally {
       setLoading(false);
     }
