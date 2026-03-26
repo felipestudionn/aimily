@@ -1026,19 +1026,6 @@ function buildCardsSheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[], ti
       const c1 = DATA_START + cardCol * (colsPerCard + gapCol);
       const r1 = currentRow + cardRow * (CARD_ROWS + GAP_ROW);
 
-      // Card borders
-      for (let r = r1; r < r1 + CARD_ROWS; r++) {
-        for (let c = c1; c < c1 + colsPerCard; c++) {
-          const cell = ws.getRow(r).getCell(c);
-          const b: Partial<ExcelJS.Borders> = {};
-          if (r === r1) b.top = CARD_THIN_BORDER;
-          if (r === r1 + CARD_ROWS - 1) b.bottom = CARD_THIN_BORDER;
-          if (c === c1) b.left = CARD_THIN_BORDER;
-          if (c === c1 + colsPerCard - 1) b.right = CARD_THIN_BORDER;
-          cell.border = b;
-        }
-      }
-
       // Rows 1-5: Image area (crema bg)
       ws.mergeCells(r1, c1, r1 + 4, c1 + colsPerCard - 1);
       const imgCell = ws.getRow(r1).getCell(c1);
@@ -1124,6 +1111,20 @@ function buildCardsSheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[], ti
       ws.getRow(r12).getCell(c1).font = { bold: true, size: 8, color: { argb: badgeColor } };
       ws.getRow(r12).getCell(c1).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
       ws.getRow(r12).height = 16;
+
+      // ── Card borders (AFTER all merges so they stick) ──
+      const cardBorder: Partial<ExcelJS.Border> = { style: 'thin', color: { argb: 'FFD0D0D0' } };
+      for (let r = r1; r < r1 + CARD_ROWS; r++) {
+        for (let c = c1; c < c1 + colsPerCard; c++) {
+          const cell = ws.getRow(r).getCell(c);
+          const b: Partial<ExcelJS.Borders> = { ...(cell.border || {}) };
+          if (r === r1) b.top = cardBorder;
+          if (r === r1 + CARD_ROWS - 1) b.bottom = cardBorder;
+          if (c === c1) b.left = cardBorder;
+          if (c === c1 + colsPerCard - 1) b.right = cardBorder;
+          cell.border = b;
+        }
+      }
     }
 
     // Advance past card rows for this family
