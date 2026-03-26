@@ -75,7 +75,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03] animate-fade-in">
-      <div className="max-w-7xl mx-auto px-6 md:px-10">
+      <div className="px-6 md:px-10">
       <div className="flex h-16 items-center">
         <Link href="/" className="flex items-center">
           <Image
@@ -83,7 +83,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
             alt="aimily"
             width={774}
             height={96}
-            className="object-contain h-9 w-auto"
+            className="object-contain h-10 w-auto"
             priority
             unoptimized
           />
