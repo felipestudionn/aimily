@@ -253,7 +253,26 @@ export default function MyCollectionsPage() {
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto">
-                  {/* Option A: Brief mode */}
+                  {/* Option A: Step-by-step (primary) */}
+                  <Link
+                    href="/new-collection"
+                    className="group bg-white border border-carbon/[0.06] text-left p-8 hover:shadow-md transition-all duration-300"
+                  >
+                    <div className="w-10 h-10 bg-carbon flex items-center justify-center mb-6">
+                      <LayoutGrid className="h-4 w-4 text-crema" />
+                    </div>
+                    <h3 className="text-lg font-light text-carbon tracking-tight mb-2">
+                      {(t.collections as Record<string, string>).buildStepByStep || 'Build step by step'}
+                    </h3>
+                    <p className="text-xs text-carbon/35 leading-relaxed mb-6">
+                      {(t.collections as Record<string, string>).buildStepByStepDesc || 'Create your collection from scratch with Aimily guiding you through each phase.'}
+                    </p>
+                    <span className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 group-hover:text-carbon/70 transition-colors">
+                      {t.overview?.start || 'Start'} <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </span>
+                  </Link>
+
+                  {/* Option B: Brief mode */}
                   <Link
                     href="/brief-to-collection"
                     className="group bg-carbon text-left p-8 hover:bg-carbon/90 transition-all duration-300"
@@ -268,25 +287,6 @@ export default function MyCollectionsPage() {
                       {(t as Record<string, Record<string, string>>).briefToCollection?.modeDesc || 'Describe your idea and Aimily builds a complete collection proposal for you to refine.'}
                     </p>
                     <span className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/50 group-hover:text-crema/80 transition-colors">
-                      {t.overview?.start || 'Start'} <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </span>
-                  </Link>
-
-                  {/* Option B: Step-by-step */}
-                  <Link
-                    href="/new-collection"
-                    className="group bg-white border border-carbon/[0.06] text-left p-8 hover:shadow-md transition-all duration-300"
-                  >
-                    <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center mb-6">
-                      <LayoutGrid className="h-4 w-4 text-carbon/40" />
-                    </div>
-                    <h3 className="text-lg font-light text-carbon tracking-tight mb-2">
-                      {(t.collections as Record<string, string>).buildStepByStep || 'Build step by step'}
-                    </h3>
-                    <p className="text-xs text-carbon/35 leading-relaxed mb-6">
-                      {(t.collections as Record<string, string>).buildStepByStepDesc || 'Create your collection from scratch with Aimily guiding you through each phase.'}
-                    </p>
-                    <span className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 group-hover:text-carbon/70 transition-colors">
                       {t.overview?.start || 'Start'} <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </span>
                   </Link>
@@ -450,40 +450,40 @@ export default function MyCollectionsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Option A: Brief mode — Aimily leads */}
+              {/* Option A: Step by step — User leads (primary) */}
               <Link
-                href="/brief-to-collection"
+                href="/new-collection"
                 onClick={() => setShowNewModal(false)}
                 className="group bg-crema text-left p-8 hover:bg-white transition-all duration-300"
               >
                 <div className="w-10 h-10 bg-carbon flex items-center justify-center mb-6">
-                  <Zap className="h-4 w-4 text-crema" />
+                  <LayoutGrid className="h-4 w-4 text-crema" />
                 </div>
                 <h3 className="text-lg font-light text-carbon tracking-tight mb-2">
-                  {(t as Record<string, Record<string, string>>).briefToCollection?.tellYourIdea || 'Tell me your vision'}
+                  {(t.collections as Record<string, string>).buildStepByStep || 'Build step by step'}
                 </h3>
                 <p className="text-xs text-carbon/40 leading-relaxed mb-6">
-                  {(t as Record<string, Record<string, string>>).briefToCollection?.modeDesc || 'Describe your idea and Aimily builds a complete collection proposal for you to refine.'}
+                  {(t.collections as Record<string, string>).buildStepByStepDesc || 'Create your collection from scratch with Aimily guiding you through each phase.'}
                 </p>
                 <span className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/40 group-hover:text-carbon transition-colors">
                   {t.overview?.start || 'Start'} <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </span>
               </Link>
 
-              {/* Option B: Step by step — User leads */}
+              {/* Option B: Brief mode — Aimily leads */}
               <Link
-                href="/new-collection"
+                href="/brief-to-collection"
                 onClick={() => setShowNewModal(false)}
                 className="group border border-crema/[0.08] text-left p-8 hover:border-crema/20 hover:bg-crema/[0.03] transition-all duration-300"
               >
                 <div className="w-10 h-10 border border-crema/15 flex items-center justify-center mb-6">
-                  <LayoutGrid className="h-4 w-4 text-crema/50" />
+                  <Zap className="h-4 w-4 text-crema/50" />
                 </div>
                 <h3 className="text-lg font-light text-crema tracking-tight mb-2">
-                  {(t.collections as Record<string, string>).buildStepByStep || 'Build step by step'}
+                  {(t as Record<string, Record<string, string>>).briefToCollection?.tellYourIdea || 'Tell me your vision'}
                 </h3>
                 <p className="text-xs text-crema/30 leading-relaxed mb-6">
-                  {(t.collections as Record<string, string>).buildStepByStepDesc || 'Create your collection from scratch with Aimily guiding you through each phase.'}
+                  {(t as Record<string, Record<string, string>>).briefToCollection?.modeDesc || 'Describe your idea and Aimily builds a complete collection proposal for you to refine.'}
                 </p>
                 <span className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/30 group-hover:text-crema/70 transition-colors">
                   {t.overview?.start || 'Start'} <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />

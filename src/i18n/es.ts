@@ -2513,9 +2513,9 @@ export const es: Dictionary = {
     errorScenarios: 'No se pudieron generar los escenarios. Inténtalo de nuevo.',
     errorGenerate: 'No se pudo generar la colección. Inténtalo de nuevo.',
     errorCreate: 'No se pudo crear la colección. Inténtalo de nuevo.',
-    tellYourIdea: 'O cuéntame tu idea',
+    tellYourIdea: 'Cuéntame tu visión',
     tellYourIdeaDesc: 'Describe tu visión y Aimily construirá tu colección',
-    modeDesc: 'Describe your idea and Aimily builds a complete collection proposal for you to refine.',
+    modeDesc: 'Describe tu idea y Aimily construye una propuesta completa de colección para que la refines.',,
     backToCollections: 'Collections',
   },
 };
