@@ -91,7 +91,6 @@ interface PlanRow {
   id: string;
   name: string;
   season: string;
-  launch_date?: string;
   user_id: string;
 }
 
@@ -124,7 +123,7 @@ export async function GET(req: NextRequest) {
     const [planResult, skuResult, timelineResult] = await Promise.all([
       supabaseAdmin
         .from('collection_plans')
-        .select('id, name, season, launch_date, user_id')
+        .select('id, name, season, user_id')
         .eq('id', planId)
         .single(),
       supabaseAdmin
@@ -159,7 +158,7 @@ export async function GET(req: NextRequest) {
     if (timeline) {
       buildCalendarSheet(wb, timeline, plan);
     }
-    buildSummarySheet(wb, plan, skus);
+    buildSummarySheet(wb, plan, skus, timeline);
 
     // ── Return as download ──
 
@@ -636,7 +635,7 @@ function buildCalendarSheet(
 // SHEET 3: Collection Summary
 // ══════════════════════════════════════════════════════════════
 
-function buildSummarySheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[]) {
+function buildSummarySheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[], timeline: TimelineRow | null) {
   const ws = wb.addWorksheet('Collection Summary');
 
   ws.columns = [
@@ -661,8 +660,8 @@ function buildSummarySheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[]) 
   ws.getCell('B2').font = { size: 10, color: { argb: 'FF333333' } };
   ws.getCell('C2').value = 'Launch Date';
   ws.getCell('C2').font = { bold: true, size: 10, color: { argb: 'FF666666' } };
-  ws.getCell('D2').value = plan.launch_date
-    ? new Date(plan.launch_date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
+  ws.getCell('D2').value = timeline?.launch_date
+    ? new Date(timeline.launch_date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
     : '\u2014';
   ws.getCell('D2').font = { size: 10, color: { argb: 'FF333333' } };
 
