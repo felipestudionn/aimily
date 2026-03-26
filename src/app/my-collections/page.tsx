@@ -231,7 +231,7 @@ export default function MyCollectionsPage() {
       <Navbar />
       <OnboardingModal />
 
-      <main className="pt-20 pb-16 px-6 md:px-10">
+      <main className="pt-24 pb-16 px-6 md:px-10">
         <div className="max-w-7xl mx-auto">
 
           {loading ? (
@@ -296,39 +296,47 @@ export default function MyCollectionsPage() {
           ) : (
             <div className="space-y-8">
 
-              {/* ── Hero section — clean, data only ── */}
-              <div className="bg-carbon -mx-6 md:-mx-10 px-6 md:px-10 py-10 sm:py-12">
-                <div className="max-w-7xl mx-auto">
-                  <div className="mb-10">
-                    <p className="text-[11px] font-medium tracking-[0.25em] uppercase text-crema/25 mb-3">
+              {/* ── Hero section — editorial fashion ── */}
+              <div className="relative bg-carbon -mx-6 md:-mx-10 px-6 md:px-10 py-12 sm:py-16 overflow-hidden">
+                {/* Subtle grid texture */}
+                <div
+                  className="absolute inset-0 opacity-[0.015]"
+                  style={{
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+                    backgroundSize: '60px 60px',
+                  }}
+                />
+                <div className="relative max-w-7xl mx-auto">
+                  <div className="mb-12">
+                    <p className="text-[11px] font-medium tracking-[0.3em] uppercase text-crema/20 mb-4">
                       {t.collections.yourWorkspace}
                     </p>
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-crema tracking-tight leading-[1.15]">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-light text-crema tracking-tight leading-[1.08]">
                       <span className="italic">{t.collections.collections}</span>
                     </h1>
                   </div>
 
-                  {/* Stats row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
+                  {/* Stats row — editorial spacing */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-12">
                     <div>
-                      <p className="text-3xl sm:text-4xl font-light text-crema tracking-tight">{collections.length}</p>
-                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.collections.collections}</p>
+                      <p className="text-4xl sm:text-5xl font-light text-crema tracking-tight">{collections.length}</p>
+                      <p className="text-[11px] font-medium text-crema/20 uppercase tracking-[0.2em] mt-2">{t.collections.collections}</p>
                     </div>
                     <div>
-                      <p className="text-3xl sm:text-4xl font-light text-crema tracking-tight">{stats.avgProgress}%</p>
-                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.collections.avgProgress}</p>
+                      <p className="text-4xl sm:text-5xl font-light text-crema tracking-tight">{stats.avgProgress}%</p>
+                      <p className="text-[11px] font-medium text-crema/20 uppercase tracking-[0.2em] mt-2">{t.collections.avgProgress}</p>
                     </div>
                     <div>
-                      <p className={`text-3xl sm:text-4xl font-light tracking-tight ${stats.totalOverdue > 0 ? 'text-error' : 'text-crema'}`}>
+                      <p className={`text-4xl sm:text-5xl font-light tracking-tight ${stats.totalOverdue > 0 ? 'text-error' : 'text-crema'}`}>
                         {stats.totalOverdue}
                       </p>
-                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.common.overdue}</p>
+                      <p className="text-[11px] font-medium text-crema/20 uppercase tracking-[0.2em] mt-2">{t.common.overdue}</p>
                     </div>
                     <div>
-                      <p className="text-3xl sm:text-4xl font-light text-crema tracking-tight">
+                      <p className="text-4xl sm:text-5xl font-light text-crema tracking-tight">
                         {stats.nextLaunch ? `${stats.nextLaunch.daysUntilLaunch}d` : '--'}
                       </p>
-                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.collections.nextLaunch}</p>
+                      <p className="text-[11px] font-medium text-crema/20 uppercase tracking-[0.2em] mt-2">{t.collections.nextLaunch}</p>
                     </div>
                   </div>
                 </div>

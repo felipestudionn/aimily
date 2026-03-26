@@ -33,29 +33,29 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
       <div className={`fixed top-0 left-0 right-0 z-50 transition-colors ${
         isDark
           ? 'bg-transparent'
-          : 'bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.04]'
+          : 'bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03]'
       }`}>
-        <div className="flex h-14 items-center justify-between px-5">
+        <div className="flex h-16 items-center justify-between px-6 md:px-10">
           <Link href="/my-collections" className="flex items-center">
             <Image
               src={isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png'}
               alt="aimily"
               width={774}
               height={96}
-              className={`object-contain h-5 w-auto transition-opacity ${
-                isDark ? 'opacity-50 hover:opacity-80' : 'opacity-40 hover:opacity-70'
+              className={`object-contain h-6 w-auto transition-opacity ${
+                isDark ? 'opacity-60 hover:opacity-90' : 'opacity-50 hover:opacity-80'
               }`}
               priority
               unoptimized
             />
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <NotificationBell />
             {user && (
               <Link
                 href="/account"
-                className={`w-7 h-7 flex items-center justify-center text-[11px] font-medium hover:opacity-80 transition-opacity ${
-                  isDark ? 'bg-crema/20 text-crema' : 'bg-carbon text-crema'
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-medium hover:opacity-80 transition-all ${
+                  isDark ? 'bg-crema/15 text-crema/70' : 'bg-carbon text-crema'
                 }`}
                 title={t.common.account}
               >
@@ -74,29 +74,29 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-crema/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03] animate-fade-in">
       <div className="max-w-7xl mx-auto px-6 md:px-10">
-      <div className="flex h-14 items-center">
+      <div className="flex h-16 items-center">
         <Link href="/" className="flex items-center">
           <Image
             src="/images/aimily-logo-black.png"
             alt="aimily"
             width={774}
             height={96}
-            className="object-contain h-8 w-auto"
+            className="object-contain h-9 w-auto"
             priority
             unoptimized
           />
         </Link>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-4">
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
                 <NotificationBell />
                 <Link
                   href="/account"
-                  className="w-7 h-7 bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:bg-carbon/80 transition-colors"
+                  className="w-8 h-8 rounded-full bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:bg-carbon/80 transition-colors"
                   title={t.common.account}
                 >
                   {user.email?.charAt(0).toUpperCase()}
@@ -106,13 +106,13 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
               <>
                 <button
                   onClick={() => openAuth('signin')}
-                  className="inline-flex items-center justify-center px-4 py-2 text-texto/70 text-sm font-medium transition-all hover:text-texto"
+                  className="inline-flex items-center justify-center px-4 py-2 text-texto/50 text-[11px] font-medium tracking-[0.1em] uppercase transition-all hover:text-texto"
                 >
                   {t.common.logIn}
                 </button>
                 <button
                   onClick={() => openAuth('signup')}
-                  className="inline-flex items-center justify-center px-5 py-2.5 bg-carbon text-crema text-sm font-medium tracking-wide transition-all hover:bg-carbon/90"
+                  className="inline-flex items-center justify-center px-6 py-2.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.12em] uppercase transition-all hover:bg-carbon/90"
                 >
                   {t.common.startFreeTrial}
                 </button>
