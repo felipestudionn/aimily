@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAIUsage } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildScenariosPrompt, buildResearchQueries } from '@/lib/ai/brief-prompts';
 
@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
-  const usageCheck = await checkAIUsage(user.id, user.email || '');
-  if (usageCheck) return usageCheck;
+  const usage = await checkAIUsage(user.id, user.email || '');
+  if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
     const { understood, answers, researchTopics, language = 'en' } = await req.json();
