@@ -316,8 +316,8 @@ export default function MyCollectionsPage() {
                     </h1>
                   </div>
 
-                  {/* Stats row — editorial spacing */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-12">
+                  {/* Stats row — editorial, left-aligned like a magazine masthead */}
+                  <div className="flex flex-wrap gap-x-12 sm:gap-x-16 gap-y-6">
                     <div>
                       <p className="text-4xl sm:text-5xl font-light text-crema tracking-tight">{collections.length}</p>
                       <p className="text-[11px] font-medium text-crema/20 uppercase tracking-[0.2em] mt-2">{t.collections.collections}</p>
