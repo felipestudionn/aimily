@@ -159,6 +159,7 @@ export async function GET(req: NextRequest) {
       buildCalendarSheet(wb, timeline, plan);
     }
     buildSummarySheet(wb, plan, skus, timeline);
+    buildCardsSheet(wb, skus);
 
     // ── Return as download ──
 
@@ -773,5 +774,157 @@ function buildSummarySheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[], 
     for (let c = 1; c <= 4; c++) row.getCell(c).fill = fill;
 
     rowNum++;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// SHEET 4: Cards View
+// ══════════════════════════════════════════════════════════════
+
+const CARD_COLS = 4;   // each card spans 4 columns
+const CARD_ROWS = 8;   // each card spans 8 rows
+const CARDS_PER_ROW = 3;
+const GAP_COL = 1;     // 1 empty column between cards
+const GAP_ROW = 1;     // 1 empty row between card rows
+
+const CARD_IMAGE_FILL: ExcelJS.Fill = {
+  type: 'pattern',
+  pattern: 'solid',
+  fgColor: { argb: 'FFF5F1E8' },
+};
+
+const TYPE_BADGE_COLORS: Record<string, string> = {
+  REVENUE: 'FF9c7c4c',
+  IMAGE: 'FF7d5a8c',
+  ENTRY: 'FF4c7c6c',
+};
+
+const CARD_THIN_BORDER: Partial<ExcelJS.Border> = {
+  style: 'thin',
+  color: { argb: 'FFCCCCCC' },
+};
+
+function buildCardsSheet(wb: ExcelJS.Workbook, skus: SkuRow[]) {
+  if (skus.length === 0) return;
+
+  const ws = wb.addWorksheet('Cards View');
+
+  // Set all possible column widths — each card block is 4 cols, gaps are 1 col
+  const totalGridCols = CARDS_PER_ROW * CARD_COLS + (CARDS_PER_ROW - 1) * GAP_COL;
+  for (let c = 1; c <= totalGridCols; c++) {
+    ws.getColumn(c).width = 14;
+  }
+  // Make gap columns narrower
+  for (let g = 0; g < CARDS_PER_ROW - 1; g++) {
+    const gapCol = (g + 1) * CARD_COLS + g * GAP_COL + 1;
+    ws.getColumn(gapCol).width = 3;
+  }
+
+  skus.forEach((sku, idx) => {
+    const gridCol = idx % CARDS_PER_ROW;           // 0, 1, or 2
+    const gridRow = Math.floor(idx / CARDS_PER_ROW); // 0, 1, 2, ...
+
+    // Top-left cell of this card
+    const startCol = gridCol * (CARD_COLS + GAP_COL) + 1;
+    const startRow = gridRow * (CARD_ROWS + GAP_ROW) + 1;
+
+    // ── Card border (thin border around entire 4×8 block) ──
+    for (let r = startRow; r < startRow + CARD_ROWS; r++) {
+      for (let c = startCol; c < startCol + CARD_COLS; c++) {
+        const cell = ws.getRow(r).getCell(c);
+        const border: Partial<ExcelJS.Borders> = {};
+        if (r === startRow) border.top = CARD_THIN_BORDER;
+        if (r === startRow + CARD_ROWS - 1) border.bottom = CARD_THIN_BORDER;
+        if (c === startCol) border.left = CARD_THIN_BORDER;
+        if (c === startCol + CARD_COLS - 1) border.right = CARD_THIN_BORDER;
+        cell.border = border;
+      }
+    }
+
+    // ── Row 1-4: Image placeholder (merged 4 cols × 4 rows) ──
+    ws.mergeCells(startRow, startCol, startRow + 3, startCol + CARD_COLS - 1);
+    const imgCell = ws.getRow(startRow).getCell(startCol);
+    imgCell.value = '\u{1F4F7}';
+    imgCell.fill = CARD_IMAGE_FILL;
+    imgCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    imgCell.font = { size: 24 };
+    // Ensure merged area gets the border
+    imgCell.border = {
+      top: CARD_THIN_BORDER,
+      left: CARD_THIN_BORDER,
+      right: CARD_THIN_BORDER,
+    };
+    // Set row heights for image area
+    for (let r = startRow; r < startRow + 4; r++) {
+      ws.getRow(r).height = 22;
+    }
+
+    // ── Row 5: SKU name (bold, merged 4 cols) ──
+    const nameRow = startRow + 4;
+    ws.mergeCells(nameRow, startCol, nameRow, startCol + CARD_COLS - 1);
+    const nameCell = ws.getRow(nameRow).getCell(startCol);
+    nameCell.value = sku.name || 'Unnamed SKU';
+    nameCell.font = { bold: true, size: 12, color: { argb: 'FF282A29' } };
+    nameCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    nameCell.border = { left: CARD_THIN_BORDER, right: CARD_THIN_BORDER };
+    ws.getRow(nameRow).height = 20;
+
+    // ── Row 6: Family name (italic, lighter color) ──
+    const familyRow = startRow + 5;
+    ws.mergeCells(familyRow, startCol, familyRow, startCol + CARD_COLS - 1);
+    const familyCell = ws.getRow(familyRow).getCell(startCol);
+    familyCell.value = sku.family || 'No Family';
+    familyCell.font = { italic: true, size: 10, color: { argb: 'FF666666' } };
+    familyCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    familyCell.border = { left: CARD_THIN_BORDER, right: CARD_THIN_BORDER };
+    ws.getRow(familyRow).height = 18;
+
+    // ── Row 7: PVP | COGS | Margin (3 cells, last col merged with col before if needed) ──
+    const metricsRow = startRow + 6;
+    const pvpCell = ws.getRow(metricsRow).getCell(startCol);
+    pvpCell.value = `PVP \u20AC${(sku.pvp || 0).toFixed(0)}`;
+    pvpCell.font = { size: 9, color: { argb: 'FF333333' } };
+    pvpCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    pvpCell.border = { left: CARD_THIN_BORDER };
+
+    const cogsCell = ws.getRow(metricsRow).getCell(startCol + 1);
+    cogsCell.value = `COGS \u20AC${(sku.cost || 0).toFixed(0)}`;
+    cogsCell.font = { size: 9, color: { argb: 'FF333333' } };
+    cogsCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Merge last two columns for margin
+    ws.mergeCells(metricsRow, startCol + 2, metricsRow, startCol + CARD_COLS - 1);
+    const marginCell = ws.getRow(metricsRow).getCell(startCol + 2);
+    marginCell.value = `Margin ${(sku.margin || 0).toFixed(0)}%`;
+    marginCell.font = { size: 9, color: { argb: 'FF333333' } };
+    marginCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    marginCell.border = { right: CARD_THIN_BORDER };
+    ws.getRow(metricsRow).height = 16;
+
+    // ── Row 8: Type badge + Units + Drop ──
+    const badgeRow = startRow + 7;
+    const typeLabel = (sku.type || 'REVENUE').toUpperCase();
+    const badgeColor = TYPE_BADGE_COLORS[typeLabel] || 'FF9c7c4c';
+
+    const typeCell = ws.getRow(badgeRow).getCell(startCol);
+    typeCell.value = typeLabel;
+    typeCell.font = { bold: true, size: 9, color: { argb: badgeColor } };
+    typeCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    typeCell.border = { left: CARD_THIN_BORDER, bottom: CARD_THIN_BORDER };
+
+    const unitsCell = ws.getRow(badgeRow).getCell(startCol + 1);
+    unitsCell.value = `${sku.buy_units || 0} units`;
+    unitsCell.font = { size: 9, color: { argb: 'FF333333' } };
+    unitsCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    unitsCell.border = { bottom: CARD_THIN_BORDER };
+
+    // Merge last two columns for drop
+    ws.mergeCells(badgeRow, startCol + 2, badgeRow, startCol + CARD_COLS - 1);
+    const dropCell = ws.getRow(badgeRow).getCell(startCol + 2);
+    dropCell.value = sku.drop_number ? `Drop ${sku.drop_number}` : '';
+    dropCell.font = { size: 9, color: { argb: 'FF333333' } };
+    dropCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    dropCell.border = { right: CARD_THIN_BORDER, bottom: CARD_THIN_BORDER };
+    ws.getRow(badgeRow).height = 16;
   });
 }
