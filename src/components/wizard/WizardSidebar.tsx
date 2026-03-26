@@ -15,6 +15,7 @@ import {
   Grid3X3,
   Megaphone,
   Presentation,
+  FolderOpen,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -338,6 +339,19 @@ export function WizardSidebar({
               );
             })}
           </div>
+        </div>
+
+        {/* ── My Collections link ── */}
+        <div className="shrink-0">
+          <div className="mx-3 border-t border-white/[0.06]" />
+          <Link
+            href="/my-collections"
+            className={`relative flex items-center ${collapsed ? 'justify-center h-10' : 'gap-3 px-5 py-2.5'} transition-all text-[11px] tracking-wide text-white/30 hover:text-white/55`}
+            title={collapsed ? 'My Collections' : undefined}
+          >
+            <FolderOpen className={`${collapsed ? 'h-[17px] w-[17px]' : 'h-[15px] w-[15px]'} shrink-0`} />
+            {!collapsed && <span className="font-medium tracking-[0.04em] uppercase">Collections</span>}
+          </Link>
         </div>
 
         {/* ── Pin toggle (expanded only) ── */}
