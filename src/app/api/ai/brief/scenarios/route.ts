@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
-import { generateJSON } from '@/lib/ai/llm-client';
+import { generateJSON, generateText, extractJSON } from '@/lib/ai/llm-client';
 import { buildScenariosPrompt, buildResearchQueries } from '@/lib/ai/brief-prompts';
 
 export const maxDuration = 60;
@@ -58,20 +58,44 @@ export async function POST(req: NextRequest) {
       .join('\n\n');
 
     // Step 3: Generate scenarios with AI
-    const { system, user: userPrompt } = buildScenariosPrompt(understood, answers, combinedResearch, language);
+    const { system, user: userPrompt } = buildScenariosPrompt(understood, answers || {}, combinedResearch, language);
 
-    const { data } = await generateJSON({
-      system,
-      user: userPrompt,
-      temperature: 0.7,
-      maxTokens: 8192,
-      language,
-    });
+    // Try generateJSON first, fall back to generateText + manual extraction
+    let data;
+    try {
+      const result = await generateJSON({
+        system,
+        user: userPrompt,
+        temperature: 0.7,
+        maxTokens: 8192,
+        language,
+      });
+      data = result.data;
+    } catch (jsonErr) {
+      console.error('[Brief/Scenarios] generateJSON failed, trying text fallback:', jsonErr instanceof Error ? jsonErr.message : jsonErr);
+      // Fallback: get raw text and try to extract JSON manually
+      const textResult = await generateText({
+        system,
+        user: userPrompt,
+        temperature: 0.7,
+        maxTokens: 8192,
+        language,
+      });
+      console.log('[Brief/Scenarios] Raw text response (first 500):', textResult.text.slice(0, 500));
+      try {
+        data = extractJSON(textResult.text);
+      } catch {
+        // Last resort: return a structured error with the raw text for debugging
+        return NextResponse.json({
+          error: `AI returned non-JSON response. First 200 chars: ${textResult.text.slice(0, 200)}`,
+        }, { status: 500 });
+      }
+    }
 
     return NextResponse.json({ result: data });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[Brief/Scenarios]', msg, err);
+    console.error('[Brief/Scenarios]', msg);
     return NextResponse.json({ error: `Failed to generate scenarios: ${msg}` }, { status: 500 });
   }
 }
