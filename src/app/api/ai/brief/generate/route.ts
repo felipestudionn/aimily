@@ -1,0 +1,37 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser, checkAIUsage } from '@/lib/api-auth';
+import { generateJSON } from '@/lib/ai/llm-client';
+import { buildGeneratePrompt } from '@/lib/ai/brief-prompts';
+
+export async function POST(req: NextRequest) {
+  const { user, error: authError } = await getAuthenticatedUser();
+  if (authError) return authError;
+
+  const usageCheck = await checkAIUsage(user.id, user.email || '');
+  if (usageCheck) return usageCheck;
+
+  try {
+    const { understood, answers, scenario, marketResearch, language = 'en' } = await req.json();
+
+    if (!understood || !scenario) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const { system, user: userPrompt } = buildGeneratePrompt(
+      understood, answers || {}, scenario, marketResearch || '', language
+    );
+
+    const result = await generateJSON({
+      system,
+      user: userPrompt,
+      temperature: 0.8,
+      maxTokens: 8192,
+      language,
+    });
+
+    return NextResponse.json({ result });
+  } catch (err) {
+    console.error('[Brief/Generate]', err);
+    return NextResponse.json({ error: 'Failed to generate collection' }, { status: 500 });
+  }
+}

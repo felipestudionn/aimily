@@ -261,6 +261,13 @@ export default function MyCollectionsPage() {
                     <Plus className="h-4 w-4" />
                     {t.collections.createCollection}
                   </Link>
+                  <Link
+                    href="/brief-to-collection"
+                    className="inline-flex items-center gap-2 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/40 hover:text-crema/70 transition-colors mt-4"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {(t as Record<string, Record<string, string>>).briefToCollection?.tellYourIdea || 'Or tell me your idea'}
+                  </Link>
                 </div>
               </div>
             </div>
@@ -277,13 +284,22 @@ export default function MyCollectionsPage() {
                     <span className="italic">{t.collections.collections}</span>
                   </h1>
                 </div>
-                <Link
-                  href="/new-collection"
-                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                  {t.collections.newCollection}
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/brief-to-collection"
+                    className="inline-flex items-center gap-2 px-5 py-3.5 border border-carbon/[0.08] text-carbon/50 text-[11px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {(t as Record<string, Record<string, string>>).briefToCollection?.tellYourIdea || 'Tell me your idea'}
+                  </Link>
+                  <Link
+                    href="/new-collection"
+                    className="inline-flex items-center gap-2 px-8 py-3.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t.collections.newCollection}
+                  </Link>
+                </div>
               </div>
 
               {/* Aggregate Stats */}
