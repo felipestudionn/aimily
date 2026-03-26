@@ -152,7 +152,11 @@ export default function BriefToCollectionPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ brief, language }),
       });
-      if (!res.ok) throw new Error('Analysis failed');
+      if (!res.ok) {
+        let errMsg = `HTTP ${res.status}`;
+        try { const errData = await res.json(); errMsg = errData?.error || errMsg; } catch { /* non-JSON */ }
+        throw new Error(errMsg);
+      }
       const { result } = await res.json();
       if (!result?.understood) throw new Error('Invalid analysis response');
       setAnalysis(result);
@@ -184,8 +188,12 @@ export default function BriefToCollectionPage() {
           language,
         }),
       });
+      if (!res.ok) {
+        let errMsg = `HTTP ${res.status}`;
+        try { const errData = await res.json(); errMsg = errData?.error || errMsg; } catch { /* non-JSON response */ }
+        throw new Error(errMsg);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Scenarios failed');
       if (!data.result?.scenarios) throw new Error('No scenarios in response');
       setScenariosResult(data.result);
       setStep(2);
@@ -214,7 +222,11 @@ export default function BriefToCollectionPage() {
           language,
         }),
       });
-      if (!res.ok) throw new Error('Generation failed');
+      if (!res.ok) {
+        let errMsg = `HTTP ${res.status}`;
+        try { const errData = await res.json(); errMsg = errData?.error || errMsg; } catch { /* non-JSON */ }
+        throw new Error(errMsg);
+      }
       const { result } = await res.json();
       setGeneratedData(result);
       // Auto-fill collection name from brand suggestions
@@ -271,7 +283,11 @@ export default function BriefToCollectionPage() {
         }),
       });
 
-      if (!res.ok) throw new Error('Creation failed');
+      if (!res.ok) {
+        let errMsg = `HTTP ${res.status}`;
+        try { const errData = await res.json(); errMsg = errData?.error || errMsg; } catch { /* non-JSON */ }
+        throw new Error(errMsg);
+      }
       const { plan } = await res.json();
       setStep(4);
       // Navigate to the new collection after a moment
