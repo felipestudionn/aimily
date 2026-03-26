@@ -157,12 +157,11 @@ export async function GET(req: NextRequest) {
     wb.creator = 'Aimily';
     wb.created = new Date();
 
+    buildCardsSheet(wb, plan, skus, timeline);
     buildRangePlanSheet(wb, skus);
     if (timeline) {
       buildCalendarSheet(wb, timeline, plan);
     }
-    buildSummarySheet(wb, plan, skus, timeline);
-    buildCardsSheet(wb, skus);
 
     // ── Return as download ──
 
@@ -708,158 +707,11 @@ function buildCalendarSheet(
 }
 
 // ══════════════════════════════════════════════════════════════
-// SHEET 3: Collection Summary
+// SHEET 3: Collection Overview + Cards View (merged)
 // ══════════════════════════════════════════════════════════════
 
-function buildSummarySheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[], timeline: TimelineRow | null) {
-  const ws = wb.addWorksheet('Collection Summary');
-
-  ws.columns = [
-    { width: 28 },
-    { width: 18 },
-    { width: 14 },
-    { width: 14 },
-  ];
-
-  // ── Row 1: Collection Name (large, merged) ──
-  ws.mergeCells('A1:D1');
-  const titleCell = ws.getCell('A1');
-  titleCell.value = plan.name;
-  titleCell.font = { bold: true, size: 18, color: { argb: 'FF282A29' } };
-  titleCell.alignment = { vertical: 'middle' };
-  ws.getRow(1).height = 32;
-
-  // ── Row 2: Season | Launch Date ──
-  ws.getCell('A2').value = 'Season';
-  ws.getCell('A2').font = { bold: true, size: 10, color: { argb: 'FF666666' } };
-  ws.getCell('B2').value = plan.season || '\u2014';
-  ws.getCell('B2').font = { size: 10, color: { argb: 'FF333333' } };
-  ws.getCell('C2').value = 'Launch Date';
-  ws.getCell('C2').font = { bold: true, size: 10, color: { argb: 'FF666666' } };
-  ws.getCell('D2').value = timeline?.launch_date
-    ? new Date(timeline.launch_date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
-    : '\u2014';
-  ws.getCell('D2').font = { size: 10, color: { argb: 'FF333333' } };
-
-  // ── Row 3: blank ──
-
-  // ── Row 4: FAMILIES header ──
-  ws.mergeCells('A4:D4');
-  const familiesHeader = ws.getCell('A4');
-  familiesHeader.value = 'FAMILIES';
-  familiesHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-  familiesHeader.fill = DARK_FILL;
-  familiesHeader.alignment = { vertical: 'middle' };
-  ws.getRow(4).height = 24;
-
-  // Sub-header
-  const famSubRow = ws.getRow(5);
-  const famSubHeaders = ['Family', 'SKU Count', 'Avg Price', 'Avg Margin'];
-  famSubHeaders.forEach((h, i) => {
-    const cell = famSubRow.getCell(i + 1);
-    cell.value = h;
-    cell.font = { bold: true, size: 9, color: { argb: 'FF666666' } };
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFF5F1E8' },
-    };
-    cell.border = THIN_BORDER_BOTTOM;
-  });
-
-  // ── Family rows ──
-  const familyMap = new Map<string, SkuRow[]>();
-  skus.forEach((sku) => {
-    const fam = sku.family || 'Unassigned';
-    if (!familyMap.has(fam)) familyMap.set(fam, []);
-    familyMap.get(fam)!.push(sku);
-  });
-
-  let rowNum = 6;
-  familyMap.forEach((famSkus, famName) => {
-    const avgPrice = famSkus.reduce((s, sk) => s + (sk.pvp || 0), 0) / famSkus.length;
-    const avgMargin = famSkus.reduce((s, sk) => s + (sk.margin || 0), 0) / famSkus.length;
-
-    const row = ws.getRow(rowNum);
-    row.getCell(1).value = famName;
-    row.getCell(1).font = BODY_FONT;
-    row.getCell(2).value = famSkus.length;
-    row.getCell(2).font = BODY_FONT;
-    row.getCell(2).alignment = { horizontal: 'center' };
-    row.getCell(3).value = avgPrice;
-    row.getCell(3).font = BODY_FONT;
-    row.getCell(3).numFmt = '#,##0.00 "\u20AC"';
-    row.getCell(3).alignment = { horizontal: 'right' };
-    row.getCell(4).value = avgMargin / 100;
-    row.getCell(4).font = BODY_FONT;
-    row.getCell(4).numFmt = '0.0%';
-    row.getCell(4).alignment = { horizontal: 'center' };
-
-    // Alternating colors
-    const fill = (rowNum - 6) % 2 === 0 ? WHITE_FILL : CREAM_FILL;
-    for (let c = 1; c <= 4; c++) row.getCell(c).fill = fill;
-
-    rowNum++;
-  });
-
-  // ── Blank row ──
-  rowNum++;
-
-  // ── FINANCIAL OVERVIEW ──
-  ws.mergeCells(rowNum, 1, rowNum, 4);
-  const finHeader = ws.getCell(rowNum, 1);
-  finHeader.value = 'FINANCIAL OVERVIEW';
-  finHeader.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-  finHeader.fill = DARK_FILL;
-  finHeader.alignment = { vertical: 'middle' };
-  ws.getRow(rowNum).height = 24;
-  rowNum++;
-
-  // Compute financials
-  const totalUnits = skus.reduce((s, sk) => s + (sk.buy_units || 0), 0);
-  const totalSales = skus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
-  const totalCost = skus.reduce((s, sk) => s + (sk.cost || 0) * (sk.buy_units || 0), 0);
-  const avgPrice = skus.length > 0
-    ? skus.reduce((s, sk) => s + (sk.pvp || 0), 0) / skus.length
-    : 0;
-  const avgMargin = skus.length > 0
-    ? skus.reduce((s, sk) => s + (sk.margin || 0), 0) / skus.length
-    : 0;
-  const grossProfit = totalSales - totalCost;
-
-  const financials: [string, string | number, string?][] = [
-    ['Revenue Target', totalSales, '#,##0.00 "\u20AC"'],
-    ['Total Units', totalUnits, '#,##0'],
-    ['Avg Price', avgPrice, '#,##0.00 "\u20AC"'],
-    ['Target Margin', avgMargin / 100, '0.0%'],
-    ['Total COGS', totalCost, '#,##0.00 "\u20AC"'],
-    ['Gross Profit', grossProfit, '#,##0.00 "\u20AC"'],
-  ];
-
-  financials.forEach(([label, value, fmt], i) => {
-    const row = ws.getRow(rowNum);
-    row.getCell(1).value = label;
-    row.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF666666' } };
-    row.getCell(2).value = value;
-    row.getCell(2).font = { bold: true, size: 11, color: { argb: 'FF282A29' } };
-    if (fmt) row.getCell(2).numFmt = fmt;
-    row.getCell(2).alignment = { horizontal: 'right' };
-
-    const fill = i % 2 === 0 ? WHITE_FILL : CREAM_FILL;
-    for (let c = 1; c <= 4; c++) row.getCell(c).fill = fill;
-
-    rowNum++;
-  });
-}
-
-// ══════════════════════════════════════════════════════════════
-// SHEET 4: Cards View
-// ══════════════════════════════════════════════════════════════
-
-const CARD_COLS = 3;   // each card spans 3 columns (matches Builder: PVP/COGS, Units/Margin, Sales/Type)
-const CARD_ROWS = 12;  // image(5) + phase(1) + name(1) + metrics(3) + family+cta(2)
-const CARDS_PER_ROW = 6; // 6 cards per row like the Builder
-const GAP_COL = 1;
+const CARD_ROWS = 12;
+const CARDS_PER_ROW = 4;
 const GAP_ROW = 1;
 
 const CARD_IMAGE_FILL: ExcelJS.Fill = {
@@ -876,13 +728,12 @@ const TYPE_BADGE_COLORS: Record<string, string> = {
 
 const CARD_THIN_BORDER: Partial<ExcelJS.Border> = {
   style: 'thin',
-  color: { argb: 'FFCCCCCC' },
+  color: { argb: 'FFE0E0E0' },
 };
 
-function buildCardsSheet(wb: ExcelJS.Workbook, skus: SkuRow[]) {
-  if (skus.length === 0) return;
+function buildCardsSheet(wb: ExcelJS.Workbook, plan: PlanRow, skus: SkuRow[], timeline: TimelineRow | null) {
+  const ws = wb.addWorksheet('Collection Overview');
 
-  const ws = wb.addWorksheet('Cards View');
   const LABEL_FONT: Partial<ExcelJS.Font> = { size: 8, color: { argb: 'FF999999' } };
   const VALUE_FONT: Partial<ExcelJS.Font> = { size: 10, color: { argb: 'FF282A29' } };
   const PHASE_COLORS: Record<string, string> = {
@@ -894,45 +745,288 @@ function buildCardsSheet(wb: ExcelJS.Workbook, skus: SkuRow[]) {
     production: 'PRODUCTION', completed: 'COMPLETE',
   };
 
-  // Column widths: 6 cards × 2 cols each + 5 gap cols = 17 cols
-  const colsPerCard = 2;
-  const totalCols = CARDS_PER_ROW * colsPerCard + (CARDS_PER_ROW - 1) * GAP_COL;
-  for (let c = 1; c <= totalCols; c++) { ws.getColumn(c).width = 12; }
-  for (let g = 0; g < CARDS_PER_ROW - 1; g++) {
-    ws.getColumn((g + 1) * colsPerCard + g * GAP_COL + 1).width = 1.5;
+  // ── Column layout: A=margin, then 4 cards × 3 cols + 3 gap cols = 15 data cols ──
+  // So columns B..P for cards (cols 2..16)
+  const MARGIN_COL = 1;
+  const DATA_START = 2; // cards start at column B
+  const colsPerCard = 3;
+  const gapCol = 1;
+  const totalDataCols = CARDS_PER_ROW * colsPerCard + (CARDS_PER_ROW - 1) * gapCol;
+  const LAST_COL = DATA_START + totalDataCols - 1;
+
+  // Column A: narrow margin
+  ws.getColumn(MARGIN_COL).width = 3;
+
+  // Card columns
+  for (let i = 0; i < totalDataCols; i++) {
+    const colIdx = DATA_START + i;
+    // Figure out if this is a gap column
+    const cardBlock = colsPerCard + gapCol; // 4
+    const posInBlock = i % cardBlock;
+    if (posInBlock === colsPerCard) {
+      // Gap column
+      ws.getColumn(colIdx).width = 1.5;
+    } else {
+      ws.getColumn(colIdx).width = 11;
+    }
   }
 
-  // Group SKUs by family for header rows
+  // ── Row 1: empty (top margin) ──
+  ws.getRow(1).height = 12;
+
+  // ══════════════════════════════════════════════
+  // HEADER: Collection name + Season/Launch
+  // ══════════════════════════════════════════════
+  const titleRow = 2;
+  ws.mergeCells(titleRow, DATA_START, titleRow, DATA_START + 6);
+  const titleCell = ws.getRow(titleRow).getCell(DATA_START);
+  titleCell.value = plan.name;
+  titleCell.font = { bold: true, size: 20, color: { argb: 'FF282A29' } };
+  titleCell.alignment = { vertical: 'middle' };
+  ws.getRow(titleRow).height = 36;
+
+  // Season + Launch on row 3
+  const metaRow = 3;
+  const seasonCell = ws.getRow(metaRow).getCell(DATA_START);
+  seasonCell.value = plan.season || '';
+  seasonCell.font = { size: 10, color: { argb: 'FF999999' } };
+  const launchCell = ws.getRow(metaRow).getCell(DATA_START + 3);
+  launchCell.value = timeline?.launch_date
+    ? `Launch: ${new Date(timeline.launch_date).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`
+    : '';
+  launchCell.font = { size: 10, color: { argb: 'FF999999' } };
+  ws.getRow(metaRow).height = 18;
+
+  // Row 4: blank separator
+  ws.getRow(4).height = 10;
+
+  // ══════════════════════════════════════════════
+  // FAMILIES (left) + FINANCIAL OVERVIEW (right)
+  // ══════════════════════════════════════════════
+
+  // Build family data
+  const familyMap = new Map<string, SkuRow[]>();
+  skus.forEach((sku) => {
+    const fam = sku.family || 'Unassigned';
+    if (!familyMap.has(fam)) familyMap.set(fam, []);
+    familyMap.get(fam)!.push(sku);
+  });
+
+  // Compute financials
+  const totalUnits = skus.reduce((s, sk) => s + (sk.buy_units || 0), 0);
+  const totalSales = skus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
+  const totalCost = skus.reduce((s, sk) => s + (sk.cost || 0) * (sk.buy_units || 0), 0);
+  const avgPrice = skus.length > 0 ? skus.reduce((s, sk) => s + (sk.pvp || 0), 0) / skus.length : 0;
+  const avgMargin = skus.length > 0 ? skus.reduce((s, sk) => s + (sk.margin || 0), 0) / skus.length : 0;
+  const grossProfit = totalSales - totalCost;
+
+  // Left block: Families (cols B-G = DATA_START to DATA_START+5)
+  const FAM_L = DATA_START;
+  const FAM_R = DATA_START + 5;
+  // Right block: Financials (cols I-N = DATA_START+7 to DATA_START+12)
+  const FIN_L = DATA_START + 7;
+  const FIN_R = DATA_START + 12;
+
+  const headerRowNum = 5;
+
+  // FAMILIES header
+  ws.mergeCells(headerRowNum, FAM_L, headerRowNum, FAM_R);
+  const famHeaderCell = ws.getRow(headerRowNum).getCell(FAM_L);
+  famHeaderCell.value = 'FAMILIES';
+  famHeaderCell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' }, name: 'Arial' };
+  famHeaderCell.fill = DARK_FILL;
+  famHeaderCell.alignment = { vertical: 'middle', indent: 1 };
+  ws.getRow(headerRowNum).height = 26;
+
+  // FINANCIAL OVERVIEW header
+  ws.mergeCells(headerRowNum, FIN_L, headerRowNum, FIN_R);
+  const finHeaderCell = ws.getRow(headerRowNum).getCell(FIN_L);
+  finHeaderCell.value = 'FINANCIAL OVERVIEW';
+  finHeaderCell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' }, name: 'Arial' };
+  finHeaderCell.fill = DARK_FILL;
+  finHeaderCell.alignment = { vertical: 'middle', indent: 1 };
+
+  // Families sub-header row
+  const famSubRow = 6;
+  const famSubHeaders = [
+    { label: 'Family', width: 2 },
+    { label: 'SKUs', width: 1 },
+    { label: 'Avg PVP', width: 1 },
+    { label: 'Avg Margin', width: 1 },
+    { label: 'Revenue', width: 1 },
+  ];
+  let famColPos = FAM_L;
+  famSubHeaders.forEach((h) => {
+    if (h.width > 1) {
+      ws.mergeCells(famSubRow, famColPos, famSubRow, famColPos + h.width - 1);
+    }
+    const cell = ws.getRow(famSubRow).getCell(famColPos);
+    cell.value = h.label;
+    cell.font = { bold: true, size: 8, color: { argb: 'FF999999' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F1E8' } };
+    cell.alignment = { vertical: 'middle', horizontal: h.label === 'Family' ? 'left' : 'right', indent: 1 };
+    cell.border = THIN_BORDER_BOTTOM;
+    famColPos += h.width;
+  });
+  ws.getRow(famSubRow).height = 20;
+
+  // Family data rows
+  let famRowNum = 7;
+  let famIdx = 0;
+  familyMap.forEach((famSkus, famName) => {
+    const fAvgPrice = famSkus.reduce((s, sk) => s + (sk.pvp || 0), 0) / famSkus.length;
+    const fAvgMargin = famSkus.reduce((s, sk) => s + (sk.margin || 0), 0) / famSkus.length;
+    const fRevenue = famSkus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
+    const row = ws.getRow(famRowNum);
+    const fill = famIdx % 2 === 0 ? WHITE_FILL : CREAM_FILL;
+
+    // Family name (2 cols)
+    ws.mergeCells(famRowNum, FAM_L, famRowNum, FAM_L + 1);
+    row.getCell(FAM_L).value = famName;
+    row.getCell(FAM_L).font = { size: 10, color: { argb: 'FF282A29' } };
+    row.getCell(FAM_L).alignment = { vertical: 'middle', indent: 1 };
+
+    // SKU count
+    row.getCell(FAM_L + 2).value = famSkus.length;
+    row.getCell(FAM_L + 2).font = BODY_FONT;
+    row.getCell(FAM_L + 2).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+
+    // Avg PVP
+    row.getCell(FAM_L + 3).value = fAvgPrice;
+    row.getCell(FAM_L + 3).font = BODY_FONT;
+    row.getCell(FAM_L + 3).numFmt = '€#,##0';
+    row.getCell(FAM_L + 3).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+
+    // Avg Margin
+    row.getCell(FAM_L + 4).value = fAvgMargin / 100;
+    row.getCell(FAM_L + 4).font = BODY_FONT;
+    row.getCell(FAM_L + 4).numFmt = '0%';
+    row.getCell(FAM_L + 4).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+
+    // Revenue
+    row.getCell(FAM_L + 5).value = fRevenue;
+    row.getCell(FAM_L + 5).font = BODY_FONT;
+    row.getCell(FAM_L + 5).numFmt = '€#,##0';
+    row.getCell(FAM_L + 5).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+
+    for (let c = FAM_L; c <= FAM_R; c++) row.getCell(c).fill = fill;
+    row.height = 20;
+    famRowNum++;
+    famIdx++;
+  });
+
+  // Families total row
+  const famTotalRow = ws.getRow(famRowNum);
+  ws.mergeCells(famRowNum, FAM_L, famRowNum, FAM_L + 1);
+  famTotalRow.getCell(FAM_L).value = `TOTAL (${skus.length} SKUs)`;
+  famTotalRow.getCell(FAM_L).font = { bold: true, size: 9, color: { argb: 'FF282A29' } };
+  famTotalRow.getCell(FAM_L).alignment = { vertical: 'middle', indent: 1 };
+  famTotalRow.getCell(FAM_L + 5).value = totalSales;
+  famTotalRow.getCell(FAM_L + 5).font = { bold: true, size: 10, color: { argb: 'FF282A29' } };
+  famTotalRow.getCell(FAM_L + 5).numFmt = '€#,##0';
+  famTotalRow.getCell(FAM_L + 5).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+  for (let c = FAM_L; c <= FAM_R; c++) {
+    famTotalRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E4DA' } };
+    famTotalRow.getCell(c).border = { top: { style: 'thin', color: { argb: 'FF282A29' } } };
+  }
+  famTotalRow.height = 22;
+
+  // ── FINANCIAL OVERVIEW rows (right side, same vertical position) ──
+  const financials: [string, number, string][] = [
+    ['Revenue Target', totalSales, '€#,##0'],
+    ['Total Units', totalUnits, '#,##0'],
+    ['Avg Price', avgPrice, '€#,##0'],
+    ['Target Margin', avgMargin / 100, '0.0%'],
+    ['Total COGS', totalCost, '€#,##0'],
+    ['Gross Profit', grossProfit, '€#,##0'],
+  ];
+
+  // Financials sub-header
+  ws.mergeCells(famSubRow, FIN_L, famSubRow, FIN_L + 2);
+  ws.getRow(famSubRow).getCell(FIN_L).value = 'Metric';
+  ws.getRow(famSubRow).getCell(FIN_L).font = { bold: true, size: 8, color: { argb: 'FF999999' } };
+  ws.getRow(famSubRow).getCell(FIN_L).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F1E8' } };
+  ws.getRow(famSubRow).getCell(FIN_L).alignment = { vertical: 'middle', indent: 1 };
+  ws.getRow(famSubRow).getCell(FIN_L).border = THIN_BORDER_BOTTOM;
+
+  ws.mergeCells(famSubRow, FIN_L + 3, famSubRow, FIN_R);
+  ws.getRow(famSubRow).getCell(FIN_L + 3).value = 'Value';
+  ws.getRow(famSubRow).getCell(FIN_L + 3).font = { bold: true, size: 8, color: { argb: 'FF999999' } };
+  ws.getRow(famSubRow).getCell(FIN_L + 3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F1E8' } };
+  ws.getRow(famSubRow).getCell(FIN_L + 3).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+  ws.getRow(famSubRow).getCell(FIN_L + 3).border = THIN_BORDER_BOTTOM;
+
+  financials.forEach(([label, value, fmt], i) => {
+    const rn = 7 + i;
+    const row = ws.getRow(rn);
+    const fill = i % 2 === 0 ? WHITE_FILL : CREAM_FILL;
+
+    ws.mergeCells(rn, FIN_L, rn, FIN_L + 2);
+    row.getCell(FIN_L).value = label;
+    row.getCell(FIN_L).font = { size: 10, color: { argb: 'FF666666' } };
+    row.getCell(FIN_L).alignment = { vertical: 'middle', indent: 1 };
+
+    ws.mergeCells(rn, FIN_L + 3, rn, FIN_R);
+    row.getCell(FIN_L + 3).value = value;
+    row.getCell(FIN_L + 3).font = { bold: true, size: 11, color: { argb: 'FF282A29' } };
+    row.getCell(FIN_L + 3).numFmt = fmt;
+    row.getCell(FIN_L + 3).alignment = { vertical: 'middle', horizontal: 'right', indent: 1 };
+
+    for (let c = FIN_L; c <= FIN_R; c++) row.getCell(c).fill = fill;
+  });
+
+  // ══════════════════════════════════════════════
+  // CARDS SECTION (below summary)
+  // ══════════════════════════════════════════════
+
+  if (skus.length === 0) return;
+
+  // Start cards 2 rows below the summary section
+  const summaryEndRow = Math.max(famRowNum + 1, 7 + financials.length);
+  let currentRow = summaryEndRow + 2;
+
+  // Separator line
+  for (let c = DATA_START; c <= LAST_COL; c++) {
+    ws.getRow(currentRow - 1).getCell(c).border = { bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } } };
+  }
+
   const families = Array.from(new Set(skus.map(s => s.family)));
-  let currentRow = 1;
 
   for (const fam of families) {
     const famSkus = skus.filter(s => s.family === fam);
-    const totalSales = famSkus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
+    const famTotalSales = famSkus.reduce((s, sk) => s + (sk.expected_sales || 0), 0);
 
     // Family header row
-    ws.mergeCells(currentRow, 1, currentRow, 4);
-    const famCell = ws.getRow(currentRow).getCell(1);
+    ws.mergeCells(currentRow, DATA_START, currentRow, DATA_START + 4);
+    const famCell = ws.getRow(currentRow).getCell(DATA_START);
     famCell.value = fam;
-    famCell.font = { bold: true, size: 11, color: { argb: 'FF282A29' } };
+    famCell.font = { bold: true, size: 12, color: { argb: 'FF282A29' } };
     famCell.alignment = { vertical: 'middle' };
 
-    const countCell = ws.getRow(currentRow).getCell(5);
-    countCell.value = `${famSkus.length} SKUs · €${totalSales.toLocaleString()}`;
-    countCell.font = { size: 9, color: { argb: 'FF999999' } };
-    countCell.alignment = { vertical: 'middle' };
-    ws.getRow(currentRow).height = 22;
+    const cntCell = ws.getRow(currentRow).getCell(DATA_START + 5);
+    cntCell.value = `${famSkus.length} SKUs`;
+    cntCell.font = { size: 9, color: { argb: 'FF999999' } };
+    cntCell.alignment = { vertical: 'middle' };
+
+    const revCell = ws.getRow(currentRow).getCell(DATA_START + 7);
+    revCell.value = famTotalSales;
+    revCell.numFmt = '€#,##0';
+    revCell.font = { size: 9, color: { argb: 'FF999999' } };
+    revCell.alignment = { vertical: 'middle', horizontal: 'right' };
+
+    ws.getRow(currentRow).height = 26;
     currentRow += 1;
 
-    // Cards for this family
+    // Cards grid
     for (let i = 0; i < famSkus.length; i++) {
       const sku = famSkus[i];
-      const col = i % CARDS_PER_ROW;
-      const row = Math.floor(i / CARDS_PER_ROW);
-      const c1 = col * (colsPerCard + GAP_COL) + 1;
-      const r1 = currentRow + row * (CARD_ROWS + GAP_ROW);
+      const cardCol = i % CARDS_PER_ROW;
+      const cardRow = Math.floor(i / CARDS_PER_ROW);
+      // Each card: 3 data cols, 1 gap col between cards
+      const c1 = DATA_START + cardCol * (colsPerCard + gapCol);
+      const r1 = currentRow + cardRow * (CARD_ROWS + GAP_ROW);
 
-      // Set card borders on all cells
+      // Card borders
       for (let r = r1; r < r1 + CARD_ROWS; r++) {
         for (let c = c1; c < c1 + colsPerCard; c++) {
           const cell = ws.getRow(r).getCell(c);
@@ -945,97 +1039,94 @@ function buildCardsSheet(wb: ExcelJS.Workbook, skus: SkuRow[]) {
         }
       }
 
-      // Row 1-5: Image area (5 rows, crema bg)
+      // Rows 1-5: Image area (crema bg)
       ws.mergeCells(r1, c1, r1 + 4, c1 + colsPerCard - 1);
       const imgCell = ws.getRow(r1).getCell(c1);
       imgCell.fill = CARD_IMAGE_FILL;
       imgCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      if (sku.sketch_url) {
+      if (sku.sketch_url || sku.reference_image_url) {
         imgCell.value = sku.name;
         imgCell.font = { size: 9, color: { argb: 'FF999999' }, italic: true };
       } else {
         imgCell.value = '';
       }
-      for (let r = r1; r < r1 + 5; r++) ws.getRow(r).height = 24;
+      for (let r = r1; r < r1 + 5; r++) ws.getRow(r).height = 22;
 
-      // Row 6: Phase bar
-      const phaseRow = r1 + 5;
-      ws.mergeCells(phaseRow, c1, phaseRow, c1 + colsPerCard - 1);
-      const phaseCell = ws.getRow(phaseRow).getCell(c1);
+      // Row 6: Phase badge
+      const phaseR = r1 + 5;
+      ws.mergeCells(phaseR, c1, phaseR, c1 + colsPerCard - 1);
       const phase = sku.design_phase || 'range_plan';
+      const phaseCell = ws.getRow(phaseR).getCell(c1);
       phaseCell.value = PHASE_LABELS[phase] || 'CONCEPT';
       phaseCell.font = { bold: true, size: 8, color: { argb: PHASE_COLORS[phase] || 'FF9c7c4c' } };
       phaseCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-      ws.getRow(phaseRow).height = 16;
+      ws.getRow(phaseR).height = 16;
 
       // Row 7: SKU name
-      const nameRow = r1 + 6;
-      ws.mergeCells(nameRow, c1, nameRow, c1 + colsPerCard - 1);
-      const nameCell = ws.getRow(nameRow).getCell(c1);
-      nameCell.value = sku.name;
-      nameCell.font = { size: 10, color: { argb: 'FF282A29' } };
-      nameCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-      ws.getRow(nameRow).height = 18;
+      const nameR = r1 + 6;
+      ws.mergeCells(nameR, c1, nameR, c1 + colsPerCard - 1);
+      ws.getRow(nameR).getCell(c1).value = sku.name;
+      ws.getRow(nameR).getCell(c1).font = { size: 10, color: { argb: 'FF282A29' } };
+      ws.getRow(nameR).getCell(c1).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      ws.getRow(nameR).height = 20;
 
-      // Row 8: PVP | COGS
+      // Row 8: PVP | COGS | Units labels
       const r8 = r1 + 7;
-      const pvpLabel = ws.getRow(r8).getCell(c1);
-      pvpLabel.value = 'PVP';
-      pvpLabel.font = LABEL_FONT;
-      pvpLabel.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
-      const cogsLabel = ws.getRow(r8).getCell(c1 + 1);
-      cogsLabel.value = 'COGS';
-      cogsLabel.font = LABEL_FONT;
-      cogsLabel.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r8).getCell(c1).value = 'PVP';
+      ws.getRow(r8).getCell(c1).font = LABEL_FONT;
+      ws.getRow(r8).getCell(c1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r8).getCell(c1 + 1).value = 'COGS';
+      ws.getRow(r8).getCell(c1 + 1).font = LABEL_FONT;
+      ws.getRow(r8).getCell(c1 + 1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r8).getCell(c1 + 2).value = 'UNITS';
+      ws.getRow(r8).getCell(c1 + 2).font = LABEL_FONT;
+      ws.getRow(r8).getCell(c1 + 2).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
       ws.getRow(r8).height = 11;
 
-      // Row 9: PVP value | COGS value
+      // Row 9: PVP | COGS | Units values
       const r9 = r1 + 8;
-      const pvpVal = ws.getRow(r9).getCell(c1);
-      pvpVal.value = `€${sku.pvp}`;
-      pvpVal.font = VALUE_FONT;
-      pvpVal.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
-      const cogsVal = ws.getRow(r9).getCell(c1 + 1);
-      cogsVal.value = `€${sku.cost}`;
-      cogsVal.font = VALUE_FONT;
-      cogsVal.alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r9).getCell(c1).value = `€${sku.pvp}`;
+      ws.getRow(r9).getCell(c1).font = VALUE_FONT;
+      ws.getRow(r9).getCell(c1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r9).getCell(c1 + 1).value = `€${sku.cost}`;
+      ws.getRow(r9).getCell(c1 + 1).font = VALUE_FONT;
+      ws.getRow(r9).getCell(c1 + 1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
+      ws.getRow(r9).getCell(c1 + 2).value = String(sku.buy_units || 0);
+      ws.getRow(r9).getCell(c1 + 2).font = VALUE_FONT;
+      ws.getRow(r9).getCell(c1 + 2).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
       ws.getRow(r9).height = 15;
 
-      // Row 10: UNITS | MARGIN labels
+      // Row 10: Margin | Sales labels
       const r10 = r1 + 9;
-      ws.getRow(r10).getCell(c1).value = 'UNITS';
+      ws.getRow(r10).getCell(c1).value = 'MARGIN';
       ws.getRow(r10).getCell(c1).font = LABEL_FONT;
       ws.getRow(r10).getCell(c1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
-      ws.getRow(r10).getCell(c1 + 1).value = 'MARGIN';
+      ws.getRow(r10).getCell(c1 + 1).value = 'SALES';
       ws.getRow(r10).getCell(c1 + 1).font = LABEL_FONT;
       ws.getRow(r10).getCell(c1 + 1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
       ws.getRow(r10).height = 11;
 
-      // Row 11: Units value | Margin value + SALES + Type badge
+      // Row 11: Margin | Sales values
       const r11 = r1 + 10;
-      ws.getRow(r11).getCell(c1).value = String(sku.buy_units || 0);
+      ws.getRow(r11).getCell(c1).value = `${Math.round(sku.margin || 0)}%`;
       ws.getRow(r11).getCell(c1).font = VALUE_FONT;
       ws.getRow(r11).getCell(c1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
-      ws.getRow(r11).getCell(c1 + 1).value = `${Math.round(sku.margin || 0)}%`;
+      ws.getRow(r11).getCell(c1 + 1).value = `€${(sku.expected_sales || 0).toLocaleString()}`;
       ws.getRow(r11).getCell(c1 + 1).font = VALUE_FONT;
       ws.getRow(r11).getCell(c1 + 1).alignment = { vertical: 'top', horizontal: 'left', indent: 1 };
       ws.getRow(r11).height = 15;
 
-      // Row 12: SALES value | Type badge
+      // Row 12: Type badge
       const r12 = r1 + 11;
-      ws.getRow(r12).getCell(c1).value = `€${(sku.expected_sales || 0).toLocaleString()}`;
-      ws.getRow(r12).getCell(c1).font = { size: 9, color: { argb: 'FF666666' } };
-      ws.getRow(r12).getCell(c1).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-
-      const typeLabel = (sku.type || 'REVENUE').toUpperCase();
+      const typeLabel = (sku.type === 'IMAGEN' ? 'IMAGE' : sku.type || 'REVENUE').toUpperCase();
       const badgeColor = TYPE_BADGE_COLORS[typeLabel] || 'FF9c7c4c';
-      ws.getRow(r12).getCell(c1 + 1).value = typeLabel;
-      ws.getRow(r12).getCell(c1 + 1).font = { bold: true, size: 8, color: { argb: badgeColor } };
-      ws.getRow(r12).getCell(c1 + 1).alignment = { vertical: 'middle', horizontal: 'right' };
+      ws.getRow(r12).getCell(c1).value = typeLabel;
+      ws.getRow(r12).getCell(c1).font = { bold: true, size: 8, color: { argb: badgeColor } };
+      ws.getRow(r12).getCell(c1).alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
       ws.getRow(r12).height = 16;
     }
 
-    // Advance currentRow past all card rows for this family
+    // Advance past card rows for this family
     const familyCardRows = Math.ceil(famSkus.length / CARDS_PER_ROW);
     currentRow += familyCardRows * (CARD_ROWS + GAP_ROW) + 1;
   }
