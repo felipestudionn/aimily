@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       understood, answers || {}, scenario, marketResearch || '', language
     );
 
-    const result = await generateJSON({
+    const { data } = await generateJSON({
       system,
       user: userPrompt,
       temperature: 0.8,
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       language,
     });
 
-    return NextResponse.json({ result });
+    return NextResponse.json({ result: data });
   } catch (err) {
     console.error('[Brief/Generate]', err);
     return NextResponse.json({ error: 'Failed to generate collection' }, { status: 500 });

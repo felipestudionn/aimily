@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     // Step 3: Generate scenarios with AI
     const { system, user: userPrompt } = buildScenariosPrompt(understood, answers, combinedResearch, language);
 
-    const result = await generateJSON({
+    const { data } = await generateJSON({
       system,
       user: userPrompt,
       temperature: 0.8,
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       language,
     });
 
-    return NextResponse.json({ result });
+    return NextResponse.json({ result: data });
   } catch (err) {
     console.error('[Brief/Scenarios]', err);
     return NextResponse.json({ error: 'Failed to generate scenarios' }, { status: 500 });

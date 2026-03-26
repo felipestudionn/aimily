@@ -154,10 +154,11 @@ export default function BriefToCollectionPage() {
       });
       if (!res.ok) throw new Error('Analysis failed');
       const { result } = await res.json();
+      if (!result?.understood) throw new Error('Invalid analysis response');
       setAnalysis(result);
       // Pre-fill answers with empty strings
       const initAnswers: Record<string, string> = {};
-      result.questions?.forEach((q: BriefQuestion) => { initAnswers[q.id] = ''; });
+      (result.questions || []).forEach((q: BriefQuestion) => { initAnswers[q.id] = ''; });
       setAnswers(initAnswers);
       setStep(1);
     } catch {

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     const { system, user: userPrompt } = buildAnalyzePrompt(brief.trim(), language);
 
-    const result = await generateJSON({
+    const { data } = await generateJSON({
       system,
       user: userPrompt,
       temperature: 0.7,
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       language,
     });
 
-    return NextResponse.json({ result });
+    return NextResponse.json({ result: data });
   } catch (err) {
     console.error('[Brief/Analyze]', err);
     return NextResponse.json({ error: 'Failed to analyze brief' }, { status: 500 });
