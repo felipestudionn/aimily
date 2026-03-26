@@ -849,6 +849,13 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors">
               <Plus className="h-3 w-3" /> Add SKU
             </button>
+            <a
+              href={`/api/collection-export?planId=${collectionPlanId}`}
+              download
+              className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors"
+            >
+              <Download className="h-3 w-3" /> Excel
+            </a>
           </div>
           <div className="flex items-center bg-carbon/[0.06] rounded-full p-0.5">
             {(['pipeline', 'list', 'cards'] as const).map((mode) => (

@@ -24,6 +24,7 @@ import {
   Target,
   Rocket,
   Check,
+  Presentation,
 } from 'lucide-react';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
@@ -288,8 +289,19 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
             </h2>
           </div>
 
-          {/* View Toggle */}
-          <div className="flex border border-carbon/[0.06] overflow-x-auto">
+          {/* Actions: View Toggle + Presentation + Export */}
+          <div className="flex items-center gap-2">
+            {/* Presentation */}
+            <Link
+              href={`/collection/${collectionId}/presentation`}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-carbon/[0.06] text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-all whitespace-nowrap"
+            >
+              <Presentation className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{(t.overview as Record<string, string>).presentation || 'Presentation'}</span>
+            </Link>
+
+            {/* View Toggle */}
+            <div className="flex border border-carbon/[0.06] overflow-x-auto">
             {[
               { id: 'blocks' as ViewMode, label: t.overview.blocks, icon: LayoutGrid },
               { id: 'calendar' as ViewMode, label: t.overview.calendar, icon: CalendarDays },
@@ -311,6 +323,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                 </button>
               );
             })}
+          </div>
           </div>
         </div>
 

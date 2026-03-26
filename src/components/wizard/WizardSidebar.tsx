@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Grid3X3,
   Megaphone,
+  Presentation,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -315,6 +316,7 @@ export function WizardSidebar({
           <div className="mx-3 border-t border-white/[0.06]" />
           <div className="py-2">
             {[
+              { id: 'presentation', path: '/presentation', label: 'Presentation', Icon: Presentation },
               { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
               { id: 'overview', path: '', label: 'Overview', Icon: LayoutDashboard },
             ].map((item) => {
