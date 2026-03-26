@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { DEFAULT_MILESTONES } from '@/lib/timeline-template';
+import { createDefaultTimeline } from '@/lib/timeline-template';
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,22 +36,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Create timeline with default milestones
-    const milestones = DEFAULT_MILESTONES
-      ? DEFAULT_MILESTONES.map((m) => ({
-          ...m,
-          startDate: null,
-          endDate: null,
-          status: 'pending' as const,
-        }))
-      : [];
+    // 2. Create timeline with properly computed milestones
+    const timeline = createDefaultTimeline(name, season, launchDate || '2027-03-01');
 
     const { error: timelineError } = await supabaseAdmin
       .from('collection_timelines')
       .insert({
         collection_plan_id: plan.id,
-        launch_date: launchDate,
-        milestones,
+        launch_date: launchDate || '2027-03-01',
+        milestones: timeline.milestones,
       });
 
     if (timelineError) {

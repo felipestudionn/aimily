@@ -226,9 +226,20 @@ You need to produce:
    - Each individual product with: name, family, category, price (PVP), cost (COGS),
      units, margin, discount, channel, type (REVENUE/IMAGE/ENTRY), drop number, novelty
 
-CRITICAL: Your output will directly populate a database. Every field must match the exact schema.
-Names should be creative, specific, and commercially viable — NOT generic ("Model A", "Style 1").
-Each SKU name should evoke the product's character (e.g., "Portofino Slip-On", "Riviera Ballet Flat").
+CRITICAL RULES — VIOLATING ANY OF THESE WILL REJECT THE OUTPUT:
+
+1. PRICING IS SACRED: Every SKU's "pvp" MUST fall within the price range from the APPROVED SCENARIO.
+   If the scenario says min €25, max €39, then EVERY pvp must be between 25 and 39. NO EXCEPTIONS.
+   The average price across all SKUs must match the scenario's avg price (±10%).
+
+2. SKU NAMES MUST BE CREATIVE AND EVOCATIVE: Not "Slip Blanco" or "Model A".
+   Use place names, mood words, cultural references (e.g., "Portofino Slip-On", "Riviera Ballet", "Mistral Runner").
+   Each name should feel like a real product you'd see in a store.
+
+3. BRAND NAMES: Propose 3 real, viable brand names. Short (1-2 words), memorable, easy to pronounce
+   in Spanish/English/French. NOT generic words. Think like a naming agency.
+
+4. Your output will directly populate a database. Every field must match the exact schema.
 
 ${QUALITY_GATES.creativeSpecificity}
 ${QUALITY_GATES.merchSpecificity}
@@ -246,6 +257,11 @@ ${Object.entries(answers).map(([q, a]) => `${q}: ${a}`).join('\n')}
 
 APPROVED SCENARIO:
 ${JSON.stringify(scenario, null, 2)}
+
+⚠️ MANDATORY PRICE CONSTRAINT: The scenario above defines the price range.
+Every SKU pvp MUST be within €${(scenario as Record<string, Record<string, number>>).priceArchitecture?.min || 20}-${(scenario as Record<string, Record<string, number>>).priceArchitecture?.max || 45}.
+Average price target: €${(scenario as Record<string, Record<string, number>>).priceArchitecture?.avg || 30}.
+DO NOT generate prices outside this range under any circumstance.
 
 MARKET RESEARCH:
 ${marketResearch}
