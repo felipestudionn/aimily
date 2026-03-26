@@ -131,22 +131,22 @@ export default function PricingPage() {
       <div className="pt-28 pb-16 px-4 max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-[#282A29] mb-3">
+          <h1 className="text-4xl font-light text-carbon tracking-tight mb-3">
             {t.pricingPage.title}
           </h1>
-          <p className="text-lg text-[#282A29]/60 mb-2">
+          <p className="text-lg text-carbon/60 mb-2">
             {t.pricingPage.subtitle}
           </p>
         </div>
 
         {/* Trial banner */}
         <div className="max-w-2xl mx-auto mb-10">
-          <div className="bg-[#282A29] text-white rounded-2xl px-6 py-4 flex items-center gap-4">
-            <div className="p-2 bg-white/10 rounded-xl shrink-0">
+          <div className="bg-carbon text-white rounded-md px-6 py-4 flex items-center gap-4">
+            <div className="p-2 bg-white/10 rounded-md shrink-0">
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold text-sm">
+              <p className="font-medium text-sm">
                 {t.pricingPage.trialTitle}
               </p>
               <p className="text-white/70 text-xs">
@@ -158,13 +158,13 @@ export default function PricingPage() {
 
         {/* Toggle annual/monthly */}
         <div className="flex items-center justify-center gap-3 mb-10">
-          <span className={`text-sm ${!annual ? 'text-[#282A29] font-medium' : 'text-[#282A29]/50'}`}>
+          <span className={`text-sm ${!annual ? 'text-carbon font-medium' : 'text-carbon/50'}`}>
             {t.landing.monthly}
           </span>
           <button
             onClick={() => setAnnual(!annual)}
             className={`relative w-14 h-7 rounded-full transition-colors ${
-              annual ? 'bg-[#282A29]' : 'bg-[#282A29]/30'
+              annual ? 'bg-carbon' : 'bg-carbon/30'
             }`}
           >
             <span
@@ -173,7 +173,7 @@ export default function PricingPage() {
               }`}
             />
           </button>
-          <span className={`text-sm ${annual ? 'text-[#282A29] font-medium' : 'text-[#282A29]/50'}`}>
+          <span className={`text-sm ${annual ? 'text-carbon font-medium' : 'text-carbon/50'}`}>
             {t.landing.annual}
           </span>
           {annual && (
@@ -193,25 +193,25 @@ export default function PricingPage() {
             return (
               <div
                 key={plan.id}
-                className={`relative bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-lg ${
+                className={`relative bg-white rounded-md p-6 border transition-all hover:shadow-lg ${
                   plan.popular
-                    ? 'border-[#282A29] shadow-md'
-                    : 'border-[#282A29]/10'
+                    ? 'border-carbon shadow-md'
+                    : 'border-carbon/10'
                 } ${isCurrent ? 'ring-2 ring-green-500' : ''}`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#282A29] text-white text-xs px-3 py-1 rounded-full font-medium">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-carbon text-white text-xs px-3 py-1 rounded-full font-medium">
                     {t.landing.mostPopular}
                   </div>
                 )}
 
                 <div className="mb-4">
-                  <plan.icon className="w-8 h-8 text-[#282A29] mb-3" />
-                  <h3 className="text-xl font-bold text-[#282A29]">{t.landing[plan.nameKey]}</h3>
-                  <p className="text-sm text-[#282A29]/50 mt-1">
+                  <plan.icon className="w-8 h-8 text-carbon mb-3" />
+                  <h3 className="text-xl font-light text-carbon tracking-tight">{t.landing[plan.nameKey]}</h3>
+                  <p className="text-sm text-carbon/50 mt-1">
                     {t.landing[plan.descKey]}
                   </p>
-                  <p className="text-xs text-[#282A29]/40 mt-0.5 italic">
+                  <p className="text-xs text-carbon/40 mt-0.5 italic">
                     {t.landing[plan.taglineKey]}
                   </p>
                 </div>
@@ -219,16 +219,16 @@ export default function PricingPage() {
                 <div className="mb-6">
                   {price !== null ? (
                     <>
-                      <span className="text-4xl font-bold text-[#282A29]">
+                      <span className="text-4xl font-light text-carbon tracking-tight">
                         {price}€
                       </span>
-                      <span className="text-[#282A29]/50 text-sm">
+                      <span className="text-carbon/50 text-sm">
                         {t.landing.perMonth}
                       </span>
                       {annual && (
-                        <div className="text-xs text-[#282A29]/40 mt-1">
+                        <div className="text-xs text-carbon/40 mt-1">
                           {price * 12}€{t.landing.perYear}{' '}
-                          <span className="line-through text-[#282A29]/30">
+                          <span className="line-through text-carbon/30">
                             {plan.price! * 12}€
                           </span>
                         </div>
@@ -236,8 +236,8 @@ export default function PricingPage() {
                     </>
                   ) : (
                     <>
-                      <span className="text-3xl font-bold text-[#282A29]">{t.landing.custom}</span>
-                      <div className="text-xs text-[#282A29]/40 mt-1">
+                      <span className="text-3xl font-light text-carbon tracking-tight">{t.landing.custom}</span>
+                      <div className="text-xs text-carbon/40 mt-1">
                         {t.landing.customFrom}
                       </div>
                     </>
@@ -247,12 +247,12 @@ export default function PricingPage() {
                 <button
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={isCurrent || isLoading}
-                  className={`w-full py-2.5 px-4 rounded-xl font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-2.5 px-4 rounded-md font-medium text-sm transition-all flex items-center justify-center gap-2 ${
                     isCurrent
                       ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
                       : plan.popular
-                        ? 'bg-[#282A29] text-white hover:bg-[#282A29]/90'
-                        : 'bg-[#282A29]/5 text-[#282A29] hover:bg-[#282A29]/10'
+                        ? 'bg-carbon text-white hover:bg-carbon/90'
+                        : 'bg-carbon/5 text-carbon hover:bg-carbon/10'
                   }`}
                 >
                   {isLoading ? (
@@ -284,9 +284,9 @@ export default function PricingPage() {
                         {included ? (
                           <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
                         ) : (
-                          <X className="w-4 h-4 text-[#282A29]/20 mt-0.5 shrink-0" />
+                          <X className="w-4 h-4 text-carbon/20 mt-0.5 shrink-0" />
                         )}
-                        <span className={included ? 'text-[#282A29]' : 'text-[#282A29]/30'}>
+                        <span className={included ? 'text-carbon' : 'text-carbon/30'}>
                           {typeof resolved === 'string'
                             ? `${t.pricingPage[feature.labelKey]}: ${resolved}`
                             : t.pricingPage[feature.labelKey]}
@@ -301,28 +301,28 @@ export default function PricingPage() {
         </div>
 
         {/* Full feature comparison table */}
-        <div className="bg-white rounded-2xl border border-[#282A29]/10 overflow-hidden mb-16">
-          <div className="px-6 py-4 border-b border-[#282A29]/10">
-            <h2 className="text-lg font-bold text-[#282A29]">
+        <div className="bg-white rounded-md border border-carbon/10 overflow-hidden mb-16">
+          <div className="px-6 py-4 border-b border-carbon/10">
+            <h2 className="text-lg font-light text-carbon tracking-tight">
               {t.pricingPage.fullComparison}
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#282A29]/10">
-                  <th className="text-left text-sm font-medium text-[#282A29]/50 px-6 py-3 w-1/3">
+                <tr className="border-b border-carbon/10">
+                  <th className="text-left text-sm font-medium text-carbon/50 px-6 py-3 w-1/3">
                     {t.pricingPage.feature}
                   </th>
-                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3">{t.landing.starter}</th>
-                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3 bg-[#282A29]/5">{t.landing.professional}</th>
-                  <th className="text-center text-sm font-bold text-[#282A29] px-4 py-3">{t.landing.enterprise}</th>
+                  <th className="text-center text-sm font-medium text-carbon px-4 py-3">{t.landing.starter}</th>
+                  <th className="text-center text-sm font-medium text-carbon px-4 py-3 bg-carbon/5">{t.landing.professional}</th>
+                  <th className="text-center text-sm font-medium text-carbon px-4 py-3">{t.landing.enterprise}</th>
                 </tr>
               </thead>
               <tbody>
                 {FEATURES.map((feature, i) => (
-                  <tr key={i} className={i % 2 === 0 ? '' : 'bg-[#282A29]/[0.02]'}>
-                    <td className="text-sm text-[#282A29] px-6 py-2.5">
+                  <tr key={i} className={i % 2 === 0 ? '' : 'bg-carbon/[0.02]'}>
+                    <td className="text-sm text-carbon px-6 py-2.5">
                       {t.pricingPage[feature.labelKey]}
                     </td>
                     {(['starter', 'professional', 'enterprise'] as PlanId[]).map((planId) => {
@@ -331,15 +331,15 @@ export default function PricingPage() {
                         <td
                           key={planId}
                           className={`text-center text-sm px-4 py-2.5 ${
-                            planId === 'professional' ? 'bg-[#282A29]/5' : ''
+                            planId === 'professional' ? 'bg-carbon/5' : ''
                           }`}
                         >
                           {typeof resolved === 'string' ? (
-                            <span className="text-[#282A29] font-medium">{resolved}</span>
+                            <span className="text-carbon font-medium">{resolved}</span>
                           ) : resolved ? (
                             <Check className="w-4 h-4 text-green-600 mx-auto" />
                           ) : (
-                            <X className="w-4 h-4 text-[#282A29]/20 mx-auto" />
+                            <X className="w-4 h-4 text-carbon/20 mx-auto" />
                           )}
                         </td>
                       );
@@ -353,7 +353,7 @@ export default function PricingPage() {
 
         {/* Value proposition */}
         <div className="max-w-3xl mx-auto mb-16">
-          <h2 className="text-2xl font-bold text-[#282A29] text-center mb-8">
+          <h2 className="text-2xl font-medium text-carbon text-center mb-8">
             {t.pricingPage.replaceTools}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -365,20 +365,20 @@ export default function PricingPage() {
               { tool: t.pricingPage.toolTrend, cost: '€1,500/mo', icon: Sparkles },
               { tool: t.pricingPage.toolTimeline, cost: '€57/mo', icon: Clock },
             ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white/60 rounded-xl px-4 py-3">
+              <div key={i} className="flex items-center gap-3 bg-white/60 rounded-md px-4 py-3">
                 <X className="w-4 h-4 text-red-400 shrink-0" />
                 <div className="flex-1">
-                  <span className="text-sm text-[#282A29]">{item.tool}</span>
+                  <span className="text-sm text-carbon">{item.tool}</span>
                 </div>
-                <span className="text-sm text-[#282A29]/40 line-through">{item.cost}</span>
+                <span className="text-sm text-carbon/40 line-through">{item.cost}</span>
               </div>
             ))}
           </div>
           <div className="text-center mt-6">
-            <p className="text-[#282A29]/50 text-sm">
+            <p className="text-carbon/50 text-sm">
               {t.pricingPage.totalSeparateTools}
             </p>
-            <p className="text-[#282A29] font-bold text-lg mt-1">
+            <p className="text-carbon font-bold text-lg mt-1">
               {t.pricingPage.aimilyFromSave}
             </p>
           </div>
@@ -386,17 +386,17 @@ export default function PricingPage() {
 
         {/* Bottom */}
         <div className="text-center">
-          <p className="text-[#282A29]/50 text-sm">
+          <p className="text-carbon/50 text-sm">
             {t.landing.allPlansNote}
             <br />
-            <span className="text-[#282A29]/30 text-xs">
+            <span className="text-carbon/30 text-xs">
               {t.landing.pricesExclVat}
             </span>
           </p>
           {isPaid && (
             <button
               onClick={() => openPortal()}
-              className="mt-4 text-sm text-[#282A29]/50 hover:text-[#282A29] underline transition-colors"
+              className="mt-4 text-sm text-carbon/50 hover:text-carbon underline transition-colors"
             >
               {t.pricingPage.manageSubscription}
             </button>

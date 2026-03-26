@@ -11,6 +11,8 @@
     --gris: #D8D8D8;
     --blanco: #FFFFFF;
     --error: #A0463C;
+    --success: #2d6a4f;
+    --warning: #c77000;
 
     /* shadcn/ui mappings → Aimily palette */
     --background: 37 71% 93%;       /* crema #FAEFE0 */
@@ -32,7 +34,7 @@
     --border: 0 0% 85%;             /* gris */
     --input: 0 0% 85%;
     --ring: 156 4% 16%;             /* carbon */
-    --radius: 4px;                  /* subtle rounding — editorial but modern */
+    --radius: 6px;                  /* modern editorial — 6px cards, rounded-full pills */
   }
 }
 
@@ -51,10 +53,10 @@
 /* ── Global subtle rounding (outside @layer for higher specificity) ── */
 button, [role="button"],
 input, textarea, select {
-  border-radius: 4px !important;
+  border-radius: 6px !important;
 }
 [class~="border"] {
-  border-radius: 4px;
+  border-radius: 6px;
 }
 /* Preserve full pills — override global rounding */
 [class~="rounded-full"] {
@@ -64,8 +66,8 @@ input, textarea, select {
 /* ── Global font size boost ──
    Bump everything up ~1px for better readability.
    Single place to tune all text sizes across the app. */
-.text-\[9px\]  { font-size: 0.8125rem !important; } /* 9→13px */
-.text-\[10px\] { font-size: 0.8125rem !important; } /* 10→13px */
+.text-\[9px\]  { font-size: 0.875rem !important; }  /* 9→14px (min legible) */
+.text-\[10px\] { font-size: 0.875rem !important; }  /* 10→14px (min legible) */
 .text-\[11px\] { font-size: 0.875rem !important; }  /* 11→14px */
 .text-xs       { font-size: 0.8125rem !important; } /* 12→13px */
 .text-sm       { font-size: 0.9375rem !important; } /* 14→15px */

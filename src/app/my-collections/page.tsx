@@ -274,186 +274,193 @@ export default function MyCollectionsPage() {
           ) : (
             <div className="space-y-10">
 
-              {/* Hub Header — editorial style */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
-                <div>
-                  <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
-                    {t.collections.yourWorkspace}
-                  </p>
-                  <h1 className="text-4xl md:text-5xl font-light text-carbon tracking-tight leading-[1.15]">
-                    <span className="italic">{t.collections.collections}</span>
-                  </h1>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/brief-to-collection"
-                    className="inline-flex items-center gap-2 px-5 py-3.5 border border-carbon/[0.08] text-carbon/50 text-[11px] font-medium tracking-[0.1em] uppercase hover:border-carbon/20 transition-colors"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {(t as Record<string, Record<string, string>>).briefToCollection?.tellYourIdea || 'Tell me your idea'}
-                  </Link>
-                  <Link
-                    href="/new-collection"
-                    className="inline-flex items-center gap-2 px-8 py-3.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {t.collections.newCollection}
-                  </Link>
-                </div>
-              </div>
-
-              {/* Aggregate Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gris/20">
-                <div className="bg-crema p-6 text-center">
-                  <p className="text-3xl font-light text-carbon tracking-tight">{collections.length}</p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.collections.collections}</p>
-                </div>
-                <div className="bg-crema p-6 text-center">
-                  <p className="text-3xl font-light text-carbon tracking-tight">{stats.avgProgress}%</p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.collections.avgProgress}</p>
-                </div>
-                <div className="bg-crema p-6 text-center">
-                  <p className={`text-3xl font-light tracking-tight ${stats.totalOverdue > 0 ? 'text-error' : 'text-carbon'}`}>
-                    {stats.totalOverdue}
-                  </p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.common.overdue}</p>
-                </div>
-                <div className="bg-crema p-6 text-center">
-                  <p className="text-3xl font-light text-carbon tracking-tight">
-                    {stats.nextLaunch ? `${stats.nextLaunch.daysUntilLaunch}d` : '--'}
-                  </p>
-                  <p className="text-xs font-medium text-carbon/30 uppercase tracking-[0.2em] mt-1.5">{t.collections.nextLaunch}</p>
-                </div>
-              </div>
-
-              {/* Upcoming Deadlines */}
-              {upcomingDeadlines.length > 0 && (
-                <div className="border border-gris/40 bg-white p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="h-4 w-4 text-texto/40" />
-                    <h3 className="text-xs font-medium text-texto uppercase tracking-widest">{t.collections.upcomingDeadlines}</h3>
-                  </div>
-                  <div className="divide-y divide-gris/30">
-                    {upcomingDeadlines.map((d, i) => {
-                      const now = new Date();
-                      now.setHours(0, 0, 0, 0);
-                      const daysOverdue = d.isOverdue
-                        ? Math.ceil((now.getTime() - d.endDate.getTime()) / (1000 * 60 * 60 * 24))
-                        : 0;
-                      const daysLeft = !d.isOverdue
-                        ? Math.ceil((d.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-                        : 0;
-                      return (
-                        <Link
-                          key={i}
-                          href={`/collection/${d.collectionId}`}
-                          className="flex items-center gap-3 py-3 hover:bg-crema/50 transition-colors -mx-1 px-1"
-                        >
-                          {d.isOverdue ? (
-                            <AlertTriangle className="h-3.5 w-3.5 text-error flex-shrink-0" />
-                          ) : (
-                            <Clock className="h-3.5 w-3.5 text-texto/30 flex-shrink-0" />
-                          )}
-                          <span className="text-sm text-texto flex-1 truncate">{d.milestone}</span>
-                          <span className="text-xs text-texto/40 truncate max-w-[120px]">{d.collection}</span>
-                          <span className={`text-xs font-medium ${d.isOverdue ? 'text-error' : 'text-texto/50'}`}>
-                            {d.isOverdue
-                              ? `${daysOverdue}${t.collections.dOverdue}`
-                              : daysLeft === 0
-                              ? t.common.today
-                              : `${daysLeft}${t.collections.dLeft}`}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Collections Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-gris/20">
-                {enrichedCollections.map((collection) => (
-                  <div key={collection.id} className="bg-white p-8 flex flex-col">
-                    {/* Header row */}
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-xl font-light text-carbon tracking-tight truncate flex-1 min-w-0 pr-3">
-                        {collection.name}
-                      </h3>
-                      <button
-                        onClick={() => handleDelete(collection.id)}
-                        className="p-1.5 text-gris/40 hover:text-error transition-colors flex-shrink-0"
-                        title={t.collections.deleteCollection}
+              {/* ── Hero section — carbon accent (Creative Synthesis pattern) ── */}
+              <div className="bg-carbon -mx-6 md:-mx-10 px-6 md:px-10 py-10 sm:py-12">
+                <div className="max-w-7xl mx-auto">
+                  {/* Header row */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-10">
+                    <div>
+                      <p className="text-[11px] font-medium tracking-[0.25em] uppercase text-crema/25 mb-3">
+                        {t.collections.yourWorkspace}
+                      </p>
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl font-light text-crema tracking-tight leading-[1.15]">
+                        <span className="italic">{t.collections.collections}</span>
+                      </h1>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href="/brief-to-collection"
+                        className="inline-flex items-center gap-2 px-5 py-3 border border-crema/[0.1] text-crema/50 text-[11px] font-medium tracking-[0.1em] uppercase hover:border-crema/25 hover:text-crema/70 transition-colors"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {(t as Record<string, Record<string, string>>).briefToCollection?.tellYourIdea || 'Tell me your idea'}
+                      </Link>
+                      <Link
+                        href="/new-collection"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-crema/90 transition-colors"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {t.collections.newCollection}
+                      </Link>
                     </div>
-
-                    <div className="flex items-center gap-3 mb-6 text-xs font-medium text-carbon/30">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(collection.updated_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
-                      </span>
-                      {collection.setup_data?.totalSalesTarget && (
-                        <span className="flex items-center gap-1">
-                          <Euro className="h-3 w-3" />
-                          {collection.setup_data.totalSalesTarget.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Progress */}
-                    {collection.timeline && (
-                      <div className="mb-6">
-                        <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="font-medium text-carbon/30 tracking-wide">{t.common.progress}</span>
-                          <span className="font-light text-carbon text-lg tracking-tight">{collection.progress}%</span>
-                        </div>
-                        <div className="h-[2px] bg-gris/20 overflow-hidden">
-                          <div
-                            className="h-full bg-carbon transition-all duration-500"
-                            style={{ width: `${collection.progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Status badges */}
-                    <div className="flex items-center gap-2 mb-6 flex-wrap">
-                      {collection.setup_data?.productCategory && (
-                        <span className="text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
-                          {collection.setup_data.productCategory}
-                        </span>
-                      )}
-                      {collection.overdue > 0 && (
-                        <span className="flex items-center gap-1 text-xs font-medium text-error border border-error/20 px-2.5 py-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          {collection.overdue} {t.common.overdue}
-                        </span>
-                      )}
-                      {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch > 0 && (
-                        <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
-                          <Rocket className="h-3 w-3" />
-                          {collection.daysUntilLaunch}{t.collections.dToLaunch}
-                        </span>
-                      )}
-                      {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch <= 0 && (
-                        <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          {t.common.launched}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* CTA */}
-                    <Link
-                      href={`/collection/${collection.id}`}
-                      className="mt-auto flex items-center justify-center gap-2 w-full py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors"
-                    >
-                      {t.common.continue}
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
                   </div>
-                ))}
+
+                  {/* Stats row — integrated in hero */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
+                    <div>
+                      <p className="text-3xl sm:text-4xl font-light text-crema tracking-tight">{collections.length}</p>
+                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.collections.collections}</p>
+                    </div>
+                    <div>
+                      <p className="text-3xl sm:text-4xl font-light text-crema tracking-tight">{stats.avgProgress}%</p>
+                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.collections.avgProgress}</p>
+                    </div>
+                    <div>
+                      <p className={`text-3xl sm:text-4xl font-light tracking-tight ${stats.totalOverdue > 0 ? 'text-error' : 'text-crema'}`}>
+                        {stats.totalOverdue}
+                      </p>
+                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.common.overdue}</p>
+                    </div>
+                    <div>
+                      <p className="text-3xl sm:text-4xl font-light text-crema tracking-tight">
+                        {stats.nextLaunch ? `${stats.nextLaunch.daysUntilLaunch}d` : '--'}
+                      </p>
+                      <p className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em] mt-1.5">{t.collections.nextLaunch}</p>
+                    </div>
+                  </div>
+
+                  {/* Upcoming deadlines — integrated in hero */}
+                  {upcomingDeadlines.length > 0 && (
+                    <div className="mt-8 pt-8 border-t border-crema/[0.06]">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Clock className="h-3.5 w-3.5 text-crema/25" />
+                        <h3 className="text-[11px] font-medium text-crema/25 uppercase tracking-[0.2em]">{t.collections.upcomingDeadlines}</h3>
+                      </div>
+                      <div className="space-y-0 divide-y divide-crema/[0.06]">
+                        {upcomingDeadlines.map((d, i) => {
+                          const now = new Date();
+                          now.setHours(0, 0, 0, 0);
+                          const daysOverdue = d.isOverdue
+                            ? Math.ceil((now.getTime() - d.endDate.getTime()) / (1000 * 60 * 60 * 24))
+                            : 0;
+                          const daysLeft = !d.isOverdue
+                            ? Math.ceil((d.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                            : 0;
+                          return (
+                            <Link
+                              key={i}
+                              href={`/collection/${d.collectionId}`}
+                              className="flex items-center gap-3 py-3 hover:bg-crema/[0.03] transition-colors -mx-2 px-2"
+                            >
+                              {d.isOverdue ? (
+                                <AlertTriangle className="h-3.5 w-3.5 text-error flex-shrink-0" />
+                              ) : (
+                                <Clock className="h-3.5 w-3.5 text-crema/20 flex-shrink-0" />
+                              )}
+                              <span className="text-sm text-crema/70 flex-1 truncate">{d.milestone}</span>
+                              <span className="text-xs text-crema/30 truncate max-w-[140px]">{d.collection}</span>
+                              <span className={`text-xs font-medium ${d.isOverdue ? 'text-error' : 'text-crema/40'}`}>
+                                {d.isOverdue
+                                  ? `${daysOverdue}${t.collections.dOverdue}`
+                                  : daysLeft === 0
+                                  ? t.common.today
+                                  : `${daysLeft}${t.collections.dLeft}`}
+                              </span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Collections Grid — compact cards with shadow ── */}
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <p className="text-[11px] font-medium tracking-[0.2em] uppercase text-carbon/30">
+                    {t.collections.collections} · {enrichedCollections.length}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {enrichedCollections.map((collection) => (
+                    <Link
+                      key={collection.id}
+                      href={`/collection/${collection.id}`}
+                      className="group bg-white border border-carbon/[0.06] shadow-sm hover:shadow-md p-6 flex flex-col transition-all duration-300"
+                    >
+                      {/* Header row */}
+                      <div className="flex items-start justify-between mb-1">
+                        <h3 className="text-lg font-light text-carbon tracking-tight truncate flex-1 min-w-0 pr-3 group-hover:text-carbon/80 transition-colors">
+                          {collection.name}
+                        </h3>
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(collection.id); }}
+                          className="p-1.5 text-carbon/0 group-hover:text-carbon/20 hover:!text-error transition-colors flex-shrink-0"
+                          title={t.collections.deleteCollection}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-3 mb-5 text-xs font-medium text-carbon/30">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(collection.updated_at).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')}
+                        </span>
+                        {collection.setup_data?.totalSalesTarget && (
+                          <span className="flex items-center gap-1">
+                            <Euro className="h-3 w-3" />
+                            {collection.setup_data.totalSalesTarget.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Progress */}
+                      {collection.timeline && (
+                        <div className="mb-5">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-carbon/30 tracking-wide">{t.common.progress}</span>
+                            <span className="font-light text-carbon text-base tracking-tight">{collection.progress}%</span>
+                          </div>
+                          <div className="h-[2px] bg-carbon/[0.06] overflow-hidden">
+                            <div
+                              className="h-full bg-carbon transition-all duration-500"
+                              style={{ width: `${collection.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status badges */}
+                      <div className="flex items-center gap-2 flex-wrap mt-auto">
+                        {collection.setup_data?.productCategory && (
+                          <span className="text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1 rounded-full">
+                            {collection.setup_data.productCategory}
+                          </span>
+                        )}
+                        {collection.overdue > 0 && (
+                          <span className="flex items-center gap-1 text-xs font-medium text-error border border-error/20 px-2.5 py-1 rounded-full">
+                            <AlertTriangle className="h-3 w-3" />
+                            {collection.overdue} {t.common.overdue}
+                          </span>
+                        )}
+                        {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch > 0 && (
+                          <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1 rounded-full">
+                            <Rocket className="h-3 w-3" />
+                            {collection.daysUntilLaunch}{t.collections.dToLaunch}
+                          </span>
+                        )}
+                        {collection.daysUntilLaunch !== undefined && collection.daysUntilLaunch <= 0 && (
+                          <span className="flex items-center gap-1 text-xs font-medium text-carbon/35 border border-carbon/[0.08] px-2.5 py-1 rounded-full">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {t.common.launched}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           )}

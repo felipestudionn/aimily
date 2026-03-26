@@ -33,22 +33,22 @@ export function CompetitorMap({ competitors, onUpdate }: Props) {
   };
 
   return (
-    <div className="bg-white border border-gray-100 p-6 space-y-4">
+    <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Swords className="h-4 w-4 text-teal-500" />
-          <h2 className="font-semibold text-gray-900">{t.brandPage.competitorTitle}</h2>
+          <Swords className="h-4 w-4 text-carbon/40" />
+          <h2 className="font-light text-carbon tracking-tight">{t.brandPage.competitorTitle}</h2>
         </div>
         <button
           onClick={add}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 text-teal-600 text-xs font-medium hover:bg-teal-100 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-carbon/[0.04] text-carbon/60 text-xs font-medium hover:bg-carbon/[0.06] transition-colors"
         >
           <Plus className="h-3.5 w-3.5" /> {t.common.add}
         </button>
       </div>
 
       {list.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-4">
+        <p className="text-sm text-carbon/30 text-center py-4">
           {t.brandPage.noCompetitors}
         </p>
       )}
@@ -61,25 +61,25 @@ export function CompetitorMap({ competitors, onUpdate }: Props) {
               value={c.name}
               onChange={(e) => updateItem(i, { name: e.target.value })}
               placeholder={t.brandPage.competitorName}
-              className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+              className="px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
             />
             <input
               type="text"
               value={c.positioning}
               onChange={(e) => updateItem(i, { positioning: e.target.value })}
               placeholder={t.brandPage.positioning}
-              className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+              className="px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
             />
             <input
               type="text"
               value={c.priceRange}
               onChange={(e) => updateItem(i, { priceRange: e.target.value })}
               placeholder={t.brandPage.priceRange}
-              className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+              className="px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
             />
             <button
               onClick={() => remove(i)}
-              className="p-2 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+              className="p-2 rounded-lg text-carbon/20 hover:text-red-400 hover:bg-red-50 transition-colors"
             >
               <Trash2 className="h-4 w-4" />
             </button>

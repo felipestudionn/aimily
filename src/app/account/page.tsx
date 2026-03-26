@@ -100,7 +100,7 @@ export default function AccountPage() {
   return (
     <>
       <Navbar />
-      <main className="bg-[#fff6dc] min-h-screen pt-28 pb-16 px-4">
+      <main className="bg-crema min-h-screen pt-28 pb-16 px-4">
         <div className="max-w-2xl mx-auto space-y-8">
           <div>
             <h1 className="text-3xl font-light text-carbon tracking-tight">{t.account.title}</h1>
@@ -108,7 +108,7 @@ export default function AccountPage() {
           </div>
 
           {/* Profile Section */}
-          <section className="bg-white border border-gris/20 p-6 space-y-4">
+          <section className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-carbon" />
               <h2 className="text-lg font-medium text-carbon">{t.account.profile}</h2>
@@ -140,7 +140,7 @@ export default function AccountPage() {
           </section>
 
           {/* Language Section */}
-          <section className="bg-white border border-gris/20 p-6 space-y-4">
+          <section className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div className="flex items-center gap-3">
               <Globe className="h-5 w-5 text-carbon" />
               <h2 className="text-lg font-medium text-carbon">{t.account.languageSection}</h2>
@@ -151,7 +151,7 @@ export default function AccountPage() {
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as Language)}
-                  className="bg-white border border-gris/30 text-sm text-carbon px-3 py-2 focus:outline-none focus:border-carbon/50 cursor-pointer"
+                  className="bg-white border border-carbon/[0.08] text-sm text-carbon px-3 py-2 focus:outline-none focus:border-carbon/50 cursor-pointer"
                 >
                   <option value="en">English</option>
                   <option value="es">Español</option>
@@ -173,7 +173,7 @@ export default function AccountPage() {
 
           {/* Change Password — only for email users */}
           {!isOAuthUser && (
-            <section className="bg-white border border-gris/20 p-6 space-y-4">
+            <section className="bg-white border border-carbon/[0.06] p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <Key className="h-5 w-5 text-carbon" />
                 <h2 className="text-lg font-medium text-carbon">{t.account.changePassword}</h2>
@@ -184,7 +184,7 @@ export default function AccountPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder={t.auth.newPasswordPlaceholder}
-                  className="w-full px-4 py-3 border border-gris/30 text-sm text-carbon placeholder:text-gris/40 focus:outline-none focus:border-carbon/50"
+                  className="w-full px-4 py-3 border border-carbon/[0.08] text-sm text-carbon placeholder:text-carbon/20 focus:outline-none focus:border-carbon/50"
                   minLength={8}
                   required
                 />
@@ -212,7 +212,7 @@ export default function AccountPage() {
           )}
 
           {/* Subscription Section */}
-          <section className="bg-white border border-gris/20 p-6 space-y-4">
+          <section className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div className="flex items-center gap-3">
               <CreditCard className="h-5 w-5 text-carbon" />
               <h2 className="text-lg font-medium text-carbon">{t.account.subscription}</h2>
@@ -263,7 +263,7 @@ export default function AccountPage() {
           </section>
 
           {/* Data Export — GDPR Right of Access */}
-          <section className="bg-white border border-gris/20 p-6 space-y-4">
+          <section className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div className="flex items-center gap-3">
               <Download className="h-5 w-5 text-carbon" />
               <h2 className="text-lg font-medium text-carbon">{t.account.exportData}</h2>
@@ -327,7 +327,7 @@ export default function AccountPage() {
                   </button>
                   <button
                     onClick={() => setDeleteStep(0)}
-                    className="px-6 py-2.5 border border-gris/30 text-carbon text-sm font-medium tracking-wide hover:bg-gris/10 transition-colors"
+                    className="px-6 py-2.5 border border-carbon/[0.08] text-carbon text-sm font-medium tracking-wide hover:bg-carbon/[0.04] transition-colors"
                   >
                     {t.common.cancel}
                   </button>
@@ -355,7 +355,7 @@ export default function AccountPage() {
                   <button
                     onClick={() => setDeleteStep(0)}
                     disabled={deleteLoading}
-                    className="px-6 py-2.5 border border-gris/30 text-carbon text-sm font-medium tracking-wide hover:bg-gris/10 transition-colors disabled:opacity-50"
+                    className="px-6 py-2.5 border border-carbon/[0.08] text-carbon text-sm font-medium tracking-wide hover:bg-carbon/[0.04] transition-colors disabled:opacity-50"
                   >
                     {t.common.cancel}
                   </button>

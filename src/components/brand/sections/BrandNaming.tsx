@@ -39,13 +39,13 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
   };
 
   return (
-    <div className="bg-white border border-gray-100 p-6 space-y-5">
-      <h2 className="font-semibold text-gray-900">{t.brandPage.namingTitle}</h2>
+    <div className="bg-white border border-carbon/[0.06] p-6 space-y-5">
+      <h2 className="font-light text-carbon tracking-tight">{t.brandPage.namingTitle}</h2>
 
       {/* Brand Name */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.brandNameLabel}</label>
+          <label className="block text-xs font-medium text-carbon/40 mb-1.5">{t.brandPage.brandNameLabel}</label>
           <input
             type="text"
             value={name}
@@ -54,11 +54,11 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
               onUpdate({ brand_name: e.target.value });
             }}
             placeholder={t.brandPage.brandNamePlaceholder}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.taglineLabel}</label>
+          <label className="block text-xs font-medium text-carbon/40 mb-1.5">{t.brandPage.taglineLabel}</label>
           <input
             type="text"
             value={tag}
@@ -67,14 +67,14 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
               onUpdate({ tagline: e.target.value });
             }}
             placeholder={t.brandPage.taglinePlaceholder}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
         </div>
       </div>
 
       {/* Naming brainstorm */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 mb-2">{t.brandPage.nameOptions}</label>
+        <label className="block text-xs font-medium text-carbon/40 mb-2">{t.brandPage.nameOptions}</label>
         <div className="flex gap-2 mb-3">
           <input
             type="text"
@@ -82,11 +82,11 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addOption()}
             placeholder={t.brandPage.addNameIdea}
-            className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="flex-1 px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
           <button
             onClick={addOption}
-            className="px-3 py-2 rounded-lg bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors"
+            className="px-3 py-2 rounded-lg bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.06] transition-colors"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -98,19 +98,19 @@ export function BrandNaming({ namingOptions, brandName, tagline, onUpdate }: Pro
                 key={i}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm ${
                   name === opt.name
-                    ? 'bg-teal-50 border-teal-300 text-teal-700'
-                    : 'bg-gray-50 border-gray-200 text-gray-700'
+                    ? 'bg-carbon/[0.04] border-carbon/[0.12] text-carbon/70'
+                    : 'bg-carbon/[0.03] border-carbon/[0.08] text-carbon/70'
                 }`}
               >
                 <button onClick={() => selectAsName(opt)} title={t.brandPage.selectAsBrandName}>
                   {name === opt.name ? (
-                    <Star className="h-3.5 w-3.5 text-teal-500 fill-teal-500" />
+                    <Star className="h-3.5 w-3.5 text-carbon/40 fill-carbon/40" />
                   ) : (
-                    <StarOff className="h-3.5 w-3.5 text-gray-300" />
+                    <StarOff className="h-3.5 w-3.5 text-carbon/20" />
                   )}
                 </button>
                 <span>{opt.name}</span>
-                <button onClick={() => removeOption(i)} className="text-gray-300 hover:text-red-400">
+                <button onClick={() => removeOption(i)} className="text-carbon/20 hover:text-red-400">
                   <X className="h-3 w-3" />
                 </button>
               </div>

@@ -23,41 +23,41 @@ export function TargetAudienceSection({ audience, onUpdate }: Props) {
   };
 
   return (
-    <div className="bg-white border border-gray-100 p-6 space-y-4">
+    <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
       <div className="flex items-center gap-2">
-        <Users className="h-4 w-4 text-teal-500" />
-        <h2 className="font-semibold text-gray-900">{t.brandPage.audienceTitle}</h2>
+        <Users className="h-4 w-4 text-carbon/40" />
+        <h2 className="font-light text-carbon tracking-tight">{t.brandPage.audienceTitle}</h2>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.demographicsLabel}</label>
+          <label className="block text-xs font-medium text-carbon/40 mb-1.5">{t.brandPage.demographicsLabel}</label>
           <textarea
             value={a.demographics}
             onChange={(e) => update({ demographics: e.target.value })}
             rows={2}
             placeholder={t.brandPage.demographicsPlaceholder}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.psychographicsLabel}</label>
+          <label className="block text-xs font-medium text-carbon/40 mb-1.5">{t.brandPage.psychographicsLabel}</label>
           <textarea
             value={a.psychographics}
             onChange={(e) => update({ psychographics: e.target.value })}
             rows={2}
             placeholder={t.brandPage.psychographicsPlaceholder}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.lifestyleLabel}</label>
+          <label className="block text-xs font-medium text-carbon/40 mb-1.5">{t.brandPage.lifestyleLabel}</label>
           <textarea
             value={a.lifestyle}
             onChange={(e) => update({ lifestyle: e.target.value })}
             rows={2}
             placeholder={t.brandPage.lifestylePlaceholder}
-            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm resize-none focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
         </div>
       </div>

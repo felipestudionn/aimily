@@ -15,15 +15,15 @@ export function PackagingSection({ notes, onUpdate }: Props) {
   const [text, setText] = useState(notes || '');
 
   return (
-    <div className="bg-white border border-gray-100 p-6 space-y-4">
+    <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
       <div className="flex items-center gap-2">
-        <Package className="h-4 w-4 text-teal-500" />
-        <h2 className="font-semibold text-gray-900">{t.brandPage.packagingTitle}</h2>
+        <Package className="h-4 w-4 text-carbon/40" />
+        <h2 className="font-light text-carbon tracking-tight">{t.brandPage.packagingTitle}</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <label className="block text-xs font-medium text-gray-500 mb-1.5">{t.brandPage.packagingNotesLabel}</label>
+          <label className="block text-xs font-medium text-carbon/40 mb-1.5">{t.brandPage.packagingNotesLabel}</label>
           <textarea
             value={text}
             onChange={(e) => {
@@ -32,15 +32,15 @@ export function PackagingSection({ notes, onUpdate }: Props) {
             }}
             rows={5}
             placeholder={t.brandPage.packagingPlaceholder}
-            className="w-full px-4 py-3 border border-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            className="w-full px-4 py-3 border border-carbon/[0.08] text-sm leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
         </div>
       </div>
 
-      <div className="rounded-xl border-2 border-dashed border-gray-200 p-6 text-center">
-        <Package className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-        <p className="text-sm text-gray-500">{t.brandPage.packagingUploadsComing}</p>
-        <p className="text-xs text-gray-400 mt-1">{t.brandPage.uploadMockups}</p>
+      <div className="rounded-xl border-2 border-dashed border-carbon/[0.1] p-6 text-center">
+        <Package className="h-8 w-8 mx-auto text-carbon/20 mb-2" />
+        <p className="text-sm text-carbon/40">{t.brandPage.packagingUploadsComing}</p>
+        <p className="text-xs text-carbon/30 mt-1">{t.brandPage.uploadMockups}</p>
       </div>
     </div>
   );

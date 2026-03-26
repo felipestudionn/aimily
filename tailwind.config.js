@@ -20,12 +20,14 @@ module.exports = {
         sans: ["'Helvetica Neue'", "'Helvetica'", "'Arial'", "sans-serif"],
       },
       colors: {
-        /* Alfred palette */
+        /* Aimily palette */
         crema: "#F5F1E8",
         carbon: "#282A29",
         texto: "#191919",
         gris: "#D8D8D8",
         error: "#A0463C",
+        success: "#2d6a4f",
+        warning: "#c77000",
         /* shadcn/ui semantic tokens */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

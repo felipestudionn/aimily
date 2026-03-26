@@ -33,7 +33,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
       <div className={`fixed top-0 left-0 right-0 z-50 transition-colors ${
         isDark
           ? 'bg-transparent'
-          : 'bg-white/80 backdrop-blur-sm border-b border-black/[0.04]'
+          : 'bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.04]'
       }`}>
         <div className="flex h-14 items-center justify-between px-5">
           <Link href="/my-collections" className="flex items-center">

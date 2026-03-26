@@ -118,7 +118,7 @@ export function SizeRunEditor({
       <div className="flex items-center justify-between text-[10px] text-carbon/30">
         <span>Total: {total} units</span>
         {buyUnits > 0 && total !== buyUnits && (
-          <span className="text-[#c77000]">Plan: {buyUnits} units</span>
+          <span className="text-warning">Plan: {buyUnits} units</span>
         )}
       </div>
     </div>
@@ -137,7 +137,7 @@ export function StarRating({ value, onChange }: { value: number | null; onChange
         >
           <Star
             className={`h-4 w-4 ${
-              value && star <= value ? 'fill-[#c77000] text-[#c77000]' : 'text-carbon/15'
+              value && star <= value ? 'fill-warning text-warning' : 'text-carbon/15'
             }`}
           />
         </button>
@@ -151,14 +151,14 @@ export function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; text: string }> = {
     pending: { bg: 'bg-carbon/[0.06]', text: 'text-carbon/40' },
     draft: { bg: 'bg-carbon/[0.06]', text: 'text-carbon/40' },
-    review: { bg: 'bg-[#c77000]/10', text: 'text-[#c77000]' },
-    issues_found: { bg: 'bg-[#c77000]/10', text: 'text-[#c77000]' },
-    issues: { bg: 'bg-[#c77000]/10', text: 'text-[#c77000]' },
-    approved: { bg: 'bg-[#2d6a4f]/10', text: 'text-[#2d6a4f]' },
+    review: { bg: 'bg-warning/10', text: 'text-warning' },
+    issues_found: { bg: 'bg-warning/10', text: 'text-warning' },
+    issues: { bg: 'bg-warning/10', text: 'text-warning' },
+    approved: { bg: 'bg-success/10', text: 'text-success' },
     rejected: { bg: 'bg-carbon/10', text: 'text-carbon/50' },
     proposed: { bg: 'bg-carbon/[0.06]', text: 'text-carbon/40' },
-    sampled: { bg: 'bg-[#c77000]/10', text: 'text-[#c77000]' },
-    production: { bg: 'bg-[#2d6a4f]/10', text: 'text-[#2d6a4f]' },
+    sampled: { bg: 'bg-warning/10', text: 'text-warning' },
+    production: { bg: 'bg-success/10', text: 'text-success' },
   };
   const c = config[status] || config.pending;
   return (
@@ -172,9 +172,9 @@ export function StatusBadge({ status }: { status: string }) {
 export function SeverityBadge({ severity }: { severity: string }) {
   const config: Record<string, string> = {
     low: 'bg-carbon/[0.06] text-carbon/40',
-    medium: 'bg-[#c77000]/10 text-[#c77000]',
-    high: 'bg-[#A0463C]/10 text-[#A0463C]',
-    critical: 'bg-[#A0463C]/20 text-[#A0463C]',
+    medium: 'bg-warning/10 text-warning',
+    high: 'bg-error/10 text-error',
+    critical: 'bg-error/20 text-error',
   };
   return (
     <span className={`px-2 py-0.5 text-[8px] font-semibold tracking-[0.05em] uppercase rounded ${config[severity] || config.low}`}>

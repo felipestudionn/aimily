@@ -166,7 +166,7 @@ function BlockCard({
   return (
     <Link
       href={getCtaRoute()}
-      className="group relative bg-white p-4 sm:p-6 md:p-10 lg:p-12 hover:shadow-lg transition-all duration-300 overflow-hidden border border-carbon/[0.06] flex flex-col min-h-[180px] sm:min-h-[280px] md:min-h-[420px]"
+      className="group relative bg-white p-5 sm:p-6 md:p-8 hover:shadow-md transition-all duration-300 overflow-hidden border border-carbon/[0.06] shadow-sm flex flex-col"
     >
       {/* Progress bar top */}
       <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
@@ -176,46 +176,23 @@ function BlockCard({
         />
       </div>
 
-      {/* Title + circular progress */}
-      <div className="flex items-start justify-between mb-2">
-        <h3 className="text-xl sm:text-2xl md:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
+      {/* Title + progress indicator */}
+      <div className="flex items-start justify-between mb-1 mt-1">
+        <h3 className="text-lg sm:text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
           {t.overview[block.titleKey as keyof typeof t.overview]} <span className="italic">{t.overview[block.titleItalicKey as keyof typeof t.overview]}</span>
         </h3>
-
-        {/* Circular progress */}
-        <div className="relative flex-shrink-0 w-10 h-10 sm:w-14 sm:h-14">
-          <svg className="w-10 h-10 sm:w-14 sm:h-14 -rotate-90" viewBox="0 0 56 56">
-            <circle
-              cx="28" cy="28" r="24"
-              fill="none"
-              stroke="currentColor"
-              className="text-carbon/[0.06]"
-              strokeWidth="2.5"
-            />
-            <circle
-              cx="28" cy="28" r="24"
-              fill="none"
-              stroke="currentColor"
-              className="text-carbon transition-all duration-700"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 24}`}
-              strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
-            />
-          </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs text-carbon/50">
-            {progress}%
-          </span>
-        </div>
+        <span className="text-xs font-medium text-carbon/30 flex-shrink-0 ml-3 mt-1">
+          {progress}%
+        </span>
       </div>
 
       {/* Subtitle */}
-      <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-carbon/50 mb-8">
+      <p className="text-[11px] font-medium tracking-[0.12em] uppercase text-carbon/40 mb-6">
         {t.overview[block.subtitleKey as keyof typeof t.overview]}
       </p>
 
       {/* Internal steps */}
-      <div className="pt-6 border-t border-carbon/[0.06] space-y-4 flex-1">
+      <div className="pt-5 border-t border-carbon/[0.06] space-y-3 flex-1">
         {block.steps.map((step) => {
           const Icon = step.icon;
           return (
@@ -223,7 +200,7 @@ function BlockCard({
               <div className="w-7 h-7 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
                 <Icon className="h-3.5 w-3.5 text-carbon/40" />
               </div>
-              <p className="text-sm text-carbon/70 truncate">
+              <p className="text-sm text-carbon/60 truncate">
                 {t.overview[step.nameKey as keyof typeof t.overview]}
               </p>
             </div>
@@ -231,11 +208,11 @@ function BlockCard({
         })}
       </div>
 
-      {/* CTA bar */}
-      <div className={`relative mt-auto pt-8`}>
-        <div className={`flex items-center justify-center gap-3 py-3.5 px-6 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors overflow-hidden ${
+      {/* CTA — inline, centered */}
+      <div className="mt-6 flex justify-center">
+        <div className={`relative inline-flex items-center justify-center gap-2 py-2.5 px-8 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors overflow-hidden ${
           isComplete
-            ? 'bg-carbon/[0.06] text-carbon/40'
+            ? 'bg-carbon/[0.05] text-carbon/35'
             : 'bg-carbon text-crema group-hover:bg-carbon/90'
         }`}>
           {getCtaLabel()}
@@ -329,7 +306,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
         {/* View Content */}
         {view === 'blocks' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-5">
             {BLOCK_DEFS.map((block) => (
               <BlockCard
                 key={block.phase}

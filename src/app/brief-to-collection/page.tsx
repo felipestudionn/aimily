@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
+import { Navbar } from '@/components/layout/navbar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
@@ -322,10 +323,14 @@ export default function BriefToCollectionPage() {
   return (
     <SubscriptionGate>
       <div className="min-h-screen bg-carbon text-crema">
-        {/* ── Top bar ── */}
-        <div className="fixed top-0 left-0 right-0 z-50 px-6 md:px-10 py-4 flex items-center justify-between">
-          <Link href="/my-collections" className="text-crema/40 hover:text-crema transition-colors">
-            <ArrowLeft className="h-4 w-4" />
+        {/* ── Navbar — workspace-dark keeps app identity ── */}
+        <Navbar variant="workspace-dark" />
+
+        {/* ── Sub-bar: back link + step indicators ── */}
+        <div className="fixed top-14 left-0 right-0 z-40 px-6 md:px-10 py-3 flex items-center justify-between">
+          <Link href="/my-collections" className="flex items-center gap-2 text-crema/30 hover:text-crema/60 transition-colors text-[11px] font-medium tracking-[0.1em] uppercase">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{bt.backToCollections || 'Collections'}</span>
           </Link>
 
           {/* Step indicators */}
@@ -336,7 +341,7 @@ export default function BriefToCollectionPage() {
               const isDone = i < step;
               return (
                 <div key={s.id} className="flex items-center gap-2">
-                  {i > 0 && <div className={`w-8 h-px ${isDone ? 'bg-crema/30' : 'bg-crema/[0.06]'}`} />}
+                  {i > 0 && <div className={`w-6 sm:w-8 h-px ${isDone ? 'bg-crema/30' : 'bg-crema/[0.06]'}`} />}
                   <div className={`w-7 h-7 flex items-center justify-center transition-all ${
                     isActive ? 'bg-crema text-carbon' : isDone ? 'bg-crema/15 text-crema/60' : 'bg-crema/[0.04] text-crema/20'
                   }`}>
@@ -347,11 +352,11 @@ export default function BriefToCollectionPage() {
             })}
           </div>
 
-          <div className="w-4" /> {/* spacer */}
+          <div className="w-16 sm:w-20" /> {/* balance spacer */}
         </div>
 
         {/* ── Content ── */}
-        <div className="min-h-screen flex items-center justify-center px-6 py-20">
+        <div className="min-h-screen flex items-center justify-center px-6 py-28">
           <div className="w-full max-w-3xl">
 
             {/* ════ STEP 0: Brief Input ════ */}
