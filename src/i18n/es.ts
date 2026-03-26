@@ -2515,7 +2515,7 @@ export const es: Dictionary = {
     errorCreate: 'No se pudo crear la colección. Inténtalo de nuevo.',
     tellYourIdea: 'Cuéntame tu visión',
     tellYourIdeaDesc: 'Describe tu visión y Aimily construirá tu colección',
-    modeDesc: 'Describe tu idea y Aimily construye una propuesta completa de colección para que la refines.',,
+    modeDesc: 'Describe tu idea y Aimily construye una propuesta completa de colección para que la refines.',
     backToCollections: 'Collections',
   },
 };
