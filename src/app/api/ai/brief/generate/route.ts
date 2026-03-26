@@ -1,8 +1,8 @@
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
-import { generateJSON } from '@/lib/ai/llm-client';
+import { generateJSON, generateText, extractJSON } from '@/lib/ai/llm-client';
 import { buildGeneratePrompt } from '@/lib/ai/brief-prompts';
 
 export async function POST(req: NextRequest) {
@@ -23,17 +23,40 @@ export async function POST(req: NextRequest) {
       understood, answers || {}, scenario, marketResearch || '', language
     );
 
-    const { data } = await generateJSON({
-      system,
-      user: userPrompt,
-      temperature: 0.8,
-      maxTokens: 8192,
-      language,
-    });
+    // Try generateJSON first, fall back to generateText + manual extraction
+    let data;
+    try {
+      const result = await generateJSON({
+        system,
+        user: userPrompt,
+        temperature: 0.7,
+        maxTokens: 16384,
+        language,
+      });
+      data = result.data;
+    } catch (jsonErr) {
+      console.error('[Brief/Generate] generateJSON failed, trying text fallback:', jsonErr instanceof Error ? jsonErr.message : jsonErr);
+      const textResult = await generateText({
+        system,
+        user: userPrompt,
+        temperature: 0.7,
+        maxTokens: 16384,
+        language,
+      });
+      console.log('[Brief/Generate] Raw text (first 500):', textResult.text.slice(0, 500));
+      try {
+        data = extractJSON(textResult.text);
+      } catch {
+        return NextResponse.json({
+          error: `AI returned non-JSON. First 200 chars: ${textResult.text.slice(0, 200)}`,
+        }, { status: 500 });
+      }
+    }
 
     return NextResponse.json({ result: data });
   } catch (err) {
-    console.error('[Brief/Generate]', err);
-    return NextResponse.json({ error: 'Failed to generate collection' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[Brief/Generate]', msg);
+    return NextResponse.json({ error: `Failed to generate collection: ${msg}` }, { status: 500 });
   }
 }
