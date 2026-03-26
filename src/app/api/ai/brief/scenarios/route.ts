@@ -3,6 +3,8 @@ import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/a
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildScenariosPrompt, buildResearchQueries } from '@/lib/ai/brief-prompts';
 
+export const maxDuration = 60;
+
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 
 async function searchPerplexity(query: string): Promise<string> {
@@ -41,12 +43,12 @@ export async function POST(req: NextRequest) {
   try {
     const { understood, answers, researchTopics, language = 'en' } = await req.json();
 
-    if (!understood || !answers) {
-      return NextResponse.json({ error: 'Missing understood or answers' }, { status: 400 });
+    if (!understood) {
+      return NextResponse.json({ error: 'Missing understood data' }, { status: 400 });
     }
 
-    // Step 1: Build research queries
-    const queries = buildResearchQueries(understood, answers, researchTopics || []);
+    // Step 1: Build research queries (max 2 for speed)
+    const queries = buildResearchQueries(understood, answers || {}, researchTopics || []).slice(0, 2);
 
     // Step 2: Run Perplexity searches in parallel
     const researchResults = await Promise.all(queries.map(q => searchPerplexity(q)));
@@ -68,7 +70,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ result: data });
   } catch (err) {
-    console.error('[Brief/Scenarios]', err);
-    return NextResponse.json({ error: 'Failed to generate scenarios' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[Brief/Scenarios]', msg, err);
+    return NextResponse.json({ error: `Failed to generate scenarios: ${msg}` }, { status: 500 });
   }
 }
