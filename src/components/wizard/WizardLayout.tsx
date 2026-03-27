@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { WizardSidebar } from '@/components/wizard/WizardSidebar';
+import { Navbar } from '@/components/layout/navbar';
 import { TimelineProvider } from '@/contexts/TimelineContext';
 import type { TimelineMilestone } from '@/types/timeline';
 
@@ -32,6 +33,14 @@ export function WizardLayout({
 
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
+      {/* ── Persistent top navbar ── */}
+      <Navbar
+        variant="workspace"
+        collectionName={collectionName}
+        collectionId={collectionId}
+      />
+
+      {/* ── Sidebar below navbar ── */}
       <WizardSidebar
         collectionId={collectionId}
         collectionName={collectionName}
@@ -44,16 +53,16 @@ export function WizardLayout({
         onCollapsedChange={setSidebarCollapsed}
       />
 
-      {/* Mobile hamburger button */}
+      {/* Mobile hamburger button — below navbar */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-30 w-10 h-10 bg-carbon text-crema flex items-center justify-center shadow-lg"
+        className="md:hidden fixed top-[72px] left-4 z-30 w-10 h-10 bg-carbon text-crema flex items-center justify-center shadow-lg"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      <main className={`ml-0 min-h-screen transition-all duration-300 ${
+      <main className={`ml-0 pt-16 min-h-screen transition-all duration-300 ${
         sidebarCollapsed ? 'md:ml-[52px]' : 'md:ml-[200px]'
       }`}>
         {children}

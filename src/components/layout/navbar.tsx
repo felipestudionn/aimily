@@ -10,11 +10,13 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface NavbarProps {
-  /** Slim mode for workspace context — logo in corner, minimal actions */
   variant?: 'default' | 'workspace' | 'workspace-dark';
+  /** For workspace variant: show breadcrumb back + collection name */
+  collectionName?: string;
+  collectionId?: string;
 }
 
-export function Navbar({ variant = 'default' }: NavbarProps) {
+export function Navbar({ variant = 'default', collectionName, collectionId }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -26,7 +28,7 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
     setShowAuthModal(true);
   };
 
-  // Slim workspace navbar — just logo + user avatar
+  // Workspace navbar — persistent header for collection context
   if (variant === 'workspace' || variant === 'workspace-dark') {
     const isDark = variant === 'workspace-dark';
     return (
@@ -36,19 +38,37 @@ export function Navbar({ variant = 'default' }: NavbarProps) {
           : 'bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03]'
       }`}>
         <div className="flex h-16 items-center justify-between px-6 md:px-10">
-          <Link href="/my-collections" className="flex items-center">
-            <Image
-              src={isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png'}
-              alt="aimily"
-              width={774}
-              height={96}
-              className={`object-contain h-6 w-auto transition-opacity ${
-                isDark ? 'opacity-60 hover:opacity-90' : 'opacity-50 hover:opacity-80'
-              }`}
-              priority
-              unoptimized
-            />
-          </Link>
+          {/* Left: logo + breadcrumb */}
+          <div className="flex items-center gap-4">
+            <Link href="/my-collections" className="flex items-center">
+              <Image
+                src={isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png'}
+                alt="aimily"
+                width={774}
+                height={96}
+                className={`object-contain h-8 w-auto transition-opacity ${
+                  isDark ? 'opacity-60 hover:opacity-90' : 'opacity-70 hover:opacity-100'
+                }`}
+                priority
+                unoptimized
+              />
+            </Link>
+            {collectionName && (
+              <>
+                <span className={`text-[11px] ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>/</span>
+                <Link
+                  href={`/collection/${collectionId}`}
+                  className={`text-[11px] font-medium tracking-[0.05em] truncate max-w-[200px] transition-colors ${
+                    isDark ? 'text-crema/50 hover:text-crema/80' : 'text-carbon/40 hover:text-carbon/70'
+                  }`}
+                >
+                  {collectionName}
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Right: notifications + avatar */}
           <div className="flex items-center gap-3">
             <NotificationBell />
             {user && (

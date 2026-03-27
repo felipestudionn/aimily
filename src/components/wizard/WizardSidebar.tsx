@@ -15,7 +15,6 @@ import {
   Grid3X3,
   Megaphone,
   Presentation,
-  FolderOpen,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -145,38 +144,20 @@ export function WizardSidebar({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-[width,transform] duration-200 ease-out flex flex-col ${
+        className={`fixed left-0 top-16 bottom-0 bg-carbon z-40 transition-[width,transform] duration-200 ease-out flex flex-col ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
-        {/* ── Logo ── */}
-        <div className="shrink-0 flex items-center justify-center overflow-hidden" style={{ height: collapsed ? 120 : 56 }}>
-          <Link href="/my-collections" className="flex items-center justify-center hover:opacity-70 transition-opacity">
-            {collapsed ? (
-              /* Logo rotated -90° (reads bottom-to-top) */
-              <img
-                src="/images/aimily-logo-white.png"
-                alt="aimily"
-                className="h-5 w-auto -rotate-90"
-              />
-            ) : (
-              <div className="flex items-center gap-3 px-5 w-full">
-                <img src="/images/aimily-logo-white.png" alt="aimily" className="h-5 w-auto" />
-                {saving && <Loader2 className="h-2.5 w-2.5 text-white/30 animate-spin ml-auto" />}
-              </div>
-            )}
-          </Link>
+        {/* ── Mobile close button ── */}
+        <button onClick={onMobileClose} className="md:hidden absolute right-2 top-3 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white z-10" aria-label="Close">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
 
-          <button onClick={onMobileClose} className="md:hidden absolute right-2 top-4 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white" aria-label="Close">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-
-        {/* ── Collection header (expanded only) ── */}
+        {/* ── Collection info (expanded only) ── */}
         {!collapsed && (
-          <div className="px-5 pb-4 shrink-0">
+          <div className="px-5 py-4 shrink-0">
             <h2 className="text-[11px] font-medium text-white/80 tracking-tight leading-tight truncate">
               {displayName}
             </h2>
@@ -189,6 +170,7 @@ export function WizardSidebar({
                   {weeksLeft > 0 && <>{weeksLeft}w </>}{daysLeft}d
                 </span>
               )}
+              {saving && <Loader2 className="h-2.5 w-2.5 text-white/30 animate-spin ml-auto" />}
             </div>
           </div>
         )}
@@ -339,19 +321,6 @@ export function WizardSidebar({
               );
             })}
           </div>
-        </div>
-
-        {/* ── My Collections link ── */}
-        <div className="shrink-0">
-          <div className="mx-3 border-t border-white/[0.06]" />
-          <Link
-            href="/my-collections"
-            className={`relative flex items-center ${collapsed ? 'justify-center h-10' : 'gap-3 px-5 py-2.5'} transition-all text-[11px] tracking-wide text-white/30 hover:text-white/55`}
-            title={collapsed ? 'My Collections' : undefined}
-          >
-            <FolderOpen className={`${collapsed ? 'h-[17px] w-[17px]' : 'h-[15px] w-[15px]'} shrink-0`} />
-            {!collapsed && <span className="font-medium tracking-[0.04em] uppercase">Collections</span>}
-          </Link>
         </div>
 
         {/* ── Pin toggle (expanded only) ── */}
