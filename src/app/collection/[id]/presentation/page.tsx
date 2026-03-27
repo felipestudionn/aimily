@@ -766,65 +766,51 @@ export default async function PresentationPage({ params }: PageProps) {
 
 
         {/* ═══════════════════════════════════════════
-            SLIDE 8 — PRODUCT GRID
+            SLIDE 8+ — PRODUCT GRID (paginated, 10 per slide)
             ═══════════════════════════════════════════ */}
-        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
-          <div className="w-full">
-            <p className="text-[10px] tracking-[0.3em] uppercase mb-8" style={{ color: '#9c7c4c' }}>
-              Product Portfolio
-            </p>
-
-            {skus.length > 0 ? (
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {skus.slice(0, 20).map((sku) => (
-                  <div key={sku.id} className="border border-crema/[0.06] p-3 group hover:border-crema/[0.12] transition-colors">
-                    {/* Sketch image or placeholder */}
-                    {sku.sketch_url ? (
-                      <div className="aspect-square bg-crema/[0.03] mb-3 overflow-hidden">
-                        <img
-                          src={sku.sketch_url}
-                          alt={sku.name}
-                          className="w-full h-full object-cover opacity-80"
-                        />
-                      </div>
-                    ) : (
-                      <div className="aspect-square bg-crema/[0.03] mb-3 flex items-center justify-center">
-                        <div className="w-8 h-8 border border-crema/[0.08] rounded-full flex items-center justify-center">
-                          <span className="text-[8px] text-crema/20 uppercase">{(sku.family || '?')[0]}</span>
+        {skus.length > 0 ? (
+          (() => {
+            const perPage = 10;
+            const pages = Math.ceil(Math.min(skus.length, 40) / perPage);
+            return Array.from({ length: pages }, (_, pageIdx) => {
+              const pageSkus = skus.slice(pageIdx * perPage, (pageIdx + 1) * perPage);
+              return (
+                <section key={`products-${pageIdx}`} className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+                  <div className="w-full">
+                    <p className="text-[10px] tracking-[0.3em] uppercase mb-8" style={{ color: '#9c7c4c' }}>
+                      Product Portfolio{pages > 1 ? ` (${pageIdx + 1}/${pages})` : ''}
+                    </p>
+                    <div className="grid grid-cols-5 gap-3">
+                      {pageSkus.map((sku) => (
+                        <div key={sku.id} className="border border-crema/[0.06] p-3">
+                          {sku.sketch_url ? (
+                            <div className="aspect-square bg-crema/[0.03] mb-2 overflow-hidden">
+                              <img src={sku.sketch_url} alt={sku.name} className="w-full h-full object-cover opacity-80" />
+                            </div>
+                          ) : (
+                            <div className="aspect-square bg-crema/[0.03] mb-2 flex items-center justify-center">
+                              <span className="text-[10px] text-crema/15 uppercase">{(sku.family || '?')[0]}</span>
+                            </div>
+                          )}
+                          <p className="text-[11px] font-light text-crema truncate">{sku.name}</p>
+                          <p className="text-[9px] text-crema/30 truncate">{sku.family}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[11px] font-light text-crema/60">{sku.pvp > 0 ? currency(sku.pvp) : '\u2014'}</span>
+                            <span className="text-[8px] tracking-[0.1em] uppercase text-crema/30">{sku.type || 'REV'}</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                    {/* Name */}
-                    <p className="text-[11px] font-light text-crema truncate">{sku.name}</p>
-                    {/* Family */}
-                    <p className="text-[9px] text-crema/30 truncate">{sku.family}</p>
-                    {/* Price & type */}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-[11px] font-light text-crema/60">{sku.pvp > 0 ? currency(sku.pvp) : '\u2014'}</span>
-                      <span
-                        className="text-[8px] tracking-[0.1em] uppercase px-1.5 py-0.5"
-                        style={{
-                          color: sku.type === 'IMAGEN' ? '#c4a66a' : sku.type === 'ENTRY' ? '#7B9E8E' : '#8E8B82',
-                          backgroundColor: sku.type === 'IMAGEN' ? 'rgba(196,166,106,0.1)' : sku.type === 'ENTRY' ? 'rgba(123,158,142,0.1)' : 'rgba(142,139,130,0.1)',
-                        }}
-                      >
-                        {sku.type || 'REV'}
-                      </span>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xl font-light text-crema/30 italic">No products created yet</p>
-            )}
-
-            {skus.length > 20 && (
-              <p className="text-[10px] tracking-[0.15em] uppercase text-crema/25 mt-6 text-center">
-                + {skus.length - 20} more products
-              </p>
-            )}
-          </div>
-        </section>
+                </section>
+              );
+            });
+          })()
+        ) : (
+          <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+            <p className="text-xl font-light text-crema/30 italic">No products created yet</p>
+          </section>
+        )}
 
 
         {/* ═══════════════════════════════════════════
