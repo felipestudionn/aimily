@@ -2,23 +2,90 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LogOut, Zap, User, FolderOpen } from "lucide-react";
-import { useState } from "react";
+import { LogOut, Zap, User, FolderOpen, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/i18n";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
-interface NavbarProps {
-  variant?: 'default' | 'workspace' | 'workspace-dark';
-  /** For workspace variant: show breadcrumb back + collection name */
-  collectionName?: string;
-  collectionId?: string;
-  /** Sidebar width offset — navbar shifts right to make room */
-  sidebarWidth?: number;
+/* ── Inline editable collection name ── */
+function CollectionNameBreadcrumb({ name, collectionId, isDark, onRename }: {
+  name: string; collectionId: string; isDark: boolean; onRename?: (n: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(name);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setValue(name); }, [name]);
+  useEffect(() => { if (editing) inputRef.current?.select(); }, [editing]);
+
+  const save = async () => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === name) { setValue(name); setEditing(false); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/collections/${collectionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (res.ok) {
+        onRename?.(trimmed);
+        setEditing(false);
+      } else {
+        setValue(name);
+        setEditing(false);
+      }
+    } catch {
+      setValue(name);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <span className={`text-[11px] ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>/</span>
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={save}
+          onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setValue(name); setEditing(false); } }}
+          disabled={saving}
+          className={`text-[11px] font-medium tracking-[0.05em] max-w-[200px] bg-transparent border-b outline-none transition-colors ${
+            isDark ? 'text-crema/70 border-crema/20' : 'text-carbon/60 border-carbon/20'
+          }`}
+        />
+      ) : (
+        <button
+          onClick={() => setEditing(true)}
+          className={`text-[11px] font-medium tracking-[0.05em] truncate max-w-[200px] transition-colors cursor-text ${
+            isDark ? 'text-crema/50 hover:text-crema/80' : 'text-carbon/40 hover:text-carbon/70'
+          }`}
+          title="Click to rename"
+        >
+          {name}
+        </button>
+      )}
+    </>
+  );
 }
 
-export function Navbar({ variant = 'default', collectionName, collectionId, sidebarWidth = 0 }: NavbarProps) {
+interface NavbarProps {
+  variant?: 'default' | 'workspace' | 'workspace-dark';
+  collectionName?: string;
+  collectionId?: string;
+  sidebarWidth?: number;
+  /** Callback when collection name is renamed */
+  onCollectionRename?: (newName: string) => void;
+}
+
+export function Navbar({ variant = 'default', collectionName, collectionId, sidebarWidth = 0, onCollectionRename }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -59,17 +126,12 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
               />
             </Link>
             {collectionName && (
-              <>
-                <span className={`text-[11px] ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>/</span>
-                <Link
-                  href={`/collection/${collectionId}`}
-                  className={`text-[11px] font-medium tracking-[0.05em] truncate max-w-[200px] transition-colors ${
-                    isDark ? 'text-crema/50 hover:text-crema/80' : 'text-carbon/40 hover:text-carbon/70'
-                  }`}
-                >
-                  {collectionName}
-                </Link>
-              </>
+              <CollectionNameBreadcrumb
+                name={collectionName}
+                collectionId={collectionId || ''}
+                isDark={isDark}
+                onRename={onCollectionRename}
+              />
             )}
           </div>
 

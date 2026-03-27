@@ -5,6 +5,52 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 const BUCKET = 'collection-assets';
 
 /**
+ * PATCH /api/collections/[id] — Rename collection
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: collection } = await supabaseAdmin
+      .from('collection_plans')
+      .select('id, user_id')
+      .eq('id', id)
+      .single();
+
+    if (!collection || collection.user_id !== user.id) {
+      return NextResponse.json({ error: 'Not found or forbidden' }, { status: 404 });
+    }
+
+    const body = await req.json();
+    const name = body.name?.trim();
+    if (!name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('collection_plans')
+      .update({ name, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    return NextResponse.json({ success: true, name });
+  } catch (error) {
+    console.error('Error renaming collection:', error);
+    return NextResponse.json({ error: 'Failed to rename' }, { status: 500 });
+  }
+}
+
+/**
  * DELETE /api/collections/[id]
  *
  * Enterprise-grade collection deletion:

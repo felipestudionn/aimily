@@ -30,21 +30,23 @@ export function WizardLayout({
 }: WizardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [displayName, setDisplayName] = useState(collectionName);
 
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
       {/* ── Persistent top navbar — shifts right for sidebar ── */}
       <Navbar
         variant="workspace"
-        collectionName={collectionName}
+        collectionName={displayName}
         collectionId={collectionId}
         sidebarWidth={sidebarCollapsed ? 52 : 200}
+        onCollectionRename={setDisplayName}
       />
 
       {/* ── Sidebar below navbar ── */}
       <WizardSidebar
         collectionId={collectionId}
-        collectionName={collectionName}
+        collectionName={displayName}
         season={season}
         launchDate={launchDate}
         skuCount={skuCount}
