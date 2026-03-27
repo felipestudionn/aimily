@@ -75,22 +75,12 @@ export default function InlineTimeline({ collectionId, collectionName, season, l
   }
 
   return (
-    <div className="px-8 md:px-12 lg:px-16 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
-          Vista calendario
-        </p>
-        <h2 className="text-2xl font-light text-carbon tracking-tight">
-          Collection <span className="italic">Timeline</span>
-        </h2>
-      </div>
-
-      {/* Full interactive Gantt — scroll trapped inside */}
+    <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-2">
+      {/* Full interactive Gantt — maximized screen space */}
       <div
         ref={containerRef}
         className="bg-white border border-carbon/[0.06] overflow-hidden"
-        style={{ height: 'calc(100vh - 320px)' }}
+        style={{ height: 'calc(100vh - 200px)' }}
       >
         <GanttChart
           timeline={timeline}
