@@ -156,18 +156,7 @@ export function WizardSidebar({
         </button>
 
         {/* ── Top spacer aligned with navbar height ── */}
-        <div className="shrink-0 h-16 flex items-center justify-center">
-          <Link href="/my-collections" className="flex items-center justify-center hover:opacity-70 transition-opacity">
-            {collapsed ? (
-              <img src="/images/aimily-logo-white.png" alt="aimily" className="h-4 w-auto opacity-40" />
-            ) : (
-              <div className="flex items-center gap-3 px-5 w-full">
-                <img src="/images/aimily-logo-white.png" alt="aimily" className="h-5 w-auto opacity-50" />
-                {saving && <Loader2 className="h-2.5 w-2.5 text-white/30 animate-spin ml-auto" />}
-              </div>
-            )}
-          </Link>
-        </div>
+        <div className="shrink-0 h-16" />
 
         {/* ── Collection info (expanded only) ── */}
         {!collapsed && (
