@@ -1233,7 +1233,17 @@ interface SavedBrand {
   brand_data: Record<string, unknown>;
 }
 
-type BrandDNAOption = 'my-brand' | 'manual' | 'trend-driven' | null;
+type BrandDNAOption = 'existing' | 'new' | null;
+type ExistingBrandMethod = 'extract' | 'manual';
+type NewBrandMethod = 'free' | 'assisted' | 'ai';
+
+interface BrandProposal {
+  brandName: string;
+  colors: string[];
+  tone: string;
+  typography: string;
+  style: string;
+}
 
 function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
@@ -1244,9 +1254,13 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
   const [loadingBrands, setLoadingBrands] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
+
   const hasResult = (data.extracted as boolean) || (data.generated as boolean);
-  const isTrendDriven = data.trendDriven as boolean;
   const selectedOption = (data._brandOption as BrandDNAOption) || null;
+  const existingMethod = (data._existingMethod as ExistingBrandMethod) || 'extract';
+  const newMethod = (data._newMethod as NewBrandMethod) || 'free';
+  const brandProposals = (data._brandProposals as BrandProposal[]) || [];
+  const selectedProposalIdx = data._selectedProposal as number | null;
 
   // Fetch saved brands on mount
   useEffect(() => {
@@ -1256,10 +1270,6 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
       .catch(() => setSavedBrands([]))
       .finally(() => setLoadingBrands(false));
   }, []);
-
-  const selectOption = (opt: BrandDNAOption) => {
-    onChange({ ...data, _brandOption: opt, trendDriven: opt === 'trend-driven' });
-  };
 
   const handleSaveBrand = async () => {
     setSaving(true);
@@ -1275,7 +1285,7 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
           style: (data.style as string) || '',
           instagram: (data.instagram as string) || '',
           website: (data.website as string) || '',
-          is_trend_driven: isTrendDriven || false,
+          is_trend_driven: false,
           brand_data: data,
         }),
       });
@@ -1299,9 +1309,10 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
       style: brand.style || '',
       instagram: brand.instagram || '',
       website: brand.website || '',
-      trendDriven: brand.is_trend_driven || false,
+      trendDriven: false,
       extracted: true,
-      _brandOption: brand.is_trend_driven ? 'trend-driven' : 'my-brand',
+      _brandOption: 'existing',
+      _existingMethod: 'extract',
     });
   };
 
@@ -1310,40 +1321,389 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
     setSavedBrands(prev => prev.filter(b => b.id !== id));
   };
 
-  // Trend-driven confirmation view
-  if (isTrendDriven) {
+  const goBackToLevel1 = () => {
+    onChange({ ...data, _brandOption: null, _existingMethod: 'extract', _newMethod: 'free', extracted: false, generated: false, _brandProposals: [], _selectedProposal: null });
+  };
+
+  // ── EXISTING BRAND: Extract with AI ──
+  const handleExtract = async () => {
+    setGenerating(true);
+    setError(null);
+    const { result, error: err } = await generateCreative('brand-extract', {
+      instagram: (data.instagram as string) || '',
+      website: (data.website as string) || '',
+    }, language);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
+    onChange({ ...data, extracted: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '' });
+    setGenerating(false);
+  };
+
+  // ── NEW BRAND: Assisted — extract reference + generate inspired brand ──
+  const handleAssisted = async () => {
+    setGenerating(true);
+    setError(null);
+    const { result, error: err } = await generateCreative('brand-assisted', {
+      website: (data.website as string) || '',
+      instagram: (data.instagram as string) || '',
+      brief: (data._brief as string) || '',
+      brandName: (data.brandName as string) || '',
+      ...collectionContext,
+    }, language);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
+    onChange({ ...data, generated: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '' });
+    setGenerating(false);
+  };
+
+  // ── NEW BRAND: AI Proposals — generate 3 brand proposals ──
+  const handleGenerateProposals = async () => {
+    setGenerating(true);
+    setError(null);
+    const { result, error: err } = await generateCreative('brand-proposals', {
+      brief: (data._brief as string) || '',
+      ...collectionContext,
+    }, language);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { proposals: BrandProposal[] };
+    onChange({ ...data, _brandProposals: parsed.proposals || [], _selectedProposal: null });
+    setGenerating(false);
+  };
+
+  const selectProposal = (idx: number) => {
+    const p = brandProposals[idx];
+    onChange({
+      ...data,
+      _selectedProposal: idx,
+      generated: true,
+      brandName: p.brandName,
+      colors: p.colors,
+      tone: p.tone,
+      typography: p.typography,
+      style: p.style,
+    });
+  };
+
+  // ── Save + Back buttons (shared) ──
+  const renderSaveBar = () => (
+    <div className="flex items-center gap-3">
+      <button
+        onClick={goBackToLevel1}
+        className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
+      >
+        {`\u2190 ${t.creative.changeOption || 'Change option'}`}
+      </button>
+      <button
+        onClick={handleSaveBrand}
+        disabled={saving}
+        className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
+      >
+        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+        {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
+      </button>
+    </div>
+  );
+
+  // ══════════════════════════════════════════════
+  // RESULT VIEW — shown after extraction/generation/manual fill for both flows
+  // ══════════════════════════════════════════════
+  if (hasResult) {
     return (
       <div className="space-y-5">
-        <div className="bg-carbon/[0.03] border border-carbon/[0.06] p-6 text-center space-y-3">
-          <div className="w-12 h-12 mx-auto bg-carbon/[0.06] flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-carbon/40" />
-          </div>
-          <p className="text-sm font-medium text-carbon">{t.creative.trendDrivenTitle || 'Trend-Driven Brand'}</p>
-          <p className="text-xs text-carbon/50 max-w-md mx-auto leading-relaxed">
-            {t.creative.trendDrivenDesc || 'Your brand identity will adapt to each season\'s trends. aimily will use market data and trend research — not a fixed brand guideline — to shape your collection.'}
-          </p>
-        </div>
-        {/* Save to My Brands */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => { onChange({ ...data, trendDriven: false, _brandOption: null }); }}
-            className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
-          >
-            ← {t.creative.changeOption || 'Change option'}
-          </button>
-          <button
-            onClick={handleSaveBrand}
-            disabled={saving}
-            className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
-          >
-            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-            {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
-          </button>
-        </div>
+        <BrandResultEditor data={data} onChange={onChange} />
+        {renderSaveBar()}
       </div>
     );
   }
 
+  // ══════════════════════════════════════════════
+  // EXISTING BRAND FLOW
+  // ══════════════════════════════════════════════
+  if (selectedOption === 'existing') {
+    return (
+      <div className="space-y-6">
+        {/* Back to Level 1 */}
+        <button onClick={goBackToLevel1} className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase">
+          {`\u2190 ${t.creative.backToSelection || 'Back'}`}
+        </button>
+
+        {/* Saved Brands */}
+        {!loadingBrands && savedBrands.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
+              {t.creative.savedBrands || 'Your saved brands'}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {savedBrands.map((brand) => (
+                <div key={brand.id} className="flex items-center gap-3 px-4 py-3 border border-carbon/[0.08] hover:border-carbon/20 transition-all group">
+                  <div className="flex gap-1">
+                    {(brand.colors || []).slice(0, 4).map((c, i) => {
+                      const hex = c.replace(/\s*\(.*\)/, '').trim();
+                      return <div key={i} className="w-5 h-5 border border-carbon/[0.08]" style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }} />;
+                    })}
+                    {(!brand.colors || brand.colors.length === 0) && <div className="w-5 h-5 bg-carbon/[0.06] border border-carbon/[0.08]" />}
+                  </div>
+                  <span className="text-xs font-medium text-carbon">{brand.brand_name}</span>
+                  <button onClick={() => handleUseBrand(brand)} className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors px-2 py-1 border border-carbon/[0.08] hover:border-carbon/20">
+                    {t.creative.useBrand || 'Use'}
+                  </button>
+                  <button onClick={() => handleDeleteBrand(brand.id)} className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Method toggle */}
+        <SegmentedPill
+          options={[
+            { id: 'extract' as ExistingBrandMethod, label: t.creative.extractWithAI || 'Extract with AI' },
+            { id: 'manual' as ExistingBrandMethod, label: t.creative.enterManually || 'Enter manually' },
+          ]}
+          value={existingMethod}
+          onChange={(v) => onChange({ ...data, _existingMethod: v })}
+          size="md"
+        />
+
+        {/* Extract with AI */}
+        {existingMethod === 'extract' && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.instagramLabel}</label>
+                <input
+                  type="text"
+                  value={(data.instagram as string) || ''}
+                  onChange={(e) => onChange({ ...data, instagram: e.target.value })}
+                  placeholder="@yourbrand"
+                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.websiteLabel}</label>
+                <input
+                  type="text"
+                  value={(data.website as string) || ''}
+                  onChange={(e) => onChange({ ...data, website: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleExtract}
+              disabled={generating || (!(data.instagram as string)?.trim() && !(data.website as string)?.trim())}
+              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {t.creative.extractBrandDNA}
+            </button>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+          </div>
+        )}
+
+        {/* Enter manually */}
+        {existingMethod === 'manual' && (
+          <div className="space-y-4">
+            <BrandResultEditor data={data} onChange={onChange} />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onChange({ ...data, extracted: true })}
+                disabled={!(data.brandName as string)?.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Check className="h-3.5 w-3.5" />
+                {t.creative.confirmBrand || 'Confirm Brand'}
+              </button>
+              <button
+                onClick={handleSaveBrand}
+                disabled={saving || !(data.brandName as string)?.trim()}
+                className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
+              >
+                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  // NEW BRAND FLOW
+  // ══════════════════════════════════════════════
+  if (selectedOption === 'new') {
+    return (
+      <div className="space-y-6">
+        {/* Back to Level 1 */}
+        <button onClick={goBackToLevel1} className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase">
+          {`\u2190 ${t.creative.backToSelection || 'Back'}`}
+        </button>
+
+        {/* Method toggle: Free / Assisted / AI Proposal */}
+        <SegmentedPill
+          options={[
+            { id: 'free' as NewBrandMethod, label: t.creative.freeMode || 'Free' },
+            { id: 'assisted' as NewBrandMethod, label: t.creative.assistedMode || 'Assisted' },
+            { id: 'ai' as NewBrandMethod, label: t.creative.aiProposalMode || 'AI Proposal' },
+          ]}
+          value={newMethod}
+          onChange={(v) => onChange({ ...data, _newMethod: v, _brandProposals: [], _selectedProposal: null })}
+          size="md"
+        />
+
+        {/* ── Free: empty BrandResultEditor ── */}
+        {newMethod === 'free' && (
+          <div className="space-y-4">
+            <BrandResultEditor data={data} onChange={onChange} />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onChange({ ...data, generated: true })}
+                disabled={!(data.brandName as string)?.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Check className="h-3.5 w-3.5" />
+                {t.creative.confirmBrand || 'Confirm Brand'}
+              </button>
+              <button
+                onClick={handleSaveBrand}
+                disabled={saving || !(data.brandName as string)?.trim()}
+                className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
+              >
+                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Assisted: reference brand + brief → AI generates inspired brand ── */}
+        {newMethod === 'assisted' && (
+          <div className="space-y-4">
+            <p className="text-xs text-carbon/50 leading-relaxed">
+              {t.creative.assistedBrandDesc || 'Provide a reference brand and a brief. aimily will extract the reference and generate a new brand inspired by it.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.referenceBrandIG || 'Reference Instagram'}</label>
+                <input
+                  type="text"
+                  value={(data.instagram as string) || ''}
+                  onChange={(e) => onChange({ ...data, instagram: e.target.value })}
+                  placeholder="@referencebrand"
+                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.referenceBrandURL || 'Reference Website'}</label>
+                <input
+                  type="text"
+                  value={(data.website as string) || ''}
+                  onChange={(e) => onChange({ ...data, website: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.yourBrandName || 'Your New Brand Name'}</label>
+              <input
+                type="text"
+                value={(data.brandName as string) || ''}
+                onChange={(e) => onChange({ ...data, brandName: e.target.value })}
+                placeholder={t.creative.brandNamePlaceholder || 'e.g. Maison Soleil'}
+                className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.briefLabel || 'Brief'}</label>
+              <textarea
+                value={(data._brief as string) || ''}
+                onChange={(e) => onChange({ ...data, _brief: e.target.value })}
+                placeholder={t.creative.briefPlaceholder || 'Describe the brand you want to create: target audience, positioning, values, aesthetic...'}
+                className="w-full h-24 px-3 py-2.5 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+              />
+            </div>
+            <button
+              onClick={handleAssisted}
+              disabled={generating || (!(data.instagram as string)?.trim() && !(data.website as string)?.trim())}
+              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {t.creative.generateBrand || 'Generate Brand'}
+            </button>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+          </div>
+        )}
+
+        {/* ── AI Proposal: generate 3 brand proposals ── */}
+        {newMethod === 'ai' && (
+          <div className="space-y-4">
+            <p className="text-xs text-carbon/50 leading-relaxed">
+              {t.creative.aiProposalBrandDesc || 'aimily will generate 3 brand proposals based on your collection context. Add an optional brief to guide the direction.'}
+            </p>
+            <div>
+              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/40 mb-1.5 block">
+                {t.creative.optionalBrief || 'Brief (optional)'}
+              </label>
+              <textarea
+                value={(data._brief as string) || ''}
+                onChange={(e) => onChange({ ...data, _brief: e.target.value })}
+                placeholder={t.creative.briefPlaceholder || 'Describe the brand you want to create: target audience, positioning, values, aesthetic...'}
+                className="w-full h-24 px-3 py-2.5 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+              />
+            </div>
+            <button
+              onClick={handleGenerateProposals}
+              disabled={generating}
+              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {t.creative.generateProposals || 'Generate Proposals'}
+            </button>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+
+            {/* Proposal cards */}
+            {brandProposals.length > 0 && selectedProposalIdx === null && (
+              <div className="space-y-3">
+                <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
+                  {t.creative.selectOneDirection || 'Select one direction'}
+                </p>
+                {brandProposals.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => selectProposal(i)}
+                    className="w-full text-left p-5 border border-carbon/[0.08] hover:border-carbon/30 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-carbon">{p.brandName}</span>
+                      <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">{t.creative.selectAction || 'Select'}</span>
+                    </div>
+                    {/* Color preview */}
+                    <div className="flex gap-1.5 mb-2">
+                      {(p.colors || []).slice(0, 6).map((c, ci) => {
+                        const hex = c.replace(/\s*\(.*\)/, '').trim();
+                        return <div key={ci} className="w-6 h-6 border border-carbon/[0.08]" style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }} />;
+                      })}
+                    </div>
+                    <div className="text-xs text-carbon/70 leading-relaxed line-clamp-2">{p.tone}</div>
+                    <div className="text-[11px] text-carbon/40 mt-1">{p.typography}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  // LEVEL 1 — "Do you already have a brand?"
+  // ══════════════════════════════════════════════
   return (
     <div className="space-y-6">
       {/* ── Saved Brands Section ── */}
@@ -1354,40 +1714,19 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
           </p>
           <div className="flex flex-wrap gap-3">
             {savedBrands.map((brand) => (
-              <div
-                key={brand.id}
-                className="flex items-center gap-3 px-4 py-3 border border-carbon/[0.08] hover:border-carbon/20 transition-all group"
-              >
-                {/* Color swatches */}
+              <div key={brand.id} className="flex items-center gap-3 px-4 py-3 border border-carbon/[0.08] hover:border-carbon/20 transition-all group">
                 <div className="flex gap-1">
                   {(brand.colors || []).slice(0, 4).map((c, i) => {
                     const hex = c.replace(/\s*\(.*\)/, '').trim();
-                    return (
-                      <div
-                        key={i}
-                        className="w-5 h-5 border border-carbon/[0.08]"
-                        style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }}
-                      />
-                    );
+                    return <div key={i} className="w-5 h-5 border border-carbon/[0.08]" style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }} />;
                   })}
-                  {(!brand.colors || brand.colors.length === 0) && (
-                    <div className="w-5 h-5 bg-carbon/[0.06] border border-carbon/[0.08]" />
-                  )}
+                  {(!brand.colors || brand.colors.length === 0) && <div className="w-5 h-5 bg-carbon/[0.06] border border-carbon/[0.08]" />}
                 </div>
                 <span className="text-xs font-medium text-carbon">{brand.brand_name}</span>
-                {brand.is_trend_driven && (
-                  <RefreshCw className="h-3 w-3 text-carbon/30" />
-                )}
-                <button
-                  onClick={() => handleUseBrand(brand)}
-                  className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors px-2 py-1 border border-carbon/[0.08] hover:border-carbon/20"
-                >
+                <button onClick={() => handleUseBrand(brand)} className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors px-2 py-1 border border-carbon/[0.08] hover:border-carbon/20">
                   {t.creative.useBrand || 'Use'}
                 </button>
-                <button
-                  onClick={() => handleDeleteBrand(brand.id)}
-                  className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
+                <button onClick={() => handleDeleteBrand(brand.id)} className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="h-3 w-3" />
                 </button>
               </div>
@@ -1396,145 +1735,37 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
         </div>
       )}
 
-      {/* ── 3 Option Cards ── */}
-      {!hasResult && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Option A: My Brand */}
+      {/* ── Two Cards: Existing vs New ── */}
+      <div>
+        <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-4">
+          {t.creative.doYouHaveBrand || 'Do you already have a brand?'}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Card A: I already have my brand */}
           <button
-            onClick={() => selectOption('my-brand')}
-            className={`text-left p-5 border transition-all hover:shadow-sm ${
-              selectedOption === 'my-brand'
-                ? 'border-carbon bg-carbon/[0.03]'
-                : 'border-carbon/[0.08] hover:border-carbon/20'
-            }`}
+            onClick={() => onChange({ ...data, _brandOption: 'existing', _existingMethod: 'extract' })}
+            className="text-left p-6 border border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm transition-all"
           >
-            <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center mb-3">
-              <Fingerprint className="h-4 w-4 text-carbon/50" />
+            <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center mb-3">
+              <Fingerprint className="h-5 w-5 text-carbon/50" />
             </div>
-            <p className="text-sm font-medium text-carbon mb-1">{t.creative.myBrand || 'My Brand'}</p>
-            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.extractIdentity || 'Extract identity from your brand or an inspiration'}</p>
+            <p className="text-sm font-medium text-carbon mb-1">{t.creative.iHaveMyBrand || 'I already have my brand'}</p>
+            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.iHaveMyBrandDesc || 'Extract your brand identity from your website or Instagram, or enter it manually.'}</p>
           </button>
 
-          {/* Option B: Manual */}
+          {/* Card B: Create a new brand */}
           <button
-            onClick={() => selectOption('manual')}
-            className={`text-left p-5 border transition-all hover:shadow-sm ${
-              selectedOption === 'manual'
-                ? 'border-carbon bg-carbon/[0.03]'
-                : 'border-carbon/[0.08] hover:border-carbon/20'
-            }`}
+            onClick={() => onChange({ ...data, _brandOption: 'new', _newMethod: 'free' })}
+            className="text-left p-6 border border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm transition-all"
           >
-            <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center mb-3">
-              <Pencil className="h-4 w-4 text-carbon/50" />
+            <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center mb-3">
+              <Sparkles className="h-5 w-5 text-carbon/50" />
             </div>
-            <p className="text-sm font-medium text-carbon mb-1">{t.creative.buildFromScratch || 'Build from scratch'}</p>
-            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.buildFromScratchDesc || 'Define every aspect of your brand identity manually'}</p>
-          </button>
-
-          {/* Option C: Trend-driven */}
-          <button
-            onClick={() => selectOption('trend-driven')}
-            className={`text-left p-5 border transition-all hover:shadow-sm ${
-              selectedOption === 'trend-driven'
-                ? 'border-carbon bg-carbon/[0.03]'
-                : 'border-carbon/[0.08] hover:border-carbon/20'
-            }`}
-          >
-            <div className="w-9 h-9 bg-carbon/[0.04] flex items-center justify-center mb-3">
-              <RefreshCw className="h-4 w-4 text-carbon/50" />
-            </div>
-            <p className="text-sm font-medium text-carbon mb-1">{t.creative.trendDrivenCard || 'Trend-driven'}</p>
-            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.trendDrivenCardDesc || 'Like Zara — no fixed identity, trends guide each collection'}</p>
+            <p className="text-sm font-medium text-carbon mb-1">{t.creative.createNewBrand || 'Create a new brand'}</p>
+            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.createNewBrandDesc || 'Build a brand from scratch — manually, with AI assistance, or let aimily propose one for you.'}</p>
           </button>
         </div>
-      )}
-
-      {/* ── My Brand: Extract from existing brand (website/IG) ── */}
-      {selectedOption === 'my-brand' && !hasResult && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.instagramLabel}</label>
-              <input
-                type="text"
-                value={(data.instagram as string) || ''}
-                onChange={(e) => onChange({ ...data, instagram: e.target.value })}
-                placeholder="@yourbrand"
-                className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.websiteLabel}</label>
-              <input
-                type="text"
-                value={(data.website as string) || ''}
-                onChange={(e) => onChange({ ...data, website: e.target.value })}
-                placeholder="https://..."
-                className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-              />
-            </div>
-          </div>
-          <button
-            onClick={async () => {
-              setGenerating(true);
-              setError(null);
-              const { result, error: err } = await generateCreative('brand-extract', {
-                instagram: (data.instagram as string) || '',
-                website: (data.website as string) || '',
-              }, language);
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
-              onChange({ ...data, extracted: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '' });
-              setGenerating(false);
-            }}
-            disabled={generating || (!(data.instagram as string)?.trim() && !(data.website as string)?.trim())}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {t.creative.extractBrandDNA}
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-        </div>
-      )}
-
-      {/* ── Manual: Build brand identity from scratch ── */}
-      {selectedOption === 'manual' && !hasResult && (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.brandName}</label>
-            <input
-              type="text"
-              value={(data.brandName as string) || ''}
-              onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-              placeholder={t.creative.brandNamePlaceholder}
-              className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ── Result Editor (shown after extract/manual fill) ── */}
-      {hasResult && (
-        <div className="space-y-4">
-          <BrandResultEditor data={data} onChange={onChange} />
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => { onChange({ ...data, extracted: false, generated: false, _brandOption: null }); }}
-              className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
-            >
-              ← {t.creative.changeOption || 'Change option'}
-            </button>
-            <button
-              onClick={handleSaveBrand}
-              disabled={saving}
-              className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
-            >
-              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-              {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

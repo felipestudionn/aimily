@@ -20,6 +20,8 @@ type GenerationType =
   | 'vibe-proposals'
   | 'brand-extract'
   | 'brand-generate'
+  | 'brand-assisted'
+  | 'brand-proposals'
   | 'trends-global'
   | 'trends-deep-dive'
   | 'trends-live-signals'
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
   // ══════════════════════════════════════════════════════════
   // BRAND EXTRACT: Perplexity Search + scraping → Claude analysis
   // ══════════════════════════════════════════════════════════
-  if (type === 'brand-extract') {
+  if (type === 'brand-extract' || type === 'brand-assisted') {
     let brandHint = '';
     if (input.website) {
       try {

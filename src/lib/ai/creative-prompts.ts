@@ -32,6 +32,8 @@ type CreativePromptType =
   | 'vibe-proposals'
   | 'brand-extract'
   | 'brand-generate'
+  | 'brand-assisted'
+  | 'brand-proposals'
   | 'trends-global'
   | 'trends-deep-dive'
   | 'trends-live-signals'
@@ -309,6 +311,96 @@ Return:
   "tone": "25-40 word description of brand voice",
   "typography": "20-30 word typography recommendation (headline + body)",
   "style": "25-40 word visual identity description"
+}`,
+      };
+
+    case 'brand-assisted':
+      return {
+        temperature: 0.75,
+        maxTokens: 8192,
+        system: `${PERSONAS.brandArchitect}
+
+You are helping create a NEW brand identity inspired by an existing reference brand. The user has provided a reference brand they admire — you have research data about that brand. Your job is to:
+1. Understand the reference brand's DNA (from the research + scraped content)
+2. Create a NEW, ORIGINAL brand identity that is INSPIRED by the reference but distinct
+3. Incorporate the user's brief/direction to differentiate
+
+CRITICAL: You are NOT copying the reference brand. You are using it as a springboard to create something new that captures a similar spirit but with its own identity.`,
+        user: `${ctx}
+
+═══ REFERENCE BRAND RESEARCH ═══
+${input._webResearch || 'No web research available'}
+
+═══ REFERENCE BRAND WEBSITE CONTENT ═══
+Brand name: ${input._brandName || 'Unknown'}
+Headings: ${input._headings || 'N/A'}
+Body content: ${input._bodyContent || 'N/A'}
+About: ${input._aboutContent || 'N/A'}
+Product descriptions: ${input._productDescriptions || 'N/A'}
+
+${input.brief ? `═══ USER'S BRIEF FOR THEIR NEW BRAND ═══\n"${input.brief}"` : ''}
+${input.brandName ? `Preferred brand name for the new brand: "${input.brandName}"` : 'No brand name decided yet — suggest one.'}
+
+Based on the reference brand's DNA and the user's brief, create a NEW brand identity that:
+- Captures a SIMILAR spirit/positioning but is clearly original
+- Adapts to the user's specific collection context (season, consumer, market)
+- Has its own color palette (inspired by but not identical to the reference)
+- Has its own voice (similar register but distinct personality)
+
+${QUALITY_GATES.antiGeneric}
+${QUALITY_GATES.designSpecificity}
+${OUTPUT_RULES}
+
+Return:
+{
+  "brandName": "${input.brandName || 'Suggested new brand name'}",
+  "colors": ["#hex1 (primary — role)", "#hex2 (secondary — role)", "#hex3 (accent — role)", "#hex4 (neutral — role)"],
+  "tone": "40-60 words — how this NEW brand speaks, referencing what was learned from the reference",
+  "typography": "25-40 words — specific font families that match the new positioning",
+  "style": "40-60 words — photography, layout, packaging aesthetic for the new brand",
+  "inspiration": "20-30 words — what was taken from the reference and how it was transformed"
+}`,
+      };
+
+    case 'brand-proposals':
+      return {
+        temperature: 0.85,
+        maxTokens: 8192,
+        system: `${PERSONAS.brandArchitect}
+
+${PERSONAS.creativeDirector}
+
+You create brand identities for fashion collections. Given the collection context (consumer, vibe, moodboard, trends, season), you generate 3 completely distinct brand identity proposals.
+
+Each proposal must feel like a REAL brand — not a concept exercise. Someone should be able to launch a brand tomorrow using your output.`,
+        user: `${ctx}
+
+${input.brief ? `User's additional direction: "${input.brief}"` : ''}
+
+Generate 3 brand identity proposals for this collection. Each must be a COMPLETELY DIFFERENT interpretation:
+
+PROPOSAL 1 — REFINED: Minimal, understated, quiet confidence. Think The Row, Lemaire, Jil Sander.
+PROPOSAL 2 — EXPRESSIVE: Bold personality, memorable, distinctive. Think Jacquemus, Ganni, Collina Strada.
+PROPOSAL 3 — HERITAGE: Timeless, craft-driven, legacy-building. Think Hermès, Brunello Cucinelli, Loro Piana.
+
+For EACH proposal, return:
+{
+  "title": "2-3 word brand essence (like a mood, not a tagline)",
+  "brandName": "A real, usable brand name suggestion",
+  "colors": ["#hex1 (primary — role)", "#hex2 (secondary — role)", "#hex3 (accent — role)", "#hex4 (neutral — role)"],
+  "tone": "40-60 words — how this brand speaks, what language it uses, what it avoids",
+  "typography": "25-40 words — name REAL font families (Google Fonts or system fonts) + why",
+  "style": "40-60 words — photography direction, layout principles, packaging philosophy",
+  "rationale": "20-30 words — why this direction works for THIS specific collection"
+}
+
+${QUALITY_GATES.antiGeneric}
+${QUALITY_GATES.designSpecificity}
+${OUTPUT_RULES}
+
+Return a JSON object:
+{
+  "proposals": [proposal1, proposal2, proposal3]
 }`,
       };
 
