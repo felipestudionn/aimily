@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Fetch pins from a specific Pinterest board
+ * Fetch ALL pins from a specific Pinterest board (handles pagination)
  */
 export async function GET(
   req: NextRequest,
@@ -18,61 +18,60 @@ export async function GET(
   }
 
   try {
-    
-    // Pinterest API v5 endpoint for board pins
-    const response = await fetch(
-      `https://api.pinterest.com/v5/boards/${boardId}/pins?page_size=50`,
-      {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      }
-    );
+    const allPins: unknown[] = [];
+    let bookmark: string | undefined;
+    let page = 0;
+    const maxPages = 10; // Safety limit
 
-    const responseText = await response.text();
+    do {
+      const url = new URL(`https://api.pinterest.com/v5/boards/${boardId}/pins`);
+      url.searchParams.set('page_size', '100');
+      if (bookmark) url.searchParams.set('bookmark', bookmark);
 
-    if (!response.ok) {
-      let errorData;
-      try {
-        errorData = JSON.parse(responseText);
-      } catch {
-        errorData = { message: responseText };
-      }
-      
-      if (response.status === 401) {
+      const response = await fetch(url.toString(), {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        let errorData;
+        try { errorData = JSON.parse(responseText); } catch { errorData = { message: responseText }; }
+
+        if (response.status === 401) {
+          return NextResponse.json(
+            { error: 'Pinterest session expired', code: 'TOKEN_EXPIRED' },
+            { status: 401 }
+          );
+        }
+
         return NextResponse.json(
-          { error: 'Pinterest session expired', code: 'TOKEN_EXPIRED' },
-          { status: 401 }
+          { error: 'Failed to fetch pins', code: 'API_ERROR', details: errorData },
+          { status: response.status }
         );
       }
-      
-      return NextResponse.json(
-        { error: 'Failed to fetch pins', code: 'API_ERROR', details: errorData },
-        { status: response.status }
-      );
-    }
 
-    const data = JSON.parse(responseText);
-    
-    // Transform pins to a simpler format with image URLs
-    const pins = (data.items || []).map((pin: any) => ({
-      id: pin.id,
-      title: pin.title || '',
-      description: pin.description || '',
-      link: pin.link || '',
-      // 600x keeps original aspect ratio at ~564px wide — fast to load
-      imageUrl: pin.media?.images?.['600x']?.url
-        || pin.media?.images?.['400x300']?.url
-        || pin.image_cover_url
-        || null,
-      dominantColor: pin.dominant_color || null,
-    })).filter((pin: any) => pin.imageUrl); // Only return pins with images
+      const data = await response.json();
 
-    
-    return NextResponse.json({ 
-      items: pins,
-      bookmark: data.bookmark // For pagination if needed
-    });
+      // Transform pins to simpler format
+      const pins = (data.items || []).map((pin: Record<string, unknown>) => {
+        const media = pin.media as Record<string, unknown> | undefined;
+        const images = media?.images as Record<string, { url?: string }> | undefined;
+        return {
+          id: pin.id,
+          title: (pin.title as string) || '',
+          description: (pin.description as string) || '',
+          link: (pin.link as string) || '',
+          imageUrl: images?.['600x']?.url || images?.['400x300']?.url || (pin.image_cover_url as string) || null,
+          dominantColor: (pin.dominant_color as string) || null,
+        };
+      }).filter((pin: Record<string, unknown>) => pin.imageUrl);
+
+      allPins.push(...pins);
+      bookmark = (data.bookmark as string) || undefined;
+      page++;
+    } while (bookmark && page < maxPages);
+
+    return NextResponse.json({ items: allPins });
   } catch (error) {
     console.error('Error fetching Pinterest pins:', error);
     return NextResponse.json(
