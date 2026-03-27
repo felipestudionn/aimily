@@ -426,19 +426,30 @@ export default async function PresentationPage({ params }: PageProps) {
             </p>
 
             {consumerProposals.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {consumerProposals.map((profile, i) => (
-                  <div key={i} className="border border-crema/[0.08] p-8 group">
-                    <div className="flex items-start gap-4 mb-4">
-                      <span className="text-[10px] tracking-[0.15em] uppercase font-medium px-2 py-0.5 border border-crema/10 text-crema/30">
-                        {String(i + 1).padStart(2, '0')}
-                      </span>
-                      <h3 className="text-lg font-light text-crema">{profile.title}</h3>
+              consumerProposals.length === 1 && consumerProposals[0].desc.length > 400 ? (
+                /* Single long profile — editorial layout */
+                <div className="max-w-3xl">
+                  <p className="text-xl md:text-2xl font-light text-crema leading-relaxed">
+                    {consumerProposals[0].desc.slice(0, 500).replace(/\s\S*$/, '')}...
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {consumerProposals.map((profile, i) => (
+                    <div key={i} className="border border-crema/[0.08] p-8 group">
+                      <div className="flex items-start gap-4 mb-4">
+                        <span className="text-[10px] tracking-[0.15em] uppercase font-medium px-2 py-0.5 border border-crema/10 text-crema/30">
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <h3 className="text-lg font-light text-crema">{profile.title}</h3>
+                      </div>
+                      <p className="text-sm font-light text-crema/50 leading-relaxed">
+                        {profile.desc.length > 300 ? profile.desc.slice(0, 300).replace(/\s\S*$/, '') + '...' : profile.desc}
+                      </p>
                     </div>
-                    <p className="text-sm font-light text-crema/50 leading-relaxed">{profile.desc}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )
             ) : (
               <p className="text-2xl font-light text-crema/30 italic">No consumer profiles defined yet</p>
             )}

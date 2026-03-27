@@ -2842,12 +2842,16 @@ export default function CreativeBrandPage() {
       const proposals = bd?.data?.proposals as Array<{ title: string; desc: string; status: string }> | undefined;
       const hasLikedOrPending = proposals?.some(p => p.status !== 'rejected');
       if (profile && !hasLikedOrPending) {
-        const collName = collectionContext.collectionName || 'Collection';
+        // Extract a meaningful title from the first sentence
+        const firstSentence = profile.split(/[.!?]/)[0]?.trim() || '';
+        const title = firstSentence.length > 60
+          ? 'Target Consumer'
+          : firstSentence || 'Target Consumer';
         updateBlockData(blockId, {
           confirmed: true,
           data: {
             ...bd?.data,
-            proposals: [{ title: collName + ' Consumer', desc: profile, status: 'liked' }],
+            proposals: [{ title, desc: profile, status: 'liked' }],
           },
         });
         handleCollapse();
