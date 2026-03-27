@@ -136,6 +136,8 @@ export default async function PresentationPage({ params }: PageProps) {
   const brandTypography = safe<string>(brandData.typography, '');
   const brandStyle = safe<string>(brandData.style, '');
 
+  const moodboardImages = safe<string[]>((blockData?.moodboard?.data as Record<string, unknown>)?.images as string[], []);
+
   // ── Merch workspace extraction ──
   const merchBlock = (merch?.blockData || {}) as Record<string, { confirmed?: boolean; data?: Record<string, unknown> }>;
   const channelsData = merchBlock?.channels?.data || {};
@@ -383,6 +385,36 @@ export default async function PresentationPage({ params }: PageProps) {
           </div>
         </section>
 
+        {/* ═══════════════════════════════════════════
+            SLIDE 2B — MOODBOARD
+            ═══════════════════════════════════════════ */}
+        {moodboardImages.length > 0 && (
+          <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+            <div className="w-full">
+              <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+                Moodboard
+              </p>
+
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                {moodboardImages.slice(0, 12).map((url, i) => (
+                  <div key={i} className="aspect-[3/4] overflow-hidden bg-crema/[0.03]">
+                    <img
+                      src={url}
+                      alt=""
+                      className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {moodboardImages.length > 12 && (
+                <p className="text-[10px] tracking-[0.15em] uppercase text-crema/25 mt-4 text-center">
+                  + {moodboardImages.length - 12} more images
+                </p>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ═══════════════════════════════════════════
             SLIDE 3 — THE CONSUMER
