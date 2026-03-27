@@ -31,8 +31,10 @@ import type { CollectionPlan } from '@/types/planner';
 import { computeWizardState } from '@/lib/wizard-phases';
 import InlineTimeline from './InlineTimeline';
 import { useTranslation } from '@/i18n';
+import { useRouter } from 'next/navigation';
+import { SegmentedPill } from '@/components/ui/segmented-pill';
 
-type ViewMode = 'blocks' | 'calendar';
+type ViewMode = 'blocks' | 'calendar' | 'presentation';
 
 /* ═══════════════════════════════════════════════════════════
    Block definitions — internal structure for each of the 4 blocks
@@ -232,6 +234,7 @@ function BlockCard({
 export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverviewProps) {
   const { id } = useParams();
   const collectionId = id as string;
+  const router = useRouter();
   const milestones = timeline?.milestones || [];
   const [view, setView] = useState<ViewMode>('blocks');
   const t = useTranslation();
@@ -252,56 +255,30 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     return acc;
   }, {} as Record<TimelinePhase, number>);
 
+  const handleViewChange = (newView: string) => {
+    if (newView === 'presentation') {
+      router.push(`/collection/${collectionId}/presentation`);
+    } else {
+      setView(newView as ViewMode);
+    }
+  };
+
   return (
     <div className="min-h-[80vh]">
-      <div className="px-4 sm:px-5 md:px-12 lg:px-16 pt-16 md:pt-12 pb-12">
-        {/* Header + View Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 pl-12 md:pl-0">
-          <div>
-            <p className="text-[10px] sm:text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
-              {t.overview.yourWorkspace}
-            </p>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-              {t.overview.teamBlocks} <span className="italic">{t.overview.teamBlocksItalic}</span>
-            </h2>
-          </div>
+      <div className="px-4 sm:px-5 md:px-12 lg:px-16 pt-8 md:pt-6 pb-12">
 
-          {/* Actions: View Toggle + Presentation + Export */}
-          <div className="flex items-center gap-2">
-            {/* Presentation */}
-            <Link
-              href={`/collection/${collectionId}/presentation`}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border border-carbon/[0.06] text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-all whitespace-nowrap"
-            >
-              <Presentation className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{(t.overview as Record<string, string>).presentation || 'Presentation'}</span>
-            </Link>
-
-            {/* View Toggle */}
-            <div className="flex border border-carbon/[0.06] overflow-x-auto">
-            {[
-              { id: 'blocks' as ViewMode, label: t.overview.blocks, icon: LayoutGrid },
-              { id: 'calendar' as ViewMode, label: t.overview.calendar, icon: CalendarDays },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              const isActive = view === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setView(tab.id)}
-                  className={`flex items-center gap-2 px-2.5 sm:px-4 md:px-5 py-2 sm:py-2.5 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all whitespace-nowrap ${
-                    isActive
-                      ? 'bg-carbon text-crema'
-                      : 'bg-white text-carbon/40 hover:text-carbon/60'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-          </div>
+        {/* ── View Slider — SegmentedPill ── */}
+        <div className="flex justify-center mb-10 sm:mb-12">
+          <SegmentedPill
+            options={[
+              { id: 'blocks', label: t.overview.blocks },
+              { id: 'calendar', label: t.overview.calendar },
+              { id: 'presentation', label: (t.overview as Record<string, string>).presentation || 'Presentation' },
+            ]}
+            value={view}
+            onChange={handleViewChange}
+            size="md"
+          />
         </div>
 
         {/* View Content */}
