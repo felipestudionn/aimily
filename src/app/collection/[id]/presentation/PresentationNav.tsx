@@ -2,10 +2,30 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, Download, Loader2 } from 'lucide-react';
 
 export function PresentationNav({ collectionId, totalSkus }: { collectionId: string; totalSkus: number }) {
   const [lang, setLang] = useState<'es' | 'en'>('es');
+  const [pptxLoading, setPptxLoading] = useState(false);
+
+  const downloadPptx = async () => {
+    setPptxLoading(true);
+    try {
+      const res = await fetch(`/api/collection-export-pptx?collectionId=${collectionId}`);
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Presentation.pptx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('PPTX export failed:', err);
+    } finally {
+      setPptxLoading(false);
+    }
+  };
 
   return (
     <div className="no-print fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3 bg-carbon/95 backdrop-blur-sm border-b border-white/[0.06]">
@@ -51,10 +71,17 @@ export function PresentationNav({ collectionId, totalSkus }: { collectionId: str
         </button>
 
         <button
+          onClick={downloadPptx}
+          disabled={pptxLoading}
+          className="px-4 py-1.5 text-[10px] tracking-[0.15em] uppercase font-medium text-crema/60 hover:text-crema transition-colors border border-crema/10 disabled:opacity-40"
+        >
+          {pptxLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'PPTX'}
+        </button>
+        <button
           onClick={() => window.print()}
           className="px-4 py-1.5 text-[10px] tracking-[0.15em] uppercase font-medium bg-crema/10 text-crema/80 hover:bg-crema/20 hover:text-crema transition-colors border border-crema/10"
         >
-          Download PDF
+          PDF
         </button>
       </div>
     </div>
