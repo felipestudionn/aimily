@@ -225,10 +225,13 @@ export default async function PresentationPage({ params }: PageProps) {
       {/* ── Print & screen styles ── */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          /* Hide ALL chrome: sidebar, navbar, mobile buttons */
           body { background: #282A29 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-          .slide { page-break-after: always; page-break-inside: avoid; min-height: 100vh; }
+          aside, nav, .no-print, [class*="fixed top-0"], [class*="fixed left-0"], button[aria-label="Open menu"] { display: none !important; }
+          main { margin-left: 0 !important; padding-top: 0 !important; }
+          .slide { page-break-after: always; page-break-inside: avoid; min-height: 100vh; width: 100vw; }
           .slide:last-child { page-break-after: auto; }
-          .no-print { display: none !important; }
+          .slide-container { height: auto !important; overflow: visible !important; }
           @page { margin: 0; size: landscape; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }

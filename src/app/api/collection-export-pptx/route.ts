@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
 
   const consumerData = blockData?.consumer?.data || {};
   const consumerProposals = (safe<Array<{ title: string; desc: string; status: string }>>(consumerData.proposals, []))
-    .filter(p => p.status === 'liked');
+    .filter(p => p.status !== 'rejected');
 
   const brandData = blockData?.['brand-dna']?.data || {};
   const brandName = safe<string>(brandData.brandName, '');
@@ -316,7 +316,9 @@ export async function GET(req: NextRequest) {
   s8.addShape(pptx.ShapeType.rect, { x: 0, y: 7.49, w: '100%', h: 0.01, fill: { color: GOLD } });
 
   // ── Generate buffer ──
-  const buffer = await pptx.write({ outputType: 'nodebuffer' }) as Buffer;
+  // Use base64 output for maximum compatibility (edge + node)
+  const base64 = await pptx.write({ outputType: 'base64' }) as string;
+  const buffer = Buffer.from(base64, 'base64');
 
   const filename = `${(plan.name || 'Collection').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_')}_Presentation.pptx`;
 
