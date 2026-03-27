@@ -144,20 +144,34 @@ export function WizardSidebar({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-        className={`fixed left-0 top-16 bottom-0 bg-carbon z-40 transition-[width,transform] duration-200 ease-out flex flex-col ${
+        className={`fixed left-0 top-0 bottom-0 bg-carbon z-50 transition-[width,transform] duration-200 ease-out flex flex-col ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
         {/* ── Mobile close button ── */}
-        <button onClick={onMobileClose} className="md:hidden absolute right-2 top-3 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white z-10" aria-label="Close">
+        <button onClick={onMobileClose} className="md:hidden absolute right-2 top-5 w-6 h-6 flex items-center justify-center text-white/60 hover:text-white z-10" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
 
+        {/* ── Top spacer aligned with navbar height ── */}
+        <div className="shrink-0 h-16 flex items-center justify-center">
+          <Link href="/my-collections" className="flex items-center justify-center hover:opacity-70 transition-opacity">
+            {collapsed ? (
+              <img src="/images/aimily-logo-white.png" alt="aimily" className="h-4 w-auto opacity-40" />
+            ) : (
+              <div className="flex items-center gap-3 px-5 w-full">
+                <img src="/images/aimily-logo-white.png" alt="aimily" className="h-5 w-auto opacity-50" />
+                {saving && <Loader2 className="h-2.5 w-2.5 text-white/30 animate-spin ml-auto" />}
+              </div>
+            )}
+          </Link>
+        </div>
+
         {/* ── Collection info (expanded only) ── */}
         {!collapsed && (
-          <div className="px-5 py-4 shrink-0">
+          <div className="px-5 pb-4 shrink-0">
             <h2 className="text-[11px] font-medium text-white/80 tracking-tight leading-tight truncate">
               {displayName}
             </h2>
@@ -170,7 +184,6 @@ export function WizardSidebar({
                   {weeksLeft > 0 && <>{weeksLeft}w </>}{daysLeft}d
                 </span>
               )}
-              {saving && <Loader2 className="h-2.5 w-2.5 text-white/30 animate-spin ml-auto" />}
             </div>
           </div>
         )}

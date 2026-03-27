@@ -33,11 +33,12 @@ export function WizardLayout({
 
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
-      {/* ── Persistent top navbar ── */}
+      {/* ── Persistent top navbar — shifts right for sidebar ── */}
       <Navbar
         variant="workspace"
         collectionName={collectionName}
         collectionId={collectionId}
+        sidebarWidth={sidebarCollapsed ? 52 : 200}
       />
 
       {/* ── Sidebar below navbar ── */}

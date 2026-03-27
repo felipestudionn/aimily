@@ -14,9 +14,11 @@ interface NavbarProps {
   /** For workspace variant: show breadcrumb back + collection name */
   collectionName?: string;
   collectionId?: string;
+  /** Sidebar width offset — navbar shifts right to make room */
+  sidebarWidth?: number;
 }
 
-export function Navbar({ variant = 'default', collectionName, collectionId }: NavbarProps) {
+export function Navbar({ variant = 'default', collectionName, collectionId, sidebarWidth = 0 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -28,15 +30,18 @@ export function Navbar({ variant = 'default', collectionName, collectionId }: Na
     setShowAuthModal(true);
   };
 
-  // Workspace navbar — persistent header for collection context
+  // Workspace navbar — persistent header, shifts right for sidebar
   if (variant === 'workspace' || variant === 'workspace-dark') {
     const isDark = variant === 'workspace-dark';
     return (
-      <div className={`fixed top-0 left-0 right-0 z-50 transition-colors ${
-        isDark
-          ? 'bg-transparent'
-          : 'bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03]'
-      }`}>
+      <div
+        className={`fixed top-0 right-0 z-50 transition-all duration-200 ${
+          isDark
+            ? 'bg-transparent'
+            : 'bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03]'
+        }`}
+        style={{ left: sidebarWidth }}
+      >
         <div className="flex h-16 items-center justify-between px-6 md:px-10">
           {/* Left: logo + breadcrumb */}
           <div className="flex items-center gap-4">
