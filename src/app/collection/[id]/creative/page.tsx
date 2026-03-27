@@ -2835,9 +2835,28 @@ export default function CreativeBrandPage() {
   }, []);
 
   const handleConfirm = useCallback((blockId: string) => {
+    // For consumer block: if profile text exists but no proposals, convert it
+    if (blockId === 'consumer') {
+      const bd = blockData[blockId];
+      const profile = bd?.data?.profile as string;
+      const proposals = bd?.data?.proposals as Array<{ title: string; desc: string; status: string }> | undefined;
+      const hasLikedOrPending = proposals?.some(p => p.status !== 'rejected');
+      if (profile && !hasLikedOrPending) {
+        const collName = collectionContext.collectionName || 'Collection';
+        updateBlockData(blockId, {
+          confirmed: true,
+          data: {
+            ...bd?.data,
+            proposals: [{ title: collName + ' Consumer', desc: profile, status: 'liked' }],
+          },
+        });
+        handleCollapse();
+        return;
+      }
+    }
     updateBlockData(blockId, { confirmed: true });
     handleCollapse();
-  }, [updateBlockData, handleCollapse]);
+  }, [updateBlockData, handleCollapse, blockData, collectionContext]);
 
   // Hide mode pills for blocks with their own flow (moodboard, brand-dna, all research blocks)
   const researchBlocks = ['global-trends', 'deep-dive', 'live-signals', 'competitors'];
