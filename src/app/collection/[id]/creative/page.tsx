@@ -2345,7 +2345,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
       {hasVibe && (
         <div className="bg-carbon text-crema p-8 sm:p-12 lg:p-16">
           <div className="text-[10px] font-medium tracking-[0.3em] uppercase text-crema/40 mb-4">
-            {collectionContext.collectionName} · {collectionContext.season}
+            {collectionContext.collectionName}
           </div>
           {vibeTitle && (
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-[1.1] mb-6">
@@ -2679,7 +2679,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
             </div>
 
             <div className="text-[10px] font-medium tracking-[0.4em] uppercase text-crema/30 mb-4" style={{ animation: 'fadeIn 0.6s ease-out 0.8s both' }}>
-              {collectionContext.collectionName} · {collectionContext.season}
+              {collectionContext.collectionName}
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
