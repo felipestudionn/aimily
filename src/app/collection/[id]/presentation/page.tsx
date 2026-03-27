@@ -127,7 +127,7 @@ export default async function PresentationPage({ params }: PageProps) {
 
   const consumerData = blockData?.consumer?.data || {};
   const consumerProposals = (safe<Array<{ title: string; desc: string; status: string }>>(consumerData.proposals, []))
-    .filter(p => p.status === 'liked');
+    .filter(p => p.status !== 'rejected');
 
   const brandData = blockData?.['brand-dna']?.data || {};
   const brandName = safe<string>(brandData.brandName, '');

@@ -2098,7 +2098,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
   const consumerData = blockData.consumer?.data || {};
   const consumerProposals = ((consumerData.proposals as Array<{ title: string; desc: string; status: string }>) || [])
-    .filter(p => p.status === 'liked');
+    .filter(p => p.status !== 'rejected');
 
   const moodboardImages = (blockData.moodboard?.data?.images as string[]) || [];
 
