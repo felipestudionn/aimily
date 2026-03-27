@@ -29,6 +29,12 @@ function pct(n: number | undefined | null): string {
   return `${Math.round(n * (n < 1 ? 100 : 1))}%`;
 }
 
+/** Extract hex color from strings like "#1A1A1A (PRIMARIO — description)" */
+function extractHex(color: string): string {
+  const match = color.match(/#[0-9A-Fa-f]{3,8}/);
+  return match ? match[0] : color.startsWith('#') ? color.split(/[\s(]/)[0] : `#${color.split(/[\s(]/)[0]}`;
+}
+
 function formatDate(d: string | null | undefined): string {
   if (!d) return '\u2014';
   try {
@@ -338,58 +344,69 @@ export default async function PresentationPage({ params }: PageProps) {
 
             {/* Color palette */}
             {brandColors.length > 0 && (
-              <div className="mt-14">
+              <div className="mt-12">
                 <p className="text-[10px] tracking-[0.3em] uppercase text-crema/30 mb-5">Color Palette</p>
-                <div className="flex gap-4">
-                  {brandColors.map((color, i) => (
-                    <div key={i} className="flex flex-col items-center gap-2">
-                      <div
-                        className="w-12 h-12 rounded-full border border-white/10"
-                        style={{ backgroundColor: color.startsWith('#') ? color : `#${color}` }}
-                      />
-                      <span className="text-[9px] tracking-[0.1em] uppercase text-crema/30">
-                        {color.startsWith('#') ? color : `#${color}`}
-                      </span>
-                    </div>
-                  ))}
+                <div className="flex gap-6">
+                  {brandColors.map((color, i) => {
+                    const hex = extractHex(color);
+                    return (
+                      <div key={i} className="flex flex-col items-center gap-2">
+                        <div
+                          className="w-14 h-14 rounded-full border border-white/10"
+                          style={{ backgroundColor: hex }}
+                        />
+                        <span className="text-[9px] tracking-[0.1em] uppercase text-crema/30">
+                          {hex}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
-
-            {/* Brand info subtle footer */}
-            {(brandName || brandTone) && (
-              <div className="mt-14 pt-6 border-t border-crema/[0.06] flex gap-12">
-                {brandName && (
-                  <div>
-                    <p className="text-[9px] tracking-[0.2em] uppercase text-crema/20 mb-1">Brand</p>
-                    <p className="text-sm font-light text-crema/50">{brandName}</p>
-                  </div>
-                )}
-                {brandTone && (
-                  <div>
-                    <p className="text-[9px] tracking-[0.2em] uppercase text-crema/20 mb-1">Tone</p>
-                    <p className="text-sm font-light text-crema/50">{brandTone}</p>
-                  </div>
-                )}
-                {brandTypography && (
-                  <div>
-                    <p className="text-[9px] tracking-[0.2em] uppercase text-crema/20 mb-1">Typography</p>
-                    <p className="text-sm font-light text-crema/50">{brandTypography}</p>
-                  </div>
-                )}
-                {brandStyle && (
-                  <div>
-                    <p className="text-[9px] tracking-[0.2em] uppercase text-crema/20 mb-1">Style</p>
-                    <p className="text-sm font-light text-crema/50">{brandStyle}</p>
-                  </div>
-                )}
               </div>
             )}
           </div>
         </section>
 
         {/* ═══════════════════════════════════════════
-            SLIDE 2B — MOODBOARD
+            SLIDE 2B — BRAND IDENTITY
+            ═══════════════════════════════════════════ */}
+        {(brandName || brandTone || brandTypography || brandStyle) && (
+          <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+            <div className="max-w-5xl">
+              <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+                Brand Identity
+              </p>
+
+              {brandName && (
+                <h3 className="text-3xl md:text-4xl font-light text-crema mb-10">{brandName}</h3>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                {brandTone && (
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-crema/25 mb-3">Voice & Tone</p>
+                    <p className="text-sm font-light text-crema/60 leading-relaxed">{brandTone}</p>
+                  </div>
+                )}
+                {brandTypography && (
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-crema/25 mb-3">Typography</p>
+                    <p className="text-sm font-light text-crema/60 leading-relaxed">{brandTypography}</p>
+                  </div>
+                )}
+                {brandStyle && (
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-crema/25 mb-3">Visual Style</p>
+                    <p className="text-sm font-light text-crema/60 leading-relaxed">{brandStyle}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════
+            SLIDE 2C — MOODBOARD
             ═══════════════════════════════════════════ */}
         {moodboardImages.length > 0 && (
           <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
