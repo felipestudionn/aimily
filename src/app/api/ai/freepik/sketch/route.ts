@@ -28,11 +28,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'description or concept is required' }, { status: 400 });
     }
 
-    // Build specialized flat sketch prompt (same as Fal.ai version)
+    // Build specialized flat sketch prompt — view depends on product category
+    const isFootwear = productType === 'CALZADO' || /shoe|sneaker|boot|sandal|footwear|calzado/i.test(family || '');
+
+    const viewInstruction = isFootwear
+      ? 'Side profile view, shoe pointing left, horizontal baseline as if resting on a flat surface. Show lateral side with all panels, seams, sole unit, and construction details visible. Single shoe, not a pair.'
+      : 'Front view only, no perspective, no shadows, no color, no human body';
+
     const promptParts = [
       'Technical fashion flat sketch, black line drawing on pure white background',
       'Clean technical illustration for a tech pack / spec sheet',
-      'Front view only, no perspective, no shadows, no color, no human body',
+      viewInstruction,
       'Precise construction details: seams, stitching, panels, closures, pockets, topstitching',
       'Proportions accurate for pattern-making, factory-ready level of detail',
       'Think like a patternmaker, not an illustrator',
