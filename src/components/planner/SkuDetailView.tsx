@@ -144,7 +144,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   return (
     <div
-      className={`fixed inset-0 z-[70] bg-crema flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
+      className={`fixed inset-0 z-[80] bg-[#F5F1E8] flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
     >
       {/* ── Top bar ── */}
       <div className="shrink-0 border-b border-carbon/[0.06]">
