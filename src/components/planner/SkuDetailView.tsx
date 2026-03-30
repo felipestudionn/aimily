@@ -144,7 +144,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   return (
     <div
-      className={`fixed inset-0 z-[60] bg-crema flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
+      className={`fixed inset-0 z-[70] bg-crema flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
     >
       {/* ── Top bar ── */}
       <div className="shrink-0 border-b border-carbon/[0.06]">
@@ -206,8 +206,8 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         </div>
       </div>
 
-      {/* ── Content — fit viewport, no scroll ── */}
-      <div className="flex-1 min-h-0 px-3.5 sm:px-10 lg:px-16 py-3 sm:py-6 overflow-hidden">
+      {/* ── Content — scrollable ── */}
+      <div className="flex-1 min-h-0 px-3.5 sm:px-10 lg:px-16 py-3 sm:py-6 overflow-y-auto">
         <div className="max-w-5xl mx-auto h-full">
           {activePhase === 'range_plan' && (
             <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
