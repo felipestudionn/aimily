@@ -47,6 +47,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
   // AI state
   const [generating, setGenerating] = useState(false);
+  const [sketchTopView, setSketchTopView] = useState<string | null>(null);
   const [generatingSketchFor, setGeneratingSketchFor] = useState<number | null>(null);
   const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
@@ -252,8 +253,14 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         });
                         if (res.ok) {
                           const data = await res.json();
-                          const sketch = data.sketchOptions?.[0]?.frontImageBase64 || data.sketchOptions?.[0]?.url;
-                          if (sketch) await onUpdate({ sketch_url: sketch });
+                          // Footwear: 2 views (side + top). Apparel: 1 view.
+                          const views = data.sketchOptions || [];
+                          const sideView = views[0]?.frontImageBase64;
+                          const topView = views[1]?.frontImageBase64;
+                          if (sideView) {
+                            await onUpdate({ sketch_url: sideView });
+                            if (topView) setSketchTopView(topView);
+                          }
                         } else {
                           const err = await res.json().catch(() => ({}));
                           alert(`Sketch failed: ${err.error || 'Unknown error'}`);
@@ -268,10 +275,24 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       {stepLabel('generateFlat') || 'Generate Flat Sketch'}
                     </button>
                   </div>
+                  {/* Generated sketch views */}
                   <div className="space-y-2">
                     <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('generatedSketch') || 'Generated'}</p>
                     {sku.sketch_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
+                      <div className="space-y-2">
+                        <div className="border border-carbon/[0.06] overflow-hidden aspect-square max-h-[35vh] sm:max-h-[45vh] bg-white">
+                          <img src={sku.sketch_url} alt="Side profile" className="w-full h-full object-contain" />
+                        </div>
+                        {sku.sketch_url && <p className="text-[8px] text-carbon/20 uppercase tracking-wider text-center">{stepLabel('sideProfile') || 'Side Profile'}</p>}
+                        {sketchTopView && (
+                          <>
+                            <div className="border border-carbon/[0.06] overflow-hidden aspect-square max-h-[35vh] sm:max-h-[45vh] bg-white">
+                              <img src={sketchTopView} alt="Top down" className="w-full h-full object-contain" />
+                            </div>
+                            <p className="text-[8px] text-carbon/20 uppercase tracking-wider text-center">{stepLabel('topDown') || 'Top Down'}</p>
+                          </>
+                        )}
+                      </div>
                     ) : (
                       <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] flex items-center justify-center">
                         <p className="text-[11px] text-carbon/15 text-center px-4">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>

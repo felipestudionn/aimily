@@ -6,10 +6,13 @@ import { persistAsset } from '@/lib/storage';
    Sketch from Reference Photo
 
    APPAREL: OpenAI gpt-image-1 (image edits) — front view flat
-   FOOTWEAR: 2-step pipeline:
+   FOOTWEAR: 3-step pipeline:
      1. Gemini Vision analyzes reference → detailed text description
-     2. Freepik Flux Dev generates flat sketch from description
-        → side profile + top-down in correct views
+     2. Two parallel Flux Dev calls (€0.01 each):
+        - Side profile view
+        - Top-down bird's eye view
+     Same description = same shoe design, different angles.
+     Total cost: ~€0.021
    ═══════════════════════════════════════════════════════════ */
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -26,7 +29,7 @@ interface RequestBody {
   additionalNotes: string;
 }
 
-/* ── Step 1: Gemini Vision → describe the shoe ── */
+/* ── Gemini Vision → describe the shoe ── */
 async function describeShoeWithGemini(base64: string, mimeType: string, styleName: string): Promise<string> {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not configured');
 
@@ -39,137 +42,107 @@ async function describeShoeWithGemini(base64: string, mimeType: string, styleNam
     body: JSON.stringify({
       contents: [{
         parts: [
-          {
-            inlineData: {
-              mimeType: mimeType || 'image/png',
-              data: base64,
-            },
-          },
-          {
-            text: `You are a footwear technical designer. Analyze this shoe photo and provide a DETAILED technical description for a patternmaker to recreate it as a flat sketch.
+          { inlineData: { mimeType: mimeType || 'image/png', data: base64 } },
+          { text: `You are a footwear technical designer. Analyze this shoe photo and describe it in detail for a patternmaker to recreate it as a flat sketch.
 
-Describe in English, be extremely specific about:
-1. SILHOUETTE: Overall shape, height (low-top/mid/high), toe shape (round/pointed/square), profile line
-2. UPPER CONSTRUCTION: Number and shape of panels, overlays, cutouts, perforations, split-toe details
-3. CLOSURE SYSTEM: Laces/velcro straps/slip-on/buckles, number of eyelets, strap width and placement
-4. TONGUE: Shape, visibility, padding, attachment style
-5. COLLAR: Height, padding, shape when viewed from above
-6. SOLE UNIT: Midsole profile, outsole tread pattern, foxing, mudguard
-7. HEEL: Counter shape, pull tab, backstay details
-8. BRANDING: Logo placement, size, style (embroidered/printed/debossed)
-9. SPECIAL FEATURES: Split-toe, open toe, mesh panels, etc.
+Be extremely specific about:
+1. SILHOUETTE: shape, height (low/mid/high), toe shape, profile line
+2. UPPER: panel layout, overlays, cutouts, perforations, split-toe details
+3. CLOSURE: laces/velcro/slip-on/buckles, eyelet count, strap placement
+4. TONGUE: shape, padding, attachment
+5. COLLAR: height, shape from above
+6. SOLE: midsole profile, outsole tread, foxing, mudguard
+7. HEEL: counter shape, pull tab, backstay
+8. BRANDING: logo placement, style
+9. SPECIAL FEATURES: split-toe, open-toe, mesh panels, etc.
 
-Style name for context: ${styleName || 'N/A'}
+Style: ${styleName || 'N/A'}
 
-Output ONLY the technical description, no preamble. Be concise but complete.`,
-          },
+Output ONLY the technical description, no preamble. Concise but complete.` },
         ],
       }],
     }),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Gemini error: ${res.status} — ${err.slice(0, 200)}`);
-  }
-
+  if (!res.ok) throw new Error(`Gemini error: ${res.status}`);
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('No description from Gemini');
-  return text;
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
-/* ── Step 2: Mystic flexible → multi-view flat sketch from description ── */
-const MYSTIC_ENDPOINT = 'https://api.freepik.com/v1/ai/mystic';
-
-async function generateSketchWithMystic(description: string, styleName: string): Promise<string> {
+/* ── Flux Dev → single view sketch ── */
+async function generateFluxSketch(prompt: string): Promise<string> {
   if (!FREEPIK_API_KEY) throw new Error('FREEPIK_API_KEY not configured');
 
-  // Use proven multi-view keywords: "design sheet", "multiple views", "turnaround"
-  // Landscape 4:3 gives more horizontal space for side-by-side views
-  const prompt = `Product design sheet, turnaround reference sheet, multiple views of the same shoe, black line technical flat sketch on pure white background.
-
-Left side: SIDE PROFILE VIEW of the shoe pointing left. Full lateral view showing upper panels, tongue, strap or laces, midsole profile, outsole tread, heel counter, toe box silhouette, all seam lines and stitching.
-
-Right side: TOP-DOWN VIEW of the same shoe from directly above. Bird's eye perspective showing collar opening, tongue, lacing or strap layout, toe box contour, panel distribution from above.
-
-Both views show the EXACT same single shoe design (not a pair), consistent proportions and details across views. Clean horizontal layout, orthographic camera, consistent lighting.
-
-Shoe design: ${description}${styleName ? `. Style: ${styleName}` : ''}
-
-Technical illustration style: precise black ink lines on white, solid lines for seams, dashed lines for stitching. No color, no shading, no fills, no decorative elements. Factory-ready tech pack quality.`;
-
-  const createRes = await fetch(MYSTIC_ENDPOINT, {
+  const createRes = await fetch(FLUX_DEV_ENDPOINT, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-freepik-api-key': FREEPIK_API_KEY,
-    },
-    body: JSON.stringify({
-      prompt,
-      model: 'flexible',         // Best prompt adherence for illustrations
-      resolution: '1k',
-      aspect_ratio: 'classic_4_3', // Landscape — more room for side-by-side views
-      creative_detailing: '40',
-    }),
+    headers: { 'Content-Type': 'application/json', 'x-freepik-api-key': FREEPIK_API_KEY },
+    body: JSON.stringify({ prompt, aspect_ratio: 'square_1_1' }),
   });
+  if (!createRes.ok) throw new Error(`Flux Dev create error: ${createRes.status}`);
 
-  if (!createRes.ok) {
-    const err = await createRes.json().catch(() => ({}));
-    throw new Error(`Mystic error: ${JSON.stringify(err).slice(0, 200)}`);
-  }
+  const { data } = await createRes.json();
+  const taskId = data?.task_id;
+  if (!taskId) throw new Error('No task_id');
 
-  const { data: createData } = await createRes.json();
-  const taskId = createData?.task_id;
-  if (!taskId) throw new Error('No task_id from Mystic');
-
-  // Poll (max 120s — Mystic can be slower)
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 20; i++) {
     await new Promise(r => setTimeout(r, 3000));
-    const statusRes = await fetch(`${MYSTIC_ENDPOINT}/${taskId}`, {
+    const res = await fetch(`${FLUX_DEV_ENDPOINT}/${taskId}`, {
       headers: { 'x-freepik-api-key': FREEPIK_API_KEY },
     });
-    const statusData = await statusRes.json();
-    const status = statusData.data?.status;
-    if (status === 'COMPLETED') {
-      const imgUrl = statusData.data?.generated?.[0];
-      if (!imgUrl) throw new Error('No image in completed task');
-      return imgUrl;
-    }
-    if (status === 'FAILED') throw new Error('Mystic task failed');
+    const sd = await res.json();
+    if (sd.data?.status === 'COMPLETED') return sd.data?.generated?.[0] || '';
+    if (sd.data?.status === 'FAILED') throw new Error('Flux task failed');
   }
-  throw new Error('Mystic timed out');
+  throw new Error('Flux timed out');
 }
 
-/* ── Apparel path: OpenAI image edits (unchanged) ── */
+/* ── Build single-view sketch prompts ── */
+function buildSidePrompt(description: string, styleName: string): string {
+  return [
+    'Technical fashion flat sketch, black line drawing on pure white background.',
+    'Side profile view of a single shoe pointing left, resting on a horizontal ground line.',
+    'Show the full lateral silhouette: upper panels, tongue, closure system, midsole profile, outsole tread, heel counter, toe box shape.',
+    'All seam lines visible: solid lines for seams, dashed lines for stitching.',
+    `Shoe: ${description}`,
+    styleName ? `Style: ${styleName}` : '',
+    'Factory-ready tech pack illustration. Black ink only. No color, no shading, no fills. Single shoe, not a pair.',
+  ].filter(Boolean).join(' ');
+}
+
+function buildTopPrompt(description: string, styleName: string): string {
+  return [
+    'Technical fashion flat sketch, black line drawing on pure white background.',
+    'Top-down bird\'s eye view looking straight down at a single shoe from directly above.',
+    'Show the collar opening, tongue shape, lacing or strap layout, toe box contour, and upper panel distribution from above.',
+    'All seam lines visible: solid lines for seams, dashed lines for stitching.',
+    `Shoe: ${description}`,
+    styleName ? `Style: ${styleName}` : '',
+    'Factory-ready tech pack illustration. Black ink only. No color, no shading, no fills. Single shoe, not a pair.',
+  ].filter(Boolean).join(' ');
+}
+
+/* ── Apparel: OpenAI image edits ── */
 async function generateSketchWithOpenAI(
-  garmentType: string, fabric: string, additionalNotes: string,
-  photoBase64: string,
+  garmentType: string, fabric: string, additionalNotes: string, photoBase64: string,
 ): Promise<string> {
   if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
 
   const prompt = `A partir de esta foto de referencia, genera un FLAT SKETCH TÉCNICO de la prenda.
 
-REGLAS DEL DIBUJO:
-- Flat sketch técnico para ficha técnica / tech pack
+REGLAS:
+- Flat sketch técnico para tech pack
 - Vista frontal
-- Fondo blanco puro
-- Trazo negro fino, limpio y uniforme
-- Sin cuerpo humano, sin perspectiva, sin sombras, sin color, sin texturas
-- Proporciones realistas de patronaje
-- Todos los detalles constructivos visibles: cierres, bolsillos, costuras, paneles, pinzas, tapetas, vistas
-- No reinterpretar ni inventar detalles — reproducir fielmente lo que se ve en la foto
+- Fondo blanco puro, trazo negro fino y limpio
+- Sin cuerpo humano, sin perspectiva, sin sombras, sin color
+- Todos los detalles constructivos: cierres, bolsillos, costuras, paneles
+- Reproducir fielmente lo que se ve en la foto
 - Nivel de detalle apto para fábrica
 
-Piensa como un patronista, no como un ilustrador.
-
-TIPO DE PRENDA: ${garmentType}
+TIPO: ${garmentType}
 ${fabric ? `TEJIDO: ${fabric}` : ''}
 ${additionalNotes ? `NOTAS: ${additionalNotes}` : ''}`;
 
-  const imageBuffer = Buffer.from(photoBase64, 'base64');
-  const blob = new Blob([imageBuffer], { type: 'image/png' });
-
+  const blob = new Blob([Buffer.from(photoBase64, 'base64')], { type: 'image/png' });
   const formData = new FormData();
   formData.append('model', 'gpt-image-1');
   formData.append('image', blob, 'photo.png');
@@ -183,21 +156,14 @@ ${additionalNotes ? `NOTAS: ${additionalNotes}` : ''}`;
     headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
     body: formData,
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI error: ${response.status} - ${errorText}`);
-  }
+  if (!response.ok) throw new Error(`OpenAI error: ${response.status}`);
 
   const data = await response.json();
-  if (data.data?.[0]?.b64_json) {
-    return `data:image/png;base64,${data.data[0].b64_json}`;
-  }
+  if (data.data?.[0]?.b64_json) return `data:image/png;base64,${data.data[0].b64_json}`;
   if (data.data?.[0]?.url) {
     const imgRes = await fetch(data.data[0].url);
-    const arrayBuffer = await imgRes.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    return `data:image/png;base64,${base64}`;
+    const buf = await imgRes.arrayBuffer();
+    return `data:image/png;base64,${Buffer.from(buf).toString('base64')}`;
   }
   throw new Error('No image in OpenAI response');
 }
@@ -213,73 +179,109 @@ export async function POST(req: NextRequest) {
 
     const body: RequestBody & { collectionPlanId?: string } = await req.json();
 
-    if (!body.images || body.images.length === 0) {
+    if (!body.images?.length) {
       return NextResponse.json({ error: 'At least 1 reference photo required' }, { status: 400 });
-    }
-    if (!body.garmentType) {
-      return NextResponse.json({ error: 'Garment type is required' }, { status: 400 });
     }
 
     const isFootwear = body.garmentType === 'CALZADO' || /shoe|sneaker|boot|sandal|footwear|calzado/i.test(body.garmentType);
     const primaryPhoto = body.images[0];
 
-    let sketchImage: string;
-
     if (isFootwear) {
-      // 2-step: Gemini describes → Mystic flexible draws in correct views
-      console.log('[Sketch] Footwear detected — using Gemini Vision + Mystic flexible pipeline');
+      // ── FOOTWEAR: Gemini describes → 2x Flux Dev in parallel ──
+      console.log('[Sketch] Footwear — Gemini Vision + 2x Flux Dev');
       const description = await describeShoeWithGemini(
         primaryPhoto.base64, primaryPhoto.mimeType, body.styleName
       );
-      console.log('[Sketch] Gemini description:', description.slice(0, 200));
-      sketchImage = await generateSketchWithMystic(description, body.styleName);
+      console.log('[Sketch] Description:', description.slice(0, 150));
+
+      // Launch both views in parallel
+      const [sideResult, topResult] = await Promise.allSettled([
+        generateFluxSketch(buildSidePrompt(description, body.styleName)),
+        generateFluxSketch(buildTopPrompt(description, body.styleName)),
+      ]);
+
+      const sideUrl = sideResult.status === 'fulfilled' ? sideResult.value : null;
+      const topUrl = topResult.status === 'fulfilled' ? topResult.value : null;
+
+      if (!sideUrl && !topUrl) {
+        return NextResponse.json({ error: 'Both sketch views failed' }, { status: 500 });
+      }
+
+      // Use side view as the primary sketch_url (most important for tech pack)
+      const primarySketch = sideUrl || topUrl!;
+
+      // Persist both views
+      const persist = async (url: string, label: string) => {
+        if (!body.collectionPlanId) return url;
+        try {
+          const { publicUrl } = await persistAsset({
+            collectionPlanId: body.collectionPlanId,
+            assetType: 'sketch',
+            name: `Sketch ${body.styleName || ''} — ${label}`.trim(),
+            sourceUrl: url,
+            phase: 'design',
+            metadata: { pipeline: 'gemini+flux-dev', view: label },
+            uploadedBy: user.id,
+          });
+          return publicUrl;
+        } catch { return url; }
+      };
+
+      const sidePersisted = sideUrl ? await persist(sideUrl, 'Side Profile') : null;
+      const topPersisted = topUrl ? await persist(topUrl, 'Top Down') : null;
+
+      return NextResponse.json({
+        sketchOptions: [{
+          id: '1',
+          description: 'Side Profile',
+          frontImageBase64: sidePersisted || sideUrl,
+        }, ...(topPersisted || topUrl ? [{
+          id: '2',
+          description: 'Top Down',
+          frontImageBase64: topPersisted || topUrl,
+        }] : [])],
+        views: { side: sidePersisted || sideUrl, top: topPersisted || topUrl },
+        persisted: true,
+        pipeline: 'gemini-vision+flux-dev-dual',
+      });
+
     } else {
-      // Apparel: OpenAI image edits (proven, works well for front-view)
-      sketchImage = await generateSketchWithOpenAI(
+      // ── APPAREL: OpenAI image edits ──
+      const sketchImage = await generateSketchWithOpenAI(
         body.garmentType, body.fabric, body.additionalNotes, primaryPhoto.base64,
       );
-    }
 
-    // Persist to Supabase Storage
-    let persistedUrl: string | null = null;
-    let assetId: string | null = null;
-    if (body.collectionPlanId) {
-      try {
-        const isUrl = sketchImage.startsWith('http');
-        const result = await persistAsset({
-          collectionPlanId: body.collectionPlanId,
-          assetType: 'sketch',
-          name: `Sketch — ${body.garmentType}${isFootwear ? ' (Side + Top)' : ''}`,
-          ...(isUrl ? { sourceUrl: sketchImage } : { base64: sketchImage, mimeType: 'image/png' }),
-          phase: 'design',
-          metadata: {
-            garmentType: body.garmentType,
-            pipeline: isFootwear ? 'gemini-vision+mystic-flexible' : 'openai-image-edits',
-          },
-          uploadedBy: user.id,
-        });
-        persistedUrl = result.publicUrl;
-        assetId = result.assetId;
-      } catch (err) {
-        console.error('[Sketch] Persist failed:', err);
+      let persistedUrl: string | null = null;
+      if (body.collectionPlanId) {
+        try {
+          const result = await persistAsset({
+            collectionPlanId: body.collectionPlanId,
+            assetType: 'sketch',
+            name: `Sketch — ${body.garmentType}`,
+            base64: sketchImage, mimeType: 'image/png',
+            phase: 'design',
+            metadata: { pipeline: 'openai-image-edits' },
+            uploadedBy: user.id,
+          });
+          persistedUrl = result.publicUrl;
+        } catch (err) {
+          console.error('[Sketch] Persist failed:', err);
+        }
       }
+
+      return NextResponse.json({
+        sketchOptions: [{
+          id: '1',
+          description: `Front view: ${body.garmentType}`,
+          frontImageBase64: persistedUrl || sketchImage,
+        }],
+        persisted: !!persistedUrl,
+        pipeline: 'openai-image-edits',
+      });
     }
-
-    const finalImage = persistedUrl || sketchImage;
-
-    return NextResponse.json({
-      sketchOptions: [{
-        id: '1',
-        description: isFootwear ? 'Side profile + Top-down' : `Front view: ${body.garmentType}`,
-        frontImageBase64: finalImage,
-        ...(persistedUrl && { url: persistedUrl, assetId }),
-      }],
-      persisted: !!persistedUrl,
-      pipeline: isFootwear ? 'gemini-vision+mystic-flexible' : 'openai-image-edits',
-    });
   } catch (error) {
     console.error('Sketch generation error:', error);
-    const message = error instanceof Error ? error.message : 'Error inesperado';
+    const message = error instanceof Error ? error.message : 'Sketch generation failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
