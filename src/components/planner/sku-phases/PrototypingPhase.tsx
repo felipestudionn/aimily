@@ -37,7 +37,6 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
     return s;
   });
   const [modes, setModes] = useState<Record<string, InputMode>>({ sourcing: 'free', tracking: 'free' });
-  const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
 
   const confirmStep = (stepId: string) => {
     setConfirmedSteps(prev => { const n = new Set(prev); n.add(stepId); return n; });
@@ -143,6 +142,7 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
   language: string; t: ReturnType<typeof useTranslation>;
 }) {
   const [generating, setGenerating] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
   const [aiResult, setAiResult] = useState<{
     factoryType?: { recommended: string; description: string; capabilities: string[] };
     regions?: { name: string; fit: string; moq: string; leadTime: string; cogsRange: string }[];
