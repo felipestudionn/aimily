@@ -83,21 +83,17 @@ Output ONLY the technical description, no preamble. Be concise but complete.`,
 async function generateSketchWithFluxDev(description: string, styleName: string): Promise<string> {
   if (!FREEPIK_API_KEY) throw new Error('FREEPIK_API_KEY not configured');
 
-  const prompt = [
-    'Technical fashion flat sketch, black line drawing on pure white background.',
-    'Clean technical illustration for a tech pack / spec sheet.',
-    'TWO VIEWS of the SAME shoe in one image, clearly separated by a thin horizontal line:',
-    'TOP HALF: Side profile view, shoe pointing left, horizontal baseline. Show all panels, seams, sole unit, stitching lines, and construction details from the lateral side.',
-    'BOTTOM HALF: Top-down bird\'s eye view looking straight down. Show upper opening, tongue, collar shape, lacing/strap system, toe box contour, and panel layout from above.',
-    'Both views MUST depict the exact same shoe design.',
-    'Single shoe per view, NOT a pair.',
-    `Shoe design to draw: ${description}`,
-    styleName ? `Style: ${styleName}` : '',
-    'Precise construction details: seams shown as solid lines, stitching as dashed lines.',
-    'Proportions accurate for pattern-making, factory-ready level of detail.',
-    'Think like a patternmaker, not an illustrator.',
-    'Minimal, precise, technical. Black ink on white. No decorative elements. No color. No shading.',
-  ].filter(Boolean).join(' ');
+  const prompt = `Technical spec sheet: two black line drawings of one shoe on white background, stacked vertically.
+
+DRAWING 1 (upper half of image): SIDE VIEW — the shoe seen from the left side, pointing left, resting on a horizontal ground line. Show the full lateral profile: upper panels, tongue, laces or straps, midsole, outsole tread, heel counter, toe box shape, all seam lines.
+
+DRAWING 2 (lower half of image): TOP VIEW — the same shoe seen from directly above, bird's eye. Show the collar opening, tongue, lacing/strap layout, toe box outline, panel shapes from above.
+
+A thin horizontal line separates the two drawings. Both drawings show the SAME single shoe (not a pair).
+
+The shoe to draw: ${description}${styleName ? `. Style: ${styleName}` : ''}
+
+Rules: black ink technical flat sketch on pure white. No color, no shading, no fills. Solid lines for seams, dashed lines for stitching. Factory-ready precision. No decorative elements.`;
 
   // Create task
   const createRes = await fetch(FLUX_DEV_ENDPOINT, {

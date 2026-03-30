@@ -32,27 +32,38 @@ export async function POST(req: NextRequest) {
     const isFootwear = productType === 'CALZADO' || /shoe|sneaker|boot|sandal|footwear|calzado/i.test(family || '');
 
     // Build view-specific prompt
-    const viewInstruction = isFootwear
-      ? 'Technical spec sheet layout with TWO VIEWS of the SAME shoe on one page: TOP HALF shows side profile view (shoe pointing left, horizontal baseline, all panels, seams, sole unit visible). BOTTOM HALF shows top-down bird\'s eye view (looking straight down, showing upper opening, tongue, collar shape, lacing system, toe box contour). Both views must be the SAME shoe design. Single shoe per view, not a pair. Clear separation between views with a thin horizontal line.'
-      : 'Front view only, no perspective, no shadows, no color, no human body';
+    let fullPrompt: string;
 
-    const promptParts = [
-      'Technical fashion flat sketch, black line drawing on pure white background',
-      'Clean technical illustration for a tech pack / spec sheet',
-      viewInstruction,
-      'Precise construction details: seams, stitching, panels, closures, topstitching',
-      'Proportions accurate for pattern-making, factory-ready level of detail',
-      'Think like a patternmaker, not an illustrator',
-      `Product: ${productType || 'garment'}`,
-    ];
+    if (isFootwear) {
+      const designDesc = [description, concept, skuName, family].filter(Boolean).join('. ');
+      fullPrompt = `Technical spec sheet: two black line drawings of one shoe on white background, stacked vertically.
 
-    if (family) promptParts.push(`Category: ${family}`);
-    if (skuName) promptParts.push(`Style: ${skuName}`);
-    if (description) promptParts.push(`Design direction: ${description}`);
-    if (concept) promptParts.push(`Concept: ${concept}`);
-    promptParts.push('Minimal, precise, technical. Black ink on white. No decorative elements.');
+DRAWING 1 (upper half of image): SIDE VIEW — the shoe seen from the left side, pointing left, resting on a horizontal ground line. Show the full lateral profile: upper panels, tongue, laces or straps, midsole, outsole tread, heel counter, toe box shape, all seam lines.
 
-    const fullPrompt = promptParts.join('. ');
+DRAWING 2 (lower half of image): TOP VIEW — the same shoe seen from directly above, bird's eye. Show the collar opening, tongue, lacing/strap layout, toe box outline, panel shapes from above.
+
+A thin horizontal line separates the two drawings. Both drawings show the SAME single shoe (not a pair).
+
+The shoe to draw: ${productType || 'footwear'}. ${designDesc}
+
+Rules: black ink technical flat sketch on pure white. No color, no shading, no fills. Solid lines for seams, dashed lines for stitching. Factory-ready precision. No decorative elements.`;
+    } else {
+      const promptParts = [
+        'Technical fashion flat sketch, black line drawing on pure white background',
+        'Clean technical illustration for a tech pack / spec sheet',
+        'Front view only, no perspective, no shadows, no color, no human body',
+        'Precise construction details: seams, stitching, panels, closures, topstitching',
+        'Proportions accurate for pattern-making, factory-ready level of detail',
+        'Think like a patternmaker, not an illustrator',
+        `Product: ${productType || 'garment'}`,
+      ];
+      if (family) promptParts.push(`Category: ${family}`);
+      if (skuName) promptParts.push(`Style: ${skuName}`);
+      if (description) promptParts.push(`Design direction: ${description}`);
+      if (concept) promptParts.push(`Concept: ${concept}`);
+      promptParts.push('Minimal, precise, technical. Black ink on white. No decorative elements.');
+      fullPrompt = promptParts.join('. ');
+    }
 
     // Use 3:4 portrait for footwear dual-view (more vertical space), square for apparel
     const aspectRatio = isFootwear ? 'traditional_3_4' : 'square_1_1';
