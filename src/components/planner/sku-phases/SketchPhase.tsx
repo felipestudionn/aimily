@@ -71,6 +71,20 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     if (activeStep < STEPS.length - 1) setActiveStep(activeStep + 1);
   }, [activeStep]);
 
+  const clearStep = useCallback(async (stepIdx: number) => {
+    setConfirmedSteps(prev => { const n = new Set(prev); n.delete(stepIdx); return n; });
+    // Clear data for the step
+    if (stepIdx === 0) {
+      await onUpdate({ sketch_url: undefined });
+    } else if (stepIdx === 1) {
+      // Delete all colorways for this SKU
+      for (const cw of skuColorways) await deleteColorway(cw.id);
+    } else if (stepIdx === 2) {
+      await onUpdate({ material_zones: [] } as Partial<SKU>);
+    }
+    setActiveStep(stepIdx);
+  }, [skuColorways, deleteColorway, onUpdate]);
+
   const mode = modes[STEPS[activeStep]?.id] || 'free';
   const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
 
@@ -138,6 +152,17 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 }`}>
                   {isConfirmed && !isActive ? <Check className="h-2.5 w-2.5" /> : idx + 1}
                 </span>
+                {/* Clear button on confirmed steps (not tech pack) */}
+                {isConfirmed && isActive && idx < 3 && (
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); clearStep(idx); }}
+                    className="ml-0.5 text-carbon/15 hover:text-[#A0463C]/50 transition-colors"
+                    title={stepLabel('clearStep') || 'Clear this step'}
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </span>
+                )}
                 <span className={`text-[10px] tracking-[0.06em] uppercase whitespace-nowrap ${
                   isActive ? 'font-semibold' : 'font-medium'
                 }`}>{step.label}</span>

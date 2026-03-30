@@ -1150,9 +1150,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     {/* Sketch / AI pill toggle — top center */}
                     {sku.sketch_url && (
                       <div
-                        className={`absolute top-2 left-1/2 -translate-x-1/2 z-10 transition-opacity ${
-                          !renderImage && !renderingSkus.has(sku.id) ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
-                        }`}
+                        className="absolute top-2 left-1/2 -translate-x-1/2 z-10"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <SkuCardPill

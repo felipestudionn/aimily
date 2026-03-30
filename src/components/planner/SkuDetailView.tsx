@@ -106,6 +106,20 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     }
   }, [localSku.design_phase, update]);
 
+  /* ── Revert to previous phase ── */
+  const canRevert = ['sketch', 'prototyping'].includes(localSku.design_phase || '');
+  const revertPhase = useCallback(async () => {
+    const order: DesignPhase[] = ['range_plan', 'sketch', 'prototyping', 'production', 'completed'];
+    const idx = order.indexOf(localSku.design_phase || 'range_plan');
+    if (idx > 0 && idx <= 2) { // Can only revert from sketch or prototyping
+      setSavingPhase(true);
+      const prev = order[idx - 1];
+      await update({ design_phase: prev });
+      setSavingPhase(false);
+      setActivePhase(prev);
+    }
+  }, [localSku.design_phase, update]);
+
   /* ── Phase labels ── */
   const phaseLabel = (phase: DesignPhase): string => {
     const labels: Record<DesignPhase, string> = {
@@ -233,12 +247,23 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
       {/* ── Footer ── */}
       <div className="shrink-0 border-t border-carbon/[0.06] px-6 sm:px-10 lg:px-16 py-2.5">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <button
-            onClick={async () => { await onDelete(localSku.id); onClose(); }}
-            className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/20 hover:text-red-600/50 transition-colors"
-          >
-            <Trash2 className="h-3 w-3" /> {t.skuPhases?.deleteSku || 'Delete SKU'}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={async () => { await onDelete(localSku.id); onClose(); }}
+              className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/20 hover:text-red-600/50 transition-colors"
+            >
+              <Trash2 className="h-3 w-3" /> {t.skuPhases?.deleteSku || 'Delete SKU'}
+            </button>
+            {canRevert && (
+              <button
+                onClick={revertPhase}
+                disabled={savingPhase}
+                className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/25 hover:text-carbon/50 transition-colors disabled:opacity-30"
+              >
+                <ArrowLeft className="h-3 w-3" /> {'Back to'} {phaseLabel(PHASES[currentPhaseIdx - 1]?.id || 'range_plan')}
+              </button>
+            )}
+          </div>
           {!isCompleted && (
             <button
               onClick={footerAction.action}
