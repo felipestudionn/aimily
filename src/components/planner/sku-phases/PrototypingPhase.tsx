@@ -37,6 +37,7 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
     return s;
   });
   const [modes, setModes] = useState<Record<string, InputMode>>({ sourcing: 'free', tracking: 'free' });
+  const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
 
   const confirmStep = (stepId: string) => {
     setConfirmedSteps(prev => { const n = new Set(prev); n.add(stepId); return n; });
@@ -226,17 +227,32 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
                     <p className="text-[9px] font-semibold tracking-[0.1em] uppercase text-carbon/30">{t.skuPhases?.recommendedRegions || 'Recommended Regions'}</p>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {aiResult.regions.map((region, i) => (
-                      <div key={i} className="border border-carbon/[0.04] bg-white p-3 space-y-1.5">
-                        <p className="text-[12px] font-light text-carbon flex items-center gap-1"><MapPin className="h-2.5 w-2.5 text-carbon/25" /> {region.name}</p>
-                        <p className="text-[10px] text-carbon/40 leading-relaxed">{region.fit}</p>
-                        <div className="grid grid-cols-3 gap-2 pt-1">
-                          <div><p className="text-[7px] text-carbon/20 uppercase">MOQ</p><p className="text-[9px] text-carbon/45">{region.moq}</p></div>
-                          <div><p className="text-[7px] text-carbon/20 uppercase">Lead time</p><p className="text-[9px] text-carbon/45">{region.leadTime}</p></div>
-                          <div><p className="text-[7px] text-carbon/20 uppercase">COGS</p><p className="text-[9px] text-carbon/45">{region.cogsRange}</p></div>
-                        </div>
-                      </div>
-                    ))}
+                    {aiResult.regions.map((region, i) => {
+                      const isSelected = selectedRegion === i;
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setSelectedRegion(i);
+                            onUpdate({ sourcing_region: region.name, sourcing_moq: region.moq, sourcing_lead_time: region.leadTime, sourcing_cogs: region.cogsRange } as Partial<SKU>);
+                          }}
+                          className={`border bg-white p-3 space-y-1.5 text-left transition-all ${
+                            isSelected ? 'border-carbon shadow-sm' : 'border-carbon/[0.04] hover:border-carbon/[0.12]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-[12px] font-light text-carbon flex items-center gap-1"><MapPin className="h-2.5 w-2.5 text-carbon/25" /> {region.name}</p>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-carbon" />}
+                          </div>
+                          <p className="text-[10px] text-carbon/40 leading-relaxed">{region.fit}</p>
+                          <div className="grid grid-cols-3 gap-2 pt-1">
+                            <div><p className="text-[7px] text-carbon/20 uppercase">MOQ</p><p className="text-[9px] text-carbon/45">{region.moq}</p></div>
+                            <div><p className="text-[7px] text-carbon/20 uppercase">Lead time</p><p className="text-[9px] text-carbon/45">{region.leadTime}</p></div>
+                            <div><p className="text-[7px] text-carbon/20 uppercase">COGS</p><p className="text-[9px] text-carbon/45">{region.cogsRange}</p></div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
