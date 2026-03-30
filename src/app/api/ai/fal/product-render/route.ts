@@ -68,24 +68,27 @@ export async function POST(req: NextRequest) {
       input.strength = design_context ? 0.55 : 0.75;
     }
 
-    // Try ControlNet first for sketch-to-render, fallback to Flux 2 Pro
     let result;
     if (design_context && image_url) {
+      // ControlNet Lineart — trained specifically for line art / technical sketches
+      // Uses promeai/FLUX.1-controlnet-lineart-promeai (understands sketch semantics)
       try {
         result = await fal.subscribe('fal-ai/flux-general', {
           input: {
             prompt: fullPrompt,
             num_images: 2,
             image_size: { width: width || 1024, height: height || 1024 },
+            num_inference_steps: 28,
+            guidance_scale: 3.5,
             controlnets: [{
-              path: 'fal-ai/flux-general/canny',
+              path: 'promeai/FLUX.1-controlnet-lineart-promeai',
               control_image_url: image_url,
-              conditioning_scale: 0.9,
+              conditioning_scale: 0.85,
             }],
           },
         } as any);
       } catch (controlNetErr) {
-        console.error('[Product Render] ControlNet failed, falling back to Flux 2 Pro:', controlNetErr);
+        console.error('[Product Render] ControlNet Lineart failed, trying Flux 2 Pro:', controlNetErr);
         result = await fal.subscribe('fal-ai/flux-2-pro', { input } as any);
       }
     } else {
