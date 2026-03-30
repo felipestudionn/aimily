@@ -47,7 +47,7 @@ const ANGLE_CONFIGS: Record<RenderAngle, AngleConfig> = {
   },
   side: {
     label: 'Side Profile',
-    promptSuffix: 'Side profile view pointing right, 90-degree lateral exterior angle, showing full silhouette, sole unit, and construction details',
+    promptSuffix: 'Side profile view pointing left, 90-degree lateral exterior angle, showing full silhouette, sole unit, and construction details',
     structureStrength: 70,
   },
   back: {
