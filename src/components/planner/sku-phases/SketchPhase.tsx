@@ -218,21 +218,22 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               {/* Option A: From reference photo */}
               <div className="space-y-4 mb-8">
                 <p className="text-[11px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('fromReference') || 'From Reference'}</p>
-                <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-6">
-                  {/* LEFT: Reference photo + generate button */}
-                  <div className="space-y-3">
-                    <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referencePhoto') || 'Reference Photo'}</p>
+                {/* Reference photo compact + generate button */}
+                <div className="flex items-end gap-4">
+                  <div className="shrink-0">
+                    <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('referencePhoto') || 'Reference'}</p>
                     {sku.reference_image_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden bg-white">
-                        <img src={sku.reference_image_url} alt="" className="w-full object-contain" />
+                      <div className="border border-carbon/[0.06] overflow-hidden bg-white w-28 h-28">
+                        <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
                       </div>
                     ) : (
                       <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
-                        placeholder={stepLabel('uploadReference') || 'Upload reference'}
+                        placeholder={stepLabel('uploadReference') || 'Upload'}
                         onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
-                        onRemove={() => {}} aspectClass="aspect-square" />
+                        onRemove={() => {}} aspectClass="w-28 h-28" />
                     )}
-                    <button onClick={async () => {
+                  </div>
+                  <button onClick={async () => {
                       if (!sku.reference_image_url) return;
                       setGenerating(true);
                       try {
@@ -276,11 +277,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                       {stepLabel('generateFlat') || 'Generate Flat Sketch'}
                     </button>
-                  </div>
+                </div>
 
-                  {/* RIGHT: Generated sketches */}
-                  <div className="space-y-3">
-                    {sku.category === 'CALZADO' ? (
+                {/* Sketch views — full width below */}
+                <div>
+                  {sku.category === 'CALZADO' ? (
                       <>
                         {/* Side Profile */}
                         <div>
@@ -313,17 +314,16 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       <>
                         <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('generatedSketch') || 'Generated Sketch'}</p>
                         {sku.sketch_url ? (
-                          <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
-                            <img src={sku.sketch_url} alt="Front view" className="w-full h-full object-contain" />
+                          <div className="border border-carbon/[0.06] overflow-hidden bg-white p-2">
+                            <img src={sku.sketch_url} alt="Front view" className="w-full object-contain" />
                           </div>
                         ) : (
-                          <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[55vh] flex items-center justify-center">
+                          <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] py-12 flex items-center justify-center">
                             <p className="text-[11px] text-carbon/15 text-center px-4">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
                           </div>
                         )}
                       </>
                     )}
-                  </div>
                 </div>
               </div>
 
