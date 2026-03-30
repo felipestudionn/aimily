@@ -48,7 +48,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   // AI state
   const [generating, setGenerating] = useState(false);
   const [sketchTopView, setSketchTopView] = useState<string | null>(sku.sketch_top_url || null);
-  const [expandedCw, setExpandedCw] = useState<string | null>(null);
+  const firstCwId = colorways.filter(c => c.sku_id === sku.id)[0]?.id || null;
+  const [expandedCw, setExpandedCw] = useState<string | null>(firstCwId);
   const [generatingSketchFor, setGeneratingSketchFor] = useState<number | null>(null);
   const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
