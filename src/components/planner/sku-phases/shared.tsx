@@ -77,24 +77,113 @@ export function MetricCell({ label, value, secondary, editable, onChange }: {
 }
 
 /* ── Size Run Editor ── */
+/* ── Size distribution curves (industry standard) ── */
+const FOOTWEAR_CURVES: Record<string, Record<string, number>> = {
+  women: { '35': 0.04, '36': 0.08, '37': 0.16, '38': 0.22, '39': 0.22, '40': 0.16, '41': 0.08, '42': 0.04 },
+  men:   { '39': 0.04, '40': 0.08, '41': 0.14, '42': 0.22, '43': 0.22, '44': 0.16, '45': 0.10, '46': 0.04 },
+};
+const APPAREL_CURVES: Record<string, Record<string, number>> = {
+  women: { 'XXS': 0.05, 'XS': 0.10, 'S': 0.20, 'M': 0.25, 'L': 0.20, 'XL': 0.15, 'XXL': 0.05 },
+  men:   { 'XS': 0.05, 'S': 0.10, 'M': 0.25, 'L': 0.25, 'XL': 0.20, 'XXL': 0.10, '3XL': 0.05 },
+};
+
+function autoFillSizeRun(category: string, gender: string, units: number): Record<string, number> {
+  const isFootwear = category === 'CALZADO' || category === 'FOOTWEAR';
+  const curves = isFootwear ? FOOTWEAR_CURVES : APPAREL_CURVES;
+  const curve = curves[gender] || curves['women'];
+  const result: Record<string, number> = {};
+  let remaining = units;
+  const entries = Object.entries(curve);
+  entries.forEach(([size, pct], i) => {
+    if (i === entries.length - 1) {
+      result[size] = remaining;
+    } else {
+      const qty = Math.round(units * pct);
+      result[size] = qty;
+      remaining -= qty;
+    }
+  });
+  return result;
+}
+
 export function SizeRunEditor({
-  category, sizeRun, buyUnits, onUpdate,
+  category, sizeRun, buyUnits, onUpdate, gender: initialGender,
 }: {
   category: string;
   sizeRun: Record<string, number>;
   buyUnits: number;
   onUpdate: (sizeRun: Record<string, number>) => void;
+  gender?: string;
 }) {
-  const sizes = category === 'CALZADO'
-    ? ['35','36','37','38','39','40','41','42','43','44','45']
-    : category === 'ROPA'
-      ? ['XXS','XS','S','M','L','XL','XXL']
-      : ['ONE'];
+  const [gender, setGender] = useState(initialGender || 'unisex');
+  const [unisexSplit, setUnisexSplit] = useState(50); // % women
+
+  const isFootwear = category === 'CALZADO' || category === 'FOOTWEAR';
+  const sizes = gender === 'men'
+    ? (isFootwear ? ['39','40','41','42','43','44','45','46'] : ['XS','S','M','L','XL','XXL','3XL'])
+    : gender === 'women'
+      ? (isFootwear ? ['35','36','37','38','39','40','41','42'] : ['XXS','XS','S','M','L','XL','XXL'])
+      : (isFootwear ? ['35','36','37','38','39','40','41','42','43','44','45','46'] : ['XXS','XS','S','M','L','XL','XXL','3XL']);
 
   const total = Object.values(sizeRun).reduce((a, b) => a + b, 0);
 
+  const handleAutoFill = () => {
+    if (buyUnits <= 0) return;
+    if (gender === 'unisex') {
+      const womenUnits = Math.round(buyUnits * (unisexSplit / 100));
+      const menUnits = buyUnits - womenUnits;
+      const wRun = autoFillSizeRun(category, 'women', womenUnits);
+      const mRun = autoFillSizeRun(category, 'men', menUnits);
+      const merged: Record<string, number> = {};
+      for (const [s, v] of Object.entries(wRun)) merged[s] = (merged[s] || 0) + v;
+      for (const [s, v] of Object.entries(mRun)) merged[s] = (merged[s] || 0) + v;
+      onUpdate(merged);
+    } else {
+      onUpdate(autoFillSizeRun(category, gender, buyUnits));
+    }
+  };
+
   return (
     <div className="space-y-3">
+      {/* Gender selector */}
+      <div className="flex items-center gap-3">
+        <div className="flex border border-carbon/[0.06] overflow-hidden">
+          {['women', 'men', 'unisex'].map(g => (
+            <button
+              key={g}
+              onClick={() => setGender(g)}
+              className={`px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase transition-colors ${
+                gender === g ? 'bg-carbon text-crema' : 'bg-white text-carbon/35 hover:text-carbon/60'
+              }`}
+            >
+              {g === 'women' ? 'Women' : g === 'men' ? 'Men' : 'Unisex'}
+            </button>
+          ))}
+        </div>
+        {buyUnits > 0 && (
+          <button
+            onClick={handleAutoFill}
+            className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors"
+          >
+            Auto-fill ({buyUnits} units)
+          </button>
+        )}
+      </div>
+
+      {/* Unisex split slider */}
+      {gender === 'unisex' && (
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] text-carbon/30 uppercase tracking-wider w-16">Women {unisexSplit}%</span>
+          <input
+            type="range" min={20} max={80} value={unisexSplit}
+            onChange={(e) => setUnisexSplit(Number(e.target.value))}
+            className="flex-1 h-1 accent-carbon"
+          />
+          <span className="text-[9px] text-carbon/30 uppercase tracking-wider w-12">Men {100 - unisexSplit}%</span>
+        </div>
+      )}
+
+      {/* Size inputs */}
       <div className="flex flex-wrap gap-2">
         {sizes.map(size => (
           <div key={size} className="flex flex-col items-center gap-1">
@@ -119,6 +208,9 @@ export function SizeRunEditor({
         <span>Total: {total} units</span>
         {buyUnits > 0 && total !== buyUnits && (
           <span className="text-warning">Plan: {buyUnits} units</span>
+        )}
+        {buyUnits > 0 && total === buyUnits && (
+          <span className="text-success">Matches plan</span>
         )}
       </div>
     </div>

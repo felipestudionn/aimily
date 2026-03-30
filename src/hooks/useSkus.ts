@@ -39,6 +39,7 @@ export interface SKU {
   sketch_url?: string;
   proto_iterations: ProtoIteration[];
   production_sample_url?: string;
+  render_url?: string;
   production_approved: boolean;
   created_at?: string;
   updated_at?: string;

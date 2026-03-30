@@ -481,7 +481,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                             const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
                             if (url) {
                               setRenderUrl(url);
-                              await onUpdate({ render_url: url } as unknown as Partial<typeof sku>);
+                              await onUpdate({ render_url: url });
                             }
                           }
                         } finally {
