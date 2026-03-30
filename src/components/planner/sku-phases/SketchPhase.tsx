@@ -48,6 +48,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   // AI state
   const [generating, setGenerating] = useState(false);
   const [sketchTopView, setSketchTopView] = useState<string | null>(sku.sketch_top_url || null);
+  const [expandedCw, setExpandedCw] = useState<string | null>(null);
   const [generatingSketchFor, setGeneratingSketchFor] = useState<number | null>(null);
   const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
@@ -279,52 +280,48 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     </button>
                 </div>
 
-                {/* Sketch views — full width below */}
-                <div>
-                  {sku.category === 'CALZADO' ? (
-                      <>
-                        {/* Side Profile */}
-                        <div>
-                          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('sideProfile') || 'Side Profile'}</p>
-                          {sku.sketch_url ? (
-                            <div className="border border-carbon/[0.06] overflow-hidden bg-white p-2">
-                              <img src={sku.sketch_url} alt="Side profile" className="w-full object-contain" />
-                            </div>
-                          ) : (
-                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] py-10 flex items-center justify-center">
-                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15 text-center">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>}
-                            </div>
-                          )}
+                {/* Sketch views */}
+                {sku.category === 'CALZADO' ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('sideProfile') || 'Side Profile'}</p>
+                      {sku.sketch_url ? (
+                        <div className="border border-carbon/[0.06] bg-white p-3">
+                          <img src={sku.sketch_url} alt="Side profile" className="w-full h-auto object-contain max-h-[45vh]" />
                         </div>
-                        {/* Top Down */}
-                        <div>
-                          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('topDown') || 'Top Down'}</p>
-                          {sketchTopView ? (
-                            <div className="border border-carbon/[0.06] overflow-hidden bg-white p-2">
-                              <img src={sketchTopView} alt="Top down" className="w-full object-contain" />
-                            </div>
-                          ) : (
-                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] py-10 flex items-center justify-center">
-                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15 text-center">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>}
-                            </div>
-                          )}
+                      ) : (
+                        <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] h-48 flex items-center justify-center">
+                          {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>}
                         </div>
-                      </>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('topDown') || 'Top Down'}</p>
+                      {sketchTopView ? (
+                        <div className="border border-carbon/[0.06] bg-white p-3">
+                          <img src={sketchTopView} alt="Top down" className="w-full h-auto object-contain max-h-[45vh]" />
+                        </div>
+                      ) : (
+                        <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] h-48 flex items-center justify-center">
+                          {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('generatedSketch') || 'Generated Sketch'}</p>
+                    {sku.sketch_url ? (
+                      <div className="border border-carbon/[0.06] bg-white p-3 max-w-md">
+                        <img src={sku.sketch_url} alt="Front view" className="w-full h-auto object-contain" />
+                      </div>
                     ) : (
-                      <>
-                        <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('generatedSketch') || 'Generated Sketch'}</p>
-                        {sku.sketch_url ? (
-                          <div className="border border-carbon/[0.06] overflow-hidden bg-white p-2">
-                            <img src={sku.sketch_url} alt="Front view" className="w-full object-contain" />
-                          </div>
-                        ) : (
-                          <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] py-12 flex items-center justify-center">
-                            <p className="text-[11px] text-carbon/15 text-center px-4">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
-                          </div>
-                        )}
-                      </>
+                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] h-48 max-w-md flex items-center justify-center">
+                        <p className="text-[11px] text-carbon/15">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
+                      </div>
                     )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Divider */}
@@ -389,8 +386,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         {/* ═══ STEP 2: COLOR-UP SHEET ═══ */}
         {activeStep === 1 && (() => {
           const defaultZones = getDefaultZones(sku.category);
-          const activeCw = skuColorways[0]; // Show first colorway's zones by default
-          const [expandedCw, setExpandedCw] = React.useState<string | null>(activeCw?.id || null);
+          // expandedCw state is at component level to respect React hooks rules
 
           const ensureZones = (cw: SkuColorway): ColorwayZone[] => {
             if (cw.zones && cw.zones.length > 0) return cw.zones;
