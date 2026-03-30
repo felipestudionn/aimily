@@ -19,11 +19,21 @@ interface RequestBody {
 
 // Build the sketch prompt — based on the user's proven GPT system prompt
 function buildSketchPrompt(garmentType: string, fabric: string, additionalNotes: string): string {
-  return `A partir de esta foto de referencia, genera un FLAT SKETCH TÉCNICO de la prenda.
+  const isFootwear = garmentType === 'CALZADO' || /shoe|sneaker|boot|sandal|footwear|calzado/i.test(garmentType);
+
+  const viewInstruction = isFootwear
+    ? `Composición con DOS VISTAS del MISMO zapato en una sola imagen:
+- MITAD SUPERIOR: vista lateral de perfil (zapato apuntando a la izquierda, apoyado en línea base horizontal). Mostrar todos los paneles, costuras, suela, y detalles constructivos del lateral.
+- MITAD INFERIOR: vista cenital/planta (mirando el zapato desde arriba). Mostrar la apertura del collar, lengüeta, ojales, contorno del toe box, y distribución de paneles superiores.
+- Ambas vistas deben ser del MISMO diseño de zapato. Un solo zapato por vista, no un par.
+- Separar las vistas con una línea horizontal fina.`
+    : '- Vista frontal';
+
+  return `A partir de esta foto de referencia, genera un FLAT SKETCH TÉCNICO.
 
 REGLAS DEL DIBUJO:
 - Flat sketch técnico para ficha técnica / tech pack
-- Vista frontal
+${viewInstruction}
 - Fondo blanco puro
 - Trazo negro fino, limpio y uniforme
 - Sin cuerpo humano, sin perspectiva, sin sombras, sin color, sin texturas
@@ -52,12 +62,16 @@ async function generateSketchWithOpenAI(
   const extension = photoMimeType.includes('png') ? 'png' : 'png';
   const blob = new Blob([imageBuffer], { type: 'image/png' });
 
+  // Use portrait for footwear dual-view, square for apparel
+  const isFootwearPrompt = prompt.includes('DOS VISTAS');
+  const size = isFootwearPrompt ? '1024x1536' : '1024x1024';
+
   const formData = new FormData();
   formData.append('model', 'gpt-image-1');
   formData.append('image', blob, `photo.${extension}`);
   formData.append('prompt', prompt);
   formData.append('n', '1');
-  formData.append('size', '1024x1024');
+  formData.append('size', size);
   formData.append('quality', 'high');
 
   const response = await fetch('https://api.openai.com/v1/images/edits', {
