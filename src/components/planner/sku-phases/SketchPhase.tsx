@@ -218,19 +218,19 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               {/* Option A: From reference photo */}
               <div className="space-y-4 mb-8">
                 <p className="text-[11px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('fromReference') || 'From Reference'}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-6">
                   {/* LEFT: Reference photo + generate button */}
                   <div className="space-y-3">
                     <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referencePhoto') || 'Reference Photo'}</p>
                     {sku.reference_image_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
-                        <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
+                      <div className="border border-carbon/[0.06] overflow-hidden bg-white">
+                        <img src={sku.reference_image_url} alt="" className="w-full object-contain" />
                       </div>
                     ) : (
                       <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
                         placeholder={stepLabel('uploadReference') || 'Upload reference'}
                         onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
-                        onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[55vh]" />
+                        onRemove={() => {}} aspectClass="aspect-square" />
                     )}
                     <button onClick={async () => {
                       if (!sku.reference_image_url) return;
@@ -286,12 +286,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         <div>
                           <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('sideProfile') || 'Side Profile'}</p>
                           {sku.sketch_url ? (
-                            <div className="border border-carbon/[0.06] overflow-hidden aspect-[5/4] bg-white">
-                              <img src={sku.sketch_url} alt="Side profile" className="w-full h-full object-contain" />
+                            <div className="border border-carbon/[0.06] overflow-hidden bg-white p-2">
+                              <img src={sku.sketch_url} alt="Side profile" className="w-full object-contain" />
                             </div>
                           ) : (
-                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[5/4] flex items-center justify-center">
-                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/12 text-center">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>}
+                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] py-10 flex items-center justify-center">
+                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15 text-center">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>}
                             </div>
                           )}
                         </div>
@@ -299,12 +299,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         <div>
                           <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('topDown') || 'Top Down'}</p>
                           {sketchTopView ? (
-                            <div className="border border-carbon/[0.06] overflow-hidden aspect-[5/4] bg-white">
-                              <img src={sketchTopView} alt="Top down" className="w-full h-full object-contain" />
+                            <div className="border border-carbon/[0.06] overflow-hidden bg-white p-2">
+                              <img src={sketchTopView} alt="Top down" className="w-full object-contain" />
                             </div>
                           ) : (
-                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[5/4] flex items-center justify-center">
-                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/12 text-center">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>}
+                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] py-10 flex items-center justify-center">
+                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15 text-center">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>}
                             </div>
                           )}
                         </div>

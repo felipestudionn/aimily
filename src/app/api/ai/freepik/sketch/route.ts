@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     if (isFootwear) {
       prompts.push({
         label: 'Side Profile',
-        prompt: `Technical fashion flat sketch, black line drawing on pure white background. Side profile view of a single shoe pointing left, resting on a horizontal ground line. Show the full lateral silhouette: upper panels, tongue, closure system, midsole profile, outsole tread, heel counter, toe box shape, all seam lines. Shoe: ${designDesc}. ${baseRules}`,
+        prompt: `Technical fashion flat sketch, black line drawing on pure white background. Side profile view of a single shoe pointing right (exterior/lateral side visible), resting on a horizontal ground line. Show the full lateral exterior silhouette: upper panels, tongue, closure system, midsole profile, outsole tread, heel counter, toe box shape, all seam lines. Shoe: ${designDesc}. ${baseRules}`,
       });
       prompts.push({
         label: 'Top Down',

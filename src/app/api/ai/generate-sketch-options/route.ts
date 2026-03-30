@@ -48,7 +48,7 @@ async function generateWithOpenAI(prompt: string, photoBase64: string, size = '1
 /* ── Footwear prompts ── */
 const SIDE_PROMPT = `From this reference shoe, generate a TECHNICAL FLAT SKETCH in SIDE PROFILE VIEW.
 
-MANDATORY VIEW: The shoe must be drawn from the LEFT SIDE, pointing left, resting on a horizontal ground line. Show the full lateral silhouette.
+MANDATORY VIEW: The shoe must be drawn from the RIGHT SIDE (lateral/exterior), pointing right, resting on a horizontal ground line. Show the full lateral exterior silhouette.
 
 DRAWING RULES:
 - Black line drawing on pure white background
