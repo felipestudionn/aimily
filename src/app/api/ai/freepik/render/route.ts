@@ -3,9 +3,10 @@ import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/a
 import { persistAsset } from '@/lib/storage';
 
 /* ═══════════════════════════════════════════════════════════
-   Freepik Mystic API — Sketch to Photorealistic Render
-   Uses structure_reference to preserve sketch silhouette
-   Pay-per-use ~$0.002/image
+   Freepik Mystic API — Photorealistic Render (single angle)
+   User picks angle → auto-adjusts prompt + structure_strength
+   Engine: magnific_sharpy for max texture detail
+   Styling.colors: injects exact colorway hexes
    ═══════════════════════════════════════════════════════════ */
 
 const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY;
@@ -15,8 +16,56 @@ interface DesignContext {
   productName?: string;
   productType?: string;
   colorway?: string;
+  colorHexes?: { hex: string; weight?: number }[];
   materials?: string;
   designNotes?: string;
+}
+
+export type RenderAngle = 'front' | 'three_quarter' | 'side' | 'back';
+
+interface AngleConfig {
+  label: string;
+  promptSuffix: string;
+  structureStrength: number;
+}
+
+const ANGLE_CONFIGS: Record<RenderAngle, AngleConfig> = {
+  front: {
+    label: 'Front',
+    promptSuffix: 'Straight front view, centered, symmetrical composition',
+    structureStrength: 85,
+  },
+  three_quarter: {
+    label: 'Three-Quarter',
+    promptSuffix: 'Three-quarter angle view, showing depth and volume, slightly rotated 30-45 degrees',
+    structureStrength: 70,
+  },
+  side: {
+    label: 'Side Profile',
+    promptSuffix: 'Side profile view, 90-degree lateral angle, showing silhouette and sole/hem construction',
+    structureStrength: 50,
+  },
+  back: {
+    label: 'Back',
+    promptSuffix: 'Back view, showing rear construction, heel counter, back panel details',
+    structureStrength: 40,
+  },
+};
+
+function buildPrompt(dc: DesignContext, angleConfig: AngleConfig): string {
+  return [
+    `Photorealistic product photograph of ${dc.productName || 'fashion product'}`,
+    dc.productType ? `Product type: ${dc.productType}` : '',
+    dc.colorway ? `Color: ${dc.colorway}` : '',
+    dc.materials ? `Material finish: ${dc.materials}` : '',
+    dc.designNotes ? `Design: ${dc.designNotes}` : '',
+    angleConfig.promptSuffix,
+    'Product only on neutral light grey background',
+    'Soft natural shadow beneath product, studio photography lighting',
+    'Sharp focus on material texture, stitching details, and construction',
+    'No human body, no mannequin, clean background',
+    'Photorealistic, high-end e-commerce product shot',
+  ].filter(Boolean).join('. ');
 }
 
 export async function POST(req: NextRequest) {
@@ -31,48 +80,53 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Freepik API key not configured' }, { status: 500 });
     }
 
-    const { sketch_base64, design_context, collectionPlanId } = await req.json();
+    const { sketch_base64, design_context, collectionPlanId, angle } = await req.json();
 
     if (!sketch_base64) {
       return NextResponse.json({ error: 'sketch_base64 is required' }, { status: 400 });
     }
 
     const dc: DesignContext = design_context || {};
+    const selectedAngle: RenderAngle = (angle && angle in ANGLE_CONFIGS) ? angle : 'three_quarter';
+    const config = ANGLE_CONFIGS[selectedAngle];
 
-    // Build prompt from design context
-    const promptParts = [
-      `Photorealistic product photograph of ${dc.productName || 'fashion product'}`,
-      dc.productType ? `Product type: ${dc.productType}` : '',
-      dc.colorway ? `Color: ${dc.colorway}` : '',
-      dc.materials ? `Material finish: ${dc.materials}` : '',
-      dc.designNotes ? `Design: ${dc.designNotes}` : '',
-      'Three-quarter angle view, pair of shoes, neutral light grey background',
-      'Soft natural shadow beneath product, studio photography lighting',
-      'Sharp focus on material texture, stitching details, and construction',
-      'No human body, no mannequin, product only on clean background',
-      'Photorealistic, high-end e-commerce product shot',
-    ].filter(Boolean).join('. ');
+    const prompt = buildPrompt(dc, config);
 
     // Strip data URL prefix if present
     const base64Data = sketch_base64.includes('base64,')
       ? sketch_base64.split('base64,')[1]
       : sketch_base64;
 
-    // Call Freepik Mystic API
+    // Build styling.colors from colorway hexes
+    const styling: Record<string, unknown> | undefined = dc.colorHexes?.length
+      ? {
+          colors: dc.colorHexes.slice(0, 5).map(c => ({
+            color: c.hex.toUpperCase().replace(/^(?!#)/, '#'),
+            weight: c.weight ?? 0.5,
+          })),
+        }
+      : undefined;
+
+    const body: Record<string, unknown> = {
+      prompt,
+      structure_reference: base64Data,
+      structure_strength: config.structureStrength,
+      resolution: '1k',
+      aspect_ratio: 'square_1_1',
+      model: 'realism',
+      engine: 'magnific_sharpy',
+      creative_detailing: '50',
+    };
+    if (styling) body.styling = styling;
+
+    // Create task
     const createRes = await fetch(FREEPIK_API, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-freepik-api-key': FREEPIK_API_KEY,
       },
-      body: JSON.stringify({
-        prompt: promptParts,
-        structure_reference: base64Data,
-        structure_strength: 80,
-        resolution: '1k',
-        aspect_ratio: 'square_1_1',
-        model: 'realism',
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!createRes.ok) {
@@ -88,9 +142,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No task_id returned' }, { status: 500 });
     }
 
-    // Poll for completion (max 90 seconds)
+    // Poll for completion (max 120 seconds)
     let imageUrl: string | null = null;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 40; i++) {
       await new Promise(r => setTimeout(r, 3000));
 
       const statusRes = await fetch(`${FREEPIK_API}/${taskId}`, {
@@ -100,8 +154,7 @@ export async function POST(req: NextRequest) {
       const status = statusData.data?.status;
 
       if (status === 'COMPLETED') {
-        const images = statusData.data?.generated || [];
-        imageUrl = images[0] || null;
+        imageUrl = statusData.data?.generated?.[0] || null;
         break;
       }
       if (status === 'FAILED') {
@@ -114,28 +167,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Render timed out' }, { status: 504 });
     }
 
-    // Persist to Supabase Storage if collectionPlanId provided
+    // Persist to Supabase Storage
     let finalUrl = imageUrl;
     if (collectionPlanId) {
       try {
         const { publicUrl } = await persistAsset({
           collectionPlanId,
           assetType: 'render',
-          name: `Render ${dc.productName || 'Product'}`,
+          name: `Render ${dc.productName || 'Product'} — ${config.label}`,
           sourceUrl: imageUrl,
           phase: 'design',
-          metadata: { provider: 'freepik-mystic', taskId, prompt: promptParts },
+          metadata: { provider: 'freepik-mystic', taskId, angle: selectedAngle },
           uploadedBy: user.id,
         });
         finalUrl = publicUrl;
       } catch (err) {
         console.error('[Freepik Render] Persist failed:', err);
-        // Still return the Freepik URL if persist fails
       }
     }
 
     return NextResponse.json({
       images: [{ url: finalUrl, originalUrl: imageUrl }],
+      angle: selectedAngle,
       taskId,
       provider: 'freepik-mystic',
     });

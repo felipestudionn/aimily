@@ -24,6 +24,59 @@ interface CollectionBuilderProps {
   collectionPlanId: string;
 }
 
+/* ── SkuCardPill — mini sliding pill for Sketch/AI toggle on cards ── */
+function SkuCardPill({ hasRender, showRender, isGenerating, onToggle }: {
+  hasRender: boolean;
+  showRender: boolean;
+  isGenerating: boolean;
+  onToggle: (view: 'sketch' | 'ai') => void;
+}) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [indicator, setIndicator] = React.useState({ left: 0, width: 0 });
+  const active = isGenerating ? 'ai' : showRender ? 'ai' : 'sketch';
+
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const buttons = container.querySelectorAll<HTMLButtonElement>('[data-pill-btn]');
+    const idx = active === 'sketch' ? 0 : 1;
+    const btn = buttons[idx];
+    if (btn) setIndicator({ left: btn.offsetLeft, width: btn.offsetWidth });
+  }, [active]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative flex items-center bg-white/90 backdrop-blur-sm border border-carbon/[0.08] rounded-full p-[2px] shadow-sm"
+    >
+      <div
+        className="absolute top-[2px] h-[calc(100%-4px)] bg-carbon rounded-full transition-all duration-250 ease-out"
+        style={{ left: indicator.left, width: indicator.width }}
+      />
+      <button
+        data-pill-btn
+        onClick={() => onToggle('sketch')}
+        className={`relative z-10 px-2.5 py-1 text-[8px] font-semibold tracking-[0.08em] uppercase transition-colors duration-200 rounded-full whitespace-nowrap ${
+          active === 'sketch' ? 'text-crema' : 'text-carbon/35 hover:text-carbon/55'
+        }`}
+      >
+        Sketch
+      </button>
+      <button
+        data-pill-btn
+        onClick={() => onToggle('ai')}
+        disabled={isGenerating}
+        className={`relative z-10 px-2.5 py-1 text-[8px] font-semibold tracking-[0.08em] uppercase transition-colors duration-200 rounded-full whitespace-nowrap flex items-center gap-1 ${
+          active === 'ai' ? 'text-crema' : 'text-carbon/35 hover:text-carbon/55'
+        } ${isGenerating ? 'cursor-wait' : ''}`}
+      >
+        {isGenerating && <Loader2 className="h-2 w-2 animate-spin" />}
+        {hasRender ? 'AI' : <><Sparkles className="h-2 w-2" /> AI</>}
+      </button>
+    </div>
+  );
+}
+
 export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBuilderProps) {
   const { language } = useLanguage();
   const t = useTranslation();
@@ -1094,82 +1147,71 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       </>
                     )}
 
-                    {/* AI Render toggle — top right corner */}
+                    {/* Sketch / AI pill toggle — top center */}
                     {sku.sketch_url && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (renderImage) {
-                            // Toggle view
-                            setAiViewSkus(prev => {
-                              const next = new Set(prev);
-                              if (next.has(sku.id)) next.delete(sku.id); else next.add(sku.id);
-                              return next;
-                            });
-                          } else if (!renderingSkus.has(sku.id)) {
-                            // Generate render
-                            setRenderingSkus(prev => new Set(prev).add(sku.id));
-                            const cws = colorways.filter(c => c.sku_id === sku.id);
-                            const colorDesc = cws.map(c => `${c.name} (${c.hex_primary})`).join(', ');
-                            const matData = (designData.patterns[sku.id] || []) as { name: string; gradingNotes: string }[];
-                            const materialDesc = matData.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
-                            fetch('/api/ai/freepik/render', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                sketch_base64: sku.sketch_url,
-                                collectionPlanId,
-                                design_context: {
-                                  productName: `${sku.name} in colorway ${cws[0]?.name || 'default'}`,
-                                  productType: `${sku.family} — ${sku.category === 'CALZADO' ? 'footwear/sneaker' : sku.category === 'ROPA' ? 'clothing' : sku.category}`,
-                                  colorway: colorDesc || 'neutral tones',
-                                  materials: materialDesc || 'premium materials',
-                                  designNotes: sku.notes || '',
-                                },
-                              }),
-                            }).then(async (res) => {
-                              if (res.ok) {
-                                const data = await res.json();
-                                const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
-                                if (url) {
-                                  await updateSku(sku.id, { render_url: url });
-                                  setAiViewSkus(prev => new Set(prev).add(sku.id));
-                                  refetch();
-                                }
-                              } else {
-                                const err = await res.json().catch(() => ({}));
-                                console.error('[AI Render] Failed:', err);
-                                alert(`Render failed: ${err.error || 'Unknown error'}`);
-                              }
-                            }).catch((err) => {
-                              console.error('[AI Render] Network error:', err);
-                              alert('Render failed: network error');
-                            }).finally(() => {
-                              setRenderingSkus(prev => { const n = new Set(prev); n.delete(sku.id); return n; });
-                            });
-                          }
-                        }}
-                        className={`absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 text-[7px] font-semibold tracking-[0.08em] uppercase transition-all ${
-                          renderingSkus.has(sku.id)
-                            ? 'bg-carbon/80 text-crema cursor-wait'
-                            : showRender
-                              ? 'bg-carbon text-crema hover:bg-carbon/80'
-                              : renderImage
-                                ? 'bg-white/90 text-carbon/50 border border-carbon/[0.08] hover:bg-carbon hover:text-crema'
-                                : 'bg-white/90 text-carbon/30 border border-carbon/[0.06] hover:bg-carbon hover:text-crema opacity-0 group-hover:opacity-100'
+                      <div
+                        className={`absolute top-2 left-1/2 -translate-x-1/2 z-10 transition-opacity ${
+                          !renderImage && !renderingSkus.has(sku.id) ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'
                         }`}
-                        title={renderImage ? (showRender ? 'Show original' : 'Show AI render') : 'Generate AI render'}
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {renderingSkus.has(sku.id) ? (
-                          <><Loader2 className="h-2.5 w-2.5 animate-spin" /> AI</>
-                        ) : showRender ? (
-                          <>Original</>
-                        ) : renderImage ? (
-                          <>AI 3D</>
-                        ) : (
-                          <><Sparkles className="h-2.5 w-2.5" /> AI 3D</>
-                        )}
-                      </button>
+                        <SkuCardPill
+                          hasRender={!!renderImage}
+                          showRender={!!showRender}
+                          isGenerating={renderingSkus.has(sku.id)}
+                          onToggle={(view) => {
+                            if (view === 'ai' && !renderImage) {
+                              // Generate render
+                              setRenderingSkus(prev => new Set(prev).add(sku.id));
+                              const cws = colorways.filter(c => c.sku_id === sku.id);
+                              const colorDesc = cws.map(c => `${c.name} (${c.hex_primary})`).join(', ');
+                              const colorHexes = cws.filter(c => c.hex_primary).map(c => ({ hex: c.hex_primary, weight: 0.5 }));
+                              const matData = (designData.patterns[sku.id] || []) as { name: string; gradingNotes: string }[];
+                              const materialDesc = matData.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
+                              fetch('/api/ai/freepik/render', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  sketch_base64: sku.sketch_url,
+                                  collectionPlanId,
+                                  angle: 'three_quarter',
+                                  design_context: {
+                                    productName: `${sku.name} in colorway ${cws[0]?.name || 'default'}`,
+                                    productType: `${sku.family} — ${sku.category === 'CALZADO' ? 'footwear/sneaker' : sku.category === 'ROPA' ? 'clothing' : sku.category}`,
+                                    colorway: colorDesc || 'neutral tones',
+                                    colorHexes,
+                                    materials: materialDesc || 'premium materials',
+                                    designNotes: sku.notes || '',
+                                  },
+                                }),
+                              }).then(async (res) => {
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
+                                  if (url) {
+                                    await updateSku(sku.id, { render_url: url });
+                                    setAiViewSkus(prev => new Set(prev).add(sku.id));
+                                    refetch();
+                                  }
+                                } else {
+                                  const err = await res.json().catch(() => ({}));
+                                  console.error('[AI Render] Failed:', err);
+                                  alert(`Render failed: ${err.error || 'Unknown error'}`);
+                                }
+                              }).catch((err) => {
+                                console.error('[AI Render] Network error:', err);
+                                alert('Render failed: network error');
+                              }).finally(() => {
+                                setRenderingSkus(prev => { const n = new Set(prev); n.delete(sku.id); return n; });
+                              });
+                            } else if (view === 'ai') {
+                              setAiViewSkus(prev => new Set(prev).add(sku.id));
+                            } else {
+                              setAiViewSkus(prev => { const n = new Set(prev); n.delete(sku.id); return n; });
+                            }
+                          }}
+                        />
+                      </div>
                     )}
 
                     {/* Phase Progress Bar — bottom overlay */}

@@ -50,8 +50,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
   const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
-  const [renderUrl, setRenderUrl] = useState<string | null>(null);
+  const existingRenderUrls = sku.render_urls || {};
+  const initialAngle: 'front' | 'three_quarter' | 'side' | 'back' = existingRenderUrls.three_quarter ? 'three_quarter' : (Object.keys(existingRenderUrls)[0] as 'front' | 'three_quarter' | 'side' | 'back') || 'three_quarter';
+  const [renderUrl, setRenderUrl] = useState<string | null>(existingRenderUrls[initialAngle] || sku.render_url || null);
   const [renderGenerating, setRenderGenerating] = useState(false);
+  const [renderAngle, setRenderAngle] = useState(initialAngle);
+  const [renderUrls, setRenderUrls] = useState<Record<string, string>>(existingRenderUrls);
 
   const [confirmedSteps, setConfirmedSteps] = useState<Set<number>>(() => {
     const s = new Set<number>();
@@ -453,49 +457,91 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     <p className="text-[10px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('productRender') || 'Product Render'}</p>
                     <p className="text-[11px] text-carbon/40 mt-0.5">{stepLabel('renderDesc') || 'Generate a photorealistic render from your sketch, colors and materials'}</p>
                   </div>
-                  {!renderUrl && (
-                    <button
-                      onClick={async () => {
-                        setRenderGenerating(true);
-                        try {
-                          const primaryCw = skuColorways[0];
-                          const colorDesc = skuColorways.map(c => `${c.name} (${c.hex_primary})`).join(', ');
-                          const materialDesc = materials.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
-                          const res = await fetch('/api/ai/freepik/render', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              sketch_base64: sku.sketch_url,
-                              collectionPlanId,
-                              design_context: {
-                                productName: `${sku.name} - ${primaryCw?.name || ''}`,
-                                productType: `${sku.family} (${sku.category})`,
-                                colorway: colorDesc,
-                                materials: materialDesc || 'premium materials',
-                                designNotes: sku.notes || '',
-                              },
-                            }),
-                          });
-                          if (res.ok) {
-                            const data = await res.json();
-                            const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
-                            if (url) {
-                              setRenderUrl(url);
-                              await onUpdate({ render_url: url });
-                            }
-                          }
-                        } finally {
-                          setRenderGenerating(false);
-                        }
-                      }}
-                      disabled={renderGenerating}
-                      className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30"
-                    >
-                      {renderGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      {stepLabel('generateRender') || 'Generate Render'}
-                    </button>
-                  )}
                 </div>
+
+                {/* Angle selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] text-carbon/25 uppercase tracking-wider">{stepLabel('angle') || 'Angle'}:</span>
+                  {(['front', 'three_quarter', 'side', 'back'] as const).map(a => {
+                    const labels = { front: 'Front', three_quarter: '3/4', side: 'Side', back: 'Back' };
+                    const hasRender = !!renderUrls[a];
+                    return (
+                      <button
+                        key={a}
+                        onClick={() => {
+                          setRenderAngle(a);
+                          if (renderUrls[a]) setRenderUrl(renderUrls[a]);
+                        }}
+                        className={`px-3 py-1.5 text-[10px] font-medium tracking-[0.06em] uppercase border transition-colors relative ${
+                          renderAngle === a
+                            ? 'bg-carbon text-crema border-carbon'
+                            : 'border-carbon/[0.08] text-carbon/40 hover:border-carbon/20'
+                        }`}
+                      >
+                        {labels[a]}
+                        {hasRender && <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Generate button */}
+                <button
+                  onClick={async () => {
+                    setRenderGenerating(true);
+                    try {
+                      const primaryCw = skuColorways[0];
+                      const colorDesc = skuColorways.map(c => `${c.name} (${c.hex_primary})`).join(', ');
+                      const materialDesc = materials.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
+                      const colorHexes = skuColorways.map(c => ({ hex: c.hex_primary, weight: 0.5 }));
+                      const res = await fetch('/api/ai/freepik/render', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          sketch_base64: sku.sketch_url,
+                          collectionPlanId,
+                          angle: renderAngle,
+                          design_context: {
+                            productName: `${sku.name} - ${primaryCw?.name || ''}`,
+                            productType: `${sku.family} (${sku.category})`,
+                            colorway: colorDesc,
+                            colorHexes,
+                            materials: materialDesc || 'premium materials',
+                            designNotes: sku.notes || '',
+                          },
+                        }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
+                        if (url) {
+                          setRenderUrl(url);
+                          const updated = { ...renderUrls, [renderAngle]: url };
+                          setRenderUrls(updated);
+                          // Save primary render_url (first generated) + all angles
+                          const isFirst = !sku.render_url && Object.keys(renderUrls).length === 0;
+                          await onUpdate({
+                            ...(isFirst ? { render_url: url } : {}),
+                            render_urls: updated,
+                          } as Partial<SKU>);
+                        }
+                      } else {
+                        const err = await res.json().catch(() => ({}));
+                        alert(`Render failed: ${err.error || 'Unknown error'}`);
+                      }
+                    } finally {
+                      setRenderGenerating(false);
+                    }
+                  }}
+                  disabled={renderGenerating}
+                  className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-fit"
+                >
+                  {renderGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {renderUrls[renderAngle]
+                    ? (stepLabel('regenerateAngle') || 'Regenerate')
+                    : (stepLabel('generateRender') || 'Generate Render')
+                  }
+                </button>
 
                 {renderGenerating && (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -504,20 +550,31 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   </div>
                 )}
 
-                {renderUrl && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="border border-carbon/[0.06] overflow-hidden bg-white aspect-square">
-                      <img src={renderUrl} alt="Product render" className="w-full h-full object-contain" />
-                    </div>
-                    <div className="flex flex-col justify-center gap-3">
-                      <p className="text-[11px] text-carbon/40">{stepLabel('renderReady') || 'Render ready. You can regenerate or use this for your presentation and catalog.'}</p>
-                      <button
-                        onClick={() => { setRenderUrl(null); }}
-                        className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/30 hover:text-carbon transition-colors self-start"
-                      >
-                        {stepLabel('regenerate') || 'Regenerate'}
-                      </button>
-                    </div>
+                {/* Render gallery — show all generated angles */}
+                {Object.keys(renderUrls).length > 0 && !renderGenerating && (
+                  <div className="space-y-3">
+                    {/* Active angle large */}
+                    {renderUrl && (
+                      <div className="border border-carbon/[0.06] overflow-hidden bg-white aspect-square max-w-md">
+                        <img src={renderUrl} alt={`Render ${renderAngle}`} className="w-full h-full object-contain" />
+                      </div>
+                    )}
+                    {/* Thumbnails of all generated angles */}
+                    {Object.keys(renderUrls).length > 1 && (
+                      <div className="flex gap-2">
+                        {Object.entries(renderUrls).map(([angle, url]) => (
+                          <button
+                            key={angle}
+                            onClick={() => { setRenderAngle(angle as typeof renderAngle); setRenderUrl(url); }}
+                            className={`w-16 h-16 border overflow-hidden ${
+                              renderAngle === angle ? 'border-carbon ring-1 ring-carbon' : 'border-carbon/[0.06]'
+                            }`}
+                          >
+                            <img src={url} alt={angle} className="w-full h-full object-contain" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -40,6 +40,7 @@ export interface SKU {
   proto_iterations: ProtoIteration[];
   production_sample_url?: string;
   render_url?: string;
+  render_urls?: Record<string, string>; // {front, three_quarter, side, back}
   production_approved: boolean;
   created_at?: string;
   updated_at?: string;
