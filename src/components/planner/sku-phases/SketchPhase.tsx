@@ -218,114 +218,113 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               {/* Option A: From reference photo */}
               <div className="space-y-4 mb-8">
                 <p className="text-[11px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('fromReference') || 'From Reference'}</p>
-
-                {/* Reference photo + upload */}
-                <div className="space-y-2">
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referencePhoto') || 'Reference Photo'}</p>
-                  {sku.reference_image_url ? (
-                    <div className="border border-carbon/[0.06] overflow-hidden max-h-[30vh] bg-white w-fit">
-                      <img src={sku.reference_image_url} alt="" className="h-full max-h-[30vh] object-contain" />
-                    </div>
-                  ) : (
-                    <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
-                      placeholder={stepLabel('uploadReference') || 'Upload reference'}
-                      onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
-                      onRemove={() => {}} aspectClass="aspect-[3/2] max-h-[25vh]" />
-                  )}
-                </div>
-
-                {/* Generate button */}
-                <button onClick={async () => {
-                  if (!sku.reference_image_url) return;
-                  setGenerating(true);
-                  try {
-                    let base64: string;
-                    if (sku.reference_image_url.startsWith('data:')) {
-                      base64 = sku.reference_image_url.split(',')[1];
-                    } else {
-                      const imgRes = await fetch(sku.reference_image_url);
-                      const buf = await imgRes.arrayBuffer();
-                      const bytes = new Uint8Array(buf);
-                      let binary = '';
-                      for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
-                      base64 = btoa(binary);
-                    }
-                    const res = await fetch('/api/ai/generate-sketch-options', {
-                      method: 'POST', headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ images: [{ base64, mimeType: 'image/png', instructions: '' }], garmentType: sku.category, season: '', styleName: sku.name, fabric: '', additionalNotes: sku.notes || '', collectionPlanId }),
-                    });
-                    if (res.ok) {
-                      const data = await res.json();
-                      const views = data.sketchOptions || [];
-                      const sideView = views.find((v: { description: string }) => v.description === 'Side Profile')?.frontImageBase64 || views[0]?.frontImageBase64;
-                      const topView = views.find((v: { description: string }) => v.description === 'Top Down')?.frontImageBase64;
-                      if (sideView) {
-                        await onUpdate({
-                          sketch_url: sideView,
-                          ...(topView ? { sketch_top_url: topView } : {}),
-                        } as Partial<SKU>);
-                        if (topView) setSketchTopView(topView);
-                      }
-                    } else {
-                      const err = await res.json().catch(() => ({}));
-                      alert(`Sketch failed: ${err.error || 'Unknown error'}`);
-                    }
-                  } catch (e) {
-                    console.error('[Sketch] Error:', e);
-                    alert('Sketch generation failed');
-                  } finally { setGenerating(false); }
-                }} disabled={generating || !sku.reference_image_url}
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-fit">
-                  {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                  {stepLabel('generateFlat') || 'Generate Flat Sketch'}
-                </button>
-
-                {/* ── Two dedicated sketch view boxes ── */}
-                {sku.category === 'CALZADO' ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Side Profile box */}
-                    <div className="space-y-1.5">
-                      <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('sideProfile') || 'Side Profile'}</p>
-                      {sku.sketch_url ? (
-                        <div className="border border-carbon/[0.06] overflow-hidden aspect-square bg-white">
-                          <img src={sku.sketch_url} alt="Side profile" className="w-full h-full object-contain" />
-                        </div>
-                      ) : (
-                        <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-square flex items-center justify-center">
-                          {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15 text-center px-3">{stepLabel('sideProfilePlaceholder') || 'Side profile will appear here'}</p>}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Top Down box */}
-                    <div className="space-y-1.5">
-                      <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('topDown') || 'Top Down'}</p>
-                      {sketchTopView ? (
-                        <div className="border border-carbon/[0.06] overflow-hidden aspect-square bg-white">
-                          <img src={sketchTopView} alt="Top down" className="w-full h-full object-contain" />
-                        </div>
-                      ) : (
-                        <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-square flex items-center justify-center">
-                          {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15 text-center px-3">{stepLabel('topDownPlaceholder') || 'Top-down view will appear here'}</p>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  /* Apparel: single sketch view */
-                  <div className="space-y-1.5">
-                    <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('generatedSketch') || 'Generated Sketch'}</p>
-                    {sku.sketch_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[50vh] bg-white w-fit">
-                        <img src={sku.sketch_url} alt="Front view" className="h-full max-h-[50vh] object-contain" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* LEFT: Reference photo + generate button */}
+                  <div className="space-y-3">
+                    <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referencePhoto') || 'Reference Photo'}</p>
+                    {sku.reference_image_url ? (
+                      <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
+                        <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
                       </div>
                     ) : (
-                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[40vh] flex items-center justify-center">
-                        <p className="text-[11px] text-carbon/15 text-center px-4">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
-                      </div>
+                      <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
+                        placeholder={stepLabel('uploadReference') || 'Upload reference'}
+                        onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
+                        onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[55vh]" />
+                    )}
+                    <button onClick={async () => {
+                      if (!sku.reference_image_url) return;
+                      setGenerating(true);
+                      try {
+                        let base64: string;
+                        if (sku.reference_image_url.startsWith('data:')) {
+                          base64 = sku.reference_image_url.split(',')[1];
+                        } else {
+                          const imgRes = await fetch(sku.reference_image_url);
+                          const buf = await imgRes.arrayBuffer();
+                          const bytes = new Uint8Array(buf);
+                          let binary = '';
+                          for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
+                          base64 = btoa(binary);
+                        }
+                        const res = await fetch('/api/ai/generate-sketch-options', {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ images: [{ base64, mimeType: 'image/png', instructions: '' }], garmentType: sku.category, season: '', styleName: sku.name, fabric: '', additionalNotes: sku.notes || '', collectionPlanId }),
+                        });
+                        if (res.ok) {
+                          const data = await res.json();
+                          const views = data.sketchOptions || [];
+                          const sideView = views.find((v: { id: string }) => v.id === 'side')?.frontImageBase64 || views[0]?.frontImageBase64;
+                          const topView = views.find((v: { id: string }) => v.id === 'top')?.frontImageBase64;
+                          if (sideView) {
+                            await onUpdate({
+                              sketch_url: sideView,
+                              ...(topView ? { sketch_top_url: topView } : {}),
+                            } as Partial<SKU>);
+                            if (topView) setSketchTopView(topView);
+                          }
+                        } else {
+                          const err = await res.json().catch(() => ({}));
+                          alert(`Sketch failed: ${err.error || 'Unknown error'}`);
+                        }
+                      } catch (e) {
+                        console.error('[Sketch] Error:', e);
+                        alert('Sketch generation failed');
+                      } finally { setGenerating(false); }
+                    }} disabled={generating || !sku.reference_image_url}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-full">
+                      {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {stepLabel('generateFlat') || 'Generate Flat Sketch'}
+                    </button>
+                  </div>
+
+                  {/* RIGHT: Generated sketches */}
+                  <div className="space-y-3">
+                    {sku.category === 'CALZADO' ? (
+                      <>
+                        {/* Side Profile */}
+                        <div>
+                          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('sideProfile') || 'Side Profile'}</p>
+                          {sku.sketch_url ? (
+                            <div className="border border-carbon/[0.06] overflow-hidden aspect-[5/4] bg-white">
+                              <img src={sku.sketch_url} alt="Side profile" className="w-full h-full object-contain" />
+                            </div>
+                          ) : (
+                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[5/4] flex items-center justify-center">
+                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/12 text-center">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>}
+                            </div>
+                          )}
+                        </div>
+                        {/* Top Down */}
+                        <div>
+                          <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('topDown') || 'Top Down'}</p>
+                          {sketchTopView ? (
+                            <div className="border border-carbon/[0.06] overflow-hidden aspect-[5/4] bg-white">
+                              <img src={sketchTopView} alt="Top down" className="w-full h-full object-contain" />
+                            </div>
+                          ) : (
+                            <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[5/4] flex items-center justify-center">
+                              {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/12 text-center">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('generatedSketch') || 'Generated Sketch'}</p>
+                        {sku.sketch_url ? (
+                          <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[55vh] bg-white">
+                            <img src={sku.sketch_url} alt="Front view" className="w-full h-full object-contain" />
+                          </div>
+                        ) : (
+                          <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[55vh] flex items-center justify-center">
+                            <p className="text-[11px] text-carbon/15 text-center px-4">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Divider */}
