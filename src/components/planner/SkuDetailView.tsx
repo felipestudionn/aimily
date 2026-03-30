@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Loader2, Trash2, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import type { SKU, DesignPhase } from '@/hooks/useSkus';
@@ -142,7 +143,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     isPhaseAdvance: true,
   };
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-[80] bg-[#F5F1E8] flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
     >
@@ -282,6 +283,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
