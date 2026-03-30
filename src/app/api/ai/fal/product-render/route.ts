@@ -63,13 +63,21 @@ export async function POST(req: NextRequest) {
       image_size: { width: width || 1024, height: height || 1024 },
     };
 
-    if (image_url) {
+    let model = 'fal-ai/flux-2-pro';
+
+    if (design_context && image_url) {
+      // Use ControlNet Canny to preserve EXACT sketch lines
+      model = 'fal-ai/flux-general';
+      input.controlnets = [{
+        path: 'fal-ai/flux-general/canny',
+        control_image_url: image_url,
+        conditioning_scale: 0.85,
+      }];
+    } else if (image_url) {
       input.image_url = image_url;
       input.strength = 0.75;
     }
 
-    // Use Kontext for sketch-to-render (preserves structure), Flux 2 Pro for other renders
-    const model = design_context && image_url ? 'fal-ai/flux-pro/kontext' : 'fal-ai/flux-2-pro';
     const result = await fal.subscribe(model, { input } as any);
     const falImages = result.data?.images || [];
 
