@@ -19,22 +19,36 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
-    const { image_url, prompt, background, width, height, story_context, collectionPlanId } = await req.json();
+    const { image_url, prompt, background, width, height, story_context, collectionPlanId, design_context } = await req.json();
 
     if (!image_url && !prompt) {
       return NextResponse.json({ error: 'image_url or prompt is required' }, { status: 400 });
     }
 
-    const promptParts = [
-      prompt || 'Professional product photography',
-    ];
-    if (story_context) {
-      promptParts.push(`Story context: "${story_context.name}" — ${story_context.tone || ''}`);
-      if (story_context.brand_personality) promptParts.push(`Brand aesthetic: ${story_context.brand_personality}`);
+    const promptParts: string[] = [];
+
+    // Design context — structured data from SKU (sketch + colors + materials)
+    if (design_context) {
+      const dc = design_context;
+      promptParts.push(`Photorealistic product photograph of ${dc.productName || 'fashion product'}`);
+      if (dc.productType) promptParts.push(`Product type: ${dc.productType}`);
+      if (dc.colorway) promptParts.push(`Color: ${dc.colorway}`);
+      if (dc.materials) promptParts.push(`Material finish: ${dc.materials}`);
+      if (dc.designNotes) promptParts.push(`Design: ${dc.designNotes}`);
+      promptParts.push('Three-quarter angle view, soft drop shadow, neutral light grey background');
+      promptParts.push('Studio lighting, product photography, high-end e-commerce quality');
+      promptParts.push('Sharp focus on material texture and construction details');
+      promptParts.push('No human body, no mannequin, product only, floating on background');
+    } else {
+      promptParts.push(prompt || 'Professional product photography');
+      if (story_context) {
+        promptParts.push(`Story context: "${story_context.name}" — ${story_context.tone || ''}`);
+        if (story_context.brand_personality) promptParts.push(`Brand aesthetic: ${story_context.brand_personality}`);
+      }
+      promptParts.push(background ? `Background: ${background}` : 'Clean white studio background');
+      promptParts.push('High resolution, commercial quality, fashion product shot');
+      promptParts.push('Sharp focus, professional lighting, e-commerce ready');
     }
-    promptParts.push(background ? `Background: ${background}` : 'Clean white studio background');
-    promptParts.push('High resolution, commercial quality, fashion product shot');
-    promptParts.push('Sharp focus, professional lighting, e-commerce ready');
 
     const fullPrompt = promptParts.join('. ');
 
@@ -47,7 +61,8 @@ export async function POST(req: NextRequest) {
 
     if (image_url) {
       input.image_url = image_url;
-      input.strength = 0.75;
+      // Lower strength for design-to-render (more transformation from sketch)
+      input.strength = design_context ? 0.45 : 0.75;
     }
 
     const result = await fal.subscribe('fal-ai/flux-2-pro', { input } as any);

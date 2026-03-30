@@ -50,6 +50,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
   const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
+  const [renderUrl, setRenderUrl] = useState<string | null>(null);
+  const [renderGenerating, setRenderGenerating] = useState(false);
 
   const [confirmedSteps, setConfirmedSteps] = useState<Set<number>>(() => {
     const s = new Set<number>();
@@ -440,6 +442,84 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             {!(confirmedSteps.has(0) && confirmedSteps.has(1) && confirmedSteps.has(2)) && (
               <div className="p-3 bg-carbon/[0.02] border border-carbon/[0.06]">
                 <p className="text-[10px] text-carbon/30">{stepLabel('techPackPending') || 'Complete Sketch, Colorways and Materials to finalize the tech pack.'}</p>
+              </div>
+            )}
+
+            {/* ── Product Render — AI realistic photo from sketch + colors + materials ── */}
+            {sku.sketch_url && skuColorways.length > 0 && (
+              <div className="border border-carbon/[0.06] bg-white p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('productRender') || 'Product Render'}</p>
+                    <p className="text-[11px] text-carbon/40 mt-0.5">{stepLabel('renderDesc') || 'Generate a photorealistic render from your sketch, colors and materials'}</p>
+                  </div>
+                  {!renderUrl && (
+                    <button
+                      onClick={async () => {
+                        setRenderGenerating(true);
+                        try {
+                          const primaryCw = skuColorways[0];
+                          const colorDesc = skuColorways.map(c => `${c.name} (${c.hex_primary})`).join(', ');
+                          const materialDesc = materials.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
+                          const res = await fetch('/api/ai/fal/product-render', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              image_url: sku.sketch_url,
+                              collectionPlanId,
+                              design_context: {
+                                productName: `${sku.name} - ${primaryCw?.name || ''}`,
+                                productType: `${sku.family} (${sku.category})`,
+                                colorway: colorDesc,
+                                materials: materialDesc || 'premium materials',
+                                designNotes: sku.notes || '',
+                              },
+                            }),
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
+                            if (url) {
+                              setRenderUrl(url);
+                              await onUpdate({ render_url: url } as unknown as Partial<typeof sku>);
+                            }
+                          }
+                        } finally {
+                          setRenderGenerating(false);
+                        }
+                      }}
+                      disabled={renderGenerating}
+                      className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30"
+                    >
+                      {renderGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {stepLabel('generateRender') || 'Generate Render'}
+                    </button>
+                  )}
+                </div>
+
+                {renderGenerating && (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
+                    <p className="text-[11px] text-carbon/25">{stepLabel('renderGenerating') || 'Generating photorealistic render...'}</p>
+                  </div>
+                )}
+
+                {renderUrl && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="border border-carbon/[0.06] overflow-hidden bg-white aspect-square">
+                      <img src={renderUrl} alt="Product render" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="flex flex-col justify-center gap-3">
+                      <p className="text-[11px] text-carbon/40">{stepLabel('renderReady') || 'Render ready. You can regenerate or use this for your presentation and catalog.'}</p>
+                      <button
+                        onClick={() => { setRenderUrl(null); }}
+                        className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/30 hover:text-carbon transition-colors self-start"
+                      >
+                        {stepLabel('regenerate') || 'Regenerate'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
