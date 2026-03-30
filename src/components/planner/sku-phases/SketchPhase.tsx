@@ -55,7 +55,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
   const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
   const existingRenderUrls = sku.render_urls || {};
-  const defaultAngle = sku.category === 'CALZADO' ? 'side' : 'three_quarter';
+  const defaultAngle = 'three_quarter' as const;
   const initialAngle: 'front' | 'three_quarter' | 'side' | 'back' = existingRenderUrls[defaultAngle] ? defaultAngle : (Object.keys(existingRenderUrls)[0] as 'front' | 'three_quarter' | 'side' | 'back') || defaultAngle;
   const [renderUrl, setRenderUrl] = useState<string | null>(existingRenderUrls[initialAngle] || sku.render_url || null);
   const [renderGenerating, setRenderGenerating] = useState(false);

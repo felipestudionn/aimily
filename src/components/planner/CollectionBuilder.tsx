@@ -1178,7 +1178,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                                 body: JSON.stringify({
                                   sketch_base64: sku.sketch_url,
                                   collectionPlanId,
-                                  angle: sku.category === 'CALZADO' ? 'side' : 'three_quarter',
+                                  angle: 'three_quarter',
                                   design_context: {
                                     productName: `${sku.name} in colorway ${primaryCw?.name || 'default'}`,
                                     productType: `${sku.family} — ${sku.category === 'CALZADO' ? 'footwear/sneaker' : sku.category === 'ROPA' ? 'clothing' : sku.category}`,
