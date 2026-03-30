@@ -216,6 +216,7 @@ export function ColorwayManager({ skus, colorways, onAdd, onUpdate, onDelete }: 
       material_swatch_url: null,
       status: 'proposed',
       position,
+      zones: [],
     });
   };
 

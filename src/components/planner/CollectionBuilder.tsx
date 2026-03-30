@@ -1164,8 +1164,14 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                               // Generate render
                               setRenderingSkus(prev => new Set(prev).add(sku.id));
                               const cws = colorways.filter(c => c.sku_id === sku.id);
+                              const primaryCw = cws[0];
                               const colorDesc = cws.map(c => `${c.name} (${c.hex_primary})`).join(', ');
-                              const colorHexes = cws.filter(c => c.hex_primary).map(c => ({ hex: c.hex_primary, weight: 0.5 }));
+                              const colorZones = primaryCw?.zones?.length ? primaryCw.zones.map((z: { zone: string; hex: string }) => ({ zone: z.zone, hex: z.hex })) : [];
+                              const colorHexes = colorZones.length > 0
+                                ? colorZones.map((z: { hex: string }) => ({ hex: z.hex, weight: 0.5 }))
+                                : cws.filter(c => c.hex_primary).map(c => ({ hex: c.hex_primary, weight: 0.5 }));
+                              const matZones = sku.material_zones?.filter((m: { material: string }) => m.material) || [];
+                              const materialZones = matZones.map((m: { zone: string; material: string; finish?: string }) => ({ zone: m.zone, material: m.material, finish: m.finish }));
                               const matData = (designData.patterns[sku.id] || []) as { name: string; gradingNotes: string }[];
                               const materialDesc = matData.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
                               fetch('/api/ai/freepik/render', {
@@ -1176,10 +1182,12 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                                   collectionPlanId,
                                   angle: 'three_quarter',
                                   design_context: {
-                                    productName: `${sku.name} in colorway ${cws[0]?.name || 'default'}`,
+                                    productName: `${sku.name} in colorway ${primaryCw?.name || 'default'}`,
                                     productType: `${sku.family} — ${sku.category === 'CALZADO' ? 'footwear/sneaker' : sku.category === 'ROPA' ? 'clothing' : sku.category}`,
                                     colorway: colorDesc || 'neutral tones',
                                     colorHexes,
+                                    colorZones,
+                                    materialZones,
                                     materials: materialDesc || 'premium materials',
                                     designNotes: sku.notes || '',
                                   },

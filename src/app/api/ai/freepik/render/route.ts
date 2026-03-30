@@ -12,11 +12,16 @@ import { persistAsset } from '@/lib/storage';
 const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY;
 const FREEPIK_API = 'https://api.freepik.com/v1/ai/mystic';
 
+interface ZoneColor { zone: string; hex: string; }
+interface ZoneMaterial { zone: string; material: string; finish?: string; }
+
 interface DesignContext {
   productName?: string;
   productType?: string;
   colorway?: string;
   colorHexes?: { hex: string; weight?: number }[];
+  colorZones?: ZoneColor[];
+  materialZones?: ZoneMaterial[];
   materials?: string;
   designNotes?: string;
 }
@@ -53,11 +58,22 @@ const ANGLE_CONFIGS: Record<RenderAngle, AngleConfig> = {
 };
 
 function buildPrompt(dc: DesignContext, angleConfig: AngleConfig): string {
+  // Build rich zone-based descriptions if available
+  const zoneColorDesc = dc.colorZones?.length
+    ? 'Color specification by component: ' + dc.colorZones.map(z => `${z.zone}: ${z.hex}`).join(', ')
+    : dc.colorway ? `Color: ${dc.colorway}` : '';
+
+  const zoneMaterialDesc = dc.materialZones?.filter(z => z.material).length
+    ? 'Material specification by component: ' + dc.materialZones.filter(z => z.material).map(z =>
+        `${z.zone}: ${z.material}${z.finish ? ` (${z.finish})` : ''}`
+      ).join(', ')
+    : dc.materials ? `Material finish: ${dc.materials}` : '';
+
   return [
     `Photorealistic product photograph of ${dc.productName || 'fashion product'}`,
     dc.productType ? `Product type: ${dc.productType}` : '',
-    dc.colorway ? `Color: ${dc.colorway}` : '',
-    dc.materials ? `Material finish: ${dc.materials}` : '',
+    zoneColorDesc,
+    zoneMaterialDesc,
     dc.designNotes ? `Design: ${dc.designNotes}` : '',
     angleConfig.promptSuffix,
     'Product only on neutral light grey background',

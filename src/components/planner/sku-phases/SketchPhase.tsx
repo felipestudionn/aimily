@@ -3,15 +3,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Sparkles, Loader2, Plus, Trash2,
-  Check, X, GripVertical, ArrowRight,
+  Check, X,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { SKU } from '@/hooks/useSkus';
-import type { SkuColorway } from '@/types/design';
+import type { SkuColorway, ColorwayZone, MaterialZone } from '@/types/design';
 import { useSkuLifecycle } from './SkuLifecycleContext';
 import { ImageUploadArea } from './shared';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
+import { getDefaultZones, zonesToColorwayZones } from '@/lib/product-zones';
 import type { FooterAction } from '../SkuDetailView';
 
 type InputMode = 'free' | 'ai';
@@ -35,7 +36,7 @@ interface SketchPhaseProps {
 export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterAction, onAdvancePhase }: SketchPhaseProps) {
   const t = useTranslation();
   const { language } = useLanguage();
-  const { colorways, addColorway, updateColorway, deleteColorway, designData, saveDesignData, collectionPlanId } = useSkuLifecycle();
+  const { colorways, addColorway, updateColorway, deleteColorway, designData, collectionPlanId } = useSkuLifecycle();
 
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
   const materials = (designData.patterns[sku.id] || []) as { name: string; url: string; fileType: string; gradingNotes: string }[];
@@ -293,38 +294,125 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           </div>
         )}
 
-        {/* ═══ STEP 2: COLORWAYS ═══ */}
-        {activeStep === 1 && (
+        {/* ═══ STEP 2: COLOR-UP SHEET ═══ */}
+        {activeStep === 1 && (() => {
+          const defaultZones = getDefaultZones(sku.category);
+          const activeCw = skuColorways[0]; // Show first colorway's zones by default
+          const [expandedCw, setExpandedCw] = React.useState<string | null>(activeCw?.id || null);
+
+          const ensureZones = (cw: SkuColorway): ColorwayZone[] => {
+            if (cw.zones && cw.zones.length > 0) return cw.zones;
+            // Migrate: create zones from defaults + existing hex_primary
+            return defaultZones.map((z, i) => ({
+              zone: z.zone,
+              hex: i === 0 ? cw.hex_primary : z.defaultHex,
+            }));
+          };
+
+          const updateZone = (cwId: string, zoneIdx: number, field: keyof ColorwayZone, value: string) => {
+            const cw = skuColorways.find(c => c.id === cwId);
+            if (!cw) return;
+            const zones = [...ensureZones(cw)];
+            zones[zoneIdx] = { ...zones[zoneIdx], [field]: value };
+            // Also update hex_primary from first zone for backward compat
+            const primary = zones[0]?.hex || cw.hex_primary;
+            const secondary = zones[1]?.hex || null;
+            const accent = zones[2]?.hex || null;
+            updateColorway(cwId, { zones, hex_primary: primary, hex_secondary: secondary, hex_accent: accent } as Partial<SkuColorway>);
+          };
+
+          const addZoneToCw = (cwId: string) => {
+            const cw = skuColorways.find(c => c.id === cwId);
+            if (!cw) return;
+            const zones = [...ensureZones(cw), { zone: 'Custom', hex: '#808080' }];
+            updateColorway(cwId, { zones } as Partial<SkuColorway>);
+          };
+
+          const removeZoneFromCw = (cwId: string, zoneIdx: number) => {
+            const cw = skuColorways.find(c => c.id === cwId);
+            if (!cw) return;
+            const zones = ensureZones(cw).filter((_, i) => i !== zoneIdx);
+            updateColorway(cwId, { zones } as Partial<SkuColorway>);
+          };
+
+          return (
           <div className="space-y-4">
             {sku.sketch_url && (
               <div className="flex items-center gap-3 p-2.5 bg-white border border-carbon/[0.04]">
                 <div className="w-10 h-10 border border-carbon/[0.06] overflow-hidden shrink-0 bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
-                <p className="text-[10px] text-carbon/35">{stepLabel('sketchConfirmed') || 'Sketch confirmed'} — {stepLabel('colorwaysStepDesc') || 'now define your color palette'}</p>
+                <p className="text-[10px] text-carbon/35">{stepLabel('sketchConfirmed') || 'Sketch confirmed'} — {stepLabel('colorUpDesc') || 'assign colors to each product zone'}</p>
               </div>
             )}
+
+            {/* Existing colorways — expandable zone editor */}
             {(mode === 'free' || skuColorways.length > 0) && (
-              <div className="space-y-2">
-                {skuColorways.map((cw) => (
-                  <div key={cw.id} className="flex items-center gap-3 px-3 py-2.5 bg-white border border-carbon/[0.04]">
-                    <GripVertical className="h-3 w-3 text-carbon/10 shrink-0" />
-                    <div className="flex gap-1 shrink-0">
-                      <div className="w-6 h-6 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_primary }} />
-                      {cw.hex_secondary && <div className="w-6 h-6 border border-carbon/[0.06]" style={{ backgroundColor: cw.hex_secondary }} />}
+              <div className="space-y-3">
+                {skuColorways.map((cw) => {
+                  const zones = ensureZones(cw);
+                  const isOpen = expandedCw === cw.id;
+                  return (
+                    <div key={cw.id} className="border border-carbon/[0.06] bg-white overflow-hidden">
+                      {/* Colorway header */}
+                      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-carbon/[0.01]" onClick={() => setExpandedCw(isOpen ? null : cw.id)}>
+                        {/* Color strip preview — all zone colors */}
+                        <div className="flex shrink-0 h-5 overflow-hidden border border-carbon/[0.06]">
+                          {zones.map((z, i) => <div key={i} className="w-4 h-full" style={{ backgroundColor: z.hex }} />)}
+                        </div>
+                        <input value={cw.name} onClick={e => e.stopPropagation()} onChange={(e) => updateColorway(cw.id, { name: e.target.value })}
+                          className="flex-1 text-[13px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none" />
+                        <select value={cw.status} onClick={e => e.stopPropagation()} onChange={(e) => updateColorway(cw.id, { status: e.target.value as SkuColorway['status'] })}
+                          className="text-[9px] font-medium uppercase bg-transparent border border-carbon/[0.06] px-1.5 py-0.5 text-carbon/45 focus:outline-none">
+                          <option value="proposed">Proposed</option><option value="sampled">Sampled</option><option value="approved">Approved</option><option value="production">Production</option>
+                        </select>
+                        <button onClick={(e) => { e.stopPropagation(); deleteColorway(cw.id); }} className="text-carbon/15 hover:text-[#A0463C]/50"><Trash2 className="h-3 w-3" /></button>
+                        <Check className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180 text-carbon/30' : 'rotate-0 text-carbon/10'}`} />
+                      </div>
+
+                      {/* Zone grid — expanded */}
+                      {isOpen && (
+                        <div className="border-t border-carbon/[0.04] px-4 py-3 space-y-1.5">
+                          <div className="grid grid-cols-[1fr_44px_120px_1fr] gap-x-3 gap-y-0 mb-1">
+                            <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zoneLabel') || 'Zone'}</span>
+                            <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('colorLabel') || 'Color'}</span>
+                            <span className="text-[8px] text-carbon/20 uppercase tracking-wider">Pantone</span>
+                            <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('notesLabel') || 'Notes'}</span>
+                          </div>
+                          {zones.map((z, zi) => (
+                            <div key={zi} className="grid grid-cols-[1fr_44px_120px_1fr_20px] gap-x-3 items-center py-1 border-b border-carbon/[0.02] last:border-0">
+                              <input value={z.zone} onChange={(e) => updateZone(cw.id, zi, 'zone', e.target.value)}
+                                className="text-[11px] font-light text-carbon bg-transparent focus:outline-none border-b border-transparent hover:border-carbon/[0.06] focus:border-carbon/[0.12]" />
+                              <div className="relative">
+                                <div className="w-7 h-7 border border-carbon/[0.08] cursor-pointer hover:ring-1 hover:ring-carbon/20" style={{ backgroundColor: z.hex }} />
+                                <input type="color" value={z.hex} onChange={(e) => updateZone(cw.id, zi, 'hex', e.target.value)}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                              </div>
+                              <input value={z.pantone || ''} onChange={(e) => updateZone(cw.id, zi, 'pantone', e.target.value)}
+                                placeholder="e.g. 19-4052 TCX" className="text-[10px] text-carbon/40 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                              <input value={z.notes || ''} onChange={(e) => updateZone(cw.id, zi, 'notes', e.target.value)}
+                                placeholder="DTM, contrast, etc." className="text-[10px] text-carbon/30 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                              <button onClick={() => removeZoneFromCw(cw.id, zi)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>
+                            </div>
+                          ))}
+                          <button onClick={() => addZoneToCw(cw.id)}
+                            className="flex items-center gap-1.5 px-2 py-1.5 text-[9px] text-carbon/25 hover:text-carbon/45 transition-colors">
+                            <Plus className="h-2.5 w-2.5" /> {stepLabel('addZone') || 'Add zone'}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <input value={cw.name} onChange={(e) => updateColorway(cw.id, { name: e.target.value })} className="flex-1 text-[12px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none" />
-                    <input value={cw.pantone_primary || ''} onChange={(e) => updateColorway(cw.id, { pantone_primary: e.target.value })} placeholder="Pantone" className="w-20 text-[9px] text-carbon/35 bg-transparent border-b border-carbon/[0.05] focus:outline-none text-right" />
-                    <select value={cw.status} onChange={(e) => updateColorway(cw.id, { status: e.target.value as SkuColorway['status'] })} className="text-[9px] font-medium uppercase bg-transparent border border-carbon/[0.06] px-1.5 py-0.5 text-carbon/45 focus:outline-none">
-                      <option value="proposed">Proposed</option><option value="sampled">Sampled</option><option value="approved">Approved</option><option value="production">Production</option>
-                    </select>
-                    <button onClick={() => deleteColorway(cw.id)} className="text-carbon/15 hover:text-[#A0463C]/50"><Trash2 className="h-3 w-3" /></button>
-                  </div>
-                ))}
-                <button onClick={() => addColorway({ sku_id: sku.id, name: 'New Colorway', hex_primary: '#4ECDC4', hex_secondary: null as unknown as string, hex_accent: null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length })}
-                  className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:border-carbon/15 w-full justify-center">
+                  );
+                })}
+                <button onClick={() => {
+                  const zones = zonesToColorwayZones(defaultZones);
+                  addColorway({ sku_id: sku.id, name: `Colorway ${skuColorways.length + 1}`, hex_primary: zones[0]?.hex || '#3B3B3B', hex_secondary: zones[1]?.hex || null as unknown as string, hex_accent: zones[2]?.hex || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
+                }}
+                  className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:border-carbon/15 w-full justify-center">
                   <Plus className="h-2.5 w-2.5" /> {stepLabel('addColorway') || 'Add Colorway'}
                 </button>
               </div>
             )}
+
+            {/* AI colorway proposals */}
             {mode === 'ai' && !aiColorways && (
               <button onClick={async () => {
                 setGenerating(true);
@@ -338,48 +426,130 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             )}
             {aiColorways?.map((cw, idx) => (
               <div key={idx} className="border border-carbon/[0.06] bg-white p-3.5 flex items-center gap-3">
-                <div className="flex gap-0.5 shrink-0">{cw.colors.map((hex, i) => <div key={i} className="w-7 h-7 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />)}</div>
+                <div className="flex gap-0.5 shrink-0">{cw.colors.map((hex: string, i: number) => <div key={i} className="w-7 h-7 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />)}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-light text-carbon">{cw.name}</p>
                   <p className="text-[10px] text-carbon/35 mt-0.5">{cw.description}</p>
                   <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{cw.commercialRole}</span>
                 </div>
-                <button onClick={async () => { await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length }); }}
+                <button onClick={async () => {
+                  // Map AI colors to zones
+                  const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
+                  await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
+                }}
                   className="px-2.5 py-1 text-[9px] font-medium uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors shrink-0">{stepLabel('accept') || 'Accept'}</button>
               </div>
             ))}
           </div>
-        )}
+          );
+        })()}
 
-        {/* ═══ STEP 3: MATERIALS ═══ */}
-        {activeStep === 2 && (
+        {/* ═══ STEP 3: MATERIALS / BOM ═══ */}
+        {activeStep === 2 && (() => {
+          const defaultZones = getDefaultZones(sku.category);
+          const matZones: MaterialZone[] = sku.material_zones && sku.material_zones.length > 0
+            ? sku.material_zones
+            : defaultZones.map(z => ({ zone: z.zone, material: '' }));
+
+          // Get zone colors from first colorway for visual reference
+          const firstCw = skuColorways[0];
+          const cwZones = firstCw?.zones && firstCw.zones.length > 0 ? firstCw.zones : [];
+          const zoneColor = (zoneName: string): string | null => {
+            const z = cwZones.find(cz => cz.zone === zoneName);
+            return z?.hex || null;
+          };
+
+          const updateMatZone = (idx: number, field: keyof MaterialZone, value: string) => {
+            const updated = [...matZones];
+            updated[idx] = { ...updated[idx], [field]: value };
+            onUpdate({ material_zones: updated } as Partial<SKU>);
+          };
+
+          const addMatZone = () => {
+            const updated = [...matZones, { zone: 'Custom', material: '' }];
+            onUpdate({ material_zones: updated } as Partial<SKU>);
+          };
+
+          const removeMatZone = (idx: number) => {
+            const updated = matZones.filter((_, i) => i !== idx);
+            onUpdate({ material_zones: updated } as Partial<SKU>);
+          };
+
+          return (
           <div className="space-y-4">
+            {/* Context bar */}
             <div className="flex items-center gap-2.5 p-2.5 bg-white border border-carbon/[0.04]">
               {sku.sketch_url && <div className="w-8 h-8 border border-carbon/[0.06] overflow-hidden shrink-0 bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>}
-              {skuColorways.slice(0, 4).map(cw => <div key={cw.id} className="w-4 h-4 border border-carbon/[0.06] shrink-0" style={{ backgroundColor: cw.hex_primary }} />)}
-              <p className="text-[10px] text-carbon/35">{skuColorways.length} colorways — {stepLabel('materialsStepDesc') || 'now define materials'}</p>
+              {firstCw && cwZones.length > 0 && (
+                <div className="flex shrink-0 h-4 overflow-hidden border border-carbon/[0.06]">
+                  {cwZones.map((z, i) => <div key={i} className="w-3 h-full" style={{ backgroundColor: z.hex }} />)}
+                </div>
+              )}
+              <p className="text-[10px] text-carbon/35">{skuColorways.length} {skuColorways.length === 1 ? 'colorway' : 'colorways'} — {stepLabel('bomDesc') || 'assign materials to each zone'}</p>
             </div>
-            {(mode === 'free' || materials.length > 0) && (
-              <div className="space-y-2">
-                {materials.map((mat, idx) => (
-                  <div key={idx} className="flex items-center gap-3 px-3 py-2.5 bg-white border border-carbon/[0.04]">
-                    <input value={mat.name} onChange={(e) => { const m = [...materials]; m[idx] = { ...m[idx], name: e.target.value }; saveDesignData({ ...designData, patterns: { ...designData.patterns, [sku.id]: m } }); }}
-                      className="flex-1 text-[12px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:outline-none" placeholder="Material name" />
-                    <input value={mat.gradingNotes} onChange={(e) => { const m = [...materials]; m[idx] = { ...m[idx], gradingNotes: e.target.value }; saveDesignData({ ...designData, patterns: { ...designData.patterns, [sku.id]: m } }); }}
-                      placeholder="Description" className="flex-1 text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.05] focus:outline-none" />
-                    <button onClick={() => saveDesignData({ ...designData, patterns: { ...designData.patterns, [sku.id]: materials.filter((_, i) => i !== idx) } })} className="text-carbon/15 hover:text-[#A0463C]/50"><Trash2 className="h-3 w-3" /></button>
-                  </div>
-                ))}
-                <button onClick={() => saveDesignData({ ...designData, patterns: { ...designData.patterns, [sku.id]: [...materials, { name: '', url: '', fileType: 'Other', gradingNotes: '' }] } })}
+
+            {/* Zone-based BOM table */}
+            {(mode === 'free' || matZones.some(m => m.material)) && (
+              <div className="space-y-1.5">
+                {/* Headers */}
+                <div className="grid grid-cols-[20px_minmax(80px,1fr)_minmax(100px,1.5fr)_minmax(80px,1fr)_minmax(60px,0.7fr)_minmax(70px,0.8fr)_20px] gap-x-2 px-3">
+                  <span />
+                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zoneLabel') || 'Zone'}</span>
+                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('materialLabel') || 'Material'}</span>
+                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('compositionLabel') || 'Composition'}</span>
+                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('weightLabel') || 'Weight'}</span>
+                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('finishLabel') || 'Finish'}</span>
+                  <span />
+                </div>
+
+                {matZones.map((mz, idx) => {
+                  const hex = zoneColor(mz.zone);
+                  return (
+                    <div key={idx} className="grid grid-cols-[20px_minmax(80px,1fr)_minmax(100px,1.5fr)_minmax(80px,1fr)_minmax(60px,0.7fr)_minmax(70px,0.8fr)_20px] gap-x-2 items-center px-3 py-2 bg-white border border-carbon/[0.04]">
+                      {/* Color dot from colorway */}
+                      <div>{hex ? <div className="w-4 h-4 border border-carbon/[0.08]" style={{ backgroundColor: hex }} /> : <div className="w-4 h-4 border border-dashed border-carbon/[0.06]" />}</div>
+
+                      <input value={mz.zone} onChange={(e) => updateMatZone(idx, 'zone', e.target.value)}
+                        className="text-[11px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.12]" />
+
+                      <input value={mz.material} onChange={(e) => updateMatZone(idx, 'material', e.target.value)}
+                        placeholder="e.g. Nubuck leather" className="text-[11px] text-carbon/50 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+
+                      <input value={mz.composition || ''} onChange={(e) => updateMatZone(idx, 'composition', e.target.value)}
+                        placeholder="100% bovine" className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+
+                      <input value={mz.weight || ''} onChange={(e) => updateMatZone(idx, 'weight', e.target.value)}
+                        placeholder="1.4mm" className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+
+                      <input value={mz.finish || ''} onChange={(e) => updateMatZone(idx, 'finish', e.target.value)}
+                        placeholder="Tumbled" className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+
+                      <button onClick={() => removeMatZone(idx)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>
+                    </div>
+                  );
+                })}
+
+                <button onClick={addMatZone}
                   className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:border-carbon/15 w-full justify-center">
-                  <Plus className="h-2.5 w-2.5" /> {stepLabel('addMaterial') || 'Add Material'}
+                  <Plus className="h-2.5 w-2.5" /> {stepLabel('addZone') || 'Add Zone'}
                 </button>
+
+                {/* Zones without material = factory discretion note */}
+                {matZones.some(m => !m.material) && (
+                  <p className="text-[9px] text-carbon/20 italic px-1">{stepLabel('emptyZonesNote') || 'Empty zones will be noted as "factory discretion" in the tech pack.'}</p>
+                )}
               </div>
             )}
+
+            {/* AI material proposals */}
             {mode === 'ai' && !aiMaterials && (
               <button onClick={async () => {
                 setGenerating(true);
-                const colorwayContext = skuColorways.map(c => `${c.name}: ${[c.hex_primary, c.hex_secondary, c.hex_accent].filter(Boolean).join(', ')}`).join(' | ');
+                const zoneContext = matZones.map(m => m.zone).join(', ');
+                const colorwayContext = skuColorways.map(c => {
+                  const zones = c.zones && c.zones.length > 0 ? c.zones : [];
+                  return `${c.name}: ${zones.map(z => `${z.zone}=${z.hex}`).join(', ')}`;
+                }).join(' | ');
                 const result = await callDesignAI('materials-suggest', {
                   productType: sku.category || sku.type || '',
                   subcategory: sku.name || '',
@@ -388,6 +558,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   priceRange: `€${sku.pvp}`,
                   designDirection: `${sku.name} — ${sku.family}. ${sku.notes || ''}`,
                   colorways: colorwayContext,
+                  zones: zoneContext,
                 });
                 if (result?.materials) setAiMaterials(result.materials);
                 setGenerating(false);
@@ -404,12 +575,23 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <p className="text-[10px] text-carbon/35 mt-0.5">{mat.description}</p>
                   {mat.sustainability && <p className="text-[9px] text-[#2d6a4f]/50 mt-0.5 italic">{mat.sustainability}</p>}
                 </div>
-                <button onClick={() => saveDesignData({ ...designData, patterns: { ...designData.patterns, [sku.id]: [...materials, { name: `${mat.type}: ${mat.name}`, url: '', fileType: 'Other', gradingNotes: mat.description }] } })}
+                <button onClick={() => {
+                  // Find matching zone or add to first empty
+                  const updated = [...matZones];
+                  const emptyIdx = updated.findIndex(m => !m.material);
+                  if (emptyIdx >= 0) {
+                    updated[emptyIdx] = { ...updated[emptyIdx], material: mat.name, composition: mat.description };
+                  } else {
+                    updated.push({ zone: mat.type || 'Other', material: mat.name, composition: mat.description });
+                  }
+                  onUpdate({ material_zones: updated } as Partial<SKU>);
+                }}
                   className="px-2.5 py-1 text-[9px] font-medium uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors shrink-0">{stepLabel('accept') || 'Accept'}</button>
               </div>
             ))}
           </div>
-        )}
+          );
+        })()}
 
         {/* ═══ STEP 4: TECH PACK ═══ */}
         {activeStep === 3 && (
@@ -430,13 +612,41 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   </div>
                 </div>
               )}
-              {skuColorways.length > 0 && (
-                <div>
-                  <span className="text-carbon/25 uppercase tracking-wider text-[8px]">Colorways</span>
-                  <div className="flex gap-2 mt-1">{skuColorways.map(cw => <div key={cw.id} className="flex items-center gap-1"><div className="w-3.5 h-3.5" style={{ backgroundColor: cw.hex_primary }} /><span className="text-[9px] text-carbon/40">{cw.name}</span></div>)}</div>
-                </div>
-              )}
-              {materials.length > 0 && (
+              {/* Color-Up + BOM table by zone */}
+              {skuColorways.length > 0 && (() => {
+                const primaryCw = skuColorways[0];
+                const zones = primaryCw.zones?.length ? primaryCw.zones : [];
+                const mZones = sku.material_zones || [];
+                const hasZones = zones.length > 0;
+                return hasZones ? (
+                  <div>
+                    <span className="text-carbon/25 uppercase tracking-wider text-[8px]">{stepLabel('colorUpBom') || 'Color-Up & BOM'} — {primaryCw.name}</span>
+                    <div className="mt-1.5 space-y-px">
+                      {zones.map((z, i) => {
+                        const mat = mZones.find(m => m.zone === z.zone);
+                        return (
+                          <div key={i} className="flex items-center gap-2 py-0.5">
+                            <div className="w-3.5 h-3.5 border border-carbon/[0.06] shrink-0" style={{ backgroundColor: z.hex }} />
+                            <span className="text-[10px] text-carbon/50 w-20 shrink-0">{z.zone}</span>
+                            {z.pantone && <span className="text-[8px] text-carbon/25">{z.pantone}</span>}
+                            {mat?.material && <span className="text-[9px] text-carbon/35 italic">— {mat.material}{mat.finish ? ` (${mat.finish})` : ''}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {skuColorways.length > 1 && (
+                      <p className="text-[8px] text-carbon/20 mt-1">+{skuColorways.length - 1} more colorway{skuColorways.length > 2 ? 's' : ''}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-carbon/25 uppercase tracking-wider text-[8px]">Colorways</span>
+                    <div className="flex gap-2 mt-1">{skuColorways.map(cw => <div key={cw.id} className="flex items-center gap-1"><div className="w-3.5 h-3.5" style={{ backgroundColor: cw.hex_primary }} /><span className="text-[9px] text-carbon/40">{cw.name}</span></div>)}</div>
+                  </div>
+                );
+              })()}
+              {/* Legacy materials fallback */}
+              {materials.length > 0 && (!sku.material_zones || sku.material_zones.length === 0) && (
                 <div>
                   <span className="text-carbon/25 uppercase tracking-wider text-[8px]">Materials</span>
                   <div className="mt-1 space-y-0.5">{materials.map((m, i) => <p key={i} className="text-[10px] text-carbon/45">{m.name}{m.gradingNotes ? ` — ${m.gradingNotes}` : ''}</p>)}</div>
@@ -493,7 +703,13 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       const primaryCw = skuColorways[0];
                       const colorDesc = skuColorways.map(c => `${c.name} (${c.hex_primary})`).join(', ');
                       const materialDesc = materials.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
-                      const colorHexes = skuColorways.map(c => ({ hex: c.hex_primary, weight: 0.5 }));
+                      // Zone-based data for richer prompts
+                      const colorZones = primaryCw?.zones?.length ? primaryCw.zones.map(z => ({ zone: z.zone, hex: z.hex })) : [];
+                      const colorHexes = colorZones.length > 0
+                        ? colorZones.map(z => ({ hex: z.hex, weight: 0.5 }))
+                        : skuColorways.map(c => ({ hex: c.hex_primary, weight: 0.5 }));
+                      const matZones = sku.material_zones?.filter(m => m.material) || [];
+                      const materialZones = matZones.map(m => ({ zone: m.zone, material: m.material, finish: m.finish }));
                       const res = await fetch('/api/ai/freepik/render', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -506,6 +722,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                             productType: `${sku.family} (${sku.category})`,
                             colorway: colorDesc,
                             colorHexes,
+                            colorZones,
+                            materialZones,
                             materials: materialDesc || 'premium materials',
                             designNotes: sku.notes || '',
                           },

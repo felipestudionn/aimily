@@ -41,6 +41,7 @@ export interface SKU {
   production_sample_url?: string;
   render_url?: string;
   render_urls?: Record<string, string>; // {front, three_quarter, side, back}
+  material_zones?: import('@/types/design').MaterialZone[];
   production_approved: boolean;
   created_at?: string;
   updated_at?: string;
