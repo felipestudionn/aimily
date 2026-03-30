@@ -94,11 +94,15 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     const idx = order.indexOf(localSku.design_phase || 'range_plan');
     if (idx < order.length - 1) {
       setSavingPhase(true);
-      const from = order[idx];
       const next = order[idx + 1];
       await update({ design_phase: next });
       setSavingPhase(false);
-      setShowSuccess({ from, to: next });
+      // Navigate directly to next phase — no overlay
+      if (next !== 'completed') {
+        setActivePhase(next);
+      } else {
+        setShowSuccess({ from: order[idx], to: next });
+      }
     }
   }, [localSku.design_phase, update]);
 
