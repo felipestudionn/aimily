@@ -1113,11 +1113,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                             const colorDesc = cws.map(c => `${c.name} (${c.hex_primary})`).join(', ');
                             const matData = (designData.patterns[sku.id] || []) as { name: string; gradingNotes: string }[];
                             const materialDesc = matData.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
-                            fetch('/api/ai/fal/product-render', {
+                            fetch('/api/ai/freepik/render', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                image_url: sku.sketch_url,
+                                sketch_base64: sku.sketch_url,
                                 collectionPlanId,
                                 design_context: {
                                   productName: `${sku.name} in colorway ${cws[0]?.name || 'default'}`,

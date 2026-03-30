@@ -461,11 +461,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           const primaryCw = skuColorways[0];
                           const colorDesc = skuColorways.map(c => `${c.name} (${c.hex_primary})`).join(', ');
                           const materialDesc = materials.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
-                          const res = await fetch('/api/ai/fal/product-render', {
+                          const res = await fetch('/api/ai/freepik/render', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                              image_url: sku.sketch_url,
+                              sketch_base64: sku.sketch_url,
                               collectionPlanId,
                               design_context: {
                                 productName: `${sku.name} - ${primaryCw?.name || ''}`,
