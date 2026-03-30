@@ -234,7 +234,7 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
                           key={i}
                           onClick={() => {
                             setSelectedRegion(i);
-                            onUpdate({ sourcing_region: region.name, sourcing_moq: region.moq, sourcing_lead_time: region.leadTime, sourcing_cogs: region.cogsRange } as Partial<SKU>);
+                            onUpdate({ sourcing_region: region.name, sourcing_moq: region.moq, sourcing_lead_time: region.leadTime, sourcing_cogs: region.cogsRange } as unknown as Partial<SKU>);
                           }}
                           className={`border bg-white p-3 space-y-1.5 text-left transition-all ${
                             isSelected ? 'border-carbon shadow-sm' : 'border-carbon/[0.04] hover:border-carbon/[0.12]'
