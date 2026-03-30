@@ -209,12 +209,33 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       if (!sku.reference_image_url) return;
                       setGenerating(true);
                       try {
-                        const base64 = sku.reference_image_url.startsWith('data:') ? sku.reference_image_url.split(',')[1] : sku.reference_image_url;
+                        let base64: string;
+                        if (sku.reference_image_url.startsWith('data:')) {
+                          base64 = sku.reference_image_url.split(',')[1];
+                        } else {
+                          // Fetch URL and convert to base64
+                          const imgRes = await fetch(sku.reference_image_url);
+                          const buf = await imgRes.arrayBuffer();
+                          const bytes = new Uint8Array(buf);
+                          let binary = '';
+                          for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
+                          base64 = btoa(binary);
+                        }
                         const res = await fetch('/api/ai/generate-sketch-options', {
                           method: 'POST', headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ images: [{ base64, mimeType: 'image/png', instructions: '' }], garmentType: sku.category, season: '', styleName: sku.name, fabric: '', additionalNotes: sku.notes || '', collectionPlanId }),
                         });
-                        if (res.ok) { const data = await res.json(); const sketch = data.sketchOptions?.[0]?.frontImageBase64; if (sketch) await onUpdate({ sketch_url: sketch }); }
+                        if (res.ok) {
+                          const data = await res.json();
+                          const sketch = data.sketchOptions?.[0]?.frontImageBase64 || data.sketchOptions?.[0]?.url;
+                          if (sketch) await onUpdate({ sketch_url: sketch });
+                        } else {
+                          const err = await res.json().catch(() => ({}));
+                          alert(`Sketch failed: ${err.error || 'Unknown error'}`);
+                        }
+                      } catch (e) {
+                        console.error('[Sketch] Error:', e);
+                        alert('Sketch generation failed');
                       } finally { setGenerating(false); }
                     }} disabled={generating || !sku.reference_image_url}
                       className="flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-full">
