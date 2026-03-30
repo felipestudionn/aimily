@@ -65,11 +65,12 @@ export async function POST(req: NextRequest) {
 
     if (image_url) {
       input.image_url = image_url;
-      // Higher strength preserves sketch silhouette, lower allows more creative freedom
-      input.strength = design_context ? 0.68 : 0.75;
+      input.strength = 0.75;
     }
 
-    const result = await fal.subscribe('fal-ai/flux-2-pro', { input } as any);
+    // Use Kontext for sketch-to-render (preserves structure), Flux 2 Pro for other renders
+    const model = design_context && image_url ? 'fal-ai/flux-pro/kontext' : 'fal-ai/flux-2-pro';
+    const result = await fal.subscribe(model, { input } as any);
     const falImages = result.data?.images || [];
 
     // Auto-persist to Supabase Storage if collectionPlanId provided
