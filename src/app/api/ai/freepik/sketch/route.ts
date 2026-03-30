@@ -5,6 +5,7 @@ import { persistAsset } from '@/lib/storage';
 /* ═══════════════════════════════════════════════════════════
    Freepik Flux Dev — Technical Flat Sketch Generation
    €0.01/image — 5x cheaper than Fal.ai Flux 2 Pro
+   Footwear: single image with side profile + top-down views
    ═══════════════════════════════════════════════════════════ */
 
 const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY;
@@ -28,18 +29,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'description or concept is required' }, { status: 400 });
     }
 
-    // Build specialized flat sketch prompt — view depends on product category
     const isFootwear = productType === 'CALZADO' || /shoe|sneaker|boot|sandal|footwear|calzado/i.test(family || '');
 
+    // Build view-specific prompt
     const viewInstruction = isFootwear
-      ? 'Side profile view, shoe pointing left, horizontal baseline as if resting on a flat surface. Show lateral side with all panels, seams, sole unit, and construction details visible. Single shoe, not a pair.'
+      ? 'Technical spec sheet layout with TWO VIEWS of the SAME shoe on one page: TOP HALF shows side profile view (shoe pointing left, horizontal baseline, all panels, seams, sole unit visible). BOTTOM HALF shows top-down bird\'s eye view (looking straight down, showing upper opening, tongue, collar shape, lacing system, toe box contour). Both views must be the SAME shoe design. Single shoe per view, not a pair. Clear separation between views with a thin horizontal line.'
       : 'Front view only, no perspective, no shadows, no color, no human body';
 
     const promptParts = [
       'Technical fashion flat sketch, black line drawing on pure white background',
       'Clean technical illustration for a tech pack / spec sheet',
       viewInstruction,
-      'Precise construction details: seams, stitching, panels, closures, pockets, topstitching',
+      'Precise construction details: seams, stitching, panels, closures, topstitching',
       'Proportions accurate for pattern-making, factory-ready level of detail',
       'Think like a patternmaker, not an illustrator',
       `Product: ${productType || 'garment'}`,
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
 
     const fullPrompt = promptParts.join('. ');
 
+    // Use 3:4 portrait for footwear dual-view (more vertical space), square for apparel
+    const aspectRatio = isFootwear ? 'traditional_3_4' : 'square_1_1';
+
     // Create task
     const createRes = await fetch(FLUX_DEV_ENDPOINT, {
       method: 'POST',
@@ -62,7 +66,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         prompt: fullPrompt,
-        aspect_ratio: 'square_1_1',
+        aspect_ratio: aspectRatio,
       }),
     });
 
@@ -109,13 +113,14 @@ export async function POST(req: NextRequest) {
       const persisted = await Promise.all(
         images.map(async (imgUrl: string, i: number) => {
           try {
+            const viewLabel = isFootwear ? 'Side + Top-Down' : 'Front';
             const { publicUrl } = await persistAsset({
               collectionPlanId,
               assetType: 'sketch',
-              name: `AI Sketch ${skuName || ''} ${i + 1}`.trim(),
+              name: `AI Sketch ${skuName || ''} — ${viewLabel} ${i + 1}`.trim(),
               sourceUrl: imgUrl,
               phase: 'design',
-              metadata: { provider: 'freepik-flux-dev', taskId },
+              metadata: { provider: 'freepik-flux-dev', taskId, isFootwear },
               uploadedBy: user.id,
             });
             return { url: publicUrl, originalUrl: imgUrl };
@@ -124,12 +129,13 @@ export async function POST(req: NextRequest) {
           }
         })
       );
-      return NextResponse.json({ images: persisted, taskId, provider: 'freepik-flux-dev' });
+      return NextResponse.json({ images: persisted, taskId, isFootwear, provider: 'freepik-flux-dev' });
     }
 
     return NextResponse.json({
       images: images.map(url => ({ url, originalUrl: url })),
       taskId,
+      isFootwear,
       provider: 'freepik-flux-dev',
     });
   } catch (error) {
