@@ -40,7 +40,9 @@ interface SkuDetailViewProps {
 
 export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload }: SkuDetailViewProps) {
   const t = useTranslation();
-  const [activePhase, setActivePhase] = useState<DesignPhase>(sku.design_phase || 'range_plan');
+  const [activePhase, setActivePhase] = useState<DesignPhase>(
+    sku.design_phase === 'completed' ? 'production' : (sku.design_phase || 'range_plan')
+  );
   const [localSku, setLocalSku] = useState<SKU>(sku);
   const [uploading, setUploading] = useState<string | null>(null);
   const [savingPhase, setSavingPhase] = useState(false);
