@@ -46,6 +46,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'pipeline'>('cards');
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
+  const [aiViewSkus, setAiViewSkus] = useState<Set<string>>(new Set());
+  const [renderingSkus, setRenderingSkus] = useState<Set<string>>(new Set());
   const [editingNotes, setEditingNotes] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showCarryOver, setShowCarryOver] = useState(false);
@@ -1055,7 +1057,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 // Dynamic image: show most advanced phase image
                 const protoImg = sku.proto_iterations?.length > 0 ? sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] : undefined;
                 const displayImage = sku.production_sample_url || protoImg || sku.sketch_url || sku.reference_image_url;
+                const renderImage = (sku as Record<string, unknown>).render_url as string | undefined;
                 const isSketchImage = !sku.production_sample_url && !protoImg && !!sku.sketch_url;
+                const showRender = aiViewSkus.has(sku.id) && renderImage;
                 // Phase progress
                 const phaseProgress: Record<string, number> = {
                   range_plan: 0, sketch: 25, prototyping: 50, production: 75, completed: 100,
@@ -1075,7 +1079,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 >
                   {/* Image / Name area */}
                   <div className="aspect-[4/5] bg-white relative overflow-hidden">
-                    {displayImage ? (
+                    {showRender ? (
+                      <img src={renderImage} alt={sku.name} className="w-full h-full object-contain p-1" />
+                    ) : displayImage ? (
                       <img src={displayImage as string} alt={sku.name} className="w-full h-full object-contain p-2" />
                     ) : (
                       <>
@@ -1087,6 +1093,77 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         </div>
                       </>
                     )}
+
+                    {/* AI Render toggle — top right corner */}
+                    {sku.sketch_url && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (renderImage) {
+                            // Toggle view
+                            setAiViewSkus(prev => {
+                              const next = new Set(prev);
+                              if (next.has(sku.id)) next.delete(sku.id); else next.add(sku.id);
+                              return next;
+                            });
+                          } else if (!renderingSkus.has(sku.id)) {
+                            // Generate render
+                            setRenderingSkus(prev => new Set(prev).add(sku.id));
+                            const cws = colorways.filter(c => c.sku_id === sku.id);
+                            const colorDesc = cws.map(c => `${c.name} (${c.hex_primary})`).join(', ');
+                            const matData = (designData.patterns[sku.id] || []) as { name: string; gradingNotes: string }[];
+                            const materialDesc = matData.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
+                            fetch('/api/ai/fal/product-render', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                image_url: sku.sketch_url,
+                                collectionPlanId,
+                                design_context: {
+                                  productName: `${sku.name} - ${cws[0]?.name || ''}`,
+                                  productType: `${sku.family} (${sku.category})`,
+                                  colorway: colorDesc || 'neutral tones',
+                                  materials: materialDesc || 'premium materials',
+                                  designNotes: sku.notes || '',
+                                },
+                              }),
+                            }).then(async (res) => {
+                              if (res.ok) {
+                                const data = await res.json();
+                                const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
+                                if (url) {
+                                  await updateSku(sku.id, { render_url: url } as unknown as Partial<SKU>);
+                                  setAiViewSkus(prev => new Set(prev).add(sku.id));
+                                }
+                              }
+                            }).finally(() => {
+                              setRenderingSkus(prev => { const n = new Set(prev); n.delete(sku.id); return n; });
+                            });
+                          }
+                        }}
+                        className={`absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-1 text-[7px] font-semibold tracking-[0.08em] uppercase transition-all ${
+                          renderingSkus.has(sku.id)
+                            ? 'bg-carbon/80 text-crema cursor-wait'
+                            : showRender
+                              ? 'bg-carbon text-crema hover:bg-carbon/80'
+                              : renderImage
+                                ? 'bg-white/90 text-carbon/50 border border-carbon/[0.08] hover:bg-carbon hover:text-crema'
+                                : 'bg-white/90 text-carbon/30 border border-carbon/[0.06] hover:bg-carbon hover:text-crema opacity-0 group-hover:opacity-100'
+                        }`}
+                        title={renderImage ? (showRender ? 'Show original' : 'Show AI render') : 'Generate AI render'}
+                      >
+                        {renderingSkus.has(sku.id) ? (
+                          <><Loader2 className="h-2.5 w-2.5 animate-spin" /> AI</>
+                        ) : showRender ? (
+                          <>Original</>
+                        ) : renderImage ? (
+                          <>AI 3D</>
+                        ) : (
+                          <><Sparkles className="h-2.5 w-2.5" /> AI 3D</>
+                        )}
+                      </button>
+                    )}
+
                     {/* Phase Progress Bar — bottom overlay */}
                     <div className="absolute bottom-0 left-0 right-0 bg-white/90 px-3 py-2">
                       <div className="w-full h-1 bg-carbon/[0.06] mb-1.5">
