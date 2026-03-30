@@ -33,21 +33,33 @@ export async function POST(req: NextRequest) {
 
     // Build view-specific prompt
     let fullPrompt: string;
+    let useEndpoint: string;
+    let apiBody: Record<string, unknown>;
 
     if (isFootwear) {
+      // Mystic flexible for multi-view (better prompt adherence than Flux Dev)
       const designDesc = [description, concept, skuName, family].filter(Boolean).join('. ');
-      fullPrompt = `Technical spec sheet: two black line drawings of one shoe on white background, stacked vertically.
+      fullPrompt = `Product design sheet, turnaround reference sheet, multiple views of the same shoe, black line technical flat sketch on pure white background.
 
-DRAWING 1 (upper half of image): SIDE VIEW — the shoe seen from the left side, pointing left, resting on a horizontal ground line. Show the full lateral profile: upper panels, tongue, laces or straps, midsole, outsole tread, heel counter, toe box shape, all seam lines.
+Left side: SIDE PROFILE VIEW of the shoe pointing left. Full lateral view showing upper panels, tongue, strap or laces, midsole profile, outsole tread, heel counter, toe box silhouette, all seam lines and stitching.
 
-DRAWING 2 (lower half of image): TOP VIEW — the same shoe seen from directly above, bird's eye. Show the collar opening, tongue, lacing/strap layout, toe box outline, panel shapes from above.
+Right side: TOP-DOWN VIEW of the same shoe from directly above. Bird's eye perspective showing collar opening, tongue, lacing or strap layout, toe box contour, panel distribution from above.
 
-A thin horizontal line separates the two drawings. Both drawings show the SAME single shoe (not a pair).
+Both views show the EXACT same single shoe design (not a pair), consistent proportions and details across views. Clean horizontal layout, orthographic camera, consistent lighting.
 
-The shoe to draw: ${productType || 'footwear'}. ${designDesc}
+Shoe design: ${productType || 'footwear'}. ${designDesc}
 
-Rules: black ink technical flat sketch on pure white. No color, no shading, no fills. Solid lines for seams, dashed lines for stitching. Factory-ready precision. No decorative elements.`;
+Technical illustration style: precise black ink lines on white, solid lines for seams, dashed lines for stitching. No color, no shading, no fills, no decorative elements. Factory-ready tech pack quality.`;
+      useEndpoint = 'https://api.freepik.com/v1/ai/mystic';
+      apiBody = {
+        prompt: fullPrompt,
+        model: 'flexible',
+        resolution: '1k',
+        aspect_ratio: 'classic_4_3',
+        creative_detailing: '40',
+      };
     } else {
+      // Flux Dev for apparel (cheap, good for single front-view)
       const promptParts = [
         'Technical fashion flat sketch, black line drawing on pure white background',
         'Clean technical illustration for a tech pack / spec sheet',
@@ -63,22 +75,18 @@ Rules: black ink technical flat sketch on pure white. No color, no shading, no f
       if (concept) promptParts.push(`Concept: ${concept}`);
       promptParts.push('Minimal, precise, technical. Black ink on white. No decorative elements.');
       fullPrompt = promptParts.join('. ');
+      useEndpoint = FLUX_DEV_ENDPOINT;
+      apiBody = { prompt: fullPrompt, aspect_ratio: 'square_1_1' };
     }
 
-    // Use 3:4 portrait for footwear dual-view (more vertical space), square for apparel
-    const aspectRatio = isFootwear ? 'traditional_3_4' : 'square_1_1';
-
     // Create task
-    const createRes = await fetch(FLUX_DEV_ENDPOINT, {
+    const createRes = await fetch(useEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-freepik-api-key': FREEPIK_API_KEY,
       },
-      body: JSON.stringify({
-        prompt: fullPrompt,
-        aspect_ratio: aspectRatio,
-      }),
+      body: JSON.stringify(apiBody),
     });
 
     if (!createRes.ok) {
@@ -94,12 +102,13 @@ Rules: black ink technical flat sketch on pure white. No color, no shading, no f
       return NextResponse.json({ error: 'No task_id returned' }, { status: 500 });
     }
 
-    // Poll for completion (max 60 seconds)
+    // Poll for completion (max 120 seconds for Mystic, 60 for Flux)
+    const maxPolls = isFootwear ? 40 : 20;
     let images: string[] = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < maxPolls; i++) {
       await new Promise(r => setTimeout(r, 3000));
 
-      const statusRes = await fetch(`${FLUX_DEV_ENDPOINT}/${taskId}`, {
+      const statusRes = await fetch(`${useEndpoint}/${taskId}`, {
         headers: { 'x-freepik-api-key': FREEPIK_API_KEY },
       });
       const statusData = await statusRes.json();

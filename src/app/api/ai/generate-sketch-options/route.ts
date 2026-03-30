@@ -79,45 +79,54 @@ Output ONLY the technical description, no preamble. Be concise but complete.`,
   return text;
 }
 
-/* ── Step 2: Flux Dev → flat sketch from description ── */
-async function generateSketchWithFluxDev(description: string, styleName: string): Promise<string> {
+/* ── Step 2: Mystic flexible → multi-view flat sketch from description ── */
+const MYSTIC_ENDPOINT = 'https://api.freepik.com/v1/ai/mystic';
+
+async function generateSketchWithMystic(description: string, styleName: string): Promise<string> {
   if (!FREEPIK_API_KEY) throw new Error('FREEPIK_API_KEY not configured');
 
-  const prompt = `Technical spec sheet: two black line drawings of one shoe on white background, stacked vertically.
+  // Use proven multi-view keywords: "design sheet", "multiple views", "turnaround"
+  // Landscape 4:3 gives more horizontal space for side-by-side views
+  const prompt = `Product design sheet, turnaround reference sheet, multiple views of the same shoe, black line technical flat sketch on pure white background.
 
-DRAWING 1 (upper half of image): SIDE VIEW — the shoe seen from the left side, pointing left, resting on a horizontal ground line. Show the full lateral profile: upper panels, tongue, laces or straps, midsole, outsole tread, heel counter, toe box shape, all seam lines.
+Left side: SIDE PROFILE VIEW of the shoe pointing left. Full lateral view showing upper panels, tongue, strap or laces, midsole profile, outsole tread, heel counter, toe box silhouette, all seam lines and stitching.
 
-DRAWING 2 (lower half of image): TOP VIEW — the same shoe seen from directly above, bird's eye. Show the collar opening, tongue, lacing/strap layout, toe box outline, panel shapes from above.
+Right side: TOP-DOWN VIEW of the same shoe from directly above. Bird's eye perspective showing collar opening, tongue, lacing or strap layout, toe box contour, panel distribution from above.
 
-A thin horizontal line separates the two drawings. Both drawings show the SAME single shoe (not a pair).
+Both views show the EXACT same single shoe design (not a pair), consistent proportions and details across views. Clean horizontal layout, orthographic camera, consistent lighting.
 
-The shoe to draw: ${description}${styleName ? `. Style: ${styleName}` : ''}
+Shoe design: ${description}${styleName ? `. Style: ${styleName}` : ''}
 
-Rules: black ink technical flat sketch on pure white. No color, no shading, no fills. Solid lines for seams, dashed lines for stitching. Factory-ready precision. No decorative elements.`;
+Technical illustration style: precise black ink lines on white, solid lines for seams, dashed lines for stitching. No color, no shading, no fills, no decorative elements. Factory-ready tech pack quality.`;
 
-  // Create task
-  const createRes = await fetch(FLUX_DEV_ENDPOINT, {
+  const createRes = await fetch(MYSTIC_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-freepik-api-key': FREEPIK_API_KEY,
     },
-    body: JSON.stringify({ prompt, aspect_ratio: 'traditional_3_4' }),
+    body: JSON.stringify({
+      prompt,
+      model: 'flexible',         // Best prompt adherence for illustrations
+      resolution: '1k',
+      aspect_ratio: 'classic_4_3', // Landscape — more room for side-by-side views
+      creative_detailing: '40',
+    }),
   });
 
   if (!createRes.ok) {
     const err = await createRes.json().catch(() => ({}));
-    throw new Error(`Flux Dev error: ${JSON.stringify(err).slice(0, 200)}`);
+    throw new Error(`Mystic error: ${JSON.stringify(err).slice(0, 200)}`);
   }
 
   const { data: createData } = await createRes.json();
   const taskId = createData?.task_id;
-  if (!taskId) throw new Error('No task_id from Flux Dev');
+  if (!taskId) throw new Error('No task_id from Mystic');
 
-  // Poll (max 60s)
-  for (let i = 0; i < 20; i++) {
+  // Poll (max 120s — Mystic can be slower)
+  for (let i = 0; i < 40; i++) {
     await new Promise(r => setTimeout(r, 3000));
-    const statusRes = await fetch(`${FLUX_DEV_ENDPOINT}/${taskId}`, {
+    const statusRes = await fetch(`${MYSTIC_ENDPOINT}/${taskId}`, {
       headers: { 'x-freepik-api-key': FREEPIK_API_KEY },
     });
     const statusData = await statusRes.json();
@@ -127,9 +136,9 @@ Rules: black ink technical flat sketch on pure white. No color, no shading, no f
       if (!imgUrl) throw new Error('No image in completed task');
       return imgUrl;
     }
-    if (status === 'FAILED') throw new Error('Flux Dev task failed');
+    if (status === 'FAILED') throw new Error('Mystic task failed');
   }
-  throw new Error('Flux Dev timed out');
+  throw new Error('Mystic timed out');
 }
 
 /* ── Apparel path: OpenAI image edits (unchanged) ── */
@@ -217,13 +226,13 @@ export async function POST(req: NextRequest) {
     let sketchImage: string;
 
     if (isFootwear) {
-      // 2-step: Gemini describes → Flux Dev draws in correct views
-      console.log('[Sketch] Footwear detected — using Gemini Vision + Flux Dev pipeline');
+      // 2-step: Gemini describes → Mystic flexible draws in correct views
+      console.log('[Sketch] Footwear detected — using Gemini Vision + Mystic flexible pipeline');
       const description = await describeShoeWithGemini(
         primaryPhoto.base64, primaryPhoto.mimeType, body.styleName
       );
       console.log('[Sketch] Gemini description:', description.slice(0, 200));
-      sketchImage = await generateSketchWithFluxDev(description, body.styleName);
+      sketchImage = await generateSketchWithMystic(description, body.styleName);
     } else {
       // Apparel: OpenAI image edits (proven, works well for front-view)
       sketchImage = await generateSketchWithOpenAI(
@@ -245,7 +254,7 @@ export async function POST(req: NextRequest) {
           phase: 'design',
           metadata: {
             garmentType: body.garmentType,
-            pipeline: isFootwear ? 'gemini-vision+flux-dev' : 'openai-image-edits',
+            pipeline: isFootwear ? 'gemini-vision+mystic-flexible' : 'openai-image-edits',
           },
           uploadedBy: user.id,
         });
@@ -266,7 +275,7 @@ export async function POST(req: NextRequest) {
         ...(persistedUrl && { url: persistedUrl, assetId }),
       }],
       persisted: !!persistedUrl,
-      pipeline: isFootwear ? 'gemini-vision+flux-dev' : 'openai-image-edits',
+      pipeline: isFootwear ? 'gemini-vision+mystic-flexible' : 'openai-image-edits',
     });
   } catch (error) {
     console.error('Sketch generation error:', error);
