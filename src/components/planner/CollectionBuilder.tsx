@@ -1134,8 +1134,16 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                                 if (url) {
                                   await updateSku(sku.id, { render_url: url });
                                   setAiViewSkus(prev => new Set(prev).add(sku.id));
+                                  refetch();
                                 }
+                              } else {
+                                const err = await res.json().catch(() => ({}));
+                                console.error('[AI Render] Failed:', err);
+                                alert(`Render failed: ${err.error || 'Unknown error'}`);
                               }
+                            }).catch((err) => {
+                              console.error('[AI Render] Network error:', err);
+                              alert('Render failed: network error');
                             }).finally(() => {
                               setRenderingSkus(prev => { const n = new Set(prev); n.delete(sku.id); return n; });
                             });

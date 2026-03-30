@@ -63,22 +63,34 @@ export async function POST(req: NextRequest) {
       image_size: { width: width || 1024, height: height || 1024 },
     };
 
-    let model = 'fal-ai/flux-2-pro';
-
-    if (design_context && image_url) {
-      // Use ControlNet Canny to preserve EXACT sketch lines
-      model = 'fal-ai/flux-general';
-      input.controlnets = [{
-        path: 'fal-ai/flux-general/canny',
-        control_image_url: image_url,
-        conditioning_scale: 0.85,
-      }];
-    } else if (image_url) {
+    if (image_url) {
       input.image_url = image_url;
-      input.strength = 0.75;
+      input.strength = design_context ? 0.55 : 0.75;
     }
 
-    const result = await fal.subscribe(model, { input } as any);
+    // Try ControlNet first for sketch-to-render, fallback to Flux 2 Pro
+    let result;
+    if (design_context && image_url) {
+      try {
+        result = await fal.subscribe('fal-ai/flux-general', {
+          input: {
+            prompt: fullPrompt,
+            num_images: 2,
+            image_size: { width: width || 1024, height: height || 1024 },
+            controlnets: [{
+              path: 'fal-ai/flux-general/canny',
+              control_image_url: image_url,
+              conditioning_scale: 0.9,
+            }],
+          },
+        } as any);
+      } catch (controlNetErr) {
+        console.error('[Product Render] ControlNet failed, falling back to Flux 2 Pro:', controlNetErr);
+        result = await fal.subscribe('fal-ai/flux-2-pro', { input } as any);
+      }
+    } else {
+      result = await fal.subscribe('fal-ai/flux-2-pro', { input } as any);
+    }
     const falImages = result.data?.images || [];
 
     // Auto-persist to Supabase Storage if collectionPlanId provided
