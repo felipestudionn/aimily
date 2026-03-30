@@ -1057,7 +1057,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 // Dynamic image: show most advanced phase image
                 const protoImg = sku.proto_iterations?.length > 0 ? sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] : undefined;
                 const displayImage = sku.production_sample_url || protoImg || sku.sketch_url || sku.reference_image_url;
-                const renderImage = (sku as Record<string, unknown>).render_url as string | undefined;
+                const renderImage = (sku as unknown as Record<string, unknown>).render_url as string | undefined;
                 const isSketchImage = !sku.production_sample_url && !protoImg && !!sku.sketch_url;
                 const showRender = aiViewSkus.has(sku.id) && renderImage;
                 // Phase progress
