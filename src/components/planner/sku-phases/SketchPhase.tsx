@@ -260,7 +260,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       ) : (
                         <button onClick={async () => {
                           setGeneratingSketchFor(idx);
-                          const res = await fetch('/api/ai/fal/sketch', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          const res = await fetch('/api/ai/freepik/sketch', { method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ description: `${p.title}: ${p.description}. ${p.silhouette}`, productType: sku.category, family: sku.family, skuName: sku.name, collectionPlanId }) });
                           if (res.ok) { const d = await res.json(); const url = d.images?.[0]?.url || d.images?.[0]?.originalUrl; if (url) setAiProposals(prev => prev?.map((x, i) => i === idx ? { ...x, sketchUrl: url } : x) || null); }
                           setGeneratingSketchFor(null);

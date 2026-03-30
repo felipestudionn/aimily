@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         prompt: promptParts,
         structure_reference: base64Data,
         structure_strength: 80,
-        resolution: '2k',
+        resolution: '1k',
         aspect_ratio: 'square_1_1',
         model: 'realism',
       }),
