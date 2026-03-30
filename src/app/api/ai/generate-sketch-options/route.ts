@@ -43,22 +43,26 @@ async function describeShoeWithGemini(base64: string, mimeType: string, styleNam
       contents: [{
         parts: [
           { inlineData: { mimeType: mimeType || 'image/png', data: base64 } },
-          { text: `You are a footwear technical designer. Analyze this shoe photo and describe it in detail for a patternmaker to recreate it as a flat sketch.
+          { text: `You are a footwear technical designer. From this photo, describe the shoe's CONSTRUCTION AND DESIGN for a patternmaker.
 
-Be extremely specific about:
-1. SILHOUETTE: shape, height (low/mid/high), toe shape, profile line
-2. UPPER: panel layout, overlays, cutouts, perforations, split-toe details
-3. CLOSURE: laces/velcro/slip-on/buckles, eyelet count, strap placement
-4. TONGUE: shape, padding, attachment
-5. COLLAR: height, shape from above
-6. SOLE: midsole profile, outsole tread, foxing, mudguard
-7. HEEL: counter shape, pull tab, backstay
-8. BRANDING: logo placement, style
-9. SPECIAL FEATURES: split-toe, open-toe, mesh panels, etc.
+CRITICAL: Describe the shoe as an OBJECT — its structure, materials, and construction details. Do NOT describe the photo's angle, composition, number of shoes shown, or how they are arranged. A patternmaker needs to understand what to BUILD, not what the photo looks like.
+
+Always describe a SINGLE shoe. If the photo shows a pair, just describe one.
+
+Be specific about:
+1. SILHOUETTE: overall shape, low/mid/high-top, toe shape (round/pointed/split), profile curve
+2. UPPER CONSTRUCTION: panel shapes and layout, overlays, cutouts, perforations, mesh areas
+3. CLOSURE: type (laces/velcro strap/slip-on/buckle), eyelet count, strap width and position
+4. TONGUE: shape, attached or floating, padding level
+5. COLLAR: padded or raw, height
+6. SOLE UNIT: midsole thickness and shape, outsole material, foxing tape, mudguard
+7. HEEL: counter shape, pull tab presence, backstay
+8. BRANDING: logo type (swoosh/text/embossed), placement (lateral/medial/tongue/heel)
+9. SPECIAL: split-toe, open-toe, sock-like collar, etc.
 
 Style: ${styleName || 'N/A'}
 
-Output ONLY the technical description, no preamble. Concise but complete.` },
+Output ONLY the technical description. No preamble, no photo commentary.` },
         ],
       }],
     }),

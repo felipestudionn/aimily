@@ -47,7 +47,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
   // AI state
   const [generating, setGenerating] = useState(false);
-  const [sketchTopView, setSketchTopView] = useState<string | null>(null);
+  const [sketchTopView, setSketchTopView] = useState<string | null>(sku.sketch_top_url || null);
   const [generatingSketchFor, setGeneratingSketchFor] = useState<number | null>(null);
   const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
@@ -258,7 +258,10 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           const sideView = views[0]?.frontImageBase64;
                           const topView = views[1]?.frontImageBase64;
                           if (sideView) {
-                            await onUpdate({ sketch_url: sideView });
+                            await onUpdate({
+                              sketch_url: sideView,
+                              ...(topView ? { sketch_top_url: topView } : {}),
+                            } as Partial<SKU>);
                             if (topView) setSketchTopView(topView);
                           }
                         } else {

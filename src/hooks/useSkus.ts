@@ -37,6 +37,7 @@ export interface SKU {
   // ── Design lifecycle ──
   design_phase: DesignPhase;
   sketch_url?: string;
+  sketch_top_url?: string;
   proto_iterations: ProtoIteration[];
   production_sample_url?: string;
   render_url?: string;
