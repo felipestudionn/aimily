@@ -683,67 +683,146 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         })()}
 
         {/* ═══ STEP 4: TECH PACK ═══ */}
-        {activeStep === 3 && (
-          <div className="space-y-4">
-            <div className="p-5 bg-white border border-carbon/[0.06] space-y-4">
-              <h4 className="text-sm font-light text-carbon">{sku.name}</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-[11px]">
-                <div><span className="text-carbon/25 uppercase tracking-wider text-[8px]">Category</span><p className="text-carbon mt-0.5">{sku.category}</p></div>
-                <div><span className="text-carbon/25 uppercase tracking-wider text-[8px]">Family</span><p className="text-carbon mt-0.5">{sku.family}</p></div>
-                <div><span className="text-carbon/25 uppercase tracking-wider text-[8px]">PVP / COGS</span><p className="text-carbon mt-0.5">€{sku.pvp} / €{sku.cost}</p></div>
-              </div>
-              {sku.sketch_url && (
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 border border-carbon/[0.06] overflow-hidden bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
+        {activeStep === 3 && (() => {
+          const primaryCw = skuColorways[0];
+          const cwZones = primaryCw?.zones?.length ? primaryCw.zones : [];
+          const mZones = sku.material_zones || [];
+
+          // Callout positions for side profile (% from top-left)
+          const sideCallouts: Record<string, { top: string; left: string }> = {
+            'Upper': { top: '35%', left: '45%' },
+            'Tongue': { top: '15%', left: '55%' },
+            'Lining': { top: '25%', left: '65%' },
+            'Midsole': { top: '72%', left: '50%' },
+            'Outsole': { top: '85%', left: '50%' },
+            'Laces': { top: '20%', left: '45%' },
+            'Heel Counter': { top: '40%', left: '85%' },
+            'Eyelets': { top: '28%', left: '40%' },
+            'Branding': { top: '55%', left: '30%' },
+          };
+          // Callout positions for top-down view
+          const topCallouts: Record<string, { top: string; left: string }> = {
+            'Upper': { top: '50%', left: '30%' },
+            'Tongue': { top: '25%', left: '50%' },
+            'Lining': { top: '20%', left: '70%' },
+            'Midsole': { top: '80%', left: '30%' },
+            'Outsole': { top: '90%', left: '50%' },
+            'Laces': { top: '35%', left: '50%' },
+            'Heel Counter': { top: '85%', left: '70%' },
+            'Eyelets': { top: '30%', left: '35%' },
+            'Branding': { top: '60%', left: '50%' },
+          };
+
+          return (
+          <div className="space-y-0">
+            {/* ── Tech Pack Sheet ── */}
+            <div className="bg-white border border-carbon/[0.08]">
+              {/* Header bar */}
+              <div className="border-b border-carbon/[0.08] px-6 py-4">
+                <div className="flex items-start justify-between">
                   <div>
-                    <span className="text-carbon/25 uppercase tracking-wider text-[8px]">Sketch</span>
-                    <p className="text-[10px] text-carbon/45 mt-0.5 line-clamp-2">{sku.notes}</p>
+                    <h3 className="text-lg font-light text-carbon tracking-tight">{sku.name}</h3>
+                    <p className="text-[10px] text-carbon/30 mt-0.5">{sku.family} · Drop {sku.drop_number} · {sku.category}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider">PVP / COGS</p>
+                    <p className="text-[13px] font-light text-carbon">€{sku.pvp} / €{sku.cost}</p>
+                    <p className="text-[8px] text-carbon/20 mt-0.5">{stepLabel('margin') || 'Margin'}: {sku.pvp > 0 ? Math.round((1 - sku.cost / sku.pvp) * 100) : 0}%</p>
                   </div>
                 </div>
-              )}
-              {/* Color-Up + BOM table by zone */}
-              {skuColorways.length > 0 && (() => {
-                const primaryCw = skuColorways[0];
-                const zones = primaryCw.zones?.length ? primaryCw.zones : [];
-                const mZones = sku.material_zones || [];
-                const hasZones = zones.length > 0;
-                return hasZones ? (
-                  <div>
-                    <span className="text-carbon/25 uppercase tracking-wider text-[8px]">{stepLabel('colorUpBom') || 'Color-Up & BOM'} — {primaryCw.name}</span>
-                    <div className="mt-1.5 space-y-px">
-                      {zones.map((z, i) => {
-                        const mat = mZones.find(m => m.zone === z.zone);
+                {sku.notes && <p className="text-[10px] text-carbon/35 mt-2 leading-relaxed">{sku.notes}</p>}
+              </div>
+
+              {/* Sketch views with numbered callouts */}
+              <div className="grid grid-cols-2 border-b border-carbon/[0.08]">
+                {/* Side Profile */}
+                <div className="border-r border-carbon/[0.08] p-4">
+                  <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('sideProfile') || 'Side Profile'}</p>
+                  {sku.sketch_url ? (
+                    <div className="relative">
+                      <img src={sku.sketch_url} alt="Side profile" className="w-full object-contain" />
+                      {/* Numbered callouts */}
+                      {cwZones.map((z, i) => {
+                        const pos = sideCallouts[z.zone];
+                        if (!pos) return null;
                         return (
-                          <div key={i} className="flex items-center gap-2 py-0.5">
-                            <div className="w-3.5 h-3.5 border border-carbon/[0.06] shrink-0" style={{ backgroundColor: z.hex }} />
-                            <span className="text-[10px] text-carbon/50 w-20 shrink-0">{z.zone}</span>
-                            {z.pantone && <span className="text-[8px] text-carbon/25">{z.pantone}</span>}
-                            {mat?.material && <span className="text-[9px] text-carbon/35 italic">— {mat.material}{mat.finish ? ` (${mat.finish})` : ''}</span>}
+                          <div key={i} className="absolute flex items-center justify-center w-4 h-4 rounded-full bg-carbon text-crema text-[7px] font-bold shadow-sm" style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
+                            {i + 1}
                           </div>
                         );
                       })}
                     </div>
-                    {skuColorways.length > 1 && (
-                      <p className="text-[8px] text-carbon/20 mt-1">+{skuColorways.length - 1} more colorway{skuColorways.length > 2 ? 's' : ''}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <span className="text-carbon/25 uppercase tracking-wider text-[8px]">Colorways</span>
-                    <div className="flex gap-2 mt-1">{skuColorways.map(cw => <div key={cw.id} className="flex items-center gap-1"><div className="w-3.5 h-3.5" style={{ backgroundColor: cw.hex_primary }} /><span className="text-[9px] text-carbon/40">{cw.name}</span></div>)}</div>
-                  </div>
-                );
-              })()}
-              {/* Legacy materials fallback */}
-              {materials.length > 0 && (!sku.material_zones || sku.material_zones.length === 0) && (
-                <div>
-                  <span className="text-carbon/25 uppercase tracking-wider text-[8px]">Materials</span>
-                  <div className="mt-1 space-y-0.5">{materials.map((m, i) => <p key={i} className="text-[10px] text-carbon/45">{m.name}{m.gradingNotes ? ` — ${m.gradingNotes}` : ''}</p>)}</div>
+                  ) : (
+                    <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No sketch</div>
+                  )}
                 </div>
-              )}
+                {/* Top Down */}
+                <div className="p-4">
+                  <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('topDown') || 'Top Down'}</p>
+                  {(sku.sketch_top_url || sketchTopView) ? (
+                    <div className="relative">
+                      <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full object-contain" />
+                      {cwZones.map((z, i) => {
+                        const pos = topCallouts[z.zone];
+                        if (!pos) return null;
+                        return (
+                          <div key={i} className="absolute flex items-center justify-center w-4 h-4 rounded-full bg-carbon text-crema text-[7px] font-bold shadow-sm" style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
+                            {i + 1}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No top-down view</div>
+                  )}
+                </div>
+              </div>
+
+              {/* BOM / Color-Up Table */}
+              <div className="px-6 py-4">
+                <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-3">{stepLabel('colorUpBom') || 'Color-Up & Bill of Materials'}{primaryCw ? ` — ${primaryCw.name}` : ''}</p>
+                <table className="w-full text-[10px]">
+                  <thead>
+                    <tr className="border-b border-carbon/[0.08]">
+                      <th className="text-left py-1.5 pr-2 text-[8px] text-carbon/25 uppercase tracking-wider font-medium w-6">#</th>
+                      <th className="text-left py-1.5 pr-2 text-[8px] text-carbon/25 uppercase tracking-wider font-medium w-5"></th>
+                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('zoneLabel') || 'Zone'}</th>
+                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">Pantone</th>
+                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('materialLabel') || 'Material'}</th>
+                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('compositionLabel') || 'Composition'}</th>
+                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('weightLabel') || 'Weight'}</th>
+                      <th className="text-left py-1.5 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('finishLabel') || 'Finish'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cwZones.map((z, i) => {
+                      const mat = mZones.find(m => m.zone === z.zone);
+                      return (
+                        <tr key={i} className="border-b border-carbon/[0.03]">
+                          <td className="py-1.5 pr-2 text-[9px] font-semibold text-carbon/40">{i + 1}</td>
+                          <td className="py-1.5 pr-2"><div className="w-3.5 h-3.5 border border-carbon/[0.08]" style={{ backgroundColor: z.hex }} /></td>
+                          <td className="py-1.5 pr-3 text-carbon/60 font-medium">{z.zone}</td>
+                          <td className="py-1.5 pr-3 text-carbon/30">{z.pantone || '—'}</td>
+                          <td className="py-1.5 pr-3 text-carbon/50">{mat?.material || <span className="text-carbon/15 italic">Factory discretion</span>}</td>
+                          <td className="py-1.5 pr-3 text-carbon/35">{mat?.composition || '—'}</td>
+                          <td className="py-1.5 pr-3 text-carbon/35">{mat?.weight || '—'}</td>
+                          <td className="py-1.5 text-carbon/35">{mat?.finish || '—'}</td>
+                        </tr>
+                      );
+                    })}
+                    {cwZones.length === 0 && (
+                      <tr><td colSpan={8} className="py-4 text-center text-carbon/15">{stepLabel('noZonesConfigured') || 'No zones configured — go to Colorways step'}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+                {skuColorways.length > 1 && (
+                  <p className="text-[8px] text-carbon/20 mt-2">+{skuColorways.length - 1} additional colorway{skuColorways.length > 2 ? 's' : ''} configured</p>
+                )}
+              </div>
             </div>
+
             {!(confirmedSteps.has(0) && confirmedSteps.has(1) && confirmedSteps.has(2)) && (
-              <div className="p-3 bg-carbon/[0.02] border border-carbon/[0.06]">
+              <div className="p-3 bg-carbon/[0.02] border border-carbon/[0.06] mt-4">
                 <p className="text-[10px] text-carbon/30">{stepLabel('techPackPending') || 'Complete Sketch, Colorways and Materials to finalize the tech pack.'}</p>
               </div>
             )}
@@ -887,7 +966,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
