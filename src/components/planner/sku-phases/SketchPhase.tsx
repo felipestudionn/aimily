@@ -14,7 +14,7 @@ import { ImageUploadArea } from './shared';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import type { FooterAction } from '../SkuDetailView';
 
-type InputMode = 'free' | 'assisted' | 'ai';
+type InputMode = 'free' | 'ai';
 
 const STEPS = [
   { id: 'sketch', label: 'Drawing' },
@@ -41,7 +41,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const materials = (designData.patterns[sku.id] || []) as { name: string; url: string; fileType: string; gradingNotes: string }[];
 
   const [activeStep, setActiveStep] = useState(0);
-  const [modes, setModes] = useState<Record<string, InputMode>>({ sketch: 'free', colorways: 'free', materials: 'free' });
+  const [modes, setModes] = useState<Record<string, InputMode>>({ sketch: 'free', colorways: 'free', materials: 'free', techpack: 'free' });
   const [notes, setNotes] = useState(sku.notes || '');
 
   // AI state
@@ -144,9 +144,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
       {activeStep < 3 && (
         <SegmentedPill
           options={[
-            { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Free' },
-            { id: 'assisted' as InputMode, label: stepLabel('assisted') || 'Assisted' },
-            { id: 'ai' as InputMode, label: stepLabel('aiProposal') || 'AI Proposal' },
+            { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Manual' },
+            { id: 'ai' as InputMode, label: stepLabel('aiProposal') || 'AI' },
           ]}
           value={mode}
           onChange={(m) => setModes(prev => ({ ...prev, [STEPS[activeStep].id]: m }))}
@@ -181,9 +180,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 </div>
               </div>
             )}
-            {mode === 'assisted' && (
-              <div className="space-y-4">
-                <p className="text-[12px] font-light text-carbon/45 leading-relaxed">{stepLabel('assistedSketchDesc') || 'Upload a reference photo and Aimily will generate a technical flat sketch.'}</p>
+            {mode === 'ai' && (
+              <>
+              {/* Option A: From reference photo */}
+              <div className="space-y-4 mb-8">
+                <p className="text-[11px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('fromReference') || 'From Reference'}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-2">
                     <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referencePhoto') || 'Reference'}</p>
@@ -226,9 +227,17 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   </div>
                 </div>
               </div>
-            )}
-            {mode === 'ai' && (
+
+              {/* Divider */}
+              <div className="flex items-center gap-4 mb-8">
+                <div className="flex-1 h-px bg-carbon/[0.06]" />
+                <span className="text-[10px] text-carbon/20 uppercase tracking-[0.15em]">{stepLabel('or') || 'or'}</span>
+                <div className="flex-1 h-px bg-carbon/[0.06]" />
+              </div>
+
+              {/* Option B: AI proposes from scratch */}
               <div className="space-y-4">
+                <p className="text-[11px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('aiFromScratch') || 'AI Proposal'}</p>
                 <p className="text-[12px] font-light text-carbon/45 leading-relaxed">{stepLabel('aiSketchDesc') || 'Aimily will propose sketch directions and generate visual flat sketches.'}</p>
                 {!aiProposals && (
                   <button onClick={async () => {
@@ -271,6 +280,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   </div>
                 ))}
               </div>
+            </>
             )}
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
               placeholder={stepLabel('sketchNotesPlaceholder') || 'Design notes...'} className="w-full h-12 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]" />
@@ -309,7 +319,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 </button>
               </div>
             )}
-            {(mode === 'assisted' || mode === 'ai') && !aiColorways && (
+            {mode === 'ai' && !aiColorways && (
               <button onClick={async () => {
                 setGenerating(true);
                 const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
@@ -360,7 +370,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 </button>
               </div>
             )}
-            {(mode === 'assisted' || mode === 'ai') && !aiMaterials && (
+            {mode === 'ai' && !aiMaterials && (
               <button onClick={async () => {
                 setGenerating(true);
                 const colorwayContext = skuColorways.map(c => `${c.name}: ${[c.hex_primary, c.hex_secondary, c.hex_accent].filter(Boolean).join(', ')}`).join(' | ');

@@ -23,7 +23,7 @@ const STEPS = [
   { id: 'tracking', icon: Camera, nameKey: 'protoTrackingStep', descKey: 'protoTrackingStepDesc' },
 ];
 
-type InputMode = 'free' | 'assisted' | 'ai';
+type InputMode = 'free' | 'ai';
 
 export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: PrototypingPhaseProps) {
   const t = useTranslation();
@@ -88,9 +88,8 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
                 <div className="px-5 pt-3">
                   <SegmentedPill
                     options={[
-                      { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Free' },
-                      { id: 'assisted' as InputMode, label: stepLabel('assisted') || 'Assisted' },
-                      { id: 'ai' as InputMode, label: stepLabel('aiProposal') || 'AI Proposal' },
+                      { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Manual' },
+                      { id: 'ai' as InputMode, label: stepLabel('aiProposal') || 'AI' },
                     ]}
                     value={mode}
                     onChange={(m) => setModes(prev => ({ ...prev, [step.id]: m }))}
@@ -194,7 +193,7 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
         </div>
       )}
 
-      {(mode === 'assisted' || mode === 'ai') && (
+      {mode === 'ai' && (
         <div className="space-y-4">
           <p className="text-[11px] font-light text-carbon/40">{t.skuPhases?.sourcingAiDesc || 'Aimily will analyze your product specs, materials, and price point to recommend the best sourcing strategy.'}</p>
 
