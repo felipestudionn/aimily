@@ -128,10 +128,15 @@ Return:
         user: `${ctx}
 
 The user needs material recommendations for a specific product:
-- Product type: ${input.productType || 'not specified'}
-- Subcategory: ${input.subcategory || 'not specified'}
+- Product name: ${input.subcategory || 'not specified'}
+- Product type / category: ${input.productType || 'not specified'}
+- Product family: ${input.family || 'not specified'}
 - Price range: ${input.priceRange || 'not specified'}
 - Design direction: ${input.designDirection || 'not specified'}
+- Colorways selected: ${input.colorways || 'not specified'}
+- Additional notes: ${input.concept || ''}
+
+CRITICAL: Your material suggestions must be SPECIFIC to this exact product and its design context. Use the inherited brand DNA, vibe, and collection context above to inform material choices. Do NOT suggest generic fashion materials — suggest materials that make sense for THIS product at THIS price point within THIS collection's world.
 
 Suggest the complete material specification for this product. Think like a product developer preparing a tech pack.
 

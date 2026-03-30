@@ -363,7 +363,16 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             {(mode === 'assisted' || mode === 'ai') && !aiMaterials && (
               <button onClick={async () => {
                 setGenerating(true);
-                const result = await callDesignAI('materials-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '', priceRange: `€${sku.pvp}` });
+                const colorwayContext = skuColorways.map(c => `${c.name}: ${[c.hex_primary, c.hex_secondary, c.hex_accent].filter(Boolean).join(', ')}`).join(' | ');
+                const result = await callDesignAI('materials-suggest', {
+                  productType: sku.category || sku.type || '',
+                  subcategory: sku.name || '',
+                  family: sku.family,
+                  concept: sku.notes || '',
+                  priceRange: `€${sku.pvp}`,
+                  designDirection: `${sku.name} — ${sku.family}. ${sku.notes || ''}`,
+                  colorways: colorwayContext,
+                });
                 if (result?.materials) setAiMaterials(result.materials);
                 setGenerating(false);
               }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
