@@ -1120,8 +1120,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                                 image_url: sku.sketch_url,
                                 collectionPlanId,
                                 design_context: {
-                                  productName: `${sku.name} - ${cws[0]?.name || ''}`,
-                                  productType: `${sku.family} (${sku.category})`,
+                                  productName: `${sku.name} in colorway ${cws[0]?.name || 'default'}`,
+                                  productType: `${sku.family} — ${sku.category === 'CALZADO' ? 'footwear/sneaker' : sku.category === 'ROPA' ? 'clothing' : sku.category}`,
                                   colorway: colorDesc || 'neutral tones',
                                   materials: materialDesc || 'premium materials',
                                   designNotes: sku.notes || '',

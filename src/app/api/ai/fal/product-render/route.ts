@@ -30,15 +30,19 @@ export async function POST(req: NextRequest) {
     // Design context — structured data from SKU (sketch + colors + materials)
     if (design_context) {
       const dc = design_context;
-      promptParts.push(`Photorealistic product photograph of ${dc.productName || 'fashion product'}`);
-      if (dc.productType) promptParts.push(`Product type: ${dc.productType}`);
-      if (dc.colorway) promptParts.push(`Color: ${dc.colorway}`);
-      if (dc.materials) promptParts.push(`Material finish: ${dc.materials}`);
-      if (dc.designNotes) promptParts.push(`Design: ${dc.designNotes}`);
-      promptParts.push('Three-quarter angle view, soft drop shadow, neutral light grey background');
-      promptParts.push('Studio lighting, product photography, high-end e-commerce quality');
-      promptParts.push('Sharp focus on material texture and construction details');
-      promptParts.push('No human body, no mannequin, product only, floating on background');
+      // CRITICAL: The prompt must preserve the EXACT silhouette from the sketch.
+      // The sketch is the source of truth for the shape — the prompt adds color, material, and lighting.
+      promptParts.push(`Transform this technical flat sketch into a photorealistic product photograph`);
+      promptParts.push(`PRESERVE THE EXACT SILHOUETTE, proportions, and design details from the sketch`);
+      promptParts.push(`Product: ${dc.productName || 'fashion product'} (${dc.productType || ''})`);
+      if (dc.colorway) promptParts.push(`Apply these exact colors: ${dc.colorway}`);
+      if (dc.materials) promptParts.push(`Material appearance: ${dc.materials}`);
+      if (dc.designNotes) promptParts.push(`Design details to preserve: ${dc.designNotes}`);
+      promptParts.push('Three-quarter angle, pair of shoes, neutral light grey background (#E8E8E8)');
+      promptParts.push('Soft natural shadow beneath product, studio photography lighting');
+      promptParts.push('Sharp focus on material texture, stitching details, and construction');
+      promptParts.push('No human body, no mannequin, product only floating on clean background');
+      promptParts.push('Photorealistic, high-end e-commerce product shot, 8K quality');
     } else {
       promptParts.push(prompt || 'Professional product photography');
       if (story_context) {
@@ -61,8 +65,8 @@ export async function POST(req: NextRequest) {
 
     if (image_url) {
       input.image_url = image_url;
-      // Lower strength for design-to-render (more transformation from sketch)
-      input.strength = design_context ? 0.45 : 0.75;
+      // Higher strength preserves sketch silhouette, lower allows more creative freedom
+      input.strength = design_context ? 0.68 : 0.75;
     }
 
     const result = await fal.subscribe('fal-ai/flux-2-pro', { input } as any);
