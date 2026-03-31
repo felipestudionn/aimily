@@ -953,36 +953,32 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                               setGenerating(true);
                               try {
                                 const primaryCw = skuColorways[0];
-                                const colorZones = primaryCw?.zones?.length ? primaryCw.zones.map(z => ({ zone: z.zone, hex: z.hex })) : [];
-                                const colorHexes = colorZones.length > 0
-                                  ? colorZones.map(z => ({ hex: z.hex, weight: 0.5 }))
-                                  : skuColorways.map(c => ({ hex: c.hex_primary, weight: 0.5 }));
                                 const matZones = sku.material_zones?.filter(m => m.material) || [];
-                                const materialZones = matZones.map(m => ({ zone: m.zone, material: m.material, finish: m.finish }));
-                                const res = await fetch('/api/ai/freepik/render', {
+                                const materialDesc = matZones.map(m => `${m.zone}: ${m.material}${m.finish ? ` (${m.finish})` : ''}`).join(', ');
+                                const colorDesc = primaryCw?.zones?.length
+                                  ? primaryCw.zones.map(z => `${z.zone}: ${z.hex}`).join(', ')
+                                  : '';
+
+                                // Use gpt-image-1 for faithful 3D conversion (same model as colorization)
+                                const res = await fetch('/api/ai/colorize-sketch', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
-                                    sketch_base64: sku.render_url,
+                                    sketch_url: sku.render_url,
+                                    colorway_name: primaryCw?.name || 'main',
+                                    color_description: `Photorealistic 3D product photo. ${colorDesc}`,
+                                    zone_colors: primaryCw?.zones || [],
+                                    category: sku.category,
+                                    product_name: sku.name,
+                                    family: sku.family,
                                     collectionPlanId,
-                                    angle: 'three_quarter',
-                                    design_context: {
-                                      productName: `${sku.name} - ${primaryCw?.name || ''}`,
-                                      productType: `${sku.family} (${sku.category})`,
-                                      colorway: primaryCw ? `${primaryCw.name} (${primaryCw.hex_primary})` : '',
-                                      colorHexes,
-                                      colorZones,
-                                      materialZones,
-                                      materials: matZones.map(m => `${m.zone}: ${m.material}`).join(', ') || 'premium materials',
-                                      designNotes: sku.notes || '',
-                                    },
+                                    is_3d_render: true,
                                   }),
                                 });
                                 if (res.ok) {
-                                  const data = await res.json();
-                                  const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
-                                  if (url) {
-                                    const updated = { ...(sku.render_urls || {}), '3d': url };
+                                  const { imageUrl } = await res.json();
+                                  if (imageUrl) {
+                                    const updated = { ...(sku.render_urls || {}), '3d': imageUrl };
                                     await onUpdate({ render_urls: updated } as Partial<SKU>);
                                     toast('3D render generated', 'success');
                                   }
