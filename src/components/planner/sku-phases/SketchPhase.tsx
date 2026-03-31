@@ -16,6 +16,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { getDefaultZones, zonesToColorwayZones } from '@/lib/product-zones';
 import type { FooterAction } from '../SkuDetailView';
+import dynamic from 'next/dynamic';
+
+const ZoneEditorLazy = dynamic(() => import('./ZoneEditor').then(m => ({ default: m.ZoneEditor })), { ssr: false, loading: () => <div className="h-40 flex items-center justify-center"><Loader2 className="h-4 w-4 animate-spin text-carbon/15" /></div> });
 
 type InputMode = 'free' | 'ai';
 
@@ -68,6 +71,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
   const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
+
+  // Zone Editor state
+  const [zoneSvg, setZoneSvg] = useState<string | null>(null);
+  const [vectorizing, setVectorizing] = useState(false);
+
   const existingRenderUrls = sku.render_urls || {};
   const defaultAngle = 'three_quarter' as const;
   const initialAngle: 'front' | 'three_quarter' | 'side' | 'back' = existingRenderUrls[defaultAngle] ? defaultAngle : (Object.keys(existingRenderUrls)[0] as 'front' | 'three_quarter' | 'side' | 'back') || defaultAngle;
@@ -532,34 +540,144 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* AI colorway proposals */}
-            {mode === 'ai' && !aiColorways && (
-              <button onClick={async () => {
-                setGenerating(true);
-                const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
-                if (result?.colorways) setAiColorways(result.colorways);
-                setGenerating(false);
-              }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
-                {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                {stepLabel('proposeColorways') || 'Propose Colorways'}
-              </button>
-            )}
-            {aiColorways?.map((cw, idx) => (
-              <div key={idx} className="border border-carbon/[0.06] bg-white p-3.5 flex items-center gap-3">
-                <div className="flex gap-0.5 shrink-0">{cw.colors.map((hex: string, i: number) => <div key={i} className="w-7 h-7 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />)}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-light text-carbon">{cw.name}</p>
-                  <p className="text-[10px] text-carbon/35 mt-0.5">{cw.description}</p>
-                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{cw.commercialRole}</span>
+            {/* AI mode: Zone Editor (vectorize sketch → visual zone painting) */}
+            {mode === 'ai' && (
+              <div className="space-y-4">
+                {/* Zone Editor — requires sketch */}
+                {sku.sketch_url ? (
+                  <>
+                    {!zoneSvg && !vectorizing && (
+                      <div className="space-y-3">
+                        <p className="text-[11px] text-carbon/40 leading-relaxed">
+                          {stepLabel('zoneEditorDesc') || 'Vectorize your sketch to visually paint colors on each zone. Click zones to select, pick colors, add or remove areas.'}
+                        </p>
+                        <button
+                          onClick={async () => {
+                            setVectorizing(true);
+                            try {
+                              // Step 1: Vectorize
+                              const vecRes = await fetch('/api/ai/vectorize', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ image_url: sku.sketch_url }),
+                              });
+                              if (!vecRes.ok) throw new Error('Vectorization failed');
+                              const { svg } = await vecRes.json();
+
+                              // Step 2: Detect zones
+                              const zoneRes = await fetch('/api/ai/detect-zones', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ svg, category: sku.category }),
+                              });
+                              if (!zoneRes.ok) throw new Error('Zone detection failed');
+                              const { svg: labeledSvg } = await zoneRes.json();
+
+                              setZoneSvg(labeledSvg);
+                              toast(stepLabel('vectorized') || 'Sketch vectorized — zones detected', 'success');
+                            } catch (err) {
+                              console.error('[Vectorize]', err);
+                              toast(stepLabel('vectorizeFailed') || 'Vectorization failed', 'error');
+                            } finally {
+                              setVectorizing(false);
+                            }
+                          }}
+                          disabled={vectorizing}
+                          className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30"
+                        >
+                          {vectorizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          {vectorizing
+                            ? (stepLabel('vectorizing') || 'Vectorizing & detecting zones...')
+                            : (stepLabel('vectorizeSketch') || 'Vectorize & Edit Zones')
+                          }
+                        </button>
+                      </div>
+                    )}
+
+                    {vectorizing && (
+                      <div className="flex flex-col items-center justify-center py-12 gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
+                        <p className="text-[11px] text-carbon/25">{stepLabel('vectorizing') || 'Vectorizing sketch & detecting zones...'}</p>
+                      </div>
+                    )}
+
+                    {zoneSvg && (
+                      <ZoneEditorLazy
+                        svgSource={zoneSvg}
+                        zoneColors={skuColorways[0]?.zones || defaultZones.map(z => ({ zone: z.zone, hex: z.defaultHex }))}
+                        onZoneColorsChange={(updatedZones: ColorwayZone[]) => {
+                          // Sync to first colorway (or create one)
+                          if (skuColorways.length > 0) {
+                            const primary = updatedZones[0]?.hex || skuColorways[0].hex_primary;
+                            updateColorway(skuColorways[0].id, {
+                              zones: updatedZones,
+                              hex_primary: primary,
+                              hex_secondary: updatedZones[1]?.hex || null as unknown as string,
+                              hex_accent: updatedZones[2]?.hex || null as unknown as string,
+                            } as Partial<SkuColorway>);
+                          } else {
+                            addColorway({
+                              sku_id: sku.id,
+                              name: 'Colorway 1',
+                              hex_primary: updatedZones[0]?.hex || '#3B3B3B',
+                              hex_secondary: updatedZones[1]?.hex || null as unknown as string,
+                              hex_accent: updatedZones[2]?.hex || null as unknown as string,
+                              pantone_primary: null as unknown as string,
+                              pantone_secondary: null as unknown as string,
+                              material_swatch_url: null as unknown as string,
+                              status: 'proposed',
+                              position: 0,
+                              zones: updatedZones,
+                            } as Omit<SkuColorway, 'id' | 'created_at'>);
+                          }
+                        }}
+                        onSvgChange={(newSvg: string) => setZoneSvg(newSvg)}
+                        category={sku.category}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06] text-center">
+                    <p className="text-[11px] text-carbon/30">{stepLabel('needSketchFirst') || 'Complete the Sketch step first to use the visual zone editor.'}</p>
+                  </div>
+                )}
+
+                {/* Divider */}
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-px bg-carbon/[0.06]" />
+                  <span className="text-[10px] text-carbon/20 uppercase tracking-[0.15em]">{stepLabel('or') || 'or'}</span>
+                  <div className="flex-1 h-px bg-carbon/[0.06]" />
                 </div>
-                <button onClick={async () => {
-                  // Map AI colors to zones
-                  const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
-                  await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
-                }}
-                  className="px-2.5 py-1 text-[9px] font-medium uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors shrink-0">{stepLabel('accept') || 'Accept'}</button>
+
+                {/* AI text-based colorway proposals (fallback) */}
+                {!aiColorways && (
+                  <button onClick={async () => {
+                    setGenerating(true);
+                    const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
+                    if (result?.colorways) setAiColorways(result.colorways);
+                    setGenerating(false);
+                  }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
+                    {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {stepLabel('proposeColorways') || 'Propose Colorways'}
+                  </button>
+                )}
+                {aiColorways?.map((cw, idx) => (
+                  <div key={idx} className="border border-carbon/[0.06] bg-white p-3.5 flex items-center gap-3">
+                    <div className="flex gap-0.5 shrink-0">{cw.colors.map((hex: string, i: number) => <div key={i} className="w-7 h-7 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />)}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-light text-carbon">{cw.name}</p>
+                      <p className="text-[10px] text-carbon/35 mt-0.5">{cw.description}</p>
+                      <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{cw.commercialRole}</span>
+                    </div>
+                    <button onClick={async () => {
+                      const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
+                      await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
+                    }}
+                      className="px-2.5 py-1 text-[9px] font-medium uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors shrink-0">{stepLabel('accept') || 'Accept'}</button>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
           );
         })()}
