@@ -38,7 +38,7 @@ export function SketchColorPreview({ sketchUrl, colors, zoneLayout, className }:
 
   useEffect(() => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // crossOrigin set per-format below (NOT here — breaks data URIs)
 
     img.onload = () => {
       const canvas = canvasRef.current;
@@ -110,14 +110,24 @@ export function SketchColorPreview({ sketchUrl, colors, zoneLayout, className }:
       setLoaded(true);
     };
 
-    img.onerror = () => setLoaded(true); // Show empty on error
+    img.onerror = (e) => {
+      console.error('[SketchColorPreview] Image load failed:', e);
+      setLoaded(true);
+    };
 
     // Handle all URL formats
     let src = sketchUrl;
-    if (src.length > 500 && !src.startsWith('data:') && !src.startsWith('http')) {
-      src = `data:image/png;base64,${src}`;
+    if (src.startsWith('data:')) {
+      // Data URI — do NOT set crossOrigin (breaks in some browsers)
+      img.src = src;
+    } else if (src.length > 500 && !src.startsWith('http')) {
+      // Raw base64 without prefix
+      img.src = `data:image/png;base64,${src}`;
+    } else {
+      // HTTP URL — need crossOrigin for canvas getImageData
+      img.crossOrigin = 'anonymous';
+      img.src = src;
     }
-    img.src = src;
   }, [sketchUrl, colors, zoneLayout]);
 
   return (
