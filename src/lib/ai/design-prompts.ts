@@ -11,6 +11,8 @@
  * and Merchandising blocks flows in, making outputs highly specific.
  */
 
+import { formatPalettesForPrompt } from '@/lib/sanzo-colors';
+
 import {
   PERSONAS,
   QUALITY_GATES,
@@ -79,12 +81,13 @@ Return:
 }`,
       };
 
-    case 'color-suggest':
+    case 'color-suggest': {
+      const sanzoContext = formatPalettesForPrompt(8);
       return {
         temperature: 0.75,
         system: `${PERSONAS.designConsultant}
 
-You also have specialized knowledge in color theory for fashion — you understand how color works on different materials, how it translates across production processes, and how seasonal palettes evolve. You think in color systems, not individual swatches.`,
+You are also a master of color harmony, trained in the tradition of Sanzo Wada — Japan's legendary colorist whose "Dictionary of Color Combinations" (1934) remains the definitive reference for color harmony in fashion, art, and design. You understand how color works on different materials, how it translates across production, and how to create combinations that are both commercially viable and aesthetically extraordinary.`,
         user: `${ctx}
 
 The user needs colorway options for a specific product:
@@ -92,21 +95,21 @@ The user needs colorway options for a specific product:
 - Design direction: ${input.designDirection || 'not specified'}
 - Season: ${input.season || 'current season'}
 
-Generate 4 complete colorway options. Each colorway is a COMBINATION of 3 colors that represent the MAIN ZONES of this product (e.g., for footwear: upper, midsole, outsole/accents).
+${sanzoContext}
 
-CRITICAL — VISUAL CONTRAST:
-• The 3 colors in each colorway MUST be visually distinct from each other. Do NOT propose 3 shades of the same color.
-• Minimum contrast: at least one light color and one dark color per colorway. Example: dark navy upper + white midsole + gum outsole.
-• Think like a product designer: the color blocking creates the visual identity. Monochrome is boring on a sketch.
+YOUR TASK: Generate 4 colorway proposals. Each colorway has EXACTLY 3 colors for the product zones.
 
-COLOR METHODOLOGY:
-1. CONTRAST FIRST — Each colorway must have clear light/dark differentiation between zones. Avoid muddy all-dark or all-light palettes.
-2. MATERIAL REALITY — Colors look different on leather vs. canvas vs. knit. Specify how each color is achieved on the material.
-3. COMMERCIAL GRADIENT — Include a range: one "core" (commercial anchor), one "seasonal" (trend-forward), one "statement" (bold/editorial). Plus one versatile option.
-4. SEASONAL LOGIC — Align with the season's light and mood.
-5. PRODUCTION FEASIBILITY — Hex codes must translate to achievable, dyeable colors.
+COLOR STRUCTURE PER COLORWAY:
+• Color 1 (UPPER/BODY) — the dominant identity color. This defines the product's character.
+• Color 2 (MIDSOLE/STRUCTURAL) — must contrast with the upper. Use lighter or neutral tones: white, cream, bone, gum, light gray. This grounds the product visually.
+• Color 3 (ACCENTS/DETAILS) — tongue, heel counter, lining, branding. Creates the "pop" or the tonal story.
 
-Each colorway should have a name that evokes its world — not "Blue/White" but a name that could appear on a product page. Each colorway MUST feel fresh and visually distinct when colorized on a sketch.
+MANDATORY RULES:
+1. SANZO WADA INSPIRED — Base each proposal on one of the reference palettes above, adapting it to the product. You may adjust hex values to better fit the material/product, but keep the HARMONY of the original Wada combination.
+2. MIDSOLE MUST CONTRAST — Color 2 (midsole/structural zone) must be clearly lighter or darker than Color 1. NEVER the same tone as the upper. Preferred midsole colors: white (#FFFFFF), cream (#F5F0E6), bone (#E8DFD0), gum (#D4C9B0), black (#2B2B2B).
+3. VISUAL DIVERSITY — The 4 proposals must cover different moods: one warm/earthy, one cool/modern, one bold/statement, one neutral/commercial.
+4. EACH COLORWAY MUST LOOK BEAUTIFUL WHEN COLORIZED ON A SKETCH — imagine how it will render: if all 3 colors are dark, the sketch will be a dark blob. Avoid this.
+5. PRODUCTION FEASIBILITY — Hex codes that translate to real dyeable/achievable colors on the specified material.
 
 ${QUALITY_GATES.designSpecificity}
 ${QUALITY_GATES.antiGeneric}
@@ -116,15 +119,16 @@ Return:
 {
   "colorways": [
     {
-      "name": "Colorway Name (2-3 words, evocative — could appear on product page)",
-      "colors": ["#hex1", "#hex2", "#hex3"],
-      "description": "20-35 words: the color story — why these colors together, what world they evoke, how they work on the material",
+      "name": "Colorway Name (2-3 words, evocative — Wada-inspired naming style)",
+      "colors": ["#hex_upper", "#hex_midsole", "#hex_accent"],
+      "description": "20-35 words: the color story inspired by Wada's harmony principles — why these colors together, what world they evoke",
       "primary": "#hex_dominant_color",
-      "commercialRole": "core" or "seasonal" or "statement"
+      "commercialRole": "core" or "seasonal" or "statement" or "versatile"
     }
   ]
 }`,
       };
+    }
 
     case 'materials-suggest':
       return {
