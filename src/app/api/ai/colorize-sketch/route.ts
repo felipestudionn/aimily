@@ -40,7 +40,8 @@ CRITICAL RULES:
 • The product in the photo must be THE EXACT SAME PRODUCT as in the sketch — same silhouette, same proportions, same design details, same angle.
 • Keep the EXACT SAME COLORS shown in the sketch. Do not change any color — the upper, midsole, outsole, tongue, and all zones must match exactly.
 • Add realistic material textures: leather grain, suede nap, rubber texture, stitching detail, fabric weave — based on what the sketch suggests.
-• Professional studio photography: soft neutral gray background, natural shadow beneath the product, even studio lighting.
+• BACKGROUND: pure clean WHITE studio background (#FFFFFF). No textures, no colors, no gradients — just white. A very subtle, soft drop shadow directly beneath the product where it touches the ground. Nothing else in the background.
+• Professional e-commerce product photography lighting: soft, even, diffused studio light from above-left. No dramatic shadows, no colored lighting.
 • Sharp focus on material quality, construction details, and color accuracy.
 • This must look like a real product photo of the exact same shoe/product shown in the sketch — not a different product, not a reinterpretation.
 • Single product, no human body, no mannequin, clean e-commerce style.
