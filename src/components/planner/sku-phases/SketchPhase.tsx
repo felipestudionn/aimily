@@ -919,12 +919,93 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* ── Colorized preview (from accepted colorway) ── */}
+            {/* ── Product Visualization ── */}
             {sku.render_url && (
-              <div className="border border-carbon/[0.06] bg-white p-5 mt-4">
-                <p className="text-[10px] font-medium text-carbon/30 uppercase tracking-[0.15em] mb-3">{stepLabel('colorizedPreview') || 'Colorized Preview'}</p>
-                <div className="max-w-sm">
-                  <img src={sku.render_url} alt="Colorized sketch" className="w-full h-auto object-contain" />
+              <div className="border border-carbon/[0.06] bg-white p-5 mt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{'Product Visualization'}</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Colorized sketch */}
+                  <div className="space-y-1.5">
+                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{'Colored Sketch'}</p>
+                    <div className="border border-carbon/[0.06] bg-white overflow-hidden">
+                      <img src={sku.render_url} alt="Colorized sketch" className="w-full h-auto object-contain" />
+                    </div>
+                  </div>
+                  {/* 3D Render */}
+                  <div className="space-y-1.5">
+                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{'3D Render'}</p>
+                    {(sku.render_urls as Record<string, string>)?.['3d'] ? (
+                      <div className="border border-carbon/[0.06] bg-white overflow-hidden">
+                        <img src={(sku.render_urls as Record<string, string>)['3d']} alt="3D render" className="w-full h-auto object-contain" />
+                      </div>
+                    ) : (
+                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/3] flex flex-col items-center justify-center gap-3">
+                        {generating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
+                            <span className="text-[9px] text-carbon/20">{'Generating 3D render...'}</span>
+                          </>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              setGenerating(true);
+                              try {
+                                const primaryCw = skuColorways[0];
+                                const colorZones = primaryCw?.zones?.length ? primaryCw.zones.map(z => ({ zone: z.zone, hex: z.hex })) : [];
+                                const colorHexes = colorZones.length > 0
+                                  ? colorZones.map(z => ({ hex: z.hex, weight: 0.5 }))
+                                  : skuColorways.map(c => ({ hex: c.hex_primary, weight: 0.5 }));
+                                const matZones = sku.material_zones?.filter(m => m.material) || [];
+                                const materialZones = matZones.map(m => ({ zone: m.zone, material: m.material, finish: m.finish }));
+                                const res = await fetch('/api/ai/freepik/render', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    sketch_base64: sku.render_url,
+                                    collectionPlanId,
+                                    angle: 'three_quarter',
+                                    design_context: {
+                                      productName: `${sku.name} - ${primaryCw?.name || ''}`,
+                                      productType: `${sku.family} (${sku.category})`,
+                                      colorway: primaryCw ? `${primaryCw.name} (${primaryCw.hex_primary})` : '',
+                                      colorHexes,
+                                      colorZones,
+                                      materialZones,
+                                      materials: matZones.map(m => `${m.zone}: ${m.material}`).join(', ') || 'premium materials',
+                                      designNotes: sku.notes || '',
+                                    },
+                                  }),
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
+                                  if (url) {
+                                    const updated = { ...(sku.render_urls || {}), '3d': url };
+                                    await onUpdate({ render_urls: updated } as Partial<SKU>);
+                                    toast('3D render generated', 'success');
+                                  }
+                                } else {
+                                  const err = await res.json().catch(() => ({}));
+                                  toast(`Render failed: ${err.error || 'Unknown error'}`, 'error');
+                                }
+                              } catch (err) {
+                                console.error('[3DRender]', err);
+                                toast('3D render failed', 'error');
+                              } finally {
+                                setGenerating(false);
+                              }
+                            }}
+                            disabled={generating}
+                            className="flex items-center gap-2 px-4 py-2 border border-carbon/[0.08] text-carbon/40 text-[10px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors"
+                          >
+                            <Sparkles className="h-3 w-3" /> {'Generate 3D Render'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
