@@ -1417,7 +1417,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 /* ── Pipeline View ── */
 function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: SKU) => void; t: ReturnType<typeof useTranslation> }) {
   const phases: { id: DesignPhase; label: string; count: number }[] = [
-    { id: 'range_plan', label: t.skuPhases?.rangePlan || 'Range Plan', count: 0 },
+    { id: 'range_plan', label: t.skuPhases?.rangePlan || 'Concept', count: 0 },
     { id: 'sketch', label: t.skuPhases?.sketch || 'Sketch', count: 0 },
     { id: 'prototyping', label: t.skuPhases?.prototyping || 'Prototyping', count: 0 },
     { id: 'production', label: t.skuPhases?.production || 'Production', count: 0 },

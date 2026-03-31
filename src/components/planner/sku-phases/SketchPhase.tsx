@@ -12,6 +12,8 @@ import type { SkuColorway, ColorwayZone, MaterialZone } from '@/types/design';
 import { useSkuLifecycle } from './SkuLifecycleContext';
 import { ImageUploadArea } from './shared';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useToast } from '@/components/ui/toast';
 import { getDefaultZones, zonesToColorwayZones } from '@/lib/product-zones';
 import type { FooterAction } from '../SkuDetailView';
 
@@ -36,7 +38,19 @@ interface SketchPhaseProps {
 export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterAction, onAdvancePhase }: SketchPhaseProps) {
   const t = useTranslation();
   const { language } = useLanguage();
+  const { toast } = useToast();
   const { colorways, addColorway, updateColorway, deleteColorway, designData, collectionPlanId } = useSkuLifecycle();
+
+  /* ── Confirm dialog state ── */
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description?: string;
+    confirmLabel: string;
+    cancelLabel: string;
+    variant: 'danger' | 'warning' | 'neutral';
+    onConfirm: () => void;
+  } | null>(null);
 
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
   const materials = (designData.patterns[sku.id] || []) as { name: string; url: string; fileType: string; gradingNotes: string }[];
@@ -75,19 +89,35 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     if (activeStep < STEPS.length - 1) setActiveStep(activeStep + 1);
   }, [activeStep]);
 
-  const clearStep = useCallback(async (stepIdx: number) => {
+  const doClearStep = useCallback(async (stepIdx: number) => {
     setConfirmedSteps(prev => { const n = new Set(prev); n.delete(stepIdx); return n; });
-    // Clear data for the step
     if (stepIdx === 0) {
       await onUpdate({ sketch_url: undefined });
     } else if (stepIdx === 1) {
-      // Delete all colorways for this SKU
       for (const cw of skuColorways) await deleteColorway(cw.id);
     } else if (stepIdx === 2) {
       await onUpdate({ material_zones: [] } as Partial<SKU>);
     }
     setActiveStep(stepIdx);
-  }, [skuColorways, deleteColorway, onUpdate]);
+    toast(stepLabel('stepCleared') || 'Step cleared', 'info');
+  }, [skuColorways, deleteColorway, onUpdate, toast]);
+
+  const clearStep = useCallback((stepIdx: number) => {
+    const stepNames = [
+      stepLabel('drawing') || 'Sketch',
+      stepLabel('colorways') || 'Colorways',
+      stepLabel('materials') || 'Materials',
+    ];
+    setConfirmDialog({
+      open: true,
+      title: (stepLabel('clearStepTitle') || 'Clear {step}?').replace('{step}', stepNames[stepIdx] || ''),
+      description: stepLabel('clearStepDesc') || 'This will delete all data for this step. You can redo it afterwards.',
+      confirmLabel: stepLabel('clearConfirm') || 'Clear',
+      cancelLabel: stepLabel('cancel') || 'Cancel',
+      variant: 'danger',
+      onConfirm: () => { setConfirmDialog(null); doClearStep(stepIdx); },
+    });
+  }, [doClearStep]);
 
   const mode = modes[STEPS[activeStep]?.id] || 'free';
   const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
@@ -269,11 +299,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           }
                         } else {
                           const err = await res.json().catch(() => ({}));
-                          alert(`Sketch failed: ${err.error || 'Unknown error'}`);
+                          toast(`Sketch failed: ${err.error || 'Unknown error'}`, 'error');
                         }
                       } catch (e) {
                         console.error('[Sketch] Error:', e);
-                        alert('Sketch generation failed');
+                        toast(stepLabel('sketchFailed') || 'Sketch generation failed', 'error');
                       } finally { setGenerating(false); }
                     }} disabled={generating || !sku.reference_image_url}
                       className="flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-full">
@@ -914,7 +944,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         }
                       } else {
                         const err = await res.json().catch(() => ({}));
-                        alert(`Render failed: ${err.error || 'Unknown error'}`);
+                        toast(`Render failed: ${err.error || 'Unknown error'}`, 'error');
                       }
                     } finally {
                       setRenderGenerating(false);
@@ -970,6 +1000,20 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           );
         })()}
       </div>
+
+      {/* ── Confirm dialog ── */}
+      {confirmDialog && (
+        <ConfirmDialog
+          open={confirmDialog.open}
+          title={confirmDialog.title}
+          description={confirmDialog.description}
+          confirmLabel={confirmDialog.confirmLabel}
+          cancelLabel={confirmDialog.cancelLabel}
+          variant={confirmDialog.variant}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 }

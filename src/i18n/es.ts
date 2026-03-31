@@ -2225,9 +2225,9 @@ export const es: Dictionary = {
     cta_desc: 'De una chispa de inspiración a un lanzamiento agotado. Una asistente. Cada paso. aimily está aquí para hacer que tu próxima colección sea la mejor hasta ahora.',
   },
 
-  // ─── Range Plan ───
+  // ─── Range Plan (Concepto) ───
   rangePlan: {
-    label: 'Plan de Colección',
+    label: 'Concepto',
     collection: 'Colección',
     familiesCount: 'familias',
     skusPlanned: 'SKUs planificados',
@@ -2252,7 +2252,8 @@ export const es: Dictionary = {
 
   // ─── SKU Design Phases ───
   skuPhases: {
-    rangePlan: 'Plan de Colección',
+    rangePlan: 'Concepto',
+    concept: 'Concepto',
     sketch: 'Diseño',
     prototyping: 'Prototipado',
     production: 'Producción',
@@ -2465,6 +2466,35 @@ export const es: Dictionary = {
     mode: 'Modo',
     sketchConfirmed: 'Sketch confirmado',
     next: 'Siguiente',
+    // Navigation & confirmation dialogs
+    exitTitle: '¿Salir del editor de SKU?',
+    exitDescription: 'Tu progreso se guarda automáticamente. Este SKU permanecerá en la fase "{phase}".',
+    exitConfirm: 'Salir',
+    exitCancel: 'Seguir editando',
+    deleteTitle: '¿Eliminar este SKU?',
+    deleteDescription: 'Esto eliminará permanentemente "{name}" y todos sus datos de diseño, colorways y renders. No se puede deshacer.',
+    deleteConfirm: 'Eliminar permanentemente',
+    revertTitle: '¿Volver a {phase}?',
+    revertDescription: 'Se cambiará la fase del SKU. Tus datos se conservarán.',
+    revertConfirm: 'Volver a {phase}',
+    revertedTo: 'Vuelto a {phase}',
+    phaseAdvanced: 'Fase avanzada',
+    advanceIncomplete: '¿Avanzar con datos incompletos?',
+    advanceAnywayDesc: 'Puedes volver a completar esto más tarde.',
+    advanceAnyway: 'Avanzar de todos modos',
+    stayAndComplete: 'Quedarme y completar',
+    warnNoReference: 'No se ha subido imagen de referencia',
+    warnNoPricing: 'No se ha definido precio (PVP)',
+    completedLabel: 'completado',
+    backTo: 'Volver a',
+    // Clear step
+    clearStepTitle: '¿Limpiar {step}?',
+    clearStepDesc: 'Esto eliminará todos los datos de este paso. Podrás rehacerlo después.',
+    clearConfirm: 'Limpiar',
+    stepCleared: 'Paso limpiado',
+    sketchFailed: 'Error al generar sketch',
+    drawing: 'Sketch',
+    modeFree: 'Manual',
   },
   trust: {
     navLabel: 'Confianza',

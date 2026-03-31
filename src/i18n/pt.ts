@@ -2223,7 +2223,7 @@ export const pt: Dictionary = {
 
   // ─── Range Plan ───
   rangePlan: {
-    label: 'Plano de Coleção',
+    label: 'Conceito',
     collection: 'Coleção',
     familiesCount: 'famílias',
     skusPlanned: 'SKUs planejados',
@@ -2248,7 +2248,8 @@ export const pt: Dictionary = {
 
   // ─── SKU Phases ───
   skuPhases: {
-    rangePlan: 'Plano de Coleção',
+    rangePlan: 'Conceito',
+    concept: 'Conceito',
     sketch: 'Design',
     prototyping: 'Prototipagem',
     production: 'Produção',
@@ -2461,6 +2462,33 @@ export const pt: Dictionary = {
     mode: 'Modo',
     sketchConfirmed: 'Sketch confirmado',
     next: 'Próximo',
+    exitTitle: 'Sair do editor SKU?',
+    exitDescription: 'Seu progresso é salvo automaticamente. Este SKU permanecerá na fase "{phase}".',
+    exitConfirm: 'Sair',
+    exitCancel: 'Continuar editando',
+    deleteTitle: 'Excluir este SKU?',
+    deleteDescription: '"{name}" e todos os dados serão excluídos permanentemente.',
+    deleteConfirm: 'Excluir permanentemente',
+    revertTitle: 'Voltar para {phase}?',
+    revertDescription: 'A fase do SKU será alterada. Seus dados serão preservados.',
+    revertConfirm: 'Voltar para {phase}',
+    revertedTo: 'Voltou para {phase}',
+    phaseAdvanced: 'Fase avançada',
+    advanceIncomplete: 'Avançar com dados incompletos?',
+    advanceAnywayDesc: 'Você pode voltar para completar depois.',
+    advanceAnyway: 'Avançar mesmo assim',
+    stayAndComplete: 'Ficar e completar',
+    warnNoReference: 'Nenhuma imagem de referência',
+    warnNoPricing: 'Nenhum preço definido (PVP)',
+    completedLabel: 'concluído',
+    backTo: 'Voltar para',
+    clearStepTitle: 'Limpar {step}?',
+    clearStepDesc: 'Todos os dados desta etapa serão excluídos.',
+    clearConfirm: 'Limpar',
+    stepCleared: 'Etapa limpa',
+    sketchFailed: 'Falha na geração do sketch',
+    drawing: 'Sketch',
+    modeFree: 'Manual',
   },
   trust: {
     navLabel: 'Confiança',

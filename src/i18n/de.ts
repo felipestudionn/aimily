@@ -2241,7 +2241,7 @@ export const de: Dictionary = {
 
   // ─── Range Plan ───
   rangePlan: {
-    label: 'Kollektionsplan',
+    label: 'Konzept',
     collection: 'Kollektion',
     familiesCount: 'Familien',
     skusPlanned: 'SKUs geplant',
@@ -2266,7 +2266,8 @@ export const de: Dictionary = {
 
   // ─── SKU Phases ───
   skuPhases: {
-    rangePlan: 'Kollektionsplan',
+    rangePlan: 'Konzept',
+    concept: 'Konzept',
     sketch: 'Design',
     prototyping: 'Prototyping',
     production: 'Produktion',
@@ -2479,6 +2480,34 @@ export const de: Dictionary = {
     mode: 'Modus',
     sketchConfirmed: 'Sketch bestätigt',
     next: 'Weiter',
+    // Navigation & confirmation dialogs
+    exitTitle: 'SKU-Editor verlassen?',
+    exitDescription: 'Ihr Fortschritt wird automatisch gespeichert. Dieses SKU bleibt in der Phase "{phase}".',
+    exitConfirm: 'Verlassen',
+    exitCancel: 'Weiter bearbeiten',
+    deleteTitle: 'Dieses SKU löschen?',
+    deleteDescription: '"{name}" und alle Designdaten werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.',
+    deleteConfirm: 'Dauerhaft löschen',
+    revertTitle: 'Zurück zu {phase}?',
+    revertDescription: 'Die SKU-Phase wird geändert. Ihre Daten bleiben erhalten.',
+    revertConfirm: 'Zurück zu {phase}',
+    revertedTo: 'Zurückgesetzt auf {phase}',
+    phaseAdvanced: 'Phase fortgeschritten',
+    advanceIncomplete: 'Mit unvollständigen Daten fortfahren?',
+    advanceAnywayDesc: 'Sie können später zurückkommen.',
+    advanceAnyway: 'Trotzdem fortfahren',
+    stayAndComplete: 'Bleiben und vervollständigen',
+    warnNoReference: 'Kein Referenzbild hochgeladen',
+    warnNoPricing: 'Kein Preis festgelegt (PVP)',
+    completedLabel: 'abgeschlossen',
+    backTo: 'Zurück zu',
+    clearStepTitle: '{step} löschen?',
+    clearStepDesc: 'Alle Daten dieses Schritts werden gelöscht.',
+    clearConfirm: 'Löschen',
+    stepCleared: 'Schritt gelöscht',
+    sketchFailed: 'Sketch-Generierung fehlgeschlagen',
+    drawing: 'Sketch',
+    modeFree: 'Manuell',
   },
   trust: {
     navLabel: 'Vertrauen',

@@ -61,7 +61,7 @@ const THIN_BORDER_BOTTOM: Partial<ExcelJS.Borders> = {
 };
 
 const DESIGN_PHASE_LABELS: Record<string, string> = {
-  range_plan: 'Range Plan',
+  range_plan: 'Concept',
   sketch: 'Sketch',
   prototyping: 'Prototyping',
   production: 'Production',
@@ -338,7 +338,7 @@ function buildRangePlanSheet(wb: ExcelJS.Workbook, skus: SkuRow[]) {
       row.getCell(COL.drop).value = sku.drop_number || '';
       row.getCell(COL.drop).font = BODY_FONT;
       row.getCell(COL.drop).alignment = { vertical: 'middle', horizontal: 'center' };
-      row.getCell(COL.phase).value = DESIGN_PHASE_LABELS[sku.design_phase] || sku.design_phase || 'Range Plan';
+      row.getCell(COL.phase).value = DESIGN_PHASE_LABELS[sku.design_phase] || sku.design_phase || 'Concept';
       row.getCell(COL.phase).font = BODY_FONT;
       row.getCell(COL.notes).value = sku.notes || '';
       row.getCell(COL.notes).font = { size: 9, color: { argb: 'FF999999' } };

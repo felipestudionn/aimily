@@ -2241,7 +2241,7 @@ export const fr: Dictionary = {
 
   // ─── Range Plan ───
   rangePlan: {
-    label: 'Plan de Collection',
+    label: 'Concept',
     collection: 'Collection',
     familiesCount: 'familles',
     skusPlanned: 'SKUs planifiés',
@@ -2266,7 +2266,8 @@ export const fr: Dictionary = {
 
   // ─── SKU Phases ───
   skuPhases: {
-    rangePlan: 'Plan de Collection',
+    rangePlan: 'Concept',
+    concept: 'Concept',
     sketch: 'Design',
     prototyping: 'Prototypage',
     production: 'Production',
@@ -2479,6 +2480,34 @@ export const fr: Dictionary = {
     mode: 'Mode',
     sketchConfirmed: 'Sketch confirmé',
     next: 'Suivant',
+    // Navigation & confirmation dialogs
+    exitTitle: 'Quitter l\'éditeur SKU ?',
+    exitDescription: 'Votre progression est sauvegardée automatiquement. Ce SKU restera en phase "{phase}".',
+    exitConfirm: 'Quitter',
+    exitCancel: 'Continuer l\'édition',
+    deleteTitle: 'Supprimer ce SKU ?',
+    deleteDescription: 'Cela supprimera définitivement "{name}" et toutes ses données. Cette action est irréversible.',
+    deleteConfirm: 'Supprimer définitivement',
+    revertTitle: 'Revenir à {phase} ?',
+    revertDescription: 'La phase du SKU sera modifiée. Vos données seront conservées.',
+    revertConfirm: 'Retour à {phase}',
+    revertedTo: 'Revenu à {phase}',
+    phaseAdvanced: 'Phase avancée',
+    advanceIncomplete: 'Avancer avec des données incomplètes ?',
+    advanceAnywayDesc: 'Vous pourrez revenir compléter plus tard.',
+    advanceAnyway: 'Avancer quand même',
+    stayAndComplete: 'Rester et compléter',
+    warnNoReference: 'Aucune image de référence',
+    warnNoPricing: 'Pas de prix défini (PVP)',
+    completedLabel: 'terminé',
+    backTo: 'Retour à',
+    clearStepTitle: 'Effacer {step} ?',
+    clearStepDesc: 'Toutes les données de cette étape seront supprimées.',
+    clearConfirm: 'Effacer',
+    stepCleared: 'Étape effacée',
+    sketchFailed: 'Échec de la génération du sketch',
+    drawing: 'Sketch',
+    modeFree: 'Manuel',
   },
   trust: {
     navLabel: 'Confiance',

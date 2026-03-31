@@ -2244,9 +2244,9 @@ export const en = {
     cta_desc: 'From a spark of inspiration to a sold-out launch. One assistant. Every step. aimily is here to make your next collection the best one yet.',
   },
 
-  // ─── Range Plan ───
+  // ─── Range Plan (Concept) ───
   rangePlan: {
-    label: 'Range Plan',
+    label: 'Concept',
     collection: 'Collection',
     familiesCount: 'families',
     skusPlanned: 'SKUs planned',
@@ -2271,7 +2271,8 @@ export const en = {
 
   // ─── SKU Design Phases ───
   skuPhases: {
-    rangePlan: 'Range Plan',
+    rangePlan: 'Concept',
+    concept: 'Concept',
     sketch: 'Design',
     prototyping: 'Prototyping',
     production: 'Production',
@@ -2492,6 +2493,35 @@ export const en = {
     mode: 'Mode',
     sketchConfirmed: 'Sketch confirmed',
     next: 'Next',
+    // Navigation & confirmation dialogs
+    exitTitle: 'Exit SKU editor?',
+    exitDescription: 'Your progress is saved automatically. This SKU will remain in the "{phase}" phase.',
+    exitConfirm: 'Exit',
+    exitCancel: 'Keep editing',
+    deleteTitle: 'Delete this SKU?',
+    deleteDescription: 'This will permanently delete "{name}" and all its design data, colorways, and renders. This cannot be undone.',
+    deleteConfirm: 'Delete permanently',
+    revertTitle: 'Go back to {phase}?',
+    revertDescription: 'The SKU phase will be changed. Your data will be preserved.',
+    revertConfirm: 'Back to {phase}',
+    revertedTo: 'Reverted to {phase}',
+    phaseAdvanced: 'Phase advanced',
+    advanceIncomplete: 'Advance with incomplete data?',
+    advanceAnywayDesc: 'You can come back to complete this later.',
+    advanceAnyway: 'Advance anyway',
+    stayAndComplete: 'Stay and complete',
+    warnNoReference: 'No reference image uploaded',
+    warnNoPricing: 'No pricing set (PVP)',
+    completedLabel: 'completed',
+    backTo: 'Back to',
+    // Clear step
+    clearStepTitle: 'Clear {step}?',
+    clearStepDesc: 'This will delete all data for this step. You can redo it afterwards.',
+    clearConfirm: 'Clear',
+    stepCleared: 'Step cleared',
+    sketchFailed: 'Sketch generation failed',
+    drawing: 'Sketch',
+    modeFree: 'Manual',
   },
   trust: {
     navLabel: 'Trust',

@@ -2241,7 +2241,7 @@ export const nl: Dictionary = {
 
   // ─── Range Plan ───
   rangePlan: {
-    label: 'Collectieplan',
+    label: 'Concept',
     collection: 'Collectie',
     familiesCount: 'families',
     skusPlanned: 'SKU\'s gepland',
@@ -2266,7 +2266,8 @@ export const nl: Dictionary = {
 
   // ─── SKU Phases ───
   skuPhases: {
-    rangePlan: 'Collectieplan',
+    rangePlan: 'Concept',
+    concept: 'Concept',
     sketch: 'Ontwerp',
     prototyping: 'Prototyping',
     production: 'Productie',
@@ -2479,6 +2480,33 @@ export const nl: Dictionary = {
     mode: 'Modus',
     sketchConfirmed: 'Sketch bevestigd',
     next: 'Volgende',
+    exitTitle: 'SKU-editor verlaten?',
+    exitDescription: 'Je voortgang wordt automatisch opgeslagen. Dit SKU blijft in de "{phase}" fase.',
+    exitConfirm: 'Verlaten',
+    exitCancel: 'Blijven bewerken',
+    deleteTitle: 'Dit SKU verwijderen?',
+    deleteDescription: '"{name}" en alle ontwerpgegevens worden permanent verwijderd.',
+    deleteConfirm: 'Permanent verwijderen',
+    revertTitle: 'Terug naar {phase}?',
+    revertDescription: 'De SKU-fase wordt gewijzigd. Je gegevens blijven behouden.',
+    revertConfirm: 'Terug naar {phase}',
+    revertedTo: 'Terug naar {phase}',
+    phaseAdvanced: 'Fase voortgezet',
+    advanceIncomplete: 'Doorgaan met onvolledige gegevens?',
+    advanceAnywayDesc: 'Je kunt later terugkomen om dit te voltooien.',
+    advanceAnyway: 'Toch doorgaan',
+    stayAndComplete: 'Blijven en voltooien',
+    warnNoReference: 'Geen referentieafbeelding',
+    warnNoPricing: 'Geen prijs ingesteld (PVP)',
+    completedLabel: 'voltooid',
+    backTo: 'Terug naar',
+    clearStepTitle: '{step} wissen?',
+    clearStepDesc: 'Alle gegevens van deze stap worden verwijderd.',
+    clearConfirm: 'Wissen',
+    stepCleared: 'Stap gewist',
+    sketchFailed: 'Schets generatie mislukt',
+    drawing: 'Sketch',
+    modeFree: 'Handmatig',
   },
   trust: {
     navLabel: 'Vertrouwen',

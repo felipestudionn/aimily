@@ -2241,7 +2241,7 @@ export const it: Dictionary = {
 
   // ─── Range Plan ───
   rangePlan: {
-    label: 'Piano Collezione',
+    label: 'Concetto',
     collection: 'Collezione',
     familiesCount: 'famiglie',
     skusPlanned: 'SKU pianificati',
@@ -2266,7 +2266,8 @@ export const it: Dictionary = {
 
   // ─── SKU Phases ───
   skuPhases: {
-    rangePlan: 'Piano Collezione',
+    rangePlan: 'Concetto',
+    concept: 'Concetto',
     sketch: 'Design',
     prototyping: 'Prototipazione',
     production: 'Produzione',
@@ -2479,6 +2480,34 @@ export const it: Dictionary = {
     mode: 'Modalità',
     sketchConfirmed: 'Sketch confermato',
     next: 'Avanti',
+    // Navigation & confirmation dialogs
+    exitTitle: 'Uscire dall\'editor SKU?',
+    exitDescription: 'I tuoi progressi vengono salvati automaticamente. Questo SKU rimarrà nella fase "{phase}".',
+    exitConfirm: 'Esci',
+    exitCancel: 'Continua a modificare',
+    deleteTitle: 'Eliminare questo SKU?',
+    deleteDescription: '"{name}" e tutti i dati di design verranno eliminati permanentemente. Non è possibile annullare.',
+    deleteConfirm: 'Elimina permanentemente',
+    revertTitle: 'Tornare a {phase}?',
+    revertDescription: 'La fase SKU verrà modificata. I tuoi dati saranno conservati.',
+    revertConfirm: 'Torna a {phase}',
+    revertedTo: 'Tornato a {phase}',
+    phaseAdvanced: 'Fase avanzata',
+    advanceIncomplete: 'Avanzare con dati incompleti?',
+    advanceAnywayDesc: 'Puoi tornare a completare in seguito.',
+    advanceAnyway: 'Avanza comunque',
+    stayAndComplete: 'Rimani e completa',
+    warnNoReference: 'Nessuna immagine di riferimento',
+    warnNoPricing: 'Nessun prezzo impostato (PVP)',
+    completedLabel: 'completato',
+    backTo: 'Torna a',
+    clearStepTitle: 'Cancellare {step}?',
+    clearStepDesc: 'Tutti i dati di questo passaggio verranno eliminati.',
+    clearConfirm: 'Cancella',
+    stepCleared: 'Passaggio cancellato',
+    sketchFailed: 'Generazione sketch fallita',
+    drawing: 'Sketch',
+    modeFree: 'Manuale',
   },
   trust: {
     navLabel: 'Fiducia',

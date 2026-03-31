@@ -2115,7 +2115,7 @@ export const sv: Dictionary = {
 
   // ─── Range Plan ───
   rangePlan: {
-    label: 'Kollektionsplan',
+    label: 'Koncept',
     collection: 'Kollektion',
     familiesCount: 'familjer',
     skusPlanned: 'SKU:er planerade',
@@ -2140,7 +2140,8 @@ export const sv: Dictionary = {
 
   // ─── SKU Phases ───
   skuPhases: {
-    rangePlan: 'Kollektionsplan',
+    rangePlan: 'Koncept',
+    concept: 'Koncept',
     sketch: 'Design',
     prototyping: 'Prototypning',
     production: 'Produktion',
@@ -2353,6 +2354,33 @@ export const sv: Dictionary = {
     mode: 'Läge',
     sketchConfirmed: 'Sketch bekräftad',
     next: 'Nästa',
+    exitTitle: 'Lämna SKU-redigeraren?',
+    exitDescription: 'Dina framsteg sparas automatiskt. Denna SKU förblir i "{phase}"-fasen.',
+    exitConfirm: 'Lämna',
+    exitCancel: 'Fortsätt redigera',
+    deleteTitle: 'Ta bort denna SKU?',
+    deleteDescription: '"{name}" och all designdata raderas permanent.',
+    deleteConfirm: 'Radera permanent',
+    revertTitle: 'Gå tillbaka till {phase}?',
+    revertDescription: 'SKU-fasen ändras. Dina data bevaras.',
+    revertConfirm: 'Tillbaka till {phase}',
+    revertedTo: 'Tillbaka till {phase}',
+    phaseAdvanced: 'Fas avancerad',
+    advanceIncomplete: 'Gå vidare med ofullständig data?',
+    advanceAnywayDesc: 'Du kan komma tillbaka och slutföra senare.',
+    advanceAnyway: 'Gå vidare ändå',
+    stayAndComplete: 'Stanna och slutför',
+    warnNoReference: 'Ingen referensbild uppladdad',
+    warnNoPricing: 'Inget pris satt (PVP)',
+    completedLabel: 'slutförd',
+    backTo: 'Tillbaka till',
+    clearStepTitle: 'Rensa {step}?',
+    clearStepDesc: 'All data för detta steg raderas.',
+    clearConfirm: 'Rensa',
+    stepCleared: 'Steg rensat',
+    sketchFailed: 'Skissgenerering misslyckades',
+    drawing: 'Sketch',
+    modeFree: 'Manuell',
   },
   trust: {
     navLabel: 'Förtroende',

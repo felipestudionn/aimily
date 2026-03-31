@@ -2115,7 +2115,7 @@ export const no: Dictionary = {
 
   // ─── Range Plan ───
   rangePlan: {
-    label: 'Kolleksjonsplan',
+    label: 'Konsept',
     collection: 'Kolleksjon',
     familiesCount: 'familier',
     skusPlanned: 'SKU-er planlagt',
@@ -2140,7 +2140,8 @@ export const no: Dictionary = {
 
   // ─── SKU Phases ───
   skuPhases: {
-    rangePlan: 'Kolleksjonsplan',
+    rangePlan: 'Konsept',
+    concept: 'Konsept',
     sketch: 'Design',
     prototyping: 'Prototyping',
     production: 'Produksjon',
@@ -2353,6 +2354,33 @@ export const no: Dictionary = {
     mode: 'Modus',
     sketchConfirmed: 'Sketch bekreftet',
     next: 'Neste',
+    exitTitle: 'Avslutte SKU-editor?',
+    exitDescription: 'Fremgangen lagres automatisk. Denne SKU forblir i "{phase}"-fasen.',
+    exitConfirm: 'Avslutt',
+    exitCancel: 'Fortsett redigering',
+    deleteTitle: 'Slette denne SKU?',
+    deleteDescription: '"{name}" og alle designdata slettes permanent.',
+    deleteConfirm: 'Slett permanent',
+    revertTitle: 'Gå tilbake til {phase}?',
+    revertDescription: 'SKU-fasen endres. Dataene dine beholdes.',
+    revertConfirm: 'Tilbake til {phase}',
+    revertedTo: 'Tilbake til {phase}',
+    phaseAdvanced: 'Fase avansert',
+    advanceIncomplete: 'Gå videre med ufullstendige data?',
+    advanceAnywayDesc: 'Du kan komme tilbake for å fullføre senere.',
+    advanceAnyway: 'Gå videre likevel',
+    stayAndComplete: 'Bli og fullfør',
+    warnNoReference: 'Ingen referansebilde lastet opp',
+    warnNoPricing: 'Ingen pris satt (PVP)',
+    completedLabel: 'fullført',
+    backTo: 'Tilbake til',
+    clearStepTitle: 'Tøm {step}?',
+    clearStepDesc: 'Alle data for dette steget slettes.',
+    clearConfirm: 'Tøm',
+    stepCleared: 'Steg tømt',
+    sketchFailed: 'Skissegenerering mislyktes',
+    drawing: 'Sketch',
+    modeFree: 'Manuell',
   },
   trust: {
     navLabel: 'Tillit',
