@@ -117,43 +117,27 @@ export function ZoneEditor({ sketchImageUrl, zoneColors, onZoneColorsChange, cat
       const h = Math.round(img.naturalHeight * scale);
       setCanvasSize({ w, h });
 
-      // Draw sketch on the top canvas — extract lines only (remove white background)
+      // Draw sketch on the top canvas — ORIGINAL image, no processing
       const sketchCtx = sketchCanvasRef.current?.getContext('2d');
       if (sketchCtx && sketchCanvasRef.current) {
         sketchCanvasRef.current.width = w;
         sketchCanvasRef.current.height = h;
         sketchCtx.drawImage(img, 0, 0, w, h);
 
-        // Prepare boundary map for flood fill (gap closing) — from ORIGINAL image
+        // Prepare boundary map for flood fill (gap closing)
         const rawData = sketchCtx.getImageData(0, 0, w, h);
         boundaryRef.current = prepareForFloodFill(rawData, 2);
-
-        // Now make the sketch layer transparent except for dark lines
-        // This lets colors show through cleanly underneath
-        const lineData = sketchCtx.getImageData(0, 0, w, h);
-        const d = lineData.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const gray = (d[i] + d[i + 1] + d[i + 2]) / 3;
-          if (gray > 200) {
-            // White/light pixel → make transparent
-            d[i + 3] = 0;
-          } else {
-            // Dark pixel (line) → keep opaque, make pure black
-            d[i] = 0;
-            d[i + 1] = 0;
-            d[i + 2] = 0;
-            d[i + 3] = Math.min(255, (200 - gray) * 2); // Smooth edge antialiasing
-          }
-        }
-        sketchCtx.putImageData(lineData, 0, 0);
       }
 
-      // Initialize color canvas (transparent)
+      // Initialize color canvas with WHITE background (not transparent)
+      // This is critical: multiply blend on the sketch above means
+      // white × white = white (clean), white × color = color (shows through)
       const colorCtx = colorCanvasRef.current?.getContext('2d');
       if (colorCtx && colorCanvasRef.current) {
         colorCanvasRef.current.width = w;
         colorCanvasRef.current.height = h;
-        colorCtx.clearRect(0, 0, w, h);
+        colorCtx.fillStyle = '#FFFFFF';
+        colorCtx.fillRect(0, 0, w, h);
 
         // Save initial empty state
         historyRef.current = [colorCtx.getImageData(0, 0, w, h)];
@@ -174,43 +158,38 @@ export function ZoneEditor({ sketchImageUrl, zoneColors, onZoneColorsChange, cat
 
   /* ── Flood fill handler ── */
   const handleFill = useCallback((x: number, y: number) => {
-    const colorCtx = colorCanvasRef.current?.getContext('2d');
+    const colorCanvas = colorCanvasRef.current;
     const boundary = boundaryRef.current;
-    if (!colorCtx || !boundary) return;
+    if (!colorCanvas || !boundary) return;
 
-    // Create a temp canvas with boundary lines + current colors merged
+    saveHistory();
+
+    // Merge: boundary map (dilated lines) + current color canvas
+    // This gives the fill algorithm both line boundaries AND existing fills as walls
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = canvasSize.w;
     tempCanvas.height = canvasSize.h;
     const tempCtx = tempCanvas.getContext('2d')!;
 
-    // Start with boundary map (dilated lines)
-    tempCtx.putImageData(boundary, 0, 0);
+    // Start with current color canvas state
+    tempCtx.drawImage(colorCanvas, 0, 0);
 
-    // Overlay current colors (so we don't fill over already-colored areas)
+    // Burn boundary lines on top (darken = only makes pixels darker)
     tempCtx.globalCompositeOperation = 'darken';
-    tempCtx.drawImage(colorCanvasRef.current!, 0, 0);
+    tempCtx.putImageData(boundary, 0, 0);
     tempCtx.globalCompositeOperation = 'source-over';
 
-    // Get merged pixel data for flood fill
+    // Flood fill on the merged canvas
     const mergedData = tempCtx.getImageData(0, 0, canvasSize.w, canvasSize.h);
-    const beforeData = new ImageData(
-      new Uint8ClampedArray(mergedData.data),
-      canvasSize.w, canvasSize.h
-    );
 
-    // Run flood fill on merged canvas
     import('q-floodfill').then(({ default: FloodFill }) => {
       const ff = new FloodFill(mergedData);
-      const rgba = hexToRgba(color, 255); // Fill opaque on temp, apply with alpha later
+      const rgba = hexToRgba(color, 255);
       ff.fill(`rgba(${rgba.r},${rgba.g},${rgba.b},255)`, x, y, FILL_TOLERANCE);
 
-      // Extract mask of what changed
-      const mask = extractFillMask(beforeData, ff.imageData);
-
-      // Apply color with alpha to the actual color canvas
-      saveHistory();
-      applyMaskColor(colorCtx, mask, canvasSize.w, hexToRgba(color, FILL_ALPHA));
+      // Write fill result back to the color canvas
+      const colorCtx = colorCanvas.getContext('2d')!;
+      colorCtx.putImageData(ff.imageData, 0, 0);
 
       // Track zone
       zoneFills.current.set(zoneName, color);
@@ -470,6 +449,7 @@ export function ZoneEditor({ sketchImageUrl, zoneColors, onZoneColorsChange, cat
             display: loaded ? 'block' : 'none',
             width: '100%',
             height: 'auto',
+            mixBlendMode: 'multiply',
             pointerEvents: tool === 'pen' ? 'auto' : 'none',
             cursor: tool === 'pen' ? 'crosshair' : undefined,
           }}
