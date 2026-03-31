@@ -374,9 +374,16 @@ export function ZoneEditor({ svgSource, zoneColors, onZoneColorsChange, onSvgCha
 
     await loadSvgIntoCanvas(fabric, canvas, text);
 
-    // Extract colors from uploaded SVG
-    const { extractZoneColors } = await import('@/lib/zone-detection');
-    const extracted = extractZoneColors(text);
+    // Extract zone colors from uploaded SVG (inline — avoids importing server-only module)
+    const extracted: { zone: string; hex: string }[] = [];
+    const regex = /data-zone="([^"]+)"[^>]*fill="([^"]+)"/g;
+    let m;
+    while ((m = regex.exec(text)) !== null) {
+      const [, zone, fill] = m;
+      if (zone !== 'none' && fill !== 'none' && fill !== 'transparent' && !extracted.find(z => z.zone === zone)) {
+        extracted.push({ zone, hex: fill });
+      }
+    }
     if (extracted.length > 0) {
       onZoneColorsChange(extracted);
       extracted.forEach(z => colorMap.current.set(z.zone, z.hex));
