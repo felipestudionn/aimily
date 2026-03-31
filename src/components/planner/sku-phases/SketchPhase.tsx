@@ -238,7 +238,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     onRemove={() => {}} aspectClass="w-12 h-12" />
                 </div>
               )}
-              <p className="text-[10px] text-carbon/35">{stepLabel('referenceHint') || 'Reference photo — used as basis for AI sketch generation'}</p>
+              <p className="text-[10px] text-carbon/35">{stepLabel('referenceImage') || 'Reference image'}</p>
             </div>
 
             {/* AI generate button — only in AI mode, only if sketch doesn't exist yet */}
@@ -383,9 +383,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* Design notes — always visible */}
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
-              placeholder={stepLabel('sketchNotesPlaceholder') || 'Design notes...'} className="w-full h-12 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]" />
           </div>
         )}
 
