@@ -43,14 +43,15 @@ Color each zone with its assigned color. The zones and their colors are:
 
 ${zoneInstructions}
 
-STEP 3 — EXECUTION RULES:
-• FIRST identify where each zone is in the sketch by analyzing the construction lines, then fill that specific area with its color
-• Each zone MUST be visually distinguishable from adjacent zones — use the exact hex color specified
-• Keep ALL original line art: construction lines, stitching (dashed), seam lines, and structural details must remain visible as darker outlines within the colored areas
-• Add subtle tonal variation within each zone (slightly lighter on top/front surfaces, slightly darker on bottom/shadow areas) to give dimensionality
-• The result must be a professional colored technical flat illustration — NOT photorealistic, NOT a simple color overlay
-• Preserve the exact silhouette, proportions, and all details of the original sketch
-• Background: clean white`;
+STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
+• DO NOT ALTER THE SKETCH IN ANY WAY. The silhouette, proportions, line positions, construction details, angle, and composition must be PIXEL-PERFECT identical to the input image. You are ONLY adding color fills — nothing else changes.
+• Fill each identified zone with its flat color. Use the exact hex specified.
+• Each zone MUST be visually distinguishable from adjacent zones.
+• Keep ALL original line art visible: construction lines, stitching, seam lines remain as darker outlines within colored areas.
+• Add very subtle tonal variation within zones for dimensionality (lighter on top, slightly darker on bottom).
+• This is a colored technical flat illustration — NOT photorealistic. Think "fashion flat with color" — the same drawing, just with color added.
+• Background: clean white.
+• DO NOT redraw, reinterpret, or modify the shoe/product shape. ONLY add color to the existing drawing.`;
 
     // Get sketch as base64
     let sketchBase64: string;
@@ -64,15 +65,15 @@ STEP 3 — EXECUTION RULES:
       sketchBase64 = buf.toString('base64');
     }
 
-    // Call OpenAI gpt-image-1-mini
+    // Call OpenAI gpt-image-1 (full model — more faithful to input sketch)
     const blob = new Blob([Buffer.from(sketchBase64, 'base64')], { type: 'image/png' });
     const formData = new FormData();
-    formData.append('model', 'gpt-image-1-mini');
+    formData.append('model', 'gpt-image-1');
     formData.append('image', blob, 'sketch.png');
     formData.append('prompt', prompt);
     formData.append('n', '1');
     formData.append('size', '1024x1024');
-    formData.append('quality', 'medium');
+    formData.append('quality', 'low');
 
     const res = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
