@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/api-auth';
 import sharp from 'sharp';
+import potrace from 'potrace';
 
 /* ═══════════════════════════════════════════════════════════
    Vectorize — Convert raster sketch (PNG/JPG) to SVG
-   Uses vtracer-wasm for high-quality spline-based tracing.
-   Optimal for technical flat sketches (clean line art).
+   Uses potrace (pure JS, no WASM) for reliable serverless.
+   Optimal for technical flat sketches (clean line art on white).
    ═══════════════════════════════════════════════════════════ */
 
-let vtracerReady = false;
-
-async function ensureVtracer() {
-  if (vtracerReady) return;
-  const { readFileSync } = await import('fs');
-  const { join } = await import('path');
-  const { initSync } = await import('vtracer-wasm');
-  const wasmPath = join(process.cwd(), 'node_modules/vtracer-wasm/vtracer.wasm');
-  const wasmBytes = readFileSync(wasmPath);
-  initSync(wasmBytes);
-  vtracerReady = true;
+function traceToSvg(imageBuffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const trace = new potrace.Potrace();
+    trace.setParameters({
+      threshold: 128,
+      turdSize: 2,
+      optCurve: true,
+      optTolerance: 0.2,
+      blackOnWhite: true,
+      color: '#000000',
+      background: 'transparent',
+    });
+    trace.loadImage(imageBuffer, (_potrace: unknown, err: Error | null) => {
+      if (err) return reject(err);
+      resolve(trace.getSVG());
+    });
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -40,32 +47,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'image_base64 or image_url required' }, { status: 400 });
     }
 
-    // Preprocess: grayscale → threshold → RGBA pixels
-    const { data, info } = await sharp(imageBuffer)
+    // Preprocess with sharp: grayscale → high contrast for clean tracing
+    const processedBuffer = await sharp(imageBuffer)
       .greyscale()
-      .threshold(128)
-      .ensureAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+      .normalize()
+      .sharpen()
+      .png()
+      .toBuffer();
 
-    // Vectorize with vtracer-wasm
-    await ensureVtracer();
-    const { to_svg } = await import('vtracer-wasm');
+    // Get dimensions for response
+    const metadata = await sharp(imageBuffer).metadata();
 
-    const svg = to_svg(new Uint8Array(data.buffer), info.width, info.height, {
-      colormode: 'bw',
-      mode: 'spline',
-      filter_speckle: 4,
-      corner_threshold: 60,
-      segment_length: 3.5,
-      splice_threshold: 45,
-      path_precision: 3,
-    });
+    // Vectorize with potrace
+    const svg = await traceToSvg(processedBuffer);
 
     return NextResponse.json({
       svg,
-      width: info.width,
-      height: info.height,
+      width: metadata.width || 800,
+      height: metadata.height || 600,
     });
   } catch (err) {
     console.error('[Vectorize] Error:', err);
