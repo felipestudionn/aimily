@@ -51,10 +51,10 @@
     "exceljs": "^4.4.0",
     "fabric": "^7.2.0",
     "html2canvas": "^1.4.1",
+    "imagetracerjs": "^1.2.6",
     "jspdf": "^4.1.0",
     "lucide-react": "^0.487.0",
     "next": "^16.1.6",
-    "potrace": "^2.1.8",
     "pptxgenjs": "^4.0.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -66,7 +66,6 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/potrace": "^2.1.5",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
     "puppeteer": "^24.39.1",

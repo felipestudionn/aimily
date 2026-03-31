@@ -555,16 +555,34 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           onClick={async () => {
                             setVectorizing(true);
                             try {
-                              // Step 1: Vectorize
-                              const vecRes = await fetch('/api/ai/vectorize', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ image_url: sku.sketch_url }),
+                              // Step 1: Vectorize client-side with imagetracerjs
+                              const ImageTracer = (await import('imagetracerjs')).default || await import('imagetracerjs');
+                              const svg: string = await new Promise((resolve, reject) => {
+                                ImageTracer.imageToSVG(
+                                  sku.sketch_url!,
+                                  (svgStr: string) => {
+                                    if (svgStr) resolve(svgStr);
+                                    else reject(new Error('Vectorization returned empty'));
+                                  },
+                                  {
+                                    // Optimized for line art sketches
+                                    ltres: 1,
+                                    qtres: 1,
+                                    pathomit: 8,
+                                    colorsampling: 0,
+                                    numberofcolors: 2,
+                                    mincolorratio: 0,
+                                    colorquantcycles: 1,
+                                    blurradius: 0,
+                                    blurdelta: 20,
+                                    strokewidth: 1,
+                                    linefilter: true,
+                                    desc: false,
+                                  }
+                                );
                               });
-                              if (!vecRes.ok) throw new Error('Vectorization failed');
-                              const { svg } = await vecRes.json();
 
-                              // Step 2: Detect zones
+                              // Step 2: Detect zones via Claude Vision (server)
                               const zoneRes = await fetch('/api/ai/detect-zones', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
