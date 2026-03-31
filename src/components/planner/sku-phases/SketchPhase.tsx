@@ -242,7 +242,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             </div>
 
             {/* AI generate button — only in AI mode, only if sketch doesn't exist yet */}
-            {mode === 'ai' && !sku.sketch_url && (
+            {mode === 'ai' && (
               <button onClick={async () => {
                   if (!sku.reference_image_url) {
                     toast(stepLabel('needReference') || 'Upload a reference photo first', 'warning');
@@ -293,7 +293,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </button>
             )}
 
-            {generating && !sku.sketch_url && (
+            {generating && mode === 'ai' && (
               <div className="flex flex-col items-center justify-center py-10 gap-3">
                 <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
                 <p className="text-[11px] text-carbon/25">{stepLabel('generatingSketch') || 'Generating flat sketch...'}</p>
@@ -463,30 +463,38 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
           return (
           <div className="space-y-4">
-            {/* Sketch preview — compact bar */}
-            {sku.sketch_url && (
-              <div className="flex items-center gap-3 p-2.5 bg-white border border-carbon/[0.04]">
-                <div className="w-10 h-10 border border-carbon/[0.06] overflow-hidden shrink-0 bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
-                <p className="text-[10px] text-carbon/35">{stepLabel('sketchConfirmed') || 'Sketch confirmed'} — {stepLabel('colorUpDesc') || 'assign colors to each product zone'}</p>
-              </div>
-            )}
+            {/* Sketch + color direction */}
+            <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-start">
+              {/* Sketch preview — prominent */}
+              {sku.sketch_url ? (
+                <div className="space-y-1.5">
+                  <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('currentSketch') || 'Sketch'}</p>
+                  <div className="border border-carbon/[0.06] bg-white p-2">
+                    <img src={sku.sketch_url} alt="" className="w-full h-auto object-contain" />
+                  </div>
+                </div>
+              ) : (
+                <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-square flex items-center justify-center">
+                  <p className="text-[9px] text-carbon/15 text-center px-2">{stepLabel('completeSketchFirst') || 'Complete sketch step first'}</p>
+                </div>
+              )}
 
-            {/* ── Color input area — depends on mode ── */}
-            {mode === 'free' ? (
-              /* MANUAL: describe colors → AI generates 4 options based on description */
+              {/* Color input */}
               <div className="space-y-3">
-                <p className="text-[11px] text-carbon/40 leading-relaxed">
-                  {stepLabel('manualColorDesc') || 'Describe the colors you want and AI will generate 4 variations based on your direction.'}
-                </p>
-                <div className="flex gap-2">
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
-                    placeholder={stepLabel('colorDescriptionPlaceholder') || 'e.g. "Black leather upper with white midsole and red accents on the tongue"'}
-                    className="flex-1 h-16 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]"
-                  />
-                  <button onClick={async () => {
+                {mode === 'free' ? (
+                  /* MANUAL: describe colors → AI generates 4 options */
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-carbon/40 leading-relaxed">
+                      {'Describe the colors you want for this product. Aimily will generate 4 colorized versions of your sketch based on your description.'}
+                    </p>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
+                      placeholder={'e.g. "Black leather upper with white midsole and red accents on the tongue"'}
+                      className="w-full h-20 p-3 bg-white border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]"
+                    />
+                    <button onClick={async () => {
                     if (!notes.trim()) {
                       toast(stepLabel('describeFirst') || 'Describe the colors you want first', 'warning');
                       return;
@@ -507,32 +515,33 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                     {stepLabel('generateColors') || 'Generate'}
                   </button>
-                </div>
-              </div>
-            ) : (
-              /* AI: auto-propose colorways freely */
-              <div className="space-y-3">
-                {!aiColorways && !generating && (
-                  <>
-                    <p className="text-[11px] text-carbon/40 leading-relaxed">
-                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations inspired by Sanzo Wada and colorize your sketch with each one.'}
-                    </p>
-                    <button onClick={async () => {
-                      setGenerating(true);
-                      try {
-                        const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
-                        if (result?.colorways) await colorizeProposals(result.colorways);
-                      } finally {
-                        setGenerating(false);
-                      }
-                    }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
-                      <Sparkles className="h-3 w-3" />
-                      {stepLabel('proposeColorways') || 'Propose Colorways'}
-                    </button>
-                  </>
+                  </div>
+                ) : (
+                  /* AI: auto-propose colorways freely */
+                  <div className="space-y-3">
+                    {!aiColorways && !generating && (
+                      <>
+                        <p className="text-[11px] text-carbon/40 leading-relaxed">
+                          {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations inspired by Sanzo Wada and colorize your sketch with each one.'}
+                        </p>
+                        <button onClick={async () => {
+                          setGenerating(true);
+                          try {
+                            const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
+                            if (result?.colorways) await colorizeProposals(result.colorways);
+                          } finally {
+                            setGenerating(false);
+                          }
+                        }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
+                          <Sparkles className="h-3 w-3" />
+                          {stepLabel('proposeColorways') || 'Propose Colorways'}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
+            </div>
 
             {/* Loading state */}
             {generating && !aiColorways && (
