@@ -503,8 +503,17 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         concept: notes,
                         designDirection: notes,
                       });
-                      if (result?.colorways) await colorizeProposals(result.colorways);
-                    } finally {
+                      if (result?.colorways && result.colorways.length > 0) {
+                        // Show cards immediately, colorize in background
+                        setGenerating(false);
+                        colorizeProposals(result.colorways);
+                      } else {
+                        toast('No colorways returned — try a more detailed description', 'warning');
+                        setGenerating(false);
+                      }
+                    } catch (err) {
+                      console.error('[ManualColor]', err);
+                      toast('Failed to generate colorways', 'error');
                       setGenerating(false);
                     }
                   }} disabled={generating || !notes.trim()}
@@ -525,8 +534,13 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           setGenerating(true);
                           try {
                             const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
-                            if (result?.colorways) await colorizeProposals(result.colorways);
-                          } finally {
+                            if (result?.colorways) {
+                              setGenerating(false);
+                              colorizeProposals(result.colorways);
+                            } else {
+                              setGenerating(false);
+                            }
+                          } catch {
                             setGenerating(false);
                           }
                         }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
