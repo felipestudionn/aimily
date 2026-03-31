@@ -368,6 +368,26 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
             )}
           </div>
         </div>
+
+        {/* Row 2: Actions bar — always visible */}
+        <div className="flex items-center gap-3 px-6 sm:px-10 py-1.5 border-t border-carbon/[0.03]">
+          {canRevert && (
+            <button
+              onClick={revertPhase}
+              disabled={savingPhase}
+              className="flex items-center gap-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/25 hover:text-carbon/50 transition-colors disabled:opacity-30"
+            >
+              <ArrowLeft className="h-3 w-3" /> {(t.skuPhases?.backTo || 'Back to')} {phaseLabel(PHASES[currentPhaseIdx - 1]?.id || 'range_plan')}
+            </button>
+          )}
+          <div className="flex-1" />
+          <button
+            onClick={handleDeleteSku}
+            className="flex items-center gap-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/15 hover:text-red-600/40 transition-colors"
+          >
+            <Trash2 className="h-3 w-3" /> {t.skuPhases?.deleteSku || 'Delete'}
+          </button>
+        </div>
       </div>
 
       {/* ── Content — scrollable ── */}
@@ -389,26 +409,9 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         </div>
       </div>
 
-      {/* ── Footer ── */}
+      {/* ── Footer — clean, only CTA ── */}
       <div className="shrink-0 border-t border-carbon/[0.06] px-6 sm:px-10 lg:px-16 py-2.5">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleDeleteSku}
-              className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/20 hover:text-red-600/50 transition-colors"
-            >
-              <Trash2 className="h-3 w-3" /> {t.skuPhases?.deleteSku || 'Delete SKU'}
-            </button>
-            {canRevert && (
-              <button
-                onClick={revertPhase}
-                disabled={savingPhase}
-                className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.1em] uppercase text-carbon/25 hover:text-carbon/50 transition-colors disabled:opacity-30"
-              >
-                <ArrowLeft className="h-3 w-3" /> {(t.skuPhases?.backTo || 'Back to')} {phaseLabel(PHASES[currentPhaseIdx - 1]?.id || 'range_plan')}
-              </button>
-            )}
-          </div>
+        <div className="max-w-5xl mx-auto flex items-center justify-end">
           {!isCompleted && (
             <button
               onClick={footerAction.action}
