@@ -566,6 +566,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                                     colorway_name: cw.name,
                                     color_description: cw.description,
                                     zone_colors: zoneColors,
+                                    category: sku.category,
+                                    product_name: sku.name,
+                                    family: sku.family,
                                     collectionPlanId,
                                   }),
                                 });

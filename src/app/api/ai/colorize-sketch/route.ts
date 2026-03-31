@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   try {
-    const { sketch_url, colorway_name, color_description, zone_colors, collectionPlanId } = await req.json();
+    const { sketch_url, colorway_name, color_description, zone_colors, category, product_name, family, collectionPlanId } = await req.json();
 
     if (!sketch_url) {
       return NextResponse.json({ error: 'sketch_url required' }, { status: 400 });
@@ -26,28 +26,31 @@ export async function POST(req: NextRequest) {
 
     // Build zone-specific color instructions
     const zoneInstructions = zone_colors?.length
-      ? zone_colors.map((z: { zone: string; hex: string }) => {
-          // Convert hex to a human-readable color name hint for better AI understanding
-          const hex = z.hex.toUpperCase();
-          return `${z.zone} → ${hex}`;
-        }).join('\n')
+      ? zone_colors.map((z: { zone: string; hex: string }) => `• ${z.zone} → ${z.hex.toUpperCase()}`).join('\n')
       : color_description || 'natural colors';
 
-    const prompt = `You are a professional fashion product illustrator. Colorize this technical flat sketch with the colorway "${colorway_name || 'colorway'}".
+    // Product-aware context
+    const productType = category === 'CALZADO' ? 'footwear/shoe' : category === 'ROPA' ? 'apparel/garment' : 'accessory';
+    const productDesc = product_name ? `"${product_name}"${family ? ` from the ${family} family` : ''}` : 'this product';
 
-ZONE-BY-ZONE COLOR MAP (apply each color ONLY to its specific zone):
+    const prompt = `You are an expert fashion product illustrator. This sketch shows a ${productType}: ${productDesc}.
+
+STEP 1 — IDENTIFY THE PRODUCT:
+Look at this sketch carefully. Identify what type of ${productType} it is and recognize its anatomical zones (the different structural parts visible in the drawing).
+
+STEP 2 — APPLY COLORWAY "${colorway_name || 'colorway'}":
+Color each zone with its assigned color. The zones and their colors are:
+
 ${zoneInstructions}
 
-CRITICAL RULES:
-1. Each zone MUST be a DIFFERENT, clearly distinguishable color — even if two zones have similar hex values, make them visually distinct from each other
-2. Keep all original construction lines, seam lines, and stitching details visible
-3. The Upper, Midsole, and Outsole MUST be clearly separated with different tones
-4. Lining and Tongue should contrast with the Upper
-5. Use flat, solid color fills — this is a colored technical illustration, NOT a photo
-6. Keep the white/light background
-7. Preserve the exact silhouette and proportions of the original sketch
-8. Add subtle shading/depth within each zone to show dimension (lighter on top surfaces, slightly darker on lower/shadow areas)
-9. Construction details (stitching, seams, eyelets) should remain visible as darker lines within each colored zone`;
+STEP 3 — EXECUTION RULES:
+• FIRST identify where each zone is in the sketch by analyzing the construction lines, then fill that specific area with its color
+• Each zone MUST be visually distinguishable from adjacent zones — use the exact hex color specified
+• Keep ALL original line art: construction lines, stitching (dashed), seam lines, and structural details must remain visible as darker outlines within the colored areas
+• Add subtle tonal variation within each zone (slightly lighter on top/front surfaces, slightly darker on bottom/shadow areas) to give dimensionality
+• The result must be a professional colored technical flat illustration — NOT photorealistic, NOT a simple color overlay
+• Preserve the exact silhouette, proportions, and all details of the original sketch
+• Background: clean white`;
 
     // Get sketch as base64
     let sketchBase64: string;
