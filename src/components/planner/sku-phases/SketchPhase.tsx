@@ -65,7 +65,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const firstCwId = colorways.filter(c => c.sku_id === sku.id)[0]?.id || null;
   const [expandedCw, setExpandedCw] = useState<string | null>(firstCwId);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
-  const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
+
 
   // Zone Editor (no state needed — renders immediately when sketch exists)
 
@@ -666,7 +666,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             ? sku.material_zones
             : defaultZones.map(z => ({ zone: z.zone, material: '' }));
 
-          // Get zone colors from first colorway for visual reference
           const firstCw = skuColorways[0];
           const cwZones = firstCw?.zones && firstCw.zones.length > 0 ? firstCw.zones : [];
           const zoneColor = (zoneName: string): string | null => {
@@ -690,120 +689,132 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             onUpdate({ material_zones: updated } as Partial<SKU>);
           };
 
+          // AI auto-fill: replaces entire table at once
+          const autoFillMaterials = async () => {
+            setGenerating(true);
+            try {
+              const zoneContext = matZones.map(m => m.zone).join(', ');
+              const colorwayContext = skuColorways.map(c => {
+                const zones = c.zones && c.zones.length > 0 ? c.zones : [];
+                return `${c.name}: ${zones.map(z => `${z.zone}=${z.hex}`).join(', ')}`;
+              }).join(' | ');
+              const result = await callDesignAI('materials-suggest', {
+                productType: sku.category || sku.type || '',
+                subcategory: sku.name || '',
+                family: sku.family,
+                concept: sku.notes || '',
+                priceRange: `€${sku.pvp}`,
+                designDirection: `${sku.name} — ${sku.family}. ${sku.notes || ''}`,
+                colorways: colorwayContext,
+                zones: zoneContext,
+              });
+              if (result?.materials && result.materials.length > 0) {
+                // Map AI suggestions to zones
+                const filled = matZones.map(mz => {
+                  const suggestion = result.materials.find((m: any) =>
+                    m.type?.toLowerCase().includes(mz.zone.toLowerCase()) ||
+                    mz.zone.toLowerCase().includes(m.type?.toLowerCase() || '')
+                  ) || result.materials.find((m: any) => !matZones.some(existing => existing.material && existing.zone.toLowerCase().includes(m.type?.toLowerCase() || '')));
+                  if (suggestion && !mz.material) {
+                    return { ...mz, material: suggestion.name, composition: suggestion.description || '', finish: suggestion.sustainability || '' };
+                  }
+                  return mz;
+                });
+                // If any zones still empty, fill from remaining suggestions
+                const usedNames = new Set(filled.filter(m => m.material).map(m => m.material));
+                const remaining = result.materials.filter((m: any) => !usedNames.has(m.name));
+                let remainIdx = 0;
+                const finalFilled = filled.map(mz => {
+                  if (!mz.material && remainIdx < remaining.length) {
+                    const s = remaining[remainIdx++];
+                    return { ...mz, material: s.name, composition: s.description || '' };
+                  }
+                  return mz;
+                });
+                onUpdate({ material_zones: finalFilled } as Partial<SKU>);
+                toast('Materials suggested — review and edit as needed', 'success');
+              } else {
+                toast('No material suggestions returned', 'warning');
+              }
+            } catch (err) {
+              console.error('[Materials]', err);
+              toast('Failed to suggest materials', 'error');
+            } finally {
+              setGenerating(false);
+            }
+          };
+
           return (
           <div className="space-y-4">
-            {/* Context bar */}
-            <div className="flex items-center gap-2.5 p-2.5 bg-white border border-carbon/[0.04]">
-              {sku.sketch_url && <div className="w-8 h-8 border border-carbon/[0.06] overflow-hidden shrink-0 bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>}
-              {firstCw && cwZones.length > 0 && (
-                <div className="flex shrink-0 h-4 overflow-hidden border border-carbon/[0.06]">
-                  {cwZones.map((z, i) => <div key={i} className="w-3 h-full" style={{ backgroundColor: z.hex }} />)}
+            {/* Context: sketch + colorway strip */}
+            <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-start">
+              {sku.sketch_url && (
+                <div className="space-y-1.5">
+                  <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('currentSketch') || 'Sketch'}</p>
+                  <div className="border border-carbon/[0.06] bg-white p-2">
+                    <img src={sku.sketch_url} alt="" className="w-full h-auto object-contain" />
+                  </div>
+                  {firstCw && cwZones.length > 0 && (
+                    <div className="flex h-4 overflow-hidden border border-carbon/[0.06]">
+                      {cwZones.map((z, i) => <div key={i} className="flex-1 h-full" style={{ backgroundColor: z.hex }} />)}
+                    </div>
+                  )}
                 </div>
               )}
-              <p className="text-[10px] text-carbon/35">{skuColorways.length} {skuColorways.length === 1 ? 'colorway' : 'colorways'} — {stepLabel('bomDesc') || 'assign materials to each zone'}</p>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-carbon/40">
+                    {mode === 'free'
+                      ? 'Define materials for each product zone. Specify material name and finish.'
+                      : 'AI will suggest materials based on your product type, price point, and design direction.'}
+                  </p>
+                  {mode === 'ai' && (
+                    <button onClick={autoFillMaterials} disabled={generating}
+                      className="shrink-0 flex items-center gap-2 px-4 py-2 bg-carbon text-crema text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-30">
+                      {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {'Suggest Materials'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Simplified BOM table: Zone + Material + Finish */}
+                <div className="space-y-1">
+                  <div className="grid grid-cols-[20px_minmax(80px,1.2fr)_minmax(120px,2fr)_minmax(80px,1fr)_20px] gap-x-2 px-3">
+                    <span />
+                    <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zoneLabel') || 'Zone'}</span>
+                    <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('materialLabel') || 'Material'}</span>
+                    <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('finishLabel') || 'Finish'}</span>
+                    <span />
+                  </div>
+
+                  {matZones.map((mz, idx) => {
+                    const hex = zoneColor(mz.zone);
+                    return (
+                      <div key={idx} className="grid grid-cols-[20px_minmax(80px,1.2fr)_minmax(120px,2fr)_minmax(80px,1fr)_20px] gap-x-2 items-center px-3 py-2 bg-white border border-carbon/[0.04]">
+                        <div>{hex ? <div className="w-4 h-4 border border-carbon/[0.08]" style={{ backgroundColor: hex }} /> : <div className="w-4 h-4 border border-dashed border-carbon/[0.06]" />}</div>
+                        <input value={mz.zone} onChange={(e) => updateMatZone(idx, 'zone', e.target.value)}
+                          className="text-[11px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.12]" />
+                        <input value={mz.material} onChange={(e) => updateMatZone(idx, 'material', e.target.value)}
+                          placeholder="e.g. Nubuck leather" className="text-[11px] text-carbon/50 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                        <input value={mz.finish || ''} onChange={(e) => updateMatZone(idx, 'finish', e.target.value)}
+                          placeholder="Tumbled, Matte..." className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                        <button onClick={() => removeMatZone(idx)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>
+                      </div>
+                    );
+                  })}
+
+                  <button onClick={addMatZone}
+                    className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:border-carbon/15 w-full justify-center">
+                    <Plus className="h-2.5 w-2.5" /> {stepLabel('addZone') || 'Add Zone'}
+                  </button>
+
+                  {matZones.some(m => !m.material) && (
+                    <p className="text-[9px] text-carbon/20 italic px-1">{stepLabel('emptyZonesNote') || 'Empty zones will be noted as "factory discretion" in the tech pack.'}</p>
+                  )}
+                </div>
+              </div>
             </div>
-
-            {/* Zone-based BOM table */}
-            {(mode === 'free' || matZones.some(m => m.material)) && (
-              <div className="space-y-1.5">
-                {/* Headers */}
-                <div className="grid grid-cols-[20px_minmax(80px,1fr)_minmax(100px,1.5fr)_minmax(80px,1fr)_minmax(60px,0.7fr)_minmax(70px,0.8fr)_20px] gap-x-2 px-3">
-                  <span />
-                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zoneLabel') || 'Zone'}</span>
-                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('materialLabel') || 'Material'}</span>
-                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('compositionLabel') || 'Composition'}</span>
-                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('weightLabel') || 'Weight'}</span>
-                  <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('finishLabel') || 'Finish'}</span>
-                  <span />
-                </div>
-
-                {matZones.map((mz, idx) => {
-                  const hex = zoneColor(mz.zone);
-                  return (
-                    <div key={idx} className="grid grid-cols-[20px_minmax(80px,1fr)_minmax(100px,1.5fr)_minmax(80px,1fr)_minmax(60px,0.7fr)_minmax(70px,0.8fr)_20px] gap-x-2 items-center px-3 py-2 bg-white border border-carbon/[0.04]">
-                      {/* Color dot from colorway */}
-                      <div>{hex ? <div className="w-4 h-4 border border-carbon/[0.08]" style={{ backgroundColor: hex }} /> : <div className="w-4 h-4 border border-dashed border-carbon/[0.06]" />}</div>
-
-                      <input value={mz.zone} onChange={(e) => updateMatZone(idx, 'zone', e.target.value)}
-                        className="text-[11px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.12]" />
-
-                      <input value={mz.material} onChange={(e) => updateMatZone(idx, 'material', e.target.value)}
-                        placeholder="e.g. Nubuck leather" className="text-[11px] text-carbon/50 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
-
-                      <input value={mz.composition || ''} onChange={(e) => updateMatZone(idx, 'composition', e.target.value)}
-                        placeholder="100% bovine" className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
-
-                      <input value={mz.weight || ''} onChange={(e) => updateMatZone(idx, 'weight', e.target.value)}
-                        placeholder="1.4mm" className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
-
-                      <input value={mz.finish || ''} onChange={(e) => updateMatZone(idx, 'finish', e.target.value)}
-                        placeholder="Tumbled" className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
-
-                      <button onClick={() => removeMatZone(idx)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>
-                    </div>
-                  );
-                })}
-
-                <button onClick={addMatZone}
-                  className="flex items-center gap-2 px-3 py-2 border border-dashed border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:border-carbon/15 w-full justify-center">
-                  <Plus className="h-2.5 w-2.5" /> {stepLabel('addZone') || 'Add Zone'}
-                </button>
-
-                {/* Zones without material = factory discretion note */}
-                {matZones.some(m => !m.material) && (
-                  <p className="text-[9px] text-carbon/20 italic px-1">{stepLabel('emptyZonesNote') || 'Empty zones will be noted as "factory discretion" in the tech pack.'}</p>
-                )}
-              </div>
-            )}
-
-            {/* AI material proposals */}
-            {mode === 'ai' && !aiMaterials && (
-              <button onClick={async () => {
-                setGenerating(true);
-                const zoneContext = matZones.map(m => m.zone).join(', ');
-                const colorwayContext = skuColorways.map(c => {
-                  const zones = c.zones && c.zones.length > 0 ? c.zones : [];
-                  return `${c.name}: ${zones.map(z => `${z.zone}=${z.hex}`).join(', ')}`;
-                }).join(' | ');
-                const result = await callDesignAI('materials-suggest', {
-                  productType: sku.category || sku.type || '',
-                  subcategory: sku.name || '',
-                  family: sku.family,
-                  concept: sku.notes || '',
-                  priceRange: `€${sku.pvp}`,
-                  designDirection: `${sku.name} — ${sku.family}. ${sku.notes || ''}`,
-                  colorways: colorwayContext,
-                  zones: zoneContext,
-                });
-                if (result?.materials) setAiMaterials(result.materials);
-                setGenerating(false);
-              }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
-                {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                {stepLabel('proposeMaterials') || 'Propose Materials'}
-              </button>
-            )}
-            {aiMaterials?.map((mat, idx) => (
-              <div key={idx} className="border border-carbon/[0.06] bg-white p-3.5 flex items-start gap-3">
-                <div className="flex-1">
-                  <span className="text-[8px] font-semibold tracking-[0.1em] uppercase text-carbon/25">{mat.type}</span>
-                  <p className="text-[12px] font-light text-carbon mt-0.5">{mat.name}</p>
-                  <p className="text-[10px] text-carbon/35 mt-0.5">{mat.description}</p>
-                  {mat.sustainability && <p className="text-[9px] text-[#2d6a4f]/50 mt-0.5 italic">{mat.sustainability}</p>}
-                </div>
-                <button onClick={() => {
-                  // Find matching zone or add to first empty
-                  const updated = [...matZones];
-                  const emptyIdx = updated.findIndex(m => !m.material);
-                  if (emptyIdx >= 0) {
-                    updated[emptyIdx] = { ...updated[emptyIdx], material: mat.name, composition: mat.description };
-                  } else {
-                    updated.push({ zone: mat.type || 'Other', material: mat.name, composition: mat.description });
-                  }
-                  onUpdate({ material_zones: updated } as Partial<SKU>);
-                }}
-                  className="px-2.5 py-1 text-[9px] font-medium uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors shrink-0">{stepLabel('accept') || 'Accept'}</button>
-              </div>
-            ))}
           </div>
           );
         })()}
@@ -814,30 +825,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           const cwZones = primaryCw?.zones?.length ? primaryCw.zones : [];
           const mZones = sku.material_zones || [];
 
-          // Callout positions for side profile (% from top-left)
-          const sideCallouts: Record<string, { top: string; left: string }> = {
-            'Upper': { top: '35%', left: '45%' },
-            'Tongue': { top: '15%', left: '55%' },
-            'Lining': { top: '25%', left: '65%' },
-            'Midsole': { top: '72%', left: '50%' },
-            'Outsole': { top: '85%', left: '50%' },
-            'Laces': { top: '20%', left: '45%' },
-            'Heel Counter': { top: '40%', left: '85%' },
-            'Eyelets': { top: '28%', left: '40%' },
-            'Branding': { top: '55%', left: '30%' },
-          };
-          // Callout positions for top-down view
-          const topCallouts: Record<string, { top: string; left: string }> = {
-            'Upper': { top: '50%', left: '30%' },
-            'Tongue': { top: '25%', left: '50%' },
-            'Lining': { top: '20%', left: '70%' },
-            'Midsole': { top: '80%', left: '30%' },
-            'Outsole': { top: '90%', left: '50%' },
-            'Laces': { top: '35%', left: '50%' },
-            'Heel Counter': { top: '85%', left: '70%' },
-            'Eyelets': { top: '30%', left: '35%' },
-            'Branding': { top: '60%', left: '50%' },
-          };
 
           return (
           <div className="space-y-0">
@@ -867,16 +854,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   {sku.sketch_url ? (
                     <div className="relative">
                       <img src={sku.sketch_url} alt="Side profile" className="w-full object-contain" />
-                      {/* Numbered callouts */}
-                      {cwZones.map((z, i) => {
-                        const pos = sideCallouts[z.zone];
-                        if (!pos) return null;
-                        return (
-                          <div key={i} className="absolute flex items-center justify-center w-4 h-4 rounded-full bg-carbon text-crema text-[7px] font-bold shadow-sm" style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
-                            {i + 1}
-                          </div>
-                        );
-                      })}
                     </div>
                   ) : (
                     <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No sketch</div>
@@ -888,15 +865,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   {(sku.sketch_top_url || sketchTopView) ? (
                     <div className="relative">
                       <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full object-contain" />
-                      {cwZones.map((z, i) => {
-                        const pos = topCallouts[z.zone];
-                        if (!pos) return null;
-                        return (
-                          <div key={i} className="absolute flex items-center justify-center w-4 h-4 rounded-full bg-carbon text-crema text-[7px] font-bold shadow-sm" style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
-                            {i + 1}
-                          </div>
-                        );
-                      })}
                     </div>
                   ) : (
                     <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No top-down view</div>
