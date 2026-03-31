@@ -43,7 +43,7 @@ const ANGLE_CONFIGS: Record<RenderAngle, AngleConfig> = {
   three_quarter: {
     label: 'Three-Quarter',
     promptSuffix: 'Three-quarter angle view, showing depth and volume, slightly rotated 30-45 degrees',
-    structureStrength: 75,
+    structureStrength: 70,
   },
   side: {
     label: 'Side Profile',
