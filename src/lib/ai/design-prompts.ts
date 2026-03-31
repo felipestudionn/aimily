@@ -92,16 +92,21 @@ The user needs colorway options for a specific product:
 - Design direction: ${input.designDirection || 'not specified'}
 - Season: ${input.season || 'current season'}
 
-Generate 4-5 complete colorway options. Each colorway is a COMBINATION of 2-4 colors that work together on this specific product.
+Generate 4 complete colorway options. Each colorway is a COMBINATION of 3 colors that represent the MAIN ZONES of this product (e.g., for footwear: upper, midsole, outsole/accents).
+
+CRITICAL — VISUAL CONTRAST:
+• The 3 colors in each colorway MUST be visually distinct from each other. Do NOT propose 3 shades of the same color.
+• Minimum contrast: at least one light color and one dark color per colorway. Example: dark navy upper + white midsole + gum outsole.
+• Think like a product designer: the color blocking creates the visual identity. Monochrome is boring on a sketch.
 
 COLOR METHODOLOGY:
-1. MATERIAL REALITY — Colors look different on leather vs. canvas vs. knit vs. nylon. Specify how each color should be achieved on the actual material.
-2. COMMERCIAL GRADIENT — Include a range from "safest commercial" (the black/navy that sells 40% of units) to "boldest seasonal" (the color that gets press/social attention but sells fewer units)
-3. SEASONAL LOGIC — Colors must align with the season's light: SS palettes read differently than FW palettes
-4. BRAND COHERENCE — If brand DNA includes a color system, colorways should feel like they belong to the same brand
-5. PRODUCTION FEASIBILITY — Specify hex codes that translate to real dyeable/achievable colors. No impossible neons on natural fibers.
+1. CONTRAST FIRST — Each colorway must have clear light/dark differentiation between zones. Avoid muddy all-dark or all-light palettes.
+2. MATERIAL REALITY — Colors look different on leather vs. canvas vs. knit. Specify how each color is achieved on the material.
+3. COMMERCIAL GRADIENT — Include a range: one "core" (commercial anchor), one "seasonal" (trend-forward), one "statement" (bold/editorial). Plus one versatile option.
+4. SEASONAL LOGIC — Align with the season's light and mood.
+5. PRODUCTION FEASIBILITY — Hex codes must translate to achievable, dyeable colors.
 
-Each colorway should have a name that evokes its world — not "Blue/White" but a name that could appear on a product page.
+Each colorway should have a name that evokes its world — not "Blue/White" but a name that could appear on a product page. Each colorway MUST feel fresh and visually distinct when colorized on a sketch.
 
 ${QUALITY_GATES.designSpecificity}
 ${QUALITY_GATES.antiGeneric}
