@@ -14,7 +14,7 @@ import { ImageUploadArea } from './shared';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
-import { getDefaultZones, zonesToColorwayZones } from '@/lib/product-zones';
+import { getDefaultZones } from '@/lib/product-zones';
 import type { FooterAction } from '../SkuDetailView';
 
 type InputMode = 'free' | 'ai';
@@ -64,8 +64,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [sketchTopView, setSketchTopView] = useState<string | null>(sku.sketch_top_url || null);
   const firstCwId = colorways.filter(c => c.sku_id === sku.id)[0]?.id || null;
   const [expandedCw, setExpandedCw] = useState<string | null>(firstCwId);
-  const [generatingSketchFor, setGeneratingSketchFor] = useState<number | null>(null);
-  const [aiProposals, setAiProposals] = useState<{ title: string; description: string; keyFeatures: string[]; silhouette: string; sketchUrl?: string }[] | null>(null);
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
   const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
 
@@ -226,193 +224,166 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         {/* ═══ STEP 1: SKETCH ═══ */}
         {activeStep === 0 && (
           <div className="space-y-4">
-            {mode === 'free' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('designSketch') || 'Design Sketch'}</p>
-                  <ImageUploadArea imageUrl={sku.sketch_url} uploading={uploading === 'sketch_url'}
-                    placeholder={stepLabel('uploadSketch') || 'Upload your sketch'}
-                    onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[4/5] max-h-[40vh] sm:max-h-[55vh]" />
+            {/* Reference image — compact, always on top */}
+            <div className="flex items-center gap-3 p-2.5 bg-white border border-carbon/[0.04]">
+              {sku.reference_image_url ? (
+                <div className="w-12 h-12 border border-carbon/[0.06] overflow-hidden shrink-0 bg-white">
+                  <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('referenceComparison') || 'Reference'}</p>
-                  {sku.reference_image_url ? (
-                    <div className="border border-carbon/[0.06] overflow-hidden aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] bg-white">
-                      <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
+              ) : (
+                <div className="shrink-0">
+                  <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
+                    placeholder={stepLabel('uploadReference') || 'Ref'}
+                    onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
+                    onRemove={() => {}} aspectClass="w-12 h-12" />
+                </div>
+              )}
+              <p className="text-[10px] text-carbon/35">{stepLabel('referenceHint') || 'Reference photo — used as basis for AI sketch generation'}</p>
+            </div>
+
+            {/* AI generate button — only in AI mode, only if sketch doesn't exist yet */}
+            {mode === 'ai' && !sku.sketch_url && (
+              <button onClick={async () => {
+                  if (!sku.reference_image_url) {
+                    toast(stepLabel('needReference') || 'Upload a reference photo first', 'warning');
+                    return;
+                  }
+                  setGenerating(true);
+                  try {
+                    let base64: string;
+                    if (sku.reference_image_url.startsWith('data:')) {
+                      base64 = sku.reference_image_url.split(',')[1];
+                    } else {
+                      const imgRes = await fetch(sku.reference_image_url);
+                      const buf = await imgRes.arrayBuffer();
+                      const bytes = new Uint8Array(buf);
+                      let binary = '';
+                      for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
+                      base64 = btoa(binary);
+                    }
+                    const res = await fetch('/api/ai/generate-sketch-options', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ images: [{ base64, mimeType: 'image/png', instructions: '' }], garmentType: sku.category, season: '', styleName: sku.name, fabric: '', additionalNotes: sku.notes || '', collectionPlanId }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      const views = data.sketchOptions || [];
+                      const sideView = views.find((v: { id: string }) => v.id === 'side')?.frontImageBase64 || views[0]?.frontImageBase64;
+                      const topView = views.find((v: { id: string }) => v.id === 'top')?.frontImageBase64;
+                      if (sideView) {
+                        await onUpdate({
+                          sketch_url: sideView,
+                          ...(topView ? { sketch_top_url: topView } : {}),
+                        } as Partial<SKU>);
+                        if (topView) setSketchTopView(topView);
+                        toast(stepLabel('sketchGenerated') || 'Sketch generated from reference', 'success');
+                      }
+                    } else {
+                      const err = await res.json().catch(() => ({}));
+                      toast(`Sketch failed: ${err.error || 'Unknown error'}`, 'error');
+                    }
+                  } catch (e) {
+                    console.error('[Sketch] Error:', e);
+                    toast(stepLabel('sketchFailed') || 'Sketch generation failed', 'error');
+                  } finally { setGenerating(false); }
+                }} disabled={generating || !sku.reference_image_url}
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-full">
+                  {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {generating ? (stepLabel('generatingSketch') || 'Generating sketch...') : (stepLabel('generateFlat') || 'Generate Flat Sketch from Reference')}
+              </button>
+            )}
+
+            {generating && !sku.sketch_url && (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
+                <p className="text-[11px] text-carbon/25">{stepLabel('generatingSketch') || 'Generating flat sketch...'}</p>
+              </div>
+            )}
+
+            {/* Sketch views — SAME layout for both modes */}
+            {sku.category === 'CALZADO' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('sideProfile') || 'Side Profile'}</p>
+                  {sku.sketch_url ? (
+                    <div className="border border-carbon/[0.06] bg-white p-3 relative group">
+                      <img src={sku.sketch_url} alt="Side profile" className="w-full h-auto object-contain max-h-[45vh]" />
+                      {mode === 'free' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
+                            {stepLabel('replace') || 'Replace'}
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_url'); }} />
+                          </label>
+                        </div>
+                      )}
                     </div>
+                  ) : mode === 'free' ? (
+                    <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_url'}
+                      placeholder={stepLabel('uploadSideSketch') || 'Upload side profile sketch'}
+                      onUpload={(file) => onImageUpload(file, 'sketch_url')}
+                      onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[45vh]" />
                   ) : (
-                    <div className="border border-carbon/[0.06] bg-white aspect-[4/5] max-h-[40vh] sm:max-h-[55vh] flex items-center justify-center">
-                      <p className="text-[11px] text-carbon/15">{stepLabel('noReference') || 'No reference image'}</p>
+                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[45vh] flex items-center justify-center">
+                      <p className="text-[10px] text-carbon/15">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('topDown') || 'Top Down'}</p>
+                  {(sku.sketch_top_url || sketchTopView) ? (
+                    <div className="border border-carbon/[0.06] bg-white p-3 relative group">
+                      <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full h-auto object-contain max-h-[45vh]" />
+                      {mode === 'free' && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
+                            {stepLabel('replace') || 'Replace'}
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_url'); }} />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  ) : mode === 'free' ? (
+                    <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_top_url'}
+                      placeholder={stepLabel('uploadTopSketch') || 'Upload top-down sketch'}
+                      onUpload={(file) => onImageUpload(file, 'sketch_url')}
+                      onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[45vh]" />
+                  ) : (
+                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[45vh] flex items-center justify-center">
+                      <p className="text-[10px] text-carbon/15">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>
                     </div>
                   )}
                 </div>
               </div>
-            )}
-            {mode === 'ai' && (
-              <>
-              {/* Option A: From reference photo */}
-              <div className="space-y-4 mb-8">
-                <p className="text-[11px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('fromReference') || 'From Reference'}</p>
-                {/* Reference photo compact + generate button */}
-                <div className="flex items-end gap-4">
-                  <div className="shrink-0">
-                    <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('referencePhoto') || 'Reference'}</p>
-                    {sku.reference_image_url ? (
-                      <div className="border border-carbon/[0.06] overflow-hidden bg-white w-28 h-28">
-                        <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              /* Non-footwear: single sketch view */
+              <div className="space-y-1.5">
+                <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('designSketch') || 'Design Sketch'}</p>
+                {sku.sketch_url ? (
+                  <div className="border border-carbon/[0.06] bg-white p-3 max-w-md relative group">
+                    <img src={sku.sketch_url} alt="Sketch" className="w-full h-auto object-contain" />
+                    {mode === 'free' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
+                          {stepLabel('replace') || 'Replace'}
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_url'); }} />
+                        </label>
                       </div>
-                    ) : (
-                      <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
-                        placeholder={stepLabel('uploadReference') || 'Upload'}
-                        onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
-                        onRemove={() => {}} aspectClass="w-28 h-28" />
                     )}
                   </div>
-                  <button onClick={async () => {
-                      if (!sku.reference_image_url) return;
-                      setGenerating(true);
-                      try {
-                        let base64: string;
-                        if (sku.reference_image_url.startsWith('data:')) {
-                          base64 = sku.reference_image_url.split(',')[1];
-                        } else {
-                          const imgRes = await fetch(sku.reference_image_url);
-                          const buf = await imgRes.arrayBuffer();
-                          const bytes = new Uint8Array(buf);
-                          let binary = '';
-                          for (let b = 0; b < bytes.length; b++) binary += String.fromCharCode(bytes[b]);
-                          base64 = btoa(binary);
-                        }
-                        const res = await fetch('/api/ai/generate-sketch-options', {
-                          method: 'POST', headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ images: [{ base64, mimeType: 'image/png', instructions: '' }], garmentType: sku.category, season: '', styleName: sku.name, fabric: '', additionalNotes: sku.notes || '', collectionPlanId }),
-                        });
-                        if (res.ok) {
-                          const data = await res.json();
-                          const views = data.sketchOptions || [];
-                          const sideView = views.find((v: { id: string }) => v.id === 'side')?.frontImageBase64 || views[0]?.frontImageBase64;
-                          const topView = views.find((v: { id: string }) => v.id === 'top')?.frontImageBase64;
-                          if (sideView) {
-                            await onUpdate({
-                              sketch_url: sideView,
-                              ...(topView ? { sketch_top_url: topView } : {}),
-                            } as Partial<SKU>);
-                            if (topView) setSketchTopView(topView);
-                          }
-                        } else {
-                          const err = await res.json().catch(() => ({}));
-                          toast(`Sketch failed: ${err.error || 'Unknown error'}`, 'error');
-                        }
-                      } catch (e) {
-                        console.error('[Sketch] Error:', e);
-                        toast(stepLabel('sketchFailed') || 'Sketch generation failed', 'error');
-                      } finally { setGenerating(false); }
-                    }} disabled={generating || !sku.reference_image_url}
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-full">
-                      {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      {stepLabel('generateFlat') || 'Generate Flat Sketch'}
-                    </button>
-                </div>
-
-                {/* Sketch views */}
-                {sku.category === 'CALZADO' ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('sideProfile') || 'Side Profile'}</p>
-                      {sku.sketch_url ? (
-                        <div className="border border-carbon/[0.06] bg-white p-3">
-                          <img src={sku.sketch_url} alt="Side profile" className="w-full h-auto object-contain max-h-[45vh]" />
-                        </div>
-                      ) : (
-                        <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] h-48 flex items-center justify-center">
-                          {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('topDown') || 'Top Down'}</p>
-                      {sketchTopView ? (
-                        <div className="border border-carbon/[0.06] bg-white p-3">
-                          <img src={sketchTopView} alt="Top down" className="w-full h-auto object-contain max-h-[45vh]" />
-                        </div>
-                      ) : (
-                        <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] h-48 flex items-center justify-center">
-                          {generating ? <Loader2 className="h-4 w-4 animate-spin text-carbon/15" /> : <p className="text-[10px] text-carbon/15">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                ) : mode === 'free' ? (
+                  <ImageUploadArea imageUrl={sku.sketch_url} uploading={uploading === 'sketch_url'}
+                    placeholder={stepLabel('uploadSketch') || 'Upload your sketch'}
+                    onUpload={(file) => onImageUpload(file, 'sketch_url')}
+                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[4/5] max-h-[55vh] max-w-md" />
                 ) : (
-                  <div>
-                    <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1.5">{stepLabel('generatedSketch') || 'Generated Sketch'}</p>
-                    {sku.sketch_url ? (
-                      <div className="border border-carbon/[0.06] bg-white p-3 max-w-md">
-                        <img src={sku.sketch_url} alt="Front view" className="w-full h-auto object-contain" />
-                      </div>
-                    ) : (
-                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] h-48 max-w-md flex items-center justify-center">
-                        <p className="text-[11px] text-carbon/15">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
-                      </div>
-                    )}
+                  <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[55vh] max-w-md flex items-center justify-center">
+                    <p className="text-[11px] text-carbon/15">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
                   </div>
                 )}
               </div>
-
-              {/* Divider */}
-              <div className="flex items-center gap-4 mb-8">
-                <div className="flex-1 h-px bg-carbon/[0.06]" />
-                <span className="text-[10px] text-carbon/20 uppercase tracking-[0.15em]">{stepLabel('or') || 'or'}</span>
-                <div className="flex-1 h-px bg-carbon/[0.06]" />
-              </div>
-
-              {/* Option B: AI proposes from scratch */}
-              <div className="space-y-4">
-                <p className="text-[11px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('aiFromScratch') || 'AI Proposal'}</p>
-                <p className="text-[12px] font-light text-carbon/45 leading-relaxed">{stepLabel('aiSketchDesc') || 'Aimily will propose sketch directions and generate visual flat sketches.'}</p>
-                {!aiProposals && (
-                  <button onClick={async () => {
-                    setGenerating(true);
-                    const result = await callDesignAI('sketch-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '', priceRange: `€${sku.pvp}` });
-                    if (result?.proposals) setAiProposals(result.proposals.map((p: Record<string, unknown>) => ({ ...p, sketchUrl: undefined })));
-                    setGenerating(false);
-                  }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
-                    {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {stepLabel('proposeDirections') || 'Propose Directions'}
-                  </button>
-                )}
-                {aiProposals?.map((p, idx) => (
-                  <div key={idx} className="border border-carbon/[0.06] bg-white p-3 sm:p-4 flex items-start gap-3 sm:gap-4">
-                    <div className="w-20 sm:w-28 shrink-0">
-                      {p.sketchUrl ? (
-                        <div className="border border-carbon/[0.06] aspect-square overflow-hidden bg-white"><img src={p.sketchUrl} alt="" className="w-full h-full object-contain" /></div>
-                      ) : (
-                        <button onClick={async () => {
-                          setGeneratingSketchFor(idx);
-                          const res = await fetch('/api/ai/freepik/sketch', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ description: `${p.title}: ${p.description}. ${p.silhouette}`, productType: sku.category, family: sku.family, skuName: sku.name, collectionPlanId }) });
-                          if (res.ok) { const d = await res.json(); const url = d.images?.[0]?.url || d.images?.[0]?.originalUrl; if (url) setAiProposals(prev => prev?.map((x, i) => i === idx ? { ...x, sketchUrl: url } : x) || null); }
-                          setGeneratingSketchFor(null);
-                        }} disabled={generatingSketchFor !== null} className="w-full border border-dashed border-carbon/[0.08] aspect-square flex flex-col items-center justify-center gap-1 hover:border-carbon/15 disabled:opacity-30">
-                          {generatingSketchFor === idx ? <Loader2 className="h-3.5 w-3.5 text-carbon/25 animate-spin" /> : <><Sparkles className="h-3.5 w-3.5 text-carbon/15" /><span className="text-[8px] text-carbon/20 uppercase">{stepLabel('generateSketch') || 'Generate'}</span></>}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <h4 className="text-sm font-light text-carbon">{p.title}</h4>
-                      <p className="text-[11px] text-carbon/45 leading-relaxed">{p.description}</p>
-                      <p className="text-[10px] text-carbon/25 italic">{p.silhouette}</p>
-                      <div className="flex flex-wrap gap-1">{p.keyFeatures.map((f, i) => <span key={i} className="px-1.5 py-0.5 text-[8px] bg-carbon/[0.03] text-carbon/40">{f}</span>)}</div>
-                      <button onClick={async () => { await onUpdate({ notes: `${p.title}\n${p.description}`, ...(p.sketchUrl ? { sketch_url: p.sketchUrl } : {}) }); }}
-                        className="mt-1.5 px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors">
-                        {stepLabel('accept') || 'Accept'}{p.sketchUrl ? ' + Sketch' : ''}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
             )}
+
+            {/* Design notes — always visible */}
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
               placeholder={stepLabel('sketchNotesPlaceholder') || 'Design notes...'} className="w-full h-12 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]" />
           </div>
@@ -421,11 +392,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         {/* ═══ STEP 2: COLOR-UP SHEET ═══ */}
         {activeStep === 1 && (() => {
           const defaultZones = getDefaultZones(sku.category);
-          // expandedCw state is at component level to respect React hooks rules
 
           const ensureZones = (cw: SkuColorway): ColorwayZone[] => {
             if (cw.zones && cw.zones.length > 0) return cw.zones;
-            // Migrate: create zones from defaults + existing hex_primary
             return defaultZones.map((z, i) => ({
               zone: z.zone,
               hex: i === 0 ? cw.hex_primary : z.defaultHex,
@@ -437,7 +406,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             if (!cw) return;
             const zones = [...ensureZones(cw)];
             zones[zoneIdx] = { ...zones[zoneIdx], [field]: value };
-            // Also update hex_primary from first zone for backward compat
             const primary = zones[0]?.hex || cw.hex_primary;
             const secondary = zones[1]?.hex || null;
             const accent = zones[2]?.hex || null;
@@ -458,8 +426,44 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             updateColorway(cwId, { zones } as Partial<SkuColorway>);
           };
 
+          // Colorize function — shared between manual description and AI proposals
+          const colorizeProposals = async (colorways: any[]) => {
+            const proposals = colorways.map((cw: any) => ({ ...cw, colorizedUrl: null }));
+            setAiColorways(proposals);
+
+            if (sku.sketch_url) {
+              const promises = proposals.slice(0, 4).map(async (cw: any, i: number) => {
+                try {
+                  const zoneColors = defaultZones.map((z, zi) => ({ zone: z.zone, hex: cw.colors[zi % cw.colors.length] || z.defaultHex }));
+                  const res = await fetch('/api/ai/colorize-sketch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      sketch_url: sku.sketch_url,
+                      colorway_name: cw.name,
+                      color_description: cw.description,
+                      zone_colors: zoneColors,
+                      category: sku.category,
+                      product_name: sku.name,
+                      family: sku.family,
+                      collectionPlanId,
+                    }),
+                  });
+                  if (res.ok) {
+                    const { imageUrl } = await res.json();
+                    if (imageUrl) {
+                      setAiColorways(prev => prev?.map((p: any, pi: number) => pi === i ? { ...p, colorizedUrl: imageUrl } : p) || null);
+                    }
+                  }
+                } catch { /* colorization failed — show swatches only */ }
+              });
+              await Promise.all(promises);
+            }
+          };
+
           return (
           <div className="space-y-4">
+            {/* Sketch preview — compact bar */}
             {sku.sketch_url && (
               <div className="flex items-center gap-3 p-2.5 bg-white border border-carbon/[0.04]">
                 <div className="w-10 h-10 border border-carbon/[0.06] overflow-hidden shrink-0 bg-white"><img src={sku.sketch_url} alt="" className="w-full h-full object-contain" /></div>
@@ -467,17 +471,123 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* Existing colorways — expandable zone editor */}
-            {(mode === 'free' || skuColorways.length > 0) && (
+            {/* ── Color input area — depends on mode ── */}
+            {mode === 'free' ? (
+              /* MANUAL: describe colors → AI generates 4 options based on description */
               <div className="space-y-3">
+                <p className="text-[11px] text-carbon/40 leading-relaxed">
+                  {stepLabel('manualColorDesc') || 'Describe the colors you want and AI will generate 4 variations based on your direction.'}
+                </p>
+                <div className="flex gap-2">
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
+                    placeholder={stepLabel('colorDescriptionPlaceholder') || 'e.g. "Black leather upper with white midsole and red accents on the tongue"'}
+                    className="flex-1 h-16 p-3 bg-carbon/[0.02] border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]"
+                  />
+                  <button onClick={async () => {
+                    if (!notes.trim()) {
+                      toast(stepLabel('describeFirst') || 'Describe the colors you want first', 'warning');
+                      return;
+                    }
+                    setGenerating(true);
+                    try {
+                      const result = await callDesignAI('color-suggest', {
+                        productType: sku.category, family: sku.family,
+                        concept: notes,
+                        designDirection: notes,
+                      });
+                      if (result?.colorways) await colorizeProposals(result.colorways);
+                    } finally {
+                      setGenerating(false);
+                    }
+                  }} disabled={generating || !notes.trim()}
+                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-30 self-end">
+                    {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {stepLabel('generateColors') || 'Generate'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* AI: auto-propose colorways freely */
+              <div className="space-y-3">
+                {!aiColorways && !generating && (
+                  <>
+                    <p className="text-[11px] text-carbon/40 leading-relaxed">
+                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations inspired by Sanzo Wada and colorize your sketch with each one.'}
+                    </p>
+                    <button onClick={async () => {
+                      setGenerating(true);
+                      try {
+                        const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
+                        if (result?.colorways) await colorizeProposals(result.colorways);
+                      } finally {
+                        setGenerating(false);
+                      }
+                    }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
+                      <Sparkles className="h-3 w-3" />
+                      {stepLabel('proposeColorways') || 'Propose Colorways'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Loading state */}
+            {generating && !aiColorways && (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
+                <p className="text-[11px] text-carbon/25">{stepLabel('generatingColorways') || 'Generating colorway proposals...'}</p>
+              </div>
+            )}
+
+            {/* ── Colorized proposals grid — SAME for both modes ── */}
+            {aiColorways && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {aiColorways.map((cw, idx) => (
+                  <div key={idx} className="border border-carbon/[0.06] bg-white overflow-hidden">
+                    <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden">
+                      {(cw as any).colorizedUrl ? (
+                        <img src={(cw as any).colorizedUrl} alt={cw.name} className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
+                          <span className="text-[9px] text-carbon/20">{stepLabel('colorizing') || 'Colorizing...'}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[12px] font-light text-carbon">{cw.name}</p>
+                        <div className="flex gap-0.5 shrink-0">{cw.colors.map((hex: string, i: number) => <div key={i} className="w-5 h-5 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />)}</div>
+                      </div>
+                      <p className="text-[10px] text-carbon/35 leading-relaxed">{cw.description}</p>
+                      <span className="text-[8px] text-carbon/20 uppercase tracking-wider block">{cw.commercialRole}</span>
+                      <button onClick={async () => {
+                        const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
+                        await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
+                        toast(stepLabel('colorwayAccepted') || `${cw.name} added`, 'success');
+                      }}
+                        className="w-full px-3 py-2 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors text-center">
+                        {stepLabel('accept') || 'Accept'} {cw.name}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Accepted colorways — expandable zone editor (advanced) ── */}
+            {skuColorways.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('acceptedColorways') || 'Accepted Colorways'} ({skuColorways.length})</p>
                 {skuColorways.map((cw) => {
                   const zones = ensureZones(cw);
                   const isOpen = expandedCw === cw.id;
                   return (
                     <div key={cw.id} className="border border-carbon/[0.06] bg-white overflow-hidden">
-                      {/* Colorway header */}
                       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-carbon/[0.01]" onClick={() => setExpandedCw(isOpen ? null : cw.id)}>
-                        {/* Color strip preview — all zone colors */}
                         <div className="flex shrink-0 h-5 overflow-hidden border border-carbon/[0.06]">
                           {zones.map((z, i) => <div key={i} className="w-4 h-full" style={{ backgroundColor: z.hex }} />)}
                         </div>
@@ -490,8 +600,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         <button onClick={(e) => { e.stopPropagation(); deleteColorway(cw.id); }} className="text-carbon/15 hover:text-[#A0463C]/50"><Trash2 className="h-3 w-3" /></button>
                         <Check className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180 text-carbon/30' : 'rotate-0 text-carbon/10'}`} />
                       </div>
-
-                      {/* Zone grid — expanded */}
                       {isOpen && (
                         <div className="border-t border-carbon/[0.04] px-4 py-3 space-y-1.5">
                           <div className="grid grid-cols-[1fr_44px_120px_1fr] gap-x-3 gap-y-0 mb-1">
@@ -525,118 +633,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     </div>
                   );
                 })}
-                <button onClick={() => {
-                  const zones = zonesToColorwayZones(defaultZones);
-                  addColorway({ sku_id: sku.id, name: `Colorway ${skuColorways.length + 1}`, hex_primary: zones[0]?.hex || '#3B3B3B', hex_secondary: zones[1]?.hex || null as unknown as string, hex_accent: zones[2]?.hex || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
-                }}
-                  className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:border-carbon/15 w-full justify-center">
-                  <Plus className="h-2.5 w-2.5" /> {stepLabel('addColorway') || 'Add Colorway'}
-                </button>
-              </div>
-            )}
-
-            {/* AI mode: Colorway proposals with AI-colorized sketch previews */}
-            {mode === 'ai' && (
-              <div className="space-y-4">
-                {/* Step 1: Generate AI colorway proposals + colorize each */}
-                {!aiColorways && !generating && (
-                  <div className="space-y-3">
-                    <p className="text-[11px] text-carbon/40 leading-relaxed">
-                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations and colorize your sketch with each one.'}
-                    </p>
-                    <button onClick={async () => {
-                      setGenerating(true);
-                      try {
-                        const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
-                        if (result?.colorways) {
-                          // Set proposals immediately (show cards with spinners)
-                          const proposals = result.colorways.map((cw: Record<string, unknown>) => ({ ...cw, colorizedUrl: null }));
-                          setAiColorways(proposals);
-
-                          // Colorize each in parallel (~$0.007/image × 4 = $0.028 total)
-                          if (sku.sketch_url) {
-                            const colorizePromises = proposals.slice(0, 4).map(async (cw: any, i: number) => {
-                              try {
-                                const zoneColors = defaultZones.map((z, zi) => ({ zone: z.zone, hex: cw.colors[zi % cw.colors.length] || z.defaultHex }));
-                                const res = await fetch('/api/ai/colorize-sketch', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    sketch_url: sku.sketch_url,
-                                    colorway_name: cw.name,
-                                    color_description: cw.description,
-                                    zone_colors: zoneColors,
-                                    category: sku.category,
-                                    product_name: sku.name,
-                                    family: sku.family,
-                                    collectionPlanId,
-                                  }),
-                                });
-                                if (res.ok) {
-                                  const { imageUrl } = await res.json();
-                                  if (imageUrl) {
-                                    setAiColorways(prev => prev?.map((p: any, pi: number) => pi === i ? { ...p, colorizedUrl: imageUrl } : p) || null);
-                                  }
-                                }
-                              } catch { /* colorization failed for this one — show swatches only */ }
-                            });
-                            await Promise.all(colorizePromises);
-                          }
-                        }
-                      } finally {
-                        setGenerating(false);
-                      }
-                    }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
-                      <Sparkles className="h-3 w-3" />
-                      {stepLabel('proposeColorways') || 'Propose Colorways'}
-                    </button>
-                  </div>
-                )}
-
-                {generating && !aiColorways && (
-                  <div className="flex flex-col items-center justify-center py-10 gap-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
-                    <p className="text-[11px] text-carbon/25">{stepLabel('generatingColorways') || 'Generating colorway proposals...'}</p>
-                  </div>
-                )}
-
-                {/* Step 2: Show proposals with AI-colorized previews */}
-                {aiColorways && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {aiColorways.map((cw, idx) => (
-                      <div key={idx} className="border border-carbon/[0.06] bg-white overflow-hidden">
-                        {/* Colorized preview */}
-                        <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden">
-                          {(cw as any).colorizedUrl ? (
-                            <img src={(cw as any).colorizedUrl} alt={cw.name} className="w-full h-full object-contain" />
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
-                              <span className="text-[9px] text-carbon/20">{stepLabel('colorizing') || 'Colorizing...'}</span>
-                            </div>
-                          )}
-                        </div>
-                        {/* Info + swatches + accept */}
-                        <div className="p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <p className="text-[12px] font-light text-carbon">{cw.name}</p>
-                            <div className="flex gap-0.5 shrink-0">{cw.colors.map((hex: string, i: number) => <div key={i} className="w-5 h-5 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />)}</div>
-                          </div>
-                          <p className="text-[10px] text-carbon/35 leading-relaxed">{cw.description}</p>
-                          <span className="text-[8px] text-carbon/20 uppercase tracking-wider block">{cw.commercialRole}</span>
-                          <button onClick={async () => {
-                            const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
-                            await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
-                            toast(stepLabel('colorwayAccepted') || `${cw.name} added`, 'success');
-                          }}
-                            className="w-full px-3 py-2 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors text-center">
-                            {stepLabel('accept') || 'Accept'} {cw.name}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
           </div>
