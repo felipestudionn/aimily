@@ -117,16 +117,35 @@ export function ZoneEditor({ sketchImageUrl, zoneColors, onZoneColorsChange, cat
       const h = Math.round(img.naturalHeight * scale);
       setCanvasSize({ w, h });
 
-      // Draw sketch on the top canvas
+      // Draw sketch on the top canvas — extract lines only (remove white background)
       const sketchCtx = sketchCanvasRef.current?.getContext('2d');
       if (sketchCtx && sketchCanvasRef.current) {
         sketchCanvasRef.current.width = w;
         sketchCanvasRef.current.height = h;
         sketchCtx.drawImage(img, 0, 0, w, h);
 
-        // Prepare boundary map for flood fill (gap closing)
+        // Prepare boundary map for flood fill (gap closing) — from ORIGINAL image
         const rawData = sketchCtx.getImageData(0, 0, w, h);
         boundaryRef.current = prepareForFloodFill(rawData, 2);
+
+        // Now make the sketch layer transparent except for dark lines
+        // This lets colors show through cleanly underneath
+        const lineData = sketchCtx.getImageData(0, 0, w, h);
+        const d = lineData.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const gray = (d[i] + d[i + 1] + d[i + 2]) / 3;
+          if (gray > 200) {
+            // White/light pixel → make transparent
+            d[i + 3] = 0;
+          } else {
+            // Dark pixel (line) → keep opaque, make pure black
+            d[i] = 0;
+            d[i + 1] = 0;
+            d[i + 2] = 0;
+            d[i + 3] = Math.min(255, (200 - gray) * 2); // Smooth edge antialiasing
+          }
+        }
+        sketchCtx.putImageData(lineData, 0, 0);
       }
 
       // Initialize color canvas (transparent)
@@ -451,7 +470,6 @@ export function ZoneEditor({ sketchImageUrl, zoneColors, onZoneColorsChange, cat
             display: loaded ? 'block' : 'none',
             width: '100%',
             height: 'auto',
-            mixBlendMode: 'multiply',
             pointerEvents: tool === 'pen' ? 'auto' : 'none',
             cursor: tool === 'pen' ? 'crosshair' : undefined,
           }}
