@@ -2,475 +2,502 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  Loader2, Plus, Trash2, Undo2, Redo2, Download, Upload,
-  Square, Circle as CircleIcon, MousePointer, Palette,
+  PaintBucket, Eraser, Pencil, Undo2, Redo2, Download, Upload,
+  Loader2,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useToast } from '@/components/ui/toast';
-import { useCanvasHistory } from './useCanvasHistory';
+import { prepareForFloodFill, extractFillMask, applyMaskColor, hexToRgba } from '@/lib/canvas-utils';
 import type { ColorwayZone } from '@/types/design';
 
 /* ── Types ── */
-interface ZoneRegion {
-  zone: string;
-  x: number; y: number; width: number; height: number;
-  confidence: 'high' | 'medium' | 'low';
-}
+type Tool = 'fill' | 'eraser' | 'pen';
 
 interface ZoneEditorProps {
-  /** URL or base64 of the sketch image (raster — used as background) */
+  /** URL or base64 of the sketch image */
   sketchImageUrl: string;
-  /** Zone regions detected by AI (bounding boxes as % of image) */
-  zoneRegions: ZoneRegion[];
   /** Current zone colors */
   zoneColors: ColorwayZone[];
   /** Called when zone colors change */
   onZoneColorsChange: (zones: ColorwayZone[]) => void;
-  /** Category for context */
+  /** Category for zone names */
   category: string;
 }
 
-const ZONE_FILL_OPACITY = 0.3;
+const FILL_ALPHA = 90; // ~35% opacity
+const FILL_TOLERANCE = 32;
+const PEN_WIDTH = 3;
+const ERASER_WIDTH = 20;
 
-export function ZoneEditor({ sketchImageUrl, zoneRegions, zoneColors, onZoneColorsChange, category }: ZoneEditorProps) {
+export function ZoneEditor({ sketchImageUrl, zoneColors, onZoneColorsChange, category }: ZoneEditorProps) {
   const t = useTranslation();
   const { toast } = useToast();
-  const canvasEl = useRef<HTMLCanvasElement>(null);
+
+  // Canvas refs
   const containerRef = useRef<HTMLDivElement>(null);
-  const fabricRef = useRef<import('fabric').Canvas | null>(null);
-  const [fabricLoaded, setFabricLoaded] = useState(false);
-  const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const [selectedColor, setSelectedColor] = useState('#3B3B3B');
-  const [zones, setZones] = useState<string[]>([]);
-  const [renamingZone, setRenamingZone] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const sketchCanvasRef = useRef<HTMLCanvasElement>(null);   // Layer 2: sketch lines (top, non-interactive)
+  const colorCanvasRef = useRef<HTMLCanvasElement>(null);     // Layer 1: user colors (interactive)
+  const boundaryRef = useRef<ImageData | null>(null);         // Processed boundaries for flood fill
 
-  const { initHistory, undo, redo, canUndo, canRedo } = useCanvasHistory(fabricRef);
+  // State
+  const [tool, setTool] = useState<Tool>('fill');
+  const [color, setColor] = useState('#3B3B3B');
+  const [zoneName, setZoneName] = useState('Upper');
+  const [loaded, setLoaded] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ w: 700, h: 500 });
 
-  // Color map from props
-  const colorMap = useRef<Map<string, string>>(new Map());
-  useEffect(() => {
-    const m = new Map<string, string>();
-    zoneColors.forEach(z => m.set(z.zone, z.hex));
-    colorMap.current = m;
-  }, [zoneColors]);
+  // Undo history
+  const historyRef = useRef<ImageData[]>([]);
+  const redoRef = useRef<ImageData[]>([]);
+  const [historyLen, setHistoryLen] = useState(0);
+  const [redoLen, setRedoLen] = useState(0);
+
+  // Pen drawing state
+  const isPenDown = useRef(false);
+  const lastPenPos = useRef<{ x: number; y: number } | null>(null);
+
+  // Zone fills tracking
+  const zoneFills = useRef<Map<string, string>>(new Map());
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stepLabel = (key: string): string => (t.skuPhases as any)?.[key] || key;
 
-  /* ── Initialize Fabric.js ── */
+  // Default zones for the zone picker
+  const defaultZones = useRef<string[]>([]);
   useEffect(() => {
-    let mounted = true;
-    import('fabric').then((fabric) => {
-      if (!mounted || !canvasEl.current) return;
-
-      const container = containerRef.current;
-      const w = container?.clientWidth || 700;
-      const h = Math.min(w * 0.65, 480);
-
-      const canvas = new fabric.Canvas(canvasEl.current, {
-        width: w,
-        height: h,
-        backgroundColor: '#FFFFFF',
-        selection: true,
-        preserveObjectStacking: true,
-      });
-      fabricRef.current = canvas;
-
-      // Selection → React state
-      canvas.on('selection:created', () => syncSelection(canvas));
-      canvas.on('selection:updated', () => syncSelection(canvas));
-      canvas.on('selection:cleared', () => { setSelectedZone(null); });
-
-      // Load sketch as background + overlay zones
-      loadSketchAndZones(fabric, canvas, sketchImageUrl, zoneRegions);
-      setFabricLoaded(true);
+    import('@/lib/product-zones').then(m => {
+      defaultZones.current = m.getDefaultZones(category).map(z => z.zone);
+      if (defaultZones.current.length > 0 && !zoneName) setZoneName(defaultZones.current[0]);
     });
+  }, [category]);
 
-    return () => {
-      mounted = false;
-      fabricRef.current?.dispose();
-      fabricRef.current = null;
+  /* ── Save undo state ── */
+  const saveHistory = useCallback(() => {
+    const ctx = colorCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const data = ctx.getImageData(0, 0, canvasSize.w, canvasSize.h);
+    historyRef.current.push(data);
+    redoRef.current = [];
+    setHistoryLen(historyRef.current.length);
+    setRedoLen(0);
+  }, [canvasSize]);
+
+  const undo = useCallback(() => {
+    if (historyRef.current.length <= 1) return;
+    const ctx = colorCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const current = historyRef.current.pop()!;
+    redoRef.current.push(current);
+    const prev = historyRef.current[historyRef.current.length - 1];
+    ctx.putImageData(prev, 0, 0);
+    setHistoryLen(historyRef.current.length);
+    setRedoLen(redoRef.current.length);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (redoRef.current.length === 0) return;
+    const ctx = colorCanvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const next = redoRef.current.pop()!;
+    historyRef.current.push(next);
+    ctx.putImageData(next, 0, 0);
+    setHistoryLen(historyRef.current.length);
+    setRedoLen(redoRef.current.length);
+  }, []);
+
+  /* ── Load sketch image ── */
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const container = containerRef.current;
+      const maxW = container?.clientWidth || 700;
+      const scale = Math.min(maxW / img.naturalWidth, 550 / img.naturalHeight, 1);
+      const w = Math.round(img.naturalWidth * scale);
+      const h = Math.round(img.naturalHeight * scale);
+      setCanvasSize({ w, h });
+
+      // Draw sketch on the top canvas
+      const sketchCtx = sketchCanvasRef.current?.getContext('2d');
+      if (sketchCtx && sketchCanvasRef.current) {
+        sketchCanvasRef.current.width = w;
+        sketchCanvasRef.current.height = h;
+        sketchCtx.drawImage(img, 0, 0, w, h);
+
+        // Prepare boundary map for flood fill (gap closing)
+        const rawData = sketchCtx.getImageData(0, 0, w, h);
+        boundaryRef.current = prepareForFloodFill(rawData, 2);
+      }
+
+      // Initialize color canvas (transparent)
+      const colorCtx = colorCanvasRef.current?.getContext('2d');
+      if (colorCtx && colorCanvasRef.current) {
+        colorCanvasRef.current.width = w;
+        colorCanvasRef.current.height = h;
+        colorCtx.clearRect(0, 0, w, h);
+
+        // Save initial empty state
+        historyRef.current = [colorCtx.getImageData(0, 0, w, h)];
+        setHistoryLen(1);
+      }
+
+      setLoaded(true);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    img.onerror = () => toast('Failed to load sketch image', 'error');
 
-  const syncSelection = (canvas: import('fabric').Canvas) => {
-    const active = canvas.getActiveObject();
-    if (active) {
-      const zone = (active as any).name || null;
-      setSelectedZone(zone);
-      setSelectedColor((active.fill as string) || '#3B3B3B');
-    }
-  };
-
-  /* ── Load sketch image as background, add zone shapes ── */
-  const loadSketchAndZones = useCallback(async (
-    fabric: typeof import('fabric'),
-    canvas: import('fabric').Canvas,
-    imageUrl: string,
-    regions: ZoneRegion[]
-  ) => {
-    // Resolve image source
-    let src = imageUrl;
+    // Handle all URL formats
+    let src = sketchImageUrl;
     if (src.length > 500 && !src.startsWith('data:') && !src.startsWith('http')) {
       src = `data:image/png;base64,${src}`;
     }
+    img.src = src;
+  }, [sketchImageUrl, toast]);
 
-    // Load image as background
-    const img = await fabric.FabricImage.fromURL(src, { crossOrigin: 'anonymous' });
-    const cw = canvas.getWidth();
-    const ch = canvas.getHeight();
-    const scale = Math.min(cw / img.width!, ch / img.height!) * 0.95;
-    img.set({
-      scaleX: scale,
-      scaleY: scale,
-      left: (cw - img.width! * scale) / 2,
-      top: (ch - img.height! * scale) / 2,
-      selectable: false,
-      evented: false,
-      excludeFromExport: false,
+  /* ── Flood fill handler ── */
+  const handleFill = useCallback((x: number, y: number) => {
+    const colorCtx = colorCanvasRef.current?.getContext('2d');
+    const boundary = boundaryRef.current;
+    if (!colorCtx || !boundary) return;
+
+    // Create a temp canvas with boundary lines + current colors merged
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvasSize.w;
+    tempCanvas.height = canvasSize.h;
+    const tempCtx = tempCanvas.getContext('2d')!;
+
+    // Start with boundary map (dilated lines)
+    tempCtx.putImageData(boundary, 0, 0);
+
+    // Overlay current colors (so we don't fill over already-colored areas)
+    tempCtx.globalCompositeOperation = 'darken';
+    tempCtx.drawImage(colorCanvasRef.current!, 0, 0);
+    tempCtx.globalCompositeOperation = 'source-over';
+
+    // Get merged pixel data for flood fill
+    const mergedData = tempCtx.getImageData(0, 0, canvasSize.w, canvasSize.h);
+    const beforeData = new ImageData(
+      new Uint8ClampedArray(mergedData.data),
+      canvasSize.w, canvasSize.h
+    );
+
+    // Run flood fill on merged canvas
+    import('q-floodfill').then(({ default: FloodFill }) => {
+      const ff = new FloodFill(mergedData);
+      const rgba = hexToRgba(color, 255); // Fill opaque on temp, apply with alpha later
+      ff.fill(`rgba(${rgba.r},${rgba.g},${rgba.b},255)`, x, y, FILL_TOLERANCE);
+
+      // Extract mask of what changed
+      const mask = extractFillMask(beforeData, ff.imageData);
+
+      // Apply color with alpha to the actual color canvas
+      saveHistory();
+      applyMaskColor(colorCtx, mask, canvasSize.w, hexToRgba(color, FILL_ALPHA));
+
+      // Track zone
+      zoneFills.current.set(zoneName, color);
+      syncZonesToParent();
     });
-    canvas.add(img);
-    canvas.sendObjectToBack(img);
+  }, [color, zoneName, canvasSize, saveHistory]);
 
-    // Image bounds for positioning zone shapes
-    const imgLeft = img.left!;
-    const imgTop = img.top!;
-    const imgW = img.width! * scale;
-    const imgH = img.height! * scale;
+  /* ── Pen drawing (for closing gaps) ── */
+  const handlePenStart = useCallback((x: number, y: number) => {
+    isPenDown.current = true;
+    lastPenPos.current = { x, y };
 
-    // Create zone shapes from AI-detected regions
-    const foundZones: string[] = [];
-    regions.forEach((region) => {
-      const hex = colorMap.current.get(region.zone) || '#3B3B3B';
-      const rect = new fabric.Rect({
-        left: imgLeft + (region.x / 100) * imgW,
-        top: imgTop + (region.y / 100) * imgH,
-        width: (region.width / 100) * imgW,
-        height: (region.height / 100) * imgH,
-        fill: hex,
-        opacity: ZONE_FILL_OPACITY,
-        stroke: hex,
-        strokeWidth: 1.5,
-        rx: 3,
-        ry: 3,
-        hasControls: true,
-        hasBorders: true,
-        lockRotation: true,
-        cornerStyle: 'circle',
-        cornerSize: 6,
-        transparentCorners: false,
-        cornerColor: '#282A29',
-        borderColor: '#282A29',
-      } as any);
-      (rect as any).name = region.zone;
-      canvas.add(rect);
-      foundZones.push(region.zone);
-    });
-
-    canvas.renderAll();
-    setZones(foundZones);
-    initHistory();
-  }, [initHistory]);
-
-  /* ── Change color of selected object ── */
-  const handleColorChange = useCallback((color: string) => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    setSelectedColor(color);
-
-    const active = canvas.getActiveObject();
-    if (!active) return;
-
-    const zoneName = (active as any).name;
-    active.set({ fill: color, stroke: color, opacity: ZONE_FILL_OPACITY, strokeWidth: 1.5 });
-    canvas.renderAll();
-    canvas.fire('object:modified', { target: active });
-
-    if (zoneName) {
-      colorMap.current.set(zoneName, color);
-      syncColorsToParent();
+    if (tool === 'pen') {
+      // Draw on the SKETCH canvas (closing gaps in line art)
+      const ctx = sketchCanvasRef.current?.getContext('2d');
+      if (!ctx) return;
+      ctx.beginPath();
+      ctx.arc(x, y, PEN_WIDTH / 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#000000';
+      ctx.fill();
+    } else if (tool === 'eraser') {
+      saveHistory();
+      const ctx = colorCanvasRef.current?.getContext('2d');
+      if (!ctx) return;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, ERASER_WIDTH / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
     }
-  }, []);
+  }, [tool, saveHistory]);
 
-  /* ── Color all objects of a zone ── */
-  const colorEntireZone = useCallback((zoneName: string, color: string) => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    canvas.getObjects().forEach((obj) => {
-      if ((obj as any).name === zoneName) {
-        obj.set({ fill: color, stroke: color, opacity: ZONE_FILL_OPACITY, strokeWidth: 1.5 });
+  const handlePenMove = useCallback((x: number, y: number) => {
+    if (!isPenDown.current || !lastPenPos.current) return;
+
+    if (tool === 'pen') {
+      const ctx = sketchCanvasRef.current?.getContext('2d');
+      if (!ctx) return;
+      ctx.beginPath();
+      ctx.moveTo(lastPenPos.current.x, lastPenPos.current.y);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = PEN_WIDTH;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    } else if (tool === 'eraser') {
+      const ctx = colorCanvasRef.current?.getContext('2d');
+      if (!ctx) return;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.moveTo(lastPenPos.current.x, lastPenPos.current.y);
+      ctx.lineTo(x, y);
+      ctx.lineWidth = ERASER_WIDTH;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    lastPenPos.current = { x, y };
+  }, [tool]);
+
+  const handlePenEnd = useCallback(() => {
+    if (isPenDown.current && tool === 'pen') {
+      // Regenerate boundary map after drawing new lines
+      const sketchCtx = sketchCanvasRef.current?.getContext('2d');
+      if (sketchCtx) {
+        const rawData = sketchCtx.getImageData(0, 0, canvasSize.w, canvasSize.h);
+        boundaryRef.current = prepareForFloodFill(rawData, 2);
       }
-    });
-    canvas.renderAll();
-    colorMap.current.set(zoneName, color);
-    syncColorsToParent();
-  }, []);
+    }
+    isPenDown.current = false;
+    lastPenPos.current = null;
+  }, [tool, canvasSize]);
 
-  /* ── Sync colors from canvas to parent ── */
-  const syncColorsToParent = useCallback(() => {
-    const updated: ColorwayZone[] = [];
-    colorMap.current.forEach((hex, zone) => {
-      updated.push({ zone, hex });
+  /* ── Canvas mouse events ── */
+  const getCanvasPos = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.round((e.clientX - rect.left) * (canvasSize.w / rect.width)),
+      y: Math.round((e.clientY - rect.top) * (canvasSize.h / rect.height)),
+    };
+  }, [canvasSize]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { x, y } = getCanvasPos(e);
+    if (tool === 'fill') {
+      handleFill(x, y);
+    } else {
+      handlePenStart(x, y);
+    }
+  }, [tool, getCanvasPos, handleFill, handlePenStart]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const { x, y } = getCanvasPos(e);
+    handlePenMove(x, y);
+  }, [getCanvasPos, handlePenMove]);
+
+  /* ── Sync zone colors to parent ── */
+  const syncZonesToParent = useCallback(() => {
+    const zones: ColorwayZone[] = [];
+    zoneFills.current.forEach((hex, zone) => {
+      zones.push({ zone, hex });
     });
-    onZoneColorsChange(updated);
+    if (zones.length > 0) onZoneColorsChange(zones);
   }, [onZoneColorsChange]);
 
-  /* ── Delete selected ── */
-  const handleDelete = useCallback(() => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    const active = canvas.getActiveObject();
-    if (!active || !(active as any).name) return; // Don't delete background image
-
-    const zoneName = (active as any).name;
-    canvas.remove(active);
-    canvas.renderAll();
-
-    if (zoneName) {
-      const remaining = canvas.getObjects().some((o: any) => o.name === zoneName);
-      if (!remaining) {
-        setZones(prev => prev.filter(z => z !== zoneName));
-        colorMap.current.delete(zoneName);
-        syncColorsToParent();
-      }
-    }
-    toast(stepLabel('zoneDeleted') || 'Zone deleted', 'info');
-  }, [toast, syncColorsToParent]);
-
-  /* ── Add shape ── */
-  const addShape = useCallback(async (type: 'rect' | 'ellipse') => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    const fabric = await import('fabric');
-    const zoneName = `Zone ${zones.length + 1}`;
-    const color = '#808080';
-
-    const props = {
-      left: canvas.getWidth() / 2 - 40,
-      top: canvas.getHeight() / 2 - 25,
-      fill: color,
-      opacity: ZONE_FILL_OPACITY,
-      stroke: color,
-      strokeWidth: 1.5,
-      hasControls: true,
-      cornerStyle: 'circle' as const,
-      cornerSize: 6,
-      transparentCorners: false,
-      cornerColor: '#282A29',
-      borderColor: '#282A29',
-      lockRotation: true,
-    };
-
-    const shape = type === 'rect'
-      ? new fabric.Rect({ ...props, width: 80, height: 50, rx: 3, ry: 3 } as any)
-      : new fabric.Ellipse({ ...props, rx: 40, ry: 25 } as any);
-
-    (shape as any).name = zoneName;
-    canvas.add(shape);
-    canvas.setActiveObject(shape);
-    canvas.renderAll();
-
-    setZones(prev => [...prev, zoneName]);
-    setSelectedZone(zoneName);
-    colorMap.current.set(zoneName, color);
-    syncColorsToParent();
-  }, [zones, syncColorsToParent]);
-
-  /* ── Rename zone ── */
-  const handleRename = useCallback((oldName: string, newName: string) => {
-    if (!newName.trim() || newName === oldName) { setRenamingZone(null); return; }
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-
-    canvas.getObjects().forEach((obj: any) => {
-      if (obj.name === oldName) obj.name = newName;
-    });
-    setZones(prev => prev.map(z => z === oldName ? newName : z));
-    setRenamingZone(null);
-
-    if (colorMap.current.has(oldName)) {
-      const hex = colorMap.current.get(oldName)!;
-      colorMap.current.delete(oldName);
-      colorMap.current.set(newName, hex);
-    }
-    syncColorsToParent();
-  }, [syncColorsToParent]);
-
-  /* ── Download SVG ── */
+  /* ── Download SVG (sketch + color overlay) ── */
   const handleDownload = useCallback(() => {
-    const canvas = fabricRef.current;
-    if (!canvas) return;
-    const svg = canvas.toSVG();
+    const sketchCanvas = sketchCanvasRef.current;
+    const colorCanvas = colorCanvasRef.current;
+    if (!sketchCanvas || !colorCanvas) return;
+
+    // Composite: color layer + sketch layer on top
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvasSize.w;
+    exportCanvas.height = canvasSize.h;
+    const ctx = exportCanvas.getContext('2d')!;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvasSize.w, canvasSize.h);
+    ctx.drawImage(colorCanvas, 0, 0);
+    ctx.drawImage(sketchCanvas, 0, 0);
+
+    // Create SVG with embedded image
+    const dataUrl = exportCanvas.toDataURL('image/png');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasSize.w}" height="${canvasSize.h}" viewBox="0 0 ${canvasSize.w} ${canvasSize.h}">
+  <image href="${dataUrl}" width="${canvasSize.w}" height="${canvasSize.h}"/>
+</svg>`;
+
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'sketch-zones.svg'; a.click();
+    a.href = url; a.download = 'colored-sketch.svg'; a.click();
     URL.revokeObjectURL(url);
     toast(stepLabel('svgDownloaded') || 'SVG downloaded', 'success');
-  }, [toast]);
+  }, [canvasSize, toast]);
 
-  /* ── Upload SVG ── */
+  /* ── Upload SVG/PNG ── */
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const handleUpload = useCallback(async (file: File) => {
-    const text = await file.text();
-    const fabric = await import('fabric');
-    const canvas = fabricRef.current;
-    if (!canvas || !fabric) return;
-
-    // Parse SVG and add objects on top of background
-    const { objects } = await fabric.loadSVGFromString(text);
-    const newZones: string[] = [];
-    objects.forEach(obj => {
-      if (!obj) return;
-      const zone = (obj as any).name || obj.fill?.toString() || '';
-      if (zone) {
-        (obj as any).name = zone;
-        newZones.push(zone);
-      }
-      obj.set({ hasControls: true, cornerStyle: 'circle', cornerSize: 6, lockRotation: true } as any);
-      canvas.add(obj);
-    });
-    canvas.renderAll();
-    if (newZones.length > 0) setZones(prev => Array.from(new Set([...prev, ...newZones])));
-    toast(stepLabel('svgUploaded') || 'SVG imported', 'success');
-  }, [toast]);
+    // Load as image overlay on color canvas
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const ctx = colorCanvasRef.current?.getContext('2d');
+      if (!ctx) return;
+      saveHistory();
+      ctx.drawImage(img, 0, 0, canvasSize.w, canvasSize.h);
+      URL.revokeObjectURL(url);
+      toast(stepLabel('svgUploaded') || 'File imported', 'success');
+    };
+    img.src = url;
+  }, [canvasSize, saveHistory, toast]);
 
   /* ── Keyboard shortcuts ── */
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.target instanceof HTMLInputElement) return;
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo(); }
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (!(e.target instanceof HTMLInputElement)) handleDelete();
-      }
+      if (e.key === 'b' || e.key === 'B') setTool('fill');
+      if (e.key === 'e' || e.key === 'E') setTool('eraser');
+      if (e.key === 'p' || e.key === 'P') setTool('pen');
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo, handleDelete]);
+  }, [undo, redo]);
 
-  /* ── Responsive ── */
-  useEffect(() => {
-    const container = containerRef.current;
-    const canvas = fabricRef.current;
-    if (!container || !canvas) return;
-    const observer = new ResizeObserver((entries) => {
-      const { width } = entries[0].contentRect;
-      const newH = Math.min(width * 0.65, 480);
-      const ratio = width / canvas.getWidth();
-      canvas.setDimensions({ width, height: newH });
-      canvas.setZoom(canvas.getZoom() * ratio);
-      canvas.renderAll();
-    });
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [fabricLoaded]);
+  const cursor = tool === 'fill' ? 'crosshair' : tool === 'eraser' ? 'cell' : 'default';
 
   return (
     <div className="space-y-3">
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Tools */}
         <div className="flex items-center border border-carbon/[0.08] divide-x divide-carbon/[0.06]">
-          <button className="p-1.5 bg-carbon text-crema" title={stepLabel('toolSelect') || 'Select'}>
-            <MousePointer className="h-3.5 w-3.5" />
+          <button onClick={() => setTool('fill')} title="Paint Bucket (B)"
+            className={`p-2 transition-colors ${tool === 'fill' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'}`}>
+            <PaintBucket className="h-4 w-4" />
           </button>
-          <button onClick={() => addShape('rect')} className="p-1.5 text-carbon/40 hover:text-carbon/60 transition-colors" title={stepLabel('addRect') || 'Add rectangle zone'}>
-            <Square className="h-3.5 w-3.5" />
+          <button onClick={() => setTool('pen')} title="Pen — close gaps (P)"
+            className={`p-2 transition-colors ${tool === 'pen' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'}`}>
+            <Pencil className="h-4 w-4" />
           </button>
-          <button onClick={() => addShape('ellipse')} className="p-1.5 text-carbon/40 hover:text-carbon/60 transition-colors" title={stepLabel('addEllipse') || 'Add ellipse zone'}>
-            <CircleIcon className="h-3.5 w-3.5" />
+          <button onClick={() => setTool('eraser')} title="Eraser (E)"
+            className={`p-2 transition-colors ${tool === 'eraser' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'}`}>
+            <Eraser className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="w-px h-5 bg-carbon/[0.06]" />
+        <div className="w-px h-6 bg-carbon/[0.06]" />
 
-        <div className="flex items-center gap-1.5">
-          <Palette className="h-3 w-3 text-carbon/25" />
+        {/* Color picker */}
+        <div className="flex items-center gap-2">
           <div className="relative">
-            <div className="w-6 h-6 border border-carbon/[0.12] cursor-pointer hover:ring-1 hover:ring-carbon/20" style={{ backgroundColor: selectedColor }} />
-            <input type="color" value={selectedColor} onChange={(e) => handleColorChange(e.target.value)}
+            <div className="w-7 h-7 border-2 border-carbon/[0.15] cursor-pointer hover:ring-2 hover:ring-carbon/20 transition-shadow" style={{ backgroundColor: color }} />
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)}
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
           </div>
-          {selectedZone && <span className="text-[9px] text-carbon/40 font-medium uppercase tracking-wider">{selectedZone}</span>}
+          {/* Zone selector */}
+          <select
+            value={zoneName}
+            onChange={(e) => setZoneName(e.target.value)}
+            className="text-[10px] font-medium uppercase bg-transparent border border-carbon/[0.08] px-2 py-1.5 text-carbon/50 focus:outline-none tracking-wider"
+          >
+            {(defaultZones.current.length > 0 ? defaultZones.current : ['Upper', 'Midsole', 'Outsole', 'Tongue', 'Laces']).map(z => (
+              <option key={z} value={z}>{z}</option>
+            ))}
+          </select>
         </div>
 
-        <div className="w-px h-5 bg-carbon/[0.06]" />
+        <div className="w-px h-6 bg-carbon/[0.06]" />
 
-        <button onClick={handleDelete} className="p-1.5 text-carbon/30 hover:text-[#A0463C]/60 transition-colors" title={stepLabel('deleteZone') || 'Delete'}>
-          <Trash2 className="h-3.5 w-3.5" />
+        {/* Undo/Redo */}
+        <button onClick={undo} disabled={historyLen <= 1} title="Undo (Ctrl+Z)"
+          className="p-1.5 text-carbon/30 hover:text-carbon/60 transition-colors disabled:opacity-20">
+          <Undo2 className="h-4 w-4" />
         </button>
-        <button onClick={undo} disabled={!canUndo} className="p-1.5 text-carbon/30 hover:text-carbon/60 transition-colors disabled:opacity-20" title="Undo (Ctrl+Z)">
-          <Undo2 className="h-3.5 w-3.5" />
-        </button>
-        <button onClick={redo} disabled={!canRedo} className="p-1.5 text-carbon/30 hover:text-carbon/60 transition-colors disabled:opacity-20" title="Redo (Ctrl+Shift+Z)">
-          <Redo2 className="h-3.5 w-3.5" />
+        <button onClick={redo} disabled={redoLen === 0} title="Redo (Ctrl+Shift+Z)"
+          className="p-1.5 text-carbon/30 hover:text-carbon/60 transition-colors disabled:opacity-20">
+          <Redo2 className="h-4 w-4" />
         </button>
 
         <div className="flex-1" />
 
-        <button onClick={handleDownload} className="flex items-center gap-1 px-2 py-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/35 border border-carbon/[0.06] hover:border-carbon/15 transition-colors">
+        {/* Export/Import */}
+        <button onClick={handleDownload} className="flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/35 border border-carbon/[0.06] hover:border-carbon/15 transition-colors">
           <Download className="h-3 w-3" /> SVG
         </button>
-        <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2 py-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/35 border border-carbon/[0.06] hover:border-carbon/15 transition-colors">
+        <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 px-2.5 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/35 border border-carbon/[0.06] hover:border-carbon/15 transition-colors">
           <Upload className="h-3 w-3" /> {stepLabel('importSvg') || 'Import'}
         </button>
-        <input ref={fileInputRef} type="file" accept=".svg" className="hidden"
+        <input ref={fileInputRef} type="file" accept=".svg,.png,.jpg" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
       </div>
 
-      {/* ── Canvas ── */}
-      <div ref={containerRef} className="border border-carbon/[0.08] bg-white overflow-hidden">
-        <canvas ref={canvasEl} />
+      {/* ── Canvas stack (coloring book pattern) ── */}
+      <div ref={containerRef} className="relative border border-carbon/[0.08] bg-white overflow-hidden" style={{ width: '100%' }}>
+        {!loaded && (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-5 w-5 animate-spin text-carbon/15" />
+          </div>
+        )}
+        {/* Layer 1: Color canvas (bottom — where fills go) */}
+        <canvas
+          ref={colorCanvasRef}
+          width={canvasSize.w}
+          height={canvasSize.h}
+          style={{ display: loaded ? 'block' : 'none', width: '100%', height: 'auto' }}
+        />
+        {/* Layer 2: Sketch lines (top — always visible, non-interactive) */}
+        <canvas
+          ref={sketchCanvasRef}
+          width={canvasSize.w}
+          height={canvasSize.h}
+          className="absolute top-0 left-0"
+          style={{
+            display: loaded ? 'block' : 'none',
+            width: '100%',
+            height: 'auto',
+            mixBlendMode: 'multiply',
+            pointerEvents: tool === 'pen' ? 'auto' : 'none',
+            cursor: tool === 'pen' ? 'crosshair' : undefined,
+          }}
+          onMouseDown={tool === 'pen' ? handleMouseDown : undefined}
+          onMouseMove={tool === 'pen' ? handleMouseMove : undefined}
+          onMouseUp={tool === 'pen' ? handlePenEnd : undefined}
+          onMouseLeave={tool === 'pen' ? handlePenEnd : undefined}
+        />
+        {/* Interaction layer (for fill + eraser — sits on top but transparent) */}
+        <canvas
+          width={canvasSize.w}
+          height={canvasSize.h}
+          className="absolute top-0 left-0"
+          style={{
+            display: loaded ? 'block' : 'none',
+            width: '100%',
+            height: 'auto',
+            pointerEvents: tool !== 'pen' ? 'auto' : 'none',
+            cursor,
+            opacity: 0,
+          }}
+          onMouseDown={tool !== 'pen' ? handleMouseDown : undefined}
+          onMouseMove={tool !== 'pen' ? handleMouseMove : undefined}
+          onMouseUp={() => { isPenDown.current = false; lastPenPos.current = null; }}
+          onMouseLeave={() => { isPenDown.current = false; lastPenPos.current = null; }}
+        />
       </div>
 
-      {/* ── Zone list ── */}
-      {zones.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zones') || 'Zones'} ({zones.length})</p>
-          <div className="flex flex-wrap gap-1.5">
-            {zones.map(zone => {
-              const hex = colorMap.current.get(zone) || '#808080';
-              const isSelected = selectedZone === zone;
-              return (
-                <div
-                  key={zone}
-                  className={`flex items-center gap-1.5 px-2 py-1 border transition-colors cursor-pointer ${
-                    isSelected ? 'border-carbon/30 bg-carbon/[0.03]' : 'border-carbon/[0.06] hover:border-carbon/15'
-                  }`}
-                  onClick={() => {
-                    const canvas = fabricRef.current;
-                    if (!canvas) return;
-                    const obj = canvas.getObjects().find((o: any) => o.name === zone);
-                    if (obj) { canvas.setActiveObject(obj); canvas.renderAll(); }
-                    setSelectedZone(zone);
-                    setSelectedColor(hex);
-                  }}
-                >
-                  <div className="relative">
-                    <div className="w-4 h-4 border border-carbon/[0.1]" style={{ backgroundColor: hex }} />
-                    <input type="color" value={hex} onChange={(e) => colorEntireZone(zone, e.target.value)}
-                      onClick={(e) => e.stopPropagation()} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                  </div>
-                  {renamingZone === zone ? (
-                    <input autoFocus value={renameValue} onChange={(e) => setRenameValue(e.target.value)}
-                      onBlur={() => handleRename(zone, renameValue)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') handleRename(zone, renameValue); if (e.key === 'Escape') setRenamingZone(null); }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-[10px] text-carbon bg-transparent border-b border-carbon/20 focus:outline-none w-20" />
-                  ) : (
-                    <span className="text-[10px] text-carbon/50 font-medium"
-                      onDoubleClick={(e) => { e.stopPropagation(); setRenamingZone(zone); setRenameValue(zone); }}>
-                      {zone}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-[8px] text-carbon/15 italic">{stepLabel('doubleClickRename') || 'Double-click zone name to rename'}</p>
+      {/* ── Zone fills summary ── */}
+      {zoneFills.current.size > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {Array.from(zoneFills.current.entries()).map(([zone, hex]) => (
+            <div key={zone} className="flex items-center gap-1.5 px-2 py-1 border border-carbon/[0.06]">
+              <div className="w-3.5 h-3.5 border border-carbon/[0.1]" style={{ backgroundColor: hex }} />
+              <span className="text-[9px] text-carbon/40 font-medium uppercase tracking-wider">{zone}</span>
+            </div>
+          ))}
         </div>
       )}
+
+      {/* ── Instructions ── */}
+      <p className="text-[8px] text-carbon/15 italic leading-relaxed">
+        {tool === 'fill' && (stepLabel('fillInstructions') || 'Click on an area to fill it with the selected color. Select the zone name before filling.')}
+        {tool === 'pen' && (stepLabel('penInstructions') || 'Draw lines to close gaps in the sketch. The fill tool will respect these new boundaries.')}
+        {tool === 'eraser' && (stepLabel('eraserInstructions') || 'Drag over colored areas to erase them.')}
+      </p>
     </div>
   );
 }

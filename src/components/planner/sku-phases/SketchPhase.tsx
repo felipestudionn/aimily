@@ -72,9 +72,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
   const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
 
-  // Zone Editor state
-  const [zoneRegions, setZoneRegions] = useState<{ zone: string; x: number; y: number; width: number; height: number; confidence: 'high' | 'medium' | 'low' }[] | null>(null);
-  const [detectingZones, setDetectingZones] = useState(false);
+  // Zone Editor (no state needed — renders immediately when sketch exists)
 
   const existingRenderUrls = sku.render_urls || {};
   const defaultAngle = 'three_quarter' as const;
@@ -540,94 +538,40 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* AI mode: Zone Editor (sketch as background + zone overlays) */}
+            {/* AI mode: Paint-like Zone Editor */}
             {mode === 'ai' && (
               <div className="space-y-4">
-                {/* Zone Editor — requires sketch */}
                 {sku.sketch_url ? (
-                  <>
-                    {!zoneRegions && !detectingZones && (
-                      <div className="space-y-3">
-                        <p className="text-[11px] text-carbon/40 leading-relaxed">
-                          {stepLabel('zoneEditorDesc') || 'AI will detect product zones in your sketch. Then paint colors visually on each zone.'}
-                        </p>
-                        <button
-                          onClick={async () => {
-                            setDetectingZones(true);
-                            try {
-                              const res = await fetch('/api/ai/detect-zones', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ image_url: sku.sketch_url, category: sku.category }),
-                              });
-                              if (!res.ok) {
-                                const errBody = await res.json().catch(() => ({}));
-                                throw new Error(errBody.error || `Zone detection failed (${res.status})`);
-                              }
-                              const { zones: detected } = await res.json();
-                              setZoneRegions(detected);
-                              toast(stepLabel('vectorized') || 'Zones detected', 'success');
-                            } catch (err) {
-                              console.error('[DetectZones] Error:', err);
-                              const msg = err instanceof Error ? err.message : 'Unknown error';
-                              toast(`${stepLabel('vectorizeFailed') || 'Zone detection failed'}: ${msg}`, 'error', 5000);
-                            } finally {
-                              setDetectingZones(false);
-                            }
-                          }}
-                          disabled={detectingZones}
-                          className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30"
-                        >
-                          {detectingZones ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                          {detectingZones
-                            ? (stepLabel('vectorizing') || 'Detecting zones...')
-                            : (stepLabel('vectorizeSketch') || 'Detect & Edit Zones')
-                          }
-                        </button>
-                      </div>
-                    )}
-
-                    {detectingZones && (
-                      <div className="flex flex-col items-center justify-center py-12 gap-3">
-                        <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
-                        <p className="text-[11px] text-carbon/25">{stepLabel('vectorizing') || 'Detecting product zones...'}</p>
-                      </div>
-                    )}
-
-                    {zoneRegions && (
-                      <ZoneEditorLazy
-                        sketchImageUrl={sku.sketch_url!}
-                        zoneRegions={zoneRegions}
-                        zoneColors={skuColorways[0]?.zones || defaultZones.map(z => ({ zone: z.zone, hex: z.defaultHex }))}
-                        onZoneColorsChange={(updatedZones: ColorwayZone[]) => {
-                          if (skuColorways.length > 0) {
-                            const primary = updatedZones[0]?.hex || skuColorways[0].hex_primary;
-                            updateColorway(skuColorways[0].id, {
-                              zones: updatedZones,
-                              hex_primary: primary,
-                              hex_secondary: updatedZones[1]?.hex || null as unknown as string,
-                              hex_accent: updatedZones[2]?.hex || null as unknown as string,
-                            } as Partial<SkuColorway>);
-                          } else {
-                            addColorway({
-                              sku_id: sku.id,
-                              name: 'Colorway 1',
-                              hex_primary: updatedZones[0]?.hex || '#3B3B3B',
-                              hex_secondary: updatedZones[1]?.hex || null as unknown as string,
-                              hex_accent: updatedZones[2]?.hex || null as unknown as string,
-                              pantone_primary: null as unknown as string,
-                              pantone_secondary: null as unknown as string,
-                              material_swatch_url: null as unknown as string,
-                              status: 'proposed',
-                              position: 0,
-                              zones: updatedZones,
-                            } as Omit<SkuColorway, 'id' | 'created_at'>);
-                          }
-                        }}
-                        category={sku.category}
-                      />
-                    )}
-                  </>
+                  <ZoneEditorLazy
+                    sketchImageUrl={sku.sketch_url!}
+                    zoneColors={skuColorways[0]?.zones || defaultZones.map(z => ({ zone: z.zone, hex: z.defaultHex }))}
+                    onZoneColorsChange={(updatedZones: ColorwayZone[]) => {
+                      if (skuColorways.length > 0) {
+                        const primary = updatedZones[0]?.hex || skuColorways[0].hex_primary;
+                        updateColorway(skuColorways[0].id, {
+                          zones: updatedZones,
+                          hex_primary: primary,
+                          hex_secondary: updatedZones[1]?.hex || null as unknown as string,
+                          hex_accent: updatedZones[2]?.hex || null as unknown as string,
+                        } as Partial<SkuColorway>);
+                      } else {
+                        addColorway({
+                          sku_id: sku.id,
+                          name: 'Colorway 1',
+                          hex_primary: updatedZones[0]?.hex || '#3B3B3B',
+                          hex_secondary: updatedZones[1]?.hex || null as unknown as string,
+                          hex_accent: updatedZones[2]?.hex || null as unknown as string,
+                          pantone_primary: null as unknown as string,
+                          pantone_secondary: null as unknown as string,
+                          material_swatch_url: null as unknown as string,
+                          status: 'proposed',
+                          position: 0,
+                          zones: updatedZones,
+                        } as Omit<SkuColorway, 'id' | 'created_at'>);
+                      }
+                    }}
+                    category={sku.category}
+                  />
                 ) : (
                   <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06] text-center">
                     <p className="text-[11px] text-carbon/30">{stepLabel('needSketchFirst') || 'Complete the Sketch step first to use the visual zone editor.'}</p>
