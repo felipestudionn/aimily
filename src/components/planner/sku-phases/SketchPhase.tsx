@@ -16,7 +16,6 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { getDefaultZones, zonesToColorwayZones } from '@/lib/product-zones';
 import type { FooterAction } from '../SkuDetailView';
-import { SketchColorPreview } from './SketchColorPreview';
 
 type InputMode = 'free' | 'ai';
 
@@ -536,20 +535,51 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* AI mode: Visual colorway proposals with canvas tint preview */}
+            {/* AI mode: Colorway proposals with AI-colorized sketch previews */}
             {mode === 'ai' && (
               <div className="space-y-4">
-                {/* Step 1: Generate AI colorway proposals */}
+                {/* Step 1: Generate AI colorway proposals + colorize each */}
                 {!aiColorways && !generating && (
                   <div className="space-y-3">
                     <p className="text-[11px] text-carbon/40 leading-relaxed">
-                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations and preview each one on your sketch.'}
+                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations and colorize your sketch with each one.'}
                     </p>
                     <button onClick={async () => {
                       setGenerating(true);
                       try {
                         const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
-                        if (result?.colorways) setAiColorways(result.colorways);
+                        if (result?.colorways) {
+                          // Set proposals immediately (show cards with spinners)
+                          const proposals = result.colorways.map((cw: Record<string, unknown>) => ({ ...cw, colorizedUrl: null }));
+                          setAiColorways(proposals);
+
+                          // Colorize each in parallel (~$0.007/image × 4 = $0.028 total)
+                          if (sku.sketch_url) {
+                            const colorizePromises = proposals.slice(0, 4).map(async (cw: any, i: number) => {
+                              try {
+                                const zoneColors = defaultZones.map((z, zi) => ({ zone: z.zone, hex: cw.colors[zi % cw.colors.length] || z.defaultHex }));
+                                const res = await fetch('/api/ai/colorize-sketch', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    sketch_url: sku.sketch_url,
+                                    colorway_name: cw.name,
+                                    color_description: cw.description,
+                                    zone_colors: zoneColors,
+                                    collectionPlanId,
+                                  }),
+                                });
+                                if (res.ok) {
+                                  const { imageUrl } = await res.json();
+                                  if (imageUrl) {
+                                    setAiColorways(prev => prev?.map((p: any, pi: number) => pi === i ? { ...p, colorizedUrl: imageUrl } : p) || null);
+                                  }
+                                }
+                              } catch { /* colorization failed for this one — show swatches only */ }
+                            });
+                            await Promise.all(colorizePromises);
+                          }
+                        }
                       } finally {
                         setGenerating(false);
                       }
@@ -560,26 +590,29 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   </div>
                 )}
 
-                {generating && (
+                {generating && !aiColorways && (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
                     <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
                     <p className="text-[11px] text-carbon/25">{stepLabel('generatingColorways') || 'Generating colorway proposals...'}</p>
                   </div>
                 )}
 
-                {/* Step 2: Show proposals with instant canvas tint previews */}
-                {aiColorways && !generating && (
+                {/* Step 2: Show proposals with AI-colorized previews */}
+                {aiColorways && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {aiColorways.map((cw, idx) => (
                       <div key={idx} className="border border-carbon/[0.06] bg-white overflow-hidden">
-                        {/* Canvas tint preview — instant, free */}
-                        {sku.sketch_url && (
-                          <SketchColorPreview
-                            sketchUrl={sku.sketch_url}
-                            colors={cw.colors}
-                            className="aspect-[4/3]"
-                          />
-                        )}
+                        {/* Colorized preview */}
+                        <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden">
+                          {(cw as any).colorizedUrl ? (
+                            <img src={(cw as any).colorizedUrl} alt={cw.name} className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
+                              <span className="text-[9px] text-carbon/20">{stepLabel('colorizing') || 'Colorizing...'}</span>
+                            </div>
+                          )}
+                        </div>
                         {/* Info + swatches + accept */}
                         <div className="p-3 space-y-2">
                           <div className="flex items-center justify-between">
