@@ -377,6 +377,63 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
+            {/* SVG download/upload for designers */}
+            {sku.sketch_url && (
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    // Create SVG wrapper around the sketch image
+                    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <image xlink:href="${sku.sketch_url}" width="1024" height="1024" preserveAspectRatio="xMidYMid meet"/>
+</svg>`;
+                    const blob = new Blob([svg], { type: 'image/svg+xml' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `${sku.name || 'sketch'}.svg`; a.click();
+                    URL.revokeObjectURL(url);
+                    toast('SVG downloaded', 'success');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/30 border border-carbon/[0.06] hover:border-carbon/15 transition-colors"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+                  Download SVG
+                </button>
+                <label className="flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/30 border border-carbon/[0.06] hover:border-carbon/15 transition-colors cursor-pointer">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5-5 5M12 3v12" /></svg>
+                  Upload SVG
+                  <input type="file" accept=".svg,.png,.jpg,.jpeg" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
+                      // Convert SVG to data URL
+                      const text = await file.text();
+                      const blob = new Blob([text], { type: 'image/svg+xml' });
+                      const url = URL.createObjectURL(blob);
+                      // Draw SVG to canvas to get PNG data URL
+                      const img = new Image();
+                      img.onload = async () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 1024; canvas.height = 1024;
+                        const ctx = canvas.getContext('2d')!;
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, 1024, 1024);
+                        const scale = Math.min(1024 / img.width, 1024 / img.height);
+                        ctx.drawImage(img, (1024 - img.width * scale) / 2, (1024 - img.height * scale) / 2, img.width * scale, img.height * scale);
+                        const dataUrl = canvas.toDataURL('image/png');
+                        await onUpdate({ sketch_url: dataUrl } as Partial<SKU>);
+                        URL.revokeObjectURL(url);
+                        toast('SVG imported as sketch', 'success');
+                      };
+                      img.src = url;
+                    } else {
+                      // Regular image upload
+                      onImageUpload(file, 'sketch_url');
+                    }
+                    e.target.value = '';
+                  }} />
+                </label>
+              </div>
+            )}
           </div>
         )}
 
