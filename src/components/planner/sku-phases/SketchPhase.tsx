@@ -556,31 +556,33 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                             setVectorizing(true);
                             try {
                               // Step 1: Vectorize client-side with imagetracerjs
+                              // Fetch image as blob → draw to canvas → get ImageData (avoids CORS)
                               const ImageTracer = (await import('imagetracerjs')).default || await import('imagetracerjs');
-                              const svg: string = await new Promise((resolve, reject) => {
-                                ImageTracer.imageToSVG(
-                                  sku.sketch_url!,
-                                  (svgStr: string) => {
-                                    if (svgStr) resolve(svgStr);
-                                    else reject(new Error('Vectorization returned empty'));
-                                  },
-                                  {
-                                    // Optimized for line art sketches
-                                    ltres: 1,
-                                    qtres: 1,
-                                    pathomit: 8,
-                                    colorsampling: 0,
-                                    numberofcolors: 2,
-                                    mincolorratio: 0,
-                                    colorquantcycles: 1,
-                                    blurradius: 0,
-                                    blurdelta: 20,
-                                    strokewidth: 1,
-                                    linefilter: true,
-                                    desc: false,
-                                  }
-                                );
+
+                              const imgBlob = await fetch(sku.sketch_url!).then(r => r.blob());
+                              const bitmap = await createImageBitmap(imgBlob);
+                              const offscreen = document.createElement('canvas');
+                              offscreen.width = bitmap.width;
+                              offscreen.height = bitmap.height;
+                              const ctx = offscreen.getContext('2d')!;
+                              ctx.drawImage(bitmap, 0, 0);
+                              const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+
+                              const svg: string = ImageTracer.imagedataToSVG(imageData, {
+                                ltres: 1,
+                                qtres: 1,
+                                pathomit: 8,
+                                colorsampling: 0,
+                                numberofcolors: 2,
+                                mincolorratio: 0,
+                                colorquantcycles: 1,
+                                blurradius: 0,
+                                blurdelta: 20,
+                                strokewidth: 1,
+                                linefilter: true,
+                                desc: false,
                               });
+                              if (!svg) throw new Error('Vectorization returned empty');
 
                               // Step 2: Detect zones via Claude Vision (server)
                               const zoneRes = await fetch('/api/ai/detect-zones', {
