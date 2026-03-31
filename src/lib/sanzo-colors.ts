@@ -133,13 +133,13 @@ Use these as INSPIRATION and FOUNDATION for your proposals — adapt them to the
 
 ${formatted}
 
-WADA'S PRINCIPLES FOR PRODUCT APPLICATION:
-• 1st color (dominant) → main body/upper — the identity color of the product
-• 2nd color (contrast) → accent zones (tongue, heel counter, lining) — creates visual interest
-• 3rd color (ground) → structural zones (midsole, outsole) — use lighter/neutral tones to ground the palette
-• Wada's genius is in the TENSION between colors — not matching, but harmonious contrast
-• Every Wada palette balances warm and cool, light and dark — follow this principle
-• For commercial footwear/apparel: adapt the Wada palette by using the boldest color on the upper, a neutral adaptation on the midsole (white, cream, gum, gray), and the accent color on details`;
+WADA'S PRINCIPLES FOR PRODUCT APPLICATION (60-30-10 rule):
+• Color 1 — 60% DOMINANT → upper/body panels. The identity of the product. Use the boldest Wada color here.
+• Color 2 — 30% SECONDARY → midsole, structural zones. Must CONTRAST with Color 1. Prefer neutral/light tones (white, cream, gum, bone) to ground the palette visually.
+• Color 3 — 10% ACCENT → tongue, heel counter, lining, branding. The "pop" — creates visual interest and completes the story.
+• Wada's genius: TENSION between colors — warm vs cool, saturated vs muted, light vs dark. Never 3 colors at the same saturation/lightness.
+• If the dominant (upper) is bold/saturated, the secondary (midsole) should be muted/neutral. If the dominant is earthy/muted, allow the accent to carry vibrancy.
+• Wada's palette names evoke poetic worlds — "Spinel Red", "Naples Yellow", "Dark Tyrian Blue" — name colorways with this same evocative precision.`;
 }
 
 /** Standard neutral colors for structural zones (outsole, hardware, etc.) */
