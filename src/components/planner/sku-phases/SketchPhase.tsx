@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { getDefaultZones, zonesToColorwayZones } from '@/lib/product-zones';
 import type { FooterAction } from '../SkuDetailView';
+import { SketchColorPreview } from './SketchColorPreview';
 
 type InputMode = 'free' | 'ai';
 
@@ -535,59 +536,20 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* AI mode: Visual colorway proposals rendered on sketch */}
+            {/* AI mode: Visual colorway proposals with canvas tint preview */}
             {mode === 'ai' && (
               <div className="space-y-4">
                 {/* Step 1: Generate AI colorway proposals */}
                 {!aiColorways && !generating && (
                   <div className="space-y-3">
                     <p className="text-[11px] text-carbon/40 leading-relaxed">
-                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations and render each one on your sketch so you can see how they look.'}
+                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations and preview each one on your sketch.'}
                     </p>
                     <button onClick={async () => {
                       setGenerating(true);
                       try {
                         const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
-                        if (result?.colorways) {
-                          // Add renderUrl field for visual previews
-                          setAiColorways(result.colorways.map((cw: any) => ({ ...cw, renderUrl: null })));
-
-                          // Generate renders for each proposal (up to 4)
-                          if (sku.sketch_url) {
-                            for (let i = 0; i < Math.min(result.colorways.length, 4); i++) {
-                              const cw = result.colorways[i];
-                              try {
-                                const colorZones = defaultZones.map((z, zi) => ({ zone: z.zone, hex: cw.colors[zi % cw.colors.length] || z.defaultHex }));
-                                const res = await fetch('/api/ai/freepik/render', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    sketch_base64: sku.sketch_url,
-                                    collectionPlanId,
-                                    angle: 'three_quarter',
-                                    design_context: {
-                                      productName: `${sku.name} - ${cw.name}`,
-                                      productType: `${sku.family} (${sku.category})`,
-                                      colorway: `${cw.name}: ${cw.colors.join(', ')}`,
-                                      colorHexes: cw.colors.map((hex: string) => ({ hex, weight: 0.5 })),
-                                      colorZones,
-                                      materialZones: [],
-                                      materials: 'premium materials',
-                                      designNotes: `${cw.description}. ${sku.notes || ''}`,
-                                    },
-                                  }),
-                                });
-                                if (res.ok) {
-                                  const data = await res.json();
-                                  const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
-                                  if (url) {
-                                    setAiColorways(prev => prev?.map((p: any, pi: number) => pi === i ? { ...p, renderUrl: url } : p) || null);
-                                  }
-                                }
-                              } catch { /* render failed — show color swatches only */ }
-                            }
-                          }
-                        }
+                        if (result?.colorways) setAiColorways(result.colorways);
                       } finally {
                         setGenerating(false);
                       }
@@ -601,26 +563,23 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 {generating && (
                   <div className="flex flex-col items-center justify-center py-10 gap-3">
                     <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
-                    <p className="text-[11px] text-carbon/25">{stepLabel('generatingColorways') || 'Generating colorway proposals & renders...'}</p>
+                    <p className="text-[11px] text-carbon/25">{stepLabel('generatingColorways') || 'Generating colorway proposals...'}</p>
                   </div>
                 )}
 
-                {/* Step 2: Show visual proposals in a grid */}
+                {/* Step 2: Show proposals with instant canvas tint previews */}
                 {aiColorways && !generating && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {aiColorways.map((cw, idx) => (
                       <div key={idx} className="border border-carbon/[0.06] bg-white overflow-hidden">
-                        {/* Render preview */}
-                        <div className="aspect-square bg-carbon/[0.02] overflow-hidden">
-                          {(cw as any).renderUrl ? (
-                            <img src={(cw as any).renderUrl} alt={cw.name} className="w-full h-full object-contain" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
-                              <span className="text-[10px] text-carbon/20">Rendering...</span>
-                            </div>
-                          )}
-                        </div>
+                        {/* Canvas tint preview — instant, free */}
+                        {sku.sketch_url && (
+                          <SketchColorPreview
+                            sketchUrl={sku.sketch_url}
+                            colors={cw.colors}
+                            className="aspect-[4/3]"
+                          />
+                        )}
                         {/* Info + swatches + accept */}
                         <div className="p-3 space-y-2">
                           <div className="flex items-center justify-between">
@@ -632,10 +591,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           <button onClick={async () => {
                             const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
                             await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
-                            // Save render as SKU render if available
-                            if ((cw as any).renderUrl && !sku.render_url) {
-                              await onUpdate({ render_url: (cw as any).renderUrl } as Partial<SKU>);
-                            }
                             toast(stepLabel('colorwayAccepted') || `${cw.name} added`, 'success');
                           }}
                             className="w-full px-3 py-2 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors text-center">
