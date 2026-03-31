@@ -1,156 +1,103 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import React from 'react';
 
 /**
- * SketchColorPreview — Client-side canvas tinting of a sketch with zone colors.
- * Uses multiply blend mode: white areas take the tint color, black lines stay.
- * Cost: €0.00 — zero API calls, instant rendering.
+ * SketchColorPreview — Pure CSS color tinting on a sketch image.
+ * Uses mix-blend-mode: multiply on colored overlay divs.
+ * No canvas, no Image(), no CORS issues. Just HTML + CSS.
  *
- * For a rough approximation, we divide the sketch into horizontal bands
- * matching typical product anatomy (top → bottom) and overlay each zone color.
+ * Multiply blend: white × color = color, black × color = stays dark.
+ * So white areas of the sketch take the tint, lines stay visible.
  */
 
 interface SketchColorPreviewProps {
-  /** Sketch image URL or base64 */
+  /** Sketch image URL or base64 (any format — rendered as normal <img>) */
   sketchUrl: string;
-  /** Colors to apply — array of hex codes (mapped top-to-bottom as horizontal bands) */
+  /** Colors to apply as horizontal bands (top to bottom) */
   colors: string[];
-  /** Optional zone layout hints: array of { zone, hex, yStart%, yEnd% } */
-  zoneLayout?: { zone: string; hex: string; yStart: number; yEnd: number }[];
   /** CSS class for the container */
   className?: string;
 }
 
-// Default zone layouts by product type (% from top)
-const FOOTWEAR_LAYOUT = [
-  { yStart: 0, yEnd: 25 },    // Tongue / Laces area (top)
-  { yStart: 10, yEnd: 60 },   // Upper (main body)
-  { yStart: 55, yEnd: 78 },   // Midsole
-  { yStart: 75, yEnd: 95 },   // Outsole
-];
+export function SketchColorPreview({ sketchUrl, colors, className }: SketchColorPreviewProps) {
+  if (!colors || colors.length === 0) return null;
 
-export function SketchColorPreview({ sketchUrl, colors, zoneLayout, className }: SketchColorPreviewProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [dimensions, setDimensions] = useState({ w: 400, h: 400 });
-
-  useEffect(() => {
-    const img = new Image();
-    // crossOrigin set per-format below (NOT here — breaks data URIs)
-
-    img.onload = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const maxW = 500;
-      const scale = Math.min(maxW / img.naturalWidth, 1);
-      const w = Math.round(img.naturalWidth * scale);
-      const h = Math.round(img.naturalHeight * scale);
-      canvas.width = w;
-      canvas.height = h;
-      setDimensions({ w, h });
-
-      const ctx = canvas.getContext('2d')!;
-
-      // Step 1: Draw white background
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, w, h);
-
-      // Step 2: Apply zone colors as horizontal gradient bands
-      ctx.globalCompositeOperation = 'multiply';
-
-      if (zoneLayout && zoneLayout.length > 0) {
-        // Use provided zone layout
-        zoneLayout.forEach(zone => {
-          ctx.fillStyle = zone.hex;
-          const y = (zone.yStart / 100) * h;
-          const height = ((zone.yEnd - zone.yStart) / 100) * h;
-          // Soft edges with gradient
-          const grad = ctx.createLinearGradient(0, y, 0, y + height);
-          grad.addColorStop(0, hexWithAlpha(zone.hex, 0.6));
-          grad.addColorStop(0.2, zone.hex);
-          grad.addColorStop(0.8, zone.hex);
-          grad.addColorStop(1, hexWithAlpha(zone.hex, 0.6));
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, y, w, height);
-        });
-      } else if (colors.length > 0) {
-        // Auto-layout: map colors to default bands
-        const layout = colors.length <= FOOTWEAR_LAYOUT.length
-          ? FOOTWEAR_LAYOUT.slice(0, colors.length)
-          : colors.map((_, i) => ({
-              yStart: (i / colors.length) * 90,
-              yEnd: ((i + 1) / colors.length) * 90 + 5,
-            }));
-
-        colors.forEach((hex, i) => {
-          if (i >= layout.length) return;
-          const band = layout[i];
-          const y = (band.yStart / 100) * h;
-          const height = ((band.yEnd - band.yStart) / 100) * h;
-          // Gradient for soft transitions
-          const grad = ctx.createLinearGradient(0, y, 0, y + height);
-          grad.addColorStop(0, hexWithAlpha(hex, 0.4));
-          grad.addColorStop(0.15, hex);
-          grad.addColorStop(0.85, hex);
-          grad.addColorStop(1, hexWithAlpha(hex, 0.4));
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, y, w, height);
-        });
-      }
-
-      // Step 3: Draw sketch on top with multiply — lines stay, white takes color
-      ctx.drawImage(img, 0, 0, w, h);
-
-      // Reset composite
-      ctx.globalCompositeOperation = 'source-over';
-
-      setLoaded(true);
-    };
-
-    img.onerror = (e) => {
-      console.error('[SketchColorPreview] Image load failed:', e);
-      setLoaded(true);
-    };
-
-    // Handle all URL formats
-    let src = sketchUrl;
-    if (src.startsWith('data:')) {
-      // Data URI — do NOT set crossOrigin (breaks in some browsers)
-      img.src = src;
-    } else if (src.length > 500 && !src.startsWith('http')) {
-      // Raw base64 without prefix
-      img.src = `data:image/png;base64,${src}`;
-    } else {
-      // HTTP URL — need crossOrigin for canvas getImageData
-      img.crossOrigin = 'anonymous';
-      img.src = src;
-    }
-  }, [sketchUrl, colors, zoneLayout]);
+  // Build color bands — distribute colors as horizontal regions
+  // Primary color gets the most area (upper body), rest split the bottom
+  const bands = buildBands(colors);
 
   return (
-    <div className={`relative bg-white overflow-hidden ${className || ''}`}>
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
-        </div>
-      )}
-      <canvas
-        ref={canvasRef}
-        width={dimensions.w}
-        height={dimensions.h}
-        style={{ width: '100%', height: 'auto', display: loaded ? 'block' : 'none' }}
+    <div className={`relative overflow-hidden ${className || ''}`}>
+      {/* Sketch image — normal rendering, no canvas */}
+      <img
+        src={sketchUrl}
+        alt=""
+        className="w-full h-full object-contain relative z-[1]"
+        style={{ mixBlendMode: 'multiply' }}
       />
+
+      {/* Color bands underneath — visible through multiply blend */}
+      <div className="absolute inset-0 z-[0]">
+        {bands.map((band, i) => (
+          <div
+            key={i}
+            className="absolute left-0 right-0"
+            style={{
+              top: `${band.top}%`,
+              height: `${band.height}%`,
+              background: band.gradient,
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-/** Convert hex to hex with alpha for CSS gradients */
-function hexWithAlpha(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${alpha})`;
+interface Band {
+  top: number;
+  height: number;
+  gradient: string;
+}
+
+function buildBands(colors: string[]): Band[] {
+  if (colors.length === 1) {
+    return [{ top: 0, height: 100, gradient: colors[0] }];
+  }
+
+  if (colors.length === 2) {
+    return [
+      { top: 0, height: 60, gradient: buildGradient(colors[0], 'down') },
+      { top: 55, height: 45, gradient: buildGradient(colors[1], 'up') },
+    ];
+  }
+
+  if (colors.length === 3) {
+    return [
+      { top: 0, height: 45, gradient: buildGradient(colors[0], 'down') },
+      { top: 40, height: 30, gradient: buildGradient(colors[1], 'both') },
+      { top: 65, height: 35, gradient: buildGradient(colors[2], 'up') },
+    ];
+  }
+
+  // 4+ colors: distribute evenly with overlap for smooth transitions
+  const count = Math.min(colors.length, 6);
+  const segmentH = 100 / count;
+  return colors.slice(0, count).map((hex, i) => ({
+    top: Math.max(0, i * segmentH - 5),
+    height: segmentH + 10,
+    gradient: buildGradient(hex, i === 0 ? 'down' : i === count - 1 ? 'up' : 'both'),
+  }));
+}
+
+function buildGradient(hex: string, edge: 'up' | 'down' | 'both'): string {
+  if (edge === 'down') {
+    return `linear-gradient(to bottom, ${hex} 70%, ${hex}00 100%)`;
+  }
+  if (edge === 'up') {
+    return `linear-gradient(to bottom, ${hex}00 0%, ${hex} 30%)`;
+  }
+  // both
+  return `linear-gradient(to bottom, ${hex}00 0%, ${hex} 15%, ${hex} 85%, ${hex}00 100%)`;
 }
