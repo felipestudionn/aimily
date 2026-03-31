@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/api-auth';
-import { detectSvgZones, applySvgZoneLabels } from '@/lib/zone-detection';
+import { detectImageZones } from '@/lib/zone-detection';
 
 /* ═══════════════════════════════════════════════════════════
-   Detect Zones — AI identifies product zones in SVG sketch
-   Uses Claude Vision (dual input: raster + SVG source)
-   Returns labeled SVG + zone mappings
+   Detect Zones — AI identifies product zones in sketch image
+   Claude Vision analyzes the raster image directly, returns
+   bounding boxes (% of image) for each product zone.
+   No vectorization needed.
    ═══════════════════════════════════════════════════════════ */
 
 export async function POST(req: NextRequest) {
@@ -13,26 +14,41 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   try {
-    const { svg, category } = await req.json();
+    const { image_base64, image_url, category } = await req.json();
 
-    if (!svg || !category) {
-      return NextResponse.json(
-        { error: 'svg and category required' },
-        { status: 400 }
-      );
+    if (!category) {
+      return NextResponse.json({ error: 'category required' }, { status: 400 });
     }
 
-    // Detect zones via Claude Vision
-    const mappings = await detectSvgZones(svg, category);
+    // Get base64 from URL if needed
+    let base64 = image_base64;
+    if (!base64 && image_url) {
+      // Handle data URIs
+      if (image_url.startsWith('data:')) {
+        base64 = image_url.split(',')[1];
+      } else if (image_url.length > 500 && !image_url.startsWith('http')) {
+        // Raw base64
+        base64 = image_url;
+      } else {
+        // Fetch from URL
+        const res = await fetch(image_url);
+        const buf = Buffer.from(await res.arrayBuffer());
+        base64 = buf.toString('base64');
+      }
+    }
 
-    // Apply labels to SVG
-    const labeledSvg = applySvgZoneLabels(svg, mappings);
+    if (!base64) {
+      return NextResponse.json({ error: 'image_base64 or image_url required' }, { status: 400 });
+    }
+
+    // Clean base64 (remove data URI prefix if present)
+    if (base64.includes(',')) base64 = base64.split(',')[1];
+
+    const zones = await detectImageZones(base64, category);
 
     return NextResponse.json({
-      svg: labeledSvg,
-      mappings,
-      zonesFound: mappings.filter(m => m.zone !== 'none').length,
-      totalElements: mappings.length,
+      zones,
+      zonesFound: zones.length,
     });
   } catch (err) {
     console.error('[DetectZones] Error:', err);

@@ -73,8 +73,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [aiMaterials, setAiMaterials] = useState<{ name: string; type: string; description: string; sustainability: string; priceImpact: string }[] | null>(null);
 
   // Zone Editor state
-  const [zoneSvg, setZoneSvg] = useState<string | null>(null);
-  const [vectorizing, setVectorizing] = useState(false);
+  const [zoneRegions, setZoneRegions] = useState<{ zone: string; x: number; y: number; width: number; height: number; confidence: 'high' | 'medium' | 'low' }[] | null>(null);
+  const [detectingZones, setDetectingZones] = useState(false);
 
   const existingRenderUrls = sku.render_urls || {};
   const defaultAngle = 'three_quarter' as const;
@@ -540,113 +540,66 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* AI mode: Zone Editor (vectorize sketch → visual zone painting) */}
+            {/* AI mode: Zone Editor (sketch as background + zone overlays) */}
             {mode === 'ai' && (
               <div className="space-y-4">
                 {/* Zone Editor — requires sketch */}
                 {sku.sketch_url ? (
                   <>
-                    {!zoneSvg && !vectorizing && (
+                    {!zoneRegions && !detectingZones && (
                       <div className="space-y-3">
                         <p className="text-[11px] text-carbon/40 leading-relaxed">
-                          {stepLabel('zoneEditorDesc') || 'Vectorize your sketch to visually paint colors on each zone. Click zones to select, pick colors, add or remove areas.'}
+                          {stepLabel('zoneEditorDesc') || 'AI will detect product zones in your sketch. Then paint colors visually on each zone.'}
                         </p>
                         <button
                           onClick={async () => {
-                            setVectorizing(true);
+                            setDetectingZones(true);
                             try {
-                              // Step 1: Load sketch image into canvas (handles base64 and URLs)
-                              const sketchSrc = sku.sketch_url!;
-                              const img = new Image();
-                              img.crossOrigin = 'anonymous';
-                              await new Promise<void>((resolve, reject) => {
-                                img.onload = () => resolve();
-                                img.onerror = () => reject(new Error('Failed to load sketch image'));
-                                // Handle base64 strings (with or without data: prefix)
-                                if (sketchSrc.startsWith('data:')) {
-                                  img.src = sketchSrc;
-                                } else if (sketchSrc.length > 500 && !sketchSrc.startsWith('http')) {
-                                  // Raw base64 without prefix
-                                  img.src = `data:image/png;base64,${sketchSrc}`;
-                                } else {
-                                  img.src = sketchSrc;
-                                }
-                              });
-
-                              // Draw to canvas → get ImageData
-                              const offscreen = document.createElement('canvas');
-                              offscreen.width = img.naturalWidth;
-                              offscreen.height = img.naturalHeight;
-                              const ctx = offscreen.getContext('2d')!;
-                              ctx.drawImage(img, 0, 0);
-                              const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
-
-                              // Step 2: Vectorize with imagetracerjs
-                              const itMod = await import('imagetracerjs');
-                              const ImageTracer = itMod.default || itMod;
-                              const svg: string = ImageTracer.imagedataToSVG(imageData, {
-                                ltres: 1,
-                                qtres: 1,
-                                pathomit: 8,
-                                colorsampling: 0,
-                                numberofcolors: 2,
-                                mincolorratio: 0,
-                                colorquantcycles: 1,
-                                blurradius: 0,
-                                blurdelta: 20,
-                                strokewidth: 1,
-                                linefilter: true,
-                                desc: false,
-                              });
-                              if (!svg || svg.length < 50) throw new Error('Vectorization produced no paths');
-
-                              // Step 3: Detect zones via Claude Vision (server)
-                              const zoneRes = await fetch('/api/ai/detect-zones', {
+                              const res = await fetch('/api/ai/detect-zones', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ svg, category: sku.category }),
+                                body: JSON.stringify({ image_url: sku.sketch_url, category: sku.category }),
                               });
-                              if (!zoneRes.ok) {
-                                const errBody = await zoneRes.json().catch(() => ({}));
-                                throw new Error(errBody.error || `Zone detection failed (${zoneRes.status})`);
+                              if (!res.ok) {
+                                const errBody = await res.json().catch(() => ({}));
+                                throw new Error(errBody.error || `Zone detection failed (${res.status})`);
                               }
-                              const { svg: labeledSvg } = await zoneRes.json();
-
-                              setZoneSvg(labeledSvg);
-                              toast(stepLabel('vectorized') || 'Sketch vectorized — zones detected', 'success');
+                              const { zones: detected } = await res.json();
+                              setZoneRegions(detected);
+                              toast(stepLabel('vectorized') || 'Zones detected', 'success');
                             } catch (err) {
-                              console.error('[Vectorize] Error:', err);
+                              console.error('[DetectZones] Error:', err);
                               const msg = err instanceof Error ? err.message : 'Unknown error';
-                              toast(`${stepLabel('vectorizeFailed') || 'Vectorization failed'}: ${msg}`, 'error', 5000);
+                              toast(`${stepLabel('vectorizeFailed') || 'Zone detection failed'}: ${msg}`, 'error', 5000);
                             } finally {
-                              setVectorizing(false);
+                              setDetectingZones(false);
                             }
                           }}
-                          disabled={vectorizing}
+                          disabled={detectingZones}
                           className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30"
                         >
-                          {vectorizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                          {vectorizing
-                            ? (stepLabel('vectorizing') || 'Vectorizing & detecting zones...')
-                            : (stepLabel('vectorizeSketch') || 'Vectorize & Edit Zones')
+                          {detectingZones ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          {detectingZones
+                            ? (stepLabel('vectorizing') || 'Detecting zones...')
+                            : (stepLabel('vectorizeSketch') || 'Detect & Edit Zones')
                           }
                         </button>
                       </div>
                     )}
 
-                    {vectorizing && (
+                    {detectingZones && (
                       <div className="flex flex-col items-center justify-center py-12 gap-3">
                         <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
-                        <p className="text-[11px] text-carbon/25">{stepLabel('vectorizing') || 'Vectorizing sketch & detecting zones...'}</p>
+                        <p className="text-[11px] text-carbon/25">{stepLabel('vectorizing') || 'Detecting product zones...'}</p>
                       </div>
                     )}
 
-                    {zoneSvg && (
+                    {zoneRegions && (
                       <ZoneEditorLazy
-                        svgSource={zoneSvg}
+                        sketchImageUrl={sku.sketch_url!}
+                        zoneRegions={zoneRegions}
                         zoneColors={skuColorways[0]?.zones || defaultZones.map(z => ({ zone: z.zone, hex: z.defaultHex }))}
                         onZoneColorsChange={(updatedZones: ColorwayZone[]) => {
-                          // Sync to first colorway (or create one)
                           if (skuColorways.length > 0) {
                             const primary = updatedZones[0]?.hex || skuColorways[0].hex_primary;
                             updateColorway(skuColorways[0].id, {
@@ -671,7 +624,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                             } as Omit<SkuColorway, 'id' | 'created_at'>);
                           }
                         }}
-                        onSvgChange={(newSvg: string) => setZoneSvg(newSvg)}
                         category={sku.category}
                       />
                     )}

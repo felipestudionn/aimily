@@ -1,44 +1,33 @@
 import Anthropic from '@anthropic-ai/sdk';
-import sharp from 'sharp';
 import { getDefaultZones } from './product-zones';
 
 /* ═══════════════════════════════════════════════════════════
-   Zone Detection — AI Vision identifies product zones in SVG
-   Uses Claude Sonnet with dual input (raster + SVG source)
-   for maximum accuracy in zone-to-path mapping.
+   Zone Detection — AI Vision identifies product zones in image
+   Claude analyzes the raster sketch directly and returns
+   bounding polygons for each zone. No vectorization needed.
    ═══════════════════════════════════════════════════════════ */
 
-export interface ZoneMapping {
-  idx: number;
+export interface ZoneRegion {
   zone: string;
+  /** Bounding box as percentage of image (0-100) */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
   confidence: 'high' | 'medium' | 'low';
 }
 
 /**
- * Detect zones in an SVG sketch using Claude Vision.
- * Returns a mapping of SVG element indices to zone names.
+ * Detect product zones in a sketch image using Claude Vision.
+ * Returns bounding boxes (as % of image dimensions) for each zone.
  */
-export async function detectSvgZones(
-  svgSource: string,
+export async function detectImageZones(
+  imageBase64: string,
   category: string
-): Promise<ZoneMapping[]> {
-  const zones = getDefaultZones(category).map(z => z.zone);
+): Promise<ZoneRegion[]> {
+  const zones = getDefaultZones(category);
+  const zoneNames = zones.map(z => z.zone);
 
-  // 1. Render SVG to PNG for vision input
-  const pngBuffer = await sharp(Buffer.from(svgSource)).png().toBuffer();
-  const pngBase64 = pngBuffer.toString('base64');
-
-  // 2. Index all shape elements
-  let idx = 0;
-  const indexedSvg = svgSource.replace(
-    /<(path|ellipse|circle|rect|polygon|line)(\s)/g,
-    (_, tag, sp) => `<${tag} data-idx="${idx++}"${sp}`
-  );
-  const totalElements = idx;
-
-  if (totalElements === 0) return [];
-
-  // 3. Send both image + SVG to Claude
   const client = new Anthropic();
   const resp = await client.messages.create({
     model: 'claude-sonnet-4-5-20250929',
@@ -48,36 +37,32 @@ export async function detectSvgZones(
       content: [
         {
           type: 'image',
-          source: { type: 'base64', media_type: 'image/png', data: pngBase64 },
+          source: { type: 'base64', media_type: 'image/png', data: imageBase64 },
         },
         {
           type: 'text',
-          text: `You are a technical fashion designer. This image is a ${category} product sketch.
-Below is the SVG source. Each shape element is tagged data-idx="N" (${totalElements} elements total).
+          text: `You are a technical fashion product designer. This image shows a ${category} product sketch (side profile).
 
-Map each element to one of these product zones: ${zones.join(', ')}.
-Elements that are guidelines, construction lines, or background → zone: "none".
+Identify each product zone and return its bounding rectangle as a percentage of the image dimensions (0-100 for x, y, width, height).
 
-For footwear:
-- Upper = main body panels (largest area, mid-to-top)
-- Midsole = horizontal band between upper and outsole (bottom third)
-- Outsole = very bottom surface/tread
-- Tongue = central panel in lace area
-- Laces = crossing lines near top-center
-- Heel Counter = rear curved section
-- Eyelets = small circles near laces
-- Lining = inner visible edge panels
-- Branding = logo marks, text elements
+The zones to identify for ${category}: ${zoneNames.join(', ')}
 
-Analyze the Y-coordinates and shape of each path to determine zone placement.
+Guidelines for footwear (side profile view):
+- Upper: main body of the shoe, typically 30-70% of image height, 20-80% width
+- Tongue: small panel at the top-center where laces meet upper
+- Midsole: horizontal band at the bottom, typically 65-80% from top, full width of shoe
+- Outsole: very bottom strip, typically 80-95% from top
+- Heel Counter: rear portion, right 15-30% of shoe width, mid height
+- Laces: narrow area at top-center
+- Eyelets: tiny region near laces (can overlap with laces area)
+- Lining: thin strip visible at shoe opening (top edge)
+- Branding: where logos appear (side panel)
 
-Return ONLY a JSON array, no explanation:
-[{"idx": 0, "zone": "Upper", "confidence": "high"}, ...]
+Return ONLY a JSON array. Every zone MUST be included even if approximate:
+[{"zone": "Upper", "x": 20, "y": 25, "width": 55, "height": 40, "confidence": "high"}, ...]
 
-SVG source:
-\`\`\`xml
-${indexedSvg}
-\`\`\``,
+x = left edge %, y = top edge %, width = zone width %, height = zone height %.
+All values relative to full image dimensions (0-100).`,
         },
       ],
     }],
@@ -85,54 +70,51 @@ ${indexedSvg}
 
   const text = resp.content[0].type === 'text' ? resp.content[0].text : '';
   const jsonMatch = text.match(/\[[\s\S]*?\]/);
-  if (!jsonMatch) return [];
+  if (!jsonMatch) {
+    // Fallback: return default positioned zones
+    return getDefaultZonePositions(category);
+  }
 
   try {
-    return JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch[0]) as ZoneRegion[];
+    // Validate and clamp values
+    return parsed.map(z => ({
+      zone: z.zone,
+      x: Math.max(0, Math.min(100, z.x)),
+      y: Math.max(0, Math.min(100, z.y)),
+      width: Math.max(5, Math.min(100, z.width)),
+      height: Math.max(5, Math.min(100, z.height)),
+      confidence: z.confidence || 'medium',
+    }));
   } catch {
-    return [];
+    return getDefaultZonePositions(category);
   }
 }
 
-/**
- * Apply zone labels to SVG paths based on detection mappings.
- * Returns a new SVG string with data-zone attributes on each element.
- */
-export function applySvgZoneLabels(
-  svgSource: string,
-  mappings: ZoneMapping[]
-): string {
-  let idx = 0;
-  return svgSource.replace(
-    /<(path|ellipse|circle|rect|polygon|line)([\s>])/g,
-    (match, tag, after) => {
-      const mapping = mappings.find(m => m.idx === idx);
-      idx++;
-      const zone = mapping?.zone || 'none';
-      return `<${tag} data-zone="${zone}" data-idx="${idx - 1}"${after}`;
-    }
-  );
-}
-
-/**
- * Extract zone colors from a labeled SVG.
- * Reads fill attributes from elements with data-zone.
- */
-export function extractZoneColors(
-  svgSource: string
-): { zone: string; hex: string }[] {
-  const zoneColors: { zone: string; hex: string }[] = [];
-  const regex = /data-zone="([^"]+)"[^>]*fill="([^"]+)"/g;
-  let match;
-  while ((match = regex.exec(svgSource)) !== null) {
-    const [, zone, fill] = match;
-    if (zone !== 'none' && fill !== 'none' && fill !== 'transparent') {
-      // Check if this zone already exists
-      const existing = zoneColors.find(z => z.zone === zone);
-      if (!existing) {
-        zoneColors.push({ zone, hex: fill });
-      }
-    }
+/** Fallback zone positions when AI detection fails */
+function getDefaultZonePositions(category: string): ZoneRegion[] {
+  if (category === 'CALZADO') {
+    return [
+      { zone: 'Upper', x: 15, y: 15, width: 55, height: 40, confidence: 'low' },
+      { zone: 'Tongue', x: 40, y: 5, width: 15, height: 20, confidence: 'low' },
+      { zone: 'Midsole', x: 10, y: 60, width: 70, height: 15, confidence: 'low' },
+      { zone: 'Outsole', x: 10, y: 75, width: 70, height: 12, confidence: 'low' },
+      { zone: 'Heel Counter', x: 65, y: 20, width: 18, height: 35, confidence: 'low' },
+      { zone: 'Laces', x: 35, y: 10, width: 15, height: 15, confidence: 'low' },
+      { zone: 'Lining', x: 20, y: 10, width: 45, height: 8, confidence: 'low' },
+      { zone: 'Eyelets', x: 32, y: 15, width: 10, height: 10, confidence: 'low' },
+      { zone: 'Branding', x: 40, y: 35, width: 20, height: 15, confidence: 'low' },
+    ];
   }
-  return zoneColors;
+  // Generic fallback
+  const zones = getDefaultZones(category);
+  const count = zones.length;
+  return zones.map((z, i) => ({
+    zone: z.zone,
+    x: 10,
+    y: 10 + (i * (80 / count)),
+    width: 60,
+    height: Math.max(10, 70 / count),
+    confidence: 'low' as const,
+  }));
 }
