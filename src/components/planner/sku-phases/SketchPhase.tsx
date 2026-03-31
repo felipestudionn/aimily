@@ -69,13 +69,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
   // Zone Editor (no state needed — renders immediately when sketch exists)
 
-  const existingRenderUrls = sku.render_urls || {};
-  const defaultAngle = 'three_quarter' as const;
-  const initialAngle: 'front' | 'three_quarter' | 'side' | 'back' = existingRenderUrls[defaultAngle] ? defaultAngle : (Object.keys(existingRenderUrls)[0] as 'front' | 'three_quarter' | 'side' | 'back') || defaultAngle;
-  const [renderUrl, setRenderUrl] = useState<string | null>(existingRenderUrls[initialAngle] || sku.render_url || null);
-  const [renderGenerating, setRenderGenerating] = useState(false);
-  const [renderAngle, setRenderAngle] = useState(initialAngle);
-  const [renderUrls, setRenderUrls] = useState<Record<string, string>>(existingRenderUrls);
+  // Render state removed — colorized sketch from colorway proposals is used as render_url
 
   const [confirmedSteps, setConfirmedSteps] = useState<Set<number>>(() => {
     const s = new Set<number>();
@@ -587,6 +581,10 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       <button onClick={async () => {
                         const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
                         await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
+                        // Save colorized image as render_url for Tech Pack
+                        if ((cw as any).colorizedUrl) {
+                          await onUpdate({ render_url: (cw as any).colorizedUrl } as Partial<SKU>);
+                        }
                         toast(stepLabel('colorwayAccepted') || `${cw.name} added`, 'success');
                       }}
                         className="w-full px-3 py-2 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors text-center">
@@ -848,12 +846,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
               {/* Sketch views with numbered callouts */}
               <div className="grid grid-cols-2 border-b border-carbon/[0.08]">
-                {/* Side Profile */}
+                {/* Side Profile — prefer colorized render if available */}
                 <div className="border-r border-carbon/[0.08] p-4">
-                  <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('sideProfile') || 'Side Profile'}</p>
-                  {sku.sketch_url ? (
+                  <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('sideProfile') || 'Side Profile'}{sku.render_url ? ' (colored)' : ''}</p>
+                  {(sku.render_url || sku.sketch_url) ? (
                     <div className="relative">
-                      <img src={sku.sketch_url} alt="Side profile" className="w-full object-contain" />
+                      <img src={sku.render_url || sku.sketch_url} alt="Side profile" className="w-full object-contain" />
                     </div>
                   ) : (
                     <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No sketch</div>
@@ -921,142 +919,13 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* ── Product Render — AI realistic photo from sketch + colors + materials ── */}
-            {sku.sketch_url && skuColorways.length > 0 && (
-              <div className="border border-carbon/[0.06] bg-white p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{stepLabel('productRender') || 'Product Render'}</p>
-                    <p className="text-[11px] text-carbon/40 mt-0.5">{stepLabel('renderDesc') || 'Generate a photorealistic render from your sketch, colors and materials'}</p>
-                  </div>
+            {/* ── Colorized preview (from accepted colorway) ── */}
+            {sku.render_url && (
+              <div className="border border-carbon/[0.06] bg-white p-5 mt-4">
+                <p className="text-[10px] font-medium text-carbon/30 uppercase tracking-[0.15em] mb-3">{stepLabel('colorizedPreview') || 'Colorized Preview'}</p>
+                <div className="max-w-sm">
+                  <img src={sku.render_url} alt="Colorized sketch" className="w-full h-auto object-contain" />
                 </div>
-
-                {/* Angle selector */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-carbon/25 uppercase tracking-wider">{stepLabel('angle') || 'Angle'}:</span>
-                  {(['front', 'three_quarter', 'side', 'back'] as const).map(a => {
-                    const labels = { front: 'Front', three_quarter: '3/4', side: 'Side', back: 'Back' };
-                    const hasRender = !!renderUrls[a];
-                    return (
-                      <button
-                        key={a}
-                        onClick={() => {
-                          setRenderAngle(a);
-                          if (renderUrls[a]) setRenderUrl(renderUrls[a]);
-                        }}
-                        className={`px-3 py-1.5 text-[10px] font-medium tracking-[0.06em] uppercase border transition-colors relative ${
-                          renderAngle === a
-                            ? 'bg-carbon text-crema border-carbon'
-                            : 'border-carbon/[0.08] text-carbon/40 hover:border-carbon/20'
-                        }`}
-                      >
-                        {labels[a]}
-                        {hasRender && <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Generate button */}
-                <button
-                  onClick={async () => {
-                    setRenderGenerating(true);
-                    try {
-                      const primaryCw = skuColorways[0];
-                      const colorDesc = skuColorways.map(c => `${c.name} (${c.hex_primary})`).join(', ');
-                      const materialDesc = materials.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
-                      // Zone-based data for richer prompts
-                      const colorZones = primaryCw?.zones?.length ? primaryCw.zones.map(z => ({ zone: z.zone, hex: z.hex })) : [];
-                      const colorHexes = colorZones.length > 0
-                        ? colorZones.map(z => ({ hex: z.hex, weight: 0.5 }))
-                        : skuColorways.map(c => ({ hex: c.hex_primary, weight: 0.5 }));
-                      const matZones = sku.material_zones?.filter(m => m.material) || [];
-                      const materialZones = matZones.map(m => ({ zone: m.zone, material: m.material, finish: m.finish }));
-                      const res = await fetch('/api/ai/freepik/render', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          sketch_base64: sku.sketch_url,
-                          collectionPlanId,
-                          angle: renderAngle,
-                          design_context: {
-                            productName: `${sku.name} - ${primaryCw?.name || ''}`,
-                            productType: `${sku.family} (${sku.category})`,
-                            colorway: colorDesc,
-                            colorHexes,
-                            colorZones,
-                            materialZones,
-                            materials: materialDesc || 'premium materials',
-                            designNotes: sku.notes || '',
-                          },
-                        }),
-                      });
-                      if (res.ok) {
-                        const data = await res.json();
-                        const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
-                        if (url) {
-                          setRenderUrl(url);
-                          const updated = { ...renderUrls, [renderAngle]: url };
-                          setRenderUrls(updated);
-                          // Save primary render_url (first generated) + all angles
-                          const isFirst = !sku.render_url && Object.keys(renderUrls).length === 0;
-                          await onUpdate({
-                            ...(isFirst ? { render_url: url } : {}),
-                            render_urls: updated,
-                          } as Partial<SKU>);
-                        }
-                      } else {
-                        const err = await res.json().catch(() => ({}));
-                        toast(`Render failed: ${err.error || 'Unknown error'}`, 'error');
-                      }
-                    } finally {
-                      setRenderGenerating(false);
-                    }
-                  }}
-                  disabled={renderGenerating}
-                  className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-fit"
-                >
-                  {renderGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                  {renderUrls[renderAngle]
-                    ? (stepLabel('regenerateAngle') || 'Regenerate')
-                    : (stepLabel('generateRender') || 'Generate Render')
-                  }
-                </button>
-
-                {renderGenerating && (
-                  <div className="flex flex-col items-center justify-center py-10 gap-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-carbon/20" />
-                    <p className="text-[11px] text-carbon/25">{stepLabel('renderGenerating') || 'Generating photorealistic render...'}</p>
-                  </div>
-                )}
-
-                {/* Render gallery — show all generated angles */}
-                {Object.keys(renderUrls).length > 0 && !renderGenerating && (
-                  <div className="space-y-3">
-                    {/* Active angle large */}
-                    {renderUrl && (
-                      <div className="border border-carbon/[0.06] overflow-hidden bg-white aspect-square max-w-md">
-                        <img src={renderUrl} alt={`Render ${renderAngle}`} className="w-full h-full object-contain" />
-                      </div>
-                    )}
-                    {/* Thumbnails of all generated angles */}
-                    {Object.keys(renderUrls).length > 1 && (
-                      <div className="flex gap-2">
-                        {Object.entries(renderUrls).map(([angle, url]) => (
-                          <button
-                            key={angle}
-                            onClick={() => { setRenderAngle(angle as typeof renderAngle); setRenderUrl(url); }}
-                            className={`w-16 h-16 border overflow-hidden ${
-                              renderAngle === angle ? 'border-carbon ring-1 ring-carbon' : 'border-carbon/[0.06]'
-                            }`}
-                          >
-                            <img src={url} alt={angle} className="w-full h-full object-contain" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
