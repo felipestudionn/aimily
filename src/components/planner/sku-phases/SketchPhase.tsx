@@ -555,19 +555,35 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           onClick={async () => {
                             setVectorizing(true);
                             try {
-                              // Step 1: Vectorize client-side with imagetracerjs
-                              // Fetch image as blob → draw to canvas → get ImageData (avoids CORS)
-                              const ImageTracer = (await import('imagetracerjs')).default || await import('imagetracerjs');
+                              // Step 1: Load sketch image into canvas (handles base64 and URLs)
+                              const sketchSrc = sku.sketch_url!;
+                              const img = new Image();
+                              img.crossOrigin = 'anonymous';
+                              await new Promise<void>((resolve, reject) => {
+                                img.onload = () => resolve();
+                                img.onerror = () => reject(new Error('Failed to load sketch image'));
+                                // Handle base64 strings (with or without data: prefix)
+                                if (sketchSrc.startsWith('data:')) {
+                                  img.src = sketchSrc;
+                                } else if (sketchSrc.length > 500 && !sketchSrc.startsWith('http')) {
+                                  // Raw base64 without prefix
+                                  img.src = `data:image/png;base64,${sketchSrc}`;
+                                } else {
+                                  img.src = sketchSrc;
+                                }
+                              });
 
-                              const imgBlob = await fetch(sku.sketch_url!).then(r => r.blob());
-                              const bitmap = await createImageBitmap(imgBlob);
+                              // Draw to canvas → get ImageData
                               const offscreen = document.createElement('canvas');
-                              offscreen.width = bitmap.width;
-                              offscreen.height = bitmap.height;
+                              offscreen.width = img.naturalWidth;
+                              offscreen.height = img.naturalHeight;
                               const ctx = offscreen.getContext('2d')!;
-                              ctx.drawImage(bitmap, 0, 0);
-                              const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+                              ctx.drawImage(img, 0, 0);
+                              const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
 
+                              // Step 2: Vectorize with imagetracerjs
+                              const itMod = await import('imagetracerjs');
+                              const ImageTracer = itMod.default || itMod;
                               const svg: string = ImageTracer.imagedataToSVG(imageData, {
                                 ltres: 1,
                                 qtres: 1,
@@ -582,22 +598,26 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                                 linefilter: true,
                                 desc: false,
                               });
-                              if (!svg) throw new Error('Vectorization returned empty');
+                              if (!svg || svg.length < 50) throw new Error('Vectorization produced no paths');
 
-                              // Step 2: Detect zones via Claude Vision (server)
+                              // Step 3: Detect zones via Claude Vision (server)
                               const zoneRes = await fetch('/api/ai/detect-zones', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ svg, category: sku.category }),
                               });
-                              if (!zoneRes.ok) throw new Error('Zone detection failed');
+                              if (!zoneRes.ok) {
+                                const errBody = await zoneRes.json().catch(() => ({}));
+                                throw new Error(errBody.error || `Zone detection failed (${zoneRes.status})`);
+                              }
                               const { svg: labeledSvg } = await zoneRes.json();
 
                               setZoneSvg(labeledSvg);
                               toast(stepLabel('vectorized') || 'Sketch vectorized — zones detected', 'success');
                             } catch (err) {
-                              console.error('[Vectorize]', err);
-                              toast(stepLabel('vectorizeFailed') || 'Vectorization failed', 'error');
+                              console.error('[Vectorize] Error:', err);
+                              const msg = err instanceof Error ? err.message : 'Unknown error';
+                              toast(`${stepLabel('vectorizeFailed') || 'Vectorization failed'}: ${msg}`, 'error', 5000);
                             } finally {
                               setVectorizing(false);
                             }
