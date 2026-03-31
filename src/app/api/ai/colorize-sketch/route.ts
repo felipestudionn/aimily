@@ -26,21 +26,28 @@ export async function POST(req: NextRequest) {
 
     // Build zone-specific color instructions
     const zoneInstructions = zone_colors?.length
-      ? zone_colors.map((z: { zone: string; hex: string }) => `${z.zone}: ${z.hex}`).join(', ')
+      ? zone_colors.map((z: { zone: string; hex: string }) => {
+          // Convert hex to a human-readable color name hint for better AI understanding
+          const hex = z.hex.toUpperCase();
+          return `${z.zone} → ${hex}`;
+        }).join('\n')
       : color_description || 'natural colors';
 
-    const prompt = `Colorize this technical product sketch with the following color scheme: ${colorway_name || 'colorway'}.
+    const prompt = `You are a professional fashion product illustrator. Colorize this technical flat sketch with the colorway "${colorway_name || 'colorway'}".
 
-Zone colors: ${zoneInstructions}
+ZONE-BY-ZONE COLOR MAP (apply each color ONLY to its specific zone):
+${zoneInstructions}
 
-RULES:
-- Apply the specified colors to each zone of the product
-- Keep the original line art/sketch structure intact
-- Fill each zone with the solid color specified
-- Maintain clean, professional product illustration style
-- Keep the white/light background
-- The result should look like a professional colored flat sketch / fashion illustration
-- Do NOT make it photorealistic — keep it as a colored technical drawing`;
+CRITICAL RULES:
+1. Each zone MUST be a DIFFERENT, clearly distinguishable color — even if two zones have similar hex values, make them visually distinct from each other
+2. Keep all original construction lines, seam lines, and stitching details visible
+3. The Upper, Midsole, and Outsole MUST be clearly separated with different tones
+4. Lining and Tongue should contrast with the Upper
+5. Use flat, solid color fills — this is a colored technical illustration, NOT a photo
+6. Keep the white/light background
+7. Preserve the exact silhouette and proportions of the original sketch
+8. Add subtle shading/depth within each zone to show dimension (lighter on top surfaces, slightly darker on lower/shadow areas)
+9. Construction details (stitching, seams, eyelets) should remain visible as darker lines within each colored zone`;
 
     // Get sketch as base64
     let sketchBase64: string;
