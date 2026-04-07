@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
     const prompt = is_3d_render
       ? `Photorealistic product photograph of a ${productType}: ${productDesc}.
 Turn this drawing into a photorealistic image. Preserve the exact layout, proportions, perspective, colors, and closure system. Choose realistic materials and lighting consistent with the drawing intent.
-Pure white studio background with a soft contact shadow beneath.
-Do not add new elements, text, logos, or writing. Do not add laces or straps not present in the drawing. Do not place on any surface or pedestal.`
+Background must be pure flat white (#FFFFFF) with only a soft natural drop shadow directly beneath the product on the ground plane. No gray background, no gradient, no studio wall, no surface, no pedestal, no box — just white and shadow.
+Do not add new elements, text, logos, or writing. Do not add laces or straps not present in the drawing.`
       : `You are an expert fashion product illustrator. This sketch shows a ${productType}: ${productDesc}.
 
 STEP 1 — IDENTIFY THE PRODUCT:
