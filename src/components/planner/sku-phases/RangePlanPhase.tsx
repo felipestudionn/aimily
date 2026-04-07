@@ -107,9 +107,15 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, mode }
         </div>
       )}
 
-      {/* ── Concept workspace: financials + attributes + notes ── */}
+      {/* ── Concept workspace: identity + financials + attributes + notes ── */}
       {showConcept && (
         <>
+          {/* SKU Identity header */}
+          <div className="bg-white border border-carbon/[0.06] p-5 space-y-1">
+            <h2 className="text-lg font-light text-carbon tracking-tight">{sku.name}</h2>
+            <p className="text-[11px] text-carbon/30">{sku.family} · Drop {sku.drop_number} · {sku.category} · {sku.type === 'IMAGEN' ? 'Image' : sku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
+          </div>
+
           {/* Financial Summary — EDITABLE */}
           <div className="space-y-3">
             <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
