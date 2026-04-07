@@ -59,7 +59,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   // Evolution strip state — compute from SKU data
   const evolution = computeEvolutionState(localSku);
-  const [activeStep, setActiveStepRaw] = useState<EvolutionStep>(evolution.active);
+  const [activeStep, setActiveStepRaw] = useState<EvolutionStep>('concept');
   const setActiveStep = useCallback((step: EvolutionStep) => {
     setChildFooterAction(null); // Clear child overrides when switching steps
     setActiveStepRaw(step);
