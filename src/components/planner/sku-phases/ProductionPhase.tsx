@@ -20,7 +20,7 @@ interface ProductionPhaseProps {
 }
 
 const STEPS = [
-  { id: 'color', label: 'Color Validation', icon: Palette },
+  { id: 'color', label: 'Real Sample Validation', icon: Palette },
   { id: 'fit', label: 'Fit & Size Run', icon: Ruler },
   { id: 'sample', label: 'Production Sample', icon: Package },
   { id: 'signoff', label: 'Final Sign-off', icon: ShieldCheck },
@@ -95,26 +95,20 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
             )}
             <p className="text-[7px] text-carbon/20 uppercase tracking-wider text-center mt-1">3D Render</p>
           </div>
-          {/* Colorways */}
+          {/* Real Sample */}
           <div className="bg-white p-2">
-            <div className="h-32 flex flex-col items-center justify-center gap-2">
-              {skuColorways.length > 0 ? (
-                <>
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {skuColorways.map(cw => (
-                      <div key={cw.id} className="flex items-center gap-1 px-1.5 py-0.5 bg-carbon/[0.02] border border-carbon/[0.04]">
-                        <div className="w-4 h-4 border border-carbon/[0.08]" style={{ backgroundColor: cw.hex_primary }} />
-                        <span className="text-[8px] text-carbon/40">{cw.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[9px] text-carbon/30">{skuColorways.length} colorway{skuColorways.length !== 1 ? 's' : ''}</p>
-                </>
-              ) : (
-                <span className="text-[9px] text-carbon/15">No colorways</span>
-              )}
-            </div>
-            <p className="text-[7px] text-carbon/20 uppercase tracking-wider text-center mt-1">Colorways</p>
+            {sku.production_sample_url ? (
+              <img src={sku.production_sample_url} alt="Real sample" className="w-full h-32 object-contain" />
+            ) : (
+              <div className="h-32 flex flex-col items-center justify-center gap-1">
+                <label className="cursor-pointer flex flex-col items-center gap-1 hover:opacity-70 transition-opacity">
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'production_sample_url'); }} />
+                  <Package className="h-5 w-5 text-carbon/10" />
+                  <span className="text-[8px] text-carbon/20">Upload sample</span>
+                </label>
+              </div>
+            )}
+            <p className="text-[7px] text-carbon/20 uppercase tracking-wider text-center mt-1">Real Sample</p>
           </div>
         </div>
       </div>
@@ -154,10 +148,10 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
             <div className="space-y-4">
               <div>
                 <p className="text-[9px] font-semibold tracking-[0.1em] uppercase text-carbon/30 mb-2">
-                  {stepLabel('colorValidation') || 'Color Validation'}
+                  {stepLabel('colorValidation') || 'Real Sample Validation'}
                 </p>
                 <p className="text-[11px] font-light text-carbon/40 mb-4">
-                  {stepLabel('colorValidationDesc') || 'Compare production colors with approved colorways. Do they match?'}
+                  {stepLabel('colorValidationDesc') || 'Compare the real production sample with your approved design. Do colors and materials match?'}
                 </p>
               </div>
 
