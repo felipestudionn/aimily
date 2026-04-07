@@ -397,20 +397,20 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         </div>
       </div>
 
-      {/* ── Footer — clean, only CTA ── */}
-      <div className="shrink-0 border-t border-carbon/[0.06] px-6 sm:px-10 lg:px-16 py-2.5">
-        <div className="max-w-5xl mx-auto flex items-center justify-end">
-          {!isCompleted && (
+      {/* ── Footer — always visible CTA ── */}
+      {!isCompleted && (
+        <div className="shrink-0 border-t border-carbon/[0.06] bg-[#F5F1E8] px-6 sm:px-10 lg:px-16 py-3">
+          <div className="max-w-5xl mx-auto flex items-center justify-end">
             <button
               onClick={footerAction.action}
               disabled={savingPhase}
-              className="flex items-center gap-2 px-5 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
             >
               {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : <>{footerAction.label} <ArrowRight className="h-3.5 w-3.5" /></>}
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Success overlay ── */}
       {showSuccess && (
