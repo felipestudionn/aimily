@@ -40,8 +40,8 @@ export interface SKU {
   sketch_top_url?: string;
   proto_iterations: ProtoIteration[];
   production_sample_url?: string;
-  render_url?: string;
-  render_urls?: Record<string, string>; // {front, three_quarter, side, back}
+  render_url?: string; // flat colorized sketch (set by colorway acceptance only)
+  render_urls?: Record<string, string>; // {'3d': photorealistic, 'preview': card preview}
   material_zones?: import('@/types/design').MaterialZone[];
   production_approved: boolean;
   created_at?: string;
