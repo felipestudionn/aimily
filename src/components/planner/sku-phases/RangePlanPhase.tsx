@@ -50,22 +50,59 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, mode }
     <div className="space-y-6">
       {/* ── Reference Image workspace ── */}
       {showReference && (
-        <div className="space-y-3">
-          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
-            {t.skuPhases?.referenceImage || 'Reference Image'}
-          </p>
-          <p className="text-[11px] font-light text-carbon/40">
-            {'Upload an inspiration or mood image for this product. This will guide the sketch generation.'}
-          </p>
-          <div className="max-w-lg">
-            <ImageUploadArea
-              imageUrl={sku.reference_image_url}
-              uploading={uploading === 'reference_image_url'}
-              placeholder={t.skuPhases?.uploadReference || 'Upload reference image'}
-              onUpload={(file) => onImageUpload(file, 'reference_image_url')}
-              onRemove={() => onUpdate({ reference_image_url: undefined })}
-              aspectClass="aspect-[4/3]"
-            />
+        <div className="space-y-4">
+          <div>
+            <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
+              {t.skuPhases?.referenceImage || 'Reference Image'}
+            </p>
+            <p className="text-[11px] font-light text-carbon/40 mt-1">
+              {'Upload an inspiration or mood image for this product. This will guide the AI sketch generation in the next step.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Upload area */}
+            <div>
+              <ImageUploadArea
+                imageUrl={sku.reference_image_url}
+                uploading={uploading === 'reference_image_url'}
+                placeholder={t.skuPhases?.uploadReference || 'Upload reference image'}
+                onUpload={(file) => onImageUpload(file, 'reference_image_url')}
+                onRemove={() => onUpdate({ reference_image_url: undefined })}
+                aspectClass="aspect-[4/3]"
+              />
+            </div>
+
+            {/* Context card — product summary */}
+            <div className="space-y-3">
+              <div className="bg-white border border-carbon/[0.06] p-4 space-y-3">
+                <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{'Product Summary'}</p>
+                <div className="space-y-1.5">
+                  <p className="text-[13px] font-light text-carbon">{sku.name}</p>
+                  <p className="text-[10px] text-carbon/30">{sku.family} · {sku.category}</p>
+                </div>
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-carbon/[0.04]">
+                  <div>
+                    <p className="text-[8px] text-carbon/20 uppercase">PVP</p>
+                    <p className="text-[12px] font-light text-carbon">€{sku.pvp}</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] text-carbon/20 uppercase">COGS</p>
+                    <p className="text-[12px] font-light text-carbon">€{sku.cost}</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] text-carbon/20 uppercase">Units</p>
+                    <p className="text-[12px] font-light text-carbon">{sku.buy_units}</p>
+                  </div>
+                </div>
+                {sku.notes && (
+                  <div className="pt-2 border-t border-carbon/[0.04]">
+                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider mb-1">Concept Notes</p>
+                    <p className="text-[10px] text-carbon/35 leading-relaxed">{sku.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
