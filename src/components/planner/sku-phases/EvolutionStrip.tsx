@@ -63,8 +63,8 @@ export function EvolutionStrip({ active, onSelect, thumbnails, textPreviews, com
                     : 'bg-carbon/[0.02] opacity-40 cursor-default'
             }`}
           >
-            {/* Thumbnail area — fixed height */}
-            <div className={`w-full h-20 flex items-center justify-center p-1.5 overflow-hidden ${
+            {/* Thumbnail area — fixed height, images constrained within */}
+            <div className={`w-full aspect-square flex items-center justify-center p-1.5 overflow-hidden ${
               isActive ? 'bg-white' : ''
             }`}>
               {thumb ? (
