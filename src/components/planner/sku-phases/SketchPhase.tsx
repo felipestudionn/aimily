@@ -161,8 +161,10 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
   return (
     <div className="h-full flex flex-col gap-4">
-      {/* ── Sub-stepper: numbered steps with connecting line (hidden when EvolutionStrip drives navigation) ── */}
-      <div className={`flex items-center gap-0 ${evolutionStep ? 'hidden' : ''}`}>
+      {/* ── Sub-stepper: numbered steps with connecting line ── */}
+      {/* Hidden when EvolutionStrip drives sketch or render3d (single-focus steps) */}
+      {/* Visible when EvolutionStrip is on colorways (user needs to navigate colorways ↔ materials) */}
+      <div className={`flex items-center gap-0 ${evolutionStep === 'sketch' || evolutionStep === 'render3d' ? 'hidden' : ''}`}>
         {STEPS.map((step, idx) => {
           const isActive = idx === activeStep;
           const isConfirmed = confirmedSteps.has(idx);

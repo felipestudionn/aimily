@@ -16,7 +16,7 @@ export const EVOLUTION_STEPS: { id: EvolutionStep; label: string; icon: React.El
   { id: 'concept', label: 'Concept', icon: FileText },
   { id: 'reference', label: 'Reference', icon: Image },
   { id: 'sketch', label: 'Sketch', icon: Pencil },
-  { id: 'colorways', label: 'Colorways', icon: Palette },
+  { id: 'colorways', label: 'Color & Materials', icon: Palette },
   { id: 'render3d', label: '3D Render', icon: Box },
   { id: 'prototype', label: 'Prototype', icon: Factory },
   { id: 'production', label: 'Production', icon: Package },
