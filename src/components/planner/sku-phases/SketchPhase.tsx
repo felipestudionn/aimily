@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   Sparkles, Loader2, Plus, Trash2,
-  Check, X,
+  Check, X, RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -994,8 +994,52 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <div className="space-y-1.5">
                     <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{'3D Render'}</p>
                     {(sku.render_urls as Record<string, string>)?.['3d'] ? (
-                      <div className="border border-carbon/[0.06] bg-white overflow-hidden">
-                        <img src={(sku.render_urls as Record<string, string>)['3d']} alt="3D render" className="w-full h-auto object-contain" />
+                      <div className="space-y-2">
+                        <div className="border border-carbon/[0.06] bg-white overflow-hidden">
+                          <img src={(sku.render_urls as Record<string, string>)['3d']} alt="3D render" className="w-full h-auto object-contain" />
+                        </div>
+                        <button
+                          onClick={async () => {
+                            setGenerating(true);
+                            try {
+                              const primaryCw = skuColorways[0];
+                              const res = await fetch('/api/ai/colorize-sketch', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  sketch_url: sku.render_url,
+                                  colorway_name: primaryCw?.name || 'main',
+                                  zone_colors: primaryCw?.zones || [],
+                                  category: sku.category,
+                                  product_name: sku.name,
+                                  family: sku.family,
+                                  collectionPlanId,
+                                  is_3d_render: true,
+                                }),
+                              });
+                              if (res.ok) {
+                                const { imageUrl } = await res.json();
+                                if (imageUrl) {
+                                  const updated = { ...(sku.render_urls || {}), '3d': imageUrl };
+                                  await onUpdate({ render_urls: updated } as Partial<SKU>);
+                                  toast('3D render regenerated', 'success');
+                                }
+                              } else {
+                                const err = await res.json().catch(() => ({}));
+                                toast(`Render failed: ${err.error || 'Unknown error'}`, 'error');
+                              }
+                            } catch (err) {
+                              console.error('[3DRender]', err);
+                              toast('3D render failed', 'error');
+                            } finally {
+                              setGenerating(false);
+                            }
+                          }}
+                          disabled={generating}
+                          className="flex items-center justify-center gap-2 w-full px-3 py-1.5 border border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors"
+                        >
+                          {generating ? <><Loader2 className="h-3 w-3 animate-spin" /> {'Regenerating...'}</> : <><RefreshCw className="h-3 w-3" /> {'Regenerate 3D'}</>}
+                        </button>
                       </div>
                     ) : (
                       <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/3] flex flex-col items-center justify-center gap-3">
@@ -1009,7 +1053,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                             onClick={async () => {
                               setGenerating(true);
                               try {
-                                // gpt-image-1.5 with input_fidelity=high — faithful to colorized sketch
                                 const primaryCw = skuColorways[0];
                                 const res = await fetch('/api/ai/colorize-sketch', {
                                   method: 'POST',
