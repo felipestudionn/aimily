@@ -127,12 +127,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const mode = modes[STEPS[activeStep]?.id] || 'free';
   const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
 
-  // Sync footer CTA with parent
+  // Sync footer CTA with parent — only when NOT driven by EvolutionStrip
+  // When EvolutionStrip drives navigation, SkuDetailView handles the footer CTA
   useEffect(() => {
-    if (!onFooterAction) return;
+    if (!onFooterAction || evolutionStep) return;
 
     if (activeStep < STEPS.length - 1) {
-      // Not on last step → "Next: [step name]"
       const nextStepLabel = STEPS[activeStep + 1].label;
       onFooterAction({
         label: `${stepLabel('next') || 'Next'}: ${nextStepLabel}`,
@@ -140,7 +140,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         isPhaseAdvance: false,
       });
     } else {
-      // On tech pack → "Send to Prototyping" (phase advance)
       onFooterAction({
         label: t.skuPhases?.advanceToProto || 'Send to Prototyping',
         action: () => onAdvancePhase?.(),
@@ -149,7 +148,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     }
 
     return () => onFooterAction(null);
-  }, [activeStep, onFooterAction, confirmAndNext, onAdvancePhase, t.skuPhases]);
+  }, [activeStep, onFooterAction, confirmAndNext, onAdvancePhase, t.skuPhases, evolutionStep]);
 
   const callDesignAI = useCallback(async (type: string, input: Record<string, string>) => {
     const res = await fetch('/api/ai/design-generate', {
