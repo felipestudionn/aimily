@@ -35,25 +35,23 @@ export async function POST(req: NextRequest) {
     const productDesc = product_name ? `"${product_name}"${family ? ` from the ${family} family` : ''}` : 'this product';
 
     const prompt = is_3d_render
-      ? `Turn this colored product sketch into a photorealistic product photograph. This is a ${productType}: ${productDesc}.
+      ? `Convert this colored sketch into a photorealistic photograph of the exact same ${productType}: ${productDesc}. Change ONLY the rendering style from illustration to photo. Keep everything else identical.
 
-PRESERVE (do not change):
-• The exact same silhouette, proportions, and design details visible in the sketch.
-• The exact same viewing angle and perspective — side profile, same orientation.
-• The exact same colors in every zone. Match what is shown, do not shift or reinterpret any color.
-• All construction lines: stitching, panel divisions, overlays, seams.
+WHAT TO CHANGE: rendering style only. Make the flat illustration look like a real photograph with realistic material textures (leather grain, suede nap, rubber, mesh weave, fabric), natural lighting, and a soft contact shadow beneath.
 
-ADD (change only this):
-• Realistic material textures based on what each zone suggests: leather grain, suede nap, rubber texture, mesh weave, stitching thread, fabric weave.
-• Subtle realistic shadows where materials overlap and at seams.
-• A soft contact shadow directly beneath the shoe on the ground plane.
+WHAT MUST STAY IDENTICAL: the exact silhouette, proportions, viewing angle, every panel, every zone, every color, the closure system (if velcro then velcro, if laces then laces, if slip-on then slip-on), and the sole shape. Count the panels in the sketch and match them exactly.
 
-PHOTOGRAPHY:
-• Pure white studio background, seamless, no textures or gradients.
-• Soft even diffused studio lighting from above-left. No dramatic or colored lighting.
-• Sharp focus on material quality and construction details.
+BACKGROUND: pure flat white (#FFFFFF). No pedestal, no box, no surface, no gradient. Just white with a subtle drop shadow under the shoe.
 
-DO NOT: change the shape or proportions, add new elements or text, include a human foot or mannequin, redesign any part of the shoe. The viewer must confirm this is the exact same product as the sketch.`
+STRICTLY FORBIDDEN — do not do any of these:
+• Do NOT add laces if the sketch has no laces.
+• Do NOT add text, logos, brand names, or any writing on the shoe.
+• Do NOT add any element that is not visible in the sketch.
+• Do NOT place the shoe on any surface, box, or pedestal.
+• Do NOT change the number of panels, straps, or overlays.
+• Do NOT include a human foot or mannequin.
+
+This is a style transfer, not a redesign. The sketch is the blueprint — follow it exactly.`
       : `You are an expert fashion product illustrator. This sketch shows a ${productType}: ${productDesc}.
 
 STEP 1 — IDENTIFY THE PRODUCT:
