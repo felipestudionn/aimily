@@ -109,8 +109,11 @@ export function computeEvolutionState(sku: {
   const thumbnails: Partial<Record<EvolutionStep, string | null>> = {};
   const textPreviews: Partial<Record<EvolutionStep, string>> = {};
 
-  // Concept — completed if has name + pvp. Shows reference image as thumbnail if available.
-  if (sku.name && sku.pvp && sku.pvp > 0) {
+  // Concept — completed only when user has validated (advanced past range_plan)
+  // Has data (name+pvp) from Range Plan, but not confirmed until user decides on reference + validates
+  const conceptHasData = !!(sku.name && sku.pvp && sku.pvp > 0);
+  const conceptValidated = sku.design_phase !== 'range_plan';
+  if (conceptHasData && conceptValidated) {
     completed.add('concept');
     if (sku.reference_image_url) {
       thumbnails.concept = sku.reference_image_url;
