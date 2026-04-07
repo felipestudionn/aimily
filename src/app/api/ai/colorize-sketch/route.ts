@@ -35,23 +35,10 @@ export async function POST(req: NextRequest) {
     const productDesc = product_name ? `"${product_name}"${family ? ` from the ${family} family` : ''}` : 'this product';
 
     const prompt = is_3d_render
-      ? `Convert this colored sketch into a photorealistic photograph of the exact same ${productType}: ${productDesc}. Change ONLY the rendering style from illustration to photo. Keep everything else identical.
-
-WHAT TO CHANGE: rendering style only. Make the flat illustration look like a real photograph with realistic material textures (leather grain, suede nap, rubber, mesh weave, fabric), natural lighting, and a soft contact shadow beneath.
-
-WHAT MUST STAY IDENTICAL: the exact silhouette, proportions, viewing angle, every panel, every zone, every color, the closure system (if velcro then velcro, if laces then laces, if slip-on then slip-on), and the sole shape. Count the panels in the sketch and match them exactly.
-
-BACKGROUND: pure flat white (#FFFFFF). No pedestal, no box, no surface, no gradient. Just white with a subtle drop shadow under the shoe.
-
-STRICTLY FORBIDDEN — do not do any of these:
-• Do NOT add laces if the sketch has no laces.
-• Do NOT add text, logos, brand names, or any writing on the shoe.
-• Do NOT add any element that is not visible in the sketch.
-• Do NOT place the shoe on any surface, box, or pedestal.
-• Do NOT change the number of panels, straps, or overlays.
-• Do NOT include a human foot or mannequin.
-
-This is a style transfer, not a redesign. The sketch is the blueprint — follow it exactly.`
+      ? `Photorealistic product photograph of a ${productType}: ${productDesc}.
+Turn this drawing into a photorealistic image. Preserve the exact layout, proportions, perspective, colors, and closure system. Choose realistic materials and lighting consistent with the drawing intent.
+Pure white studio background with a soft contact shadow beneath.
+Do not add new elements, text, logos, or writing. Do not add laces or straps not present in the drawing. Do not place on any surface or pedestal.`
       : `You are an expert fashion product illustrator. This sketch shows a ${productType}: ${productDesc}.
 
 STEP 1 — IDENTIFY THE PRODUCT:
