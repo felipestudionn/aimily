@@ -166,7 +166,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
       {/* For colorways: show only Colorways + Materials (skip Drawing, skip Tech Pack) */}
       {evolutionStep !== 'sketch' && evolutionStep !== 'render3d' && (
         <div className="flex items-center gap-0">
-          {STEPS.filter(s => evolutionStep === 'colorways' ? s.id !== 'sketch' && s.id !== 'techpack' : true).map((step) => {
+          {STEPS.filter(s => evolutionStep === 'colorways' ? s.id !== 'sketch' : true).map((step) => {
             const idx = STEPS.findIndex(s => s.id === step.id);
             const isActive = idx === activeStep;
             const isConfirmed = confirmedSteps.has(idx);
@@ -889,7 +889,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           );
         })()}
 
-        {/* ═══ STEP 4: TECH PACK ═══ */}
+        {/* ═══ STEP 4: TECH PACK (or just Product Visualization when driven by render3d) ═══ */}
         {activeStep === 3 && (() => {
           const primaryCw = skuColorways[0];
           const cwZones = primaryCw?.zones?.length ? primaryCw.zones : [];
@@ -898,97 +898,99 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
           return (
           <div className="space-y-0">
-            {/* ── Tech Pack Sheet ── */}
-            <div className="bg-white border border-carbon/[0.08]">
-              {/* Header bar */}
-              <div className="border-b border-carbon/[0.08] px-6 py-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-lg font-light text-carbon tracking-tight">{sku.name}</h3>
-                    <p className="text-[10px] text-carbon/30 mt-0.5">{sku.family} · Drop {sku.drop_number} · {sku.category}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider">PVP / COGS</p>
-                    <p className="text-[13px] font-light text-carbon">€{sku.pvp} / €{sku.cost}</p>
-                    <p className="text-[8px] text-carbon/20 mt-0.5">{stepLabel('margin') || 'Margin'}: {sku.pvp > 0 ? Math.round((1 - sku.cost / sku.pvp) * 100) : 0}%</p>
-                  </div>
-                </div>
-                {sku.notes && <p className="text-[10px] text-carbon/35 mt-2 leading-relaxed">{sku.notes}</p>}
-              </div>
-
-              {/* Sketch views with numbered callouts */}
-              <div className="grid grid-cols-2 border-b border-carbon/[0.08]">
-                {/* Side Profile — prefer colorized render if available */}
-                <div className="border-r border-carbon/[0.08] p-4">
-                  <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('sideProfile') || 'Side Profile'}{sku.render_url ? ' (colored)' : ''}</p>
-                  {(sku.render_url || sku.sketch_url) ? (
-                    <div className="relative">
-                      <img src={sku.render_url || sku.sketch_url} alt="Side profile" className="w-full object-contain" />
+            {/* ── Tech Pack Sheet (hidden when EvolutionStrip is on render3d) ── */}
+            {evolutionStep !== 'render3d' && (
+              <>
+                <div className="bg-white border border-carbon/[0.08]">
+                  {/* Header bar */}
+                  <div className="border-b border-carbon/[0.08] px-6 py-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-lg font-light text-carbon tracking-tight">{sku.name}</h3>
+                        <p className="text-[10px] text-carbon/30 mt-0.5">{sku.family} · Drop {sku.drop_number} · {sku.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] text-carbon/20 uppercase tracking-wider">PVP / COGS</p>
+                        <p className="text-[13px] font-light text-carbon">€{sku.pvp} / €{sku.cost}</p>
+                        <p className="text-[8px] text-carbon/20 mt-0.5">{stepLabel('margin') || 'Margin'}: {sku.pvp > 0 ? Math.round((1 - sku.cost / sku.pvp) * 100) : 0}%</p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No sketch</div>
-                  )}
-                </div>
-                {/* Top Down */}
-                <div className="p-4">
-                  <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('topDown') || 'Top Down'}</p>
-                  {(sku.sketch_top_url || sketchTopView) ? (
-                    <div className="relative">
-                      <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full object-contain" />
-                    </div>
-                  ) : (
-                    <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No top-down view</div>
-                  )}
-                </div>
-              </div>
+                    {sku.notes && <p className="text-[10px] text-carbon/35 mt-2 leading-relaxed">{sku.notes}</p>}
+                  </div>
 
-              {/* BOM / Color-Up Table */}
-              <div className="px-6 py-4">
-                <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-3">{stepLabel('colorUpBom') || 'Color-Up & Bill of Materials'}{primaryCw ? ` — ${primaryCw.name}` : ''}</p>
-                <table className="w-full text-[10px]">
-                  <thead>
-                    <tr className="border-b border-carbon/[0.08]">
-                      <th className="text-left py-1.5 pr-2 text-[8px] text-carbon/25 uppercase tracking-wider font-medium w-6">#</th>
-                      <th className="text-left py-1.5 pr-2 text-[8px] text-carbon/25 uppercase tracking-wider font-medium w-5"></th>
-                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('zoneLabel') || 'Zone'}</th>
-                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">Pantone</th>
-                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('materialLabel') || 'Material'}</th>
-                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('compositionLabel') || 'Composition'}</th>
-                      <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('weightLabel') || 'Weight'}</th>
-                      <th className="text-left py-1.5 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('finishLabel') || 'Finish'}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cwZones.map((z, i) => {
-                      const mat = mZones.find(m => m.zone === z.zone);
-                      return (
-                        <tr key={i} className="border-b border-carbon/[0.03]">
-                          <td className="py-1.5 pr-2 text-[9px] font-semibold text-carbon/40">{i + 1}</td>
-                          <td className="py-1.5 pr-2"><div className="w-3.5 h-3.5 border border-carbon/[0.08]" style={{ backgroundColor: z.hex }} /></td>
-                          <td className="py-1.5 pr-3 text-carbon/60 font-medium">{z.zone}</td>
-                          <td className="py-1.5 pr-3 text-carbon/30">{z.pantone || '—'}</td>
-                          <td className="py-1.5 pr-3 text-carbon/50">{mat?.material || <span className="text-carbon/15 italic">Factory discretion</span>}</td>
-                          <td className="py-1.5 pr-3 text-carbon/35">{mat?.composition || '—'}</td>
-                          <td className="py-1.5 pr-3 text-carbon/35">{mat?.weight || '—'}</td>
-                          <td className="py-1.5 text-carbon/35">{mat?.finish || '—'}</td>
+                  {/* Sketch views with numbered callouts */}
+                  <div className="grid grid-cols-2 border-b border-carbon/[0.08]">
+                    <div className="border-r border-carbon/[0.08] p-4">
+                      <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('sideProfile') || 'Side Profile'}{sku.render_url ? ' (colored)' : ''}</p>
+                      {(sku.render_url || sku.sketch_url) ? (
+                        <div className="relative">
+                          <img src={sku.render_url || sku.sketch_url} alt="Side profile" className="w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No sketch</div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('topDown') || 'Top Down'}</p>
+                      {(sku.sketch_top_url || sketchTopView) ? (
+                        <div className="relative">
+                          <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No top-down view</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* BOM / Color-Up Table */}
+                  <div className="px-6 py-4">
+                    <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-3">{stepLabel('colorUpBom') || 'Color-Up & Bill of Materials'}{primaryCw ? ` — ${primaryCw.name}` : ''}</p>
+                    <table className="w-full text-[10px]">
+                      <thead>
+                        <tr className="border-b border-carbon/[0.08]">
+                          <th className="text-left py-1.5 pr-2 text-[8px] text-carbon/25 uppercase tracking-wider font-medium w-6">#</th>
+                          <th className="text-left py-1.5 pr-2 text-[8px] text-carbon/25 uppercase tracking-wider font-medium w-5"></th>
+                          <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('zoneLabel') || 'Zone'}</th>
+                          <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">Pantone</th>
+                          <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('materialLabel') || 'Material'}</th>
+                          <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('compositionLabel') || 'Composition'}</th>
+                          <th className="text-left py-1.5 pr-3 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('weightLabel') || 'Weight'}</th>
+                          <th className="text-left py-1.5 text-[8px] text-carbon/25 uppercase tracking-wider font-medium">{stepLabel('finishLabel') || 'Finish'}</th>
                         </tr>
-                      );
-                    })}
-                    {cwZones.length === 0 && (
-                      <tr><td colSpan={8} className="py-4 text-center text-carbon/15">{stepLabel('noZonesConfigured') || 'No zones configured — go to Colorways step'}</td></tr>
+                      </thead>
+                      <tbody>
+                        {cwZones.map((z, i) => {
+                          const mat = mZones.find(m => m.zone === z.zone);
+                          return (
+                            <tr key={i} className="border-b border-carbon/[0.03]">
+                              <td className="py-1.5 pr-2 text-[9px] font-semibold text-carbon/40">{i + 1}</td>
+                              <td className="py-1.5 pr-2"><div className="w-3.5 h-3.5 border border-carbon/[0.08]" style={{ backgroundColor: z.hex }} /></td>
+                              <td className="py-1.5 pr-3 text-carbon/60 font-medium">{z.zone}</td>
+                              <td className="py-1.5 pr-3 text-carbon/30">{z.pantone || '—'}</td>
+                              <td className="py-1.5 pr-3 text-carbon/50">{mat?.material || <span className="text-carbon/15 italic">Factory discretion</span>}</td>
+                              <td className="py-1.5 pr-3 text-carbon/35">{mat?.composition || '—'}</td>
+                              <td className="py-1.5 pr-3 text-carbon/35">{mat?.weight || '—'}</td>
+                              <td className="py-1.5 text-carbon/35">{mat?.finish || '—'}</td>
+                            </tr>
+                          );
+                        })}
+                        {cwZones.length === 0 && (
+                          <tr><td colSpan={8} className="py-4 text-center text-carbon/15">{stepLabel('noZonesConfigured') || 'No zones configured — go to Colorways step'}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                    {skuColorways.length > 1 && (
+                      <p className="text-[8px] text-carbon/20 mt-2">+{skuColorways.length - 1} additional colorway{skuColorways.length > 2 ? 's' : ''} configured</p>
                     )}
-                  </tbody>
-                </table>
-                {skuColorways.length > 1 && (
-                  <p className="text-[8px] text-carbon/20 mt-2">+{skuColorways.length - 1} additional colorway{skuColorways.length > 2 ? 's' : ''} configured</p>
-                )}
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            {!(confirmedSteps.has(0) && confirmedSteps.has(1) && confirmedSteps.has(2)) && (
-              <div className="p-3 bg-carbon/[0.02] border border-carbon/[0.06] mt-4">
-                <p className="text-[10px] text-carbon/30">{stepLabel('techPackPending') || 'Complete Sketch, Colorways and Materials to finalize the tech pack.'}</p>
-              </div>
+                {!(confirmedSteps.has(0) && confirmedSteps.has(1) && confirmedSteps.has(2)) && (
+                  <div className="p-3 bg-carbon/[0.02] border border-carbon/[0.06] mt-4">
+                    <p className="text-[10px] text-carbon/30">{stepLabel('techPackPending') || 'Complete Sketch, Colorways and Materials to finalize the tech pack.'}</p>
+                  </div>
+                )}
+              </>
             )}
 
             {/* ── Product Visualization ── */}
