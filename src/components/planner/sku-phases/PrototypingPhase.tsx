@@ -175,20 +175,28 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1">{t.skuPhases?.factoryName || 'Factory / Supplier'}</p>
-              <input className="w-full text-[12px] font-light text-carbon bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none pb-1" placeholder="e.g. Calzaturificio Molteni" />
+              <input defaultValue={sku.sourcing_data?.factory || ''}
+                onBlur={(e) => onUpdate({ sourcing_data: { ...sku.sourcing_data, factory: e.target.value } } as Partial<SKU>)}
+                className="w-full text-[12px] font-light text-carbon bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none pb-1" placeholder="e.g. Calzaturificio Molteni" />
             </div>
             <div>
               <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1">{t.skuPhases?.factoryOrigin || 'Origin / Country'}</p>
-              <input className="w-full text-[12px] font-light text-carbon bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none pb-1" placeholder="e.g. Montebelluna, Italy" />
+              <input defaultValue={sku.sourcing_data?.origin || ''}
+                onBlur={(e) => onUpdate({ sourcing_data: { ...sku.sourcing_data, origin: e.target.value } } as Partial<SKU>)}
+                className="w-full text-[12px] font-light text-carbon bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none pb-1" placeholder="e.g. Montebelluna, Italy" />
             </div>
           </div>
           <div>
             <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1">{t.skuPhases?.factoryContact || 'Contact'}</p>
-            <input className="w-full text-[12px] font-light text-carbon bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none pb-1" placeholder="name@factory.com" />
+            <input defaultValue={sku.sourcing_data?.contact || ''}
+              onBlur={(e) => onUpdate({ sourcing_data: { ...sku.sourcing_data, contact: e.target.value } } as Partial<SKU>)}
+              className="w-full text-[12px] font-light text-carbon bg-transparent border-b border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none pb-1" placeholder="name@factory.com" />
           </div>
           <div>
             <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1">{t.skuPhases?.sourcingNotes || 'Notes'}</p>
-            <textarea className="w-full h-14 p-3 bg-carbon/[0.02] border border-carbon/[0.04] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]"
+            <textarea defaultValue={sku.sourcing_data?.notes || ''}
+              onBlur={(e) => onUpdate({ sourcing_data: { ...sku.sourcing_data, notes: e.target.value } } as Partial<SKU>)}
+              className="w-full h-14 p-3 bg-carbon/[0.02] border border-carbon/[0.04] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]"
               placeholder={t.skuPhases?.sourcingNotesPlaceholder || 'MOQ discussed, lead times, payment terms...'} />
           </div>
         </div>

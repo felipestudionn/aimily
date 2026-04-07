@@ -43,6 +43,17 @@ export interface SKU {
   render_url?: string; // flat colorized sketch (set by colorway acceptance only)
   render_urls?: Record<string, string>; // {'3d': photorealistic, 'preview': card preview}
   material_zones?: import('@/types/design').MaterialZone[];
+  sourcing_data?: {
+    factory?: string; origin?: string; contact?: string; notes?: string;
+    aiResult?: Record<string, unknown>;
+  };
+  production_data?: {
+    color_status?: 'pending' | 'approved' | 'issues';
+    color_notes?: string;
+    fit_status?: 'pending' | 'approved' | 'issues';
+    fit_notes?: string;
+    confirmed_steps?: string[];
+  };
   production_approved: boolean;
   created_at?: string;
   updated_at?: string;
