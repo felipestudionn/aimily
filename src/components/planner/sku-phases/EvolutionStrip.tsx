@@ -63,14 +63,14 @@ export function EvolutionStrip({ active, onSelect, thumbnails, textPreviews, com
                     : 'bg-carbon/[0.02] opacity-40 cursor-default'
             }`}
           >
-            {/* Thumbnail area */}
-            <div className={`w-full aspect-square flex items-center justify-center p-1.5 ${
+            {/* Thumbnail area — fixed height */}
+            <div className={`w-full h-20 flex items-center justify-center p-1.5 overflow-hidden ${
               isActive ? 'bg-white' : ''
             }`}>
               {thumb ? (
-                <img src={thumb} alt={step.label} className="w-full h-full object-contain" />
+                <img src={thumb} alt={step.label} className="max-w-full max-h-full object-contain" />
               ) : textPreview && isCompleted ? (
-                <p className="text-[9px] font-light text-carbon/50 text-center leading-tight px-1 line-clamp-4">{textPreview}</p>
+                <p className="text-[9px] font-light text-carbon/50 text-center leading-tight px-1 line-clamp-3">{textPreview}</p>
               ) : (
                 <Icon className={`h-5 w-5 ${isActive ? 'text-carbon/40' : 'text-carbon/10'}`} />
               )}
