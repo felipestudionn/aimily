@@ -61,28 +61,30 @@ export function EvolutionStrip({ active, onSelect, thumbnails, textPreviews, com
                     : 'bg-carbon/[0.02] opacity-40 cursor-default'
             }`}
           >
-            {/* Thumbnail area — fixed height, images constrained within */}
-            <div className={`w-full aspect-square flex items-center justify-center p-1.5 overflow-hidden ${
+            {/* Thumbnail area */}
+            <div className={`w-full aspect-square flex items-center justify-center p-2 overflow-hidden ${
               isActive ? 'bg-white' : ''
             }`}>
               {thumb ? (
                 <img src={thumb} alt={step.label} className="max-w-full max-h-full object-contain" />
-              ) : textPreview && isCompleted ? (
-                <p className="text-[9px] font-light text-carbon/50 text-center leading-tight px-1 line-clamp-3">{textPreview}</p>
+              ) : textPreview ? (
+                <p className="text-[11px] font-light text-carbon/50 text-center leading-snug px-2 line-clamp-4">{textPreview}</p>
               ) : (
-                <Icon className={`h-5 w-5 ${isActive ? 'text-carbon/40' : 'text-carbon/10'}`} />
+                <div className="flex flex-col items-center gap-1.5">
+                  <Icon className={`h-7 w-7 ${isActive ? 'text-carbon/30' : 'text-carbon/[0.08]'}`} />
+                </div>
               )}
             </div>
 
             {/* Label */}
-            <div className={`w-full py-1.5 text-center border-t ${
+            <div className={`w-full py-2 text-center border-t ${
               isActive
                 ? 'border-carbon bg-carbon text-crema'
                 : isCompleted
-                  ? 'border-carbon/[0.04] text-carbon/40'
-                  : 'border-carbon/[0.04] text-carbon/15'
+                  ? 'border-carbon/[0.06] text-carbon/50'
+                  : 'border-carbon/[0.04] text-carbon/20'
             }`}>
-              <span className="text-[7px] font-medium tracking-[0.1em] uppercase">{step.label}</span>
+              <span className="text-[9px] font-semibold tracking-[0.08em] uppercase">{step.label}</span>
             </div>
           </button>
         );
@@ -111,17 +113,19 @@ export function computeEvolutionState(sku: {
 
   // Concept — completed only when user has validated (advanced past range_plan)
   // Has data (name+pvp) from Range Plan, but not confirmed until user decides on reference + validates
+  // Concept — always show preview text or reference thumbnail
   const conceptHasData = !!(sku.name && sku.pvp && sku.pvp > 0);
   const conceptValidated = sku.design_phase !== 'range_plan';
   if (conceptHasData && conceptValidated) {
     completed.add('concept');
-    if (sku.reference_image_url) {
-      thumbnails.concept = sku.reference_image_url;
-    } else {
-      const parts = [sku.name];
-      if (sku.notes) parts.push(sku.notes.slice(0, 60));
-      textPreviews.concept = parts.join(' · ');
-    }
+  }
+  // Always show something in the concept cell — reference image or text
+  if (sku.reference_image_url) {
+    thumbnails.concept = sku.reference_image_url;
+  } else if (sku.name) {
+    const parts = [sku.name];
+    if (sku.notes) parts.push(sku.notes.slice(0, 50));
+    textPreviews.concept = parts.join(' · ');
   }
 
   // Sketch B&W
