@@ -364,35 +364,26 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     >
       {/* ── Top bar ── */}
       <div className="shrink-0 border-b border-carbon/[0.06]">
-        {/* Row 1: Back + SKU name + phase breadcrumb */}
-        <div className="flex items-center gap-4 px-6 sm:px-10 py-3">
-          {/* Back */}
+        {/* Row 1: Back to Collection + SKU identity card (centered) */}
+        <div className="flex items-center px-6 sm:px-10 py-3">
+          {/* Left: Back to Collection */}
           <button onClick={handleClose} className="flex items-center gap-1.5 text-carbon/35 hover:text-carbon transition-colors shrink-0 group">
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-[10px] font-medium tracking-[0.08em] uppercase hidden sm:inline group-hover:text-carbon">{t.skuPhases?.back || 'Back'}</span>
+            <span className="text-[10px] font-medium tracking-[0.08em] uppercase group-hover:text-carbon">Back to Collection</span>
           </button>
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-carbon/[0.08]" />
-
-          {/* SKU identity */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="min-w-0">
-              <h1 className="text-base font-light text-carbon tracking-tight truncate">{localSku.name}</h1>
+          {/* Center: SKU identity card */}
+          <div className="flex-1 flex justify-center">
+            <div className="bg-carbon px-5 py-2 flex items-center gap-3">
+              <div className="text-center">
+                <h1 className="text-[13px] font-light text-crema tracking-tight">{localSku.name}</h1>
+                <p className="text-[9px] text-crema/40">{localSku.family} · Drop {localSku.drop_number} · {localSku.type === 'IMAGEN' ? 'Image' : localSku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
+              </div>
             </div>
-            <span className="text-[10px] text-carbon/25 hidden sm:inline">{localSku.family} · Drop {localSku.drop_number}</span>
-            <span className={`inline-block px-1.5 py-0.5 text-[8px] font-semibold tracking-[0.05em] uppercase text-white rounded-sm shrink-0 ${
-              localSku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : localSku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
-            }`}>{localSku.type === 'IMAGEN' ? 'IMAGE' : localSku.type}</span>
           </div>
 
-          {/* Delete — moved to top bar */}
-          <button
-            onClick={handleDeleteSku}
-            className="flex items-center gap-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/15 hover:text-red-600/40 transition-colors shrink-0"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
+          {/* Right: spacer to balance the layout */}
+          <div className="w-[140px] shrink-0" />
         </div>
 
         {/* Row 2: Evolution Strip */}
@@ -415,7 +406,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         <div className="max-w-5xl mx-auto h-full">
           {/* Concept → identity + financials + reference + notes */}
           {activeStep === 'concept' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} onDelete={handleDeleteSku} />
           )}
           {/* Sketch + Colorways + 3D Render → SketchPhase with evolution step sync */}
           {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (
