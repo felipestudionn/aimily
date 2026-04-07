@@ -3,9 +3,10 @@ import { getAuthenticatedUser } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 
 /* ═══════════════════════════════════════════════════════════
-   Colorize Sketch — gpt-image-1-mini (low quality)
-   Takes a B&W sketch + color instructions → colored version.
-   Cost: ~$0.007/image (8x cheaper than Freepik Mystic)
+   Colorize Sketch — gpt-image-1.5
+   Two modes:
+     • Colorization: B&W sketch + color instructions → colored flat (medium, ~$0.034)
+     • 3D Render:    colored sketch → photorealistic product photo (high + input_fidelity high, ~$0.133)
    ═══════════════════════════════════════════════════════════ */
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -34,18 +35,25 @@ export async function POST(req: NextRequest) {
     const productDesc = product_name ? `"${product_name}"${family ? ` from the ${family} family` : ''}` : 'this product';
 
     const prompt = is_3d_render
-      ? `Transform this colored product sketch into a PHOTOREALISTIC product photograph. This is a ${productType}: ${productDesc}.
+      ? `Turn this colored product sketch into a photorealistic product photograph. This is a ${productType}: ${productDesc}.
 
-CRITICAL RULES:
-• The product in the photo must be THE EXACT SAME PRODUCT as in the sketch — same silhouette, same proportions, same design details, same angle.
-• Keep the EXACT SAME COLORS shown in the sketch. Do not change any color — the upper, midsole, outsole, tongue, and all zones must match exactly.
-• Add realistic material textures: leather grain, suede nap, rubber texture, stitching detail, fabric weave — based on what the sketch suggests.
-• BACKGROUND: pure clean WHITE studio background (#FFFFFF). No textures, no colors, no gradients — just white. A very subtle, soft drop shadow directly beneath the product where it touches the ground. Nothing else in the background.
-• Professional e-commerce product photography lighting: soft, even, diffused studio light from above-left. No dramatic shadows, no colored lighting.
-• Sharp focus on material quality, construction details, and color accuracy.
-• This must look like a real product photo of the exact same shoe/product shown in the sketch — not a different product, not a reinterpretation.
-• Single product, no human body, no mannequin, clean e-commerce style.
-• The viewer should be able to look at the sketch and the photo and say "that is the exact same product."`
+PRESERVE (do not change):
+• The exact same silhouette, proportions, and design details visible in the sketch.
+• The exact same viewing angle and perspective — side profile, same orientation.
+• The exact same colors in every zone. Match what is shown, do not shift or reinterpret any color.
+• All construction lines: stitching, panel divisions, overlays, seams.
+
+ADD (change only this):
+• Realistic material textures based on what each zone suggests: leather grain, suede nap, rubber texture, mesh weave, stitching thread, fabric weave.
+• Subtle realistic shadows where materials overlap and at seams.
+• A soft contact shadow directly beneath the shoe on the ground plane.
+
+PHOTOGRAPHY:
+• Pure white studio background, seamless, no textures or gradients.
+• Soft even diffused studio lighting from above-left. No dramatic or colored lighting.
+• Sharp focus on material quality and construction details.
+
+DO NOT: change the shape or proportions, add new elements or text, include a human foot or mannequin, redesign any part of the shoe. The viewer must confirm this is the exact same product as the sketch.`
       : `You are an expert fashion product illustrator. This sketch shows a ${productType}: ${productDesc}.
 
 STEP 1 — IDENTIFY THE PRODUCT:
@@ -78,15 +86,17 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
       sketchBase64 = buf.toString('base64');
     }
 
-    // Call OpenAI gpt-image-1 (full model — more faithful to input sketch)
+    // gpt-image-1.5: 4x faster, 20% cheaper, better edit precision than gpt-image-1
+    // input_fidelity="high" preserves sketch structure (silhouette, proportions, details)
     const blob = new Blob([Buffer.from(sketchBase64, 'base64')], { type: 'image/png' });
     const formData = new FormData();
-    formData.append('model', 'gpt-image-1');
+    formData.append('model', 'gpt-image-1.5');
     formData.append('image', blob, 'sketch.png');
     formData.append('prompt', prompt);
     formData.append('n', '1');
     formData.append('size', '1024x1024');
     formData.append('quality', is_3d_render ? 'high' : 'medium');
+    if (is_3d_render) formData.append('input_fidelity', 'high');
 
     const res = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
