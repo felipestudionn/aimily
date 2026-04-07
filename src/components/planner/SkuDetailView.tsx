@@ -281,11 +281,37 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     onClose();
   };
 
-  /* ── Footer CTA logic ── */
+  /* ── Footer CTA logic — unified per evolution step ── */
+  const nextStep = useCallback(() => {
+    const order: EvolutionStep[] = ['concept', 'reference', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+    const idx = order.indexOf(activeStep);
+    if (idx < order.length - 1) {
+      const next = order[idx + 1];
+      // Check if crossing a DB phase boundary
+      const currentPhase = stepToPhase(activeStep);
+      const nextPhase = stepToPhase(next);
+      if (currentPhase !== nextPhase && localSku.design_phase === currentPhase) {
+        advancePhase(); // This advances design_phase in DB + shows success
+      } else {
+        setActiveStep(next);
+      }
+    }
+  }, [activeStep, localSku.design_phase, advancePhase]);
+
+  const stepCTALabels: Record<EvolutionStep, string> = {
+    concept: 'Continue to Reference',
+    reference: localSku.reference_image_url ? 'Continue to Sketch' : 'Skip to Sketch',
+    sketch: 'Continue to Color & Materials',
+    colorways: 'Continue to 3D Render',
+    render3d: 'Continue to Prototype',
+    prototype: 'Continue to Production',
+    production: 'Approve for Production',
+  };
+
   const footerAction = childFooterAction || {
-    label: advanceLabel(),
-    action: advancePhase,
-    isPhaseAdvance: true,
+    label: stepCTALabels[activeStep] || advanceLabel(),
+    action: activeStep === 'production' ? advancePhase : nextStep,
+    isPhaseAdvance: activeStep === 'production',
   };
 
   return createPortal(
@@ -345,13 +371,11 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         <div className="max-w-5xl mx-auto h-full">
           {/* Concept → financials + notes */}
           {activeStep === 'concept' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="concept"
-              onContinue={() => setActiveStep('reference')} />
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="concept" />
           )}
           {/* Reference → reference image upload */}
           {activeStep === 'reference' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="reference"
-              onContinue={() => { if (localSku.design_phase === 'range_plan') advancePhase(); else setActiveStep('sketch'); }} />
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="reference" />
           )}
           {/* Sketch + Colorways + 3D Render → SketchPhase with evolution step sync */}
           {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (

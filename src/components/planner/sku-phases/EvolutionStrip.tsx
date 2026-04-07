@@ -157,21 +157,42 @@ export function computeEvolutionState(sku: {
     thumbnails.production = sku.production_sample_url;
   }
 
-  // Determine farthest reachable step
-  let reachable: EvolutionStep = 'concept';
+  // Determine farthest reachable step — uses BOTH completion state AND DB design_phase
+  // design_phase gates major transitions; within a phase, completion of prior steps gates the next
   const order: EvolutionStep[] = ['concept', 'reference', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+  const phaseGate: Record<string, number> = {
+    range_plan: 1,   // can reach up to reference
+    sketch: 4,       // can reach up to render3d
+    prototyping: 5,  // can reach prototype
+    production: 6,   // can reach production
+    completed: 6,
+  };
+  const maxByPhase = phaseGate[sku.design_phase || 'range_plan'] ?? 0;
+
+  // Within the phase, find farthest reachable by completion
+  let maxByCompletion = 0;
   for (let i = 0; i < order.length; i++) {
-    reachable = order[i];
-    if (!completed.has(order[i])) break;
-    // If this step is completed, the next one is reachable
-    if (i < order.length - 1) reachable = order[i + 1];
+    if (completed.has(order[i])) {
+      maxByCompletion = i + 1; // next step is reachable
+    } else {
+      // Reference is optional — if concept done, sketch is reachable even without reference
+      if (order[i] === 'reference' && completed.has('concept')) {
+        maxByCompletion = i + 1;
+        continue;
+      }
+      break;
+    }
   }
+
+  const reachableIdx = Math.min(Math.max(maxByPhase, maxByCompletion), order.length - 1);
+  const reachable = order[reachableIdx];
 
   // Determine active step — farthest incomplete, or last if all done
   let active: EvolutionStep = 'concept';
   for (const step of order) {
-    if (!completed.has(step)) { active = step; break; }
-    active = step; // if all completed, stay on last
+    if (!completed.has(step) && step !== 'reference') { active = step; break; }
+    if (!completed.has(step) && step === 'reference') { active = step; break; }
+    active = step;
   }
 
   return { completed, thumbnails, textPreviews, reachable, active };
