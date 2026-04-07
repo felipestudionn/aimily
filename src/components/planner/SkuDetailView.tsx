@@ -29,7 +29,7 @@ function phaseIndex(phase: DesignPhase): number {
 /* ── Map evolution step → DB design_phase ── */
 function stepToPhase(step: EvolutionStep): DesignPhase {
   switch (step) {
-    case 'concept': case 'reference': return 'range_plan';
+    case 'concept': return 'range_plan';
     case 'sketch': case 'colorways': case 'render3d': return 'sketch';
     case 'prototype': return 'prototyping';
     case 'production': return 'production';
@@ -69,7 +69,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const setActivePhase = (phase: DesignPhase) => {
     // Map phase back to first evolution step of that phase
     const map: Record<DesignPhase, EvolutionStep> = {
-      range_plan: 'concept', sketch: 'sketch', prototyping: 'prototype', production: 'production', completed: 'production',
+      range_plan: 'concept', sketch: 'sketch', prototyping: 'prototype', production: 'production', completed: 'production' as EvolutionStep,
     };
     setActiveStep(map[phase] || 'concept');
   };
@@ -286,7 +286,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   };
 
   /* ── Footer navigation — 3 actions: navigate, validate, undo ── */
-  const STEP_ORDER: EvolutionStep[] = ['concept', 'reference', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+  const STEP_ORDER: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
   const activeStepIdx = STEP_ORDER.indexOf(activeStep);
   const prevStepLabel = activeStepIdx > 0 ? EVOLUTION_STEPS[activeStepIdx - 1]?.label : null;
 
@@ -314,7 +314,6 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     const step = activeStep;
     const undoMap: Record<EvolutionStep, { clear: Partial<SKU>; revertPhase?: DesignPhase; deleteColorways?: boolean }> = {
       concept: { clear: {} }, // Can't undo concept
-      reference: { clear: { reference_image_url: undefined } },
       sketch: { clear: { sketch_url: undefined, sketch_top_url: undefined }, revertPhase: 'range_plan' },
       colorways: { clear: { render_url: undefined, material_zones: [] as SKU['material_zones'] }, deleteColorways: true },
       render3d: { clear: { render_urls: {} } },
@@ -414,13 +413,9 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
       {/* ── Content — scrollable ── */}
       <div className="flex-1 min-h-0 px-3.5 sm:px-10 lg:px-16 py-3 sm:py-6 overflow-y-auto">
         <div className="max-w-5xl mx-auto h-full">
-          {/* Concept → financials + notes */}
+          {/* Concept → identity + financials + reference + notes */}
           {activeStep === 'concept' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="concept" />
-          )}
-          {/* Reference → reference image upload */}
-          {activeStep === 'reference' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="reference" />
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
           {/* Sketch + Colorways + 3D Render → SketchPhase with evolution step sync */}
           {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (

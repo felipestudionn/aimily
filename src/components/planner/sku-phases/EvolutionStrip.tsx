@@ -5,7 +5,6 @@ import { Check, FileText, Image, Pencil, Palette, Box, Factory, Package } from '
 
 export type EvolutionStep =
   | 'concept'
-  | 'reference'
   | 'sketch'
   | 'colorways'
   | 'render3d'
@@ -14,7 +13,6 @@ export type EvolutionStep =
 
 export const EVOLUTION_STEPS: { id: EvolutionStep; label: string; icon: React.ElementType }[] = [
   { id: 'concept', label: 'Concept', icon: FileText },
-  { id: 'reference', label: 'Reference', icon: Image },
   { id: 'sketch', label: 'Sketch', icon: Pencil },
   { id: 'colorways', label: 'Color & Materials', icon: Palette },
   { id: 'render3d', label: '3D Render', icon: Box },
@@ -111,18 +109,16 @@ export function computeEvolutionState(sku: {
   const thumbnails: Partial<Record<EvolutionStep, string | null>> = {};
   const textPreviews: Partial<Record<EvolutionStep, string>> = {};
 
-  // Concept — completed if has name + pvp
+  // Concept — completed if has name + pvp. Shows reference image as thumbnail if available.
   if (sku.name && sku.pvp && sku.pvp > 0) {
     completed.add('concept');
-    const parts = [sku.name];
-    if (sku.notes) parts.push(sku.notes.slice(0, 60));
-    textPreviews.concept = parts.join(' · ');
-  }
-
-  // Reference
-  if (sku.reference_image_url) {
-    completed.add('reference');
-    thumbnails.reference = sku.reference_image_url;
+    if (sku.reference_image_url) {
+      thumbnails.concept = sku.reference_image_url;
+    } else {
+      const parts = [sku.name];
+      if (sku.notes) parts.push(sku.notes.slice(0, 60));
+      textPreviews.concept = parts.join(' · ');
+    }
   }
 
   // Sketch B&W
@@ -159,13 +155,13 @@ export function computeEvolutionState(sku: {
 
   // Determine farthest reachable step — uses BOTH completion state AND DB design_phase
   // design_phase gates major transitions; within a phase, completion of prior steps gates the next
-  const order: EvolutionStep[] = ['concept', 'reference', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+  const order: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
   const phaseGate: Record<string, number> = {
-    range_plan: 1,   // can reach up to reference
-    sketch: 4,       // can reach up to render3d
-    prototyping: 5,  // can reach prototype
-    production: 6,   // can reach production
-    completed: 6,
+    range_plan: 0,   // can reach concept only
+    sketch: 3,       // can reach up to render3d
+    prototyping: 4,  // can reach prototype
+    production: 5,   // can reach production
+    completed: 5,
   };
   const maxByPhase = phaseGate[sku.design_phase || 'range_plan'] ?? 0;
 
@@ -173,13 +169,8 @@ export function computeEvolutionState(sku: {
   let maxByCompletion = 0;
   for (let i = 0; i < order.length; i++) {
     if (completed.has(order[i])) {
-      maxByCompletion = i + 1; // next step is reachable
+      maxByCompletion = i + 1;
     } else {
-      // Reference is optional — if concept done, sketch is reachable even without reference
-      if (order[i] === 'reference' && completed.has('concept')) {
-        maxByCompletion = i + 1;
-        continue;
-      }
       break;
     }
   }
@@ -190,8 +181,7 @@ export function computeEvolutionState(sku: {
   // Determine active step — farthest incomplete, or last if all done
   let active: EvolutionStep = 'concept';
   for (const step of order) {
-    if (!completed.has(step) && step !== 'reference') { active = step; break; }
-    if (!completed.has(step) && step === 'reference') { active = step; break; }
+    if (!completed.has(step)) { active = step; break; }
     active = step;
   }
 
