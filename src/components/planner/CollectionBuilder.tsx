@@ -1163,39 +1163,25 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                               setRenderingSkus(prev => new Set(prev).add(sku.id));
                               const cws = colorways.filter(c => c.sku_id === sku.id);
                               const primaryCw = cws[0];
-                              const colorDesc = cws.map(c => `${c.name} (${c.hex_primary})`).join(', ');
-                              const colorZones = primaryCw?.zones?.length ? primaryCw.zones.map((z: { zone: string; hex: string }) => ({ zone: z.zone, hex: z.hex })) : [];
-                              const colorHexes = colorZones.length > 0
-                                ? colorZones.map((z: { hex: string }) => ({ hex: z.hex, weight: 0.5 }))
-                                : cws.filter(c => c.hex_primary).map(c => ({ hex: c.hex_primary, weight: 0.5 }));
-                              const matZones = sku.material_zones?.filter((m: { material: string }) => m.material) || [];
-                              const materialZones = matZones.map((m: { zone: string; material: string; finish?: string }) => ({ zone: m.zone, material: m.material, finish: m.finish }));
-                              const matData = (designData.patterns[sku.id] || []) as { name: string; gradingNotes: string }[];
-                              const materialDesc = matData.map(m => m.name + (m.gradingNotes ? `: ${m.gradingNotes}` : '')).join('. ');
-                              fetch('/api/ai/freepik/render', {
+                              // Use same gpt-image-1.5 pipeline as SketchPhase 3D render
+                              fetch('/api/ai/colorize-sketch', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
-                                  sketch_base64: sku.render_url || sku.sketch_url,
+                                  sketch_url: sku.render_url || sku.sketch_url,
+                                  colorway_name: primaryCw?.name || 'main',
+                                  zone_colors: primaryCw?.zones || [],
+                                  category: sku.category,
+                                  product_name: sku.name,
+                                  family: sku.family,
                                   collectionPlanId,
-                                  angle: 'three_quarter',
-                                  design_context: {
-                                    productName: `${sku.name} in colorway ${primaryCw?.name || 'default'}`,
-                                    productType: `${sku.family} — ${sku.category === 'CALZADO' ? 'footwear/sneaker' : sku.category === 'ROPA' ? 'clothing' : sku.category}`,
-                                    colorway: colorDesc || 'neutral tones',
-                                    colorHexes,
-                                    colorZones,
-                                    materialZones,
-                                    materials: materialDesc || 'premium materials',
-                                    designNotes: sku.notes || '',
-                                  },
+                                  is_3d_render: true,
                                 }),
                               }).then(async (res) => {
                                 if (res.ok) {
-                                  const data = await res.json();
-                                  const url = data.images?.[0]?.url || data.images?.[0]?.originalUrl;
-                                  if (url) {
-                                    const updatedUrls = { ...(sku.render_urls || {}), preview: url };
+                                  const { imageUrl } = await res.json();
+                                  if (imageUrl) {
+                                    const updatedUrls = { ...(sku.render_urls || {}), '3d': imageUrl };
                                     await updateSku(sku.id, { render_urls: updatedUrls });
                                     setAiViewSkus(prev => new Set(prev).add(sku.id));
                                     refetch();
