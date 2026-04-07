@@ -11,8 +11,9 @@ import { RangePlanPhase } from './sku-phases/RangePlanPhase';
 import { SketchPhase } from './sku-phases/SketchPhase';
 import { PrototypingPhase } from './sku-phases/PrototypingPhase';
 import { ProductionPhase } from './sku-phases/ProductionPhase';
+import { EvolutionStrip, computeEvolutionState, EVOLUTION_STEPS, type EvolutionStep } from './sku-phases/EvolutionStrip';
 
-/* ── Phase config ── */
+/* ── Phase config (kept for DB mapping) ── */
 const PHASES: { id: DesignPhase; stepNumber: number }[] = [
   { id: 'range_plan', stepNumber: 1 },
   { id: 'sketch', stepNumber: 2 },
@@ -23,6 +24,16 @@ const PHASES: { id: DesignPhase; stepNumber: number }[] = [
 function phaseIndex(phase: DesignPhase): number {
   const idx = PHASES.findIndex(p => p.id === phase);
   return idx >= 0 ? idx : 0;
+}
+
+/* ── Map evolution step → DB design_phase ── */
+function stepToPhase(step: EvolutionStep): DesignPhase {
+  switch (step) {
+    case 'concept': case 'reference': return 'range_plan';
+    case 'sketch': case 'colorways': case 'render3d': return 'sketch';
+    case 'prototype': return 'prototyping';
+    case 'production': return 'production';
+  }
 }
 
 /* ── Footer action type ── */
@@ -44,10 +55,20 @@ interface SkuDetailViewProps {
 export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload }: SkuDetailViewProps) {
   const t = useTranslation();
   const { toast } = useToast();
-  const [activePhase, setActivePhase] = useState<DesignPhase>(
-    sku.design_phase === 'completed' ? 'production' : (sku.design_phase || 'range_plan')
-  );
   const [localSku, setLocalSku] = useState<SKU>(sku);
+
+  // Evolution strip state — compute from SKU data
+  const evolution = computeEvolutionState(localSku);
+  const [activeStep, setActiveStep] = useState<EvolutionStep>(evolution.active);
+  // Legacy activePhase for existing component compatibility
+  const activePhase = stepToPhase(activeStep);
+  const setActivePhase = (phase: DesignPhase) => {
+    // Map phase back to first evolution step of that phase
+    const map: Record<DesignPhase, EvolutionStep> = {
+      range_plan: 'concept', sketch: 'sketch', prototyping: 'prototype', production: 'production', completed: 'production',
+    };
+    setActiveStep(map[phase] || 'concept');
+  };
   const [uploading, setUploading] = useState<string | null>(null);
   const [savingPhase, setSavingPhase] = useState(false);
   const [showSuccess, setShowSuccess] = useState<{ from: DesignPhase; to: DesignPhase } | null>(null);
@@ -295,115 +316,47 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
             }`}>{localSku.type === 'IMAGEN' ? 'IMAGE' : localSku.type}</span>
           </div>
 
-          {/* Phase breadcrumb — DESKTOP */}
-          <div className="hidden md:flex items-center gap-0 shrink-0">
-            {PHASES.map((phase, idx) => {
-              const isActive = activePhase === phase.id;
-              const isReached = idx <= currentPhaseIdx;
-              const isCurrentPhase = idx === currentPhaseIdx;
-              const isDone = idx < currentPhaseIdx || isCompleted;
-              return (
-                <React.Fragment key={phase.id}>
-                  {idx > 0 && <div className={`w-5 h-px mx-0.5 ${isDone ? 'bg-carbon/25' : 'bg-carbon/[0.06]'}`} />}
-                  <button
-                    onClick={() => isReached && setActivePhase(phase.id)}
-                    disabled={!isReached}
-                    className={`flex items-center gap-1 py-1 transition-colors ${
-                      isActive ? 'text-carbon' : isDone ? 'text-carbon/35 hover:text-carbon/55' : 'text-carbon/15 cursor-default'
-                    }`}
-                  >
-                    {isDone && !isActive ? (
-                      <Check className="h-2.5 w-2.5" />
-                    ) : (
-                      <span className="text-[9px] font-medium">{phase.stepNumber}</span>
-                    )}
-                    <span className={`text-[9px] tracking-[0.05em] uppercase whitespace-nowrap ${isActive ? 'font-semibold' : 'font-medium'}`}>
-                      {phaseLabel(phase.id)}
-                    </span>
-                    {isCurrentPhase && !isCompleted && isActive && (
-                      <span className="w-1 h-1 bg-carbon rounded-full animate-pulse" />
-                    )}
-                  </button>
-                </React.Fragment>
-              );
-            })}
-          </div>
-
-          {/* Phase breadcrumb — MOBILE dropdown */}
-          <div className="md:hidden relative shrink-0">
-            <button
-              onClick={() => setMobileBreadcrumbOpen(!mobileBreadcrumbOpen)}
-              className="flex items-center gap-1 px-2 py-1 border border-carbon/[0.08] text-carbon/60"
-            >
-              <span className="text-[9px] font-semibold tracking-[0.05em] uppercase">{phaseLabel(activePhase)}</span>
-              <ChevronDown className={`h-3 w-3 transition-transform ${mobileBreadcrumbOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {mobileBreadcrumbOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setMobileBreadcrumbOpen(false)} />
-                <div className="absolute right-0 top-full mt-1 z-20 bg-[#F5F1E8] border border-carbon/[0.08] shadow-lg min-w-[160px]">
-                  {PHASES.map((phase, idx) => {
-                    const isReached = idx <= currentPhaseIdx;
-                    const isDone = idx < currentPhaseIdx || isCompleted;
-                    const isActive = activePhase === phase.id;
-                    return (
-                      <button
-                        key={phase.id}
-                        onClick={() => {
-                          if (isReached) setActivePhase(phase.id);
-                          setMobileBreadcrumbOpen(false);
-                        }}
-                        disabled={!isReached}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${
-                          isActive ? 'bg-carbon/[0.04] text-carbon' : isReached ? 'text-carbon/50 hover:bg-carbon/[0.02]' : 'text-carbon/15'
-                        }`}
-                      >
-                        {isDone ? <Check className="h-3 w-3 text-carbon/30" /> : <span className="w-3 text-center text-[9px] font-medium">{phase.stepNumber}</span>}
-                        <span className="text-[10px] tracking-[0.05em] uppercase font-medium">{phaseLabel(phase.id)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Row 2: Actions bar — always visible */}
-        <div className="flex items-center gap-3 px-6 sm:px-10 py-1.5 border-t border-carbon/[0.03]">
-          {canRevert && (
-            <button
-              onClick={revertPhase}
-              disabled={savingPhase}
-              className="flex items-center gap-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/25 hover:text-carbon/50 transition-colors disabled:opacity-30"
-            >
-              <ArrowLeft className="h-3 w-3" /> {(t.skuPhases?.backTo || 'Back to')} {phaseLabel(PHASES[currentPhaseIdx - 1]?.id || 'range_plan')}
-            </button>
-          )}
-          <div className="flex-1" />
+          {/* Delete — moved to top bar */}
           <button
             onClick={handleDeleteSku}
-            className="flex items-center gap-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/15 hover:text-red-600/40 transition-colors"
+            className="flex items-center gap-1 text-[9px] font-medium tracking-[0.08em] uppercase text-carbon/15 hover:text-red-600/40 transition-colors shrink-0"
           >
-            <Trash2 className="h-3 w-3" /> {t.skuPhases?.deleteSku || 'Delete'}
+            <Trash2 className="h-3 w-3" />
           </button>
+        </div>
+
+        {/* Row 2: Evolution Strip */}
+        <div className="px-6 sm:px-10 py-2 border-t border-carbon/[0.03]">
+          <div className="max-w-5xl mx-auto">
+            <EvolutionStrip
+              active={activeStep}
+              onSelect={setActiveStep}
+              thumbnails={evolution.thumbnails}
+              completed={evolution.completed}
+              reachable={evolution.reachable}
+            />
+          </div>
         </div>
       </div>
 
       {/* ── Content — scrollable ── */}
       <div className="flex-1 min-h-0 px-3.5 sm:px-10 lg:px-16 py-3 sm:py-6 overflow-y-auto">
         <div className="max-w-5xl mx-auto h-full">
-          {activePhase === 'range_plan' && (
+          {/* Concept + Reference → RangePlanPhase */}
+          {(activeStep === 'concept' || activeStep === 'reference') && (
             <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
-          {activePhase === 'sketch' && (
+          {/* Sketch + Colorways + 3D Render → SketchPhase */}
+          {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (
             <SketchPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading}
               onFooterAction={setChildFooterAction} onAdvancePhase={advancePhase} />
           )}
-          {activePhase === 'prototyping' && (
+          {/* Prototype → PrototypingPhase */}
+          {activeStep === 'prototype' && (
             <PrototypingPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
-          {activePhase === 'production' && (
+          {/* Production → ProductionPhase */}
+          {activeStep === 'production' && (
             <ProductionPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
           )}
         </div>

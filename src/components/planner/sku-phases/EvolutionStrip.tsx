@@ -1,0 +1,173 @@
+'use client';
+
+import React from 'react';
+import { Check, FileText, Image, Pencil, Palette, Box, Factory, Package } from 'lucide-react';
+
+export type EvolutionStep =
+  | 'concept'
+  | 'reference'
+  | 'sketch'
+  | 'colorways'
+  | 'render3d'
+  | 'prototype'
+  | 'production';
+
+export const EVOLUTION_STEPS: { id: EvolutionStep; label: string; icon: React.ElementType }[] = [
+  { id: 'concept', label: 'Concept', icon: FileText },
+  { id: 'reference', label: 'Reference', icon: Image },
+  { id: 'sketch', label: 'Sketch', icon: Pencil },
+  { id: 'colorways', label: 'Colorways', icon: Palette },
+  { id: 'render3d', label: '3D Render', icon: Box },
+  { id: 'prototype', label: 'Prototype', icon: Factory },
+  { id: 'production', label: 'Production', icon: Package },
+];
+
+interface EvolutionStripProps {
+  active: EvolutionStep;
+  onSelect: (step: EvolutionStep) => void;
+  /** Map of step id → thumbnail URL (null if not yet completed) */
+  thumbnails: Partial<Record<EvolutionStep, string | null>>;
+  /** Which steps are completed */
+  completed: Set<EvolutionStep>;
+  /** Farthest reachable step (user can click up to this) */
+  reachable: EvolutionStep;
+}
+
+export function EvolutionStrip({ active, onSelect, thumbnails, completed, reachable }: EvolutionStripProps) {
+  const reachableIdx = EVOLUTION_STEPS.findIndex(s => s.id === reachable);
+
+  return (
+    <div className="flex items-stretch gap-px bg-carbon/[0.04] border border-carbon/[0.06] overflow-hidden overflow-x-auto">
+      {EVOLUTION_STEPS.map((step, idx) => {
+        const isActive = step.id === active;
+        const isCompleted = completed.has(step.id);
+        const isReachable = idx <= reachableIdx;
+        const thumb = thumbnails[step.id];
+        const Icon = step.icon;
+
+        return (
+          <button
+            key={step.id}
+            onClick={() => isReachable && onSelect(step.id)}
+            disabled={!isReachable}
+            className={`flex-1 min-w-[80px] flex flex-col items-center transition-all relative ${
+              isActive
+                ? 'bg-white ring-1 ring-carbon/[0.12] z-10'
+                : isCompleted
+                  ? 'bg-white hover:bg-carbon/[0.02]'
+                  : isReachable
+                    ? 'bg-white/60 hover:bg-white/80'
+                    : 'bg-carbon/[0.02] opacity-40 cursor-default'
+            }`}
+          >
+            {/* Thumbnail area */}
+            <div className={`w-full aspect-square flex items-center justify-center p-1.5 ${
+              isActive ? 'bg-white' : ''
+            }`}>
+              {thumb ? (
+                <img src={thumb} alt={step.label} className="w-full h-full object-contain" />
+              ) : isCompleted ? (
+                <div className="w-8 h-8 bg-carbon/[0.06] flex items-center justify-center">
+                  <Check className="h-4 w-4 text-carbon/40" />
+                </div>
+              ) : (
+                <Icon className={`h-5 w-5 ${isActive ? 'text-carbon/40' : 'text-carbon/10'}`} />
+              )}
+            </div>
+
+            {/* Label */}
+            <div className={`w-full py-1.5 text-center border-t ${
+              isActive
+                ? 'border-carbon bg-carbon text-crema'
+                : isCompleted
+                  ? 'border-carbon/[0.04] text-carbon/40'
+                  : 'border-carbon/[0.04] text-carbon/15'
+            }`}>
+              <span className="text-[7px] font-medium tracking-[0.1em] uppercase">{step.label}</span>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Helper: compute evolution state from SKU data ── */
+export function computeEvolutionState(sku: {
+  notes?: string;
+  name?: string;
+  pvp?: number;
+  reference_image_url?: string;
+  sketch_url?: string;
+  render_url?: string;
+  render_urls?: Record<string, string>;
+  proto_iterations?: { images: string[]; status?: string }[];
+  production_sample_url?: string;
+  production_approved?: boolean;
+  design_phase?: string;
+}) {
+  const completed = new Set<EvolutionStep>();
+  const thumbnails: Partial<Record<EvolutionStep, string | null>> = {};
+
+  // Concept — completed if has name + pvp
+  if (sku.name && sku.pvp && sku.pvp > 0) {
+    completed.add('concept');
+  }
+
+  // Reference
+  if (sku.reference_image_url) {
+    completed.add('reference');
+    thumbnails.reference = sku.reference_image_url;
+  }
+
+  // Sketch B&W
+  if (sku.sketch_url) {
+    completed.add('sketch');
+    thumbnails.sketch = sku.sketch_url;
+  }
+
+  // Colorways (colored sketch)
+  if (sku.render_url) {
+    completed.add('colorways');
+    thumbnails.colorways = sku.render_url;
+  }
+
+  // 3D Render
+  const render3d = (sku.render_urls as Record<string, string>)?.['3d'];
+  if (render3d) {
+    completed.add('render3d');
+    thumbnails.render3d = render3d;
+  }
+
+  // Prototype — has at least one iteration with an image
+  const protoImg = sku.proto_iterations?.find(it => it.images?.length > 0)?.images?.[0];
+  if (protoImg) {
+    completed.add('prototype');
+    thumbnails.prototype = protoImg;
+  }
+
+  // Production — has sample photo
+  if (sku.production_sample_url) {
+    completed.add('production');
+    thumbnails.production = sku.production_sample_url;
+  }
+
+  // Determine farthest reachable step
+  let reachable: EvolutionStep = 'concept';
+  const order: EvolutionStep[] = ['concept', 'reference', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+  for (let i = 0; i < order.length; i++) {
+    reachable = order[i];
+    if (!completed.has(order[i])) break;
+    // If this step is completed, the next one is reachable
+    if (i < order.length - 1) reachable = order[i + 1];
+  }
+
+  // Determine active step — farthest incomplete, or last if all done
+  let active: EvolutionStep = 'concept';
+  for (const step of order) {
+    if (!completed.has(step)) { active = step; break; }
+    active = step; // if all completed, stay on last
+  }
+
+  return { completed, thumbnails, reachable, active };
+}
