@@ -312,7 +312,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     production: 'Approve for Production',
   };
 
-  const footerAction = childFooterAction || {
+  const footerAction = {
     label: stepCTALabels[activeStep] || advanceLabel(),
     action: activeStep === 'production' ? advancePhase : nextStep,
     isPhaseAdvance: activeStep === 'production',
