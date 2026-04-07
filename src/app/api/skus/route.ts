@@ -25,7 +25,8 @@ export async function GET(req: NextRequest) {
       .from('collection_skus')
       .select('*')
       .eq('collection_plan_id', planId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: true })
+      .order('name', { ascending: true });
 
     if (error) {
       console.error('Error fetching SKUs:', error);
