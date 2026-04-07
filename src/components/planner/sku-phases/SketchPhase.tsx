@@ -33,9 +33,11 @@ interface SketchPhaseProps {
   uploading: string | null;
   onFooterAction?: (action: FooterAction | null) => void;
   onAdvancePhase?: () => void;
+  /** When set by EvolutionStrip, forces the active sub-step (0=sketch, 1=colorways, 2=materials, 3=techpack) */
+  evolutionStep?: 'sketch' | 'colorways' | 'render3d';
 }
 
-export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterAction, onAdvancePhase }: SketchPhaseProps) {
+export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterAction, onAdvancePhase, evolutionStep }: SketchPhaseProps) {
   const t = useTranslation();
   const { language } = useLanguage();
   const { toast } = useToast();
@@ -55,7 +57,15 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
   const materials = (designData.patterns[sku.id] || []) as { name: string; url: string; fileType: string; gradingNotes: string }[];
 
-  const [activeStep, setActiveStep] = useState(0);
+  const evolutionStepMap: Record<string, number> = { sketch: 0, colorways: 1, render3d: 3 };
+  const [activeStep, setActiveStep] = useState(() => evolutionStep ? (evolutionStepMap[evolutionStep] ?? 0) : 0);
+
+  // Sync with EvolutionStrip when it changes
+  useEffect(() => {
+    if (evolutionStep && evolutionStepMap[evolutionStep] !== undefined) {
+      setActiveStep(evolutionStepMap[evolutionStep]);
+    }
+  }, [evolutionStep]);
   const [modes, setModes] = useState<Record<string, InputMode>>({ sketch: 'free', colorways: 'free', materials: 'free', techpack: 'free' });
   const [notes, setNotes] = useState(sku.notes || '');
 
@@ -151,8 +161,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
   return (
     <div className="h-full flex flex-col gap-4">
-      {/* ── Sub-stepper: numbered steps with connecting line ── */}
-      <div className="flex items-center gap-0">
+      {/* ── Sub-stepper: numbered steps with connecting line (hidden when EvolutionStrip drives navigation) ── */}
+      <div className={`flex items-center gap-0 ${evolutionStep ? 'hidden' : ''}`}>
         {STEPS.map((step, idx) => {
           const isActive = idx === activeStep;
           const isConfirmed = confirmedSteps.has(idx);

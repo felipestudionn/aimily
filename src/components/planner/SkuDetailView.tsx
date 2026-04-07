@@ -343,14 +343,18 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
       {/* ── Content — scrollable ── */}
       <div className="flex-1 min-h-0 px-3.5 sm:px-10 lg:px-16 py-3 sm:py-6 overflow-y-auto">
         <div className="max-w-5xl mx-auto h-full">
-          {/* Concept + Reference → RangePlanPhase */}
-          {(activeStep === 'concept' || activeStep === 'reference') && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
+          {/* Concept → financials + notes */}
+          {activeStep === 'concept' && (
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="concept" />
           )}
-          {/* Sketch + Colorways + 3D Render → SketchPhase */}
+          {/* Reference → reference image upload */}
+          {activeStep === 'reference' && (
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="reference" />
+          )}
+          {/* Sketch + Colorways + 3D Render → SketchPhase with evolution step sync */}
           {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (
             <SketchPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading}
-              onFooterAction={setChildFooterAction} onAdvancePhase={advancePhase} />
+              onFooterAction={setChildFooterAction} onAdvancePhase={advancePhase} evolutionStep={activeStep} />
           )}
           {/* Prototype → PrototypingPhase */}
           {activeStep === 'prototype' && (

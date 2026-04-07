@@ -10,9 +10,11 @@ interface RangePlanPhaseProps {
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
   onImageUpload: (file: File, field: 'reference_image_url') => void;
   uploading: string | null;
+  /** 'concept' = financials+notes, 'reference' = image upload, undefined = show all (legacy) */
+  mode?: 'concept' | 'reference';
 }
 
-export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading }: RangePlanPhaseProps) {
+export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, mode }: RangePlanPhaseProps) {
   const t = useTranslation();
   const [notes, setNotes] = useState(sku.notes || '');
 
@@ -41,41 +43,54 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading }: Rang
     await onUpdate(updates);
   };
 
+  const showConcept = !mode || mode === 'concept';
+  const showReference = !mode || mode === 'reference';
+
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Reference Image */}
+    <div className="space-y-6">
+      {/* ── Reference Image workspace ── */}
+      {showReference && (
         <div className="space-y-3">
           <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
             {t.skuPhases?.referenceImage || 'Reference Image'}
           </p>
-          <ImageUploadArea
-            imageUrl={sku.reference_image_url}
-            uploading={uploading === 'reference_image_url'}
-            placeholder={t.skuPhases?.uploadReference || 'Upload reference image'}
-            onUpload={(file) => onImageUpload(file, 'reference_image_url')}
-            onRemove={() => onUpdate({ reference_image_url: undefined })}
-            aspectClass="aspect-[4/3]"
-          />
-        </div>
-
-        {/* Financial Summary — EDITABLE */}
-        <div className="space-y-3">
-          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
-            {t.skuPhases?.financials || 'Financial Details'}
+          <p className="text-[11px] font-light text-carbon/40">
+            {'Upload an inspiration or mood image for this product. This will guide the sketch generation.'}
           </p>
-          <div className="bg-white border border-carbon/[0.06] p-5 space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <MetricCell label="PVP" value={`€${sku.pvp}`} editable onChange={(v) => handleFinancialChange('pvp', v)} />
-              <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => handleFinancialChange('cost', v)} />
-              <MetricCell label={t.skuPhases?.units || 'Units'} value={String(sku.buy_units)} editable onChange={(v) => handleFinancialChange('buy_units', v)} />
-              <MetricCell label={t.skuPhases?.margin || 'Margin'} value={`${Math.round(sku.margin)}%`} />
-            </div>
-            <div className="border-t border-carbon/[0.05] pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <MetricCell label={t.skuPhases?.discount || 'Discount'} value={`${sku.discount}%`} editable onChange={(v) => handleFinancialChange('discount', v)} secondary />
-              <MetricCell label={t.skuPhases?.finalPrice || 'Final Price'} value={`€${sku.final_price}`} secondary />
-              <MetricCell label={t.skuPhases?.sellThrough || 'Sell-through'} value={`${sku.sale_percentage}%`} editable onChange={(v) => handleFinancialChange('sale_percentage', v)} secondary />
-              <MetricCell label={t.skuPhases?.expectedSales || 'Expected'} value={`€${Math.round(sku.expected_sales).toLocaleString()}`} secondary />
+          <div className="max-w-lg">
+            <ImageUploadArea
+              imageUrl={sku.reference_image_url}
+              uploading={uploading === 'reference_image_url'}
+              placeholder={t.skuPhases?.uploadReference || 'Upload reference image'}
+              onUpload={(file) => onImageUpload(file, 'reference_image_url')}
+              onRemove={() => onUpdate({ reference_image_url: undefined })}
+              aspectClass="aspect-[4/3]"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Concept workspace: financials + attributes + notes ── */}
+      {showConcept && (
+        <>
+          {/* Financial Summary — EDITABLE */}
+          <div className="space-y-3">
+            <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
+              {t.skuPhases?.financials || 'Financial Details'}
+            </p>
+            <div className="bg-white border border-carbon/[0.06] p-5 space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <MetricCell label="PVP" value={`€${sku.pvp}`} editable onChange={(v) => handleFinancialChange('pvp', v)} />
+                <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => handleFinancialChange('cost', v)} />
+                <MetricCell label={t.skuPhases?.units || 'Units'} value={String(sku.buy_units)} editable onChange={(v) => handleFinancialChange('buy_units', v)} />
+                <MetricCell label={t.skuPhases?.margin || 'Margin'} value={`${Math.round(sku.margin)}%`} />
+              </div>
+              <div className="border-t border-carbon/[0.05] pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                <MetricCell label={t.skuPhases?.discount || 'Discount'} value={`${sku.discount}%`} editable onChange={(v) => handleFinancialChange('discount', v)} secondary />
+                <MetricCell label={t.skuPhases?.finalPrice || 'Final Price'} value={`€${sku.final_price}`} secondary />
+                <MetricCell label={t.skuPhases?.sellThrough || 'Sell-through'} value={`${sku.sale_percentage}%`} editable onChange={(v) => handleFinancialChange('sale_percentage', v)} secondary />
+                <MetricCell label={t.skuPhases?.expectedSales || 'Expected'} value={`€${Math.round(sku.expected_sales).toLocaleString()}`} secondary />
+              </div>
             </div>
           </div>
 
@@ -100,24 +115,24 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading }: Rang
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Notes */}
-      <div className="space-y-2">
-        <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
-          {t.skuPhases?.notes || 'Notes & Concept'}
-        </p>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          onBlur={() => {
-            if (notes !== (sku.notes || '')) onUpdate({ notes });
-          }}
-          placeholder={t.skuPhases?.notesPlaceholder || 'Concept description, fabric ideas, inspiration references...'}
-          className="w-full h-24 p-4 bg-white border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors"
-        />
-      </div>
-    </>
+          {/* Notes */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35">
+              {t.skuPhases?.notes || 'Notes & Concept'}
+            </p>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              onBlur={() => {
+                if (notes !== (sku.notes || '')) onUpdate({ notes });
+              }}
+              placeholder={t.skuPhases?.notesPlaceholder || 'Concept description, fabric ideas, inspiration references...'}
+              className="w-full h-24 p-4 bg-white border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors"
+            />
+          </div>
+        </>
+      )}
+    </div>
   );
 }

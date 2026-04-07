@@ -72,48 +72,7 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
   return (
     <div className="space-y-4">
 
-      {/* ── Visual product context — always visible ── */}
-      <div className="border border-carbon/[0.06] bg-white overflow-hidden">
-        <div className="grid grid-cols-3 gap-px bg-carbon/[0.04]">
-          {/* Colored sketch */}
-          <div className="bg-white p-2">
-            {sku.render_url ? (
-              <img src={sku.render_url} alt="Colored sketch" className="w-full h-32 object-contain" />
-            ) : sku.sketch_url ? (
-              <img src={sku.sketch_url} alt="Sketch" className="w-full h-32 object-contain" />
-            ) : (
-              <div className="h-32 flex items-center justify-center text-[9px] text-carbon/15">No sketch</div>
-            )}
-            <p className="text-[7px] text-carbon/20 uppercase tracking-wider text-center mt-1">Sketch</p>
-          </div>
-          {/* 3D render */}
-          <div className="bg-white p-2">
-            {(sku.render_urls as Record<string, string>)?.['3d'] ? (
-              <img src={(sku.render_urls as Record<string, string>)['3d']} alt="3D render" className="w-full h-32 object-contain" />
-            ) : (
-              <div className="h-32 flex items-center justify-center text-[9px] text-carbon/15">No render</div>
-            )}
-            <p className="text-[7px] text-carbon/20 uppercase tracking-wider text-center mt-1">3D Render</p>
-          </div>
-          {/* Real Sample */}
-          <div className="bg-white p-2">
-            {sku.production_sample_url ? (
-              <img src={sku.production_sample_url} alt="Real sample" className="w-full h-32 object-contain" />
-            ) : (
-              <div className="h-32 flex flex-col items-center justify-center gap-1">
-                <label className="cursor-pointer flex flex-col items-center gap-1 hover:opacity-70 transition-opacity">
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'production_sample_url'); }} />
-                  <Package className="h-5 w-5 text-carbon/10" />
-                  <span className="text-[8px] text-carbon/20">Upload sample</span>
-                </label>
-              </div>
-            )}
-            <p className="text-[7px] text-carbon/20 uppercase tracking-wider text-center mt-1">Real Sample</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Step breadcrumbs — same pattern as SketchPhase ── */}
+      {/* ── Step breadcrumbs (EvolutionStrip handles the visual context now) ── */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {STEPS.map((step, idx) => {
           const confirmed = isStepConfirmed(step.id);
