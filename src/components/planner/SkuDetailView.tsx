@@ -332,6 +332,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
               active={activeStep}
               onSelect={setActiveStep}
               thumbnails={evolution.thumbnails}
+              textPreviews={evolution.textPreviews}
               completed={evolution.completed}
               reachable={evolution.reachable}
             />

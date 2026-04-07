@@ -27,13 +27,15 @@ interface EvolutionStripProps {
   onSelect: (step: EvolutionStep) => void;
   /** Map of step id → thumbnail URL (null if not yet completed) */
   thumbnails: Partial<Record<EvolutionStep, string | null>>;
+  /** Map of step id → short text preview (for steps without images, like Concept) */
+  textPreviews?: Partial<Record<EvolutionStep, string>>;
   /** Which steps are completed */
   completed: Set<EvolutionStep>;
   /** Farthest reachable step (user can click up to this) */
   reachable: EvolutionStep;
 }
 
-export function EvolutionStrip({ active, onSelect, thumbnails, completed, reachable }: EvolutionStripProps) {
+export function EvolutionStrip({ active, onSelect, thumbnails, textPreviews, completed, reachable }: EvolutionStripProps) {
   const reachableIdx = EVOLUTION_STEPS.findIndex(s => s.id === reachable);
 
   return (
@@ -43,6 +45,7 @@ export function EvolutionStrip({ active, onSelect, thumbnails, completed, reacha
         const isCompleted = completed.has(step.id);
         const isReachable = idx <= reachableIdx;
         const thumb = thumbnails[step.id];
+        const textPreview = textPreviews?.[step.id];
         const Icon = step.icon;
 
         return (
@@ -66,10 +69,8 @@ export function EvolutionStrip({ active, onSelect, thumbnails, completed, reacha
             }`}>
               {thumb ? (
                 <img src={thumb} alt={step.label} className="w-full h-full object-contain" />
-              ) : isCompleted ? (
-                <div className="w-8 h-8 bg-carbon/[0.06] flex items-center justify-center">
-                  <Check className="h-4 w-4 text-carbon/40" />
-                </div>
+              ) : textPreview && isCompleted ? (
+                <p className="text-[9px] font-light text-carbon/50 text-center leading-tight px-1 line-clamp-4">{textPreview}</p>
               ) : (
                 <Icon className={`h-5 w-5 ${isActive ? 'text-carbon/40' : 'text-carbon/10'}`} />
               )}
@@ -108,10 +109,14 @@ export function computeEvolutionState(sku: {
 }) {
   const completed = new Set<EvolutionStep>();
   const thumbnails: Partial<Record<EvolutionStep, string | null>> = {};
+  const textPreviews: Partial<Record<EvolutionStep, string>> = {};
 
   // Concept — completed if has name + pvp
   if (sku.name && sku.pvp && sku.pvp > 0) {
     completed.add('concept');
+    const parts = [sku.name];
+    if (sku.notes) parts.push(sku.notes.slice(0, 60));
+    textPreviews.concept = parts.join(' · ');
   }
 
   // Reference
@@ -169,5 +174,5 @@ export function computeEvolutionState(sku: {
     active = step; // if all completed, stay on last
   }
 
-  return { completed, thumbnails, reachable, active };
+  return { completed, thumbnails, textPreviews, reachable, active };
 }
