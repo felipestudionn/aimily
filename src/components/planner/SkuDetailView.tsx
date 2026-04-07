@@ -345,11 +345,13 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         <div className="max-w-5xl mx-auto h-full">
           {/* Concept → financials + notes */}
           {activeStep === 'concept' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="concept" />
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="concept"
+              onContinue={() => setActiveStep('reference')} />
           )}
           {/* Reference → reference image upload */}
           {activeStep === 'reference' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="reference" />
+            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} mode="reference"
+              onContinue={() => { if (localSku.design_phase === 'range_plan') advancePhase(); else setActiveStep('sketch'); }} />
           )}
           {/* Sketch + Colorways + 3D Render → SketchPhase with evolution step sync */}
           {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (

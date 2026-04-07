@@ -12,9 +12,11 @@ interface RangePlanPhaseProps {
   uploading: string | null;
   /** 'concept' = financials+notes, 'reference' = image upload, undefined = show all (legacy) */
   mode?: 'concept' | 'reference';
+  /** Navigate to next evolution step */
+  onContinue?: () => void;
 }
 
-export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, mode }: RangePlanPhaseProps) {
+export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, mode, onContinue }: RangePlanPhaseProps) {
   const t = useTranslation();
   const [notes, setNotes] = useState(sku.notes || '');
 
@@ -104,6 +106,20 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, mode }
               </div>
             </div>
           </div>
+
+          {/* CTA → next step */}
+          {onContinue && (
+            <div className="pt-4 flex justify-end">
+              <button onClick={onContinue}
+                className={`flex items-center gap-2 px-5 py-2.5 text-[10px] font-medium tracking-[0.12em] uppercase transition-colors ${
+                  sku.reference_image_url
+                    ? 'bg-carbon text-crema hover:bg-carbon/90'
+                    : 'border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema'
+                }`}>
+                {sku.reference_image_url ? 'Continue to Sketch' : 'Skip to Sketch'} <span className={sku.reference_image_url ? 'text-crema/50' : 'text-carbon/20'}>→</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -174,6 +190,16 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, mode }
               className="w-full h-24 p-4 bg-white border border-carbon/[0.06] text-sm font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.15] transition-colors"
             />
           </div>
+
+          {/* CTA → next step */}
+          {onContinue && (
+            <div className="pt-4 flex justify-end">
+              <button onClick={onContinue}
+                className="flex items-center gap-2 px-5 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors">
+                Continue to Reference <span className="text-crema/50">→</span>
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
