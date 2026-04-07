@@ -161,57 +161,60 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
   return (
     <div className="h-full flex flex-col gap-4">
-      {/* ── Sub-stepper: numbered steps with connecting line ── */}
-      {/* Hidden when EvolutionStrip drives sketch or render3d (single-focus steps) */}
-      {/* Visible when EvolutionStrip is on colorways (user needs to navigate colorways ↔ materials) */}
-      <div className={`flex items-center gap-0 ${evolutionStep === 'sketch' || evolutionStep === 'render3d' ? 'hidden' : ''}`}>
-        {STEPS.map((step, idx) => {
-          const isActive = idx === activeStep;
-          const isConfirmed = confirmedSteps.has(idx);
-          const isPast = idx < activeStep;
-          return (
-            <React.Fragment key={step.id}>
-              {idx > 0 && (
-                <div className={`flex-1 h-px ${isConfirmed || isPast ? 'bg-carbon/20' : 'bg-carbon/[0.06]'}`} />
-              )}
-              <button
-                onClick={() => setActiveStep(idx)}
-                className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
-                  isActive
-                    ? 'text-carbon'
-                    : isConfirmed
-                      ? 'text-carbon/50 hover:text-carbon/70'
-                      : 'text-carbon/20 hover:text-carbon/30'
-                }`}
-              >
-                <span className={`w-5 h-5 flex items-center justify-center text-[9px] font-semibold rounded-full shrink-0 ${
-                  isActive
-                    ? 'bg-carbon text-crema'
-                    : isConfirmed
-                      ? 'bg-carbon/15 text-carbon/60'
-                      : 'bg-carbon/[0.05] text-carbon/25'
-                }`}>
-                  {isConfirmed && !isActive ? <Check className="h-2.5 w-2.5" /> : idx + 1}
-                </span>
-                {/* Clear button on confirmed steps (not tech pack) */}
-                {isConfirmed && isActive && idx < 3 && (
-                  <span
-                    role="button"
-                    onClick={(e) => { e.stopPropagation(); clearStep(idx); }}
-                    className="ml-0.5 text-carbon/15 hover:text-[#A0463C]/50 transition-colors"
-                    title={stepLabel('clearStep') || 'Clear this step'}
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </span>
+      {/* ── Sub-stepper: visible pills ── */}
+      {/* Hidden for sketch (Drawing is own EvolutionStrip step) and render3d (Tech Pack is own step) */}
+      {/* For colorways: show only Colorways + Materials (skip Drawing, skip Tech Pack) */}
+      {evolutionStep !== 'sketch' && evolutionStep !== 'render3d' && (
+        <div className="flex items-center gap-0">
+          {STEPS.filter(s => evolutionStep === 'colorways' ? s.id !== 'sketch' && s.id !== 'techpack' : true).map((step) => {
+            const idx = STEPS.findIndex(s => s.id === step.id);
+            const isActive = idx === activeStep;
+            const isConfirmed = confirmedSteps.has(idx);
+            const isPast = idx < activeStep;
+            const displayIdx = evolutionStep === 'colorways' ? (idx === 1 ? 1 : 2) : idx + 1;
+            return (
+              <React.Fragment key={step.id}>
+                {displayIdx > 1 && (
+                  <div className={`flex-1 h-px ${isConfirmed || isPast ? 'bg-carbon/20' : 'bg-carbon/[0.06]'}`} />
                 )}
-                <span className={`text-[10px] tracking-[0.06em] uppercase whitespace-nowrap ${
-                  isActive ? 'font-semibold' : 'font-medium'
-                }`}>{step.label}</span>
-              </button>
-            </React.Fragment>
-          );
-        })}
-      </div>
+                <button
+                  onClick={() => setActiveStep(idx)}
+                  className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
+                    isActive
+                      ? 'text-carbon'
+                      : isConfirmed
+                        ? 'text-carbon/50 hover:text-carbon/70'
+                        : 'text-carbon/20 hover:text-carbon/30'
+                  }`}
+                >
+                  <span className={`w-5 h-5 flex items-center justify-center text-[9px] font-semibold rounded-full shrink-0 ${
+                    isActive
+                      ? 'bg-carbon text-crema'
+                      : isConfirmed
+                        ? 'bg-carbon/15 text-carbon/60'
+                        : 'bg-carbon/[0.05] text-carbon/25'
+                  }`}>
+                    {isConfirmed && !isActive ? <Check className="h-2.5 w-2.5" /> : displayIdx}
+                  </span>
+                  {isConfirmed && isActive && idx < 3 && (
+                    <span
+                      role="button"
+                      onClick={(e) => { e.stopPropagation(); clearStep(idx); }}
+                      className="ml-0.5 text-carbon/15 hover:text-[#A0463C]/50 transition-colors"
+                      title={stepLabel('clearStep') || 'Clear this step'}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </span>
+                  )}
+                  <span className={`text-[10px] tracking-[0.06em] uppercase whitespace-nowrap ${
+                    isActive ? 'font-semibold' : 'font-medium'
+                  }`}>{step.label}</span>
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Mode selector ── */}
       {activeStep < 3 && (
