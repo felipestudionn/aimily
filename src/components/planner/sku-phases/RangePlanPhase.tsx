@@ -14,9 +14,14 @@ interface RangePlanPhaseProps {
   onDelete?: () => void;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  CALZADO: 'Footwear', ROPA: 'Apparel', ACCESORIOS: 'Accessories',
+};
+
 export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDelete }: RangePlanPhaseProps) {
   const t = useTranslation();
   const [notes, setNotes] = useState(sku.notes || '');
+  const categoryLabel = CATEGORY_LABELS[sku.category] || sku.category;
 
   const handleFinancialChange = async (field: string, raw: string) => {
     const val = Number(raw.replace(/[^0-9.]/g, ''));
@@ -55,7 +60,7 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDele
                 </div>
                 <div>
                   <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">Category</p>
-                  <p className="text-sm font-light text-carbon">{sku.category}</p>
+                  <p className="text-sm font-light text-carbon">{categoryLabel}</p>
                 </div>
                 <div>
                   <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.channel || 'Channel'}</p>

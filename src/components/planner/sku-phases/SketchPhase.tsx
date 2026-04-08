@@ -906,7 +906,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="text-lg font-light text-carbon tracking-tight">{sku.name}</h3>
-                        <p className="text-[10px] text-carbon/30 mt-0.5">{sku.family} · Drop {sku.drop_number} · {sku.category}</p>
+                        <p className="text-[10px] text-carbon/30 mt-0.5">{sku.family} · Drop {sku.drop_number} · {sku.category === 'CALZADO' ? 'Footwear' : sku.category === 'ROPA' ? 'Apparel' : sku.category}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[8px] text-carbon/20 uppercase tracking-wider">PVP / COGS</p>
