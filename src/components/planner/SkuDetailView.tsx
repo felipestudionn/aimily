@@ -314,11 +314,11 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     const step = activeStep;
     const undoMap: Record<EvolutionStep, { clear: Partial<SKU>; revertPhase?: DesignPhase; deleteColorways?: boolean }> = {
       concept: { clear: {} }, // Can't undo concept
-      sketch: { clear: { sketch_url: undefined, sketch_top_url: undefined }, revertPhase: 'range_plan' },
-      colorways: { clear: { render_url: undefined, material_zones: [] as SKU['material_zones'] }, deleteColorways: true },
+      sketch: { clear: { sketch_url: null, sketch_top_url: null } as unknown as Partial<SKU>, revertPhase: 'range_plan' },
+      colorways: { clear: { render_url: null, material_zones: [] } as unknown as Partial<SKU>, deleteColorways: true },
       render3d: { clear: { render_urls: {} } },
-      prototype: { clear: { proto_iterations: [] as SKU['proto_iterations'], sourcing_data: {} } as Partial<SKU>, revertPhase: 'sketch' },
-      production: { clear: { production_data: {}, size_run: {}, production_sample_url: undefined, production_approved: false } as Partial<SKU>, revertPhase: 'prototyping' },
+      prototype: { clear: { proto_iterations: [], sourcing_data: {} } as unknown as Partial<SKU>, revertPhase: 'sketch' },
+      production: { clear: { production_data: {}, size_run: {}, production_sample_url: null, production_approved: false } as unknown as Partial<SKU>, revertPhase: 'prototyping' },
     };
 
     const undo = undoMap[step];
