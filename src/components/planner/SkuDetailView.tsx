@@ -374,7 +374,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
           {/* Center: SKU identity card */}
           <div className="flex-1 flex justify-center">
-            <div className="bg-carbon px-5 py-2 flex items-center gap-3">
+            <div className="bg-carbon px-5 py-2 flex items-center gap-3 rounded-md">
               <div className="text-center">
                 <h1 className="text-[13px] font-light text-crema tracking-tight">{localSku.name}</h1>
                 <p className="text-[9px] text-crema/40">{localSku.family} · Drop {localSku.drop_number} · {localSku.type === 'IMAGEN' ? 'Image' : localSku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
