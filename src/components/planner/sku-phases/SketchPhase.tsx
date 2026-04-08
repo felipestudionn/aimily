@@ -315,7 +315,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('sideProfile') || 'Side Profile'}</p>
                   {sku.sketch_url ? (
                     <div className="border border-carbon/[0.06] bg-white p-3 relative group">
-                      <img src={sku.sketch_url} alt="Side profile" className="w-full h-auto object-contain max-h-[45vh]" />
+                      <img src={sku.sketch_url} alt="Side profile" className="w-full h-auto object-contain max-h-[50vh]" />
                       {mode === 'free' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
                           <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
@@ -329,9 +329,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_url'}
                       placeholder={stepLabel('uploadSideSketch') || 'Upload side profile sketch'}
                       onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                      onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[45vh]" />
+                      onRemove={() => {}} aspectClass="aspect-square max-h-[50vh]" />
                   ) : (
-                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[45vh] flex items-center justify-center">
+                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-square max-h-[50vh] flex items-center justify-center">
                       <p className="text-[10px] text-carbon/15">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>
                     </div>
                   )}
@@ -340,7 +340,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('topDown') || 'Top Down'}</p>
                   {(sku.sketch_top_url || sketchTopView) ? (
                     <div className="border border-carbon/[0.06] bg-white p-3 relative group">
-                      <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full h-auto object-contain max-h-[45vh]" />
+                      <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full h-auto object-contain max-h-[50vh]" />
                       {mode === 'free' && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
                           <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
@@ -354,9 +354,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_top_url'}
                       placeholder={stepLabel('uploadTopSketch') || 'Upload top-down sketch'}
                       onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                      onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[45vh]" />
+                      onRemove={() => {}} aspectClass="aspect-square max-h-[50vh]" />
                   ) : (
-                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[45vh] flex items-center justify-center">
+                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-square max-h-[50vh] flex items-center justify-center">
                       <p className="text-[10px] text-carbon/15">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>
                     </div>
                   )}
@@ -382,9 +382,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <ImageUploadArea imageUrl={sku.sketch_url} uploading={uploading === 'sketch_url'}
                     placeholder={stepLabel('uploadSketch') || 'Upload your sketch'}
                     onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[4/5] max-h-[55vh] max-w-md" />
+                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-square max-h-[55vh] max-w-md" />
                 ) : (
-                  <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[55vh] max-w-md flex items-center justify-center">
+                  <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-square max-h-[55vh] max-w-md flex items-center justify-center">
                     <p className="text-[11px] text-carbon/15">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
                   </div>
                 )}
