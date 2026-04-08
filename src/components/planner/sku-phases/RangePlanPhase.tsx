@@ -14,14 +14,15 @@ interface RangePlanPhaseProps {
   onDelete?: () => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  CALZADO: 'Footwear', ROPA: 'Apparel', ACCESORIOS: 'Accessories',
-};
-
 export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDelete }: RangePlanPhaseProps) {
   const t = useTranslation();
   const [notes, setNotes] = useState(sku.notes || '');
-  const categoryLabel = CATEGORY_LABELS[sku.category] || sku.category;
+  const categoryMap: Record<string, string> = {
+    CALZADO: (t.skuPhases as Record<string, string>)?.categoryFootwear || 'Footwear',
+    ROPA: (t.skuPhases as Record<string, string>)?.categoryApparel || 'Apparel',
+    ACCESORIOS: (t.skuPhases as Record<string, string>)?.categoryAccessories || 'Accessories',
+  };
+  const categoryLabel = categoryMap[sku.category] || sku.category;
 
   const handleFinancialChange = async (field: string, raw: string) => {
     const val = Number(raw.replace(/[^0-9.]/g, ''));
