@@ -17,7 +17,7 @@ async function generateWithOpenAI(prompt: string, photoBase64: string, size = '1
 
   const blob = new Blob([Buffer.from(photoBase64, 'base64')], { type: 'image/png' });
   const formData = new FormData();
-  formData.append('model', 'gpt-image-1.5');
+  formData.append('model', 'gpt-image-1');
   formData.append('image', blob, 'photo.png');
   formData.append('prompt', prompt);
   formData.append('n', '1');
