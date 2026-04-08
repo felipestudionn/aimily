@@ -2281,6 +2281,8 @@ export const en = {
     categoryApparel: 'Apparel',
     categoryAccessories: 'Accessories',
     back: 'Back',
+    sideProfilePlaceholder: 'Side profile',
+    topDownPlaceholder: 'Top-down view',
     referenceImage: 'Reference Image',
     uploadReference: 'Upload reference image',
     financials: 'Financial Details',

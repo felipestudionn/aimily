@@ -2275,6 +2275,8 @@ export const nl: Dictionary = {
     categoryFootwear: 'Schoenen',
     categoryApparel: 'Kleding',
     categoryAccessories: 'Accessoires',
+    sideProfilePlaceholder: 'Zijaanzicht',
+    topDownPlaceholder: 'Bovenaanzicht',
     back: 'Terug',
     referenceImage: 'Referentieafbeelding',
     uploadReference: 'Referentieafbeelding uploaden',

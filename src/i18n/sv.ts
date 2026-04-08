@@ -2149,6 +2149,8 @@ export const sv: Dictionary = {
     categoryFootwear: 'Skor',
     categoryApparel: 'Kläder',
     categoryAccessories: 'Tillbehör',
+    sideProfilePlaceholder: 'Sidoprofil',
+    topDownPlaceholder: 'Ovanifrån',
     back: 'Tillbaka',
     referenceImage: 'Referensbild',
     uploadReference: 'Ladda upp referensbild',

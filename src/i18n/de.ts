@@ -2275,6 +2275,8 @@ export const de: Dictionary = {
     categoryFootwear: 'Schuhe',
     categoryApparel: 'Bekleidung',
     categoryAccessories: 'Accessoires',
+    sideProfilePlaceholder: 'Seitenansicht',
+    topDownPlaceholder: 'Draufsicht',
     back: 'Zurück',
     referenceImage: 'Referenzbild',
     uploadReference: 'Referenzbild hochladen',

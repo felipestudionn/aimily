@@ -2257,6 +2257,8 @@ export const pt: Dictionary = {
     categoryFootwear: 'Calçado',
     categoryApparel: 'Vestuário',
     categoryAccessories: 'Acessórios',
+    sideProfilePlaceholder: 'Perfil lateral',
+    topDownPlaceholder: 'Vista de cima',
     back: 'Voltar',
     referenceImage: 'Imagem de Referência',
     uploadReference: 'Carregar imagem de referência',

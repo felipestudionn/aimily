@@ -2149,6 +2149,8 @@ export const no: Dictionary = {
     categoryFootwear: 'Sko',
     categoryApparel: 'Klær',
     categoryAccessories: 'Tilbehør',
+    sideProfilePlaceholder: 'Sideprofil',
+    topDownPlaceholder: 'Ovenfra',
     back: 'Tilbake',
     referenceImage: 'Referansebilde',
     uploadReference: 'Last opp referansebilde',
