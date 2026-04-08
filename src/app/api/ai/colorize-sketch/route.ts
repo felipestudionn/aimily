@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
+import sharp from 'sharp';
 
 /* ═══════════════════════════════════════════════════════════
    Colorize Sketch — gpt-image-1.5
@@ -72,8 +73,10 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
     }
 
     // gpt-image-1.5: 4x faster, 20% cheaper, better edit precision than gpt-image-1
-    // input_fidelity="high" preserves sketch structure (silhouette, proportions, details)
-    const blob = new Blob([Buffer.from(sketchBase64, 'base64')], { type: 'image/png' });
+    // Convert any format to PNG for OpenAI compatibility (handles AVIF, WEBP, HEIC, etc.)
+    const inputBuffer = Buffer.from(sketchBase64, 'base64');
+    const pngBuffer = await sharp(inputBuffer).png().toBuffer();
+    const blob = new Blob([pngBuffer], { type: 'image/png' });
     const formData = new FormData();
     formData.append('model', 'gpt-image-1.5');
     formData.append('image', blob, 'sketch.png');

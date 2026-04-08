@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
+import sharp from 'sharp';
 
 /* ═══════════════════════════════════════════════════════════
    Sketch from Reference Photo — OpenAI gpt-image-1
@@ -15,7 +16,10 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 async function generateWithOpenAI(prompt: string, photoBase64: string, size = '1024x1024'): Promise<string> {
   if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
 
-  const blob = new Blob([Buffer.from(photoBase64, 'base64')], { type: 'image/png' });
+  // Convert any image format (AVIF, WEBP, HEIC, etc.) to PNG for OpenAI compatibility
+  const inputBuffer = Buffer.from(photoBase64, 'base64');
+  const pngBuffer = await sharp(inputBuffer).png().toBuffer();
+  const blob = new Blob([pngBuffer], { type: 'image/png' });
   const formData = new FormData();
   formData.append('model', 'gpt-image-1');
   formData.append('image', blob, 'photo.png');
