@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import ExcelJS from 'exceljs';
 
 /* ═══════════════════════════════════════════════════════════
@@ -318,6 +319,17 @@ export async function GET(req: NextRequest) {
       }
 
       currentRow += 2; // spacing between SKUs
+    });
+
+    // ── Audit log ──
+    logAudit({
+      userId: user!.id,
+      collectionPlanId: planId || skus[0]?.id ? undefined : undefined,
+      action: AUDIT_ACTIONS.PO_DOWNLOADED,
+      entityType: 'purchase_order',
+      entityId: poNumber,
+      metadata: { skuCount: skus.length, totalUnits, totalCost, factoryName, factoryFilter: factoryFilter || undefined },
+      ipAddress: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
     });
 
     // ── Generate buffer ──

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -56,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     // Fetch existing SKU to verify ownership
     const { data: existing } = await supabaseAdmin
       .from('collection_skus')
-      .select('collection_plan_id')
+      .select('collection_plan_id, design_phase, name')
       .eq('id', id)
       .single();
 
@@ -80,6 +81,17 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     if (error) {
       console.error('Error updating SKU:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Audit sensitive actions (fire-and-forget)
+    if (updates.production_approved) {
+      logAudit({ userId: user.id, collectionPlanId: existing?.collection_plan_id, action: AUDIT_ACTIONS.PRODUCTION_APPROVED, entityType: 'sku', entityId: id, metadata: { skuName: data?.name } });
+    }
+    if (updates.design_phase && updates.design_phase !== existing?.design_phase) {
+      logAudit({ userId: user.id, collectionPlanId: existing?.collection_plan_id, action: AUDIT_ACTIONS.DESIGN_PHASE_ADVANCED, entityType: 'sku', entityId: id, metadata: { from: existing?.design_phase, to: updates.design_phase } });
+    }
+    if (updates.production_data?.factory_name || updates.production_data?.factory_contact) {
+      logAudit({ userId: user.id, collectionPlanId: existing?.collection_plan_id, action: AUDIT_ACTIONS.FACTORY_DETAILS_UPDATED, entityType: 'sku', entityId: id });
     }
 
     return NextResponse.json(data);
@@ -121,6 +133,9 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       console.error('Error deleting SKU:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Audit SKU deletion
+    logAudit({ userId: user.id, collectionPlanId: existing?.collection_plan_id, action: AUDIT_ACTIONS.SKU_DELETED, entityType: 'sku', entityId: id });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import ExcelJS from 'exceljs';
 import {
@@ -163,7 +164,8 @@ export async function GET(req: NextRequest) {
       buildCalendarSheet(wb, timeline, plan);
     }
 
-    // ── Return as download ──
+    // ── Audit + Return as download ──
+    logAudit({ userId: user!.id, collectionPlanId: planId!, action: AUDIT_ACTIONS.COLLECTION_EXPORTED, entityType: 'collection', entityId: planId!, metadata: { skuCount: skus.length } });
 
     const arrayBuffer = await wb.xlsx.writeBuffer();
     const uint8 = new Uint8Array(arrayBuffer as ArrayBuffer);
