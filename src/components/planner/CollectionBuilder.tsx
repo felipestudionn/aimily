@@ -618,11 +618,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       <div className="bg-carbon">
         <div className="p-6 sm:p-8">
           <div className="flex items-center justify-between mb-5">
-            <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-white/45">Collection Overview</p>
+            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-crema/60">Collection Overview</p>
             {skus.length > 0 && (
-              <button onClick={() => setAnalyticsOpen(!analyticsOpen)} className="flex items-center gap-1.5 text-[9px] font-medium tracking-[0.1em] uppercase text-white/35 hover:text-white/60 transition-colors">
-                {analyticsOpen ? 'Hide' : 'Details'}
-                <svg className={`h-3 w-3 transition-transform duration-200 ${analyticsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              <button onClick={() => setAnalyticsOpen(!analyticsOpen)} className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium tracking-[0.08em] uppercase text-crema/50 border border-crema/15 rounded-full hover:text-crema/80 hover:border-crema/30 transition-colors">
+                {analyticsOpen ? 'Hide Details' : 'Details'}
+                <svg className={`h-3.5 w-3.5 transition-transform duration-200 ${analyticsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </button>
             )}
           </div>
@@ -640,8 +640,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               { label: 'Total Units', value: `${skus.reduce((s, sk) => s + sk.buy_units, 0).toLocaleString()}` },
             ].map((metric) => (
               <div key={metric.label}>
-                <p className="text-[9px] font-medium tracking-[0.12em] uppercase text-white/40 mb-1">{metric.label}</p>
-                <p className="text-lg font-light text-crema tracking-tight">{metric.value}</p>
+                <p className="text-[11px] font-medium tracking-[0.08em] uppercase text-crema/50 mb-1">{metric.label}</p>
+                <p className="text-xl font-normal text-crema tracking-tight">{metric.value}</p>
               </div>
             ))}
           </div>
@@ -653,13 +653,13 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Family mix — horizontal bars */}
             <div>
-              <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-white/40 mb-4">Family Mix</p>
+              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-crema/50 mb-4">Family Mix</p>
               <div className="space-y-3">
                 {frameworkValidation.familyDistribution.map((fam) => (
                   <div key={fam.name}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-light text-crema/70">{fam.name}</span>
-                      <span className="text-sm font-light text-crema/40">{fam.actual}%</span>
+                      <span className="text-[13px] text-crema/80">{fam.name}</span>
+                      <span className="text-[13px] text-crema/50">{fam.actual}%</span>
                     </div>
                     <div className="h-1.5 bg-white/[0.06] overflow-hidden">
                       <div className="h-full bg-crema/40 transition-all duration-700" style={{ width: `${fam.actual}%` }} />
@@ -671,7 +671,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
             {/* Type mix — single donut */}
             <div>
-              <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-white/40 mb-4">Segmentation Mix</p>
+              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-crema/50 mb-4">Segmentation Mix</p>
               <div className="flex items-center gap-6">
                 {(() => {
                   const r = 50; const circ = 2 * Math.PI * r;
@@ -701,9 +701,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     return (
                       <div key={td.name} className="flex items-center gap-2">
                         <div className={`w-2.5 h-2.5 shrink-0 ${dots[td.name] || 'bg-carbon/30'}`} />
-                        <span className="text-sm font-light text-crema/70">{labels[td.name] || td.name}</span>
-                        <span className="text-sm font-light text-crema/40">{td.actual}%</span>
-                        <span className="text-[9px] text-crema/20 italic">target {td.target}%</span>
+                        <span className="text-[13px] text-crema/80">{labels[td.name] || td.name}</span>
+                        <span className="text-[13px] text-crema/50">{td.actual}%</span>
+                        <span className="text-[10px] text-crema/35 italic">target {td.target}%</span>
                       </div>
                     );
                   })}
@@ -713,7 +713,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 
             {/* Design Progress — SKUs by phase */}
             <div>
-              <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-white/40 mb-4">Design Progress</p>
+              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-crema/50 mb-4">Design Progress</p>
               <div className="space-y-3">
                 {(() => {
                   const phases: { id: string; label: string; color: string }[] = [
@@ -730,8 +730,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     return (
                       <div key={phase.id}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-light text-crema/70">{phase.label}</span>
-                          <span className="text-sm font-light text-crema/40">{count}</span>
+                          <span className="text-[13px] text-crema/80">{phase.label}</span>
+                          <span className="text-[13px] text-crema/50">{count}</span>
                         </div>
                         <div className="h-1.5 bg-white/[0.06] overflow-hidden">
                           <div className="h-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: phase.color }} />
@@ -908,8 +908,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
       <div className="bg-white border border-carbon/[0.06]">
         <div className="px-6 sm:px-8 py-5 flex items-center justify-between border-b border-carbon/[0.04]">
           <div className="flex items-center gap-4">
-            <p className="text-[11px] font-medium tracking-[0.2em] uppercase text-carbon/50">Range Plan</p>
-            <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] rounded-full text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors">
+            <p className="text-[13px] font-semibold tracking-[0.15em] uppercase text-carbon/70">Range Plan</p>
+            <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors">
               <Plus className="h-3 w-3" /> Add SKU
             </button>
             <button
@@ -971,7 +971,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   btn.innerHTML = origText;
                 }
               }}
-              className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] rounded-full text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors"
             >
               <Sparkles className="h-3 w-3" /> Refresh Creative
             </button>
@@ -1001,14 +1001,14 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   btn.innerHTML = '<svg class="h-3 w-3" />' + ' Excel';
                 }
               }}
-              className="flex items-center gap-1.5 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] rounded-full text-carbon/40 hover:text-carbon hover:border-carbon/20 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors"
             >
               <Download className="h-3 w-3" /> Excel
             </button>
           </div>
           <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5">
             {(['pipeline', 'list', 'cards'] as const).map((mode) => (
-              <button key={mode} onClick={() => setViewMode(mode)} className={`flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase transition-all rounded-full ${viewMode === mode ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/35 hover:text-carbon/60'}`}>
+              <button key={mode} onClick={() => setViewMode(mode)} className={`flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase transition-all rounded-full ${viewMode === mode ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/35 hover:text-carbon/60'}`}>
                 {mode === 'pipeline' ? <Kanban className="h-3 w-3" /> : mode === 'list' ? <List className="h-3 w-3" /> : <LayoutGrid className="h-3 w-3" />}{mode}
               </button>
             ))}
@@ -1017,11 +1017,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         {/* Family filter pills */}
         {viewMode === 'list' && skus.length > 0 && (
           <div className="px-6 sm:px-8 pb-3 flex flex-wrap gap-1.5">
-            <button onClick={() => setFamily('')} className={`px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase rounded-full border transition-colors ${!family ? 'bg-carbon text-crema border-carbon' : 'border-carbon/[0.08] text-carbon/35 hover:text-carbon/60 hover:border-carbon/20'}`}>
+            <button onClick={() => setFamily('')} className={`px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase rounded-full border transition-colors ${!family ? 'bg-carbon text-crema border-carbon' : 'border-carbon/[0.08] text-carbon/35 hover:text-carbon/60 hover:border-carbon/20'}`}>
               All
             </button>
             {availableFamilies.map((f) => (
-              <button key={f} onClick={() => setFamily(family === f ? '' : f)} className={`px-3 py-1.5 text-[10px] font-medium tracking-[0.08em] uppercase rounded-full border transition-colors ${family === f ? 'bg-carbon text-crema border-carbon' : 'border-carbon/[0.08] text-carbon/35 hover:text-carbon/60 hover:border-carbon/20'}`}>
+              <button key={f} onClick={() => setFamily(family === f ? '' : f)} className={`px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase rounded-full border transition-colors ${family === f ? 'bg-carbon text-crema border-carbon' : 'border-carbon/[0.08] text-carbon/35 hover:text-carbon/60 hover:border-carbon/20'}`}>
                 {f}
               </button>
             ))}
@@ -1050,8 +1050,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                       {/* Family header with pill */}
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <span className="px-4 py-1.5 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
-                          <span className="text-[10px] text-carbon/45">{famSkus.length} SKUs</span>
+                          <span className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/[0.15] rounded-full">{fam}</span>
+                          <span className="text-[11px] text-carbon/50">{famSkus.length} SKUs</span>
                         </div>
                         <span className="text-xs text-carbon/45 font-light">€{Math.round(famRevenue).toLocaleString()}</span>
                       </div>
@@ -1060,13 +1060,13 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                         <table className="w-full text-sm">
                           <thead>
                             <tr>
-                              <th className="text-left py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/45">Product</th>
-                              <th className="text-left py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/45">Type</th>
-                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/45">COGS</th>
-                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/45">PVP</th>
-                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/45">Units</th>
-                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/45">Sales</th>
-                              <th className="text-right py-1.5 px-2 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/45">Margin</th>
+                              <th className="text-left py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Product</th>
+                              <th className="text-left py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Type</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">COGS</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">PVP</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Units</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Sales</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Margin</th>
                               <th className="w-8"></th>
                             </tr>
                           </thead>
@@ -1110,8 +1110,8 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                     <div key={fam}>
                       {/* Family pill header */}
                       <div className={`flex items-center gap-3 mb-3 ${fIdx > 0 ? 'pt-2' : ''}`}>
-                        <span className="px-4 py-1.5 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon border border-carbon/[0.12] rounded-full">{fam}</span>
-                        <span className="text-[10px] text-carbon/45">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
+                        <span className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/[0.15] rounded-full">{fam}</span>
+                        <span className="text-[11px] text-carbon/50">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
                       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {famSkus.map((sku) => {
@@ -1227,15 +1227,15 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                   {/* Metrics — 3 rows of 2 */}
                   <div className="px-3 py-2.5 border-t border-carbon/[0.04] space-y-1.5">
                     <div className="grid grid-cols-2 gap-x-3">
-                      <div><p className="text-[9px] text-carbon/40 uppercase tracking-wider">PVP</p><p className="text-[13px] text-carbon">€{sku.pvp}</p></div>
-                      <div><p className="text-[9px] text-carbon/40 uppercase tracking-wider">COGS</p><p className="text-[13px] text-carbon">€{sku.cost}</p></div>
+                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">PVP</p><p className="text-[14px] font-medium text-carbon">€{sku.pvp}</p></div>
+                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">COGS</p><p className="text-[14px] font-medium text-carbon">€{sku.cost}</p></div>
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 pt-1 border-t border-carbon/[0.03]">
-                      <div><p className="text-[9px] text-carbon/40 uppercase tracking-wider">Units</p><p className="text-[13px] text-carbon">{sku.buy_units}</p></div>
-                      <div><p className="text-[9px] text-carbon/40 uppercase tracking-wider">Margin</p><p className="text-[13px] text-carbon">{Math.round(sku.margin)}%</p></div>
+                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">Units</p><p className="text-[14px] font-medium text-carbon">{sku.buy_units}</p></div>
+                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">Margin</p><p className="text-[14px] font-medium text-carbon">{Math.round(sku.margin)}%</p></div>
                     </div>
                     <div className="flex items-center justify-between pt-1 border-t border-carbon/[0.03]">
-                      <div><p className="text-[9px] text-carbon/40 uppercase tracking-wider">Sales</p><p className="text-[13px] text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p></div>
+                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">Sales</p><p className="text-[14px] font-medium text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p></div>
                       <span className={`px-2 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white rounded ${
                         sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                       }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
@@ -1439,7 +1439,7 @@ function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: 
             <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
               {phase.label}
             </span>
-            <span className="text-[10px] text-carbon/45 tabular-nums">{phase.count}</span>
+            <span className="text-[11px] text-carbon/50 tabular-nums">{phase.count}</span>
           </div>
 
           {/* SKU cards */}
@@ -1462,7 +1462,7 @@ function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: 
                     <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <p className="text-[11px] font-light text-carbon/50 text-center px-2">{sku.name}</p>
+                      <p className="text-[12px] text-carbon/60 text-center px-2">{sku.name}</p>
                     </div>
                   )}
                   {/* Type badge */}
@@ -1476,7 +1476,7 @@ function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: 
                 <div>
                   <p className="text-[11px] font-light text-carbon leading-snug line-clamp-1">{sku.name}</p>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-carbon/45">{sku.family}</span>
+                    <span className="text-[11px] text-carbon/50">{sku.family}</span>
                     <span className="text-[10px] font-light text-carbon/50">€{sku.pvp}</span>
                   </div>
                 </div>
