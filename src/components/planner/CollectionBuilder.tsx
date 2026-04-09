@@ -386,7 +386,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
     setDiscount(0);
   };
 
-  const availableFamilies = setupData.productFamilies?.map(f => f.name) || [];
+  // Derive families from actual SKU data (source of truth) — fall back to setupData only if no SKUs yet
+  const availableFamilies = useMemo(() => {
+    const skuFamilies = Array.from(new Set(skus.map(s => s.family).filter(Boolean)));
+    return skuFamilies.length > 0 ? skuFamilies : (setupData.productFamilies?.map(f => f.name) || []);
+  }, [skus, setupData.productFamilies]);
 
   // Generic image upload for any SKU field
   const handleImageUpload = async (skuId: string, file: File, field: 'reference_image_url' | 'sketch_url' | 'production_sample_url' = 'reference_image_url'): Promise<string | null> => {
