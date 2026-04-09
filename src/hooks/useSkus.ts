@@ -53,6 +53,18 @@ export interface SKU {
     fit_status?: 'pending' | 'approved' | 'issues';
     fit_notes?: string;
     confirmed_steps?: string[];
+    // Factory order details
+    factory_name?: string;
+    factory_contact?: string;
+    factory_origin?: string;
+    target_delivery_date?: string;
+    order_quantity?: number;
+    unit_cost_final?: number;
+    payment_terms?: string;
+    shipping_method?: string;
+    special_instructions?: string;
+    po_number?: string;
+    po_generated_at?: string;
   };
   production_approved: boolean;
   created_at?: string;
