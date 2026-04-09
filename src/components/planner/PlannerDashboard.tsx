@@ -50,18 +50,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
 
   return (
     <div className="px-6 sm:px-10 md:px-14 lg:px-20 pt-8 pb-16">
-      {/* Header */}
-      <div className="mb-8">
-        <p className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/25 mb-3">
-          {t.rangePlan.label}
-        </p>
-        <h1 className="text-2xl sm:text-3xl font-light text-carbon tracking-tight leading-[1.15]">
-          {displayName} <span className="italic">{t.rangePlan.collection}</span>
-        </h1>
-        <p className="text-xs text-carbon/35 mt-2 font-light">
-          {plan.season} · {setupData.productFamilies.length} {t.rangePlan.familiesCount} · {setupData.expectedSkus} {t.rangePlan.skusPlanned}
-        </p>
-      </div>
+      {/* Header removed — navbar breadcrumb already shows collection name */}
 
       {/* Collection Builder — the main content */}
       <CollectionBuilder
