@@ -98,6 +98,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [autoGenDone, setAutoGenDone] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'pipeline'>('cards');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
   const [aiViewSkus, setAiViewSkus] = useState<Set<string>>(new Set());
   const [renderingSkus, setRenderingSkus] = useState<Set<string>>(new Set());
@@ -637,14 +638,23 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         </div>
       </div>
 
-      {/* ── How Aimily built your collection ── */}
-      {skus.length > 0 && (
-        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-light text-carbon tracking-tight leading-[1.15] mb-1">
-            How Aimily <span className="italic">built</span> your collection
-          </h2>
-          <p className="text-xs text-carbon/30 mb-8">Product architecture derived from your creative direction and merchandising strategy.</p>
+      {/* ── Collection Analytics (collapsible) ── */}
+      {skus.length > 0 && (() => {
+        const [open, setOpen] = [analyticsOpen, setAnalyticsOpen];
+        return (
+        <div className="bg-white border border-carbon/[0.06]">
+          <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-5 sm:px-8 hover:bg-carbon/[0.01] transition-colors">
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-medium text-carbon tracking-tight">
+                Collection Overview
+              </h2>
+              <span className="text-[9px] text-carbon/25 font-light">{skus.length} SKUs · {availableFamilies.length} families · {frameworkValidation.typeDistribution.filter(t => t.actual > 0).length} segments</span>
+            </div>
+            <svg className={`h-4 w-4 text-carbon/25 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          </button>
 
+          {open && (
+          <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Family mix — horizontal bars */}
             <div>
@@ -738,8 +748,11 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
               </div>
             </div>
           </div>
+          </div>
+          )}
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Add SKU Form (collapsible) ── */}
       {showAddForm && (
@@ -1273,7 +1286,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
         }}>
           <SkuDetailView
             sku={selectedSku}
-            onClose={() => { setSelectedSku(null); refetch(); }}
+            onClose={() => setSelectedSku(null)}
             onUpdate={updateSku}
             onDelete={deleteSku}
             onImageUpload={async (skuId, file, field) => {

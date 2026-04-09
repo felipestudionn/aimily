@@ -69,57 +69,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
         collectionPlanId={plan.id}
       />
 
-      {/* What's Next — educational + CTA */}
-      {skus.length > 0 && (
-        <div className="mt-8 bg-white border border-carbon/[0.06] p-6 sm:p-8">
-          <h2 className="text-xl font-light text-carbon tracking-tight mb-1">
-            What&apos;s <span className="italic">{t.rangePlan.whatsNextTitle}</span>?
-          </h2>
-          <p className="text-xs text-carbon/30 mb-6">{t.rangePlan.whatsNextSubtitle}</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 bg-carbon flex items-center justify-center text-[10px] font-medium text-crema">1</span>
-                <span className="text-xs font-medium text-carbon">{t.rangePlan.step1Title}</span>
-              </div>
-              <p className="text-[11px] text-carbon/40 leading-relaxed pl-7">
-                {t.rangePlan.step1Desc}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 bg-carbon/20 flex items-center justify-center text-[10px] font-medium text-carbon/60">2</span>
-                <span className="text-xs font-medium text-carbon/50">{t.rangePlan.step2Title}</span>
-              </div>
-              <p className="text-[11px] text-carbon/30 leading-relaxed pl-7">
-                {t.rangePlan.step2Desc}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 bg-carbon/10 flex items-center justify-center text-[10px] font-medium text-carbon/30">3</span>
-                <span className="text-xs font-medium text-carbon/35">{t.rangePlan.step3Title}</span>
-              </div>
-              <p className="text-[11px] text-carbon/25 leading-relaxed pl-7">
-                {t.rangePlan.step3Desc}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-5 border-t border-carbon/[0.05]">
-            <p className="text-xs text-carbon/25 italic max-w-sm">
-              {t.rangePlan.motivational}
-            </p>
-            <button
-              onClick={handleConfirmDraft}
-              className="flex items-center gap-2 px-6 py-3 bg-carbon text-crema text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors shrink-0"
-            >
-              {t.rangePlan.confirmDraftCta} <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {/* What's Next section removed — SKU detail EvolutionStrip now handles the flow */}
 
       {/* Celebration overlay */}
       {showCelebration && (
