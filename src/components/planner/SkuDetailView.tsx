@@ -59,7 +59,17 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   // Evolution strip state — compute from SKU data
   const evolution = computeEvolutionState(localSku);
-  const [activeStep, setActiveStepRaw] = useState<EvolutionStep>('concept');
+  // Open on the next step after the last completed one (not always concept)
+  const [activeStep, setActiveStepRaw] = useState<EvolutionStep>(() => {
+    const order: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+    // Find the last completed step
+    let lastCompleted = -1;
+    order.forEach((s, i) => { if (evolution.completed.has(s)) lastCompleted = i; });
+    // Open on the next step (or the last completed if it's the final one)
+    const nextIdx = Math.min(lastCompleted + 1, order.length - 1);
+    const reachableIdx = order.indexOf(evolution.reachable);
+    return order[Math.min(nextIdx, reachableIdx)];
+  });
   const setActiveStep = useCallback((step: EvolutionStep) => {
     setChildFooterAction(null); // Clear child overrides when switching steps
     setActiveStepRaw(step);
