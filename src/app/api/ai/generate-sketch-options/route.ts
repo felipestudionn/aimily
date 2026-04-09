@@ -50,6 +50,13 @@ async function generateWithOpenAI(prompt: string, photoBase64: string, size = '1
 }
 
 /* ── Footwear prompts ── */
+/* ── IP Protection clause (shared across all sketch prompts) ── */
+const IP_CLAUSE = `
+INTELLECTUAL PROPERTY — CRITICAL:
+- If the reference contains ANY recognizable brand logos, trademarks, or proprietary design elements (Nike swoosh, Adidas stripes/trefoil, Puma formstrip, Jordan jumpman, New Balance N, Converse star, etc.), you MUST replace them with an original, neutral design element that preserves the same visual weight and placement but is legally distinct.
+- The overall silhouette should be inspired by the reference (~90% similar) but introduce subtle original variations: slightly different toe box curvature, modified heel counter shape, adjusted panel proportions, or reworked midsole profile. The result must read as an original design inspired by the reference, not a replica.
+- Never reproduce branded outsole patterns, proprietary cushioning shapes, or trademarked closure systems verbatim.`;
+
 const SIDE_PROMPT = `From this reference shoe, generate a TECHNICAL FLAT SKETCH in SIDE PROFILE VIEW.
 
 MANDATORY VIEW: The shoe must be drawn from the RIGHT SIDE (lateral/exterior), pointing right, resting on a horizontal ground line. Show the full lateral exterior silhouette.
@@ -61,7 +68,7 @@ DRAWING RULES:
 - Solid lines for seams, dashed lines for stitching
 - No color, no shading, no fills
 - Factory tech pack quality, patternmaker precision
-- Reproduce the shoe design faithfully from the reference photo`;
+${IP_CLAUSE}`;
 
 const TOP_PROMPT = `From this reference shoe, generate a TECHNICAL FLAT SKETCH in TOP-DOWN VIEW.
 
@@ -74,17 +81,17 @@ DRAWING RULES:
 - Solid lines for seams, dashed lines for stitching
 - No color, no shading, no fills
 - Factory tech pack quality, patternmaker precision
-- Reproduce the shoe design faithfully from the reference photo`;
+${IP_CLAUSE}`;
 
-const FRONT_PROMPT = `A partir de esta foto de referencia, genera un FLAT SKETCH TÉCNICO de la prenda.
+const FRONT_PROMPT = `From this reference garment, generate a TECHNICAL FLAT SKETCH.
 
-REGLAS:
-- Flat sketch técnico para tech pack, vista frontal
-- Fondo blanco puro, trazo negro fino y limpio
-- Sin cuerpo humano, sin perspectiva, sin sombras, sin color
-- Todos los detalles constructivos: cierres, bolsillos, costuras, paneles
-- Reproducir fielmente lo que se ve en la foto
-- Nivel de detalle apto para fábrica`;
+RULES:
+- Technical flat sketch for tech pack, front view
+- Pure white background, clean thin black linework
+- No human body, no perspective, no shading, no color
+- All construction details: closures, pockets, seams, panels
+- Factory-grade detail level
+${IP_CLAUSE}`;
 
 export async function POST(req: NextRequest) {
   try {

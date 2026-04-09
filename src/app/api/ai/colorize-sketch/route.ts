@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
       ? `Photorealistic product photograph of a ${productType}: ${productDesc}.
 Turn this drawing into a photorealistic image. Preserve the exact layout, proportions, perspective, colors, and closure system. Choose realistic materials and lighting consistent with the drawing intent.
 Background must be pure flat white (#FFFFFF) with only a soft natural drop shadow directly beneath the product on the ground plane. No gray background, no gradient, no studio wall, no surface, no pedestal, no box — just white and shadow.
-Do not add new elements, text, logos, or writing. Do not add laces or straps not present in the drawing.`
+Do not add new elements, text, logos, or writing. Do not add laces or straps not present in the drawing.
+IMPORTANT: Do not reproduce any brand logos or trademarks. If any brand-like elements are visible in the input, replace them with clean, unbranded surfaces.`
       : `You are an expert fashion product illustrator. This sketch shows a ${productType}: ${productDesc}.
 
 STEP 1 — IDENTIFY THE PRODUCT:
@@ -58,7 +59,8 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
 • Add very subtle tonal variation within zones for dimensionality (lighter on top, slightly darker on bottom).
 • This is a colored technical flat illustration — NOT photorealistic. Think "fashion flat with color" — the same drawing, just with color added.
 • Background: clean white.
-• DO NOT redraw, reinterpret, or modify the shoe/product shape. ONLY add color to the existing drawing.`;
+• DO NOT redraw, reinterpret, or modify the shoe/product shape. ONLY add color to the existing drawing.
+• If any brand logos or trademarks are visible, leave those areas as clean unbranded surfaces with the zone color.`;
 
     // Get sketch as base64
     let sketchBase64: string;
