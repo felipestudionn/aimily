@@ -127,11 +127,35 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const mode = modes[STEPS[activeStep]?.id] || 'free';
   const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
 
-  // Sync footer CTA with parent — only when NOT driven by EvolutionStrip
-  // When EvolutionStrip drives navigation, SkuDetailView handles the footer CTA
+  // Sync footer CTA with parent
+  // When evolutionStep === 'colorways': sub-step navigation (Continue through Colorways→Materials→TechPack)
+  // On tech pack (last sub-step): return null so SkuDetailView shows "Validate & Continue" to advance to 3D Render
+  // When evolutionStep === 'sketch' or 'render3d': parent handles footer entirely
   useEffect(() => {
-    if (!onFooterAction || evolutionStep) return;
+    if (!onFooterAction) return;
 
+    // For colorways evolution step: control sub-step navigation
+    if (evolutionStep === 'colorways') {
+      // activeStep 1=Colorways, 2=Materials → show "Continue" to next sub-step
+      // activeStep 3=TechPack → return null so parent shows "Validate & Continue"
+      if (activeStep < STEPS.length - 1) {
+        const nextStep = STEPS[activeStep + 1];
+        onFooterAction({
+          label: `${stepLabel('continue') || 'Continue'}: ${nextStep.label}`,
+          action: confirmAndNext,
+          isPhaseAdvance: false,
+        });
+      } else {
+        // On Tech Pack — let parent handle "Validate & Continue"
+        onFooterAction(null);
+      }
+      return () => onFooterAction(null);
+    }
+
+    // For sketch/render3d evolution steps: parent handles footer entirely
+    if (evolutionStep) return;
+
+    // Legacy mode (no evolution step): original behavior
     if (activeStep < STEPS.length - 1) {
       const nextStepLabel = STEPS[activeStep + 1].label;
       onFooterAction({
@@ -161,8 +185,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   return (
     <div className="h-full flex flex-col gap-4">
       {/* ── Sub-stepper: visible pills ── */}
-      {/* Hidden for sketch (Drawing is own EvolutionStrip step) and render3d (Tech Pack is own step) */}
-      {/* For colorways: show only Colorways + Materials (skip Drawing, skip Tech Pack) */}
+      {/* Hidden for sketch (Drawing is own EvolutionStrip step) and render3d (only shows Product Visualization) */}
+      {/* For colorways: show Colorways + Materials + Tech Pack (skip Drawing) */}
       {evolutionStep !== 'sketch' && evolutionStep !== 'render3d' && (
         <div className="flex items-center gap-0">
           {STEPS.filter(s => evolutionStep === 'colorways' ? s.id !== 'sketch' : true).map((step) => {
@@ -170,7 +194,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             const isActive = idx === activeStep;
             const isConfirmed = confirmedSteps.has(idx);
             const isPast = idx < activeStep;
-            const displayIdx = evolutionStep === 'colorways' ? (idx === 1 ? 1 : 2) : idx + 1;
+            const displayIdx = evolutionStep === 'colorways' ? idx : idx + 1; // colorways: skip Drawing so idx 1=Colorways, 2=Materials, 3=TechPack
             return (
               <React.Fragment key={step.id}>
                 {displayIdx > 1 && (
@@ -992,28 +1016,78 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </>
             )}
 
-            {/* ── Product Visualization ── */}
-            {sku.render_url && (
-              <div className="border border-carbon/[0.06] bg-white p-5 mt-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-medium text-carbon/30 uppercase tracking-[0.15em]">{'Product Visualization'}</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Colorized sketch */}
+            {/* ── Product Visualization — only shown in 3D Render evolution step ── */}
+            {evolutionStep === 'render3d' && (
+              <div className="space-y-6">
+                {/* Colored Sketch */}
+                {sku.render_url && (
                   <div className="space-y-1.5">
-                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{'Colored Sketch'}</p>
-                    <div className="border border-carbon/[0.06] bg-white overflow-hidden">
-                      <img src={sku.render_url} alt="Colorized sketch" className="w-full h-auto object-contain" />
+                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('coloredSketch') || 'Colored Sketch'}</p>
+                    <div className="border border-carbon/[0.06] bg-white overflow-hidden flex items-center justify-center p-4">
+                      <img src={sku.render_url} alt="Colorized sketch" className="max-w-full max-h-[50vh] object-contain" />
                     </div>
                   </div>
-                  {/* 3D Render */}
-                  <div className="space-y-1.5">
-                    <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{'3D Render'}</p>
-                    {(sku.render_urls as Record<string, string>)?.['3d'] ? (
-                      <div className="space-y-2">
-                        <div className="border border-carbon/[0.06] bg-white overflow-hidden">
-                          <img src={(sku.render_urls as Record<string, string>)['3d']} alt="3D render" className="w-full h-auto object-contain" />
-                        </div>
+                )}
+
+                {/* 3D Render */}
+                <div className="space-y-1.5">
+                  <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('render3d') || '3D Render'}</p>
+                  {(sku.render_urls as Record<string, string>)?.['3d'] ? (
+                    <div className="space-y-2">
+                      <div className="border border-carbon/[0.06] bg-white overflow-hidden flex items-center justify-center p-4">
+                        <img src={(sku.render_urls as Record<string, string>)['3d']} alt="3D render" className="max-w-full max-h-[50vh] object-contain" />
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setGenerating(true);
+                          try {
+                            const primaryCw = skuColorways[0];
+                            const res = await fetch('/api/ai/colorize-sketch', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                sketch_url: sku.render_url,
+                                colorway_name: primaryCw?.name || 'main',
+                                zone_colors: primaryCw?.zones || [],
+                                category: sku.category,
+                                product_name: sku.name,
+                                family: sku.family,
+                                collectionPlanId,
+                                is_3d_render: true,
+                              }),
+                            });
+                            if (res.ok) {
+                              const { imageUrl } = await res.json();
+                              if (imageUrl) {
+                                const updated = { ...(sku.render_urls || {}), '3d': imageUrl };
+                                await onUpdate({ render_urls: updated } as Partial<SKU>);
+                                toast('3D render regenerated', 'success');
+                              }
+                            } else {
+                              const err = await res.json().catch(() => ({}));
+                              toast(`Render failed: ${err.error || 'Unknown error'}`, 'error');
+                            }
+                          } catch (err) {
+                            console.error('[3DRender]', err);
+                            toast('3D render failed', 'error');
+                          } finally {
+                            setGenerating(false);
+                          }
+                        }}
+                        disabled={generating}
+                        className="flex items-center justify-center gap-2 w-full px-3 py-1.5 border border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors"
+                      >
+                        {generating ? <><Loader2 className="h-3 w-3 animate-spin" /> {stepLabel('regenerating') || 'Regenerating...'}</> : <><RefreshCw className="h-3 w-3" /> {stepLabel('regenerate3d') || 'Regenerate 3D'}</>}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/3] flex flex-col items-center justify-center gap-3">
+                      {generating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
+                          <span className="text-[9px] text-carbon/20">{stepLabel('generating3d') || 'Generating 3D render...'}</span>
+                        </>
+                      ) : (
                         <button
                           onClick={async () => {
                             setGenerating(true);
@@ -1038,7 +1112,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                                 if (imageUrl) {
                                   const updated = { ...(sku.render_urls || {}), '3d': imageUrl };
                                   await onUpdate({ render_urls: updated } as Partial<SKU>);
-                                  toast('3D render regenerated', 'success');
+                                  toast('3D render generated', 'success');
                                 }
                               } else {
                                 const err = await res.json().catch(() => ({}));
@@ -1052,65 +1126,13 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                             }
                           }}
                           disabled={generating}
-                          className="flex items-center justify-center gap-2 w-full px-3 py-1.5 border border-carbon/[0.08] text-carbon/30 text-[9px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 border border-carbon/[0.08] text-carbon/40 text-[10px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors"
                         >
-                          {generating ? <><Loader2 className="h-3 w-3 animate-spin" /> {'Regenerating...'}</> : <><RefreshCw className="h-3 w-3" /> {'Regenerate 3D'}</>}
+                          <Sparkles className="h-3 w-3" /> {stepLabel('generate3d') || 'Generate 3D Render'}
                         </button>
-                      </div>
-                    ) : (
-                      <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/3] flex flex-col items-center justify-center gap-3">
-                        {generating ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
-                            <span className="text-[9px] text-carbon/20">{'Generating 3D render...'}</span>
-                          </>
-                        ) : (
-                          <button
-                            onClick={async () => {
-                              setGenerating(true);
-                              try {
-                                const primaryCw = skuColorways[0];
-                                const res = await fetch('/api/ai/colorize-sketch', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    sketch_url: sku.render_url,
-                                    colorway_name: primaryCw?.name || 'main',
-                                    zone_colors: primaryCw?.zones || [],
-                                    category: sku.category,
-                                    product_name: sku.name,
-                                    family: sku.family,
-                                    collectionPlanId,
-                                    is_3d_render: true,
-                                  }),
-                                });
-                                if (res.ok) {
-                                  const { imageUrl } = await res.json();
-                                  if (imageUrl) {
-                                    const updated = { ...(sku.render_urls || {}), '3d': imageUrl };
-                                    await onUpdate({ render_urls: updated } as Partial<SKU>);
-                                    toast('3D render generated', 'success');
-                                  }
-                                } else {
-                                  const err = await res.json().catch(() => ({}));
-                                  toast(`Render failed: ${err.error || 'Unknown error'}`, 'error');
-                                }
-                              } catch (err) {
-                                console.error('[3DRender]', err);
-                                toast('3D render failed', 'error');
-                              } finally {
-                                setGenerating(false);
-                              }
-                            }}
-                            disabled={generating}
-                            className="flex items-center gap-2 px-4 py-2 border border-carbon/[0.08] text-carbon/40 text-[10px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors"
-                          >
-                            <Sparkles className="h-3 w-3" /> {'Generate 3D Render'}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

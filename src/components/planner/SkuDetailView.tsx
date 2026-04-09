@@ -444,16 +444,28 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
               )}
             </div>
 
-            {/* Right: Validate & Continue */}
-            <button
-              onClick={activeStep === 'production' ? advancePhase : validateAndContinue}
-              disabled={savingPhase}
-              className="flex items-center gap-2 px-6 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
-            >
-              {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : (
-                <>{activeStep === 'production' ? 'Approve for Production' : 'Validate & Continue'} <ArrowRight className="h-3.5 w-3.5" /></>
-              )}
-            </button>
+            {/* Right: Continue (sub-step) or Validate & Continue (evolution step) */}
+            {childFooterAction ? (
+              <button
+                onClick={childFooterAction.action}
+                disabled={savingPhase}
+                className="flex items-center gap-2 px-6 py-2.5 border border-carbon/[0.12] text-carbon text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-50"
+              >
+                {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : (
+                  <>{childFooterAction.label} <ArrowRight className="h-3.5 w-3.5" /></>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={activeStep === 'production' ? advancePhase : validateAndContinue}
+                disabled={savingPhase}
+                className="flex items-center gap-2 px-6 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
+              >
+                {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : (
+                  <>{activeStep === 'production' ? 'Approve for Production' : 'Validate & Continue'} <ArrowRight className="h-3.5 w-3.5" /></>
+                )}
+              </button>
+            )}
           </div>
         </div>
       )}
