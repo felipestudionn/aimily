@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download, ChevronDown, Kanban } from 'lucide-react';
+import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download, ChevronDown, Kanban, Package } from 'lucide-react';
 import { useSkus, type SKU, type DesignPhase } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -96,7 +96,7 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [autoGenStep, setAutoGenStep] = useState(0);
   const [autoGenDone, setAutoGenDone] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'pipeline'>('cards');
+  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'pipeline' | 'orders'>('cards');
   const [showAddForm, setShowAddForm] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
@@ -1007,9 +1007,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
             </button>
           </div>
           <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5">
-            {(['pipeline', 'list', 'cards'] as const).map((mode) => (
+            {(['pipeline', 'list', 'cards', 'orders'] as const).map((mode) => (
               <button key={mode} onClick={() => setViewMode(mode)} className={`flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase transition-all rounded-full ${viewMode === mode ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/35 hover:text-carbon/60'}`}>
-                {mode === 'pipeline' ? <Kanban className="h-3 w-3" /> : mode === 'list' ? <List className="h-3 w-3" /> : <LayoutGrid className="h-3 w-3" />}{mode}
+                {mode === 'pipeline' ? <Kanban className="h-3 w-3" /> : mode === 'list' ? <List className="h-3 w-3" /> : mode === 'orders' ? <Package className="h-3 w-3" /> : <LayoutGrid className="h-3 w-3" />}{mode}
               </button>
             ))}
           </div>
@@ -1099,6 +1099,9 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
                 });
               })()}
             </div>
+          ) : viewMode === 'orders' ? (
+            /* Orders View — approved SKUs grouped by factory */
+            <OrdersView skus={skus} collectionPlanId={collectionPlanId} onSkuClick={openSkuDetail} />
           ) : (
             /* Cards View — grouped by family */
             <div className="space-y-6">
@@ -1410,6 +1413,135 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
 }
 
 /* ── Pipeline View ── */
+/* ═══ ORDERS VIEW — Approved SKUs grouped by factory ═══ */
+function OrdersView({ skus, collectionPlanId, onSkuClick }: { skus: SKU[]; collectionPlanId: string; onSkuClick: (sku: SKU) => void }) {
+  const approvedSkus = skus.filter(s => s.production_approved);
+
+  if (approvedSkus.length === 0) {
+    return (
+      <div className="text-center py-16 space-y-3">
+        <Package className="h-8 w-8 text-carbon/15 mx-auto" />
+        <p className="text-[13px] text-carbon/40">No approved SKUs yet</p>
+        <p className="text-[11px] text-carbon/30">Complete the production workflow for SKUs to see them here.</p>
+      </div>
+    );
+  }
+
+  // Group by factory
+  const factoryGroups = new Map<string, SKU[]>();
+  approvedSkus.forEach(sku => {
+    const pd = sku.production_data || {};
+    const factory = pd.factory_name || sku.sourcing_data?.factory || 'Unassigned';
+    if (!factoryGroups.has(factory)) factoryGroups.set(factory, []);
+    factoryGroups.get(factory)!.push(sku);
+  });
+
+  const downloadPO = async (factory?: string) => {
+    try {
+      const params = new URLSearchParams({ planId: collectionPlanId });
+      if (factory && factory !== 'Unassigned') params.set('factory', factory);
+      const res = await fetch(`/api/purchase-order?${params}`);
+      if (!res.ok) { alert('Export failed'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PO-${factory || 'all'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch { alert('Export failed'); }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Summary bar */}
+      <div className="flex items-center justify-between p-4 bg-[#2d6a4f]/5 border border-[#2d6a4f]/10 rounded-lg">
+        <div className="flex items-center gap-6">
+          <div>
+            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">Approved</p>
+            <p className="text-xl font-medium text-[#2d6a4f]">{approvedSkus.length} SKUs</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">Factories</p>
+            <p className="text-xl font-medium text-[#2d6a4f]">{factoryGroups.size}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">Total Units</p>
+            <p className="text-xl font-medium text-[#2d6a4f]">{approvedSkus.reduce((s, sk) => s + ((sk.production_data?.order_quantity as number) || sk.buy_units), 0).toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">Total Cost</p>
+            <p className="text-xl font-medium text-[#2d6a4f]">€{approvedSkus.reduce((s, sk) => s + (((sk.production_data?.order_quantity as number) || sk.buy_units) * ((sk.production_data?.unit_cost_final as number) || sk.cost)), 0).toLocaleString()}</p>
+          </div>
+        </div>
+        <button onClick={() => downloadPO()} className="flex items-center gap-1.5 px-5 py-2.5 bg-[#2d6a4f] text-white text-[11px] font-medium tracking-[0.06em] uppercase hover:bg-[#245a42] transition-colors rounded-full">
+          <Download className="h-3.5 w-3.5" /> Export All POs
+        </button>
+      </div>
+
+      {/* Factory groups */}
+      {Array.from(factoryGroups.entries()).map(([factory, factorySkus]) => {
+        const totalUnits = factorySkus.reduce((s, sk) => s + ((sk.production_data?.order_quantity as number) || sk.buy_units), 0);
+        const totalCost = factorySkus.reduce((s, sk) => s + (((sk.production_data?.order_quantity as number) || sk.buy_units) * ((sk.production_data?.unit_cost_final as number) || sk.cost)), 0);
+        const pd0 = factorySkus[0]?.production_data || {};
+
+        return (
+          <div key={factory} className="border border-carbon/[0.06] bg-white">
+            {/* Factory header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-carbon/[0.04]">
+              <div>
+                <p className="text-[14px] font-medium text-carbon">{factory}</p>
+                <p className="text-[11px] text-carbon/45 mt-0.5">
+                  {pd0.factory_origin || factorySkus[0]?.sourcing_data?.origin || ''}{pd0.factory_contact ? ` · ${pd0.factory_contact}` : ''}
+                  {' · '}{factorySkus.length} SKUs · {totalUnits.toLocaleString()} units · €{totalCost.toLocaleString()}
+                </p>
+              </div>
+              <button onClick={() => downloadPO(factory)} className="flex items-center gap-1.5 px-4 py-2 border border-carbon/[0.12] text-carbon/60 text-[11px] font-medium tracking-[0.06em] uppercase hover:bg-carbon hover:text-crema transition-colors rounded-full">
+                <Download className="h-3 w-3" /> Export PO
+              </button>
+            </div>
+
+            {/* SKU rows */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr>
+                    <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Product</th>
+                    <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Family</th>
+                    <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Quantity</th>
+                    <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Unit Cost</th>
+                    <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Total</th>
+                    <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">PO #</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {factorySkus.map(sku => {
+                    const skuPd = sku.production_data || {};
+                    const qty = (skuPd.order_quantity as number) || sku.buy_units;
+                    const cost = (skuPd.unit_cost_final as number) || sku.cost;
+                    return (
+                      <tr key={sku.id} onClick={() => onSkuClick(sku)} className="border-t border-carbon/[0.04] hover:bg-carbon/[0.02] cursor-pointer transition-colors">
+                        <td className="py-2.5 px-4 text-carbon font-medium">{sku.name}</td>
+                        <td className="py-2.5 px-4 text-carbon/60">{sku.family}</td>
+                        <td className="py-2.5 px-4 text-right text-carbon">{qty.toLocaleString()}</td>
+                        <td className="py-2.5 px-4 text-right text-carbon">€{cost}</td>
+                        <td className="py-2.5 px-4 text-right font-medium text-carbon">€{(qty * cost).toLocaleString()}</td>
+                        <td className="py-2.5 px-4 text-carbon/40 font-mono text-[11px]">{(skuPd.po_number as string) || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: SKU) => void; t: ReturnType<typeof useTranslation> }) {
   const phases: { id: DesignPhase; label: string; count: number }[] = [
     { id: 'range_plan', label: t.skuPhases?.rangePlan || 'Concept', count: 0 },
