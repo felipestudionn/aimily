@@ -110,31 +110,10 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   /* ── Close with exit confirmation ── */
   const handleClose = useCallback(() => {
-    // Show exit dialog with current progress info
-    const phase = localSku.design_phase || 'range_plan';
-    const phaseNames: Record<DesignPhase, string> = {
-      range_plan: t.skuPhases?.concept || 'Concept',
-      sketch: t.skuPhases?.sketch || 'Design',
-      prototyping: t.skuPhases?.prototyping || 'Prototyping',
-      production: t.skuPhases?.production || 'Production',
-      completed: t.skuPhases?.completed || 'Completed',
-    };
-
-    setConfirmDialog({
-      open: true,
-      title: t.skuPhases?.exitTitle || 'Exit SKU editor?',
-      description: (t.skuPhases?.exitDescription || 'Your progress is saved automatically. This SKU will remain in the "{phase}" phase.')
-        .replace('{phase}', phaseNames[phase]),
-      confirmLabel: t.skuPhases?.exitConfirm || 'Exit',
-      cancelLabel: t.skuPhases?.exitCancel || 'Keep editing',
-      variant: 'neutral',
-      onConfirm: () => {
-        setConfirmDialog(null);
-        setClosing(true);
-        setTimeout(() => onClose(), 250);
-      },
-    });
-  }, [localSku.design_phase, onClose, t.skuPhases]);
+    // Direct close — all changes are auto-saved, no confirmation needed
+    setClosing(true);
+    setTimeout(() => onClose(), 200);
+  }, [onClose]);
 
   /* ── Lock background scroll ── */
   useEffect(() => {
