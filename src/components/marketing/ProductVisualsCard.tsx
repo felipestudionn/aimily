@@ -219,7 +219,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         prompt: body.prompt as string || `${action} for ${sku.name}`,
         input_data: { sku_id: sku.id, sku_name: sku.name, scene: selectedScene, ...body },
         output_data: { images: data.images || [] },
-        fal_request_id: data.requestId || null,
+        provider_request_id: data.requestId || null,
         model_used: modelUsed,
         status: 'completed',
         is_favorite: false,

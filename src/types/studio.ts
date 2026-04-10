@@ -3,20 +3,27 @@
 export type GenerationType =
   | 'tryon'
   | 'product_render'
-  | 'lifestyle'
+  | 'still_life'
   | 'editorial'
   | 'ad_creative'
   | 'video'
+  | 'brand_model'
   | 'copy';
 
 export type GenerationStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
-export type FalModel =
-  | 'fashn-tryon-v1.6'
-  | 'fashn-model-create'
-  | 'fashn-product-to-model'
-  | 'flux-2-pro'
-  | 'kling-3.0';
+/**
+ * Model identifiers we record in `ai_generations.model_used`.
+ * Each value maps to one of the active providers:
+ *   - OpenAI gpt-image-1.5 (Product Render / 3D via /api/ai/colorize-sketch)
+ *   - Freepik Nano Banana (Still Life / Brand Model / Try-On)
+ *   - Freepik Kling 2.1 Std/Pro (Video)
+ */
+export type ImageVideoModel =
+  | 'gpt-image-1.5'
+  | 'freepik-nano-banana'
+  | 'freepik-kling-2.1-std'
+  | 'freepik-kling-2.1-pro';
 
 export interface AiGeneration {
   id: string;
@@ -26,7 +33,7 @@ export interface AiGeneration {
   prompt: string;
   input_data: GenerationInput;
   output_data: GenerationOutput | null;
-  fal_request_id: string | null;
+  provider_request_id: string | null;
   model_used: string;
   cost_credits: number | null;
   status: GenerationStatus;
