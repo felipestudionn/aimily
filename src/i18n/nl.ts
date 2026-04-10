@@ -1812,6 +1812,81 @@ export const nl: Dictionary = {
     actionCategoryPositioning: 'Positionering',
     actionCategorySales: 'Verkoop',
     actionCategoryAwareness: 'Bekendheid',
+
+    // Content types (kalender)
+    contentTypePost: 'Post',
+    contentTypeStory: 'Story',
+    contentTypeReel: 'Reel',
+    contentTypeEmail: 'E-mail',
+    contentTypeBlog: 'Blog',
+    contentTypeAd: 'Advertentie',
+    contentTypePr: 'PR',
+
+    // Social/content-platforms
+    platformInstagram: 'Instagram',
+    platformTiktok: 'TikTok',
+    platformEmail: 'E-mail',
+    platformWebsite: 'Website',
+    platformPinterest: 'Pinterest',
+    platformFacebook: 'Facebook',
+    platformGoogleAds: 'Google Ads',
+
+    // Content statussen
+    contentStatusIdea: 'Idee',
+    contentStatusDraft: 'Concept',
+    contentStatusReview: 'Review',
+    contentStatusApproved: 'Goedgekeurd',
+    contentStatusScheduled: 'Gepland',
+    contentStatusPublished: 'Gepubliceerd',
+
+    // Contacttypes
+    contactTypeInfluencer: 'Influencer',
+    contactTypeMedia: 'Media',
+    contactTypeStylist: 'Stylist',
+    contactTypeBuyer: 'Buyer',
+    contactTypeCelebrity: 'Celebrity',
+
+    // Contactstatussen
+    contactStatusProspect: 'Prospect',
+    contactStatusContacted: 'Benaderd',
+    contactStatusConfirmed: 'Bevestigd',
+    contactStatusShipped: 'Verzonden',
+    contactStatusPosted: 'Gepost',
+    contactStatusDeclined: 'Afgewezen',
+
+    // Paid ads platforms
+    paidPlatformMeta: 'Meta (FB/IG)',
+    paidPlatformTiktok: 'TikTok Ads',
+    paidPlatformGoogle: 'Google Ads',
+    paidPlatformPinterest: 'Pinterest Ads',
+    paidPlatformOther: 'Overig',
+
+    // Campagne statussen
+    campaignStatusDraft: 'Concept',
+    campaignStatusPlanned: 'Gepland',
+    campaignStatusActive: 'Actief',
+    campaignStatusPaused: 'Gepauzeerd',
+    campaignStatusCompleted: 'Voltooid',
+
+    // Advertentiedoelen
+    adObjectiveBrandAwareness: 'Merkbekendheid',
+    adObjectiveReach: 'Bereik',
+    adObjectiveTraffic: 'Verkeer',
+    adObjectiveEngagement: 'Engagement',
+    adObjectiveVideoViews: 'Videoweergaven',
+    adObjectiveLeadGeneration: 'Leadgeneratie',
+    adObjectiveConversions: 'Conversies',
+    adObjectiveCatalogSales: 'Catalogusverkoop',
+
+    // PR-contacttabel — korte datumlabels
+    outreachShort: 'Contact',
+    shipShort: 'Verzending',
+    postShort: 'Post',
+
+    // Ad sets — meervoud & standaardnaam
+    adSetSingular: 'ad set',
+    adSetPlural: 'ad sets',
+    adSetDefaultName: 'Ad Set',
   },
 
   // ─── SketchFlow ───

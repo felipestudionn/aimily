@@ -1698,6 +1698,81 @@ export const no: Dictionary = {
     actionCategoryPositioning: 'Posisjonering',
     actionCategorySales: 'Salg',
     actionCategoryAwareness: 'Bevissthet',
+
+    // Innholdstyper (kalender)
+    contentTypePost: 'Post',
+    contentTypeStory: 'Story',
+    contentTypeReel: 'Reel',
+    contentTypeEmail: 'E-post',
+    contentTypeBlog: 'Blogg',
+    contentTypeAd: 'Annonse',
+    contentTypePr: 'PR',
+
+    // Sosiale/innholds-plattformer
+    platformInstagram: 'Instagram',
+    platformTiktok: 'TikTok',
+    platformEmail: 'E-post',
+    platformWebsite: 'Nettside',
+    platformPinterest: 'Pinterest',
+    platformFacebook: 'Facebook',
+    platformGoogleAds: 'Google Ads',
+
+    // Innholdsstatuser
+    contentStatusIdea: 'Idé',
+    contentStatusDraft: 'Utkast',
+    contentStatusReview: 'Gjennomgang',
+    contentStatusApproved: 'Godkjent',
+    contentStatusScheduled: 'Planlagt',
+    contentStatusPublished: 'Publisert',
+
+    // Kontakttyper
+    contactTypeInfluencer: 'Influencer',
+    contactTypeMedia: 'Media',
+    contactTypeStylist: 'Stylist',
+    contactTypeBuyer: 'Innkjøper',
+    contactTypeCelebrity: 'Kjendis',
+
+    // Kontaktstatuser
+    contactStatusProspect: 'Prospekt',
+    contactStatusContacted: 'Kontaktet',
+    contactStatusConfirmed: 'Bekreftet',
+    contactStatusShipped: 'Sendt',
+    contactStatusPosted: 'Publisert',
+    contactStatusDeclined: 'Avslått',
+
+    // Betalte annonseplattformer
+    paidPlatformMeta: 'Meta (FB/IG)',
+    paidPlatformTiktok: 'TikTok Ads',
+    paidPlatformGoogle: 'Google Ads',
+    paidPlatformPinterest: 'Pinterest Ads',
+    paidPlatformOther: 'Annet',
+
+    // Kampanjestatuser
+    campaignStatusDraft: 'Utkast',
+    campaignStatusPlanned: 'Planlagt',
+    campaignStatusActive: 'Aktiv',
+    campaignStatusPaused: 'Satt på pause',
+    campaignStatusCompleted: 'Fullført',
+
+    // Annonsemål
+    adObjectiveBrandAwareness: 'Merkevarekjennskap',
+    adObjectiveReach: 'Rekkevidde',
+    adObjectiveTraffic: 'Trafikk',
+    adObjectiveEngagement: 'Engasjement',
+    adObjectiveVideoViews: 'Videovisninger',
+    adObjectiveLeadGeneration: 'Lead-generering',
+    adObjectiveConversions: 'Konverteringer',
+    adObjectiveCatalogSales: 'Katalogsalg',
+
+    // PR-kontakttabell — korte datoetiketter
+    outreachShort: 'Kontakt',
+    shipShort: 'Sending',
+    postShort: 'Publ.',
+
+    // Annonsesett — flertall & standardnavn
+    adSetSingular: 'ad set',
+    adSetPlural: 'ad sets',
+    adSetDefaultName: 'Ad Set',
   },
 
   // ─── SketchFlow ───

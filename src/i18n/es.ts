@@ -1835,6 +1835,81 @@ export const es: Dictionary = {
     actionCategoryPositioning: 'Posicionamiento',
     actionCategorySales: 'Ventas',
     actionCategoryAwareness: 'Notoriedad',
+
+    // Tipos de contenido (calendario)
+    contentTypePost: 'Publicación',
+    contentTypeStory: 'Historia',
+    contentTypeReel: 'Reel',
+    contentTypeEmail: 'Email',
+    contentTypeBlog: 'Blog',
+    contentTypeAd: 'Anuncio',
+    contentTypePr: 'PR',
+
+    // Plataformas sociales/contenido
+    platformInstagram: 'Instagram',
+    platformTiktok: 'TikTok',
+    platformEmail: 'Email',
+    platformWebsite: 'Web',
+    platformPinterest: 'Pinterest',
+    platformFacebook: 'Facebook',
+    platformGoogleAds: 'Google Ads',
+
+    // Estados de contenido
+    contentStatusIdea: 'Idea',
+    contentStatusDraft: 'Borrador',
+    contentStatusReview: 'Revisión',
+    contentStatusApproved: 'Aprobado',
+    contentStatusScheduled: 'Programado',
+    contentStatusPublished: 'Publicado',
+
+    // Tipos de contacto
+    contactTypeInfluencer: 'Influencer',
+    contactTypeMedia: 'Medios',
+    contactTypeStylist: 'Estilista',
+    contactTypeBuyer: 'Comprador',
+    contactTypeCelebrity: 'Celebridad',
+
+    // Estados de contacto
+    contactStatusProspect: 'Prospecto',
+    contactStatusContacted: 'Contactado',
+    contactStatusConfirmed: 'Confirmado',
+    contactStatusShipped: 'Enviado',
+    contactStatusPosted: 'Publicado',
+    contactStatusDeclined: 'Rechazado',
+
+    // Plataformas de paid ads
+    paidPlatformMeta: 'Meta (FB/IG)',
+    paidPlatformTiktok: 'TikTok Ads',
+    paidPlatformGoogle: 'Google Ads',
+    paidPlatformPinterest: 'Pinterest Ads',
+    paidPlatformOther: 'Otro',
+
+    // Estados de campaña
+    campaignStatusDraft: 'Borrador',
+    campaignStatusPlanned: 'Planificada',
+    campaignStatusActive: 'Activa',
+    campaignStatusPaused: 'Pausada',
+    campaignStatusCompleted: 'Completada',
+
+    // Objetivos publicitarios
+    adObjectiveBrandAwareness: 'Notoriedad de Marca',
+    adObjectiveReach: 'Alcance',
+    adObjectiveTraffic: 'Tráfico',
+    adObjectiveEngagement: 'Engagement',
+    adObjectiveVideoViews: 'Reproducciones de Vídeo',
+    adObjectiveLeadGeneration: 'Generación de Leads',
+    adObjectiveConversions: 'Conversiones',
+    adObjectiveCatalogSales: 'Ventas de Catálogo',
+
+    // Tabla de contactos PR — etiquetas cortas de fechas
+    outreachShort: 'Contacto',
+    shipShort: 'Envío',
+    postShort: 'Publicación',
+
+    // Ad sets — plural y nombre por defecto
+    adSetSingular: 'ad set',
+    adSetPlural: 'ad sets',
+    adSetDefaultName: 'Ad Set',
   },
 
   // ─── SketchFlow ───

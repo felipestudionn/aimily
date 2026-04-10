@@ -34,12 +34,23 @@ import type {
   ContactStatus,
 } from '@/types/marketing';
 import {
-  CONTENT_TYPES,
-  PLATFORMS,
-  CONTENT_STATUSES,
-  CONTACT_TYPES,
-  CONTACT_STATUSES,
+  CONTENT_TYPE_IDS,
+  PLATFORM_IDS,
+  CONTENT_STATUS_IDS,
+  CONTACT_TYPE_IDS,
+  CONTACT_STATUS_IDS,
+  CONTENT_TYPE_EMOJI,
+  CONTENT_STATUS_COLOR,
+  CONTACT_TYPE_EMOJI,
+  CONTACT_STATUS_COLOR,
 } from '@/types/marketing';
+import {
+  getContentTypeLabel,
+  getPlatformLabel,
+  getContentStatusLabel,
+  getContactTypeLabel,
+  getContactStatusLabel,
+} from '@/lib/marketing-labels';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -64,9 +75,40 @@ const AI_PILL_LABEL_KEYS: Record<AiPill, 'pillManual' | 'pillAssisted' | 'pillAi
 
 type SubTab = 'calendar' | 'influencer';
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// Locale mapping for Intl date formatting.
+const INTL_LOCALE_MAP: Record<string, string> = {
+  en: 'en-US',
+  es: 'es-ES',
+  fr: 'fr-FR',
+  de: 'de-DE',
+  it: 'it-IT',
+  pt: 'pt-PT',
+  nl: 'nl-NL',
+  no: 'nb-NO',
+  sv: 'sv-SE',
+};
 
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+function getMonthLabel(locale: string, monthIdx: number, year: number): string {
+  const d = new Date(year, monthIdx, 1);
+  return new Intl.DateTimeFormat(INTL_LOCALE_MAP[locale] ?? 'en-US', { month: 'short' }).format(d);
+}
+
+function getMonthShort(locale: string, monthIdx: number): string {
+  const d = new Date(2000, monthIdx, 1);
+  return new Intl.DateTimeFormat(INTL_LOCALE_MAP[locale] ?? 'en-US', { month: 'short' }).format(d);
+}
+
+function getWeekdayShortList(locale: string): string[] {
+  // Monday = index 0 in UI; ISO Monday = 1.
+  // We build 7 days starting from a Monday (2024-01-01 was a Monday).
+  const base = new Date(2024, 0, 1);
+  const fmt = new Intl.DateTimeFormat(INTL_LOCALE_MAP[locale] ?? 'en-US', { weekday: 'short' });
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    return fmt.format(d);
+  });
+}
 
 const PLATFORM_COLORS: Record<string, string> = {
   instagram: 'bg-pink-500', tiktok: 'bg-black', email: 'bg-blue-500',
@@ -549,13 +591,13 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 >
                   {t.marketingPage.all}
                 </button>
-                {PLATFORMS.map(p => (
+                {PLATFORM_IDS.map(id => (
                   <button
-                    key={p.id}
-                    onClick={() => setPlatformFilter(p.id)}
-                    className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === p.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                    key={id}
+                    onClick={() => setPlatformFilter(id)}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                   >
-                    {p.label}
+                    {getPlatformLabel(t, id)}
                   </button>
                 ))}
               </div>
@@ -595,13 +637,13 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 >
                   {t.marketingPage.all}
                 </button>
-                {CONTENT_TYPES.map(ct => (
+                {CONTENT_TYPE_IDS.map(id => (
                   <button
-                    key={ct.id}
-                    onClick={() => setTypeFilter(ct.id)}
-                    className={`px-3 py-1.5 text-xs border transition-colors ${typeFilter === ct.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                    key={id}
+                    onClick={() => setTypeFilter(id)}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${typeFilter === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                   >
-                    {ct.label}
+                    {getContentTypeLabel(t, id)}
                   </button>
                 ))}
               </div>
@@ -624,10 +666,10 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
 
             {/* ── Status Overview ── */}
             <div className="grid grid-cols-6 gap-3">
-              {CONTENT_STATUSES.map(s => (
-                <div key={s.id} className="bg-white border border-carbon/[0.06] p-4 text-center">
-                  <p className="text-2xl font-light text-carbon">{statusCounts[s.id] || 0}</p>
-                  <p className="text-[10px] font-medium tracking-[0.15em] uppercase mt-1" style={{ color: s.color }}>{s.label}</p>
+              {CONTENT_STATUS_IDS.map(id => (
+                <div key={id} className="bg-white border border-carbon/[0.06] p-4 text-center">
+                  <p className="text-2xl font-light text-carbon">{statusCounts[id] || 0}</p>
+                  <p className="text-[10px] font-medium tracking-[0.15em] uppercase mt-1" style={{ color: CONTENT_STATUS_COLOR[id] }}>{getContentStatusLabel(t, id)}</p>
                 </div>
               ))}
             </div>
@@ -660,7 +702,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Select value={newEntry.content_type} onValueChange={(v: ContentType) => setNewEntry(p => ({ ...p, content_type: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {CONTENT_TYPES.map(ct => <SelectItem key={ct.id} value={ct.id}>{ct.label}</SelectItem>)}
+                        {CONTENT_TYPE_IDS.map(id => <SelectItem key={id} value={id}>{getContentTypeLabel(t, id)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -669,7 +711,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Select value={newEntry.platform} onValueChange={(v: ContentPlatform) => setNewEntry(p => ({ ...p, platform: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {PLATFORMS.map(p => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
+                        {PLATFORM_IDS.map(id => <SelectItem key={id} value={id}>{getPlatformLabel(t, id)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -692,7 +734,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Select value={newEntry.status} onValueChange={(v: ContentStatus) => setNewEntry(p => ({ ...p, status: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {CONTENT_STATUSES.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                        {CONTENT_STATUS_IDS.map(id => <SelectItem key={id} value={id}>{getContentStatusLabel(t, id)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -721,7 +763,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <ChevronLeft className="h-5 w-5 text-carbon/40" />
                   </button>
                   <h3 className="text-lg font-light text-carbon tracking-tight">
-                    {MONTH_NAMES[calMonth]} {calYear}
+                    {getMonthLabel(language, calMonth, calYear)} {calYear}
                   </h3>
                   <button onClick={nextMonth} className="p-2 hover:bg-carbon/[0.04] transition-colors">
                     <ChevronRight className="h-5 w-5 text-carbon/40" />
@@ -730,8 +772,8 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
 
                 {/* Weekday headers */}
                 <div className="grid grid-cols-7 border-b border-carbon/[0.06]">
-                  {WEEKDAY_LABELS.map(d => (
-                    <div key={d} className="p-2 text-center text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30">
+                  {getWeekdayShortList(language).map((d, i) => (
+                    <div key={i} className="p-2 text-center text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30">
                       {d}
                     </div>
                   ))}
@@ -795,7 +837,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </div>
                 ) : (
                   filteredEntries.map(entry => {
-                    const statusConfig = CONTENT_STATUSES.find(s => s.id === entry.status);
+                    const entryDate = new Date(entry.scheduled_date + 'T00:00');
                     return (
                       <div
                         key={entry.id}
@@ -803,9 +845,9 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                       >
                         {/* Date */}
                         <div className="w-20 text-center flex-shrink-0">
-                          <p className="text-lg font-light text-carbon">{new Date(entry.scheduled_date + 'T00:00').getDate()}</p>
+                          <p className="text-lg font-light text-carbon">{entryDate.getDate()}</p>
                           <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30">
-                            {MONTH_NAMES[new Date(entry.scheduled_date + 'T00:00').getMonth()]}
+                            {getMonthShort(language, entryDate.getMonth())}
                           </p>
                           {entry.scheduled_time && (
                             <p className="text-[10px] text-carbon/40 mt-0.5 flex items-center justify-center gap-0.5">
@@ -820,7 +862,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                         <div className="flex items-center gap-2 w-28 flex-shrink-0">
                           <span className={`w-3 h-3 rounded-full flex-shrink-0 ${PLATFORM_COLORS[entry.platform || ''] || 'bg-gray-400'}`} />
                           <span className={`text-[10px] px-2 py-0.5 border ${TYPE_COLORS[entry.content_type] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
-                            {entry.content_type}
+                            {getContentTypeLabel(t, entry.content_type)}
                           </span>
                         </div>
 
@@ -839,16 +881,16 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                         <Select value={entry.status} onValueChange={(v: ContentStatus) => handleStatusChange(entry.id, v)}>
                           <SelectTrigger className="w-28 h-8 text-[10px]">
                             <span className="flex items-center gap-1.5">
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: statusConfig?.color }} />
-                              {statusConfig?.label}
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CONTENT_STATUS_COLOR[entry.status] }} />
+                              {getContentStatusLabel(t, entry.status)}
                             </span>
                           </SelectTrigger>
                           <SelectContent>
-                            {CONTENT_STATUSES.map(s => (
-                              <SelectItem key={s.id} value={s.id}>
+                            {CONTENT_STATUS_IDS.map(id => (
+                              <SelectItem key={id} value={id}>
                                 <span className="flex items-center gap-1.5">
-                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
-                                  {s.label}
+                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CONTENT_STATUS_COLOR[id] }} />
+                                  {getContentStatusLabel(t, id)}
                                 </span>
                               </SelectItem>
                             ))}
@@ -927,7 +969,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {CONTENT_STATUSES.map(s => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+                        {CONTENT_STATUS_IDS.map(id => <SelectItem key={id} value={id}>{getContentStatusLabel(t, id)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <Button
@@ -973,7 +1015,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Select value={newContact.type} onValueChange={(v: ContactType) => setNewContact(p => ({ ...p, type: v }))}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {CONTACT_TYPES.map(ct => <SelectItem key={ct.id} value={ct.id}>{ct.label}</SelectItem>)}
+                        {CONTACT_TYPE_IDS.map(id => <SelectItem key={id} value={id}>{getContactTypeLabel(t, id)}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1028,8 +1070,6 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   </thead>
                   <tbody>
                     {contacts.map(contact => {
-                      const typeConfig = CONTACT_TYPES.find(ct => ct.id === contact.type);
-                      const statusConfig = CONTACT_STATUSES.find(cs => cs.id === contact.status);
                       return (
                         <tr key={contact.id} className="border-b border-carbon/[0.04] hover:bg-carbon/[0.02] group">
                           <td className="p-3">
@@ -1038,7 +1078,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                             {contact.email && <p className="text-xs text-carbon/30">{contact.email}</p>}
                           </td>
                           <td className="p-3">
-                            <span className="text-xs text-carbon/50">{typeConfig?.emoji} {typeConfig?.label}</span>
+                            <span className="text-xs text-carbon/50">{CONTACT_TYPE_EMOJI[contact.type]} {getContactTypeLabel(t, contact.type)}</span>
                           </td>
                           <td className="p-3">
                             <span className="text-xs text-carbon/50">{contact.platform || '—'}</span>
@@ -1052,16 +1092,16 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                             <Select value={contact.status} onValueChange={(v: ContactStatus) => handleContactStatusChange(contact.id, v)}>
                               <SelectTrigger className="w-28 h-7 text-[10px]">
                                 <span className="flex items-center gap-1.5">
-                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: statusConfig?.color }} />
-                                  {statusConfig?.label}
+                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CONTACT_STATUS_COLOR[contact.status] }} />
+                                  {getContactStatusLabel(t, contact.status)}
                                 </span>
                               </SelectTrigger>
                               <SelectContent>
-                                {CONTACT_STATUSES.map(cs => (
-                                  <SelectItem key={cs.id} value={cs.id}>
+                                {CONTACT_STATUS_IDS.map(id => (
+                                  <SelectItem key={id} value={id}>
                                     <span className="flex items-center gap-1.5">
-                                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cs.color }} />
-                                      {cs.label}
+                                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: CONTACT_STATUS_COLOR[id] }} />
+                                      {getContactStatusLabel(t, id)}
                                     </span>
                                   </SelectItem>
                                 ))}
@@ -1070,9 +1110,9 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                           </td>
                           <td className="p-3">
                             <div className="text-[10px] text-carbon/40 space-y-0.5">
-                              {contact.outreach_date && <p>Outreach: {contact.outreach_date}</p>}
-                              {contact.ship_date && <p>Ship: {contact.ship_date}</p>}
-                              {contact.post_date && <p>Post: {contact.post_date}</p>}
+                              {contact.outreach_date && <p>{t.marketingPage.outreachShort}: {contact.outreach_date}</p>}
+                              {contact.ship_date && <p>{t.marketingPage.shipShort}: {contact.ship_date}</p>}
+                              {contact.post_date && <p>{t.marketingPage.postShort}: {contact.post_date}</p>}
                               {!contact.outreach_date && !contact.ship_date && !contact.post_date && '—'}
                             </div>
                           </td>

@@ -16,8 +16,19 @@ import {
 } from 'lucide-react';
 import { usePaidCampaigns, type PaidCampaign } from '@/hooks/usePaidCampaigns';
 import { useDrops } from '@/hooks/useDrops';
-import type { AdSet } from '@/types/marketing';
-import { AD_OBJECTIVES, PLATFORMS } from '@/types/marketing';
+import type { AdSet, PaidPlatform, CampaignStatus, AdObjective } from '@/types/marketing';
+import {
+  AD_OBJECTIVE_IDS,
+  PAID_PLATFORM_IDS,
+  PAID_PLATFORM_COLOR,
+  CAMPAIGN_STATUS_IDS,
+  CAMPAIGN_STATUS_COLOR,
+} from '@/types/marketing';
+import {
+  getAdObjectiveLabel,
+  getPaidPlatformLabel,
+  getCampaignStatusLabel,
+} from '@/lib/marketing-labels';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -32,22 +43,6 @@ import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Constants ── */
-
-const PAID_PLATFORMS = [
-  { id: 'meta', label: 'Meta (FB/IG)', color: '#1877F2' },
-  { id: 'tiktok', label: 'TikTok Ads', color: '#000000' },
-  { id: 'google', label: 'Google Ads', color: '#FBBC04' },
-  { id: 'pinterest', label: 'Pinterest Ads', color: '#E60023' },
-  { id: 'other', label: 'Other', color: '#94A3B8' },
-];
-
-const CAMPAIGN_STATUSES = [
-  { id: 'draft', label: 'Draft', color: '#94A3B8' },
-  { id: 'planned', label: 'Planned', color: '#3B82F6' },
-  { id: 'active', label: 'Active', color: '#10B981' },
-  { id: 'paused', label: 'Paused', color: '#F59E0B' },
-  { id: 'completed', label: 'Completed', color: '#8B5CF6' },
-];
 
 type AiPill = 'libre' | 'asistido' | 'propuesta';
 
@@ -84,13 +79,13 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingAdSets, setEditingAdSets] = useState<string | null>(null);
   const [newCampaign, setNewCampaign] = useState({
-    name: '', platform: 'meta', objective: 'Conversions', budget: 0, currency: 'EUR',
+    name: '', platform: 'meta', objective: 'conversions', budget: 0, currency: 'EUR',
     start_date: '', end_date: '', drop_name: '', notes: '',
   });
 
   // Assisted mode state
   const [assistedBudget, setAssistedBudget] = useState(5000);
-  const [assistedObjective, setAssistedObjective] = useState('Conversions');
+  const [assistedObjective, setAssistedObjective] = useState('conversions');
   const [assistedDirection, setAssistedDirection] = useState('');
 
   // Propuesta mode state
@@ -118,14 +113,15 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
     return Object.entries(grouped).sort((a, b) => b[1] - a[1]);
   }, [campaigns]);
 
+  const unassignedLabel = t.marketingPage.unassigned;
   const budgetByDrop = useMemo(() => {
     const grouped: Record<string, number> = {};
     campaigns.forEach(c => {
-      const key = c.drop_name || 'Unassigned';
+      const key = c.drop_name || unassignedLabel;
       grouped[key] = (grouped[key] || 0) + (c.budget || 0);
     });
     return Object.entries(grouped).sort((a, b) => b[1] - a[1]);
-  }, [campaigns]);
+  }, [campaigns, unassignedLabel]);
 
   /* ── Handlers ── */
 
@@ -145,7 +141,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
       notes: newCampaign.notes || null,
       status: 'draft',
     });
-    setNewCampaign({ name: '', platform: 'meta', objective: 'Conversions', budget: 0, currency: 'EUR', start_date: '', end_date: '', drop_name: '', notes: '' });
+    setNewCampaign({ name: '', platform: 'meta', objective: 'conversions', budget: 0, currency: 'EUR', start_date: '', end_date: '', drop_name: '', notes: '' });
     setShowAddCampaign(false);
   };
 
@@ -155,7 +151,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
     const adSets = (campaign.ad_sets as AdSet[]) || [];
     const newAdSet: AdSet = {
       id: crypto.randomUUID(),
-      name: `Ad Set ${adSets.length + 1}`,
+      name: `${t.marketingPage.adSetDefaultName} ${adSets.length + 1}`,
       audience: '',
       budget_pct: Math.round(100 / (adSets.length + 1)),
       creatives: [],
@@ -223,7 +219,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
             collection_plan_id: collectionPlanId,
             name: gen.name,
             platform: gen.platform || 'meta',
-            objective: gen.objective || 'Conversions',
+            objective: gen.objective || 'conversions',
             budget: gen.budget || 0,
             currency: 'EUR',
             start_date: gen.start_date || null,
@@ -242,14 +238,29 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
     }
   };
 
-  const getPlatformColor = (platformId: string) =>
-    PAID_PLATFORMS.find(p => p.id === platformId)?.color || '#94A3B8';
+  const isPaidPlatform = (id: string): id is PaidPlatform =>
+    (PAID_PLATFORM_IDS as readonly string[]).includes(id);
 
-  const getPlatformLabel = (platformId: string) =>
-    PAID_PLATFORMS.find(p => p.id === platformId)?.label || platformId;
+  const platformColorFor = (platformId: string): string =>
+    isPaidPlatform(platformId) ? PAID_PLATFORM_COLOR[platformId] : '#94A3B8';
 
-  const getStatusColor = (statusId: string) =>
-    CAMPAIGN_STATUSES.find(s => s.id === statusId)?.color || '#94A3B8';
+  const platformLabelFor = (platformId: string): string =>
+    isPaidPlatform(platformId) ? getPaidPlatformLabel(t, platformId) : platformId;
+
+  const isCampaignStatus = (id: string): id is CampaignStatus =>
+    (CAMPAIGN_STATUS_IDS as readonly string[]).includes(id);
+
+  const statusColorFor = (statusId: string): string =>
+    isCampaignStatus(statusId) ? CAMPAIGN_STATUS_COLOR[statusId] : '#94A3B8';
+
+  const statusLabelFor = (statusId: string): string =>
+    isCampaignStatus(statusId) ? getCampaignStatusLabel(t, statusId) : statusId;
+
+  const isAdObjective = (id: string): id is AdObjective =>
+    (AD_OBJECTIVE_IDS as readonly string[]).includes(id);
+
+  const adObjectiveLabelFor = (id: string): string =>
+    isAdObjective(id) ? getAdObjectiveLabel(t, id) : id;
 
   /* ── Card (collapsed) ── */
   if (!expanded) {
@@ -385,8 +396,8 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                 <Select value={assistedObjective} onValueChange={setAssistedObjective}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {AD_OBJECTIVES.map(obj => (
-                      <SelectItem key={obj} value={obj}>{obj}</SelectItem>
+                    {AD_OBJECTIVE_IDS.map(id => (
+                      <SelectItem key={id} value={id}>{getAdObjectiveLabel(t, id)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -444,13 +455,13 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
             >
               {t.marketingPage.all}
             </button>
-            {PAID_PLATFORMS.map(p => (
+            {PAID_PLATFORM_IDS.map(id => (
               <button
-                key={p.id}
-                onClick={() => setPlatformFilter(p.id)}
-                className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === p.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                key={id}
+                onClick={() => setPlatformFilter(id)}
+                className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
-                {p.label}
+                {getPaidPlatformLabel(t, id)}
               </button>
             ))}
           </div>
@@ -492,13 +503,13 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   return (
                     <div key={platform}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium text-carbon/60">{getPlatformLabel(platform)}</span>
+                        <span className="text-xs font-medium text-carbon/60">{platformLabelFor(platform)}</span>
                         <span className="text-xs text-carbon/40">€{amount.toLocaleString()} ({Math.round(pct)}%)</span>
                       </div>
                       <div className="h-2 bg-carbon/[0.04] w-full">
                         <div
                           className="h-full transition-all duration-300"
-                          style={{ width: `${pct}%`, backgroundColor: getPlatformColor(platform) }}
+                          style={{ width: `${pct}%`, backgroundColor: platformColorFor(platform) }}
                         />
                       </div>
                     </div>
@@ -567,8 +578,8 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   <Select value={newCampaign.platform} onValueChange={v => setNewCampaign(prev => ({ ...prev, platform: v }))}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {PAID_PLATFORMS.map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                      {PAID_PLATFORM_IDS.map(id => (
+                        <SelectItem key={id} value={id}>{getPaidPlatformLabel(t, id)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -578,8 +589,8 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   <Select value={newCampaign.objective} onValueChange={v => setNewCampaign(prev => ({ ...prev, objective: v }))}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {AD_OBJECTIVES.map(obj => (
-                        <SelectItem key={obj} value={obj}>{obj}</SelectItem>
+                      {AD_OBJECTIVE_IDS.map(id => (
+                        <SelectItem key={id} value={id}>{getAdObjectiveLabel(t, id)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -640,7 +651,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div
                         className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: getPlatformColor(campaign.platform) }}
+                        style={{ backgroundColor: platformColorFor(campaign.platform) }}
                       />
                       <div className="min-w-0 flex-1">
                         {isEditing ? (
@@ -655,9 +666,9 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                           <p className="text-sm font-medium text-carbon truncate">{campaign.name}</p>
                         )}
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-carbon/40">{getPlatformLabel(campaign.platform)}</span>
+                          <span className="text-xs text-carbon/40">{platformLabelFor(campaign.platform)}</span>
                           <span className="text-xs text-carbon/30">|</span>
-                          <span className="text-xs text-carbon/40">{campaign.objective}</span>
+                          <span className="text-xs text-carbon/40">{adObjectiveLabelFor(campaign.objective)}</span>
                           {campaign.drop_name && (
                             <>
                               <span className="text-xs text-carbon/30">|</span>
@@ -680,7 +691,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                       {/* Budget */}
                       <div className="text-right">
                         <p className="text-lg font-light text-carbon tracking-tight">€{(campaign.budget || 0).toLocaleString()}</p>
-                        <p className="text-[10px] text-carbon/30">{adSets.length} ad set{adSets.length !== 1 ? 's' : ''}</p>
+                        <p className="text-[10px] text-carbon/30">{adSets.length} {adSets.length === 1 ? t.marketingPage.adSetSingular : t.marketingPage.adSetPlural}</p>
                       </div>
 
                       {/* Status badge */}
@@ -691,14 +702,14 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                         <SelectTrigger className="h-7 w-24 text-xs border-0 p-0 justify-center">
                           <span
                             className="px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white rounded-sm"
-                            style={{ backgroundColor: getStatusColor(campaign.status) }}
+                            style={{ backgroundColor: statusColorFor(campaign.status) }}
                           >
-                            {campaign.status}
+                            {statusLabelFor(campaign.status)}
                           </span>
                         </SelectTrigger>
                         <SelectContent>
-                          {CAMPAIGN_STATUSES.map(s => (
-                            <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                          {CAMPAIGN_STATUS_IDS.map(id => (
+                            <SelectItem key={id} value={id}>{getCampaignStatusLabel(t, id)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
