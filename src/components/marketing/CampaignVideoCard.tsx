@@ -79,6 +79,8 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   const [selectedMotion, setSelectedMotion] = useState('subtle');
   const [editorialPrompt, setEditorialPrompt] = useState('');
   const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoTier, setVideoTier] = useState<'pro' | 'std'>('pro');
+  const [videoDuration, setVideoDuration] = useState<'5' | '10'>('5');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -252,15 +254,17 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       const story = activeStory;
       const storyCtx = storyContext(story);
 
-      const res = await fetch('/api/ai/fal/video', {
+      const res = await fetch('/api/ai/freepik/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image_url: sourceImageUrl,
-          motion_type: selectedMotion,
-          prompt: videoPrompt || undefined,
+          product_name: skuName || 'fashion product',
+          motion: selectedMotion,
+          tier: videoTier,
+          duration: videoDuration,
+          user_prompt: videoPrompt || undefined,
           story_context: storyCtx,
-          language,
         }),
       });
 
@@ -270,15 +274,19 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       await addGeneration({
         user_id: user.id,
         generation_type: 'video',
-        prompt: videoPrompt || `Video ${selectedMotion} for ${skuName || 'editorial'}`,
+        prompt:
+          videoPrompt ||
+          `Video ${selectedMotion} for ${skuName || 'editorial'} (${videoTier} ${videoDuration}s)`,
         input_data: {
           source_image: sourceImageUrl,
           sku_name: skuName,
           motion_type: selectedMotion,
+          tier: videoTier,
+          duration: videoDuration,
         },
         output_data: { video_url: data.video_url },
-        provider_request_id: data.requestId || null,
-        model_used: 'kling-3.0',
+        provider_request_id: null,
+        model_used: data.provider || `freepik-kling-2.1-${videoTier}`,
         status: 'completed',
         is_favorite: false,
         story_id: story?.id || null,
@@ -441,6 +449,10 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             generating={generating?.type === 'video'}
             selectedMotion={selectedMotion}
             onMotionChange={setSelectedMotion}
+            tier={videoTier}
+            onTierChange={setVideoTier}
+            duration={videoDuration}
+            onDurationChange={setVideoDuration}
             prompt={videoPrompt}
             onPromptChange={setVideoPrompt}
             onGenerate={handleVideoGenerate}
@@ -891,6 +903,10 @@ function VideoTab({
   generating,
   selectedMotion,
   onMotionChange,
+  tier,
+  onTierChange,
+  duration,
+  onDurationChange,
   prompt,
   onPromptChange,
   onGenerate,
@@ -904,6 +920,10 @@ function VideoTab({
   generating: boolean;
   selectedMotion: string;
   onMotionChange: (v: string) => void;
+  tier: 'pro' | 'std';
+  onTierChange: (v: 'pro' | 'std') => void;
+  duration: '5' | '10';
+  onDurationChange: (v: '5' | '10') => void;
   prompt: string;
   onPromptChange: (v: string) => void;
   onGenerate: (imageUrl: string, skuName?: string) => void;
@@ -985,6 +1005,68 @@ function VideoTab({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Quality tier (Pro default, Std draft) */}
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+            {t.marketingPage.videoQuality}
+          </label>
+          <div className="inline-flex border border-carbon/[0.06] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => onTierChange('pro')}
+              className={`text-xs font-light px-3 py-1.5 transition-colors ${
+                tier === 'pro'
+                  ? 'bg-carbon text-crema'
+                  : 'bg-white text-carbon/60 hover:text-carbon'
+              }`}
+            >
+              {t.marketingPage.videoQualityPro}
+            </button>
+            <button
+              type="button"
+              onClick={() => onTierChange('std')}
+              className={`text-xs font-light px-3 py-1.5 border-l border-carbon/[0.06] transition-colors ${
+                tier === 'std'
+                  ? 'bg-carbon text-crema'
+                  : 'bg-white text-carbon/60 hover:text-carbon'
+              }`}
+            >
+              {t.marketingPage.videoQualityStd}
+            </button>
+          </div>
+        </div>
+
+        {/* Duration */}
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+            {t.marketingPage.videoDuration}
+          </label>
+          <div className="inline-flex border border-carbon/[0.06] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => onDurationChange('5')}
+              className={`text-xs font-light px-3 py-1.5 transition-colors ${
+                duration === '5'
+                  ? 'bg-carbon text-crema'
+                  : 'bg-white text-carbon/60 hover:text-carbon'
+              }`}
+            >
+              5s
+            </button>
+            <button
+              type="button"
+              onClick={() => onDurationChange('10')}
+              className={`text-xs font-light px-3 py-1.5 border-l border-carbon/[0.06] transition-colors ${
+                duration === '10'
+                  ? 'bg-carbon text-crema'
+                  : 'bg-white text-carbon/60 hover:text-carbon'
+              }`}
+            >
+              10s
+            </button>
+          </div>
         </div>
       </div>
 
