@@ -102,6 +102,19 @@ export const useLookbookPages = (collectionPlanId: string, lookbookName?: string
     }
   };
 
+  /**
+   * Bulk-create pages from an AI lookbook compose (B6). Runs addPage in
+   * sequence so page_number assignment stays monotonic.
+   */
+  const bulkAddPages = async (newPages: Array<Partial<LookbookPage>>) => {
+    const created: LookbookPage[] = [];
+    for (const p of newPages) {
+      const res = await addPage(p);
+      if (res) created.push(res);
+    }
+    return created;
+  };
+
   useEffect(() => {
     if (collectionPlanId) fetchPages();
   }, [collectionPlanId, fetchPages]);
@@ -111,6 +124,7 @@ export const useLookbookPages = (collectionPlanId: string, lookbookName?: string
     loading,
     error,
     addPage,
+    bulkAddPages,
     updatePage,
     deletePage,
     refetch: fetchPages,

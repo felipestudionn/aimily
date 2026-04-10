@@ -18,6 +18,7 @@ import {
   Play,
   GripVertical,
   Layout,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStories, type Story } from '@/hooks/useStories';
@@ -81,6 +82,27 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   const [videoPrompt, setVideoPrompt] = useState('');
   const [videoTier, setVideoTier] = useState<'pro' | 'std'>('pro');
   const [videoDuration, setVideoDuration] = useState<'5' | '10'>('5');
+  // B5 — optional shotlist generated before firing the video model
+  const [videoShotlist, setVideoShotlist] = useState<{
+    shotlist: Array<{
+      beat: string;
+      start_seconds: number;
+      end_seconds: number;
+      visual_direction: string;
+      motion_type?: string;
+      on_screen_text?: string;
+      voiceover?: string;
+      sound_design?: string;
+    }>;
+    captions_plain?: string;
+    captions_srt?: string;
+    total_duration_seconds?: number;
+    rationale?: string;
+  } | null>(null);
+  const [shotlistLoading, setShotlistLoading] = useState(false);
+  const [shotlistHookType, setShotlistHookType] = useState<
+    'curiosity' | 'story' | 'value' | 'contrarian'
+  >('value');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,9 +114,13 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
     pages: lookbookPages,
     loading: pagesLoading,
     addPage,
+    bulkAddPages,
     updatePage,
     deletePage,
   } = useLookbookPages(collectionPlanId, undefined, activeStoryForLookbook);
+
+  // B6 — AI lookbook compose state
+  const [aiComposeLoading, setAiComposeLoading] = useState(false);
 
   /* ── Derived ── */
 
@@ -246,6 +272,53 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
     }
   };
 
+  // B5 — generate a structured 4-beat shotlist before firing the video model.
+  // The user reviews the beats/captions and can iterate cheaply (text only)
+  // before spending the video generation budget.
+  const handleGenerateShotlist = async (skuName?: string, skuCategory?: string, skuPvp?: number) => {
+    if (!user) return;
+    setShotlistLoading(true);
+    try {
+      const story = activeStory;
+      const res = await fetch('/api/ai/content-strategy/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'video_shotlist',
+          collectionPlanId,
+          brandContext: {
+            brand_name: 'Brand',
+          },
+          storyContext: story
+            ? {
+                name: story.name,
+                narrative: story.narrative || undefined,
+              }
+            : undefined,
+          skuContext: skuName
+            ? {
+                name: skuName,
+                category: skuCategory || '',
+                family: '',
+                pvp: skuPvp || 0,
+              }
+            : undefined,
+          hookType: shotlistHookType,
+          platform: 'reels',
+          durationSeconds: Number(videoDuration) as 15 | 30,
+          language,
+        }),
+      });
+      if (!res.ok) throw new Error('Shotlist generation failed');
+      const data = await res.json();
+      setVideoShotlist(data.result || null);
+    } catch (err) {
+      console.error('Shotlist generation error:', err);
+    } finally {
+      setShotlistLoading(false);
+    }
+  };
+
   const handleVideoGenerate = async (sourceImageUrl: string, skuName?: string) => {
     if (!user) return;
     setGenerating({ type: 'video' });
@@ -308,6 +381,130 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       lookbook_name: activeStory?.name || 'Main Lookbook',
       content: [],
     });
+  };
+
+  // B6 — AI compose lookbook from the active story's favorite visuals
+  const handleAiComposeLookbook = async () => {
+    if (!user) return;
+    const story = activeStory;
+    if (!story) return;
+
+    // Collect unique favorite visuals as the raw material for the compose
+    const visuals = favoriteVisuals
+      .flatMap((g) =>
+        (g.output_data?.images || []).map((img, idx) => ({
+          id: `${g.id}-${idx}`,
+          url: img.url,
+          type: (g.generation_type === 'still_life'
+            ? 'still_life'
+            : g.generation_type === 'editorial'
+              ? 'editorial'
+              : g.generation_type === 'product_render'
+                ? 'render'
+                : 'detail') as 'render' | 'still_life' | 'editorial' | 'detail',
+          sku_id: (g.input_data?.sku_id as string | undefined) || undefined,
+          caption: (g.input_data?.sku_name as string | undefined) || undefined,
+        }))
+      )
+      .slice(0, 24);
+
+    if (visuals.length === 0) return;
+
+    setAiComposeLoading(true);
+    try {
+      const res = await fetch('/api/ai/content-strategy/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'lookbook_compose',
+          collectionPlanId,
+          brandContext: { brand_name: 'Brand' },
+          storyContext: {
+            name: story.name,
+            narrative: story.narrative || undefined,
+            mood: story.mood || undefined,
+            tone: story.tone || undefined,
+          },
+          targetPages: Math.min(10, Math.max(6, Math.ceil(visuals.length * 0.8))),
+          availableVisuals: visuals,
+          copySnippets: '(auto)',
+          language,
+        }),
+      });
+      if (!res.ok) throw new Error('Lookbook compose failed');
+      const data = await res.json();
+      const pages = (data.result?.pages || []) as Array<{
+        page_number: number;
+        layout_type: LookbookLayout;
+        visual_ids: string[];
+        copy?: {
+          headline?: string;
+          subheadline?: string;
+          body?: string;
+          quote?: string;
+        };
+      }>;
+
+      if (pages.length === 0) return;
+
+      // Resolve visual_ids back to URLs
+      const visualById = new Map(visuals.map((v) => [v.id, v] as const));
+
+      await bulkAddPages(
+        pages.map((p) => {
+          // Resolve visual_ids back to content items with the shape
+          // the LookbookPage type expects. Positions are a simple
+          // grid fallback — the layout_type is the primary visual driver.
+          const contentItems = p.visual_ids
+            .map((id) => visualById.get(id))
+            .filter((v): v is NonNullable<typeof v> => Boolean(v))
+            .map((v, idx) => ({
+              type: 'image' as const,
+              asset_url: v.url,
+              text: v.caption,
+              sku_id: v.sku_id,
+              position: { x: idx % 2, y: Math.floor(idx / 2) },
+              size: { width: 1, height: 1 },
+            }));
+
+          type TextItem = {
+            type: 'text';
+            asset_url?: string;
+            text?: string;
+            sku_id?: string;
+            position: { x: number; y: number };
+            size: { width: number; height: number };
+          };
+
+          // If the page has AI-generated copy, append it as a text item.
+          // Cast the union because LookbookContentItem already supports text type
+          // via its type: 'image' | 'text' | 'product_info' union.
+          if (p.copy && (p.copy.headline || p.copy.body || p.copy.quote)) {
+            const copyText = [p.copy.headline, p.copy.subheadline, p.copy.body, p.copy.quote]
+              .filter(Boolean)
+              .join('\n\n');
+            const textItem: TextItem = {
+              type: 'text',
+              text: copyText,
+              position: { x: 0, y: contentItems.length },
+              size: { width: 1, height: 1 },
+            };
+            contentItems.push(textItem as unknown as (typeof contentItems)[number]);
+          }
+
+          return {
+            layout_type: p.layout_type,
+            story_id: story.id,
+            lookbook_name: story.name || 'Main Lookbook',
+            content: contentItems,
+          };
+        })
+      );
+    } catch (err) {
+      console.error('AI lookbook compose error:', err);
+    } finally {
+      setAiComposeLoading(false);
+    }
   };
 
   /* ── TABS ── */
@@ -422,6 +619,9 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             onUpdatePage={updatePage}
             onDeletePage={deletePage}
             onLightbox={setLightboxUrl}
+            onAiCompose={handleAiComposeLookbook}
+            aiComposeLoading={aiComposeLoading}
+            activeStoryName={activeStory?.name}
           />
         )}
 
@@ -455,6 +655,12 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             onDurationChange={setVideoDuration}
             prompt={videoPrompt}
             onPromptChange={setVideoPrompt}
+            shotlist={videoShotlist}
+            shotlistLoading={shotlistLoading}
+            shotlistHookType={shotlistHookType}
+            onShotlistHookChange={setShotlistHookType}
+            onGenerateShotlist={handleGenerateShotlist}
+            onClearShotlist={() => setVideoShotlist(null)}
             onGenerate={handleVideoGenerate}
             onToggleFavorite={toggleFavorite}
             onDelete={deleteGeneration}
@@ -524,6 +730,9 @@ function LookbookTab({
   onUpdatePage,
   onDeletePage,
   onLightbox,
+  onAiCompose,
+  aiComposeLoading,
+  activeStoryName,
 }: {
   pages: LookbookPage[];
   loading: boolean;
@@ -532,6 +741,9 @@ function LookbookTab({
   onUpdatePage: (id: string, updates: Partial<LookbookPage>) => Promise<LookbookPage | null>;
   onDeletePage: (id: string) => Promise<boolean>;
   onLightbox: (url: string) => void;
+  onAiCompose: () => void;
+  aiComposeLoading: boolean;
+  activeStoryName?: string;
 }) {
   const t = useTranslation();
   const [showLayoutPicker, setShowLayoutPicker] = useState(false);
@@ -549,13 +761,36 @@ function LookbookTab({
             {pages.length} page{pages.length !== 1 ? 's' : ''} · {favoriteVisuals.length} {t.marketingPage.favoriteVisualsAvailable}
           </p>
         </div>
-        <button
-          onClick={() => setShowLayoutPicker(!showLayoutPicker)}
-          className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/60 hover:text-carbon hover:border-carbon/20 transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {t.marketingPage.addPage}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* B6 — AI Compose */}
+          <button
+            type="button"
+            onClick={onAiCompose}
+            disabled={aiComposeLoading || favoriteVisuals.length === 0 || !activeStoryName}
+            title={
+              !activeStoryName
+                ? t.marketingPage.aiComposeNeedStory
+                : favoriteVisuals.length === 0
+                  ? t.marketingPage.aiComposeNeedFavorites
+                  : undefined
+            }
+            className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {aiComposeLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {t.marketingPage.aiCompose}
+          </button>
+          <button
+            onClick={() => setShowLayoutPicker(!showLayoutPicker)}
+            className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/60 hover:text-carbon hover:border-carbon/20 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {t.marketingPage.addPage}
+          </button>
+        </div>
       </div>
 
       {/* Layout picker */}
@@ -897,6 +1132,23 @@ function EditorialTab({
 
 /* ── VIDEO TAB ── */
 
+interface VideoShotlist {
+  shotlist: Array<{
+    beat: string;
+    start_seconds: number;
+    end_seconds: number;
+    visual_direction: string;
+    motion_type?: string;
+    on_screen_text?: string;
+    voiceover?: string;
+    sound_design?: string;
+  }>;
+  captions_plain?: string;
+  captions_srt?: string;
+  total_duration_seconds?: number;
+  rationale?: string;
+}
+
 function VideoTab({
   generations,
   favoriteVisuals,
@@ -909,6 +1161,12 @@ function VideoTab({
   onDurationChange,
   prompt,
   onPromptChange,
+  shotlist,
+  shotlistLoading,
+  shotlistHookType,
+  onShotlistHookChange,
+  onGenerateShotlist,
+  onClearShotlist,
   onGenerate,
   onToggleFavorite,
   onDelete,
@@ -926,6 +1184,12 @@ function VideoTab({
   onDurationChange: (v: '5' | '10') => void;
   prompt: string;
   onPromptChange: (v: string) => void;
+  shotlist: VideoShotlist | null;
+  shotlistLoading: boolean;
+  shotlistHookType: 'curiosity' | 'story' | 'value' | 'contrarian';
+  onShotlistHookChange: (v: 'curiosity' | 'story' | 'value' | 'contrarian') => void;
+  onGenerateShotlist: (skuName?: string, skuCategory?: string, skuPvp?: number) => void;
+  onClearShotlist: () => void;
   onGenerate: (imageUrl: string, skuName?: string) => void;
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
@@ -1081,6 +1345,116 @@ function VideoTab({
           placeholder={t.marketingPage.directionPlaceholder}
           className="w-full text-sm font-light text-carbon bg-white border border-carbon/[0.06] px-4 py-3 focus:outline-none focus:border-carbon/20 resize-none h-20"
         />
+      </div>
+
+      {/* B5 — Generate shotlist (text-only, cheap iteration) */}
+      <div className="border border-carbon/[0.06] bg-white p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40">
+            {t.marketingPage.shotlistHeading}
+          </p>
+          {shotlist && (
+            <button
+              type="button"
+              onClick={onClearShotlist}
+              className="text-[10px] font-light text-carbon/40 hover:text-carbon/70"
+            >
+              {t.marketingPage.shotlistClear}
+            </button>
+          )}
+        </div>
+
+        {!shotlist && (
+          <div className="space-y-3">
+            <p className="text-xs font-light text-carbon/50">
+              {t.marketingPage.shotlistHelp}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+                {t.marketingPage.shotlistHook}
+              </label>
+              {(['curiosity', 'story', 'value', 'contrarian'] as const).map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => onShotlistHookChange(h)}
+                  className={`px-3 py-1.5 text-[11px] font-light border transition-colors ${
+                    shotlistHookType === h
+                      ? 'bg-carbon text-crema border-carbon'
+                      : 'bg-white text-carbon/60 border-carbon/[0.06] hover:text-carbon'
+                  }`}
+                >
+                  {t.marketingPage[`hookType_${h}` as keyof typeof t.marketingPage] as string}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const src =
+                  selectedSourceIdx !== null && sourceImages[selectedSourceIdx]
+                    ? sourceImages[selectedSourceIdx]
+                    : undefined;
+                onGenerateShotlist(src?.skuName);
+              }}
+              disabled={shotlistLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.1em] bg-white text-carbon border border-carbon/20 hover:bg-carbon/[0.03] disabled:opacity-40"
+            >
+              {shotlistLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {t.marketingPage.shotlistGenerate}
+            </button>
+          </div>
+        )}
+
+        {shotlist && (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              {shotlist.shotlist.map((beat, i) => (
+                <div
+                  key={`${beat.beat}-${i}`}
+                  className="border-l-2 border-carbon/20 pl-3 py-1 text-xs font-light text-carbon/70"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] uppercase tracking-[0.1em] text-carbon/40">
+                      {beat.beat} · {beat.start_seconds}s–{beat.end_seconds}s
+                    </span>
+                    {beat.motion_type && (
+                      <span className="text-[10px] text-carbon/30">{beat.motion_type}</span>
+                    )}
+                  </div>
+                  <p>{beat.visual_direction}</p>
+                  {beat.on_screen_text && (
+                    <p className="text-[11px] text-carbon/50 italic">
+                      “{beat.on_screen_text}”
+                    </p>
+                  )}
+                  {beat.voiceover && (
+                    <p className="text-[11px] text-carbon/50">VO: {beat.voiceover}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {shotlist.captions_plain && (
+              <details className="text-xs font-light text-carbon/50">
+                <summary className="cursor-pointer text-[10px] uppercase tracking-[0.1em]">
+                  {t.marketingPage.shotlistCaptions}
+                </summary>
+                <pre className="mt-2 whitespace-pre-wrap text-[11px]">
+                  {shotlist.captions_plain}
+                </pre>
+              </details>
+            )}
+            {shotlist.rationale && (
+              <p className="text-[11px] font-light text-carbon/40 italic">
+                {shotlist.rationale}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Generate button */}

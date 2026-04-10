@@ -14,7 +14,8 @@ type GenerateMode =
   | 'email_template'
   | 'email_sequence'
   | 'seo'
-  | 'video_shotlist';
+  | 'video_shotlist'
+  | 'lookbook_compose';
 
 type CopyContext =
   | 'pdp'
@@ -78,6 +79,16 @@ interface GenerateRequest {
   durationSeconds?: 15 | 30;
   // C5 — SEO buyer stage
   buyerStage?: 'awareness' | 'consideration' | 'decision' | 'implementation';
+  // B6 — lookbook compose
+  targetPages?: number;
+  availableVisuals?: Array<{
+    id: string;
+    url: string;
+    type?: 'render' | 'still_life' | 'editorial' | 'detail';
+    sku_id?: string;
+    caption?: string;
+  }>;
+  copySnippets?: string;
 }
 
 function buildPromptForMode(req: GenerateRequest): { system: string; user: string } {
@@ -247,6 +258,27 @@ function buildPromptForMode(req: GenerateRequest): { system: string; user: strin
       return {
         system: MARKETING_PROMPTS.video_ad_structured.system,
         user: renderPrompt(MARKETING_PROMPTS.video_ad_structured.user, flatCtx),
+      };
+    }
+
+    case 'lookbook_compose': {
+      const sc = req.storyContext;
+      const visuals = req.availableVisuals || [];
+      const flatCtx: Record<string, unknown> = {
+        story_name: sc?.name || 'Main Lookbook',
+        story_narrative: sc?.narrative || '',
+        story_mood: sc?.mood?.join(', ') || '',
+        story_tone: sc?.tone || '',
+        brand_voice_summary:
+          req.brandVoiceSummary || bc.brand_voice?.personality || 'Aspirational, refined',
+        target_pages: req.targetPages ?? 8,
+        visual_count: visuals.length,
+        visuals_json: JSON.stringify(visuals, null, 2),
+        copy_snippets: req.copySnippets || '(none)',
+      };
+      return {
+        system: MARKETING_PROMPTS.lookbook_compose.system,
+        user: renderPrompt(MARKETING_PROMPTS.lookbook_compose.user, flatCtx),
       };
     }
   }
