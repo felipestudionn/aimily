@@ -172,15 +172,50 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
       let modelUsed = '';
 
       if (action === 'product-render') {
-        endpoint = '/api/ai/fal/product-render';
+        // Product Render mirrors the design-phase 3D render flow.
+        // If the SKU already has a photoreal 3D saved from the design phase,
+        // reuse it (zero cost, zero divergence). Otherwise regenerate it via
+        // /api/ai/colorize-sketch with is_3d_render:true — the SAME model
+        // and prompt the design phase uses. Never a different model.
+        const existing3d = sku.render_urls?.['3d'];
+        if (existing3d) {
+          await addGeneration({
+            user_id: user.id,
+            generation_type: 'product_render',
+            prompt: `Product render (reused from design phase) for ${sku.name}`,
+            input_data: {
+              sku_id: sku.id,
+              sku_name: sku.name,
+              source: 'design_phase_reuse',
+            },
+            output_data: { images: [{ url: existing3d }] },
+            provider_request_id: null,
+            model_used: 'gpt-image-1.5',
+            status: 'completed',
+            is_favorite: false,
+            story_id: story?.id || null,
+          });
+          refetchGens();
+          return;
+        }
+
+        const sourceSketch = sku.render_url || sku.sketch_url;
+        if (!sourceSketch) {
+          throw new Error(
+            'This SKU has no sketch or colorized render yet. Complete the design phase first.'
+          );
+        }
+        endpoint = '/api/ai/colorize-sketch';
         body = {
-          image_url: sku.reference_image_url || undefined,
-          prompt: `Professional product photography of ${sku.name}`,
-          background: selectedScene === 'white-studio' ? undefined : selectedScene,
-          story_context: storyCtx,
+          sketch_url: sourceSketch,
+          is_3d_render: true,
+          category: sku.category,
+          product_name: sku.name,
+          family: sku.family,
+          collectionPlanId: sku.collection_plan_id,
         };
         genType = 'product_render';
-        modelUsed = 'flux-2-pro';
+        modelUsed = 'gpt-image-1.5';
       } else if (action === 'tryon') {
         const model = selectedModelId ? models.find((m) => m.id === selectedModelId) : models[0];
         endpoint = '/api/ai/fal/tryon';
@@ -212,13 +247,16 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
       if (!res.ok) throw new Error('Generation failed');
       const data = await res.json();
 
-      // Save to ai_generations
+      // Normalize response shape: colorize-sketch returns { imageUrl },
+      // while other endpoints return { images: [{ url }] }.
+      const images = data.images ?? (data.imageUrl ? [{ url: data.imageUrl }] : []);
+
       await addGeneration({
         user_id: user.id,
         generation_type: genType as AiGeneration['generation_type'],
-        prompt: body.prompt as string || `${action} for ${sku.name}`,
+        prompt: (body.prompt as string) || `${action} for ${sku.name}`,
         input_data: { sku_id: sku.id, sku_name: sku.name, scene: selectedScene, ...body },
-        output_data: { images: data.images || [] },
+        output_data: { images },
         provider_request_id: data.requestId || null,
         model_used: modelUsed,
         status: 'completed',
