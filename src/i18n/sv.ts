@@ -1626,6 +1626,78 @@ export const sv: Dictionary = {
     platformsPlaceholderPaid: 'Meta, Google, TikTok',
     adSetNamePlaceholder: 'Namn',
     audiencePlaceholder: 'Målgrupp',
+
+    // Content Strategy — Pillars & Voice
+    pillarsVoiceDesc: 'Definiera innehållspelare och varumärkesröst. Använd AI för att generera båda på en gång eller konfigurera manuellt.',
+    generatePillarsVoiceBtn: 'Generera pelare och röst',
+    contentPillarsHeading: 'Innehållspelare',
+    pillarDefaultName: 'Pelare',
+    storiesAlignmentHeading: 'Stories',
+    brandVoiceHeading: 'Varumärkesröst',
+    personalityHeading: 'Personlighet',
+    toneHeading: 'Ton',
+    doHeading: 'Do',
+    dontHeading: 'Don\'t',
+    vocabularyHeading: 'Vokabulär',
+    exampleCaptionHeading: 'Exempel-caption',
+    noBrandVoiceConfigured: 'Ingen varumärkesröst konfigurerad. Använd AI eller redigera manuellt.',
+
+    // Content Strategy — Product Copy
+    productCopyDesc: 'Generera övertygande produktbeskrivningar per SKU, kontextualiserade per story.',
+    storyOptionalHeading: 'Story (valfri)',
+    allStoriesOption: 'Alla stories',
+    skuHeading: 'SKU',
+    selectSkuPlaceholder: 'Välj en SKU...',
+    generateCopyBtn: 'Generera copy',
+    noProductCopyYet: 'Ingen produktcopy än. Välj en SKU och generera.',
+
+    // Content Strategy — Social Templates
+    socialTemplatesDesc: 'Generera sociala medier-mallar per story och plattform.',
+    generalNoStoryOption: 'Allmänt (ingen story)',
+    generateSocialTemplatesBtn: 'Generera 5 mallar',
+    noPlatformTemplatesYet: 'Inga {platform}-mallar än.',
+
+    // Content Strategy — Email Templates
+    emailTemplatesDesc: 'Generera e-postmallar för olika touchpoints i kundresan.',
+    generalOption: 'Allmänt',
+    emailTypeHeading: 'E-posttyp',
+    emailTypeLaunch: 'Lansering',
+    emailTypeWelcome: 'Välkommen',
+    emailTypeCartAbandonment: 'Övergiven kundvagn',
+    emailTypePostPurchase: 'Efter köp',
+    generateEmailBtn: 'Generera e-post',
+    noEmailTemplatesYet: 'Inga {type}-mallar än.',
+
+    // Content Strategy — SEO
+    seoDesc: 'Generera SEO-metadata per SKU — meta titles, beskrivningar, alt-text, nyckelord.',
+    generateSeoBtn: 'Generera SEO',
+    noSeoYet: 'Ingen SEO-metadata än. Välj en SKU och generera.',
+
+    // Content Strategy — Inline-etiketter
+    subjectHeading: 'Ämne',
+    unknownSku: 'Okänd SKU',
+    ctaInlineLabel: 'CTA',
+    bestWithLabel: 'Bäst med',
+    altInlineLabel: 'Alt',
+    ogInlineLabel: 'OG',
+    voiceInlineLabel: 'Röst',
+    socialInline: 'social',
+    emailInline: 'e-post',
+
+    // Content Calendar — rubriker
+    hashtagsHeading: 'Hashtags',
+    campaignHeading: 'Kampanj',
+
+    // Go-to-Market — kommersiella åtgärdstyper
+    actionTypeSale: 'Rea',
+    actionTypeCollab: 'Kollab',
+    actionTypeCampaign: 'Kampanj',
+    actionTypeSeeding: 'Seeding',
+    actionTypeEvent: 'Event',
+    actionCategoryVisibility: 'Synlighet',
+    actionCategoryPositioning: 'Positionering',
+    actionCategorySales: 'Försäljning',
+    actionCategoryAwareness: 'Medvetenhet',
   },
 
   // ─── SketchFlow ───

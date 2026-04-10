@@ -1740,6 +1740,78 @@ export const de: Dictionary = {
     platformsPlaceholderPaid: 'Meta, Google, TikTok',
     adSetNamePlaceholder: 'Name',
     audiencePlaceholder: 'Zielgruppe',
+
+    // Content Strategy — Säulen & Voice
+    pillarsVoiceDesc: 'Definieren Sie Ihre Content-Säulen und Markenstimme. Nutzen Sie die KI, um beides auf einmal zu generieren, oder konfigurieren Sie manuell.',
+    generatePillarsVoiceBtn: 'Säulen & Voice generieren',
+    contentPillarsHeading: 'Content-Säulen',
+    pillarDefaultName: 'Säule',
+    storiesAlignmentHeading: 'Stories',
+    brandVoiceHeading: 'Brand Voice',
+    personalityHeading: 'Persönlichkeit',
+    toneHeading: 'Ton',
+    doHeading: 'Do',
+    dontHeading: 'Don\'t',
+    vocabularyHeading: 'Vokabular',
+    exampleCaptionHeading: 'Beispiel-Caption',
+    noBrandVoiceConfigured: 'Keine Brand Voice konfiguriert. Nutzen Sie die KI oder bearbeiten Sie manuell.',
+
+    // Content Strategy — Produkttexte
+    productCopyDesc: 'Überzeugende Produktbeschreibungen pro SKU, kontextualisiert durch Stories.',
+    storyOptionalHeading: 'Story (optional)',
+    allStoriesOption: 'Alle Stories',
+    skuHeading: 'SKU',
+    selectSkuPlaceholder: 'SKU auswählen...',
+    generateCopyBtn: 'Text generieren',
+    noProductCopyYet: 'Noch keine Produkttexte. Wählen Sie eine SKU und generieren Sie.',
+
+    // Content Strategy — Social Templates
+    socialTemplatesDesc: 'Social-Media-Templates pro Story und Plattform generieren.',
+    generalNoStoryOption: 'Allgemein (ohne Story)',
+    generateSocialTemplatesBtn: '5 Templates generieren',
+    noPlatformTemplatesYet: 'Noch keine {platform}-Templates.',
+
+    // Content Strategy — Email Templates
+    emailTemplatesDesc: 'E-Mail-Templates für verschiedene Touchpoints der Customer Journey generieren.',
+    generalOption: 'Allgemein',
+    emailTypeHeading: 'E-Mail-Typ',
+    emailTypeLaunch: 'Launch',
+    emailTypeWelcome: 'Willkommen',
+    emailTypeCartAbandonment: 'Warenkorb-Abbruch',
+    emailTypePostPurchase: 'Nach Kauf',
+    generateEmailBtn: 'E-Mail generieren',
+    noEmailTemplatesYet: 'Noch keine {type}-Templates.',
+
+    // Content Strategy — SEO
+    seoDesc: 'SEO-Metadaten pro SKU generieren — Meta-Titel, Beschreibungen, Alt-Text, Keywords.',
+    generateSeoBtn: 'SEO generieren',
+    noSeoYet: 'Noch keine SEO-Metadaten. Wählen Sie eine SKU und generieren Sie.',
+
+    // Content Strategy — Inline-Labels
+    subjectHeading: 'Betreff',
+    unknownSku: 'Unbekannte SKU',
+    ctaInlineLabel: 'CTA',
+    bestWithLabel: 'Am besten mit',
+    altInlineLabel: 'Alt',
+    ogInlineLabel: 'OG',
+    voiceInlineLabel: 'Voice',
+    socialInline: 'Social',
+    emailInline: 'E-Mail',
+
+    // Content Calendar — Überschriften
+    hashtagsHeading: 'Hashtags',
+    campaignHeading: 'Kampagne',
+
+    // Go-to-Market — Commercial-Action-Typen
+    actionTypeSale: 'Sale',
+    actionTypeCollab: 'Kollab',
+    actionTypeCampaign: 'Kampagne',
+    actionTypeSeeding: 'Seeding',
+    actionTypeEvent: 'Event',
+    actionCategoryVisibility: 'Sichtbarkeit',
+    actionCategoryPositioning: 'Positionierung',
+    actionCategorySales: 'Verkäufe',
+    actionCategoryAwareness: 'Bekanntheit',
   },
 
   // ─── SketchFlow ───

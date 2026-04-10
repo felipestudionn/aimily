@@ -1780,6 +1780,78 @@ export const en = {
     platformsPlaceholderPaid: 'Meta, Google, TikTok',
     adSetNamePlaceholder: 'Name',
     audiencePlaceholder: 'Audience',
+
+    // Content Strategy — Pillars & Voice
+    pillarsVoiceDesc: 'Define your content pillars and brand voice. Use AI to generate both at once, or configure manually.',
+    generatePillarsVoiceBtn: 'Generate Pillars & Voice',
+    contentPillarsHeading: 'Content Pillars',
+    pillarDefaultName: 'Pillar',
+    storiesAlignmentHeading: 'Stories',
+    brandVoiceHeading: 'Brand Voice',
+    personalityHeading: 'Personality',
+    toneHeading: 'Tone',
+    doHeading: 'Do',
+    dontHeading: "Don't",
+    vocabularyHeading: 'Vocabulary',
+    exampleCaptionHeading: 'Example Caption',
+    noBrandVoiceConfigured: 'No brand voice configured. Use AI or edit manually.',
+
+    // Content Strategy — Product Copy
+    productCopyDesc: 'Generate compelling product descriptions per SKU, contextualized by story.',
+    storyOptionalHeading: 'Story (optional)',
+    allStoriesOption: 'All stories',
+    skuHeading: 'SKU',
+    selectSkuPlaceholder: 'Select a SKU...',
+    generateCopyBtn: 'Generate Copy',
+    noProductCopyYet: 'No product copy yet. Select a SKU and generate.',
+
+    // Content Strategy — Social Templates
+    socialTemplatesDesc: 'Generate social media templates by story and platform.',
+    generalNoStoryOption: 'General (no story)',
+    generateSocialTemplatesBtn: 'Generate 5 Templates',
+    noPlatformTemplatesYet: 'No {platform} templates yet.',
+
+    // Content Strategy — Email Templates
+    emailTemplatesDesc: 'Generate email templates for different touchpoints in the customer journey.',
+    generalOption: 'General',
+    emailTypeHeading: 'Email Type',
+    emailTypeLaunch: 'Launch',
+    emailTypeWelcome: 'Welcome',
+    emailTypeCartAbandonment: 'Cart Abandonment',
+    emailTypePostPurchase: 'Post Purchase',
+    generateEmailBtn: 'Generate Email',
+    noEmailTemplatesYet: 'No {type} templates yet.',
+
+    // Content Strategy — SEO
+    seoDesc: 'Generate SEO metadata per SKU — meta titles, descriptions, alt text, keywords.',
+    generateSeoBtn: 'Generate SEO',
+    noSeoYet: 'No SEO metadata yet. Select a SKU and generate.',
+
+    // Content Strategy — Inline labels & rows
+    subjectHeading: 'Subject',
+    unknownSku: 'Unknown SKU',
+    ctaInlineLabel: 'CTA',
+    bestWithLabel: 'Best with',
+    altInlineLabel: 'Alt',
+    ogInlineLabel: 'OG',
+    voiceInlineLabel: 'Voice',
+    socialInline: 'social',
+    emailInline: 'email',
+
+    // Content Calendar — headings
+    hashtagsHeading: 'Hashtags',
+    campaignHeading: 'Campaign',
+
+    // Go-to-Market — commercial action types
+    actionTypeSale: 'Sale',
+    actionTypeCollab: 'Collab',
+    actionTypeCampaign: 'Campaign',
+    actionTypeSeeding: 'Seeding',
+    actionTypeEvent: 'Event',
+    actionCategoryVisibility: 'Visibility',
+    actionCategoryPositioning: 'Positioning',
+    actionCategorySales: 'Sales',
+    actionCategoryAwareness: 'Awareness',
   },
 
   // ─── SketchFlow ───

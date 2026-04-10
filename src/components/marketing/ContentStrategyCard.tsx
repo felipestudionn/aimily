@@ -54,6 +54,7 @@ const TAB_KEYS: { id: ContentStrategyTab; labelKey: 'pillarsAndVoice' | 'product
   { id: 'seo', labelKey: 'seo', Icon: Search },
 ];
 
+// Platform names are product nouns and are not translated.
 const PLATFORMS: { id: SocialPlatform; label: string }[] = [
   { id: 'instagram', label: 'Instagram' },
   { id: 'tiktok', label: 'TikTok' },
@@ -61,12 +62,8 @@ const PLATFORMS: { id: SocialPlatform; label: string }[] = [
   { id: 'facebook', label: 'Facebook' },
 ];
 
-const EMAIL_TYPES: { id: EmailTemplateType; label: string }[] = [
-  { id: 'launch', label: 'Launch' },
-  { id: 'welcome', label: 'Welcome' },
-  { id: 'cart_abandonment', label: 'Cart Abandonment' },
-  { id: 'post_purchase', label: 'Post Purchase' },
-];
+// Email type labels come from i18n at render time.
+const EMAIL_TYPE_IDS: EmailTemplateType[] = ['launch', 'welcome', 'cart_abandonment', 'post_purchase'];
 
 /* ── Component ── */
 
@@ -75,6 +72,15 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
   const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<ContentStrategyTab>('pillars-voice');
+
+  const emailTypeLabel = (id: EmailTemplateType): string => {
+    switch (id) {
+      case 'launch': return t.marketingPage.emailTypeLaunch;
+      case 'welcome': return t.marketingPage.emailTypeWelcome;
+      case 'cart_abandonment': return t.marketingPage.emailTypeCartAbandonment;
+      case 'post_purchase': return t.marketingPage.emailTypePostPurchase;
+    }
+  };
 
   // Data hooks
   const { stories } = useStories(collectionPlanId);
@@ -341,14 +347,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               ))}
               {voiceConfig && (
                 <span className="text-[11px] tracking-[0.05em] italic text-carbon/30">
-                  Voice: {voiceConfig.personality?.slice(0, 30)}
+                  {t.marketingPage.voiceInlineLabel}: {voiceConfig.personality?.slice(0, 30)}
                 </span>
               )}
               {socialTemplates.length > 0 && (
-                <span className="text-[11px] text-carbon/30">{socialTemplates.length} social</span>
+                <span className="text-[11px] text-carbon/30">{socialTemplates.length} {t.marketingPage.socialInline}</span>
               )}
               {emailTemplates.length > 0 && (
-                <span className="text-[11px] text-carbon/30">{emailTemplates.length} email</span>
+                <span className="text-[11px] text-carbon/30">{emailTemplates.length} {t.marketingPage.emailInline}</span>
               )}
             </div>
           )}
@@ -411,7 +417,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {/* AI Direction */}
             <div className="space-y-4">
               <p className="text-sm font-light text-carbon/50">
-                Define your content pillars and brand voice. Use AI to generate both at once, or configure manually.
+                {t.marketingPage.pillarsVoiceDesc}
               </p>
               <textarea
                 value={userDirection}
@@ -425,7 +431,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                 className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
               >
                 {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                Generate Pillars & Voice
+                {t.marketingPage.generatePillarsVoiceBtn}
               </button>
             </div>
 
@@ -433,16 +439,16 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <div>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">
-                  Content Pillars ({pillars.length})
+                  {t.marketingPage.contentPillarsHeading} ({pillars.length})
                 </p>
                 <button
-                  onClick={() => addPillar({ collection_plan_id: collectionPlanId, name: `Pillar ${pillars.length + 1}`, description: null, examples: null, stories_alignment: null })}
+                  onClick={() => addPillar({ collection_plan_id: collectionPlanId, name: `${t.marketingPage.pillarDefaultName} ${pillars.length + 1}`, description: null, examples: null, stories_alignment: null })}
                   className="flex items-center gap-1.5 text-[11px] text-carbon/50 hover:text-carbon transition-colors"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Add
+                  <Plus className="h-3.5 w-3.5" /> {t.common.add}
                 </button>
               </div>
-              {pillarsLoading && <p className="text-xs text-carbon/30">Loading...</p>}
+              {pillarsLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
               <div className="space-y-3">
                 {pillars.map(pillar => (
                   <div key={pillar.id} className="bg-white border border-carbon/[0.06] p-5">
@@ -486,7 +492,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                             </div>
                           ) : null}
                           {pillar.stories_alignment?.length ? (
-                            <p className="text-[10px] text-carbon/25 mt-2 italic">Stories: {pillar.stories_alignment.join(', ')}</p>
+                            <p className="text-[10px] text-carbon/25 mt-2 italic">{t.marketingPage.storiesAlignmentHeading}: {pillar.stories_alignment.join(', ')}</p>
                           ) : null}
                         </div>
                         <div className="flex gap-1 flex-shrink-0 ml-4">
@@ -503,17 +509,17 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {/* Brand Voice Config */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">Brand Voice</p>
+                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.brandVoiceHeading}</p>
                 {!editingVoice && (
                   <button
                     onClick={() => { setEditingVoice(true); setVoiceForm(voiceConfig || {}); }}
                     className="flex items-center gap-1.5 text-[11px] text-carbon/50 hover:text-carbon transition-colors"
                   >
-                    <Edit3 className="h-3.5 w-3.5" /> Edit
+                    <Edit3 className="h-3.5 w-3.5" /> {t.common.edit}
                   </button>
                 )}
               </div>
-              {voiceLoading && <p className="text-xs text-carbon/30">Loading...</p>}
+              {voiceLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
 
               {editingVoice ? (
                 <div className="bg-white border border-carbon/[0.06] p-5 space-y-3">
@@ -526,21 +532,21 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                   <input value={(voiceForm.vocabulary ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.vocabularyPlaceholder} />
                   <textarea value={voiceForm.example_caption ?? ''} onChange={e => setVoiceForm({ ...voiceForm, example_caption: e.target.value })} className="w-full h-16 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder={t.marketingPage.exampleCaptionPlaceholder} />
                   <div className="flex gap-2">
-                    <button onClick={() => { saveVoiceConfig(voiceForm); setEditingVoice(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90"><Check className="h-3.5 w-3.5" /> Save</button>
-                    <button onClick={() => setEditingVoice(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon/80">Cancel</button>
+                    <button onClick={() => { saveVoiceConfig(voiceForm); setEditingVoice(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
+                    <button onClick={() => setEditingVoice(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon/80">{t.common.cancel}</button>
                   </div>
                 </div>
               ) : voiceConfig ? (
                 <div className="bg-white border border-carbon/[0.06] p-5 space-y-3">
-                  {voiceConfig.personality && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">Personality</p><p className="text-sm font-light text-carbon/70">{voiceConfig.personality}</p></div>}
-                  {voiceConfig.tone && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">Tone</p><p className="text-sm font-light text-carbon/70">{voiceConfig.tone}</p></div>}
-                  {voiceConfig.do_rules?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">Do</p><div className="flex flex-wrap gap-1.5">{voiceConfig.do_rules.map((r, i) => <span key={i} className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
-                  {voiceConfig.dont_rules?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">Don&apos;t</p><div className="flex flex-wrap gap-1.5">{voiceConfig.dont_rules.map((r, i) => <span key={i} className="text-[10px] bg-red-50 text-red-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
-                  {voiceConfig.vocabulary?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">Vocabulary</p><div className="flex flex-wrap gap-1.5">{voiceConfig.vocabulary.map((v, i) => <span key={i} className="text-[10px] bg-carbon/[0.04] text-carbon/50 px-2 py-0.5">{v}</span>)}</div></div> : null}
-                  {voiceConfig.example_caption && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">Example Caption</p><p className="text-sm font-light text-carbon/50 italic">&ldquo;{voiceConfig.example_caption}&rdquo;</p></div>}
+                  {voiceConfig.personality && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.personalityHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.personality}</p></div>}
+                  {voiceConfig.tone && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.toneHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.tone}</p></div>}
+                  {voiceConfig.do_rules?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.doHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.do_rules.map((r, i) => <span key={i} className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
+                  {voiceConfig.dont_rules?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.dontHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.dont_rules.map((r, i) => <span key={i} className="text-[10px] bg-red-50 text-red-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
+                  {voiceConfig.vocabulary?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.vocabularyHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.vocabulary.map((v, i) => <span key={i} className="text-[10px] bg-carbon/[0.04] text-carbon/50 px-2 py-0.5">{v}</span>)}</div></div> : null}
+                  {voiceConfig.example_caption && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.exampleCaptionHeading}</p><p className="text-sm font-light text-carbon/50 italic">&ldquo;{voiceConfig.example_caption}&rdquo;</p></div>}
                 </div>
               ) : (
-                <p className="text-xs text-carbon/20 italic">No brand voice configured. Use AI or edit manually.</p>
+                <p className="text-xs text-carbon/20 italic">{t.marketingPage.noBrandVoiceConfigured}</p>
               )}
             </div>
           </div>
@@ -550,22 +556,22 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
         {activeTab === 'product-copy' && (
           <div className="space-y-6">
             <p className="text-sm font-light text-carbon/50">
-              Generate compelling product descriptions per SKU, contextualized by story.
+              {t.marketingPage.productCopyDesc}
             </p>
 
             {/* Selectors */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">Story (optional)</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
-                  <option value="">All stories</option>
+                  <option value="">{t.marketingPage.allStoriesOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">SKU</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
                 <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
-                  <option value="">Select a SKU...</option>
+                  <option value="">{t.marketingPage.selectSkuPlaceholder}</option>
                   {skus.map(s => <option key={s.id} value={s.id}>{s.name} — {s.family}</option>)}
                 </select>
               </div>
@@ -577,11 +583,11 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Generate Copy
+              {t.marketingPage.generateCopyBtn}
             </button>
 
             {/* Existing copies */}
-            {copiesLoading && <p className="text-xs text-carbon/30">Loading...</p>}
+            {copiesLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
             <div className="space-y-3">
               {productCopies
                 .filter(c => c.copy_type === 'product_description')
@@ -589,7 +595,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                   <ProductCopyRow key={copy.id} copy={copy} skus={skus} onDelete={() => deleteProductCopy(copy.id)} />
                 ))}
               {productCopies.filter(c => c.copy_type === 'product_description').length === 0 && !copiesLoading && (
-                <p className="text-xs text-carbon/20 italic text-center py-8">No product copy yet. Select a SKU and generate.</p>
+                <p className="text-xs text-carbon/20 italic text-center py-8">{t.marketingPage.noProductCopyYet}</p>
               )}
             </div>
           </div>
@@ -599,20 +605,20 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
         {activeTab === 'social' && (
           <div className="space-y-6">
             <p className="text-sm font-light text-carbon/50">
-              Generate social media templates by story and platform.
+              {t.marketingPage.socialTemplatesDesc}
             </p>
 
             {/* Selectors */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">Story</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.story}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
-                  <option value="">General (no story)</option>
+                  <option value="">{t.marketingPage.generalNoStoryOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">Platform</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.platform}</p>
                 <div className="flex gap-1">
                   {PLATFORMS.map(p => (
                     <button
@@ -635,20 +641,20 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Generate 5 Templates
+              {t.marketingPage.generateSocialTemplatesBtn}
             </button>
 
             {/* Templates list */}
-            {socialLoading && <p className="text-xs text-carbon/30">Loading...</p>}
+            {socialLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
             <div className="space-y-3">
               {socialTemplates
-                .filter(t => !selectedStoryId || t.story_id === selectedStoryId)
-                .filter(t => t.platform === selectedPlatform)
+                .filter(tpl => !selectedStoryId || tpl.story_id === selectedStoryId)
+                .filter(tpl => tpl.platform === selectedPlatform)
                 .map(tpl => (
                   <SocialTemplateRow key={tpl.id} template={tpl} stories={stories} onDelete={() => deleteSocial(tpl.id)} />
                 ))}
-              {socialTemplates.filter(t => t.platform === selectedPlatform).length === 0 && !socialLoading && (
-                <p className="text-xs text-carbon/20 italic text-center py-8">No {selectedPlatform} templates yet.</p>
+              {socialTemplates.filter(tpl => tpl.platform === selectedPlatform).length === 0 && !socialLoading && (
+                <p className="text-xs text-carbon/20 italic text-center py-8">{t.marketingPage.noPlatformTemplatesYet.replace('{platform}', selectedPlatform)}</p>
               )}
             </div>
           </div>
@@ -658,29 +664,29 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
         {activeTab === 'email' && (
           <div className="space-y-6">
             <p className="text-sm font-light text-carbon/50">
-              Generate email templates for different touchpoints in the customer journey.
+              {t.marketingPage.emailTemplatesDesc}
             </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">Story (optional)</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
-                  <option value="">General</option>
+                  <option value="">{t.marketingPage.generalOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">Email Type</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.emailTypeHeading}</p>
                 <div className="flex gap-1 flex-wrap">
-                  {EMAIL_TYPES.map(et => (
+                  {EMAIL_TYPE_IDS.map(id => (
                     <button
-                      key={et.id}
-                      onClick={() => setSelectedEmailType(et.id)}
+                      key={id}
+                      onClick={() => setSelectedEmailType(id)}
                       className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
-                        selectedEmailType === et.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+                        selectedEmailType === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                       }`}
                     >
-                      {et.label}
+                      {emailTypeLabel(id)}
                     </button>
                   ))}
                 </div>
@@ -693,18 +699,18 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Generate Email
+              {t.marketingPage.generateEmailBtn}
             </button>
 
-            {emailLoading && <p className="text-xs text-carbon/30">Loading...</p>}
+            {emailLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
             <div className="space-y-3">
               {emailTemplates
-                .filter(t => t.email_type === selectedEmailType)
+                .filter(tpl => tpl.email_type === selectedEmailType)
                 .map(tpl => (
                   <EmailTemplateRow key={tpl.id} template={tpl} stories={stories} onDelete={() => deleteEmail(tpl.id)} onUpdate={updateEmailTemplate} />
                 ))}
-              {emailTemplates.filter(t => t.email_type === selectedEmailType).length === 0 && !emailLoading && (
-                <p className="text-xs text-carbon/20 italic text-center py-8">No {selectedEmailType.replace('_', ' ')} templates yet.</p>
+              {emailTemplates.filter(tpl => tpl.email_type === selectedEmailType).length === 0 && !emailLoading && (
+                <p className="text-xs text-carbon/20 italic text-center py-8">{t.marketingPage.noEmailTemplatesYet.replace('{type}', emailTypeLabel(selectedEmailType))}</p>
               )}
             </div>
           </div>
@@ -714,21 +720,21 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
         {activeTab === 'seo' && (
           <div className="space-y-6">
             <p className="text-sm font-light text-carbon/50">
-              Generate SEO metadata per SKU — meta titles, descriptions, alt text, keywords.
+              {t.marketingPage.seoDesc}
             </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">Story (optional)</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
-                  <option value="">All stories</option>
+                  <option value="">{t.marketingPage.allStoriesOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">SKU</p>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
                 <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
-                  <option value="">Select a SKU...</option>
+                  <option value="">{t.marketingPage.selectSkuPlaceholder}</option>
                   {skus.map(s => <option key={s.id} value={s.id}>{s.name} — {s.family}</option>)}
                 </select>
               </div>
@@ -740,10 +746,10 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              Generate SEO
+              {t.marketingPage.generateSeoBtn}
             </button>
 
-            {copiesLoading && <p className="text-xs text-carbon/30">Loading...</p>}
+            {copiesLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
             <div className="space-y-3">
               {productCopies
                 .filter(c => c.copy_type === 'seo_meta')
@@ -751,7 +757,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                   <SeoRow key={copy.id} copy={copy} skus={skus} onDelete={() => deleteProductCopy(copy.id)} />
                 ))}
               {productCopies.filter(c => c.copy_type === 'seo_meta').length === 0 && !copiesLoading && (
-                <p className="text-xs text-carbon/20 italic text-center py-8">No SEO metadata yet. Select a SKU and generate.</p>
+                <p className="text-xs text-carbon/20 italic text-center py-8">{t.marketingPage.noSeoYet}</p>
               )}
             </div>
           </div>
@@ -767,6 +773,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
    ══════════════════════════════════════════════════════ */
 
 function ProductCopyRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU[]; onDelete: () => void }) {
+  const t = useTranslation();
   const sku = skus.find(s => s.id === copy.sku_id);
   const meta = copy.metadata as { description?: string; features?: string[]; care?: string } | null;
   return (
@@ -774,7 +781,7 @@ function ProductCopyRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU
       <div className="flex items-start justify-between mb-2">
         <div>
           <h4 className="text-base font-light text-carbon tracking-tight">{copy.title}</h4>
-          <p className="text-[10px] text-carbon/25">{sku?.name || 'Unknown SKU'} — {copy.model_used}</p>
+          <p className="text-[10px] text-carbon/25">{sku?.name || t.marketingPage.unknownSku} — {copy.model_used}</p>
         </div>
         <button onClick={onDelete} className="p-1.5 text-carbon/25 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
       </div>
@@ -790,6 +797,7 @@ function ProductCopyRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU
 }
 
 function SocialTemplateRow({ template, stories, onDelete }: { template: SocialTemplate; stories: Story[]; onDelete: () => void }) {
+  const t = useTranslation();
   const story = stories.find(s => s.id === template.story_id);
   return (
     <div className="bg-white border border-carbon/[0.06] p-5">
@@ -807,8 +815,8 @@ function SocialTemplateRow({ template, stories, onDelete }: { template: SocialTe
           {template.hashtags.map((h, i) => <span key={i} className="text-[10px] text-blue-500">#{h.replace('#', '')}</span>)}
         </div>
       ) : null}
-      {template.cta && <p className="text-[10px] text-carbon/30">CTA: {template.cta}</p>}
-      {template.best_paired_with && <p className="text-[10px] text-carbon/25 italic">Best with: {template.best_paired_with}</p>}
+      {template.cta && <p className="text-[10px] text-carbon/30">{t.marketingPage.ctaInlineLabel}: {template.cta}</p>}
+      {template.best_paired_with && <p className="text-[10px] text-carbon/25 italic">{t.marketingPage.bestWithLabel}: {template.best_paired_with}</p>}
     </div>
   );
 }
@@ -844,13 +852,13 @@ function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template:
             <input value={form.cta_url ?? ''} onChange={e => setForm({ ...form, cta_url: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.ctaUrlPlaceholder} />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => { onUpdate(template.id, form); setEditing(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema"><Check className="h-3.5 w-3.5" /> Save</button>
-            <button onClick={() => setEditing(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50">Cancel</button>
+            <button onClick={() => { onUpdate(template.id, form); setEditing(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
+            <button onClick={() => setEditing(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50">{t.common.cancel}</button>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
-          {template.subject_line && <div><p className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">Subject</p><p className="text-sm font-light text-carbon/70">{template.subject_line}</p></div>}
+          {template.subject_line && <div><p className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">{t.marketingPage.subjectHeading}</p><p className="text-sm font-light text-carbon/70">{template.subject_line}</p></div>}
           {template.preview_text && <p className="text-xs font-light text-carbon/40 italic">{template.preview_text}</p>}
           {template.heading && <p className="text-base font-light text-carbon tracking-tight">{template.heading}</p>}
           {template.body && <p className="text-sm font-light text-carbon/60 leading-relaxed whitespace-pre-wrap">{template.body}</p>}
@@ -866,6 +874,7 @@ function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template:
 }
 
 function SeoRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU[]; onDelete: () => void }) {
+  const t = useTranslation();
   const sku = skus.find(s => s.id === copy.sku_id);
   const meta = copy.metadata as { meta_title?: string; meta_description?: string; alt_text?: string; keywords?: string[]; og_title?: string; og_description?: string } | null;
   return (
@@ -873,18 +882,18 @@ function SeoRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU[]; onDe
       <div className="flex items-start justify-between mb-2">
         <div>
           <h4 className="text-base font-light text-carbon tracking-tight">{meta?.meta_title || copy.title}</h4>
-          <p className="text-[10px] text-carbon/25">{sku?.name || 'Unknown SKU'}</p>
+          <p className="text-[10px] text-carbon/25">{sku?.name || t.marketingPage.unknownSku}</p>
         </div>
         <button onClick={onDelete} className="p-1.5 text-carbon/25 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
       </div>
       {meta?.meta_description && <p className="text-sm font-light text-carbon/60 mb-2">{meta.meta_description}</p>}
-      {meta?.alt_text && <p className="text-xs font-light text-carbon/40 italic mb-2">Alt: {meta.alt_text}</p>}
+      {meta?.alt_text && <p className="text-xs font-light text-carbon/40 italic mb-2">{t.marketingPage.altInlineLabel}: {meta.alt_text}</p>}
       {meta?.keywords?.length ? (
         <div className="flex flex-wrap gap-1">
           {meta.keywords.map((k, i) => <span key={i} className="text-[10px] bg-carbon/[0.04] text-carbon/40 px-2 py-0.5">{k}</span>)}
         </div>
       ) : null}
-      {meta?.og_title && <p className="text-[10px] text-carbon/25 mt-2">OG: {meta.og_title}</p>}
+      {meta?.og_title && <p className="text-[10px] text-carbon/25 mt-2">{t.marketingPage.ogInlineLabel}: {meta.og_title}</p>}
     </div>
   );
 }

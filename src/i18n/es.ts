@@ -1763,6 +1763,78 @@ export const es: Dictionary = {
     platformsPlaceholderPaid: 'Meta, Google, TikTok',
     adSetNamePlaceholder: 'Nombre',
     audiencePlaceholder: 'Audiencia',
+
+    // Content Strategy — Pilares y Voz
+    pillarsVoiceDesc: 'Define tus pilares de contenido y la voz de marca. Usa la IA para generarlos de golpe o configúralos manualmente.',
+    generatePillarsVoiceBtn: 'Generar Pilares y Voz',
+    contentPillarsHeading: 'Pilares de Contenido',
+    pillarDefaultName: 'Pilar',
+    storiesAlignmentHeading: 'Historias',
+    brandVoiceHeading: 'Voz de Marca',
+    personalityHeading: 'Personalidad',
+    toneHeading: 'Tono',
+    doHeading: 'Sí',
+    dontHeading: 'No',
+    vocabularyHeading: 'Vocabulario',
+    exampleCaptionHeading: 'Caption de Ejemplo',
+    noBrandVoiceConfigured: 'Sin voz de marca configurada. Usa la IA o edita manualmente.',
+
+    // Content Strategy — Copy de Producto
+    productCopyDesc: 'Genera descripciones de producto por SKU, contextualizadas por historia.',
+    storyOptionalHeading: 'Historia (opcional)',
+    allStoriesOption: 'Todas las historias',
+    skuHeading: 'SKU',
+    selectSkuPlaceholder: 'Selecciona un SKU...',
+    generateCopyBtn: 'Generar Copy',
+    noProductCopyYet: 'Aún no hay copy de producto. Selecciona un SKU y genera.',
+
+    // Content Strategy — Plantillas Sociales
+    socialTemplatesDesc: 'Genera plantillas de redes sociales por historia y plataforma.',
+    generalNoStoryOption: 'General (sin historia)',
+    generateSocialTemplatesBtn: 'Generar 5 Plantillas',
+    noPlatformTemplatesYet: 'Aún no hay plantillas de {platform}.',
+
+    // Content Strategy — Plantillas de Email
+    emailTemplatesDesc: 'Genera plantillas de email para los diferentes puntos del customer journey.',
+    generalOption: 'General',
+    emailTypeHeading: 'Tipo de Email',
+    emailTypeLaunch: 'Lanzamiento',
+    emailTypeWelcome: 'Bienvenida',
+    emailTypeCartAbandonment: 'Carrito Abandonado',
+    emailTypePostPurchase: 'Post Compra',
+    generateEmailBtn: 'Generar Email',
+    noEmailTemplatesYet: 'Aún no hay plantillas de {type}.',
+
+    // Content Strategy — SEO
+    seoDesc: 'Genera metadatos SEO por SKU — títulos, descripciones, alt text, keywords.',
+    generateSeoBtn: 'Generar SEO',
+    noSeoYet: 'Aún no hay metadatos SEO. Selecciona un SKU y genera.',
+
+    // Content Strategy — Etiquetas inline
+    subjectHeading: 'Asunto',
+    unknownSku: 'SKU desconocido',
+    ctaInlineLabel: 'CTA',
+    bestWithLabel: 'Mejor con',
+    altInlineLabel: 'Alt',
+    ogInlineLabel: 'OG',
+    voiceInlineLabel: 'Voz',
+    socialInline: 'social',
+    emailInline: 'email',
+
+    // Content Calendar — encabezados
+    hashtagsHeading: 'Hashtags',
+    campaignHeading: 'Campaña',
+
+    // Go-to-Market — tipos de acción comercial
+    actionTypeSale: 'Rebaja',
+    actionTypeCollab: 'Colaboración',
+    actionTypeCampaign: 'Campaña',
+    actionTypeSeeding: 'Seeding',
+    actionTypeEvent: 'Evento',
+    actionCategoryVisibility: 'Visibilidad',
+    actionCategoryPositioning: 'Posicionamiento',
+    actionCategorySales: 'Ventas',
+    actionCategoryAwareness: 'Notoriedad',
   },
 
   // ─── SketchFlow ───

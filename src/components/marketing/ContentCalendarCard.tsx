@@ -902,21 +902,21 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
 
                   {selectedEntry.hashtags && selectedEntry.hashtags.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">Hashtags</p>
+                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">{t.marketingPage.hashtagsHeading}</p>
                       <p className="text-xs text-blue-500">{selectedEntry.hashtags.map(h => `#${h}`).join(' ')}</p>
                     </div>
                   )}
 
                   {selectedEntry.campaign && (
                     <div className="mb-4">
-                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">Campaign</p>
+                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">{t.marketingPage.campaignHeading}</p>
                       <p className="text-sm font-light text-carbon/60">{selectedEntry.campaign}</p>
                     </div>
                   )}
 
                   {selectedEntry.notes && (
                     <div className="mb-4">
-                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">Notes</p>
+                      <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">{t.marketingPage.notes}</p>
                       <p className="text-sm font-light text-carbon/60">{selectedEntry.notes}</p>
                     </div>
                   )}
@@ -992,11 +992,11 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Input type="number" value={newContact.followers || ''} onChange={e => setNewContact(p => ({ ...p, followers: Number(e.target.value) }))} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">Email</Label>
+                    <Label className="text-xs">{t.common.email}</Label>
                     <Input type="email" value={newContact.email} onChange={e => setNewContact(p => ({ ...p, email: e.target.value }))} className="h-9" />
                   </div>
                   <div className="col-span-2">
-                    <Label className="text-xs">Notes</Label>
+                    <Label className="text-xs">{t.marketingPage.notes}</Label>
                     <Input value={newContact.notes} onChange={e => setNewContact(p => ({ ...p, notes: e.target.value }))} className="h-9" />
                   </div>
                 </div>
@@ -1020,7 +1020,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                       <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.name}</th>
                       <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.type}</th>
                       <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.platform}</th>
-                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">Followers</th>
+                      <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.followersLabel}</th>
                       <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.status}</th>
                       <th className="text-left text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 p-3">{t.marketingPage.date}</th>
                       <th className="p-3 w-16" />

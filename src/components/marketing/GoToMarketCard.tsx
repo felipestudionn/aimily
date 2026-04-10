@@ -695,11 +695,11 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 <Select value={newAction.action_type} onValueChange={v => setNewAction({ ...newAction, action_type: v as any })}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SALE">Sale</SelectItem>
-                    <SelectItem value="COLLAB">Collab</SelectItem>
-                    <SelectItem value="CAMPAIGN">Campaign</SelectItem>
-                    <SelectItem value="SEEDING">Seeding</SelectItem>
-                    <SelectItem value="EVENT">Event</SelectItem>
+                    <SelectItem value="SALE">{t.marketingPage.actionTypeSale}</SelectItem>
+                    <SelectItem value="COLLAB">{t.marketingPage.actionTypeCollab}</SelectItem>
+                    <SelectItem value="CAMPAIGN">{t.marketingPage.actionTypeCampaign}</SelectItem>
+                    <SelectItem value="SEEDING">{t.marketingPage.actionTypeSeeding}</SelectItem>
+                    <SelectItem value="EVENT">{t.marketingPage.actionTypeEvent}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -709,10 +709,10 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
                 <Select value={newAction.category} onValueChange={v => setNewAction({ ...newAction, category: v })}>
                   <SelectTrigger className="h-9"><SelectValue placeholder={t.marketingPage.selectPlaceholder} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="VISIBILIDAD">Visibilidad</SelectItem>
-                    <SelectItem value="POSICIONAMIENTO">Posicionamiento</SelectItem>
-                    <SelectItem value="VENTAS">Ventas</SelectItem>
-                    <SelectItem value="NOTORIEDAD">Notoriedad</SelectItem>
+                    <SelectItem value="VISIBILIDAD">{t.marketingPage.actionCategoryVisibility}</SelectItem>
+                    <SelectItem value="POSICIONAMIENTO">{t.marketingPage.actionCategoryPositioning}</SelectItem>
+                    <SelectItem value="VENTAS">{t.marketingPage.actionCategorySales}</SelectItem>
+                    <SelectItem value="NOTORIEDAD">{t.marketingPage.actionCategoryAwareness}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

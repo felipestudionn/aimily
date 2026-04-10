@@ -1740,6 +1740,78 @@ export const nl: Dictionary = {
     platformsPlaceholderPaid: 'Meta, Google, TikTok',
     adSetNamePlaceholder: 'Naam',
     audiencePlaceholder: 'Doelgroep',
+
+    // Content Strategy — Pillars & Voice
+    pillarsVoiceDesc: 'Definieer je content pillars en brand voice. Gebruik AI om ze in één keer te genereren of configureer handmatig.',
+    generatePillarsVoiceBtn: 'Genereer pillars & voice',
+    contentPillarsHeading: 'Content Pillars',
+    pillarDefaultName: 'Pillar',
+    storiesAlignmentHeading: 'Stories',
+    brandVoiceHeading: 'Brand Voice',
+    personalityHeading: 'Persoonlijkheid',
+    toneHeading: 'Toon',
+    doHeading: 'Do',
+    dontHeading: 'Don\'t',
+    vocabularyHeading: 'Woordenschat',
+    exampleCaptionHeading: 'Voorbeeld-caption',
+    noBrandVoiceConfigured: 'Geen brand voice geconfigureerd. Gebruik AI of bewerk handmatig.',
+
+    // Content Strategy — Product Copy
+    productCopyDesc: 'Genereer overtuigende productbeschrijvingen per SKU, gecontextualiseerd per story.',
+    storyOptionalHeading: 'Story (optioneel)',
+    allStoriesOption: 'Alle stories',
+    skuHeading: 'SKU',
+    selectSkuPlaceholder: 'Selecteer een SKU...',
+    generateCopyBtn: 'Genereer copy',
+    noProductCopyYet: 'Nog geen product copy. Selecteer een SKU en genereer.',
+
+    // Content Strategy — Social Templates
+    socialTemplatesDesc: 'Genereer social media templates per story en platform.',
+    generalNoStoryOption: 'Algemeen (geen story)',
+    generateSocialTemplatesBtn: 'Genereer 5 templates',
+    noPlatformTemplatesYet: 'Nog geen {platform}-templates.',
+
+    // Content Strategy — Email Templates
+    emailTemplatesDesc: 'Genereer e-mailtemplates voor verschillende touchpoints in de customer journey.',
+    generalOption: 'Algemeen',
+    emailTypeHeading: 'E-mailtype',
+    emailTypeLaunch: 'Launch',
+    emailTypeWelcome: 'Welkom',
+    emailTypeCartAbandonment: 'Verlaten winkelwagen',
+    emailTypePostPurchase: 'Na aankoop',
+    generateEmailBtn: 'Genereer e-mail',
+    noEmailTemplatesYet: 'Nog geen {type}-templates.',
+
+    // Content Strategy — SEO
+    seoDesc: 'Genereer SEO-metadata per SKU — meta titles, beschrijvingen, alt text, keywords.',
+    generateSeoBtn: 'Genereer SEO',
+    noSeoYet: 'Nog geen SEO-metadata. Selecteer een SKU en genereer.',
+
+    // Content Strategy — Inline labels
+    subjectHeading: 'Onderwerp',
+    unknownSku: 'Onbekende SKU',
+    ctaInlineLabel: 'CTA',
+    bestWithLabel: 'Best met',
+    altInlineLabel: 'Alt',
+    ogInlineLabel: 'OG',
+    voiceInlineLabel: 'Voice',
+    socialInline: 'social',
+    emailInline: 'email',
+
+    // Content Calendar — koppen
+    hashtagsHeading: 'Hashtags',
+    campaignHeading: 'Campagne',
+
+    // Go-to-Market — commerciële actietypes
+    actionTypeSale: 'Sale',
+    actionTypeCollab: 'Collab',
+    actionTypeCampaign: 'Campagne',
+    actionTypeSeeding: 'Seeding',
+    actionTypeEvent: 'Event',
+    actionCategoryVisibility: 'Zichtbaarheid',
+    actionCategoryPositioning: 'Positionering',
+    actionCategorySales: 'Verkoop',
+    actionCategoryAwareness: 'Bekendheid',
   },
 
   // ─── SketchFlow ───

@@ -1626,6 +1626,78 @@ export const no: Dictionary = {
     platformsPlaceholderPaid: 'Meta, Google, TikTok',
     adSetNamePlaceholder: 'Navn',
     audiencePlaceholder: 'Målgruppe',
+
+    // Content Strategy — Pillars & Voice
+    pillarsVoiceDesc: 'Definer innholdspilarer og merkevarestemme. Bruk AI til å generere begge samtidig, eller konfigurer manuelt.',
+    generatePillarsVoiceBtn: 'Generer pilarer og stemme',
+    contentPillarsHeading: 'Innholdspilarer',
+    pillarDefaultName: 'Pilar',
+    storiesAlignmentHeading: 'Stories',
+    brandVoiceHeading: 'Merkevarestemme',
+    personalityHeading: 'Personlighet',
+    toneHeading: 'Tone',
+    doHeading: 'Do',
+    dontHeading: 'Don\'t',
+    vocabularyHeading: 'Vokabular',
+    exampleCaptionHeading: 'Eksempel-caption',
+    noBrandVoiceConfigured: 'Ingen merkevarestemme konfigurert. Bruk AI eller rediger manuelt.',
+
+    // Content Strategy — Product Copy
+    productCopyDesc: 'Generer overbevisende produktbeskrivelser per SKU, kontekstualisert per story.',
+    storyOptionalHeading: 'Story (valgfritt)',
+    allStoriesOption: 'Alle stories',
+    skuHeading: 'SKU',
+    selectSkuPlaceholder: 'Velg en SKU...',
+    generateCopyBtn: 'Generer copy',
+    noProductCopyYet: 'Ingen produktcopy ennå. Velg en SKU og generer.',
+
+    // Content Strategy — Social Templates
+    socialTemplatesDesc: 'Generer sosiale medier-maler per story og plattform.',
+    generalNoStoryOption: 'Generelt (ingen story)',
+    generateSocialTemplatesBtn: 'Generer 5 maler',
+    noPlatformTemplatesYet: 'Ingen {platform}-maler ennå.',
+
+    // Content Strategy — Email Templates
+    emailTemplatesDesc: 'Generer e-postmaler for forskjellige touchpoints i kundereisen.',
+    generalOption: 'Generelt',
+    emailTypeHeading: 'E-posttype',
+    emailTypeLaunch: 'Lansering',
+    emailTypeWelcome: 'Velkommen',
+    emailTypeCartAbandonment: 'Forlatt handlekurv',
+    emailTypePostPurchase: 'Etter kjøp',
+    generateEmailBtn: 'Generer e-post',
+    noEmailTemplatesYet: 'Ingen {type}-maler ennå.',
+
+    // Content Strategy — SEO
+    seoDesc: 'Generer SEO-metadata per SKU — meta titles, beskrivelser, alt-tekst, nøkkelord.',
+    generateSeoBtn: 'Generer SEO',
+    noSeoYet: 'Ingen SEO-metadata ennå. Velg en SKU og generer.',
+
+    // Content Strategy — Inline-etiketter
+    subjectHeading: 'Emne',
+    unknownSku: 'Ukjent SKU',
+    ctaInlineLabel: 'CTA',
+    bestWithLabel: 'Best med',
+    altInlineLabel: 'Alt',
+    ogInlineLabel: 'OG',
+    voiceInlineLabel: 'Stemme',
+    socialInline: 'social',
+    emailInline: 'e-post',
+
+    // Content Calendar — overskrifter
+    hashtagsHeading: 'Hashtags',
+    campaignHeading: 'Kampanje',
+
+    // Go-to-Market — kommersielle handlingstyper
+    actionTypeSale: 'Salg',
+    actionTypeCollab: 'Kollab',
+    actionTypeCampaign: 'Kampanje',
+    actionTypeSeeding: 'Seeding',
+    actionTypeEvent: 'Event',
+    actionCategoryVisibility: 'Synlighet',
+    actionCategoryPositioning: 'Posisjonering',
+    actionCategorySales: 'Salg',
+    actionCategoryAwareness: 'Bevissthet',
   },
 
   // ─── SketchFlow ───
