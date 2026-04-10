@@ -23,6 +23,22 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 type TabMode = 'libre' | 'asistido' | 'propuesta';
 
+interface AiStoryContentDirection {
+  setting?: string;
+  lighting?: string;
+  styling?: string;
+  model_attitude?: string;
+  camera_approach?: string;
+}
+
+interface AiStoryPriorityScore {
+  total?: number;
+  customer_impact?: number;
+  commercial_fit?: number;
+  visual_differentiation?: number;
+  rationale?: string;
+}
+
 interface AiStoryDraft {
   name: string;
   narrative: string;
@@ -31,7 +47,14 @@ interface AiStoryDraft {
   color_palette: string[];
   sku_ids: string[];
   hero_sku_id: string;
-  content_direction: string;
+  /**
+   * The new prompt (B3) returns this as a structured object with 5 fields.
+   * Legacy prompts returned a single string. We accept both and persist both
+   * shapes via content_direction (string summary) + content_direction_structured.
+   */
+  content_direction: string | AiStoryContentDirection;
+  priority_score?: AiStoryPriorityScore;
+  editorial_hook?: string;
 }
 
 interface AiResult {
@@ -69,6 +92,8 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDrafts, setAiDrafts] = useState<AiResult | null>(null);
   const [userDirection, setUserDirection] = useState('');
+  // B3 — optional consumer voice signals to ground stories in real customer language
+  const [consumerSignalsText, setConsumerSignalsText] = useState('');
 
   // Drag state
   const [dragSkuId, setDragSkuId] = useState<string | null>(null);
@@ -140,6 +165,11 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
     setAiLoading(true);
     setAiDrafts(null);
     try {
+      const consumerSignals = consumerSignalsText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
       const res = await fetch('/api/ai/stories/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -147,6 +177,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
           collectionPlanId,
           mode,
           userDirection: mode === 'assist' ? userDirection : undefined,
+          consumerSignals: consumerSignals.length > 0 ? consumerSignals : undefined,
           language,
         }),
       });
@@ -162,17 +193,53 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
 
   const confirmAiDrafts = async () => {
     if (!aiDrafts) return;
-    const newStories = aiDrafts.stories.map((d, i) => ({
-      collection_plan_id: collectionPlanId,
-      name: d.name,
-      narrative: d.narrative,
-      mood: d.mood,
-      tone: d.tone,
-      color_palette: d.color_palette,
-      hero_sku_id: null as string | null,
-      content_direction: d.content_direction,
-      sort_order: i,
-    }));
+
+    const consumerSignalsArr = consumerSignalsText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    const newStories = aiDrafts.stories.map((d, i) => {
+      // Back-compat: content_direction can be either a plain string (legacy)
+      // or a structured object (B3). Normalize both into a string summary
+      // AND a structured payload so legacy readers and new readers both work.
+      const structured: AiStoryContentDirection =
+        typeof d.content_direction === 'object' && d.content_direction !== null
+          ? d.content_direction
+          : {};
+      const structuredSummary = [
+        structured.setting,
+        structured.lighting,
+        structured.styling,
+        structured.model_attitude,
+        structured.camera_approach,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      const contentDirectionText =
+        typeof d.content_direction === 'string'
+          ? d.content_direction
+          : structuredSummary;
+
+      return {
+        collection_plan_id: collectionPlanId,
+        name: d.name,
+        narrative: d.narrative,
+        mood: d.mood,
+        tone: d.tone,
+        color_palette: d.color_palette,
+        hero_sku_id: null as string | null,
+        content_direction: contentDirectionText,
+        // B3 enrichment fields
+        content_direction_structured: structured,
+        priority_score_total: d.priority_score?.total ?? null,
+        priority_score_breakdown: d.priority_score ?? null,
+        editorial_hook: d.editorial_hook ?? null,
+        consumer_signals: consumerSignalsArr,
+        sort_order: i,
+      };
+    });
+
     const skuAssignments: Record<string, string[]> = {};
     for (const d of aiDrafts.stories) {
       if (d.sku_ids?.length) skuAssignments[d.name] = d.sku_ids;
@@ -406,6 +473,23 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
             <p className="text-sm font-light text-carbon/50">
               {t.marketingPage.proposalDesc}
             </p>
+
+            {/* B3 — optional consumer voice signals */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+                {t.marketingPage.consumerSignalsLabel}
+              </label>
+              <textarea
+                value={consumerSignalsText}
+                onChange={(e) => setConsumerSignalsText(e.target.value)}
+                placeholder={t.marketingPage.consumerSignalsPlaceholder}
+                className="w-full h-24 bg-white border border-carbon/[0.06] px-4 py-3 text-sm font-light text-carbon placeholder:text-carbon/25 focus:outline-none focus:border-carbon/20 resize-none"
+              />
+              <p className="text-[10px] font-light text-carbon/40">
+                {t.marketingPage.consumerSignalsHelp}
+              </p>
+            </div>
+
             <button
               onClick={() => generateStories('generate')}
               disabled={aiLoading}
@@ -710,7 +794,19 @@ function AiDraftsPreview({
             />
           </div>
           <input
-            value={draft.content_direction}
+            value={
+              typeof draft.content_direction === 'string'
+                ? draft.content_direction
+                : [
+                    draft.content_direction?.setting,
+                    draft.content_direction?.lighting,
+                    draft.content_direction?.styling,
+                    draft.content_direction?.model_attitude,
+                    draft.content_direction?.camera_approach,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+            }
             onChange={(e) => updateDraft(i, 'content_direction', e.target.value)}
             className="w-full text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
             placeholder={t.marketingPage.contentDirection}

@@ -5,8 +5,24 @@ import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { renderPrompt } from '@/lib/prompts/prompt-context';
+import { enforceHookDiversity } from '@/lib/marketing-validators';
 
-type GenerateMode = 'pillars_voice' | 'product_copy' | 'social_templates' | 'email_template' | 'seo';
+type GenerateMode =
+  | 'pillars_voice'
+  | 'product_copy'
+  | 'social_templates'
+  | 'email_template'
+  | 'email_sequence'
+  | 'seo'
+  | 'video_shotlist';
+
+type CopyContext =
+  | 'pdp'
+  | 'ad_hook'
+  | 'landing_hero'
+  | 'email_mention'
+  | 'sms_tease'
+  | 'push_notification';
 
 interface StoryContext {
   name: string;
@@ -49,6 +65,19 @@ interface GenerateRequest {
   season?: string;
   userDirection?: string;
   extraInstructions?: string;
+  // B2 — product_copy context variant
+  copyContext?: CopyContext;
+  // B1 — email sequence
+  sequenceType?: 'welcome' | 'launch' | 'post_purchase' | 're_engagement';
+  heroSkuName?: string;
+  heroSkuPvp?: number;
+  launchDate?: string;
+  dropName?: string;
+  // B5 — video shotlist
+  hookType?: 'curiosity' | 'story' | 'value' | 'contrarian';
+  durationSeconds?: 15 | 30;
+  // C5 — SEO buyer stage
+  buyerStage?: 'awareness' | 'consideration' | 'decision' | 'implementation';
 }
 
 function buildPromptForMode(req: GenerateRequest): { system: string; user: string } {
@@ -101,6 +130,7 @@ function buildPromptForMode(req: GenerateRequest): { system: string; user: strin
         sku_materials: sku?.materials || '',
         sku_type: sku?.type || 'REVENUE',
         sku_notes: sku?.notes || '',
+        copy_context: req.copyContext || 'pdp',
         extra_instructions: req.extraInstructions || '',
       };
       return {
@@ -167,11 +197,56 @@ function buildPromptForMode(req: GenerateRequest): { system: string; user: strin
         story_narrative: sc?.narrative || 'N/A',
         season: req.season || '',
         consumer_demographics: bc.target_audience?.demographics || '',
+        buyer_stage: req.buyerStage || 'decision',
         extra_instructions: req.extraInstructions || '',
       };
       return {
         system: MARKETING_PROMPTS.seo_generate.system,
         user: renderPrompt(MARKETING_PROMPTS.seo_generate.user, flatCtx),
+      };
+    }
+
+    case 'email_sequence': {
+      const sc = req.storyContext;
+      const flatCtx: Record<string, unknown> = {
+        brand_name: bc.brand_name || 'Fashion Brand',
+        brand_voice_summary:
+          req.brandVoiceSummary || bc.brand_voice?.personality || 'Aspirational, refined',
+        consumer_demographics: bc.target_audience?.demographics || '',
+        consumer_psychographics: bc.target_audience?.psychographics || '',
+        consumer_lifestyle: bc.target_audience?.lifestyle || '',
+        sequence_type: req.sequenceType || 'welcome',
+        story_name: sc?.name || '',
+        story_narrative: sc?.narrative || '',
+        hero_sku_name: req.heroSkuName || '',
+        hero_sku_pvp: req.heroSkuPvp ?? '',
+        launch_date: req.launchDate || '',
+        drop_name: req.dropName || '',
+      };
+      return {
+        system: MARKETING_PROMPTS.email_sequence_generate.system,
+        user: renderPrompt(MARKETING_PROMPTS.email_sequence_generate.user, flatCtx),
+      };
+    }
+
+    case 'video_shotlist': {
+      const sku = req.skuContext;
+      const sc = req.storyContext;
+      const flatCtx: Record<string, unknown> = {
+        brand_name: bc.brand_name || 'Fashion Brand',
+        brand_voice_personality: bc.brand_voice?.personality || '',
+        story_name: sc?.name || '',
+        story_narrative: sc?.narrative || '',
+        sku_name: sku?.name || 'Fashion product',
+        sku_category: sku?.category || '',
+        sku_pvp: sku?.pvp || 0,
+        hook_type: req.hookType || 'value',
+        platform: req.platform || 'reels',
+        duration_seconds: req.durationSeconds || 15,
+      };
+      return {
+        system: MARKETING_PROMPTS.video_ad_structured.system,
+        user: renderPrompt(MARKETING_PROMPTS.video_ad_structured.user, flatCtx),
       };
     }
   }
@@ -204,12 +279,45 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildPromptForMode(body);
 
-    const { data, model, fallback } = await generateJSON({
+    let { data, model, fallback } = await generateJSON({
       system: prompt.system,
       user: prompt.user,
       temperature: 0.7,
       language,
     });
+
+    // B4 — hook diversity enforcement for social_templates + email_sequence.
+    // If the first pass doesn't diversify hook_type enough across the set,
+    // make a single corrective second pass. Never loop — one retry max to
+    // avoid runaway costs.
+    let hookDiversityRetried = false;
+    if (mode === 'social_templates' || mode === 'email_sequence') {
+      const items =
+        mode === 'social_templates'
+          ? (data as { templates?: Array<{ hook_type?: string }> })?.templates
+          : (data as { sequence?: { emails?: Array<{ hook_type?: string }> } })?.sequence
+              ?.emails;
+
+      if (Array.isArray(items) && items.length > 0) {
+        const check = enforceHookDiversity(items);
+        if (!check.passed && !hookDiversityRetried) {
+          hookDiversityRetried = true;
+          const correction =
+            `Your previous output used only ${check.distinctTypes} distinct hook types across ${items.length} items (reason: ${check.reason}). ` +
+            `Regenerate with at least ${check.required} distinct hook types (curiosity, story, value, contrarian). ` +
+            `Make sure NO single hook type appears more than ${Math.ceil(items.length / 2)} times.`;
+          const retry = await generateJSON({
+            system: prompt.system,
+            user: prompt.user + '\n\nCORRECTIVE INSTRUCTION: ' + correction,
+            temperature: 0.8,
+            language,
+          });
+          data = retry.data;
+          model = retry.model;
+          fallback = retry.fallback;
+        }
+      }
+    }
 
     logAudit({
       userId: user!.id,
@@ -217,7 +325,7 @@ export async function POST(req: NextRequest) {
       action: AUDIT_ACTIONS.MARKETING_AI_CONTENT_STRATEGY,
       entityType: 'collection_plan',
       entityId: collectionPlanId,
-      metadata: { mode, model, fallback, language },
+      metadata: { mode, model, fallback, language, hookDiversityRetried },
     });
 
     return NextResponse.json({

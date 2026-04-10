@@ -1,5 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 
+export interface StoryContentDirection {
+  setting?: string;
+  lighting?: string;
+  styling?: string;
+  model_attitude?: string;
+  camera_approach?: string;
+}
+
+export interface StoryPriorityBreakdown {
+  customer_impact?: number;
+  commercial_fit?: number;
+  visual_differentiation?: number;
+  rationale?: string;
+}
+
 export interface Story {
   id: string;
   collection_plan_id: string;
@@ -9,7 +24,18 @@ export interface Story {
   tone: string | null;
   color_palette: string[] | null;
   hero_sku_id: string | null;
+  /** Legacy free-text field. Kept for backward compat. New flows write content_direction_structured. */
   content_direction: string | null;
+  /** B3 enrichment — structured 5-field direction. */
+  content_direction_structured?: StoryContentDirection | null;
+  /** B3 enrichment — 0-10 commercial priority score. */
+  priority_score_total?: number | null;
+  /** B3 enrichment — breakdown with customer_impact/commercial_fit/visual_differentiation/rationale. */
+  priority_score_breakdown?: StoryPriorityBreakdown | null;
+  /** B3 enrichment — 15-25 word editorial hook (the tension that makes this story shareable). */
+  editorial_hook?: string | null;
+  /** B3 enrichment — consumer voice phrases that informed this story. */
+  consumer_signals?: string[] | null;
   sort_order: number;
   created_at?: string;
   updated_at?: string;

@@ -16,7 +16,19 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { collectionPlanId, mode = 'generate', userDirection, language } = body;
+    const {
+      collectionPlanId,
+      mode = 'generate',
+      userDirection,
+      consumerSignals,
+      language,
+    } = body as {
+      collectionPlanId?: string;
+      mode?: 'generate' | 'assist';
+      userDirection?: string;
+      consumerSignals?: string[] | string;
+      language?: 'en' | 'es';
+    };
 
     if (!collectionPlanId) {
       return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
@@ -72,6 +84,9 @@ export async function POST(req: NextRequest) {
         2
       ),
       user_direction: userDirection || '',
+      consumer_signals: Array.isArray(consumerSignals)
+        ? consumerSignals.map((s) => `- ${s}`).join('\n')
+        : consumerSignals || '',
     };
 
     const systemPrompt = template.system;
