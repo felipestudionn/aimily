@@ -126,7 +126,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   const favoriteVisuals = useMemo(() => {
     return generations.filter(
       (g) =>
-        ['product_render', 'tryon', 'lifestyle'].includes(g.generation_type) &&
+        ['product_render', 'tryon', 'still_life'].includes(g.generation_type) &&
         g.status === 'completed' &&
         g.is_favorite &&
         (activeStory ? g.story_id === activeStory.id || g.input_data?.sku_id && activeStory.skus.some(s => s.id === g.input_data?.sku_id) : true)
@@ -200,25 +200,18 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       const story = activeStory;
       const storyCtx = storyContext(story);
 
-      const promptParts = [
-        `High-end fashion editorial photograph`,
-        story ? `for "${story.name}" story` : '',
-        story?.narrative ? `— ${story.narrative}` : '',
-        story?.mood?.length ? `Visual mood: ${story.mood.join(', ')}` : '',
-        story?.color_palette?.length ? `Color world: ${story.color_palette.join(', ')}` : '',
-        editorialPrompt ? `Art direction: ${editorialPrompt}` : '',
-        'Editorial quality, magazine cover worthy, dramatic lighting.',
-      ].filter(Boolean).join('. ');
-
-      const res = await fetch('/api/ai/fal/product-render', {
+      // Editorial is just a still-life with a strong art direction. It goes
+      // through the same Nano Banana route so the product identity is
+      // preserved from the design-phase 3D render.
+      const res = await fetch('/api/ai/freepik/still-life', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image_url: sourceImageUrl,
-          prompt: promptParts,
-          background: 'editorial-studio',
+          product_image_url: sourceImageUrl,
+          product_name: skuName || 'fashion product',
+          scene: 'editorial',
           story_context: storyCtx,
-          language,
+          user_prompt: editorialPrompt || undefined,
         }),
       });
 
@@ -228,15 +221,15 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       await addGeneration({
         user_id: user.id,
         generation_type: 'editorial',
-        prompt: promptParts,
+        prompt: `Editorial still life for ${skuName || 'SKU'}${editorialPrompt ? ` — ${editorialPrompt}` : ''}`,
         input_data: {
           source_image: sourceImageUrl,
           sku_name: skuName,
           extra_prompt: editorialPrompt,
         },
         output_data: { images: data.images || [] },
-        provider_request_id: data.requestId || null,
-        model_used: 'flux-2-pro',
+        provider_request_id: null,
+        model_used: 'freepik-nano-banana',
         status: 'completed',
         is_favorite: false,
         story_id: story?.id || null,

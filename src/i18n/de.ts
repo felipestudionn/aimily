@@ -1483,10 +1483,10 @@ export const de: Dictionary = {
     noVisualsGenerate: 'Noch keine Visuals. Nutzen Sie die Buttons oben zum Generieren.',
     render: 'Rendering',
     onModel: 'On-Model',
-    lifestyle: 'Lifestyle',
+    stillLife: 'Still Life',
     studioProductShot: 'Studio-Produktaufnahme',
     virtualTryOn: 'Virtuelle Anprobe',
-    lifestyleScene: 'Lifestyle-Szene',
+    stillLifeScene: 'Editorial-Still-Life-Szene',
     uploadRefFirst: 'Laden Sie zuerst ein Referenzbild hoch',
     generating: 'Wird generiert',
 

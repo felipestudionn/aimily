@@ -1483,10 +1483,10 @@ export const fr: Dictionary = {
     noVisualsGenerate: 'Aucun visuel pour le moment. Utilisez les boutons ci-dessus pour en générer.',
     render: 'Rendu',
     onModel: 'Sur mannequin',
-    lifestyle: 'Lifestyle',
+    stillLife: 'Still Life',
     studioProductShot: 'Photo produit studio',
     virtualTryOn: 'Essayage virtuel',
-    lifestyleScene: 'Scène lifestyle',
+    stillLifeScene: 'Scène still life éditoriale',
     uploadRefFirst: 'Importez d\'abord une image de référence',
     generating: 'Génération en cours',
 

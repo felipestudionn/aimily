@@ -286,7 +286,7 @@ export async function buildPromptContext(
   const generations = generationsRes.data ?? [];
   const renderCount = generations.filter(
     (g: Record<string, unknown>) =>
-      g.generation_type === 'product-render' || g.generation_type === 'lifestyle' || g.generation_type === 'tryon'
+      g.generation_type === 'product_render' || g.generation_type === 'still_life' || g.generation_type === 'tryon'
   ).length;
   const videoCount = generations.filter(
     (g: Record<string, unknown>) => g.generation_type === 'video'

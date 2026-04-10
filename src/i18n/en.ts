@@ -1523,10 +1523,10 @@ export const en = {
     noVisualsGenerate: 'No visuals yet. Use the buttons above to generate.',
     render: 'Render',
     onModel: 'On-Model',
-    lifestyle: 'Lifestyle',
+    stillLife: 'Still Life',
     studioProductShot: 'Studio product shot',
     virtualTryOn: 'Virtual try-on',
-    lifestyleScene: 'Lifestyle scene',
+    stillLifeScene: 'Editorial still life scene',
     uploadRefFirst: 'Upload a reference image first',
     generating: 'Generating',
 

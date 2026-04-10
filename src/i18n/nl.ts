@@ -1483,10 +1483,10 @@ export const nl: Dictionary = {
     noVisualsGenerate: 'Nog geen visuals. Gebruik de knoppen hierboven om te genereren.',
     render: 'Rendering',
     onModel: 'On-model',
-    lifestyle: 'Lifestyle',
+    stillLife: 'Still Life',
     studioProductShot: 'Studio-productopname',
     virtualTryOn: 'Virtuele paslijn',
-    lifestyleScene: 'Lifestyle-scène',
+    stillLifeScene: 'Editoriale still life-scène',
     uploadRefFirst: 'Upload eerst een referentieafbeelding',
     generating: 'Wordt gegenereerd',
 

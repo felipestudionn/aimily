@@ -27,7 +27,7 @@ import { useTranslation } from '@/i18n';
 
 /* ── Types ── */
 
-type VisualAction = 'product-render' | 'tryon' | 'lifestyle';
+type VisualAction = 'product-render' | 'tryon' | 'still-life';
 
 interface GeneratingState {
   skuId: string;
@@ -96,7 +96,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
     generations.filter((g) => g.input_data?.sku_id === skuId);
 
   const totalVisuals = generations.filter(
-    (g) => ['product_render', 'tryon', 'lifestyle'].includes(g.generation_type) && g.status === 'completed'
+    (g) => ['product_render', 'tryon', 'still_life'].includes(g.generation_type) && g.status === 'completed'
   ).length;
 
   /* ── Card (collapsed) ── */
@@ -226,16 +226,29 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         };
         genType = 'tryon';
         modelUsed = 'fashn-tryon-v1.6';
-      } else if (action === 'lifestyle') {
-        endpoint = '/api/ai/fal/lifestyle';
+      } else if (action === 'still-life') {
+        // Editorial still life via Freepik Nano Banana (Gemini 2.5 Flash Image).
+        // Uses the photoreal 3D render from the design phase as the reference
+        // image — the model composites the REAL product into the new scene
+        // without reinterpreting it.
+        const productImage =
+          sku.render_urls?.['3d'] || sku.render_url || sku.reference_image_url;
+        if (!productImage) {
+          throw new Error(
+            'This SKU has no product image yet. Complete the design phase first.'
+          );
+        }
+        endpoint = '/api/ai/freepik/still-life';
         body = {
-          image_url: sku.reference_image_url || undefined,
+          product_image_url: productImage,
+          product_name: sku.name,
+          category: sku.category,
           scene: selectedScene,
-          prompt: `Fashion lifestyle editorial photograph featuring ${sku.name}`,
           story_context: storyCtx,
+          collectionPlanId: sku.collection_plan_id,
         };
-        genType = 'lifestyle';
-        modelUsed = 'flux-2-pro';
+        genType = 'still_life';
+        modelUsed = 'freepik-nano-banana';
       }
 
       const res = await fetch(endpoint, {
@@ -571,10 +584,10 @@ function SkuVisualRow({
   );
   const isGenerating = generating?.skuId === sku.id;
 
-  const ACTIONS: { id: VisualAction; labelKey: 'render' | 'onModel' | 'lifestyle'; Icon: typeof Camera; descKey: 'studioProductShot' | 'virtualTryOn' | 'lifestyleScene' }[] = [
+  const ACTIONS: { id: VisualAction; labelKey: 'render' | 'onModel' | 'stillLife'; Icon: typeof Camera; descKey: 'studioProductShot' | 'virtualTryOn' | 'stillLifeScene' }[] = [
     { id: 'product-render', labelKey: 'render', Icon: ImageIcon, descKey: 'studioProductShot' },
     { id: 'tryon', labelKey: 'onModel', Icon: Shirt, descKey: 'virtualTryOn' },
-    { id: 'lifestyle', labelKey: 'lifestyle', Icon: Palmtree, descKey: 'lifestyleScene' },
+    { id: 'still-life', labelKey: 'stillLife', Icon: Palmtree, descKey: 'stillLifeScene' },
   ];
 
   return (
