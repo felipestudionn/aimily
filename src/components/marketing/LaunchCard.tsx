@@ -73,6 +73,16 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
   const t = useTranslation();
   const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
+  // C6 — Post-launch retrospective
+  const [retroLoading, setRetroLoading] = useState(false);
+  const [retro, setRetro] = useState<{
+    overall_assessment?: string;
+    wins?: string[];
+    areas_for_improvement?: string[];
+    recommendations_next_season?: string[];
+    story_performance?: Array<{ story_name: string; assessment: string; recommendation: string }>;
+  } | null>(null);
+  const [retroError, setRetroError] = useState<string | null>(null);
   const [activePill, setActivePill] = useState<AiPill>('libre');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -240,6 +250,43 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
     }
   };
 
+  // C6 — Generate post-launch retrospective on demand.
+  const handleGenerateRetro = async () => {
+    setRetroLoading(true);
+    setRetroError(null);
+    try {
+      const response = await fetch('/api/ai/post-launch/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          language,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to generate retrospective');
+      }
+      const data = await response.json();
+      setRetro(data.result || null);
+    } catch (err) {
+      console.error('Retrospective generation error:', err);
+      setRetroError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setRetroLoading(false);
+    }
+  };
+
+  // C6 — Is this collection past launch? (>= 1 day after first drop)
+  const isPastLaunch = (() => {
+    const firstDrop = drops
+      .map((d) => d.launch_date)
+      .filter(Boolean)
+      .sort((a, b) => (a || '').localeCompare(b || ''))[0];
+    if (!firstDrop) return false;
+    return new Date(firstDrop) <= new Date();
+  })();
+
   const getCategoryColor = (catId: string) =>
     CATEGORIES.find(c => c.id === catId)?.color || '#94A3B8';
 
@@ -362,6 +409,83 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+
+        {/* C6 — Post-launch retrospective block (only shown after launch) */}
+        {isPastLaunch && (
+          <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">
+                  {t.marketingPage.retroHeading}
+                </p>
+                <p className="text-sm font-light text-carbon/50">
+                  {t.marketingPage.retroDesc}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleGenerateRetro}
+                disabled={retroLoading}
+                className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-40"
+              >
+                {retroLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {retro ? t.marketingPage.retroRegenerate : t.marketingPage.retroGenerate}
+              </button>
+            </div>
+
+            {retroError && (
+              <p className="text-xs text-red-500/80">{retroError}</p>
+            )}
+
+            {retro && (
+              <div className="space-y-4 text-sm font-light text-carbon/70">
+                {retro.overall_assessment && (
+                  <p className="italic">{retro.overall_assessment}</p>
+                )}
+                {retro.wins && retro.wins.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-2">
+                      {t.marketingPage.retroWins}
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      {retro.wins.map((w, i) => (
+                        <li key={`win-${i}`}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {retro.areas_for_improvement && retro.areas_for_improvement.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-2">
+                      {t.marketingPage.retroAreas}
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      {retro.areas_for_improvement.map((a, i) => (
+                        <li key={`area-${i}`}>{a}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {retro.recommendations_next_season && retro.recommendations_next_season.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-2">
+                      {t.marketingPage.retroRecommendations}
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      {retro.recommendations_next_season.map((r, i) => (
+                        <li key={`rec-${i}`}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── AI Pills ── */}
         <div className="flex items-center gap-3">

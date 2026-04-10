@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/process-city-trends",
       "schedule": "0 7 * * 4"
+    },
+    {
+      "path": "/api/cron/post-launch-analysis",
+      "schedule": "0 8 * * *"
     }
   ]
 }

@@ -66,11 +66,17 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 /* ── Constants ── */
 
-type AiPill = 'libre' | 'asistido' | 'propuesta';
+type AiPill = 'libre' | 'asistido' | 'propuesta' | 'repurpose';
 
-const AI_PILL_IDS: AiPill[] = ['libre', 'asistido', 'propuesta'];
-const AI_PILL_LABEL_KEYS: Record<AiPill, 'pillManual' | 'pillAssisted' | 'pillAiProposal'> = {
-  libre: 'pillManual', asistido: 'pillAssisted', propuesta: 'pillAiProposal',
+const AI_PILL_IDS: AiPill[] = ['libre', 'asistido', 'propuesta', 'repurpose'];
+const AI_PILL_LABEL_KEYS: Record<
+  AiPill,
+  'pillManual' | 'pillAssisted' | 'pillAiProposal' | 'pillRepurpose'
+> = {
+  libre: 'pillManual',
+  asistido: 'pillAssisted',
+  propuesta: 'pillAiProposal',
+  repurpose: 'pillRepurpose',
 };
 
 type SubTab = 'calendar' | 'influencer';
@@ -162,6 +168,13 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
 
   // Assisted mode
   const [assistedDirection, setAssistedDirection] = useState('');
+  // C2 — atom repurpose form state
+  const [repurposeType, setRepurposeType] = useState<
+    'photo_set' | 'video' | 'editorial' | 'interview' | 'longform'
+  >('editorial');
+  const [repurposeDescription, setRepurposeDescription] = useState('');
+  const [repurposeNotes, setRepurposeNotes] = useState('');
+  const [repurposeDays, setRepurposeDays] = useState(14);
 
   // Propuesta mode
   const [propuestaStartDate, setPropuestaStartDate] = useState('');
@@ -305,6 +318,81 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
 
   const handleContactStatusChange = async (contactId: string, newStatus: ContactStatus) => {
     await updateContact(contactId, { status: newStatus });
+  };
+
+  // C2 — Atom repurpose handler. Takes a pillar description and generates
+  // 5-10 atoms distributed over distributionDays, persisting each as a
+  // calendar entry with the atom metadata in the notes field.
+  const handleAtomRepurpose = async (params: {
+    pillarType: string;
+    pillarDescription: string;
+    pillarNotes?: string;
+    distributionDays: number;
+  }) => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/ai/content-calendar/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          mode: 'atom_repurpose',
+          pillarType: params.pillarType,
+          pillarDescription: params.pillarDescription,
+          pillarNotes: params.pillarNotes || '',
+          distributionDays: params.distributionDays,
+          platforms: propuestaPlatforms,
+          language,
+        }),
+      });
+      if (!response.ok) throw new Error('Atom repurpose failed');
+      const data = await response.json();
+
+      const atoms = (data.atoms || []) as Array<{
+        day_offset: number;
+        platform: string;
+        atom_type: string;
+        hook_type: string;
+        title: string;
+        caption: string;
+        hashtags?: string[];
+        asset_suggestion?: string;
+        extraction_note?: string;
+      }>;
+
+      const baseDate = new Date();
+      for (const atom of atoms) {
+        const d = new Date(baseDate);
+        d.setDate(d.getDate() + (atom.day_offset || 0));
+        const iso = d.toISOString().split('T')[0];
+        await addEntry({
+          collection_plan_id: collectionPlanId,
+          title: atom.title || 'Atom',
+          content_type: (atom.atom_type || 'post') as ContentCalendarEntry['content_type'],
+          platform: (atom.platform || 'instagram') as ContentCalendarEntry['platform'],
+          scheduled_date: iso,
+          scheduled_time: null,
+          status: 'idea',
+          caption: atom.caption || null,
+          hashtags: atom.hashtags || null,
+          asset_urls: null,
+          target_audience: null,
+          campaign: `atom-${atom.atom_type}`,
+          performance: null,
+          notes: [
+            atom.extraction_note ? `Source: ${atom.extraction_note}` : '',
+            atom.asset_suggestion ? `Asset: ${atom.asset_suggestion}` : '',
+            atom.hook_type ? `Hook: ${atom.hook_type}` : '',
+          ]
+            .filter(Boolean)
+            .join(' · '),
+        });
+      }
+    } catch (error) {
+      console.error('Atom repurpose error:', error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleAiGenerate = async (mode: 'asistido' | 'propuesta') => {
@@ -543,6 +631,93 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 {drops.length === 0 && (
                   <p className="text-xs text-amber-600">{t.marketingPage.needDropsForAssisted}</p>
                 )}
+              </div>
+            )}
+
+            {/* ── Atom repurpose panel (C2) ── */}
+            {activePill === 'repurpose' && (
+              <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
+                <div>
+                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">
+                    {t.marketingPage.repurposeHeading}
+                  </p>
+                  <p className="text-sm font-light text-carbon/50">
+                    {t.marketingPage.repurposeDesc}
+                  </p>
+                </div>
+                <div className="grid grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs">{t.marketingPage.repurposePillarType}</Label>
+                    <select
+                      value={repurposeType}
+                      onChange={(e) =>
+                        setRepurposeType(e.target.value as typeof repurposeType)
+                      }
+                      className="h-9 w-full bg-white border border-carbon/20 px-2 text-sm font-light text-carbon focus:outline-none"
+                    >
+                      <option value="photo_set">{t.marketingPage.repurposeType_photo_set}</option>
+                      <option value="video">{t.marketingPage.repurposeType_video}</option>
+                      <option value="editorial">{t.marketingPage.repurposeType_editorial}</option>
+                      <option value="interview">{t.marketingPage.repurposeType_interview}</option>
+                      <option value="longform">{t.marketingPage.repurposeType_longform}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t.marketingPage.repurposeDays}</Label>
+                    <Input
+                      type="number"
+                      min={3}
+                      max={30}
+                      value={repurposeDays}
+                      onChange={(e) => setRepurposeDays(Number(e.target.value) || 14)}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="col-span-2 flex items-end">
+                    <Button
+                      onClick={() =>
+                        handleAtomRepurpose({
+                          pillarType: repurposeType,
+                          pillarDescription: repurposeDescription,
+                          pillarNotes: repurposeNotes,
+                          distributionDays: repurposeDays,
+                        })
+                      }
+                      disabled={isGenerating || !repurposeDescription.trim()}
+                      className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase w-full"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {t.marketingPage.generating}
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          {t.marketingPage.repurposeGenerate}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">{t.marketingPage.repurposePillarDesc}</Label>
+                  <textarea
+                    value={repurposeDescription}
+                    onChange={(e) => setRepurposeDescription(e.target.value)}
+                    placeholder={t.marketingPage.repurposePillarDescPlaceholder}
+                    className="w-full h-24 bg-white border border-carbon/20 px-3 py-2 text-sm font-light text-carbon placeholder:text-carbon/25 focus:outline-none resize-none"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">{t.marketingPage.repurposePillarNotes}</Label>
+                  <Input
+                    value={repurposeNotes}
+                    onChange={(e) => setRepurposeNotes(e.target.value)}
+                    placeholder={t.marketingPage.repurposePillarNotesPlaceholder}
+                    className="h-9"
+                  />
+                </div>
               </div>
             )}
 

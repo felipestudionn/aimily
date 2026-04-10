@@ -6,6 +6,10 @@ import { generateJSON } from '@/lib/ai/llm-client';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { renderPrompt } from '@/lib/prompts/prompt-context';
 import { enforceHookDiversity } from '@/lib/marketing-validators';
+import {
+  buildPerformanceContext,
+  formatPerformanceContextForPrompt,
+} from '@/lib/performance-context';
 
 type GenerateMode =
   | 'pillars_voice'
@@ -311,9 +315,21 @@ export async function POST(req: NextRequest) {
 
     const prompt = buildPromptForMode(body);
 
+    // C7 — append performance signals to modes that benefit from them
+    // (social_templates, email_sequence). Keeps the foundation prompts
+    // unchanged; the feedback is injected as a trailing instruction block.
+    let userWithPerf = prompt.user;
+    if (mode === 'social_templates' || mode === 'email_sequence') {
+      const perfSummary = await buildPerformanceContext(collectionPlanId);
+      const perfBlock = formatPerformanceContextForPrompt(perfSummary);
+      if (perfBlock) {
+        userWithPerf = `${userWithPerf}\n\n${perfBlock}`;
+      }
+    }
+
     let { data, model, fallback } = await generateJSON({
       system: prompt.system,
-      user: prompt.user,
+      user: userWithPerf,
       temperature: 0.7,
       language,
     });
@@ -340,7 +356,7 @@ export async function POST(req: NextRequest) {
             `Make sure NO single hook type appears more than ${Math.ceil(items.length / 2)} times.`;
           const retry = await generateJSON({
             system: prompt.system,
-            user: prompt.user + '\n\nCORRECTIVE INSTRUCTION: ' + correction,
+            user: userWithPerf + '\n\nCORRECTIVE INSTRUCTION: ' + correction,
             temperature: 0.8,
             language,
           });

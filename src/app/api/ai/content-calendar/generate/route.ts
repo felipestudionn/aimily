@@ -3,12 +3,20 @@ import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/a
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
+import { renderPrompt } from '@/lib/prompts/prompt-context';
 import { generateJSON } from '@/lib/ai/llm-client';
+import {
+  buildPerformanceContext,
+  formatPerformanceContextForPrompt,
+} from '@/lib/performance-context';
 
 /**
  * AI Content Calendar Generation
- * Modes: 'asistido' (user gives direction + drops, AI suggests calendar)
- *        'propuesta' (AI generates full editorial calendar from date range)
+ * Modes:
+ *   - 'asistido'       user direction + drops, AI suggests calendar
+ *   - 'propuesta'      AI generates full editorial calendar from date range
+ *   - 'atom_repurpose' takes ONE pillar asset and generates 5-10 atoms
+ *                      distributed over N days (C2)
  */
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
@@ -27,6 +35,13 @@ export async function POST(req: NextRequest) {
       endDate,
       platforms,
       language,
+      // C2 — atom_repurpose inputs
+      pillarType,
+      pillarDescription,
+      pillarNotes,
+      distributionDays,
+      brandName,
+      brandVoiceSummary,
     } = body;
 
     if (!collectionPlanId) {
@@ -42,6 +57,44 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+
+    // C2 — atom repurpose mode. Uses the calendar_atom_repurpose prompt
+    // from the registry with its own shape (atoms[], not calendar_entries[]).
+    if (mode === 'atom_repurpose') {
+      const flatCtx = {
+        brand_name: brandName || 'Brand',
+        brand_voice_summary: brandVoiceSummary || '',
+        pillar_type: pillarType || 'photo_set',
+        pillar_description: pillarDescription || '',
+        pillar_notes: pillarNotes || '',
+        distribution_days: distributionDays ?? 14,
+        active_platforms: platforms || 'instagram, tiktok, email',
+      };
+      const { data, model, fallback } = await generateJSON({
+        system: MARKETING_PROMPTS.calendar_atom_repurpose.system,
+        user: renderPrompt(MARKETING_PROMPTS.calendar_atom_repurpose.user, flatCtx),
+        temperature: 0.8,
+        maxTokens: 6144,
+        language,
+      });
+
+      logAudit({
+        userId: user!.id,
+        collectionPlanId,
+        action: AUDIT_ACTIONS.MARKETING_AI_CONTENT_CALENDAR,
+        entityType: 'collection_plan',
+        entityId: collectionPlanId,
+        metadata: {
+          mode: 'atom_repurpose',
+          model,
+          fallback,
+          pillar_type: pillarType,
+          language,
+        },
+      });
+
+      return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });
+    }
 
     const dropsBlock = (drops || []).map((d: { name: string; launch_date: string; story_alignment?: string }) =>
       `- ${d.name}: launches ${d.launch_date}, story "${d.story_alignment || 'N/A'}"`
@@ -67,6 +120,10 @@ ACTIVE PLATFORMS: ${platforms || 'instagram, tiktok, email'}
 Create a comprehensive content plan covering the full period.`;
     }
 
+    // C7 — perf signals from previous favorited generations
+    const perfSummary = await buildPerformanceContext(collectionPlanId);
+    const perfBlock = formatPerformanceContextForPrompt(perfSummary);
+
     const userPrompt = `${MARKETING_PROMPTS.calendar_generate.system}
 
 GTM TIMELINE:
@@ -78,7 +135,7 @@ ${actionsBlock || 'No commercial actions defined yet.'}
 STORIES:
 ${storiesBlock || 'No stories defined yet.'}
 
-${userInput}`;
+${userInput}${perfBlock ? `\n\n${perfBlock}` : ''}`;
 
     const { data, model, fallback } = await generateJSON({
       system: MARKETING_PROMPTS.calendar_generate.system,

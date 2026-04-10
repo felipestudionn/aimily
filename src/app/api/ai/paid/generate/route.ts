@@ -5,6 +5,10 @@ import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { renderPrompt } from '@/lib/prompts/prompt-context';
 import { generateJSON } from '@/lib/ai/llm-client';
+import {
+  buildPerformanceContext,
+  formatPerformanceContextForPrompt,
+} from '@/lib/performance-context';
 
 /**
  * AI Paid Media Plan Generation
@@ -53,6 +57,10 @@ export async function POST(req: NextRequest) {
       `- ${d.name}: ${d.launch_date}, story "${d.story_alignment || 'N/A'}", expected ${d.expected_sales_weight || 0}% of sales`
     ).join('\n');
 
+    // C7 — collect previous favorites to bias toward winners
+    const perfSummary = await buildPerformanceContext(collectionPlanId);
+    const perfBlock = formatPerformanceContextForPrompt(perfSummary);
+
     const templateContext: Record<string, unknown> = {
       brand_name: brandName || 'Brand',
       consumer_demographics: consumerDemographics || 'N/A',
@@ -64,9 +72,14 @@ export async function POST(req: NextRequest) {
       target_roas: String(targetRoas || 4),
       active_platforms: activePlatforms || 'Meta, Google, TikTok',
       user_direction: userDirection || '',
+      // C1 — historical conversion gate (forces manual/cost_cap bidding when <50)
+      previous_conversions_count: String(perfSummary.total_favorites || 0),
     };
 
     let userPrompt = renderPrompt(MARKETING_PROMPTS.paid_plan.user, templateContext);
+    if (perfBlock) {
+      userPrompt = `${userPrompt}\n\n${perfBlock}`;
+    }
 
     // Replace drops each block manually (renderPrompt handles simple {{#each}} but drops are passed inline)
     const dropsEachRegex = /\{\{#each drops\}\}[\s\S]*?\{\{\/each\}\}/;
