@@ -22,7 +22,6 @@
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
-    "@fal-ai/client": "^1.9.4",
     "@google/generative-ai": "^0.24.1",
     "@marsidev/react-turnstile": "^1.4.2",
     "@radix-ui/react-avatar": "^1.1.3",

@@ -217,15 +217,32 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         genType = 'product_render';
         modelUsed = 'gpt-image-1.5';
       } else if (action === 'tryon') {
+        // Virtual Try-On via Freepik Nano Banana multi-reference.
+        // Needs: a brand model image (from the brand-model library) AND
+        // the product image (photoreal 3D from the design phase).
         const model = selectedModelId ? models.find((m) => m.id === selectedModelId) : models[0];
-        endpoint = '/api/ai/fal/tryon';
+        if (!model?.reference_image_url) {
+          throw new Error(
+            'Select a brand model first (create one in the Brand Models library).'
+          );
+        }
+        const productImage =
+          sku.render_urls?.['3d'] || sku.render_url || sku.reference_image_url;
+        if (!productImage) {
+          throw new Error(
+            'This SKU has no product image yet. Complete the design phase first.'
+          );
+        }
+        endpoint = '/api/ai/freepik/tryon';
         body = {
-          garment_image_url: sku.reference_image_url,
-          model_image_url: model?.reference_image_url || undefined,
-          category: 'auto',
+          brand_model_url: model.reference_image_url,
+          product_image_url: productImage,
+          product_name: sku.name,
+          category: sku.category,
+          collectionPlanId: sku.collection_plan_id,
         };
         genType = 'tryon';
-        modelUsed = 'fashn-tryon-v1.6';
+        modelUsed = 'freepik-nano-banana';
       } else if (action === 'still-life') {
         // Editorial still life via Freepik Nano Banana (Gemini 2.5 Flash Image).
         // Uses the photoreal 3D render from the design phase as the reference
