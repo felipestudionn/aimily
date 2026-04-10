@@ -100,6 +100,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<SocialPlatform>('instagram');
   const [selectedEmailType, setSelectedEmailType] = useState<EmailTemplateType>('launch');
+  // B1 — Email mode toggle (single email vs. full sequence)
+  const [emailMode, setEmailMode] = useState<'single' | 'sequence'>('single');
+  const [selectedSequenceType, setSelectedSequenceType] =
+    useState<'welcome' | 'launch' | 'post_purchase' | 're_engagement'>('welcome');
+  // B2 — Product copy context variant
+  const [selectedCopyContext, setSelectedCopyContext] = useState<
+    'pdp' | 'ad_hook' | 'landing_hero' | 'email_mention' | 'sms_tease' | 'push_notification'
+  >('pdp');
   const [selectedSkuId, setSelectedSkuId] = useState<string | null>(null);
 
   // Edit state for pillars
@@ -218,19 +226,30 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
     const result = await generateAI('product_copy', {
       skuContext: skuToContext(sku),
       storyContext: story ? storyToContext(story) : undefined,
+      copyContext: selectedCopyContext,
     });
     if (!result) return;
+
+    // B2 — title comes from whichever field the context shape provides first.
+    const inferredTitle =
+      (result.headline as string | undefined) ||
+      (result.hook as string | undefined) ||
+      (result.title as string | undefined) ||
+      (result.message as string | undefined) ||
+      (result.one_line as string | undefined) ||
+      sku.name;
 
     await addCopy({
       collection_plan_id: collectionPlanId,
       sku_id: sku.id,
-      copy_type: 'product_description',
-      title: result.headline || sku.name,
+      copy_type:
+        selectedCopyContext === 'pdp' ? 'product_description' : `copy_${selectedCopyContext}`,
+      title: inferredTitle,
       content: JSON.stringify(result),
-      metadata: result,
+      metadata: { ...result, copy_context: selectedCopyContext },
       status: 'draft',
       story_id: selectedStoryId,
-      model_used: 'claude-sonnet-4',
+      model_used: 'claude-haiku-4.5',
     });
   };
 
@@ -244,20 +263,120 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
     });
     if (!result?.templates) return;
 
-    const items = result.templates.map((t: { type: string; caption: string; hashtags: string[]; cta: string; best_paired_with: string }) => ({
-      collection_plan_id: collectionPlanId,
-      story_id: selectedStoryId,
-      platform: selectedPlatform,
-      type: t.type || 'product_feature',
-      caption: t.caption || null,
-      hashtags: t.hashtags || null,
-      cta: t.cta || null,
-      best_paired_with: t.best_paired_with || null,
-    }));
+    type SocialTpl = {
+      type?: string;
+      caption?: string;
+      hashtags?: string[];
+      cta?: string;
+      best_paired_with?: string;
+      hook_type?: 'curiosity' | 'story' | 'value' | 'contrarian';
+    };
+    const validTypes = [
+      'product_feature',
+      'lifestyle',
+      'behind_the_scenes',
+      'styling_tip',
+      'story_narrative',
+    ] as const;
+    type ValidType = (typeof validTypes)[number];
+    const items = (result.templates as SocialTpl[]).map((tpl) => {
+      const normalizedType: ValidType = validTypes.includes(tpl.type as ValidType)
+        ? (tpl.type as ValidType)
+        : 'product_feature';
+      return {
+        collection_plan_id: collectionPlanId,
+        story_id: selectedStoryId,
+        platform: selectedPlatform,
+        type: normalizedType,
+        caption: tpl.caption || null,
+        hashtags: tpl.hashtags || null,
+        cta: tpl.cta || null,
+        best_paired_with: tpl.best_paired_with || null,
+        hook_type: tpl.hook_type ?? null,
+      };
+    });
     await bulkSaveSocial(items);
   };
 
   /* ── Tab: Email Templates AI handler ── */
+
+  const handleGenerateSequence = async () => {
+    const story = storyForId(selectedStoryId);
+    const heroSku = story?.hero_sku_id
+      ? skus.find((s) => s.id === story.hero_sku_id)
+      : undefined;
+
+    const result = await generateAI('email_sequence', {
+      storyContext: story ? storyToContext(story) : undefined,
+      sequenceType: selectedSequenceType,
+      heroSkuName: heroSku?.name,
+      heroSkuPvp: heroSku?.pvp,
+    });
+    if (!result?.sequence) return;
+
+    type SeqEmail = {
+      position?: number;
+      name?: string;
+      one_job?: string;
+      send_delay_from_previous_hours?: number;
+      send_time_preference?: string;
+      subject_line?: string;
+      preview_text?: string;
+      hook_type?: 'curiosity' | 'story' | 'value' | 'contrarian';
+      heading?: string;
+      body?: string;
+      cta_text?: string;
+      cta_url_placeholder?: string;
+    };
+    const seq = result.sequence as {
+      name?: string;
+      type?: 'welcome' | 'launch' | 'post_purchase' | 're_engagement';
+      trigger?: string;
+      exit_conditions?: string[];
+      total_emails?: number;
+      emails?: SeqEmail[];
+      success_metrics?: {
+        target_open_rate?: number;
+        target_ctr?: number;
+        target_conversion_rate?: number;
+      };
+    };
+
+    if (!seq.emails?.length) return;
+
+    // Generate a client-side sequence_id so every row in the bulk insert
+    // shares the same grouping key. crypto.randomUUID is safe in the browser.
+    const sequenceId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `seq-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    const items = seq.emails.map((em) => ({
+      collection_plan_id: collectionPlanId,
+      story_id: selectedStoryId,
+      email_type: (seq.type || selectedSequenceType) as EmailTemplateType,
+      subject_line: em.subject_line || null,
+      preview_text: em.preview_text || null,
+      heading: em.heading || null,
+      body: em.body || null,
+      cta_text: em.cta_text || null,
+      cta_url: em.cta_url_placeholder || null,
+      status: 'draft',
+      sequence_id: sequenceId,
+      sequence_name: seq.name || null,
+      sequence_type: seq.type || selectedSequenceType,
+      sequence_position: em.position ?? null,
+      sequence_total: seq.total_emails ?? seq.emails?.length ?? null,
+      trigger: seq.trigger || null,
+      send_delay_hours: em.send_delay_from_previous_hours ?? null,
+      send_time_preference: em.send_time_preference || null,
+      exit_conditions: seq.exit_conditions || null,
+      one_job: em.one_job || null,
+      hook_type: em.hook_type || null,
+      success_metrics: seq.success_metrics || null,
+    }));
+    await bulkSaveEmail(items);
+  };
 
   const handleGenerateEmail = async () => {
     const story = storyForId(selectedStoryId);
@@ -577,6 +696,30 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               </div>
             </div>
 
+            {/* B2 — copy context selector */}
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">
+                {t.marketingPage.copyContextHeading}
+              </p>
+              <div className="flex gap-1 flex-wrap">
+                {(
+                  ['pdp', 'ad_hook', 'landing_hero', 'email_mention', 'sms_tease', 'push_notification'] as const
+                ).map((ctx) => (
+                  <button
+                    key={ctx}
+                    onClick={() => setSelectedCopyContext(ctx)}
+                    className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
+                      selectedCopyContext === ctx
+                        ? 'bg-carbon text-crema border-carbon'
+                        : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+                    }`}
+                  >
+                    {t.marketingPage[`copyContext_${ctx}` as keyof typeof t.marketingPage] as string}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
               onClick={handleGenerateProductCopy}
               disabled={aiLoading || !selectedSkuId}
@@ -667,6 +810,37 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               {t.marketingPage.emailTemplatesDesc}
             </p>
 
+            {/* B1 — Single vs. Sequence toggle */}
+            <div>
+              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">
+                {t.marketingPage.emailModeHeading}
+              </p>
+              <div className="inline-flex border border-carbon/[0.06] overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setEmailMode('single')}
+                  className={`text-xs font-light px-4 py-2 transition-colors ${
+                    emailMode === 'single'
+                      ? 'bg-carbon text-crema'
+                      : 'bg-white text-carbon/60 hover:text-carbon'
+                  }`}
+                >
+                  {t.marketingPage.emailModeSingle}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEmailMode('sequence')}
+                  className={`text-xs font-light px-4 py-2 border-l border-carbon/[0.06] transition-colors ${
+                    emailMode === 'sequence'
+                      ? 'bg-carbon text-crema'
+                      : 'bg-white text-carbon/60 hover:text-carbon'
+                  }`}
+                >
+                  {t.marketingPage.emailModeSequence}
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
@@ -676,30 +850,54 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.emailTypeHeading}</p>
-                <div className="flex gap-1 flex-wrap">
-                  {EMAIL_TYPE_IDS.map(id => (
-                    <button
-                      key={id}
-                      onClick={() => setSelectedEmailType(id)}
-                      className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
-                        selectedEmailType === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
-                      }`}
-                    >
-                      {emailTypeLabel(id)}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">
+                  {emailMode === 'single'
+                    ? t.marketingPage.emailTypeHeading
+                    : t.marketingPage.sequenceTypeHeading}
+                </p>
+                {emailMode === 'single' ? (
+                  <div className="flex gap-1 flex-wrap">
+                    {EMAIL_TYPE_IDS.map(id => (
+                      <button
+                        key={id}
+                        onClick={() => setSelectedEmailType(id)}
+                        className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
+                          selectedEmailType === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+                        }`}
+                      >
+                        {emailTypeLabel(id)}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex gap-1 flex-wrap">
+                    {(['welcome', 'launch', 'post_purchase', 're_engagement'] as const).map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setSelectedSequenceType(st)}
+                        className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
+                          selectedSequenceType === st
+                            ? 'bg-carbon text-crema border-carbon'
+                            : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+                        }`}
+                      >
+                        {t.marketingPage[`sequenceType_${st}` as keyof typeof t.marketingPage] as string}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             <button
-              onClick={handleGenerateEmail}
+              onClick={emailMode === 'single' ? handleGenerateEmail : handleGenerateSequence}
               disabled={aiLoading}
               className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              {t.marketingPage.generateEmailBtn}
+              {emailMode === 'single'
+                ? t.marketingPage.generateEmailBtn
+                : t.marketingPage.generateSequenceBtn}
             </button>
 
             {emailLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}

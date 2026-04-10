@@ -5,7 +5,13 @@ export type CopyType =
   | 'brand_story'
   | 'seo_meta'
   | 'email_template'
-  | 'social_caption';
+  | 'social_caption'
+  // B2 — context-specific product copy variants
+  | 'copy_ad_hook'
+  | 'copy_landing_hero'
+  | 'copy_email_mention'
+  | 'copy_sms_tease'
+  | 'copy_push_notification';
 
 export type CopyStatus = 'draft' | 'approved' | 'rejected';
 
@@ -77,8 +83,18 @@ export interface SocialTemplate {
   hashtags: string[] | null;
   cta: string | null;
   best_paired_with: string | null;
+  /** B4 — which of the 4 hook categories this template leads with */
+  hook_type?: 'curiosity' | 'story' | 'value' | 'contrarian' | null;
   created_at: string;
 }
+
+export type EmailSequenceType =
+  | 'welcome'
+  | 'launch'
+  | 'post_purchase'
+  | 're_engagement';
+
+export type EmailHookType = 'curiosity' | 'story' | 'value' | 'contrarian';
 
 export interface EmailTemplateContent {
   id: string;
@@ -93,6 +109,23 @@ export interface EmailTemplateContent {
   cta_url: string | null;
   status: string | null;
   created_at: string;
+  // B1 — sequence fields. NULL for single emails.
+  sequence_id?: string | null;
+  sequence_name?: string | null;
+  sequence_type?: EmailSequenceType | null;
+  sequence_position?: number | null;
+  sequence_total?: number | null;
+  trigger?: string | null;
+  send_delay_hours?: number | null;
+  send_time_preference?: string | null;
+  exit_conditions?: string[] | null;
+  one_job?: string | null;
+  hook_type?: EmailHookType | null;
+  success_metrics?: {
+    target_open_rate?: number;
+    target_ctr?: number;
+    target_conversion_rate?: number;
+  } | null;
 }
 
 export type ContentStrategyTab = 'pillars-voice' | 'product-copy' | 'social' | 'email' | 'seo';
