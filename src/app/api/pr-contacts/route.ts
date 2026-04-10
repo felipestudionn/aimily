@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,8 +17,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
 
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
-    if (!authorized) return ownerError;
+    // PR contacts hold PII → require the dedicated permission even for reads.
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId: planId,
+      permission: 'manage_pr_contacts',
+    });
+    if (!perm.allowed) return perm.error!;
 
     let query = supabaseAdmin
       .from('pr_contacts')
@@ -52,8 +59,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
-    if (!authorized) return ownerError;
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId: body.collection_plan_id,
+      permission: 'manage_pr_contacts',
+    });
+    if (!perm.allowed) return perm.error!;
 
     const { data, error } = await supabaseAdmin
       .from('pr_contacts')
@@ -62,6 +73,15 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    logAudit({
+      userId: user!.id,
+      collectionPlanId: body.collection_plan_id,
+      action: AUDIT_ACTIONS.PR_CONTACT_CREATED,
+      entityType: 'pr_contact',
+      entityId: data.id,
+      metadata: { name: data.name, type: data.type, has_email: !!data.email },
+    });
 
     return NextResponse.json(data, { status: 201 });
   } catch (error) {

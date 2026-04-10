@@ -184,6 +184,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
       }));
 
       const body: Record<string, any> = {
+        collectionPlanId,
         mode,
         drops: dropsContext,
         totalBudget: mode === 'asistido' ? assistedBudget : propuestaBudget,

@@ -32,16 +32,9 @@ export function MarketingDistributionScreen({ collectionPlanId, milestones }: Pr
 
       {/* 2x2 Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Go-to-Market */}
         <GoToMarketCard collectionPlanId={collectionPlanId} />
-
-        {/* Content Calendar */}
         <ContentCalendarCard collectionPlanId={collectionPlanId} />
-
-        {/* Paid & Growth */}
         <PaidGrowthCard collectionPlanId={collectionPlanId} />
-
-        {/* Launch */}
         <LaunchCard collectionPlanId={collectionPlanId} />
       </div>
     </div>

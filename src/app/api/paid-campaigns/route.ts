@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,8 +17,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
 
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
-    if (!authorized) return ownerError;
+    // Reads are allowed to anyone with view_all on the collection.
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId: planId,
+      permission: 'view_all',
+    });
+    if (!perm.allowed) return perm.error!;
 
     let query = supabaseAdmin
       .from('paid_campaigns')
@@ -52,8 +59,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
-    if (!authorized) return ownerError;
+    // Paid campaigns carry budgets → financial-grade permission.
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId: body.collection_plan_id,
+      permission: 'edit_paid_campaigns',
+    });
+    if (!perm.allowed) return perm.error!;
 
     const { data, error } = await supabaseAdmin
       .from('paid_campaigns')
@@ -62,6 +74,20 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    logAudit({
+      userId: user!.id,
+      collectionPlanId: body.collection_plan_id,
+      action: AUDIT_ACTIONS.PAID_CAMPAIGN_CREATED,
+      entityType: 'paid_campaign',
+      entityId: data.id,
+      metadata: {
+        name: data.name,
+        platform: data.platform,
+        budget: data.budget,
+        status: data.status,
+      },
+    });
 
     return NextResponse.json(data, { status: 201 });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 
 fal.config({
@@ -16,14 +17,23 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
 
-    const usage = await checkAIUsage(user.id, user.email!);
-    if (!usage.allowed) return usageDeniedResponse(usage);
-
     const { garment_image_url, model_image_url, category, collectionPlanId } = await req.json();
 
     if (!garment_image_url) {
       return NextResponse.json({ error: 'garment_image_url is required' }, { status: 400 });
     }
+
+    if (collectionPlanId) {
+      const perm = await checkTeamPermission({
+        userId: user!.id,
+        collectionPlanId,
+        permission: 'generate_ai_marketing',
+      });
+      if (!perm.allowed) return perm.error!;
+    }
+
+    const usage = await checkAIUsage(user!.id, user!.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await fal.subscribe('fal-ai/fashn/tryon/v1.6', {

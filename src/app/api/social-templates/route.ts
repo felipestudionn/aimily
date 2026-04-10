@@ -44,12 +44,23 @@ export async function POST(req: NextRequest) {
 
     // Support bulk insert
     if (Array.isArray(body.templates)) {
-      // Verify ownership for the first template's planId
-      const firstPlanId = body.templates[0]?.collection_plan_id;
-      if (firstPlanId) {
-        const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, firstPlanId);
-        if (!authorized) return ownerError;
+      if (body.templates.length === 0) {
+        return NextResponse.json([], { status: 201 });
       }
+      const planIds = new Set(body.templates.map((t: { collection_plan_id?: string }) => t.collection_plan_id));
+      if (planIds.size !== 1 || !body.templates[0].collection_plan_id) {
+        return NextResponse.json(
+          { error: 'All templates must share a single collection_plan_id' },
+          { status: 400 },
+        );
+      }
+
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(
+        user.id,
+        body.templates[0].collection_plan_id,
+        'edit_marketing',
+      );
+      if (!authorized) return ownerError;
 
       const { data, error } = await supabaseAdmin
         .from('social_templates')
@@ -63,7 +74,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'collection_plan_id, platform, and type required' }, { status: 400 });
     }
 
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id, 'edit_marketing');
     if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin

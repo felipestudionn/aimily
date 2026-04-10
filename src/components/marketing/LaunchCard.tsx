@@ -169,6 +169,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
     setIsGenerating(true);
     try {
       const body: Record<string, any> = {
+        collectionPlanId,
         mode,
         launchDate: mode === 'asistido' ? assistedLaunchDate : propuestaLaunchDate,
         channels: mode === 'asistido' ? assistedChannels : propuestaChannels,

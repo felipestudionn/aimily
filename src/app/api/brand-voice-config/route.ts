@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 export async function GET(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const planId = req.nextUrl.searchParams.get('planId');
     if (!planId) return NextResponse.json({ error: 'planId required' }, { status: 400 });
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin
       .from('brand_voice_config')
@@ -23,10 +30,20 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
     if (!body.collection_plan_id) {
       return NextResponse.json({ error: 'collection_plan_id required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(
+      user.id,
+      body.collection_plan_id,
+      'edit_marketing',
+    );
+    if (!authorized) return ownerError;
 
     // Upsert: one config per collection
     const { data: existing } = await supabaseAdmin

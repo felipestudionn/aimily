@@ -32,16 +32,9 @@ export function MarketingCreationScreen({ collectionPlanId }: Props) {
 
       {/* 2×2 Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Stories — live card */}
         <StoriesCard collectionPlanId={collectionPlanId} />
-
-        {/* Product Visuals — live card */}
         <ProductVisualsCard collectionPlanId={collectionPlanId} />
-
-        {/* Campaign & Video — live card */}
         <CampaignVideoCard collectionPlanId={collectionPlanId} />
-
-        {/* Content Strategy — live card */}
         <ContentStrategyCard collectionPlanId={collectionPlanId} />
       </div>
     </div>

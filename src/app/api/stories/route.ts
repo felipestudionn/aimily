@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     // Verify ownership for the collection_plan_id
     const planId = rows[0].collection_plan_id;
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId, 'edit_marketing');
     if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin

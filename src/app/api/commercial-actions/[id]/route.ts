@@ -21,7 +21,7 @@ export async function PATCH(
       .single();
 
     if (existing?.collection_plan_id) {
-      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id, 'edit_marketing');
       if (!authorized) return ownerError;
     }
 
@@ -65,7 +65,7 @@ export async function DELETE(
       .single();
 
     if (existing?.collection_plan_id) {
-      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
+      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id, 'edit_marketing');
       if (!authorized) return ownerError;
     }
 

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { ADMIN_EMAILS, getPlanLimits, PlanId } from '@/lib/stripe';
+import { checkTeamPermission, type TeamPermission } from '@/lib/team-permissions';
 
 export async function getAuthenticatedUser() {
   const supabase = await createClient();
@@ -15,20 +16,28 @@ export async function getAuthenticatedUser() {
 }
 
 /**
- * Verify the authenticated user owns the collection plan.
- * Use this in every API route that accesses collection-scoped data.
+ * Verify the authenticated user has access to the collection plan.
+ *
+ * Resolves access through `checkTeamPermission` so both the legacy owner-only
+ * model AND team members (Fase 4.3) are honored. Routes that don't specify a
+ * `permission` default to `view_all`, which maps to "owner or any seat with
+ * collection access" — matching the original behavior for legacy call sites.
+ *
+ * For marketing/financial/PII routes, pass the granular permission explicitly:
+ *
+ *   await verifyCollectionOwnership(user.id, planId, 'edit_marketing')
+ *   await verifyCollectionOwnership(user.id, planId, 'edit_paid_campaigns')
+ *   await verifyCollectionOwnership(user.id, planId, 'manage_pr_contacts')
  */
-export async function verifyCollectionOwnership(userId: string, collectionPlanId: string) {
-  const { data } = await supabaseAdmin
-    .from('collection_plans')
-    .select('user_id')
-    .eq('id', collectionPlanId)
-    .single();
-
-  if (!data || data.user_id !== userId) {
-    return { authorized: false as const, error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+export async function verifyCollectionOwnership(
+  userId: string,
+  collectionPlanId: string,
+  permission: TeamPermission = 'view_all',
+) {
+  const check = await checkTeamPermission({ userId, collectionPlanId, permission });
+  if (!check.allowed) {
+    return { authorized: false as const, error: check.error! };
   }
-
   return { authorized: true as const, error: null };
 }
 

@@ -11,17 +11,19 @@ export async function GET(req: NextRequest) {
     const skuId = req.nextUrl.searchParams.get('skuId');
     const copyType = req.nextUrl.searchParams.get('copyType');
 
-    if (planId) {
-      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
-      if (!authorized) return ownerError;
+    if (!planId) {
+      return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
+
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
+    if (!authorized) return ownerError;
 
     let query = supabaseAdmin
       .from('product_copy')
       .select('*')
+      .eq('collection_plan_id', planId)
       .order('created_at', { ascending: false });
 
-    if (planId) query = query.eq('collection_plan_id', planId);
     if (skuId) query = query.eq('sku_id', skuId);
     if (copyType) query = query.eq('copy_type', copyType);
 
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id, 'edit_marketing');
     if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin

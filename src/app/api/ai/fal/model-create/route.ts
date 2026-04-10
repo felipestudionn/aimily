@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 
 fal.config({
@@ -16,14 +17,23 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
 
-    const usage = await checkAIUsage(user.id, user.email!);
-    if (!usage.allowed) return usageDeniedResponse(usage);
-
     const { reference_image_url, gender, age_range, ethnicity, body_type, style_vibe, collectionPlanId } = await req.json();
 
     if (!reference_image_url) {
       return NextResponse.json({ error: 'reference_image_url is required' }, { status: 400 });
     }
+
+    if (collectionPlanId) {
+      const perm = await checkTeamPermission({
+        userId: user!.id,
+        collectionPlanId,
+        permission: 'generate_ai_marketing',
+      });
+      if (!perm.allowed) return perm.error!;
+    }
+
+    const usage = await checkAIUsage(user!.id, user!.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
 
     const prompt = [
       `Professional fashion model photo`,

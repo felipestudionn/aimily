@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id);
+    const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, body.collection_plan_id, 'edit_marketing');
     if (!authorized) return ownerError;
 
     const { data, error } = await supabaseAdmin

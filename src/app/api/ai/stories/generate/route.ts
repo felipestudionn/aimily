@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { buildPromptContext, renderPrompt } from '@/lib/prompts/prompt-context';
 import { generateJSON } from '@/lib/ai/llm-client';
@@ -12,9 +14,6 @@ export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
-  const usage = await checkAIUsage(user!.id, user!.email!);
-  if (!usage.allowed) return usageDeniedResponse(usage);
-
   try {
     const body = await req.json();
     const { collectionPlanId, mode = 'generate', userDirection, language } = body;
@@ -22,6 +21,18 @@ export async function POST(req: NextRequest) {
     if (!collectionPlanId) {
       return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
     }
+
+    // Team permission check (also verifies the collection exists + user has access)
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId,
+      permission: 'generate_ai_marketing',
+    });
+    if (!perm.allowed) return perm.error!;
+
+    // Plan-level AI usage check (billing)
+    const usage = await checkAIUsage(user!.id, user!.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
 
     // Build full context from all blocks
     const ctx = await buildPromptContext(collectionPlanId);
@@ -71,6 +82,16 @@ export async function POST(req: NextRequest) {
       user: userPrompt,
       temperature: 0.8,
       language,
+    });
+
+    // Fire-and-forget audit of the billed AI event
+    logAudit({
+      userId: user!.id,
+      collectionPlanId,
+      action: AUDIT_ACTIONS.MARKETING_AI_STORIES,
+      entityType: 'collection_plan',
+      entityId: collectionPlanId,
+      metadata: { mode, model, fallback, sku_count: ctx.sku_count, language },
     });
 
     return NextResponse.json({

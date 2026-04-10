@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { buildPromptContext, renderPrompt } from '@/lib/prompts/prompt-context';
 import { generateJSON } from '@/lib/ai/llm-client';
@@ -13,9 +15,6 @@ export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
-  const usage = await checkAIUsage(user.id, user.email!);
-  if (!usage.allowed) return usageDeniedResponse(usage);
-
   try {
     const body = await req.json();
     const {
@@ -27,6 +26,20 @@ export async function POST(req: NextRequest) {
       existingTasks,
       language,
     } = body;
+
+    if (!collectionPlanId) {
+      return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
+    }
+
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId,
+      permission: 'generate_ai_marketing',
+    });
+    if (!perm.allowed) return perm.error!;
+
+    const usage = await checkAIUsage(user!.id, user!.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
 
     // Build real context from all collection data
     const context = collectionPlanId
@@ -70,6 +83,15 @@ Channels: ${channels || 'Instagram, TikTok, Email, Website'}`;
       user: `${promptTemplate}${userInput}`,
       temperature: 0.6,
       language,
+    });
+
+    logAudit({
+      userId: user!.id,
+      collectionPlanId,
+      action: AUDIT_ACTIONS.MARKETING_AI_LAUNCH,
+      entityType: 'collection_plan',
+      entityId: collectionPlanId,
+      metadata: { mode, model, fallback, launch_date: launchDate, channels, language },
     });
 
     return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });

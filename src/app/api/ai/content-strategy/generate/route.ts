@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { renderPrompt } from '@/lib/prompts/prompt-context';
@@ -180,15 +182,25 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
 
-    const usage = await checkAIUsage(user.id, user.email!);
-    if (!usage.allowed) return usageDeniedResponse(usage);
-
     const body: GenerateRequest & { language?: 'en' | 'es' } = await req.json();
-    const { mode, brandContext, language } = body;
+    const { collectionPlanId, mode, brandContext, language } = body;
 
-    if (!mode || !brandContext) {
-      return NextResponse.json({ error: 'mode and brandContext are required' }, { status: 400 });
+    if (!collectionPlanId || !mode || !brandContext) {
+      return NextResponse.json(
+        { error: 'collectionPlanId, mode and brandContext are required' },
+        { status: 400 },
+      );
     }
+
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId,
+      permission: 'generate_ai_marketing',
+    });
+    if (!perm.allowed) return perm.error!;
+
+    const usage = await checkAIUsage(user!.id, user!.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
 
     const prompt = buildPromptForMode(body);
 
@@ -197,6 +209,15 @@ export async function POST(req: NextRequest) {
       user: prompt.user,
       temperature: 0.7,
       language,
+    });
+
+    logAudit({
+      userId: user!.id,
+      collectionPlanId,
+      action: AUDIT_ACTIONS.MARKETING_AI_CONTENT_STRATEGY,
+      entityType: 'collection_plan',
+      entityId: collectionPlanId,
+      metadata: { mode, model, fallback, language },
     });
 
     return NextResponse.json({

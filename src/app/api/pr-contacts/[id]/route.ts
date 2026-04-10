@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 
 export async function PATCH(
   req: NextRequest,
@@ -14,14 +16,20 @@ export async function PATCH(
 
     const { data: existing } = await supabaseAdmin
       .from('pr_contacts')
-      .select('collection_plan_id')
+      .select('collection_plan_id, name')
       .eq('id', id)
       .single();
 
-    if (existing?.collection_plan_id) {
-      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
-      if (!authorized) return ownerError;
+    if (!existing?.collection_plan_id) {
+      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
+
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId: existing.collection_plan_id,
+      permission: 'manage_pr_contacts',
+    });
+    if (!perm.allowed) return perm.error!;
 
     const body = await req.json();
 
@@ -33,6 +41,15 @@ export async function PATCH(
       .single();
 
     if (error) throw error;
+
+    logAudit({
+      userId: user!.id,
+      collectionPlanId: existing.collection_plan_id,
+      action: AUDIT_ACTIONS.PR_CONTACT_UPDATED,
+      entityType: 'pr_contact',
+      entityId: id,
+      metadata: { updated_fields: Object.keys(body) },
+    });
 
     return NextResponse.json(data);
   } catch (error) {
@@ -54,14 +71,20 @@ export async function DELETE(
 
     const { data: existing } = await supabaseAdmin
       .from('pr_contacts')
-      .select('collection_plan_id')
+      .select('collection_plan_id, name')
       .eq('id', id)
       .single();
 
-    if (existing?.collection_plan_id) {
-      const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, existing.collection_plan_id);
-      if (!authorized) return ownerError;
+    if (!existing?.collection_plan_id) {
+      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
+
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId: existing.collection_plan_id,
+      permission: 'manage_pr_contacts',
+    });
+    if (!perm.allowed) return perm.error!;
 
     const { error } = await supabaseAdmin
       .from('pr_contacts')
@@ -69,6 +92,15 @@ export async function DELETE(
       .eq('id', id);
 
     if (error) throw error;
+
+    logAudit({
+      userId: user!.id,
+      collectionPlanId: existing.collection_plan_id,
+      action: AUDIT_ACTIONS.PR_CONTACT_DELETED,
+      entityType: 'pr_contact',
+      entityId: id,
+      metadata: { name: existing.name },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

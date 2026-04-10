@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fal } from '@fal-ai/client';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 
 fal.config({
@@ -16,14 +17,25 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
 
-    const usage = await checkAIUsage(user.id, user.email!);
-    if (!usage.allowed) return usageDeniedResponse(usage);
-
     const { image_url, scene, prompt, width, height, story_context, collectionPlanId } = await req.json();
 
     if (!image_url && !prompt) {
       return NextResponse.json({ error: 'image_url or prompt is required' }, { status: 400 });
     }
+
+    // collectionPlanId is technically optional for preview-only flows, but in
+    // practice every UI caller passes one. Enforce team permissions when present.
+    if (collectionPlanId) {
+      const perm = await checkTeamPermission({
+        userId: user!.id,
+        collectionPlanId,
+        permission: 'generate_ai_marketing',
+      });
+      if (!perm.allowed) return perm.error!;
+    }
+
+    const usage = await checkAIUsage(user!.id, user!.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
 
     const sceneDescriptions: Record<string, string> = {
       street: 'Urban street style, city backdrop, golden hour lighting',

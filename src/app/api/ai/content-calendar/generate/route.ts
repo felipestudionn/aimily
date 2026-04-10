@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { checkTeamPermission } from '@/lib/team-permissions';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { generateJSON } from '@/lib/ai/llm-client';
 
@@ -12,12 +14,10 @@ export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
-  const usage = await checkAIUsage(user.id, user.email!);
-  if (!usage.allowed) return usageDeniedResponse(usage);
-
   try {
     const body = await req.json();
     const {
+      collectionPlanId,
       mode,
       drops,
       commercialActions,
@@ -28,6 +28,20 @@ export async function POST(req: NextRequest) {
       platforms,
       language,
     } = body;
+
+    if (!collectionPlanId) {
+      return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
+    }
+
+    const perm = await checkTeamPermission({
+      userId: user!.id,
+      collectionPlanId,
+      permission: 'generate_ai_marketing',
+    });
+    if (!perm.allowed) return perm.error!;
+
+    const usage = await checkAIUsage(user!.id, user!.email!);
+    if (!usage.allowed) return usageDeniedResponse(usage);
 
     const dropsBlock = (drops || []).map((d: { name: string; launch_date: string; story_alignment?: string }) =>
       `- ${d.name}: launches ${d.launch_date}, story "${d.story_alignment || 'N/A'}"`
@@ -72,6 +86,15 @@ ${userInput}`;
       temperature: 0.75,
       maxTokens: 8192,
       language,
+    });
+
+    logAudit({
+      userId: user!.id,
+      collectionPlanId,
+      action: AUDIT_ACTIONS.MARKETING_AI_CONTENT_CALENDAR,
+      entityType: 'collection_plan',
+      entityId: collectionPlanId,
+      metadata: { mode, model, fallback, drop_count: drops?.length ?? 0, language },
     });
 
     return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });
