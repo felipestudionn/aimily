@@ -86,23 +86,169 @@ async function createAndPoll(
 /**
  * Build the Nano Banana still-life prompt.
  *
- * IMPORTANT: "Still life" in fashion marketing is a specific photography
- * category — the product ALONE, as an object, arranged on a surface with
- * considered light, shadow, and optional props. There is NO human, NO
- * model, NO limbs. Think of how Hereu, Jacquemus, or Khaite shoot their
- * products for e-commerce + editorial: the shoe sits on marble with a
- * dramatic shadow; the bag rests on linen with a single ceramic bowl;
- * the dress is folded over a carved wooden chair.
+ * "Still life" in fashion marketing is the product alone, as a sculpted
+ * object on a surface, with considered light and curated props. Think
+ * Hereu / Jacquemus / Khaite / Bottega lookbook imagery — not a cutout
+ * of a catalog shoe with a pebble next to it.
  *
  * Categories Claude must NEVER confuse:
- *   - still_life  = product alone as object. No humans.
- *   - on_model    = product worn by a model (that's /api/ai/freepik/tryon).
- *   - editorial   = narrative scene, may include humans (that's editorial tab).
+ *   - still_life  = product alone as object. No humans. (this file)
+ *   - tryon       = product worn by a brand model (clean catalog).
+ *   - editorial   = on-model narrative scene (/api/ai/freepik/editorial).
  *
- * Prompt structure mirrors the rigor of the design-phase colorize-sketch
- * prompt so Nano Banana's reference compositing doesn't reinterpret the
- * product.
+ * PROMPT ARCHITECTURE:
+ * The prompt treats the chosen scene preset as a LOOK — a signed
+ * director-of-photography direction with surface, light, palette, props,
+ * and composition rules baked in. Each preset in STILL_LIFE_LOOKS below
+ * is a full paragraph the model can execute against, not just a scene
+ * label like "marble" or "beach". The user picks the look, the model
+ * composes inside its language.
  */
+
+interface StillLifeLook {
+  title: string;
+  surface: string;
+  light: string;
+  palette: string;
+  props: string;
+  composition: string;
+  reference: string; // editorial reference for style anchor
+}
+
+const STILL_LIFE_LOOKS: Record<string, StillLifeLook> = {
+  sun_on_stone: {
+    title: 'Sun on Stone',
+    surface:
+      'polished warm travertine slab or sun-bleached limestone surface, cream and sand tones with subtle natural veining',
+    light:
+      'hard high-noon directional sunlight from above and slightly to one side, casting a crisp angular shadow of the product onto the stone, with realistic edge gradient and subtle bounce',
+    palette:
+      'warm neutrals — travertine cream, sand, bone, soft tan, single warm ochre accent',
+    props:
+      'at most a single natural element placed at the edge of the frame — a dried olive branch, a piece of weathered driftwood, or a rounded beach pebble — with deep, intentional shadow of its own',
+    composition:
+      'product placed off-center following the rule of thirds, with the long shadow becoming a secondary graphic element in the composition; generous negative space to one side',
+    reference:
+      'Hereu + Bottega Veneta summer e-commerce imagery',
+  },
+  still_breakfast: {
+    title: 'Still Breakfast',
+    surface:
+      'soft woven linen tablecloth (ecru or natural undyed) or warm cream ceramic tabletop, slightly wrinkled and lived-in, photographed from directly above (top-down flat lay)',
+    light:
+      'soft diffused morning window light from one side, gentle falloff across the linen, natural shadow of the props grounding them on the cloth',
+    palette:
+      'warm breakfast tones — ecru, cream, terracotta, a single fruit color (blood orange, lemon yellow, or deep plum) as the only saturated accent',
+    props:
+      'a curated still-life arrangement around the product: a clear glass bowl with a piece of fruit (half an orange, whole lemons, a plum), a silver or brass fork resting on the cloth, a folded linen napkin, a small matte ceramic dish — all real, all in sharp focus, composed like a Dutch still life painting reinterpreted for fashion',
+    composition:
+      'top-down flat lay, product anchors the composition with the props radiating outward; the arrangement feels intentional, never cluttered; 70% of the frame is surface and negative space around the arrangement',
+    reference:
+      'Hereu iconic "fork + fruit + shoe" campaign imagery',
+  },
+  atelier_floor: {
+    title: 'Atelier Floor',
+    surface:
+      'aged wide-plank wooden studio floor with visible grain and soft patina, or raw polished concrete floor with subtle texture, photographed from a low ground-level angle',
+    light:
+      'single raking side light (large studio window or soft strobe) hitting the product at a sharp angle, creating a long soft shadow stretching across the floor, with deep shadow falloff into the background',
+    palette:
+      'muted earthy neutrals — weathered oak brown, warm grey concrete, soft black shadow, single muted accent color if the product asks for it',
+    props:
+      'nothing else in the frame, or at most one crumpled piece of butter-paper or a single strand of natural twine — the floor itself is the set',
+    composition:
+      'low ground-level camera angle that makes the product feel monumental, with the wood grain or concrete running horizontally behind it as a textural field; product slightly off-center; horizon line kept very low',
+    reference:
+      'Khaite + The Row quiet lookbook imagery',
+  },
+  gallery_plinth: {
+    title: 'Gallery Plinth',
+    surface:
+      'matte white or pale beige museum plinth (rectangular pedestal) with clean edges, placed inside a softly lit gallery space with an out-of-focus neutral wall behind it',
+    light:
+      'directional museum-style light from above, sculpting the product with a soft highlight and a deep elegant shadow on the plinth surface, with gentle ambient fill from the gallery space',
+    palette:
+      'museum neutrals — gallery white, warm putty, stone grey, a single quiet accent if the product demands it',
+    props:
+      'no props — the plinth is the set; the out-of-focus gallery wall in the distant background may show the faintest hint of architectural detail (edge of a doorway, corner, or soft shadow play)',
+    composition:
+      'product centered on the plinth, photographed at a slightly low angle to make it feel sculptural and museum-worthy; background softly out of focus; the plinth occupies the lower third of the frame',
+    reference:
+      'Bottega Veneta museum campaign aesthetic',
+  },
+  window_light: {
+    title: 'Window Light',
+    surface:
+      'natural washed linen fabric draped loosely over an aged wooden table, with deliberate folds and soft wrinkles, photographed at a 30-degree angle',
+    light:
+      'large soft window light from the left side, creating a long gentle shadow of the product across the linen, with visible atmospheric dust particles in the light beam, soft falloff into the right side of the frame',
+    palette:
+      'washed neutrals — bone linen, aged oak, soft grey shadow, ivory highlights, nothing saturated',
+    props:
+      'one quiet object at the far edge of the frame — a single dried flower stem, a small handmade matte ceramic vessel, or a folded cotton napkin — always out of focus or clearly secondary',
+    composition:
+      'product occupies the central 60% of the frame with the linen folds leading the eye toward it; the side light and long shadow become part of the composition; soft natural vignetting in the corners',
+    reference:
+      'Khaite + Jil Sander editorial imagery',
+  },
+  sand_and_shell: {
+    title: 'Sand & Shell',
+    surface:
+      'fine sun-warmed coastal sand (pale gold to white) or small smooth beach pebbles, with subtle natural texture and faint wave marks or footprints brushed away',
+    light:
+      'warm golden-hour direct sunlight at a low angle from the side, creating long soft shadows on the sand and warm color bounce on the product, with the slightest atmospheric haze',
+    palette:
+      'sun-bleached coastal neutrals — pale sand, shell white, warm ivory, driftwood grey, single cool blue accent from distant ocean',
+    props:
+      'natural beach elements placed thoughtfully around the product — a single open shell (scallop, cowrie, or cockle), a smooth polished pebble, a dried piece of seaweed, or a sprig of dried beach grass — all casting their own shadows on the sand',
+    composition:
+      'photographed from a low or three-quarter angle so the horizon of sand fills most of the frame; product anchors the composition with shells and pebbles radiating naturally around it; the whole frame feels sun-soaked and quiet',
+    reference:
+      'Jacquemus summer campaign imagery',
+  },
+  color_wall: {
+    title: 'Color Wall',
+    surface:
+      'a matte painted plaster wall in a single considered hue (warm ochre, deep terracotta, butter yellow, muted sage, or dusty rose — the palette hint should match the product colorway or serve the story), at a right angle to a smooth neutral concrete floor',
+    light:
+      'single hard directional studio light from the upper left, casting a crisp sculpted shadow of the product onto both the wall and the floor, creating strong graphic geometry with clean shadow edges',
+    palette:
+      'one dominant tonal color from the wall, echoed subtly in the floor, with the product as the clear focal contrast',
+    props:
+      'no props — the color wall and the sculpted shadow are the entire set',
+    composition:
+      'product placed close to the wall with roughly 60% of the frame being the painted wall and 40% the floor, so the shadow can stretch dramatically across both surfaces as a graphic element',
+    reference:
+      'Bottega Veneta + Loewe tonal campaign imagery',
+  },
+  ceramic_still: {
+    title: 'Ceramic Still',
+    surface:
+      'a soft natural linen tablecloth (stone or putty tone) over a carved wooden table, photographed at a three-quarter angle that shows both the table surface and a hint of the wall behind',
+    light:
+      'soft diffused studio or large-window light from above and slightly in front, with gentle shadow wrapping around the product and the ceramic props, creating a calm interior feel',
+    palette:
+      'quiet interior neutrals — putty linen, cream ceramic, warm wood, soft clay, single muted accent',
+    props:
+      'a small curated grouping of matte ceramic objects near but not crowding the product — a handmade vessel, a simple bowl, a short vase with a single dried stem — all feeling like they belong to the same artisan',
+    composition:
+      'product is placed so it has a clear relationship with the ceramic grouping (conversation, not crowd); about 60% product, 25% ceramics, 15% breathing space; soft natural drop shadows ground everything on the linen',
+    reference:
+      'Khaite interior lookbook + Jil Sander still life imagery',
+  },
+};
+
+function renderLook(look: StillLifeLook): string {
+  return [
+    `LOOK: "${look.title}" — in the style of ${look.reference}.`,
+    `SURFACE: ${look.surface}.`,
+    `LIGHTING: ${look.light}.`,
+    `PALETTE: ${look.palette}.`,
+    `PROPS: ${look.props}.`,
+    `COMPOSITION: ${look.composition}.`,
+  ].join(' ');
+}
+
 function buildPrompt(params: {
   productName: string;
   category: string | undefined;
@@ -119,66 +265,30 @@ function buildPrompt(params: {
         ? 'apparel garment'
         : 'fashion accessory';
 
-  // Surface / support per category — where the product physically rests.
-  const surfaceContext =
-    category === 'CALZADO'
-      ? 'resting on the surface at a three-quarter angle that reveals its silhouette, side profile, and top construction simultaneously'
-      : category === 'ROPA'
-        ? 'softly folded or draped over the surface so the garment shows its fabric weight, texture, and color clearly without being worn'
-        : 'placed on the surface in a deliberate, considered way that makes its form and craftsmanship legible';
-
-  // Scene presets tailored to OBJECT photography (no humans).
-  const sceneMap: Record<string, string> = {
-    'white-studio':
-      'clean pure white studio backdrop (#FFFFFF), soft even high-key lighting, subtle natural contact shadow directly beneath the product on the ground plane, minimalist e-commerce aesthetic',
-    marble:
-      'polished cream or grey marble surface with soft directional daylight casting an elegant long shadow across the veining, museum-like stillness',
-    gradient:
-      'smooth seamless studio gradient backdrop (warm cream to sand or cool grey to white), single directional light from upper left creating a sculpted drop shadow',
-    street:
-      'weathered concrete or stone urban surface — curb, paving, textured wall at ground level — bathed in late-afternoon natural light, long natural shadow, no people in frame',
-    cafe:
-      'aged wooden or marble café tabletop photographed from above or at 45 degrees, with subtle bistro props out of focus (a ceramic espresso cup, a folded linen napkin) at the edges of the frame — no hands, no people',
-    beach:
-      'sun-bleached sand or smooth coastal pebbles in direct warm golden-hour light, with a single natural prop like a dried palm leaf or a seashell placed thoughtfully nearby',
-    office:
-      'clean minimalist desk surface — oak or pale concrete — with soft diffused daylight from a nearby window, one or two quiet props (a leather notebook, a ceramic vessel) at the edge of the frame',
-    runway:
-      'polished dark concrete or black terrazzo floor with a single dramatic overhead spotlight, high-contrast editorial lighting, deep cinematic shadow',
-    nature:
-      'natural outdoor surface — weathered wood, mossy stone, or dried leaves — photographed in soft dappled daylight through foliage, earthy color palette',
-    urban:
-      'raw industrial surface — exposed concrete, rusted metal sheet, or brushed steel — in cinematic directional light, editorial mood, no people, no movement',
-  };
-  const sceneDesc =
-    sceneMap[scene || ''] ||
-    scene ||
-    'clean editorial surface with considered light and shadow, magazine-quality object photography';
+  const look = STILL_LIFE_LOOKS[scene || ''] || STILL_LIFE_LOOKS.sun_on_stone;
 
   const parts: string[] = [];
 
-  // 1. Frame — declare the category explicitly so Nano Banana doesn't pull
-  //    in its "fashion photo" default, which usually includes a person.
+  // 1. Frame — declare the category explicitly.
   parts.push(
-    `HIGH-END FASHION STILL LIFE PHOTOGRAPH (object photography, no humans). Magazine editorial quality in the style of Hereu, Jacquemus, Khaite, Bottega Veneta e-commerce and lookbook imagery. The reference image shows the exact ${productType} called "${productName}". This ${productType} — and ONLY this ${productType} — is the subject of the photograph.`
+    `HIGH-END FASHION STILL LIFE PHOTOGRAPH (object photography, zero humans). Magazine editorial quality — not e-commerce catalog. The reference image shows the exact ${productType} called "${productName}". This ${productType} — and ONLY this ${productType} — is the subject of the photograph. The output must feel like a page from a fashion lookbook, NOT a cutout of the product on a flat background.`
   );
 
-  // 2. Absolute no-human rule — Nano Banana's default for "fashion photo"
-  //    usually invents a model, so we ban humans with maximum explicitness.
+  // 2. Absolute no-human rule.
   parts.push(
-    `ABSOLUTE RULES — NO HUMANS IN THE FRAME:`
-  );
-  parts.push(
-    `• NO model, NO person, NO face, NO hands, NO feet, NO legs, NO arms, NO body parts of any kind. Zero humans.`
-  );
-  parts.push(
-    `• The product is NOT being worn. The product is photographed as a standalone object on a surface.`
-  );
-  parts.push(
-    `• If you are tempted to add a person wearing or holding the product, DO NOT. This is still-life object photography.`
+    `ABSOLUTE NO-HUMAN RULE: NO model, NO person, NO face, NO hands, NO feet, NO legs, NO arms, NO body parts of any kind. Zero humans. The product is NOT being worn. If you are tempted to add a person, do not — this is still-life object photography.`
   );
 
-  // 3. Preserve — the core pixel-perfect identity contract.
+  // 3. The LOOK — the heart of the prompt. A signed editorial direction.
+  parts.push(renderLook(look));
+
+  // 4. Explicit "this is not a catalog shot" direction to break Nano Banana
+  //    out of its e-commerce cutout default.
+  parts.push(
+    `EDITORIAL OVER CATALOG: the image must NOT look like a product cutout on a plain background. The surface, light, shadow, and props must read as a deliberately composed editorial still life — the kind a creative director would sign off on for a seasonal lookbook. The product must feel integrated into the surface, not floating on it.`
+  );
+
+  // 5. Product preservation contract — same rigor as colorize-sketch.
   parts.push(
     `CRITICAL PRODUCT PRESERVATION (non-negotiable):`
   );
@@ -192,49 +302,36 @@ function buildPrompt(params: {
     `• DO NOT add anything not already in the reference: no added logos, straps, laces, buckles, branding, trims, prints, or patterns.`
   );
   parts.push(
-    `• DO NOT alter scale, proportions, or color temperature of the product itself.`
+    `• DO NOT alter the intrinsic colors of the product. The scene's light may cast shadows on it, but its colorway must match the reference exactly.`
   );
   parts.push(
     `• If any brand-like markings are visible in the reference, render them as clean unbranded surfaces — do not invent or replace logos.`
   );
 
-  // 4. Composition — how the product sits on the surface.
-  parts.push(
-    `COMPOSITION: the ${productType} is ${surfaceContext}. The product is the hero and occupies roughly 60-70% of the frame. Negative space around the product is intentional and gives the image breathing room. Camera angle is either a clean 45-degree three-quarter view or a direct top-down flat-lay, whichever best reveals the product's silhouette.`
-  );
-
-  // 5. Surface + lighting.
-  parts.push(`SURFACE & SCENE: ${sceneDesc}.`);
-  parts.push(
-    `LIGHTING: single dominant directional light source (natural window light or soft studio strobe) creating a clear, elegant shadow that grounds the product on the surface. The shadow tells the viewer the product is a real physical object, not a cutout. Realistic shadow softness, realistic color bounce off the surface, no flat ambient lighting.`
-  );
-
-  // 6. Props — optional curated objects that belong in fashion still-life.
-  parts.push(
-    `PROPS (optional, at most 1-2 quiet objects at the edge of the frame if they serve the story): natural tactile objects that never compete with the product — a ceramic vessel, a single stem of dried grass, a folded linen square, a polished stone, a piece of seasonal fruit. Props must be OUT OF FOCUS or clearly secondary. NEVER add props that imply a person (no hands, no half-visible bodies, no clothing worn).`
-  );
-
-  // 7. Story — optional brand context.
+  // 6. Story overlay — optional, never overrides the LOOK.
   if (story?.name) {
-    parts.push(`EDITORIAL DIRECTION (from the collection story "${story.name}"):`);
+    parts.push(
+      `EDITORIAL DIRECTION OVERLAY (from the collection story "${story.name}", adds flavor on top of the LOOK above without replacing it):`
+    );
     if (story.narrative) parts.push(story.narrative.replace(/\.$/, '') + '.');
     if (story.mood?.length) parts.push(`Mood: ${story.mood.join(', ')}.`);
     if (story.tone) parts.push(`Tone: ${story.tone}.`);
     if (story.color_palette?.length)
       parts.push(
-        `Story color palette references (may inform surface and prop colors, NOT the product colorway): ${story.color_palette.join(', ')}.`
+        `Story color palette (may subtly tint the surface or props, NEVER the product colorway): ${story.color_palette.join(', ')}.`
       );
-    if (story.brand_personality) parts.push(`Brand aesthetic: ${story.brand_personality}.`);
+    if (story.brand_personality)
+      parts.push(`Brand aesthetic: ${story.brand_personality}.`);
   }
 
-  // 8. Craft.
+  // 7. Craft.
   parts.push(
-    `CRAFT: sharp focus on the product, realistic material textures (leather grain, fabric weave, metal, rubber as applicable), shallow depth of field on props only, natural color grading, no CGI plastic look, no artificial gloss, no HDR over-processing.`
+    `CRAFT: sharp focus on the product, realistic material textures (leather grain, fabric weave, metal, rubber as applicable), natural color grading, deliberate depth of field with props slightly soft only when appropriate, no CGI plastic look, no artificial gloss, no HDR over-processing, no cutout-on-background feel.`
   );
 
-  // 9. Final reject list — everything Claude must actively refuse to generate.
+  // 8. Reject list.
   parts.push(
-    `REJECT LIST (the final image MUST NOT contain): no humans or body parts of any kind, no faces, no hands, no feet, no legs, no models wearing or holding the product, no text, no captions, no watermarks, no logos, no added brand markings, no multiple copies of the product, no CGI/plastic textures, no surreal dreamlike backgrounds, no motion blur, no fashion-show runway crowd.`
+    `REJECT LIST (the final image MUST NOT contain): no humans or body parts of any kind, no faces, no hands, no feet, no legs, no models wearing or holding the product, no text, no captions, no watermarks, no brand logos, no multiple copies of the product, no CGI/plastic textures, no cutout-on-flat-background look, no e-commerce white studio default, no runway crowd.`
   );
 
   if (userPrompt) parts.push(`ADDITIONAL ART DIRECTION: ${userPrompt}.`);

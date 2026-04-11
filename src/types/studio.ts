@@ -169,17 +169,72 @@ export const FORMAT_PRESETS: FormatPreset[] = [
   { id: 'web-banner', name: 'Web Banner', width: 1440, height: 480, platform: 'website' },
 ];
 
+/**
+ * Still Life editorial presets. Each one is a signed director-of-photography
+ * look — surface + light + palette + props — not just a scene label. The
+ * prompt builder treats these as lookbook directions, the way Hereu /
+ * Jacquemus / Khaite / Bottega style their product imagery.
+ *
+ * Adding a new preset: also add a matching entry in STILL_LIFE_LOOKS inside
+ * src/app/api/ai/freepik/still-life/route.ts — that's where the prose lives.
+ */
 export const SCENE_OPTIONS = [
-  { id: 'white-studio', label: 'White Studio', labelEs: 'Estudio Blanco' },
-  { id: 'marble', label: 'Marble', labelEs: 'Mármol' },
-  { id: 'gradient', label: 'Gradient', labelEs: 'Degradado' },
-  { id: 'street', label: 'Street', labelEs: 'Calle' },
-  { id: 'cafe', label: 'Café', labelEs: 'Cafetería' },
-  { id: 'beach', label: 'Beach', labelEs: 'Playa' },
-  { id: 'office', label: 'Office', labelEs: 'Oficina' },
-  { id: 'runway', label: 'Runway', labelEs: 'Pasarela' },
-  { id: 'nature', label: 'Nature', labelEs: 'Naturaleza' },
-  { id: 'urban', label: 'Urban', labelEs: 'Urbano' },
+  {
+    id: 'sun_on_stone',
+    label: 'Sun on Stone',
+    labelEs: 'Sol sobre Piedra',
+    hint: 'Hereu / Bottega · warm travertine, high-contrast noon shadow',
+    hintEs: 'Travertino cálido, sombra dura de mediodía',
+  },
+  {
+    id: 'still_breakfast',
+    label: 'Still Breakfast',
+    labelEs: 'Bodegón de Desayuno',
+    hint: 'Top-down with props (fruit, bowl, linen) · Hereu classic',
+    hintEs: 'Cenital con props (fruta, cuenco, lino)',
+  },
+  {
+    id: 'atelier_floor',
+    label: 'Atelier Floor',
+    labelEs: 'Suelo de Atelier',
+    hint: 'Aged wood or concrete at ground level · Khaite / The Row quiet',
+    hintEs: 'Madera envejecida u hormigón a ras de suelo',
+  },
+  {
+    id: 'gallery_plinth',
+    label: 'Gallery Plinth',
+    labelEs: 'Pedestal de Galería',
+    hint: 'Museum plinth, sculpted window light · high-end editorial',
+    hintEs: 'Pedestal de museo, luz de ventana esculpida',
+  },
+  {
+    id: 'window_light',
+    label: 'Window Light',
+    labelEs: 'Luz de Ventana',
+    hint: 'Linen tabletop, soft side light, dust in the air · Khaite',
+    hintEs: 'Mantel de lino, luz lateral suave, polvo en el aire',
+  },
+  {
+    id: 'sand_and_shell',
+    label: 'Sand & Shell',
+    labelEs: 'Arena y Concha',
+    hint: 'Coastal · sand, dried grass, pebble · Jacquemus summer',
+    hintEs: 'Costero · arena, hierba seca, guijarro',
+  },
+  {
+    id: 'color_wall',
+    label: 'Color Wall',
+    labelEs: 'Pared de Color',
+    hint: 'Painted wall with sculpted shadow · Bottega tonal',
+    hintEs: 'Pared pintada con sombra esculpida · tonal',
+  },
+  {
+    id: 'ceramic_still',
+    label: 'Ceramic Still',
+    labelEs: 'Cerámica',
+    hint: 'Matte ceramic vessel, neutral linen · Khaite interior',
+    hintEs: 'Cerámica mate, lino neutro · interior Khaite',
+  },
 ];
 
 export const MOTION_TYPES = [

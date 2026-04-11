@@ -62,7 +62,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<GeneratingState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [selectedScene, setSelectedScene] = useState('white-studio');
+  const [selectedScene, setSelectedScene] = useState(SCENE_OPTIONS[0]?.id ?? 'sun_on_stone');
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [expandedSkuId, setExpandedSkuId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -408,26 +408,49 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
           </div>
         )}
 
+        {/* Look picker — signed still life editorial directions (Hereu / Khaite / Jacquemus / Bottega).
+            Each preset is a full DoP look, not just a background label. */}
+        <div className="mb-8">
+          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
+            {t.marketingPage.scene}
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {SCENE_OPTIONS.map((s) => {
+              const active = selectedScene === s.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setSelectedScene(s.id)}
+                  className={`text-left px-4 py-3 border transition-colors ${
+                    active
+                      ? 'bg-carbon text-crema border-carbon'
+                      : 'bg-white text-carbon border-carbon/[0.06] hover:border-carbon/20'
+                  }`}
+                >
+                  <span
+                    className={`block text-[11px] font-medium tracking-[0.08em] uppercase ${
+                      active ? 'text-crema' : 'text-carbon'
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                  {s.hint && (
+                    <span
+                      className={`block text-[10px] font-light leading-snug mt-1 ${
+                        active ? 'text-crema/60' : 'text-carbon/40'
+                      }`}
+                    >
+                      {s.hint}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Controls bar */}
         <div className="flex items-center gap-4 mb-8 flex-wrap">
-          {/* Scene selector */}
-          <div className="flex items-center gap-2">
-            <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
-              {t.marketingPage.scene}
-            </label>
-            <select
-              value={selectedScene}
-              onChange={(e) => setSelectedScene(e.target.value)}
-              className="text-xs font-light text-carbon bg-white border border-carbon/[0.06] px-3 py-1.5 focus:outline-none focus:border-carbon/20"
-            >
-              {SCENE_OPTIONS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Model selector for try-on */}
           {models.length > 0 && (
             <div className="flex items-center gap-2">
