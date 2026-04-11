@@ -121,6 +121,16 @@ export const WIZARD_PHASES: WizardPhase[] = [
   },
 
   // ── Block 4: Marketing & Digital (2 screens) ──
+  // Both screens unlock as soon as the range plan is done, in parallel with
+  // Design. This is marketing STRATEGY territory: stories, pillars, voice,
+  // product copy, social/email templates, SEO, GTM, content calendar, paid
+  // plan and launch checklist can all start before the first render exists.
+  //
+  // The 2 cards that DO need a physical product image (Product Visuals and
+  // Campaign & Video) guard themselves at the card level — they read
+  // sku.render_urls['3d'] and show a "complete design phase first" hint
+  // when no SKU has a 3D render yet. See ProductVisualsCard.handleGenerate
+  // and CampaignVideoCard.handleEditorialGenerate/handleVideoGenerate.
   {
     id: 'marketing-creation',
     name: 'Creation',
@@ -128,7 +138,7 @@ export const WIZARD_PHASES: WizardPhase[] = [
     path: 'marketing/creation',
     block: 'go_to_market',
     milestoneIds: ['gm-3', 'gm-4', 'gm-5'],
-    unlockWhen: ['dd-14'], // Requires: Sampling done (for renders/visuals)
+    unlockWhen: ['rp-6'], // Requires: Range plan done (SKUs + brand DNA)
   },
   {
     id: 'marketing-distribution',
@@ -137,7 +147,7 @@ export const WIZARD_PHASES: WizardPhase[] = [
     path: 'marketing/distribution',
     block: 'go_to_market',
     milestoneIds: ['gm-1', 'gm-2', 'gm-6', 'gm-7', 'gm-8', 'gm-9', 'gm-10', 'gm-11', 'gm-12', 'gm-13', 'gm-14', 'gm-15'],
-    unlockWhen: ['gm-5'], // Requires: Creation done
+    unlockWhen: ['rp-6'], // Requires: Range plan done — parallel with Creation
   },
 ];
 

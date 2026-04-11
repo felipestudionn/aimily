@@ -60,6 +60,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
   const [expanded, setExpanded] = useState(false);
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<GeneratingState | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedScene, setSelectedScene] = useState('white-studio');
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [expandedSkuId, setExpandedSkuId] = useState<string | null>(null);
@@ -154,6 +155,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
   const handleGenerate = async (sku: SKU, action: VisualAction, story?: Story) => {
     if (!user) return;
     setGenerating({ skuId: sku.id, action });
+    setErrorMessage(null);
 
     try {
       const storyCtx = story
@@ -297,6 +299,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
       refetchGens();
     } catch (err) {
       console.error('Generation error:', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Generation failed');
     } finally {
       setGenerating(null);
     }
@@ -362,6 +365,20 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Error banner (e.g. "complete design phase first") */}
+        {errorMessage && (
+          <div className="mb-6 bg-amber-50 border border-amber-200/60 text-amber-900 px-4 py-3 text-xs font-light flex items-center justify-between">
+            <span>{errorMessage}</span>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="text-amber-900/60 hover:text-amber-900 text-[10px] uppercase tracking-[0.1em]"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Controls bar */}
         <div className="flex items-center gap-4 mb-8 flex-wrap">
           {/* Scene selector */}
