@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import PptxGenJS from 'pptxgenjs';
+import { getMarketingPresentationData, getMarketingSlideVisibility } from '@/lib/presentation-data';
+import { addMarketingStorySlides } from '@/lib/presentation-pptx-slides';
+import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PPTX Export — Generates a PowerPoint presentation matching the slide deck
@@ -53,12 +56,13 @@ export async function GET(req: NextRequest) {
   }
 
   // Fetch data (same as presentation page)
-  const [planRes, timelineRes, skusRes, creativeRes, merchRes] = await Promise.all([
+  const [planRes, timelineRes, skusRes, creativeRes, merchRes, marketing] = await Promise.all([
     supabaseAdmin.from('collection_plans').select('*').eq('id', collectionId).single(),
     supabaseAdmin.from('collection_timelines').select('*').eq('collection_plan_id', collectionId).single(),
     supabaseAdmin.from('collection_skus').select('*').eq('collection_plan_id', collectionId),
     supabaseAdmin.from('collection_workspace_data').select('data').eq('collection_plan_id', collectionId).eq('workspace', 'creative').single(),
     supabaseAdmin.from('collection_workspace_data').select('data').eq('collection_plan_id', collectionId).eq('workspace', 'merchandising').single(),
+    getMarketingPresentationData(collectionId, userId),
   ]);
 
   if (planRes.error || !planRes.data) {
@@ -301,6 +305,18 @@ export async function GET(req: NextRequest) {
     s7.addText(m.value, { x, y: y + 0.3, w: 2.5, h: 0.7, fontSize: 28, fontFace: 'Helvetica Neue', color: CARBON, bold: false, isTextBox: true });
   });
 
+  // ═══ MARKETING STORY MODE — 10 conditional slides ═══
+  // Inserted between Financial Overview and the Close slide. Each block
+  // omits cleanly when its source data is empty (same contract as the web).
+  let marketingSlidesAdded = 0;
+  let marketingSections: string[] = [];
+  if (marketing) {
+    const visibility = getMarketingSlideVisibility(marketing);
+    const result = addMarketingStorySlides(pptx, marketing, visibility);
+    marketingSlidesAdded = result.slidesAdded;
+    marketingSections = result.sectionsRendered;
+  }
+
   // ═══ SLIDE 8: CLOSE ═══
   const s8 = darkSlide();
   s8.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.01, fill: { color: GOLD } });
@@ -321,6 +337,22 @@ export async function GET(req: NextRequest) {
   const buffer = Buffer.from(base64, 'base64');
 
   const filename = `${(plan.name || 'Collection').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '_')}_Presentation.pptx`;
+
+  // Audit — only fire when the export actually carried marketing content.
+  // Skip the fire-and-forget when the collection has no marketing data.
+  if (marketingSlidesAdded > 0) {
+    void logAudit({
+      userId,
+      collectionPlanId: collectionId,
+      action: AUDIT_ACTIONS.MARKETING_PRESENTATION_EXPORT,
+      entityType: 'collection_plan',
+      entityId: collectionId,
+      metadata: {
+        slides_added: marketingSlidesAdded,
+        sections: marketingSections,
+      },
+    });
+  }
 
   return new NextResponse(buffer, {
     headers: {
