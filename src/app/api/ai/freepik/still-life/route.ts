@@ -8,19 +8,22 @@ import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 
 /* ═══════════════════════════════════════════════════════════════
-   Still Life / Editorial — Freepik Nano Banana
-   (Gemini 2.5 Flash Image Preview)
+   Still Life — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
 
-   This is the editorial "Vogue-shoot with the product" flow. The
-   model takes the product's existing photoreal 3D render (from the
-   design phase, gpt-image-1.5) as a reference image and composites
-   it into a new editorial scene while preserving product identity.
+   Fashion still-life object photography. The product ALONE, as a
+   standalone object on a surface, with considered light and shadow.
+   ZERO humans in frame. Think Hereu / Jacquemus / Khaite e-commerce
+   and editorial product shots — mule on marble, bag next to a
+   ceramic bowl, shoe with its own long shadow.
 
-   Why Nano Banana:
-     Google's Gemini 2.5 Flash Image is designed specifically for
-     reference-image compositing with identity preservation. It's
-     the native fit for "put MY product in a new scene without
-     reinterpreting it".
+   Categories Claude must NEVER confuse:
+     - still_life  = product alone as object. This file. No humans.
+     - on_model    = product worn by a brand model (/api/ai/freepik/tryon).
+     - editorial   = on-model narrative scene (/api/ai/freepik/editorial).
+
+   Nano Banana's reference-image compositing preserves the 3D render
+   from the design phase (gpt-image-1.5) so the product identity
+   survives through into the still-life scene.
 
    Async pattern:
      Freepik returns a task_id. We poll /v1/ai/gemini-2-5-flash-image-preview/{id}
@@ -81,22 +84,24 @@ async function createAndPoll(
 }
 
 /**
- * Build the Nano Banana still-life prompt. The design phase's colorize-sketch
- * prompt (in /api/ai/colorize-sketch/route.ts) sets the tone for the aimily
- * voice: pixel-perfect preservation, explicit negative rules, no hidden
- * freedom for the model to reinterpret the product. We mirror that here
- * because Nano Banana's reference-image compositing needs the same rigor —
- * any slack in the instructions produces the classic "I see my reference
- * pasted into the scene" failure mode.
+ * Build the Nano Banana still-life prompt.
  *
- * Prompt structure:
- *   1. Identify — tell the model what it's looking at.
- *   2. Preserve — hard constraints on the product (silhouette, colorway,
- *      materials, construction, logos, proportions).
- *   3. Compose — where/how the product is placed, who's wearing it.
- *   4. Scene — lighting, setting, mood.
- *   5. Story — brand context injected as editorial direction (optional).
- *   6. Reject list — things the model must never add.
+ * IMPORTANT: "Still life" in fashion marketing is a specific photography
+ * category — the product ALONE, as an object, arranged on a surface with
+ * considered light, shadow, and optional props. There is NO human, NO
+ * model, NO limbs. Think of how Hereu, Jacquemus, or Khaite shoot their
+ * products for e-commerce + editorial: the shoe sits on marble with a
+ * dramatic shadow; the bag rests on linen with a single ceramic bowl;
+ * the dress is folded over a carved wooden chair.
+ *
+ * Categories Claude must NEVER confuse:
+ *   - still_life  = product alone as object. No humans.
+ *   - on_model    = product worn by a model (that's /api/ai/freepik/tryon).
+ *   - editorial   = narrative scene, may include humans (that's editorial tab).
+ *
+ * Prompt structure mirrors the rigor of the design-phase colorize-sketch
+ * prompt so Nano Banana's reference compositing doesn't reinterpret the
+ * product.
  */
 function buildPrompt(params: {
   productName: string;
@@ -112,68 +117,104 @@ function buildPrompt(params: {
       ? 'footwear (shoe)'
       : category === 'ROPA'
         ? 'apparel garment'
-        : 'fashion product';
+        : 'fashion accessory';
 
-  const wearContext =
+  // Surface / support per category — where the product physically rests.
+  const surfaceContext =
     category === 'CALZADO'
-      ? 'worn on the feet of a model whose legs and feet are visible in the frame'
+      ? 'resting on the surface at a three-quarter angle that reveals its silhouette, side profile, and top construction simultaneously'
       : category === 'ROPA'
-        ? 'worn by a model, shown in a three-quarter or full-length editorial composition'
-        : 'held or worn by a model in a way that keeps the product as the hero of the frame';
+        ? 'softly folded or draped over the surface so the garment shows its fabric weight, texture, and color clearly without being worn'
+        : 'placed on the surface in a deliberate, considered way that makes its form and craftsmanship legible';
 
+  // Scene presets tailored to OBJECT photography (no humans).
   const sceneMap: Record<string, string> = {
-    street: 'urban street-style setting with real city architecture, golden hour natural light, soft directional sunlight, subtle depth of field',
-    cafe: 'European café terrace, warm ambient morning light, marble or worn-wood table surface, out-of-focus background patrons',
-    beach: 'sandy coastal beach at golden hour, soft ocean waves in the distance, warm low-angle sunlight, natural color grading',
-    office: 'modern minimalist office interior, clean architectural lines, bright diffused daylight from large windows, neutral palette',
-    runway: 'fashion show runway, dramatic editorial spotlight from above, cinematic backstage atmosphere, high-contrast lighting',
-    nature: 'lush outdoor natural setting, soft dappled daylight through foliage, organic textures, earthy palette',
-    urban: 'raw industrial urban environment with concrete and metal textures, cinematic directional light, editorial mood',
-    'white-studio': 'clean pure white studio backdrop (#FFFFFF), soft even high-key lighting, minimal contact shadow beneath the product, magazine cover aesthetic',
-    marble: 'elegant marble gallery interior, sculpted natural light from high windows, cool neutral tones, architectural depth',
-    gradient: 'smooth studio gradient backdrop, contemporary editorial lighting, soft color wash',
+    'white-studio':
+      'clean pure white studio backdrop (#FFFFFF), soft even high-key lighting, subtle natural contact shadow directly beneath the product on the ground plane, minimalist e-commerce aesthetic',
+    marble:
+      'polished cream or grey marble surface with soft directional daylight casting an elegant long shadow across the veining, museum-like stillness',
+    gradient:
+      'smooth seamless studio gradient backdrop (warm cream to sand or cool grey to white), single directional light from upper left creating a sculpted drop shadow',
+    street:
+      'weathered concrete or stone urban surface — curb, paving, textured wall at ground level — bathed in late-afternoon natural light, long natural shadow, no people in frame',
+    cafe:
+      'aged wooden or marble café tabletop photographed from above or at 45 degrees, with subtle bistro props out of focus (a ceramic espresso cup, a folded linen napkin) at the edges of the frame — no hands, no people',
+    beach:
+      'sun-bleached sand or smooth coastal pebbles in direct warm golden-hour light, with a single natural prop like a dried palm leaf or a seashell placed thoughtfully nearby',
+    office:
+      'clean minimalist desk surface — oak or pale concrete — with soft diffused daylight from a nearby window, one or two quiet props (a leather notebook, a ceramic vessel) at the edge of the frame',
+    runway:
+      'polished dark concrete or black terrazzo floor with a single dramatic overhead spotlight, high-contrast editorial lighting, deep cinematic shadow',
+    nature:
+      'natural outdoor surface — weathered wood, mossy stone, or dried leaves — photographed in soft dappled daylight through foliage, earthy color palette',
+    urban:
+      'raw industrial surface — exposed concrete, rusted metal sheet, or brushed steel — in cinematic directional light, editorial mood, no people, no movement',
   };
-  const sceneDesc = sceneMap[scene || ''] || scene || 'editorial magazine-quality setting';
+  const sceneDesc =
+    sceneMap[scene || ''] ||
+    scene ||
+    'clean editorial surface with considered light and shadow, magazine-quality object photography';
 
   const parts: string[] = [];
 
-  // 1. Identify
+  // 1. Frame — declare the category explicitly so Nano Banana doesn't pull
+  //    in its "fashion photo" default, which usually includes a person.
   parts.push(
-    `High-end editorial fashion photograph, Vogue magazine cover quality. The image in the reference is the exact ${productType} called "${productName}" that must appear in the final photograph.`
+    `HIGH-END FASHION STILL LIFE PHOTOGRAPH (object photography, no humans). Magazine editorial quality in the style of Hereu, Jacquemus, Khaite, Bottega Veneta e-commerce and lookbook imagery. The reference image shows the exact ${productType} called "${productName}". This ${productType} — and ONLY this ${productType} — is the subject of the photograph.`
   );
 
-  // 2. Preserve — the core contract. Mirrors the colorize-sketch design prompt.
+  // 2. Absolute no-human rule — Nano Banana's default for "fashion photo"
+  //    usually invents a model, so we ban humans with maximum explicitness.
   parts.push(
-    `CRITICAL PRESERVATION RULES (read carefully, these are non-negotiable):`
+    `ABSOLUTE RULES — NO HUMANS IN THE FRAME:`
   );
   parts.push(
-    `• The ${productType} in the final photograph MUST be identical to the one in the reference image: same silhouette, same proportions, same colorway, same materials, same stitching, same construction details, same closure system, same hardware. Pixel-perfect identity preservation.`
+    `• NO model, NO person, NO face, NO hands, NO feet, NO legs, NO arms, NO body parts of any kind. Zero humans.`
   );
   parts.push(
-    `• DO NOT redesign, reinterpret, simplify, or stylize the product. DO NOT substitute it for a similar-looking product.`
+    `• The product is NOT being worn. The product is photographed as a standalone object on a surface.`
   );
   parts.push(
-    `• DO NOT add any element that is not already in the reference: no added logos, no added straps, no added laces, no added buckles, no added branding, no added trims, no added prints or patterns.`
+    `• If you are tempted to add a person wearing or holding the product, DO NOT. This is still-life object photography.`
+  );
+
+  // 3. Preserve — the core pixel-perfect identity contract.
+  parts.push(
+    `CRITICAL PRODUCT PRESERVATION (non-negotiable):`
   );
   parts.push(
-    `• DO NOT alter the product's proportions, scale, or orientation beyond what is necessary to place it naturally into the scene.`
+    `• The ${productType} in the final photograph MUST be identical to the reference: same silhouette, same proportions, same colorway, same materials, same stitching, same construction, same closures, same hardware. Pixel-perfect identity preservation.`
+  );
+  parts.push(
+    `• DO NOT redesign, reinterpret, simplify, stylize, or substitute the product for a similar one.`
+  );
+  parts.push(
+    `• DO NOT add anything not already in the reference: no added logos, straps, laces, buckles, branding, trims, prints, or patterns.`
+  );
+  parts.push(
+    `• DO NOT alter scale, proportions, or color temperature of the product itself.`
   );
   parts.push(
     `• If any brand-like markings are visible in the reference, render them as clean unbranded surfaces — do not invent or replace logos.`
   );
 
-  // 3. Compose
+  // 4. Composition — how the product sits on the surface.
   parts.push(
-    `COMPOSITION: the ${productType} is ${wearContext}. Frame the shot so the product is the visual hero — sharp focus, clear silhouette, prominent in the composition. The model supports the product, not the other way around.`
+    `COMPOSITION: the ${productType} is ${surfaceContext}. The product is the hero and occupies roughly 60-70% of the frame. Negative space around the product is intentional and gives the image breathing room. Camera angle is either a clean 45-degree three-quarter view or a direct top-down flat-lay, whichever best reveals the product's silhouette.`
   );
 
-  // 4. Scene
-  parts.push(`SCENE: ${sceneDesc}.`);
+  // 5. Surface + lighting.
+  parts.push(`SURFACE & SCENE: ${sceneDesc}.`);
   parts.push(
-    `LIGHTING: professional editorial lighting that flatters the product's materials and colorway. Realistic shadows, realistic depth of field, realistic color grading consistent with the scene.`
+    `LIGHTING: single dominant directional light source (natural window light or soft studio strobe) creating a clear, elegant shadow that grounds the product on the surface. The shadow tells the viewer the product is a real physical object, not a cutout. Realistic shadow softness, realistic color bounce off the surface, no flat ambient lighting.`
   );
 
-  // 5. Story — optional brand context
+  // 6. Props — optional curated objects that belong in fashion still-life.
+  parts.push(
+    `PROPS (optional, at most 1-2 quiet objects at the edge of the frame if they serve the story): natural tactile objects that never compete with the product — a ceramic vessel, a single stem of dried grass, a folded linen square, a polished stone, a piece of seasonal fruit. Props must be OUT OF FOCUS or clearly secondary. NEVER add props that imply a person (no hands, no half-visible bodies, no clothing worn).`
+  );
+
+  // 7. Story — optional brand context.
   if (story?.name) {
     parts.push(`EDITORIAL DIRECTION (from the collection story "${story.name}"):`);
     if (story.narrative) parts.push(story.narrative.replace(/\.$/, '') + '.');
@@ -181,17 +222,19 @@ function buildPrompt(params: {
     if (story.tone) parts.push(`Tone: ${story.tone}.`);
     if (story.color_palette?.length)
       parts.push(
-        `Story color palette references (may inform lighting/background, NOT the product colorway): ${story.color_palette.join(', ')}.`
+        `Story color palette references (may inform surface and prop colors, NOT the product colorway): ${story.color_palette.join(', ')}.`
       );
     if (story.brand_personality) parts.push(`Brand aesthetic: ${story.brand_personality}.`);
   }
 
-  // 6. Craft + reject list
+  // 8. Craft.
   parts.push(
-    `CRAFT: confident natural model pose, cinematic composition, sharp focus on the product, realistic skin tones, realistic fabric textures, natural depth of field, professional color grading.`
+    `CRAFT: sharp focus on the product, realistic material textures (leather grain, fabric weave, metal, rubber as applicable), shallow depth of field on props only, natural color grading, no CGI plastic look, no artificial gloss, no HDR over-processing.`
   );
+
+  // 9. Final reject list — everything Claude must actively refuse to generate.
   parts.push(
-    `REJECT LIST (things the final image must NOT contain): no text, no captions, no watermarks, no logos, no added brand markings, no multiple copies of the product, no distorted anatomy, no plastic or CGI-looking textures, no surreal artifacts, no dream-like backgrounds.`
+    `REJECT LIST (the final image MUST NOT contain): no humans or body parts of any kind, no faces, no hands, no feet, no legs, no models wearing or holding the product, no text, no captions, no watermarks, no logos, no added brand markings, no multiple copies of the product, no CGI/plastic textures, no surreal dreamlike backgrounds, no motion blur, no fashion-show runway crowd.`
   );
 
   if (userPrompt) parts.push(`ADDITIONAL ART DIRECTION: ${userPrompt}.`);
