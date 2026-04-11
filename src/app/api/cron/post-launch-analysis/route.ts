@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { renderPrompt, buildPromptContext } from '@/lib/prompts/prompt-context';
 import { generateJSON } from '@/lib/ai/llm-client';
+import { sendRetrospectiveEmail } from '@/lib/retrospective-email';
 
 /**
  * C6 — Post-launch analysis cron.
@@ -24,7 +25,12 @@ function verifyCronAuth(req: NextRequest): boolean {
   return !!process.env.CRON_SECRET && !!authHeader && authHeader === expected;
 }
 
-async function runAnalysisFor(collectionPlanId: string): Promise<'ok' | 'failed'> {
+interface AnalysisOutcome {
+  status: 'ok' | 'failed';
+  emailSent: boolean;
+}
+
+async function runAnalysisFor(collectionPlanId: string): Promise<AnalysisOutcome> {
   try {
     const ctx = await buildPromptContext(collectionPlanId);
 
@@ -49,9 +55,10 @@ async function runAnalysisFor(collectionPlanId: string): Promise<'ok' | 'failed'
       maxTokens: 4096,
     });
 
+    // Fetch current plan state (user_id + name + season for the email + existing setup_data)
     const { data: plan } = await supabaseAdmin
       .from('collection_plans')
-      .select('setup_data')
+      .select('user_id, name, season, launch_date, setup_data')
       .eq('id', collectionPlanId)
       .single();
 
@@ -69,10 +76,23 @@ async function runAnalysisFor(collectionPlanId: string): Promise<'ok' | 'failed'
       .update({ setup_data: nextSetup })
       .eq('id', collectionPlanId);
 
-    return 'ok';
+    // Auto-email the retrospective deck. Soft-fails — delivery issues
+    // never roll back the analysis (it's still visible in the LaunchCard).
+    let emailSent = false;
+    if (plan?.user_id) {
+      emailSent = await sendRetrospectiveEmail({
+        id: collectionPlanId,
+        user_id: plan.user_id as string,
+        name: (plan.name as string | null) ?? null,
+        season: (plan.season as string | null) ?? null,
+        launch_date: (plan.launch_date as string | null) ?? null,
+      });
+    }
+
+    return { status: 'ok', emailSent };
   } catch (err) {
     console.error('[post-launch cron] analysis failed for', collectionPlanId, err);
-    return 'failed';
+    return { status: 'failed', emailSent: false };
   }
 }
 
@@ -106,17 +126,20 @@ export async function GET(req: NextRequest) {
 
     let ok = 0;
     let failed = 0;
+    let emailed = 0;
     // Sequential to keep the Gemini/Claude rate limits happy.
     for (const plan of candidates) {
       const res = await runAnalysisFor(plan.id);
-      if (res === 'ok') ok += 1;
+      if (res.status === 'ok') ok += 1;
       else failed += 1;
+      if (res.emailSent) emailed += 1;
     }
 
     return NextResponse.json({
       processed: candidates.length,
       ok,
       failed,
+      emailed,
       cutoffDate: cutoffIso,
     });
   } catch (error) {
