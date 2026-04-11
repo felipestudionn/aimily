@@ -80,7 +80,9 @@ interface GenerateRequest {
   dropName?: string;
   // B5 — video shotlist
   hookType?: 'curiosity' | 'story' | 'value' | 'contrarian';
-  durationSeconds?: 15 | 30;
+  // Kling 2.1 Pro supports 5s/10s; older Reels-generic 15/30 kept for
+  // backwards compat if a future provider wants longer clips.
+  durationSeconds?: 5 | 10 | 15 | 30;
   // C5 — SEO buyer stage
   buyerStage?: 'awareness' | 'consideration' | 'decision' | 'implementation';
   // B6 — lookbook compose
@@ -257,7 +259,9 @@ function buildPromptForMode(req: GenerateRequest): { system: string; user: strin
         sku_pvp: sku?.pvp || 0,
         hook_type: req.hookType || 'value',
         platform: req.platform || 'reels',
-        duration_seconds: req.durationSeconds || 15,
+        // Default to 10 — matches Kling 2.1 Pro max and is the most common
+        // ask from CampaignVideoCard. Caller normally passes explicitly.
+        duration_seconds: req.durationSeconds || 10,
       };
       return {
         system: MARKETING_PROMPTS.video_ad_structured.system,

@@ -25,6 +25,7 @@ import { useStories, type Story } from '@/hooks/useStories';
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import { useAiGenerations } from '@/hooks/useAiGenerations';
 import { useLookbookPages } from '@/hooks/useLookbookPages';
+import { backendError } from '@/hooks/hook-errors';
 import type { AiGeneration, LookbookLayout, LookbookPage } from '@/types/studio';
 import { MOTION_TYPES } from '@/types/studio';
 import { useTranslation } from '@/i18n';
@@ -77,6 +78,11 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   const [activeTab, setActiveTab] = useState<CampaignTab>('lookbook');
   const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<GeneratingState | null>(null);
+  // 2026-04-11 enterprise error contract: every write op (fetch + hook)
+  // throws a structured error via backendError(). We surface the real
+  // message in this banner instead of the old "console.error and pray"
+  // pattern that ProductVisualsCard/StoriesCard already moved away from.
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedMotion, setSelectedMotion] = useState('subtle');
   const [editorialPrompt, setEditorialPrompt] = useState('');
   const [videoPrompt, setVideoPrompt] = useState('');
@@ -223,6 +229,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   const handleEditorialGenerate = async (sourceImageUrl: string, skuName?: string) => {
     if (!user) return;
     setGenerating({ type: 'editorial' });
+    setErrorMessage(null);
 
     try {
       const story = activeStory;
@@ -247,7 +254,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         }),
       });
 
-      if (!res.ok) throw new Error('Editorial generation failed');
+      if (!res.ok) throw await backendError(res);
       const data = await res.json();
 
       await addGeneration({
@@ -270,7 +277,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       refetchGens();
       setEditorialPrompt('');
     } catch (err) {
-      console.error('Editorial generation error:', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Editorial generation failed');
     } finally {
       setGenerating(null);
     }
@@ -282,6 +289,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   const handleGenerateShotlist = async (skuName?: string, skuCategory?: string, skuPvp?: number) => {
     if (!user) return;
     setShotlistLoading(true);
+    setErrorMessage(null);
     try {
       const story = activeStory;
       const res = await fetch('/api/ai/content-strategy/generate', {
@@ -309,15 +317,17 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             : undefined,
           hookType: shotlistHookType,
           platform: 'reels',
-          durationSeconds: Number(videoDuration) as 15 | 30,
+          // Kling 2.1 Pro supports 5s and 10s only — the shotlist must
+          // match the actual video length, not a reels-generic 15/30.
+          durationSeconds: Number(videoDuration) as 5 | 10,
           language,
         }),
       });
-      if (!res.ok) throw new Error('Shotlist generation failed');
+      if (!res.ok) throw await backendError(res);
       const data = await res.json();
       setVideoShotlist(data.result || null);
     } catch (err) {
-      console.error('Shotlist generation error:', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Shotlist generation failed');
     } finally {
       setShotlistLoading(false);
     }
@@ -326,6 +336,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   const handleVideoGenerate = async (sourceImageUrl: string, skuName?: string) => {
     if (!user) return;
     setGenerating({ type: 'video' });
+    setErrorMessage(null);
 
     try {
       const story = activeStory;
@@ -345,7 +356,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         }),
       });
 
-      if (!res.ok) throw new Error('Video generation failed');
+      if (!res.ok) throw await backendError(res);
       const data = await res.json();
 
       await addGeneration({
@@ -372,19 +383,68 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       refetchGens();
       setVideoPrompt('');
     } catch (err) {
-      console.error('Video generation error:', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Video generation failed');
     } finally {
       setGenerating(null);
     }
   };
 
   const handleAddLookbookPage = async (layout: LookbookLayout) => {
-    await addPage({
-      layout_type: layout,
-      story_id: activeStory?.id || null,
-      lookbook_name: activeStory?.name || 'Main Lookbook',
-      content: [],
-    });
+    setErrorMessage(null);
+    try {
+      await addPage({
+        layout_type: layout,
+        story_id: activeStory?.id || null,
+        lookbook_name: activeStory?.name || 'Main Lookbook',
+        content: [],
+      });
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to add page');
+    }
+  };
+
+  // Safe wrappers for the other LookbookTab write ops — keep the
+  // backend error contract tight instead of letting hooks throw
+  // unhandled rejections from event handlers.
+  const handleUpdateLookbookPage: (
+    id: string,
+    updates: Partial<LookbookPage>
+  ) => Promise<LookbookPage | null> = async (id, updates) => {
+    setErrorMessage(null);
+    try {
+      return await updatePage(id, updates);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to update page');
+      return null;
+    }
+  };
+
+  const handleDeleteLookbookPage: (id: string) => Promise<boolean> = async (id) => {
+    setErrorMessage(null);
+    try {
+      return await deletePage(id);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to delete page');
+      return false;
+    }
+  };
+
+  const handleToggleFavorite = async (id: string) => {
+    setErrorMessage(null);
+    try {
+      await toggleFavorite(id);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to toggle favorite');
+    }
+  };
+
+  const handleDeleteGeneration = async (id: string) => {
+    setErrorMessage(null);
+    try {
+      await deleteGeneration(id);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to delete generation');
+    }
   };
 
   // B6 — AI compose lookbook from the active story's favorite visuals
@@ -415,6 +475,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
     if (visuals.length === 0) return;
 
     setAiComposeLoading(true);
+    setErrorMessage(null);
     try {
       const res = await fetch('/api/ai/content-strategy/generate', {
         method: 'POST',
@@ -435,7 +496,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           language,
         }),
       });
-      if (!res.ok) throw new Error('Lookbook compose failed');
+      if (!res.ok) throw await backendError(res);
       const data = await res.json();
       const pages = (data.result?.pages || []) as Array<{
         page_number: number;
@@ -505,7 +566,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         })
       );
     } catch (err) {
-      console.error('AI lookbook compose error:', err);
+      setErrorMessage(err instanceof Error ? err.message : 'Lookbook compose failed');
     } finally {
       setAiComposeLoading(false);
     }
@@ -613,6 +674,22 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           </div>
         )}
 
+        {/* Error banner — surfaces the real backend message from any
+            write op (hook throw or fetch failure). Dismissable; cleared
+            automatically on the next attempt. */}
+        {errorMessage && (
+          <div className="mb-6 bg-amber-50 border border-amber-200/60 text-amber-900 px-4 py-3 text-xs font-light flex items-center justify-between">
+            <span>{errorMessage}</span>
+            <button
+              type="button"
+              onClick={() => setErrorMessage(null)}
+              className="text-amber-900/60 hover:text-amber-900 text-[10px] uppercase tracking-[0.1em]"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* ═══ LOOKBOOK TAB ═══ */}
         {activeTab === 'lookbook' && (
           <LookbookTab
@@ -620,8 +697,8 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             loading={pagesLoading}
             favoriteVisuals={favoriteVisuals}
             onAddPage={handleAddLookbookPage}
-            onUpdatePage={updatePage}
-            onDeletePage={deletePage}
+            onUpdatePage={handleUpdateLookbookPage}
+            onDeletePage={handleDeleteLookbookPage}
             onLightbox={setLightboxUrl}
             onAiCompose={handleAiComposeLookbook}
             aiComposeLoading={aiComposeLoading}
@@ -638,8 +715,8 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             prompt={editorialPrompt}
             onPromptChange={setEditorialPrompt}
             onGenerate={handleEditorialGenerate}
-            onToggleFavorite={toggleFavorite}
-            onDelete={deleteGeneration}
+            onToggleFavorite={handleToggleFavorite}
+            onDelete={handleDeleteGeneration}
             onLightbox={setLightboxUrl}
             fileInputRef={fileInputRef}
           />
@@ -666,8 +743,8 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             onGenerateShotlist={handleGenerateShotlist}
             onClearShotlist={() => setVideoShotlist(null)}
             onGenerate={handleVideoGenerate}
-            onToggleFavorite={toggleFavorite}
-            onDelete={deleteGeneration}
+            onToggleFavorite={handleToggleFavorite}
+            onDelete={handleDeleteGeneration}
             onVideoPreview={setVideoPreviewUrl}
             videoInputRef={videoInputRef}
           />
@@ -762,7 +839,7 @@ function LookbookTab({
             {t.marketingPage.lookbook}
           </p>
           <p className="text-sm font-light text-carbon/50">
-            {pages.length} page{pages.length !== 1 ? 's' : ''} · {favoriteVisuals.length} {t.marketingPage.favoriteVisualsAvailable}
+            {pages.length} {t.marketingPage.lookbookPagesLabel} · {favoriteVisuals.length} {t.marketingPage.favoriteVisualsAvailable}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -863,7 +940,7 @@ function LookbookTab({
                     {page.layout_type.replace('_', ' ')}
                   </span>
                   <span className="text-[10px] text-carbon/20">
-                    · {page.content.length} item{page.content.length !== 1 ? 's' : ''}
+                    · {page.content.length} {t.marketingPage.lookbookItemsLabel}
                   </span>
                 </div>
 
@@ -1100,7 +1177,7 @@ function EditorialTab({
                   <div className="absolute inset-0 bg-carbon/0 group-hover:bg-carbon/10 transition-colors pointer-events-none" />
                   <div className="absolute top-1.5 left-1.5">
                     <span className="text-[8px] font-medium tracking-wider uppercase bg-white/90 text-carbon/60 px-1.5 py-0.5">
-                      editorial
+                      {t.marketingPage.editorialBadge}
                     </span>
                   </div>
                   <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

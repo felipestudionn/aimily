@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   PenTool,
   ChevronLeft,
@@ -117,6 +117,39 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
   // Edit state for voice
   const [editingVoice, setEditingVoice] = useState(false);
   const [voiceForm, setVoiceForm] = useState<Partial<BrandVoiceConfig>>({});
+
+  /* ── Derived: email templates split into sequences + singles ── */
+  // B1.1 (2026-04-11) — bulk-inserted sequences used to render as flat
+  // individual rows, which destroyed the editorial shape of a drip
+  // campaign. The fix: partition by sequence_id and render sequences
+  // as grouped cards with a shared header (name, type, trigger,
+  // metrics) + ordered member rows. Singles keep their existing flat
+  // EmailTemplateRow treatment.
+  const groupedEmails = useMemo(() => {
+    const seqMap = new Map<string, EmailTemplateContent[]>();
+    const singles: EmailTemplateContent[] = [];
+    for (const tpl of emailTemplates) {
+      if (tpl.email_type !== selectedEmailType) continue;
+      if (tpl.sequence_id) {
+        const arr = seqMap.get(tpl.sequence_id) ?? [];
+        arr.push(tpl);
+        seqMap.set(tpl.sequence_id, arr);
+      } else {
+        singles.push(tpl);
+      }
+    }
+    // Sort each sequence by position (fall back to created_at index if null)
+    const sequences: Array<{ id: string; emails: EmailTemplateContent[] }> = [];
+    seqMap.forEach((arr, id) => {
+      arr.sort(
+        (a, b) =>
+          (a.sequence_position ?? Number.MAX_SAFE_INTEGER) -
+          (b.sequence_position ?? Number.MAX_SAFE_INTEGER)
+      );
+      sequences.push({ id, emails: arr });
+    });
+    return { sequences, singles };
+  }, [emailTemplates, selectedEmailType]);
 
   /* ── Helpers ── */
 
@@ -901,16 +934,43 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             </button>
 
             {emailLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
-            <div className="space-y-3">
-              {emailTemplates
-                .filter(tpl => tpl.email_type === selectedEmailType)
-                .map(tpl => (
+
+            {/* Empty state — only when there's neither a sequence nor a single email for the selected type */}
+            {!emailLoading && groupedEmails.sequences.length === 0 && groupedEmails.singles.length === 0 && (
+              <p className="text-xs text-carbon/20 italic text-center py-8">{t.marketingPage.noEmailTemplatesYet.replace('{type}', emailTypeLabel(selectedEmailType))}</p>
+            )}
+
+            {/* Sequences block (visually dominant) */}
+            {groupedEmails.sequences.length > 0 && (
+              <div className="space-y-4">
+                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+                  {t.marketingPage.emailSequencesHeading}
+                </p>
+                {groupedEmails.sequences.map(({ id, emails }) => (
+                  <EmailSequenceGroup
+                    key={id}
+                    emails={emails}
+                    stories={stories}
+                    onDelete={deleteEmail}
+                    onUpdate={updateEmailTemplate}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Singles block */}
+            {groupedEmails.singles.length > 0 && (
+              <div className={`space-y-3 ${groupedEmails.sequences.length > 0 ? 'mt-6' : ''}`}>
+                {groupedEmails.sequences.length > 0 && (
+                  <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+                    {t.marketingPage.emailSinglesHeading}
+                  </p>
+                )}
+                {groupedEmails.singles.map(tpl => (
                   <EmailTemplateRow key={tpl.id} template={tpl} stories={stories} onDelete={() => deleteEmail(tpl.id)} onUpdate={updateEmailTemplate} />
                 ))}
-              {emailTemplates.filter(tpl => tpl.email_type === selectedEmailType).length === 0 && !emailLoading && (
-                <p className="text-xs text-carbon/20 italic text-center py-8">{t.marketingPage.noEmailTemplatesYet.replace('{type}', emailTypeLabel(selectedEmailType))}</p>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1015,6 +1075,135 @@ function SocialTemplateRow({ template, stories, onDelete }: { template: SocialTe
       ) : null}
       {template.cta && <p className="text-[10px] text-carbon/30">{t.marketingPage.ctaInlineLabel}: {template.cta}</p>}
       {template.best_paired_with && <p className="text-[10px] text-carbon/25 italic">{t.marketingPage.bestWithLabel}: {template.best_paired_with}</p>}
+    </div>
+  );
+}
+
+/**
+ * EmailSequenceGroup — renders a drip campaign as a single clustered card:
+ * a sequence header (name, type, trigger, target metrics) plus the member
+ * emails in `sequence_position` order, each with its delay context.
+ *
+ * Previously sequences rendered as flat individual rows — which lost the
+ * narrative of "3 emails 24h apart" and turned bulk AI inserts into a soup
+ * of rows. This component restores the editorial shape.
+ *
+ * The inner EmailTemplateRow is reused unchanged for each member — editing,
+ * deleting, and updating still work per-row. The group is presentation only.
+ */
+function EmailSequenceGroup({
+  emails,
+  stories,
+  onDelete,
+  onUpdate,
+}: {
+  emails: EmailTemplateContent[];
+  stories: Story[];
+  onDelete: (id: string) => Promise<boolean>;
+  onUpdate: (id: string, updates: Partial<EmailTemplateContent>) => Promise<EmailTemplateContent | null>;
+}) {
+  const t = useTranslation();
+  // Group metadata lives on every member row (denormalized at bulk-insert
+  // time), so we can safely pick it off the first email. Fall back cleanly
+  // if anything is missing.
+  const first = emails[0];
+  const name = first?.sequence_name || '—';
+  const type = first?.sequence_type as 'welcome' | 'launch' | 'post_purchase' | 're_engagement' | null | undefined;
+  const total = first?.sequence_total ?? emails.length;
+  const trigger = first?.trigger || null;
+  const metrics = first?.success_metrics || null;
+
+  const typeLabel = type
+    ? (t.marketingPage[`sequenceType_${type}` as keyof typeof t.marketingPage] as string)
+    : null;
+
+  return (
+    <div className="bg-carbon/[0.015] border border-carbon/[0.06]">
+      {/* Sequence header */}
+      <div className="px-5 py-4 border-b border-carbon/[0.06] flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="text-[9px] font-medium tracking-[0.12em] uppercase bg-carbon text-crema px-2 py-0.5">
+              {t.marketingPage.emailSequenceBadge}
+            </span>
+            {typeLabel && (
+              <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/40">
+                {typeLabel}
+              </span>
+            )}
+          </div>
+          <h5 className="text-base font-light text-carbon tracking-tight truncate">{name}</h5>
+          {trigger && (
+            <p className="text-[11px] font-light text-carbon/45 mt-1">
+              <span className="text-carbon/30 uppercase tracking-[0.08em] text-[10px]">{t.marketingPage.emailSequenceTriggerLabel}:</span>{' '}
+              {trigger}
+            </p>
+          )}
+        </div>
+        <div className="flex-shrink-0 text-right">
+          <p className="text-xl font-light text-carbon leading-none">
+            {emails.length}
+            {total !== emails.length && <span className="text-carbon/25 text-sm">/{total}</span>}
+          </p>
+          {metrics &&
+            (metrics.target_open_rate !== undefined ||
+              metrics.target_ctr !== undefined ||
+              metrics.target_conversion_rate !== undefined) && (
+              <div className="mt-2 flex flex-col gap-0.5 text-[10px] font-light text-carbon/40 items-end">
+                {metrics.target_open_rate !== undefined && (
+                  <span>
+                    {t.marketingPage.emailSequenceMetricOpen}{' '}
+                    {(metrics.target_open_rate * 100).toFixed(0)}%
+                  </span>
+                )}
+                {metrics.target_ctr !== undefined && (
+                  <span>
+                    {t.marketingPage.emailSequenceMetricCtr}{' '}
+                    {(metrics.target_ctr * 100).toFixed(0)}%
+                  </span>
+                )}
+                {metrics.target_conversion_rate !== undefined && (
+                  <span>
+                    {t.marketingPage.emailSequenceMetricConv}{' '}
+                    {(metrics.target_conversion_rate * 100).toFixed(0)}%
+                  </span>
+                )}
+              </div>
+            )}
+        </div>
+      </div>
+
+      {/* Member emails in position order */}
+      <div className="divide-y divide-carbon/[0.06]">
+        {emails.map((tpl, idx) => {
+          const pos = tpl.sequence_position ?? idx + 1;
+          const delay = tpl.send_delay_hours ?? 0;
+          const delayLabel =
+            idx === 0 || delay === 0
+              ? t.marketingPage.emailSequenceDelayImmediate
+              : t.marketingPage.emailSequenceDelayLabel.replace('{hours}', String(delay));
+
+          return (
+            <div key={tpl.id} className="px-5 py-4">
+              <p className="text-[10px] font-light text-carbon/40 mb-2 tracking-[0.08em] uppercase">
+                {t.marketingPage.emailSequenceOf
+                  .replace('{position}', String(pos))
+                  .replace('{total}', String(total))}
+                {' · '}
+                {delayLabel}
+              </p>
+              <EmailTemplateRow
+                template={tpl}
+                stories={stories}
+                onDelete={() => {
+                  void onDelete(tpl.id);
+                }}
+                onUpdate={onUpdate}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
