@@ -2,6 +2,15 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase/server';
 import { PresentationNav } from './PresentationNav';
+import {
+  getMarketingPresentationData,
+  getMarketingSlideVisibility,
+} from '@/lib/presentation-data';
+import type {
+  MarketingPresentationData,
+  MarketingSlideVisibility,
+} from '@/lib/presentation-data';
+import { LookbookPageRenderer } from '@/components/marketing/LookbookPageRenderer';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Collection Presentation — Full-screen editorial slide deck
@@ -89,12 +98,13 @@ async function getPresentationData(id: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [planRes, timelineRes, skusRes, creativeRes, merchRes] = await Promise.all([
+  const [planRes, timelineRes, skusRes, creativeRes, merchRes, marketing] = await Promise.all([
     supabaseAdmin.from('collection_plans').select('*').eq('id', id).single(),
     supabaseAdmin.from('collection_timelines').select('*').eq('collection_plan_id', id).single(),
     supabaseAdmin.from('collection_skus').select('*').eq('collection_plan_id', id),
     supabaseAdmin.from('collection_workspace_data').select('data').eq('collection_plan_id', id).eq('workspace', 'creative').single(),
     supabaseAdmin.from('collection_workspace_data').select('data').eq('collection_plan_id', id).eq('workspace', 'merchandising').single(),
+    getMarketingPresentationData(id, user.id),
   ]);
 
   if (planRes.error || !planRes.data) return null;
@@ -108,6 +118,7 @@ async function getPresentationData(id: string) {
     skus: (skusRes.data || []) as SKU[],
     creative: (creativeRes.data?.data || {}) as Record<string, unknown>,
     merch: (merchRes.data?.data || {}) as Record<string, unknown>,
+    marketing,
   };
 }
 
@@ -118,7 +129,8 @@ export default async function PresentationPage({ params }: PageProps) {
   const data = await getPresentationData(id);
   if (!data) notFound();
 
-  const { plan, timeline, skus, creative, merch } = data;
+  const { plan, timeline, skus, creative, merch, marketing } = data;
+  const marketingVisibility = marketing ? getMarketingSlideVisibility(marketing) : null;
   const setup: SetupData = plan.setup_data || {};
   const milestones: TimelineMilestone[] = timeline?.milestones || [];
   const launchDate = timeline?.launch_date;
@@ -831,6 +843,15 @@ export default async function PresentationPage({ params }: PageProps) {
 
 
         {/* ═══════════════════════════════════════════
+            MARKETING STORY MODE — 10 conditional slides
+            (between Product Grid and Timeline, decisions locked 2026-04-11)
+            ═══════════════════════════════════════════ */}
+        {marketing && marketingVisibility && (
+          <MarketingStorySlides data={marketing} visibility={marketingVisibility} />
+        )}
+
+
+        {/* ═══════════════════════════════════════════
             SLIDE 9 — TIMELINE
             ═══════════════════════════════════════════ */}
         <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
@@ -929,6 +950,512 @@ export default async function PresentationPage({ params }: PageProps) {
         </section>
 
       </div>
+    </>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Marketing Story Mode — 10 conditional slides (decisions locked 2026-04-11).
+   Inserted between Product Grid and Timeline.
+
+   Order: Brand Voice → Stories → Pillars → Lookbook → Drops →
+          Content Calendar → Paid & Growth → Launch Readiness →
+          Email Sequences → Retrospective (post-launch only)
+
+   Zero invented data: each slide omits cleanly when the source is empty.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function MarketingStorySlides({
+  data,
+  visibility,
+}: {
+  data: MarketingPresentationData;
+  visibility: MarketingSlideVisibility;
+}) {
+  return (
+    <>
+      {/* ═══ SLIDE M1 — BRAND VOICE ═══ */}
+      {visibility.brandVoice && data.brandVoice && (
+        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+          <div className="max-w-5xl w-full">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+              Brand Voice
+            </p>
+            {data.brandVoice.personality && (
+              <h3 className="text-3xl md:text-4xl font-light text-crema tracking-tight mb-10 max-w-3xl">
+                {data.brandVoice.personality}
+              </h3>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              {data.brandVoice.tone && (
+                <div>
+                  <p className="text-[10px] tracking-[0.25em] uppercase text-crema/25 mb-3">Tone</p>
+                  <p className="text-sm font-light text-crema/70 leading-relaxed max-w-md">
+                    {data.brandVoice.tone}
+                  </p>
+                </div>
+              )}
+              {data.brandVoice.example_caption && (
+                <div>
+                  <p className="text-[10px] tracking-[0.25em] uppercase text-crema/25 mb-3">Example Caption</p>
+                  <p className="text-sm font-light italic text-crema/60 leading-relaxed max-w-md">
+                    &ldquo;{data.brandVoice.example_caption}&rdquo;
+                  </p>
+                </div>
+              )}
+            </div>
+            {(data.brandVoice.do_rules?.length || data.brandVoice.dont_rules?.length) ? (
+              <div className="mt-14 pt-6 border-t border-crema/[0.06] grid grid-cols-1 md:grid-cols-2 gap-12">
+                {data.brandVoice.do_rules && data.brandVoice.do_rules.length > 0 && (
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-crema/25 mb-4">Do</p>
+                    <ul className="space-y-2">
+                      {data.brandVoice.do_rules.map((rule, i) => (
+                        <li key={i} className="text-sm font-light text-crema/70 flex items-start gap-3">
+                          <span className="text-[#9c7c4c] mt-1">+</span>
+                          <span>{rule}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {data.brandVoice.dont_rules && data.brandVoice.dont_rules.length > 0 && (
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-crema/25 mb-4">Don&rsquo;t</p>
+                    <ul className="space-y-2">
+                      {data.brandVoice.dont_rules.map((rule, i) => (
+                        <li key={i} className="text-sm font-light text-crema/60 flex items-start gap-3">
+                          <span className="text-crema/30 mt-1">—</span>
+                          <span>{rule}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </section>
+      )}
+
+      {/* ═══ SLIDE M2 — STORIES (one per story, max 5) ═══ */}
+      {visibility.stories &&
+        data.stories.slice(0, 5).map(({ story, heroImageUrl, heroSkuName }, idx) => (
+          <section
+            key={`story-${story.id}`}
+            className="slide min-h-screen flex bg-carbon relative overflow-hidden"
+          >
+            {/* Left: hero image (when present) */}
+            {heroImageUrl ? (
+              <div className="w-1/2 relative bg-crema/[0.03]">
+                <img src={heroImageUrl} alt={story.name} className="w-full h-full object-cover absolute inset-0" />
+              </div>
+            ) : (
+              <div className="w-1/2 relative bg-crema/[0.02] flex items-center justify-center">
+                <p className="text-[11px] tracking-[0.25em] uppercase text-crema/15">
+                  Story {String(idx + 1).padStart(2, '0')}
+                </p>
+              </div>
+            )}
+            {/* Right: narrative */}
+            <div className="w-1/2 flex flex-col justify-center px-16 py-12">
+              <p className="text-[10px] tracking-[0.3em] uppercase mb-6" style={{ color: '#9c7c4c' }}>
+                Story {String(idx + 1).padStart(2, '0')}
+              </p>
+              <h3 className="text-4xl md:text-5xl font-light text-crema tracking-tight leading-[0.95] mb-8">
+                {story.name}
+              </h3>
+              {story.editorial_hook && (
+                <p className="text-lg md:text-xl font-light italic text-crema/70 leading-snug mb-8 max-w-lg">
+                  &ldquo;{story.editorial_hook}&rdquo;
+                </p>
+              )}
+              {story.narrative && (
+                <p className="text-sm md:text-base font-light text-crema/60 leading-relaxed max-w-lg">
+                  {story.narrative}
+                </p>
+              )}
+              {(story.tone || heroSkuName) && (
+                <div className="mt-10 pt-6 border-t border-crema/[0.06] flex gap-10 text-[10px] tracking-[0.2em] uppercase text-crema/30">
+                  {story.tone && <span>Tone · {story.tone}</span>}
+                  {heroSkuName && <span>Hero · {heroSkuName}</span>}
+                </div>
+              )}
+            </div>
+          </section>
+        ))}
+
+      {/* ═══ SLIDE M3 — CONTENT PILLARS ═══ */}
+      {visibility.pillars && (
+        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-crema relative">
+          <div className="max-w-5xl w-full">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+              Content Pillars
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+              {data.pillars.slice(0, 6).map((pillar, i) => (
+                <div key={pillar.id} className="border-l-2 pl-6 border-[#9c7c4c]/40">
+                  <div className="flex items-baseline gap-3 mb-3">
+                    <span className="text-[10px] tracking-[0.2em] uppercase text-carbon/30">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <h4 className="text-xl font-light text-carbon tracking-tight">{pillar.name}</h4>
+                  </div>
+                  {pillar.description && (
+                    <p className="text-sm font-light text-carbon/60 leading-relaxed mb-3">
+                      {pillar.description}
+                    </p>
+                  )}
+                  {pillar.examples && pillar.examples.length > 0 && (
+                    <ul className="text-[11px] font-light text-carbon/50 space-y-1">
+                      {pillar.examples.slice(0, 3).map((ex, j) => (
+                        <li key={j}>· {ex}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══ SLIDE M4 — LOOKBOOK (one slide per page, full layout fidelity) ═══ */}
+      {visibility.lookbook &&
+        data.lookbookPages.map((page) => (
+          <section key={`lookbook-${page.id}`} className="slide min-h-screen bg-carbon">
+            <LookbookPageRenderer page={page} />
+          </section>
+        ))}
+
+      {/* ═══ SLIDE M5 — GO-TO-MARKET DROPS ═══ */}
+      {visibility.drops && (
+        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+          <div className="max-w-5xl w-full">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+              Go-to-Market · Drops
+            </p>
+            <div className="space-y-6">
+              {data.drops.map((drop) => (
+                <div key={drop.id} className="flex items-start gap-6 pb-6 border-b border-crema/[0.06]">
+                  <div className="w-16 shrink-0">
+                    <p className="text-3xl font-light text-crema tracking-tight">
+                      {String(drop.drop_number).padStart(2, '0')}
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-xl font-light text-crema mb-2">{drop.name}</h4>
+                    {drop.story_description && (
+                      <p className="text-sm font-light text-crema/50 leading-relaxed mb-3 max-w-2xl">
+                        {drop.story_description}
+                      </p>
+                    )}
+                    <div className="flex gap-6 text-[10px] tracking-[0.2em] uppercase text-crema/30">
+                      {drop.launch_date && <span>Launch · {formatDate(drop.launch_date)}</span>}
+                      {drop.weeks_active && <span>{drop.weeks_active}w active</span>}
+                      {drop.channels && drop.channels.length > 0 && (
+                        <span>{drop.channels.slice(0, 3).join(' · ')}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {data.commercialActions.length > 0 && (
+              <div className="mt-10 pt-6 border-t border-crema/[0.06]">
+                <p className="text-[10px] tracking-[0.2em] uppercase text-crema/30 mb-4">
+                  Commercial Actions
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {data.commercialActions.slice(0, 8).map((action) => (
+                    <span
+                      key={action.id}
+                      className="text-[11px] font-light text-crema/60 border border-crema/10 px-3 py-1.5"
+                    >
+                      {action.name}
+                      {action.start_date && (
+                        <span className="text-crema/30 ml-2">· {formatDate(action.start_date)}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ═══ SLIDE M6 — CONTENT CALENDAR (one slide per week, max 4) ═══ */}
+      {visibility.contentCalendar &&
+        data.contentCalendarWeeks.map((week, weekIdx) => (
+          <section
+            key={`calendar-${week.startDate}`}
+            className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-crema relative"
+          >
+            <div className="max-w-5xl w-full">
+              <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+                Content Calendar · Week {weekIdx + 1}
+              </p>
+              <div className="flex items-baseline gap-4 mb-8">
+                <p className="text-4xl font-light text-carbon tracking-tight">{week.weekLabel}</p>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-carbon/30">
+                  {week.entries.length} post{week.entries.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className="space-y-3">
+                {week.entries.slice(0, 10).map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-6 py-3 border-b border-carbon/[0.06]"
+                  >
+                    <span className="w-20 shrink-0 text-[10px] tracking-[0.15em] uppercase text-carbon/30 pt-1">
+                      {new Date(entry.scheduled_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    <span className="w-24 shrink-0 text-[9px] tracking-[0.15em] uppercase text-carbon/40 pt-1">
+                      {entry.platform ?? entry.content_type}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-light text-carbon truncate">{entry.title}</p>
+                      {entry.caption && (
+                        <p className="text-[11px] font-light text-carbon/50 truncate max-w-2xl">
+                          {entry.caption}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        ))}
+
+      {/* ═══ SLIDE M7 — PAID & GROWTH ═══ */}
+      {visibility.paidGrowth && (
+        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+          <div className="max-w-5xl w-full">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+              Paid &amp; Growth
+            </p>
+            <div className="flex items-baseline gap-8 mb-10">
+              <div>
+                <p className="text-5xl font-light text-crema tracking-tight">
+                  {data.paidCampaigns.length}
+                </p>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-crema/30 mt-2">Campaigns</p>
+              </div>
+              <div>
+                <p className="text-5xl font-light text-crema tracking-tight">
+                  {new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'EUR',
+                    maximumFractionDigits: 0,
+                  }).format(
+                    data.paidCampaigns.reduce((sum, c) => sum + c.totalBudget, 0)
+                  )}
+                </p>
+                <p className="text-[10px] tracking-[0.2em] uppercase text-crema/30 mt-2">Total Budget</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {data.paidCampaigns.slice(0, 6).map(({ campaign, totalBudget, adSetCount }) => (
+                <div
+                  key={campaign.id}
+                  className="flex items-center gap-6 py-4 border-b border-crema/[0.06]"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-3 mb-1">
+                      <h4 className="text-base font-light text-crema">{campaign.name}</h4>
+                      <span className="text-[9px] tracking-[0.15em] uppercase text-crema/30">
+                        {campaign.platform}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-light text-crema/40">
+                      {campaign.objective}
+                      {adSetCount > 0 && ` · ${adSetCount} ad set${adSetCount !== 1 ? 's' : ''}`}
+                      {campaign.drop_name && ` · ${campaign.drop_name}`}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-lg font-light text-crema">
+                      {currency(totalBudget)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══ SLIDE M8 — LAUNCH READINESS ═══ */}
+      {visibility.launchReadiness && data.launchReadiness && (
+        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-crema relative">
+          <div className="max-w-5xl w-full">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+              Launch Readiness
+            </p>
+            <div className="flex items-baseline gap-4 mb-12">
+              <p className="text-7xl font-light text-carbon tracking-tight leading-none">
+                {data.launchReadiness.overallPct}%
+              </p>
+              <p className="text-sm tracking-[0.2em] uppercase text-carbon/40 pb-3">
+                {data.launchReadiness.completedTasks} / {data.launchReadiness.totalTasks} tasks
+              </p>
+            </div>
+            <div className="space-y-4">
+              {data.launchReadiness.categories.map((cat) => (
+                <div key={cat.category} className="flex items-center gap-6">
+                  <div className="w-48 shrink-0">
+                    <p className="text-sm font-light text-carbon capitalize">
+                      {cat.category.replace(/_/g, ' ')}
+                    </p>
+                    <p className="text-[10px] text-carbon/30">
+                      {cat.completed} / {cat.total}
+                    </p>
+                  </div>
+                  <div className="flex-1 h-6 bg-carbon/[0.04] relative overflow-hidden">
+                    <div
+                      className="h-full transition-all"
+                      style={{
+                        width: `${Math.max(cat.pct, 3)}%`,
+                        backgroundColor: '#9c7c4c',
+                        opacity: 0.6,
+                      }}
+                    />
+                  </div>
+                  <div className="w-12 shrink-0 text-right">
+                    <p className="text-sm font-light text-carbon/60">{cat.pct}%</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══ SLIDE M9 — EMAIL SEQUENCES ═══ */}
+      {visibility.emailSequences && (
+        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-carbon relative">
+          <div className="max-w-5xl w-full">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+              Email Sequences
+            </p>
+            <div className="space-y-10">
+              {data.emailSequences.slice(0, 3).map((group) => (
+                <div key={group.sequenceId}>
+                  <div className="flex items-baseline gap-3 mb-4 pb-2 border-b border-crema/[0.06]">
+                    <h4 className="text-xl font-light text-crema">
+                      {group.sequenceName ?? 'Sequence'}
+                    </h4>
+                    {group.sequenceType && (
+                      <span className="text-[9px] tracking-[0.15em] uppercase text-[#9c7c4c]">
+                        {group.sequenceType.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                    <span className="text-[10px] tracking-[0.15em] uppercase text-crema/30">
+                      {group.emails.length} email{group.emails.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {group.emails.map((email, i) => (
+                      <div
+                        key={email.id}
+                        className="border border-crema/[0.06] p-4"
+                      >
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className="text-[9px] tracking-[0.15em] uppercase text-crema/30">
+                            {String(i + 1).padStart(2, '0')}
+                          </span>
+                          {email.send_delay_hours !== null && email.send_delay_hours !== undefined && (
+                            <span className="text-[9px] tracking-[0.1em] uppercase text-crema/25">
+                              +{email.send_delay_hours}h
+                            </span>
+                          )}
+                        </div>
+                        {email.subject_line && (
+                          <p className="text-sm font-light text-crema mb-1">{email.subject_line}</p>
+                        )}
+                        {email.preview_text && (
+                          <p className="text-[11px] font-light text-crema/50 italic">
+                            {email.preview_text}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═══ SLIDE M10 — RETROSPECTIVE (post-launch only) ═══ */}
+      {visibility.retrospective && data.postLaunchAnalysis && (
+        <section className="slide min-h-screen flex flex-col justify-center px-16 py-12 bg-crema relative">
+          <div className="max-w-5xl w-full">
+            <p className="text-[10px] tracking-[0.3em] uppercase mb-10" style={{ color: '#9c7c4c' }}>
+              Retrospective
+            </p>
+            {data.postLaunchAnalysis.result.overall_assessment && (
+              <blockquote className="text-2xl md:text-3xl font-light italic text-carbon leading-snug mb-12 max-w-4xl">
+                &ldquo;{data.postLaunchAnalysis.result.overall_assessment}&rdquo;
+              </blockquote>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {data.postLaunchAnalysis.result.wins && data.postLaunchAnalysis.result.wins.length > 0 && (
+                <div>
+                  <p className="text-[10px] tracking-[0.25em] uppercase text-carbon/30 mb-4">Wins</p>
+                  <ul className="space-y-2">
+                    {data.postLaunchAnalysis.result.wins.slice(0, 5).map((win, i) => (
+                      <li key={i} className="text-sm font-light text-carbon/70 flex items-start gap-2">
+                        <span className="text-[#9c7c4c]">+</span>
+                        <span>{win}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data.postLaunchAnalysis.result.areas_for_improvement &&
+                data.postLaunchAnalysis.result.areas_for_improvement.length > 0 && (
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-carbon/30 mb-4">
+                      Areas for Improvement
+                    </p>
+                    <ul className="space-y-2">
+                      {data.postLaunchAnalysis.result.areas_for_improvement.slice(0, 5).map((area, i) => (
+                        <li key={i} className="text-sm font-light text-carbon/60 flex items-start gap-2">
+                          <span className="text-carbon/30">—</span>
+                          <span>{area}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              {data.postLaunchAnalysis.result.recommendations &&
+                data.postLaunchAnalysis.result.recommendations.length > 0 && (
+                  <div>
+                    <p className="text-[10px] tracking-[0.25em] uppercase text-carbon/30 mb-4">
+                      Recommendations
+                    </p>
+                    <ul className="space-y-2">
+                      {data.postLaunchAnalysis.result.recommendations.slice(0, 5).map((rec, i) => (
+                        <li key={i} className="text-sm font-light text-carbon/70 flex items-start gap-2">
+                          <span className="text-[#9c7c4c]">→</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }
