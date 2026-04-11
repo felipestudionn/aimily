@@ -228,10 +228,13 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
       const story = activeStory;
       const storyCtx = storyContext(story);
 
-      // Editorial is just a still-life with a strong art direction. It goes
-      // through the same Nano Banana route so the product identity is
-      // preserved from the design-phase 3D render.
-      const res = await fetch('/api/ai/freepik/still-life', {
+      // Editorial is a distinct category from Still Life: on-model narrative
+      // scene with a human model wearing/carrying the product in a full
+      // mise-en-scène (Zara/Hereu/Jacquemus lookbook hero territory). Its
+      // own endpoint, /api/ai/freepik/editorial, has a prompt that REQUIRES
+      // a single human model — opposite of the still-life endpoint which
+      // explicitly forbids humans. Do not merge these.
+      const res = await fetch('/api/ai/freepik/editorial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -240,6 +243,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           scene: 'editorial',
           story_context: storyCtx,
           user_prompt: editorialPrompt || undefined,
+          collectionPlanId,
         }),
       });
 

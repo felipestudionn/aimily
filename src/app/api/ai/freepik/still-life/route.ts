@@ -306,10 +306,10 @@ export async function POST(req: NextRequest) {
       try {
         const result = await persistAsset({
           collectionPlanId,
-          assetType: 'lifestyle',
-          name: `Still Life — ${product_name || 'editorial'}`,
+          assetType: 'still_life',
+          name: `Still Life — ${product_name || 'object shot'}`,
           sourceUrl: generatedUrl,
-          phase: 'design',
+          phase: 'marketing',
           metadata: {
             prompt,
             scene,

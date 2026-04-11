@@ -4,14 +4,37 @@
  * Bucket: collection-assets (public)
  * Path convention: {collection_plan_id}/{asset_type}/{filename}
  *
- * Asset types: moodboard, render, lifestyle, tryon, sketch, video, model
+ * Asset types:
+ *   - moodboard  — creative phase moodboard imagery
+ *   - render     — design phase 3D product render (gpt-image-1.5)
+ *   - sketch     — design phase technical sketch
+ *   - lifestyle  — legacy: still-life product shots. Kept for back-compat
+ *                  with rows uploaded before the 2026-04-11 split.
+ *   - still_life — marketing: product alone as object, zero humans
+ *                  (/api/ai/freepik/still-life)
+ *   - editorial  — marketing: on-model narrative scene with human model
+ *                  (/api/ai/freepik/editorial)
+ *   - tryon      — marketing: clean brand-model catalog shot
+ *                  (/api/ai/freepik/tryon)
+ *   - model      — marketing: brand model portraits
+ *                  (/api/ai/freepik/brand-model)
+ *   - video      — marketing: Kling 2.1 generated video assets
  */
 
 import { supabaseAdmin } from './supabase-admin';
 
 const BUCKET = 'collection-assets';
 
-export type AssetType = 'moodboard' | 'render' | 'lifestyle' | 'tryon' | 'sketch' | 'video' | 'model';
+export type AssetType =
+  | 'moodboard'
+  | 'render'
+  | 'sketch'
+  | 'lifestyle'
+  | 'still_life'
+  | 'editorial'
+  | 'tryon'
+  | 'model'
+  | 'video';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 const ALLOWED_MIME_TYPES = [
