@@ -98,6 +98,13 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
   // Drag state
   const [dragSkuId, setDragSkuId] = useState<string | null>(null);
 
+  // Inline edit state — MUST live above the early return so hook order is
+  // identical between the collapsed and expanded renders. Previously declared
+  // after the early return, which triggered React #310 the first time the
+  // user clicked "OPEN" (collapsed render registered N hooks, expanded render
+  // registered N+1 → mismatch → crash). Fix: hoist to top.
+  const [editForm, setEditForm] = useState<Partial<Story>>({});
+
   /* ── Card (collapsed) view ── */
   if (!expanded) {
     return (
@@ -280,8 +287,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
   };
 
   /* ── Inline edit ── */
-
-  const [editForm, setEditForm] = useState<Partial<Story>>({});
+  // editForm state declared above (hoisted above early return to avoid React #310).
 
   const startEdit = (story: Story) => {
     setEditingId(story.id);
