@@ -80,6 +80,24 @@ async function createAndPoll(
   return null;
 }
 
+/**
+ * Build the Nano Banana still-life prompt. The design phase's colorize-sketch
+ * prompt (in /api/ai/colorize-sketch/route.ts) sets the tone for the aimily
+ * voice: pixel-perfect preservation, explicit negative rules, no hidden
+ * freedom for the model to reinterpret the product. We mirror that here
+ * because Nano Banana's reference-image compositing needs the same rigor —
+ * any slack in the instructions produces the classic "I see my reference
+ * pasted into the scene" failure mode.
+ *
+ * Prompt structure:
+ *   1. Identify — tell the model what it's looking at.
+ *   2. Preserve — hard constraints on the product (silhouette, colorway,
+ *      materials, construction, logos, proportions).
+ *   3. Compose — where/how the product is placed, who's wearing it.
+ *   4. Scene — lighting, setting, mood.
+ *   5. Story — brand context injected as editorial direction (optional).
+ *   6. Reject list — things the model must never add.
+ */
 function buildPrompt(params: {
   productName: string;
   category: string | undefined;
@@ -91,48 +109,92 @@ function buildPrompt(params: {
 
   const productType =
     category === 'CALZADO'
-      ? 'footwear'
+      ? 'footwear (shoe)'
       : category === 'ROPA'
-        ? 'garment'
+        ? 'apparel garment'
         : 'fashion product';
 
+  const wearContext =
+    category === 'CALZADO'
+      ? 'worn on the feet of a model whose legs and feet are visible in the frame'
+      : category === 'ROPA'
+        ? 'worn by a model, shown in a three-quarter or full-length editorial composition'
+        : 'held or worn by a model in a way that keeps the product as the hero of the frame';
+
   const sceneMap: Record<string, string> = {
-    street: 'urban street-style setting, city backdrop, golden hour natural light',
-    cafe: 'European café terrace, warm ambient light, morning atmosphere',
-    beach: 'sandy beach at golden hour, soft ocean waves, natural sunlight',
-    office: 'modern minimalist office interior, clean lines, bright diffused light',
-    runway: 'fashion show runway, dramatic editorial spotlight, high-end atmosphere',
-    nature: 'lush natural outdoor setting, soft dappled daylight, organic textures',
-    urban: 'raw industrial urban environment, concrete textures, cinematic light',
-    'white-studio': 'clean white studio backdrop, soft even lighting, high-key',
-    marble: 'elegant marble gallery interior, sculpted natural light',
-    gradient: 'smooth gradient studio backdrop, contemporary editorial light',
+    street: 'urban street-style setting with real city architecture, golden hour natural light, soft directional sunlight, subtle depth of field',
+    cafe: 'European café terrace, warm ambient morning light, marble or worn-wood table surface, out-of-focus background patrons',
+    beach: 'sandy coastal beach at golden hour, soft ocean waves in the distance, warm low-angle sunlight, natural color grading',
+    office: 'modern minimalist office interior, clean architectural lines, bright diffused daylight from large windows, neutral palette',
+    runway: 'fashion show runway, dramatic editorial spotlight from above, cinematic backstage atmosphere, high-contrast lighting',
+    nature: 'lush outdoor natural setting, soft dappled daylight through foliage, organic textures, earthy palette',
+    urban: 'raw industrial urban environment with concrete and metal textures, cinematic directional light, editorial mood',
+    'white-studio': 'clean pure white studio backdrop (#FFFFFF), soft even high-key lighting, minimal contact shadow beneath the product, magazine cover aesthetic',
+    marble: 'elegant marble gallery interior, sculpted natural light from high windows, cool neutral tones, architectural depth',
+    gradient: 'smooth studio gradient backdrop, contemporary editorial lighting, soft color wash',
   };
   const sceneDesc = sceneMap[scene || ''] || scene || 'editorial magazine-quality setting';
 
-  const parts = [
-    `High-end editorial fashion photograph, magazine-cover quality.`,
-    `A model wearing the ${productType} (${productName}) shown in the reference image.`,
-    `CRITICAL: preserve the reference ${productType} exactly as shown — silhouette, colorway, materials, stitching, construction. Do not redesign it, do not add logos, do not alter proportions.`,
-    `Scene: ${sceneDesc}.`,
-  ];
+  const parts: string[] = [];
 
+  // 1. Identify
+  parts.push(
+    `High-end editorial fashion photograph, Vogue magazine cover quality. The image in the reference is the exact ${productType} called "${productName}" that must appear in the final photograph.`
+  );
+
+  // 2. Preserve — the core contract. Mirrors the colorize-sketch design prompt.
+  parts.push(
+    `CRITICAL PRESERVATION RULES (read carefully, these are non-negotiable):`
+  );
+  parts.push(
+    `• The ${productType} in the final photograph MUST be identical to the one in the reference image: same silhouette, same proportions, same colorway, same materials, same stitching, same construction details, same closure system, same hardware. Pixel-perfect identity preservation.`
+  );
+  parts.push(
+    `• DO NOT redesign, reinterpret, simplify, or stylize the product. DO NOT substitute it for a similar-looking product.`
+  );
+  parts.push(
+    `• DO NOT add any element that is not already in the reference: no added logos, no added straps, no added laces, no added buckles, no added branding, no added trims, no added prints or patterns.`
+  );
+  parts.push(
+    `• DO NOT alter the product's proportions, scale, or orientation beyond what is necessary to place it naturally into the scene.`
+  );
+  parts.push(
+    `• If any brand-like markings are visible in the reference, render them as clean unbranded surfaces — do not invent or replace logos.`
+  );
+
+  // 3. Compose
+  parts.push(
+    `COMPOSITION: the ${productType} is ${wearContext}. Frame the shot so the product is the visual hero — sharp focus, clear silhouette, prominent in the composition. The model supports the product, not the other way around.`
+  );
+
+  // 4. Scene
+  parts.push(`SCENE: ${sceneDesc}.`);
+  parts.push(
+    `LIGHTING: professional editorial lighting that flatters the product's materials and colorway. Realistic shadows, realistic depth of field, realistic color grading consistent with the scene.`
+  );
+
+  // 5. Story — optional brand context
   if (story?.name) {
-    parts.push(`Story context: "${story.name}".`);
-    if (story.narrative) parts.push(story.narrative + '.');
+    parts.push(`EDITORIAL DIRECTION (from the collection story "${story.name}"):`);
+    if (story.narrative) parts.push(story.narrative.replace(/\.$/, '') + '.');
     if (story.mood?.length) parts.push(`Mood: ${story.mood.join(', ')}.`);
     if (story.tone) parts.push(`Tone: ${story.tone}.`);
     if (story.color_palette?.length)
-      parts.push(`Color palette references: ${story.color_palette.join(', ')}.`);
+      parts.push(
+        `Story color palette references (may inform lighting/background, NOT the product colorway): ${story.color_palette.join(', ')}.`
+      );
     if (story.brand_personality) parts.push(`Brand aesthetic: ${story.brand_personality}.`);
   }
 
+  // 6. Craft + reject list
   parts.push(
-    'Shot like a Vogue editorial: confident natural pose, cinematic composition, sharp focus on the product, realistic skin and fabric textures, depth of field, professional color grading.'
+    `CRAFT: confident natural model pose, cinematic composition, sharp focus on the product, realistic skin tones, realistic fabric textures, natural depth of field, professional color grading.`
   );
-  parts.push('No text, no watermark, no brand logos added.');
+  parts.push(
+    `REJECT LIST (things the final image must NOT contain): no text, no captions, no watermarks, no logos, no added brand markings, no multiple copies of the product, no distorted anatomy, no plastic or CGI-looking textures, no surreal artifacts, no dream-like backgrounds.`
+  );
 
-  if (userPrompt) parts.push(`Art direction: ${userPrompt}.`);
+  if (userPrompt) parts.push(`ADDITIONAL ART DIRECTION: ${userPrompt}.`);
 
   return parts.join(' ');
 }

@@ -21,6 +21,7 @@ import { useStories, type Story } from '@/hooks/useStories';
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import { useAiGenerations } from '@/hooks/useAiGenerations';
 import { useBrandModels } from '@/hooks/useBrandModels';
+import { backendError } from '@/hooks/hook-errors';
 import type { AiGeneration, BrandModel } from '@/types/studio';
 import { SCENE_OPTIONS } from '@/types/studio';
 import { useTranslation } from '@/i18n';
@@ -99,6 +100,26 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
   const totalVisuals = generations.filter(
     (g) => ['product_render', 'tryon', 'still_life'].includes(g.generation_type) && g.status === 'completed'
   ).length;
+
+  /* ── Safe wrappers for write operations passed down to SkuVisualRow ── */
+
+  const handleToggleFavorite = async (id: string) => {
+    setErrorMessage(null);
+    try {
+      await toggleFavorite(id);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to toggle favorite');
+    }
+  };
+
+  const handleDeleteGeneration = async (id: string) => {
+    setErrorMessage(null);
+    try {
+      await deleteGeneration(id);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to delete generation');
+    }
+  };
 
   /* ── Card (collapsed) ── */
   if (!expanded) {
@@ -280,7 +301,11 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         body: JSON.stringify(body),
       });
 
-      if (!res.ok) throw new Error('Generation failed');
+      if (!res.ok) {
+        // Surface the real backend error (Freepik/OpenAI) via the shared
+        // backendError helper, same contract as the hook layer.
+        throw await backendError(res);
+      }
       const data = await res.json();
 
       // Normalize response shape: colorize-sketch returns { imageUrl },
@@ -480,8 +505,8 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
                   generations={gensForSku(sku.id)}
                   generating={generating}
                   onGenerate={(action) => handleGenerate(sku, action, activeStory)}
-                  onToggleFavorite={toggleFavorite}
-                  onDelete={deleteGeneration}
+                  onToggleFavorite={handleToggleFavorite}
+                  onDelete={handleDeleteGeneration}
                   isExpanded={expandedSkuId === sku.id}
                   onToggleExpand={() => setExpandedSkuId(expandedSkuId === sku.id ? null : sku.id)}
                   onLightbox={setLightboxUrl}
@@ -507,8 +532,8 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
                 generations={gensForSku(sku.id)}
                 generating={generating}
                 onGenerate={(action) => handleGenerate(sku, action)}
-                onToggleFavorite={toggleFavorite}
-                onDelete={deleteGeneration}
+                onToggleFavorite={handleToggleFavorite}
+                onDelete={handleDeleteGeneration}
                 isExpanded={expandedSkuId === sku.id}
                 onToggleExpand={() => setExpandedSkuId(expandedSkuId === sku.id ? null : sku.id)}
                 onLightbox={setLightboxUrl}

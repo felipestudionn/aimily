@@ -1,5 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { SkuColorway } from '@/types/design';
+import { backendError } from './hook-errors';
+
+/**
+ * Contract (enterprise-ready, applies to every *.ts hook in this folder):
+ *
+ *  - Read operations (fetch*) set `error` on failure and degrade gracefully
+ *    (loading flag flips, data stays empty). They never throw.
+ *
+ *  - Write operations (add/update/delete/toggle/bulkSave) set `error` AND
+ *    throw a structured Error built from the backend envelope via
+ *    backendError(res). Callers must wrap them in try/catch and surface
+ *    err.message to the user. Silent "return null" is no longer acceptable:
+ *    it masked every persistence failure and was the root cause of the
+ *    2026-04-11 Still Life / stories regression.
+ */
 
 export const useColorways = (collectionPlanId: string) => {
   const [colorways, setColorways] = useState<SkuColorway[]>([]);
@@ -12,15 +27,11 @@ export const useColorways = (collectionPlanId: string) => {
       setLoading(true);
       setError(null);
       const res = await fetch(`/api/colorways?planId=${collectionPlanId}`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to fetch colorways');
-      }
+      if (!res.ok) throw await backendError(res);
       const data = await res.json();
       setColorways(data as SkuColorway[]);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching colorways:', err);
     } finally {
       setLoading(false);
@@ -28,67 +39,49 @@ export const useColorways = (collectionPlanId: string) => {
   }, [collectionPlanId]);
 
   const addColorway = async (colorway: Omit<SkuColorway, 'id' | 'created_at'>) => {
-    try {
-      setError(null);
-      const res = await fetch('/api/colorways', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(colorway),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to add colorway');
-      }
-      const data = await res.json();
-      setColorways((prev) => [...prev, data as SkuColorway]);
-      return data as SkuColorway;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      console.error('Error adding colorway:', err);
-      return null;
+    setError(null);
+    const res = await fetch('/api/colorways', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(colorway),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    const data = (await res.json()) as SkuColorway;
+    setColorways((prev) => [...prev, data]);
+    return data;
   };
 
   const updateColorway = async (id: string, updates: Partial<SkuColorway>) => {
-    try {
-      setError(null);
-      const res = await fetch(`/api/colorways/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to update colorway');
-      }
-      const data = await res.json();
-      setColorways((prev) => prev.map((c) => (c.id === id ? (data as SkuColorway) : c)));
-      return data as SkuColorway;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      console.error('Error updating colorway:', err);
-      return null;
+    setError(null);
+    const res = await fetch(`/api/colorways/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    const data = (await res.json()) as SkuColorway;
+    setColorways((prev) => prev.map((c) => (c.id === id ? data : c)));
+    return data;
   };
 
   const deleteColorway = async (id: string) => {
-    try {
-      setError(null);
-      const res = await fetch(`/api/colorways/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to delete colorway');
-      }
-      setColorways((prev) => prev.filter((c) => c.id !== id));
-      return true;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      console.error('Error deleting colorway:', err);
-      return false;
+    setError(null);
+    const res = await fetch(`/api/colorways/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    setColorways((prev) => prev.filter((c) => c.id !== id));
+    return true;
   };
 
   useEffect(() => {

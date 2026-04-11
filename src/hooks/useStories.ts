@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { backendError } from './hook-errors';
 
 export interface StoryContentDirection {
   setting?: string;
@@ -52,14 +53,10 @@ export const useStories = (collectionPlanId: string) => {
       setLoading(true);
       setError(null);
       const res = await fetch(`/api/stories?planId=${collectionPlanId}`);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to fetch stories');
-      }
+      if (!res.ok) throw await backendError(res);
       setStories((await res.json()) as Story[]);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching stories:', err);
     } finally {
       setLoading(false);
@@ -67,61 +64,49 @@ export const useStories = (collectionPlanId: string) => {
   }, [collectionPlanId]);
 
   const addStory = async (story: Omit<Story, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const res = await fetch('/api/stories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(story),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to add story');
-      }
-      const data = (await res.json()) as Story;
-      setStories(prev => [...prev, data].sort((a, b) => a.sort_order - b.sort_order));
-      return data;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      return null;
+    setError(null);
+    const res = await fetch('/api/stories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(story),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    const data = (await res.json()) as Story;
+    setStories((prev) => [...prev, data].sort((a, b) => a.sort_order - b.sort_order));
+    return data;
   };
 
   const updateStory = async (id: string, updates: Partial<Story>) => {
-    try {
-      const res = await fetch(`/api/stories/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to update story');
-      }
-      const data = (await res.json()) as Story;
-      setStories(prev => prev.map(s => (s.id === id ? data : s)));
-      return data;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      return null;
+    setError(null);
+    const res = await fetch(`/api/stories/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    const data = (await res.json()) as Story;
+    setStories((prev) => prev.map((s) => (s.id === id ? data : s)));
+    return data;
   };
 
   const deleteStory = async (id: string) => {
-    try {
-      const res = await fetch(`/api/stories/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to delete story');
-      }
-      setStories(prev => prev.filter(s => s.id !== id));
-      return true;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      return false;
+    setError(null);
+    const res = await fetch(`/api/stories/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    setStories((prev) => prev.filter((s) => s.id !== id));
+    return true;
   };
 
   /** Bulk-save stories from AI generation (replaces all) */
@@ -129,51 +114,47 @@ export const useStories = (collectionPlanId: string) => {
     newStories: Omit<Story, 'id' | 'created_at' | 'updated_at'>[],
     skuAssignments?: Record<string, string[]>
   ) => {
-    try {
-      // Delete existing stories first
-      await Promise.all(stories.map(s => fetch(`/api/stories/${s.id}`, { method: 'DELETE' })));
+    setError(null);
+    // Delete existing stories first. We intentionally swallow per-delete errors
+    // here because a partial delete still lets the new POST run — the POST
+    // then runs the clean-slate reset on the backend side.
+    await Promise.all(
+      stories.map((s) => fetch(`/api/stories/${s.id}`, { method: 'DELETE' }))
+    );
 
-      const res = await fetch('/api/stories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stories: newStories, sku_assignments: skuAssignments }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to bulk save stories');
-      }
-      // Response shape: either legacy Story[] OR new { stories, assignment_summary }
-      const raw = (await res.json()) as
-        | Story[]
-        | { stories: Story[]; assignment_summary?: unknown };
-      const stories_ = Array.isArray(raw) ? raw : raw.stories;
-      setStories(stories_.sort((a, b) => a.sort_order - b.sort_order));
-      return stories_;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      return null;
+    const res = await fetch('/api/stories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stories: newStories, sku_assignments: skuAssignments }),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    // Response shape: either legacy Story[] OR new { stories, assignment_summary }
+    const raw = (await res.json()) as
+      | Story[]
+      | { stories: Story[]; assignment_summary?: unknown };
+    const stories_ = Array.isArray(raw) ? raw : raw.stories;
+    setStories(stories_.sort((a, b) => a.sort_order - b.sort_order));
+    return stories_;
   };
 
   /** Assign a SKU to a story (updates collection_skus.story_id) */
   const assignSku = async (skuId: string, storyId: string | null) => {
-    try {
-      const res = await fetch(`/api/skus/${skuId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ story_id: storyId }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Failed to assign SKU');
-      }
-      return true;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      return false;
+    setError(null);
+    const res = await fetch(`/api/skus/${skuId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ story_id: storyId }),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
     }
+    return true;
   };
 
   useEffect(() => {

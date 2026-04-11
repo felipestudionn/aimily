@@ -1,4 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
+import { backendError } from './hook-errors';
+
+/**
+ * Contract (enterprise-ready, applies to every *.ts hook in this folder):
+ *
+ *  - Read operations (fetch*) set `error` on failure and degrade gracefully
+ *    (loading flag flips, data stays empty). They never throw.
+ *
+ *  - Write operations (add/update/delete/toggle/bulkSave) set `error` AND
+ *    throw a structured Error built from the backend envelope via
+ *    backendError(res). Callers must wrap them in try/catch and surface
+ *    err.message to the user. Silent "return null" is no longer acceptable:
+ *    it masked every persistence failure and was the root cause of the
+ *    2026-04-11 Still Life / stories regression.
+ */
 
 export interface CommercialAction {
   id: string;
@@ -26,22 +41,15 @@ export const useCommercialActions = (collectionPlanId: string) => {
 
   const fetchActions = useCallback(async () => {
     if (!collectionPlanId) return;
-    
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch(`/api/commercial-actions?planId=${collectionPlanId}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch commercial actions');
-      }
-      
-      const data = await response.json();
+      const res = await fetch(`/api/commercial-actions?planId=${collectionPlanId}`);
+      if (!res.ok) throw await backendError(res);
+      const data = await res.json();
       setActions(data as CommercialAction[]);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching commercial actions:', err);
     } finally {
       setLoading(false);
@@ -49,71 +57,53 @@ export const useCommercialActions = (collectionPlanId: string) => {
   }, [collectionPlanId]);
 
   const addAction = async (action: Omit<CommercialAction, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const response = await fetch('/api/commercial-actions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(action),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add commercial action');
-      }
-
-      const data = await response.json();
-      setActions(prev => [...prev, data as CommercialAction].sort((a, b) => 
-        new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
-      ));
-      return data as CommercialAction;
-    } catch (err: any) {
+    setError(null);
+    const res = await fetch('/api/commercial-actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(action),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
       setError(err.message);
-      console.error('Error adding commercial action:', err);
-      return null;
+      throw err;
     }
+    const data = (await res.json()) as CommercialAction;
+    setActions((prev) =>
+      [...prev, data].sort(
+        (a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+      )
+    );
+    return data;
   };
 
   const updateAction = async (id: string, updates: Partial<CommercialAction>) => {
-    try {
-      const response = await fetch(`/api/commercial-actions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update commercial action');
-      }
-
-      const data = await response.json();
-      setActions(prev => prev.map(action => action.id === id ? data as CommercialAction : action));
-      return data as CommercialAction;
-    } catch (err: any) {
+    setError(null);
+    const res = await fetch(`/api/commercial-actions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
       setError(err.message);
-      console.error('Error updating commercial action:', err);
-      return null;
+      throw err;
     }
+    const data = (await res.json()) as CommercialAction;
+    setActions((prev) => prev.map((a) => (a.id === id ? data : a)));
+    return data;
   };
 
   const deleteAction = async (id: string) => {
-    try {
-      const response = await fetch(`/api/commercial-actions/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete commercial action');
-      }
-
-      setActions(prev => prev.filter(action => action.id !== id));
-      return true;
-    } catch (err: any) {
+    setError(null);
+    const res = await fetch(`/api/commercial-actions/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await backendError(res);
       setError(err.message);
-      console.error('Error deleting commercial action:', err);
-      return false;
+      throw err;
     }
+    setActions((prev) => prev.filter((a) => a.id !== id));
+    return true;
   };
 
   useEffect(() => {
@@ -129,6 +119,6 @@ export const useCommercialActions = (collectionPlanId: string) => {
     addAction,
     updateAction,
     deleteAction,
-    refetch: fetchActions
+    refetch: fetchActions,
   };
 };

@@ -1,4 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
+import { backendError } from './hook-errors';
+
+/**
+ * Contract (enterprise-ready, applies to every *.ts hook in this folder):
+ *
+ *  - Read operations (fetch*) set `error` on failure and degrade gracefully
+ *    (loading flag flips, data stays empty). They never throw.
+ *
+ *  - Write operations (add/update/delete/toggle/bulkSave) set `error` AND
+ *    throw a structured Error built from the backend envelope via
+ *    backendError(res). Callers must wrap them in try/catch and surface
+ *    err.message to the user. Silent "return null" is no longer acceptable:
+ *    it masked every persistence failure and was the root cause of the
+ *    2026-04-11 Still Life / stories regression.
+ */
 
 export type DesignPhase = 'range_plan' | 'sketch' | 'prototyping' | 'production' | 'completed';
 
@@ -78,22 +93,15 @@ export const useSkus = (collectionPlanId: string) => {
 
   const fetchSkus = useCallback(async () => {
     if (!collectionPlanId) return;
-    
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch(`/api/skus?planId=${collectionPlanId}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch SKUs');
-      }
-      
-      const data = await response.json();
+      const res = await fetch(`/api/skus?planId=${collectionPlanId}`);
+      if (!res.ok) throw await backendError(res);
+      const data = await res.json();
       setSkus(data as SKU[]);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching SKUs:', err);
     } finally {
       setLoading(false);
@@ -101,74 +109,57 @@ export const useSkus = (collectionPlanId: string) => {
   }, [collectionPlanId]);
 
   const addSku = async (sku: Omit<SKU, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!collectionPlanId) return null;
-    
-    try {
-      const response = await fetch('/api/skus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...sku,
-          collection_plan_id: collectionPlanId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add SKU');
-      }
-
-      const data = await response.json();
-      setSkus(prev => [data as SKU, ...prev]);
-      return data as SKU;
-    } catch (err: any) {
+    setError(null);
+    if (!collectionPlanId) {
+      const err = new Error('Cannot add SKU without a collection plan id');
       setError(err.message);
-      console.error('Error adding SKU:', err);
-      return null;
+      throw err;
     }
+    const res = await fetch('/api/skus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...sku,
+        collection_plan_id: collectionPlanId,
+      }),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
+      setError(err.message);
+      throw err;
+    }
+    const data = (await res.json()) as SKU;
+    setSkus((prev) => [data, ...prev]);
+    return data;
   };
 
   const updateSku = async (id: string, updates: Partial<SKU>) => {
-    try {
-      const response = await fetch(`/api/skus/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update SKU');
-      }
-
-      const data = await response.json();
-      setSkus(prev => prev.map(sku => sku.id === id ? data as SKU : sku));
-      return data as SKU;
-    } catch (err: any) {
+    setError(null);
+    const res = await fetch(`/api/skus/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const err = await backendError(res);
       setError(err.message);
-      console.error('Error updating SKU:', err);
-      return null;
+      throw err;
     }
+    const data = (await res.json()) as SKU;
+    setSkus((prev) => prev.map((s) => (s.id === id ? data : s)));
+    return data;
   };
 
   const deleteSku = async (id: string) => {
-    try {
-      const response = await fetch(`/api/skus/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete SKU');
-      }
-
-      setSkus(prev => prev.filter(sku => sku.id !== id));
-      return true;
-    } catch (err: any) {
+    setError(null);
+    const res = await fetch(`/api/skus/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await backendError(res);
       setError(err.message);
-      console.error('Error deleting SKU:', err);
-      return false;
+      throw err;
     }
+    setSkus((prev) => prev.filter((s) => s.id !== id));
+    return true;
   };
 
   useEffect(() => {
@@ -184,6 +175,6 @@ export const useSkus = (collectionPlanId: string) => {
     addSku,
     updateSku,
     deleteSku,
-    refetch: fetchSkus
+    refetch: fetchSkus,
   };
 };

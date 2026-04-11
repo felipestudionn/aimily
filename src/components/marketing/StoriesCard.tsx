@@ -267,39 +267,61 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
     for (const d of aiDrafts.stories) {
       if (d.sku_ids?.length) skuAssignments[d.name] = d.sku_ids;
     }
-    await bulkSaveStories(newStories, skuAssignments);
-    setAiDrafts(null);
-    refetchSkus();
+    setAiError(null);
+    try {
+      await bulkSaveStories(newStories, skuAssignments);
+      setAiDrafts(null);
+      refetchSkus();
+    } catch (err) {
+      // Hook contract: write operations throw structured errors from the
+      // backend. Surface the real message instead of silently failing.
+      setAiError(err instanceof Error ? err.message : 'Failed to save stories');
+    }
   };
 
   /* ── Drag & Drop ── */
 
   const handleDrop = async (storyId: string) => {
     if (!dragSkuId) return;
-    await assignSku(dragSkuId, storyId);
-    setDragSkuId(null);
-    refetchSkus();
+    setAiError(null);
+    try {
+      await assignSku(dragSkuId, storyId);
+      setDragSkuId(null);
+      refetchSkus();
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Failed to assign SKU');
+    }
   };
 
   const handleUnassign = async (skuId: string) => {
-    await assignSku(skuId, null);
-    refetchSkus();
+    setAiError(null);
+    try {
+      await assignSku(skuId, null);
+      refetchSkus();
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Failed to unassign SKU');
+    }
   };
 
   /* ── Add blank story ── */
 
   const handleAddStory = async () => {
-    await addStory({
-      collection_plan_id: collectionPlanId,
-      name: `Story ${stories.length + 1}`,
-      narrative: null,
-      mood: null,
-      tone: null,
-      color_palette: null,
-      hero_sku_id: null,
-      content_direction: null,
-      sort_order: stories.length,
-    });
+    setAiError(null);
+    try {
+      await addStory({
+        collection_plan_id: collectionPlanId,
+        name: `Story ${stories.length + 1}`,
+        narrative: null,
+        mood: null,
+        tone: null,
+        color_palette: null,
+        hero_sku_id: null,
+        content_direction: null,
+        sort_order: stories.length,
+      });
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Failed to add story');
+    }
   };
 
   /* ── Inline edit ── */
@@ -319,9 +341,14 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
 
   const saveEdit = async () => {
     if (!editingId) return;
-    await updateStory(editingId, editForm);
-    setEditingId(null);
-    setEditForm({});
+    setAiError(null);
+    try {
+      await updateStory(editingId, editForm);
+      setEditingId(null);
+      setEditForm({});
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Failed to save edits');
+    }
   };
 
   /* ── TABS ── */
@@ -415,7 +442,14 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
                 }}
                 onSaveEdit={saveEdit}
                 onEditChange={setEditForm}
-                onDelete={() => deleteStory(story.id)}
+                onDelete={async () => {
+                  setAiError(null);
+                  try {
+                    await deleteStory(story.id);
+                  } catch (err) {
+                    setAiError(err instanceof Error ? err.message : 'Failed to delete story');
+                  }
+                }}
                 onDrop={() => handleDrop(story.id)}
                 onUnassignSku={handleUnassign}
                 dragActive={!!dragSkuId}
