@@ -142,9 +142,13 @@ export const useStories = (collectionPlanId: string) => {
         const err = await res.json();
         throw new Error(err.error || 'Failed to bulk save stories');
       }
-      const data = (await res.json()) as Story[];
-      setStories(data.sort((a, b) => a.sort_order - b.sort_order));
-      return data;
+      // Response shape: either legacy Story[] OR new { stories, assignment_summary }
+      const raw = (await res.json()) as
+        | Story[]
+        | { stories: Story[]; assignment_summary?: unknown };
+      const stories_ = Array.isArray(raw) ? raw : raw.stories;
+      setStories(stories_.sort((a, b) => a.sort_order - b.sort_order));
+      return stories_;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);

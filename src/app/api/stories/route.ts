@@ -69,28 +69,105 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // If bulk, also assign SKUs to stories via story_id on collection_skus
-    if (Array.isArray(body.stories) && body.sku_assignments) {
-      // sku_assignments: Record<storyName, string[]> — map by name since IDs are new
+    // If bulk, also assign SKUs to stories via story_id on collection_skus.
+    // Robustified so an LLM that hallucinates or partially fills sku_ids
+    // can't leave the collection in a broken state:
+    //  1. Pre-fetch the real SKU ids for this collection_plan_id
+    //  2. Intersect the AI's sku_ids with real ids (drop anything hallucinated)
+    //  3. After the assigned pass, sweep any SKU still orphaned into the
+    //     first story so nothing is silently lost.
+    //  4. Always clear story_id on every SKU of the plan first (so that
+    //     re-runs of this bulk POST produce a clean state, not merged state).
+    let assignmentSummary: {
+      assigned: number;
+      hallucinated: number;
+      orphan_fallback: number;
+      total_skus: number;
+    } | null = null;
+
+    if (Array.isArray(body.stories)) {
+      // Fetch real SKU ids once
+      const { data: realSkus } = await supabaseAdmin
+        .from('collection_skus')
+        .select('id')
+        .eq('collection_plan_id', planId);
+
+      const realSkuIds = new Set((realSkus ?? []).map((s) => s.id as string));
+      const totalSkus = realSkuIds.size;
+
+      // Reset every SKU to unassigned so a re-run yields a clean state.
+      if (totalSkus > 0) {
+        await supabaseAdmin
+          .from('collection_skus')
+          .update({ story_id: null })
+          .eq('collection_plan_id', planId);
+      }
+
       const storyMap = new Map<string, string>();
       for (const s of data) {
         storyMap.set(s.name, s.id);
       }
 
-      for (const [storyName, skuIds] of Object.entries(body.sku_assignments)) {
-        const storyId = storyMap.get(storyName);
-        if (storyId && Array.isArray(skuIds)) {
+      let assigned = 0;
+      let hallucinated = 0;
+      const assignedSkus = new Set<string>();
+
+      if (body.sku_assignments) {
+        for (const [storyName, skuIds] of Object.entries(body.sku_assignments)) {
+          const storyId = storyMap.get(storyName);
+          if (!storyId || !Array.isArray(skuIds)) continue;
           for (const skuId of skuIds as string[]) {
-            await supabaseAdmin
+            if (!realSkuIds.has(skuId)) {
+              hallucinated += 1;
+              continue;
+            }
+            if (assignedSkus.has(skuId)) continue; // already claimed by an earlier story
+            const { error: updErr } = await supabaseAdmin
               .from('collection_skus')
               .update({ story_id: storyId })
               .eq('id', skuId);
+            if (!updErr) {
+              assigned += 1;
+              assignedSkus.add(skuId);
+            }
           }
         }
       }
+
+      // Sweep orphans: any SKU not yet assigned gets attached to the first
+      // story so ProductVisualsCard never shows zero assigned when there
+      // are real products to show.
+      let orphanFallback = 0;
+      const firstStoryId = data[0]?.id as string | undefined;
+      if (firstStoryId) {
+        const orphans = Array.from(realSkuIds).filter((id) => !assignedSkus.has(id));
+        if (orphans.length > 0) {
+          const { error: sweepErr } = await supabaseAdmin
+            .from('collection_skus')
+            .update({ story_id: firstStoryId })
+            .in('id', orphans);
+          if (!sweepErr) orphanFallback = orphans.length;
+        }
+      }
+
+      assignmentSummary = {
+        assigned,
+        hallucinated,
+        orphan_fallback: orphanFallback,
+        total_skus: totalSkus,
+      };
+
+      if (hallucinated > 0) {
+        console.warn(
+          `[stories POST] AI proposed ${hallucinated} SKU ids that do not exist in plan ${planId}; dropped.`
+        );
+      }
     }
 
-    return NextResponse.json(Array.isArray(body.stories) ? data : data[0], { status: 201 });
+    const payload = Array.isArray(body.stories)
+      ? { stories: data, assignment_summary: assignmentSummary }
+      : data[0];
+    return NextResponse.json(payload, { status: 201 });
   } catch (error) {
     console.error('Stories POST error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
