@@ -8,7 +8,7 @@
  *   3. renderPrompt() — Handlebars-style template renderer
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 // ─── Sub-context types ───
 
@@ -129,7 +129,13 @@ export interface PromptContext {
 export async function buildPromptContext(
   collectionPlanId: string
 ): Promise<PromptContext> {
-  const supabase = createClient();
+  // Use the service-role admin client. buildPromptContext runs exclusively
+  // inside server-side route handlers (stories/launch/post-launch) and
+  // must read collection data regardless of RLS. The previous implementation
+  // used the browser client, which silently returned null/empty data when
+  // no cookie context was present — masking bugs and breaking the AI flow
+  // the first time a user triggered it from a fresh session.
+  const supabase = supabaseAdmin;
 
   // Fetch all data in parallel
   const [

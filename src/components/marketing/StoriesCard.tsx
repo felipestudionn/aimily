@@ -104,6 +104,8 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
   // user clicked "OPEN" (collapsed render registered N hooks, expanded render
   // registered N+1 → mismatch → crash). Fix: hoist to top.
   const [editForm, setEditForm] = useState<Partial<Story>>({});
+  // AI error state — also hoisted for the same reason.
+  const [aiError, setAiError] = useState<string | null>(null);
 
   /* ── Card (collapsed) view ── */
   if (!expanded) {
@@ -171,6 +173,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
   const generateStories = async (mode: 'generate' | 'assist') => {
     setAiLoading(true);
     setAiDrafts(null);
+    setAiError(null);
     try {
       const consumerSignals = consumerSignalsText
         .split('\n')
@@ -188,11 +191,24 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
           language,
         }),
       });
-      if (!res.ok) throw new Error('AI generation failed');
+      if (!res.ok) {
+        // Surface the real backend error instead of a generic message so
+        // the user (and future debugging) can see what actually failed.
+        let backendMessage = `HTTP ${res.status}`;
+        try {
+          const errBody = (await res.json()) as { error?: string };
+          if (errBody?.error) backendMessage = errBody.error;
+        } catch {
+          // body was not JSON — fall back to the status
+        }
+        throw new Error(backendMessage);
+      }
       const data = (await res.json()) as AiResult;
       setAiDrafts(data);
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('AI generation error:', err);
+      setAiError(message);
     } finally {
       setAiLoading(false);
     }
@@ -460,6 +476,20 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
               {t.marketingPage.generateWithDirection}
             </button>
 
+            {aiError && (
+              <div className="border border-red-500/20 bg-red-500/[0.04] px-4 py-3 flex items-start justify-between gap-3">
+                <div className="text-sm font-light text-red-700 break-words">
+                  {aiError}
+                </div>
+                <button
+                  onClick={() => setAiError(null)}
+                  className="text-red-500/60 hover:text-red-700 text-xs uppercase tracking-wider flex-shrink-0"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             {/* AI drafts preview (editable) */}
             {aiDrafts && (
               <AiDraftsPreview
@@ -508,6 +538,20 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
               )}
               {t.marketingPage.generateAiProposal}
             </button>
+
+            {aiError && (
+              <div className="border border-red-500/20 bg-red-500/[0.04] px-4 py-3 flex items-start justify-between gap-3">
+                <div className="text-sm font-light text-red-700 break-words">
+                  {aiError}
+                </div>
+                <button
+                  onClick={() => setAiError(null)}
+                  className="text-red-500/60 hover:text-red-700 text-xs uppercase tracking-wider flex-shrink-0"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
             {aiDrafts && (
               <AiDraftsPreview

@@ -117,8 +117,15 @@ export async function POST(req: NextRequest) {
       fallback,
     });
   } catch (error) {
-    console.error('AI stories generate error:', error);
     const message = error instanceof Error ? error.message : 'Internal server error';
+    const stack = error instanceof Error ? error.stack : undefined;
+    // Structured error log — shows up in Vercel runtime logs with enough
+    // context to diagnose without redeploying.
+    console.error('[ai/stories/generate] FAILED', {
+      message,
+      stack,
+      name: error instanceof Error ? error.name : typeof error,
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
