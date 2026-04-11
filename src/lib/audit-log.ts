@@ -71,10 +71,6 @@ export const AUDIT_ACTIONS = {
   // Marketing — content state transitions
   CONTENT_PUBLISHED: 'content_published',
   LAUNCH_TASK_APPROVED: 'launch_task_approved',
-
-  // Marketing — presentation & retrospective deliverables
-  MARKETING_PRESENTATION_EXPORT: 'marketing_presentation_export',
-  MARKETING_RETROSPECTIVE_EMAILED: 'marketing_retrospective_emailed',
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
