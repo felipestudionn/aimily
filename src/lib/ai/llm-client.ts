@@ -64,12 +64,19 @@ export async function generateWithAI(req: LLMRequest): Promise<LLMResponse> {
   let model: 'haiku' | 'gemini' = 'haiku';
   let fallback = false;
 
+  // Track the first failure so we can surface a useful error if BOTH
+  // providers end up failing. Previously these errors were swallowed and
+  // the caller received only the opaque "Both AI providers failed" message.
+  let haikuError: unknown = null;
+  let geminiError: unknown = null;
+
   // Try Haiku first
   if (ANTHROPIC_API_KEY) {
     try {
       responseText = await callHaiku(req);
-    } catch {
-      // Will try Gemini fallback
+    } catch (err) {
+      haikuError = err;
+      console.warn('[llm-client] Haiku failed, will fallback to Gemini:', err instanceof Error ? err.message : err);
     }
   }
 
@@ -79,14 +86,22 @@ export async function generateWithAI(req: LLMRequest): Promise<LLMResponse> {
       responseText = await callGemini(req);
       model = 'gemini';
       fallback = true;
-    } catch {
-      throw new Error('Both AI providers failed. Please try again.');
+    } catch (err) {
+      geminiError = err;
+      const haikuMsg = haikuError instanceof Error ? haikuError.message : String(haikuError ?? 'no primary');
+      const geminiMsg = err instanceof Error ? err.message : String(err);
+      console.error('[llm-client] BOTH providers failed:', { haiku: haikuMsg, gemini: geminiMsg });
+      throw new Error(`AI providers failed — Haiku: ${haikuMsg.slice(0, 120)} | Gemini: ${geminiMsg.slice(0, 120)}`);
     }
   }
 
   if (!responseText) {
-    throw new Error('No AI provider configured (ANTHROPIC_API_KEY or GEMINI_API_KEY required)');
+    const detail = haikuError instanceof Error ? ` (last error: ${haikuError.message})` : '';
+    throw new Error(`No AI provider configured (ANTHROPIC_API_KEY or GEMINI_API_KEY required)${detail}`);
   }
+
+  // Prevent unused-var lint when both providers succeed immediately.
+  void geminiError;
 
   // ── Prompt Shield: re-identify placeholders in response ──
   if (redactionMap.length > 0) {
