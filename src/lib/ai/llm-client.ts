@@ -202,6 +202,50 @@ function tryParse<T>(str: string): T | undefined {
   }
 }
 
+/**
+ * Attempt to repair a JSON string that was truncated mid-value. Walks
+ * back from the end until we hit a structural character that can legally
+ * terminate the current depth, then closes any still-open braces/brackets.
+ * Used as a last-ditch effort when maxTokens cut the model mid-output.
+ */
+function repairTruncatedJSON(text: string): string | null {
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) return null;
+  let body = text.slice(firstBrace);
+
+  // Strip any trailing partial token that definitely can't be valid.
+  // Walk back to the last ',' '}' ']' or '"' that isn't inside a broken token.
+  // Simpler heuristic: cut at the last complete value terminator.
+  const lastCompleteIdx = Math.max(
+    body.lastIndexOf('}'),
+    body.lastIndexOf(']'),
+    body.lastIndexOf('"')
+  );
+  if (lastCompleteIdx === -1) return null;
+  body = body.slice(0, lastCompleteIdx + 1);
+
+  // Count unbalanced braces and brackets so we can close them.
+  let inString = false;
+  let escape = false;
+  let braces = 0;
+  let brackets = 0;
+  for (let i = 0; i < body.length; i += 1) {
+    const c = body[i];
+    if (escape) { escape = false; continue; }
+    if (c === '\\') { escape = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === '{') braces += 1;
+    else if (c === '}') braces -= 1;
+    else if (c === '[') brackets += 1;
+    else if (c === ']') brackets -= 1;
+  }
+  // If we're inside a string or the last char is a comma, we can't repair safely.
+  if (inString) return null;
+  body = body.replace(/,\s*$/, '');
+  return body + ']'.repeat(Math.max(brackets, 0)) + '}'.repeat(Math.max(braces, 0));
+}
+
 export function extractJSON<T = unknown>(text: string): T {
   // 1. Try direct parse
   const direct = tryParse<T>(text);
@@ -230,6 +274,16 @@ export function extractJSON<T = unknown>(text: string): T {
     if (parsed !== undefined) return parsed;
   }
 
+  // 5. Last-ditch: try to repair a truncated JSON (maxTokens cut output).
+  const repaired = repairTruncatedJSON(text);
+  if (repaired) {
+    const parsed = tryParse<T>(repaired);
+    if (parsed !== undefined) {
+      console.warn('[llm-client] Parsed AI response after truncation repair');
+      return parsed;
+    }
+  }
+
   // Check if the model refused the task
   const lower = text.toLowerCase();
   if (lower.includes('i cannot') || lower.includes("i can't") || lower.includes('i don\'t have') || lower.includes('i need to be transparent') || lower.includes('unable to access')
@@ -237,5 +291,12 @@ export function extractJSON<T = unknown>(text: string): T {
     throw new Error('AI was unable to complete the request. Please try again or adjust your input.');
   }
 
-  throw new Error(`Failed to parse AI response. Please try again.`);
+  // Log the raw text so Vercel logs show exactly what the model returned
+  // when parsing failed. Truncate to avoid blowing up the log lines.
+  const preview = text.length > 800 ? `${text.slice(0, 400)} … ${text.slice(-400)}` : text;
+  console.error('[llm-client] JSON parse failed. Raw response preview:', preview);
+
+  throw new Error(
+    `Failed to parse AI response (length ${text.length}). First 200 chars: ${text.slice(0, 200)}`
+  );
 }

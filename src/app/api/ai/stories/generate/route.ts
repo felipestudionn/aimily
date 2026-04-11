@@ -110,6 +110,11 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       user: userPrompt,
       temperature: 0.8,
+      // Stories output is ~3-5 entries × 15 fields each, including a
+      // priority_score block and structured content_direction. At the
+      // default 4096 tokens we were truncating the tail of the JSON and
+      // failing to parse. 8192 leaves comfortable margin.
+      maxTokens: 8192,
       language,
     });
 
