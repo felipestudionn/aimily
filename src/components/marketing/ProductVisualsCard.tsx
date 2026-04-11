@@ -622,6 +622,17 @@ function SkuVisualRow({
   );
   const isGenerating = generating?.skuId === sku.id;
 
+  // Thumbnail priority: 3D render > flat colored render > reference upload.
+  // Using the 3D render as the primary thumb gives marketing a preview
+  // aligned with what Still Life / Try-On will actually composite from.
+  const thumbImage =
+    sku.render_urls?.['3d'] || sku.render_url || sku.reference_image_url;
+
+  // Still Life and Try-On require the 3D render. Disable the buttons
+  // upfront when the SKU hasn't reached that step in the design phase
+  // so the user isn't led into a failing flow by a clickable button.
+  const hasRender3d = !!sku.render_urls?.['3d'];
+
   const ACTIONS: { id: VisualAction; labelKey: 'render' | 'onModel' | 'stillLife'; Icon: typeof Camera; descKey: 'studioProductShot' | 'virtualTryOn' | 'stillLifeScene' }[] = [
     { id: 'product-render', labelKey: 'render', Icon: ImageIcon, descKey: 'studioProductShot' },
     { id: 'tryon', labelKey: 'onModel', Icon: Shirt, descKey: 'virtualTryOn' },
@@ -637,8 +648,8 @@ function SkuVisualRow({
       >
         {/* Thumbnail */}
         <div className="w-14 h-14 bg-carbon/[0.03] border border-carbon/[0.06] flex-shrink-0 overflow-hidden">
-          {sku.reference_image_url ? (
-            <img src={sku.reference_image_url} alt={sku.name} className="w-full h-full object-cover" />
+          {thumbImage ? (
+            <img src={thumbImage} alt={sku.name} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Camera className="h-5 w-5 text-carbon/15" />
@@ -695,14 +706,17 @@ function SkuVisualRow({
           <div className="flex flex-wrap gap-2">
             {ACTIONS.map((action) => {
               const loading = isGenerating && generating?.action === action.id;
-              const needsImage = action.id === 'tryon' && !sku.reference_image_url;
+              // Still Life + Try-On require the 3D render to exist.
+              // Product Render itself can regenerate it on demand, so it
+              // doesn't need the guard.
+              const needs3d = (action.id === 'still-life' || action.id === 'tryon') && !hasRender3d;
               return (
                 <button
                   key={action.id}
                   onClick={() => onGenerate(action.id)}
-                  disabled={loading || isGenerating || needsImage}
+                  disabled={loading || isGenerating || needs3d}
                   className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/60 hover:text-carbon hover:border-carbon/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={needsImage ? t.marketingPage.uploadRefFirst : t.marketingPage[action.descKey]}
+                  title={needs3d ? 'Run the 3D render step in the design phase first.' : t.marketingPage[action.descKey]}
                 >
                   {loading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
