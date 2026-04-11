@@ -220,19 +220,20 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         modelUsed = 'gpt-image-1.5';
       } else if (action === 'tryon') {
         // Virtual Try-On via Freepik Nano Banana multi-reference.
-        // Needs: a brand model image (from the brand-model library) AND
-        // the product image (photoreal 3D from the design phase).
+        // STRICT: product image must be the photoreal 3D render, not a
+        // user-uploaded reference. Same reasoning as Still Life — Nano
+        // Banana composites the reference as-is, so using anything less
+        // than the 3D render produces visually weak results.
         const model = selectedModelId ? models.find((m) => m.id === selectedModelId) : models[0];
         if (!model?.reference_image_url) {
           throw new Error(
             'Select a brand model first (create one in the Brand Models library).'
           );
         }
-        const productImage =
-          sku.render_urls?.['3d'] || sku.render_url || sku.reference_image_url;
+        const productImage = sku.render_urls?.['3d'];
         if (!productImage) {
           throw new Error(
-            'This SKU has no product image yet. Complete the design phase first.'
+            'Try-On needs the photoreal 3D render of this SKU. Open the design phase, run the 3D render step, and try again.'
           );
         }
         endpoint = '/api/ai/freepik/tryon';
@@ -247,14 +248,17 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         modelUsed = 'freepik-nano-banana';
       } else if (action === 'still-life') {
         // Editorial still life via Freepik Nano Banana (Gemini 2.5 Flash Image).
-        // Uses the photoreal 3D render from the design phase as the reference
-        // image — the model composites the REAL product into the new scene
-        // without reinterpreting it.
-        const productImage =
-          sku.render_urls?.['3d'] || sku.render_url || sku.reference_image_url;
+        // STRICT: must use the photoreal 3D render from the design phase.
+        // Using a user-uploaded reference image produces low-quality results
+        // because Nano Banana composites the *reference* into the scene.
+        // Falling back to reference_image_url or the flat colorized render
+        // gives the "I see my reference picture in the new background"
+        // failure mode. Require render_urls['3d'] and guide the user to
+        // complete the design phase if it's missing.
+        const productImage = sku.render_urls?.['3d'];
         if (!productImage) {
           throw new Error(
-            'This SKU has no product image yet. Complete the design phase first.'
+            'Still Life needs the photoreal 3D render of this SKU. Open the design phase, run the 3D render step, and try again.'
           );
         }
         endpoint = '/api/ai/freepik/still-life';
