@@ -49,6 +49,20 @@ export async function POST(req: NextRequest) {
     // Build full context from all blocks
     const ctx = await buildPromptContext(collectionPlanId);
 
+    // Guard: AI story grouping needs actual SKUs to group. Without them
+    // the prompt asks the model to organize an empty collection and
+    // Haiku either refuses or returns malformed JSON — both surface as
+    // opaque 500s. Fail fast with a clear, actionable message instead.
+    if (!ctx.skus || ctx.skus.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            'Add at least one SKU to the collection before generating stories. The AI needs products to group into narrative arcs.',
+        },
+        { status: 400 }
+      );
+    }
+
     // Choose prompt template
     const template = mode === 'assist'
       ? MARKETING_PROMPTS.stories_assist
