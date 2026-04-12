@@ -6,7 +6,7 @@ import {
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset, uploadToStorage } from '@/lib/storage';
-import { blurFaceInStyleReference } from '@/lib/face-blur';
+import { compositeModelOntoStyleRef, blurFaceInStyleReference } from '@/lib/face-blur';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -439,19 +439,69 @@ export async function POST(req: NextRequest) {
     //
     // Any of [1] or [2] may be absent. When both are present, the prompt
     // instructs Nano Banana which image provides what signal.
+    // Reference images: ONLY 2 images max to avoid identity conflicts.
+    //
+    // Strategy v3: when both style_reference AND model are selected,
+    // we COMPOSITE the model's head onto the style reference BEFORE
+    // sending to Nano Banana. This gives Nano Banana a single image
+    // that already has the right face + right pose/lighting. No more
+    // 3-image confusion.
+    //
+    //   Case A: product only → [product]
+    //   Case B: product + model (no style ref) → [product, model_headshot]
+    //   Case C: product + style ref (no model) → [product, blurred_style_ref]
+    //   Case D: product + style ref + model → [product, composited_style_ref]
+    //
     const referenceImages = [product_image_url];
 
-    // Style reference — blur the face before sending
-    if (style_reference_url) {
+    if (style_reference_url && aiModel?.headshot_url) {
+      // Case D: composite model head onto style reference
       try {
-        const blurredBuffer = await blurFaceInStyleReference(style_reference_url);
+        const compositedBuffer = await compositeModelOntoStyleRef(
+          style_reference_url,
+          aiModel.headshot_url
+        );
         if (collectionPlanId) {
           const upload = await uploadToStorage(
             collectionPlanId,
             'editorial',
-            `style-ref-blurred-${Date.now()}.jpg`,
-            blurredBuffer,
+            `style-ref-composited-${Date.now()}.jpg`,
+            compositedBuffer,
             'image/jpeg'
+          );
+          referenceImages.push(upload.publicUrl);
+        } else {
+          // Fallback: pass both separately
+          referenceImages.push(style_reference_url);
+          referenceImages.push(aiModel.headshot_url);
+        }
+      } catch (compErr) {
+        console.error('[Editorial] Composite failed, falling back to blur+headshot:', compErr);
+        // Fallback: blur face + separate headshot (old v2 strategy)
+        try {
+          const blurredBuffer = await blurFaceInStyleReference(style_reference_url);
+          if (collectionPlanId) {
+            const upload = await uploadToStorage(
+              collectionPlanId, 'editorial',
+              `style-ref-blurred-${Date.now()}.jpg`, blurredBuffer, 'image/jpeg'
+            );
+            referenceImages.push(upload.publicUrl);
+          } else {
+            referenceImages.push(style_reference_url);
+          }
+        } catch {
+          referenceImages.push(style_reference_url);
+        }
+        referenceImages.push(aiModel.headshot_url);
+      }
+    } else if (style_reference_url) {
+      // Case C: style ref only — blur the face
+      try {
+        const blurredBuffer = await blurFaceInStyleReference(style_reference_url);
+        if (collectionPlanId) {
+          const upload = await uploadToStorage(
+            collectionPlanId, 'editorial',
+            `style-ref-blurred-${Date.now()}.jpg`, blurredBuffer, 'image/jpeg'
           );
           referenceImages.push(upload.publicUrl);
         } else {
@@ -461,10 +511,8 @@ export async function POST(req: NextRequest) {
         console.error('[Editorial] Face blur failed, using original:', blurErr);
         referenceImages.push(style_reference_url);
       }
-    }
-
-    // Model headshot — the aimily model's face as identity reference
-    if (aiModel?.headshot_url) {
+    } else if (aiModel?.headshot_url) {
+      // Case B: model only — pass headshot directly
       referenceImages.push(aiModel.headshot_url);
     }
 
