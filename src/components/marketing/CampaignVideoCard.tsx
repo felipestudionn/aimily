@@ -241,7 +241,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         }
       : undefined;
 
-  const handleEditorialGenerate = async (sourceImageUrl: string, skuName?: string, styleRefUrl?: string, modelDirectives?: { complexion: string; age: string; hair: string }) => {
+  const handleEditorialGenerate = async (sourceImageUrl: string, skuName?: string, styleRefUrl?: string, modelDirectives?: { complexion: string; age: string; hair: string }, modelId?: string) => {
     if (!user) return;
     setGenerating({ type: 'editorial' });
     setErrorMessage(null);
@@ -262,6 +262,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         body: JSON.stringify({
           product_image_url: sourceImageUrl,
           style_reference_url: styleRefUrl || undefined,
+          model_id: modelId || undefined,
           product_name: skuName || 'fashion product',
           scene: 'editorial',
           story_context: storyCtx,
@@ -1083,7 +1084,7 @@ function EditorialTab({
   generating: boolean;
   prompt: string;
   onPromptChange: (v: string) => void;
-  onGenerate: (productUrl: string, skuName?: string, styleRefUrl?: string, modelDirectives?: { complexion: string; age: string; hair: string }) => void;
+  onGenerate: (productUrl: string, skuName?: string, styleRefUrl?: string, modelDirectives?: { complexion: string; age: string; hair: string }, modelId?: string) => void;
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
   onLightbox: (url: string) => void;
@@ -1184,6 +1185,10 @@ function EditorialTab({
   const [modelComplexion, setModelComplexion] = useState('any');
   const [modelAge, setModelAge] = useState('any');
   const [modelHair, setModelHair] = useState('any');
+  // When the user selects an aimily model from the roster, this holds the
+  // model's UUID. When set, the dropdown selectors are ignored — the model's
+  // metadata is used instead by the endpoint.
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
 
   const selectedProduct = selectedProductIdx !== null ? productImages[selectedProductIdx] : null;
   const selectedStyle = selectedStyleIdx !== null ? styleImages[selectedStyleIdx] : null;
@@ -1360,7 +1365,8 @@ function EditorialTab({
                 selectedProduct.url,
                 selectedProduct.skuName,
                 selectedStyle?.url,
-                { complexion: modelComplexion, age: modelAge, hair: modelHair }
+                selectedModelId ? undefined : { complexion: modelComplexion, age: modelAge, hair: modelHair },
+                selectedModelId || undefined
               );
             }
           }}

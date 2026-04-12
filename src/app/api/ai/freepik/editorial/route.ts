@@ -7,6 +7,7 @@ import {
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset, uploadToStorage } from '@/lib/storage';
 import { blurFaceInStyleReference } from '@/lib/face-blur';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /* ═══════════════════════════════════════════════════════════════
    Editorial — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
@@ -115,9 +116,10 @@ function buildPrompt(params: {
   story?: StoryContext;
   userPrompt?: string;
   hasStyleReference?: boolean;
+  hasModelHeadshot?: boolean;
   modelDirectives?: ModelDirectives;
 }): string {
-  const { productName, category, scene, story, userPrompt, hasStyleReference, modelDirectives } = params;
+  const { productName, category, scene, story, userPrompt, hasStyleReference, hasModelHeadshot, modelDirectives } = params;
 
   const productType =
     category === 'CALZADO'
@@ -321,6 +323,23 @@ function buildPrompt(params: {
     );
   }
 
+  // 10. Model headshot reference — when the user selects an aimily model,
+  // their headshot is passed as the last reference image. This provides
+  // the face identity signal. The style reference (if any) has its face
+  // blurred, so this headshot is the ONLY face Nano Banana can latch onto.
+  if (hasModelHeadshot) {
+    parts.push(
+      `MODEL HEADSHOT (last reference image): The last reference image is a headshot of the SPECIFIC model who must appear in the final photograph. Use THIS person's face, facial features, skin tone, and hair as the model in the scene. The face in the final image must closely match this headshot — same person, same features, same identity. This is the casting selection — this specific model was chosen by the creative director.`
+    );
+
+    // When we have both a style ref AND a model headshot, clarify the roles
+    if (hasStyleReference) {
+      parts.push(
+        `REFERENCE IMAGE ROLES SUMMARY: Image 1 = product (preserve exactly). Image 2 = style/composition/lighting/pose (follow the scene direction, ignore the blurred face). Image 3 = model headshot (use this person's face and identity).`
+      );
+    }
+  }
+
   if (userPrompt) parts.push(`ADDITIONAL ART DIRECTION: ${userPrompt}.`);
 
   return parts.join(' ');
@@ -341,6 +360,7 @@ export async function POST(req: NextRequest) {
     const {
       product_image_url,
       style_reference_url,
+      model_id,
       product_name,
       category,
       scene,
@@ -349,6 +369,18 @@ export async function POST(req: NextRequest) {
       model_directives,
       collectionPlanId,
     } = await req.json();
+
+    // Look up the selected aimily model if provided
+    let aiModel: { name: string; headshot_url: string; description: string; gender: string; complexion: string; hair_style: string; hair_color: string } | null = null;
+    if (model_id) {
+      const { data } = await supabaseAdmin
+        .from('aimily_models')
+        .select('name, headshot_url, description, gender, complexion, hair_style, hair_color')
+        .eq('id', model_id)
+        .eq('is_active', true)
+        .single();
+      aiModel = data;
+    }
 
     if (!product_image_url) {
       return NextResponse.json(
@@ -369,6 +401,13 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
+    // When the user selects an aimily model, we use the model's metadata
+    // to override the model_directives (complexion/hair/etc) so the prompt
+    // is consistent with the headshot being passed as a reference image.
+    const effectiveModelDirectives = aiModel
+      ? { complexion: aiModel.complexion, hair: aiModel.hair_style, age: '20s' }
+      : (model_directives || undefined);
+
     const prompt = buildPrompt({
       productName: product_name || 'fashion product',
       category,
@@ -376,20 +415,23 @@ export async function POST(req: NextRequest) {
       story: story_context,
       userPrompt: user_prompt,
       hasStyleReference: !!style_reference_url,
-      modelDirectives: model_directives || undefined,
+      hasModelHeadshot: !!aiModel,
+      modelDirectives: effectiveModelDirectives,
     });
 
-    // Reference images: product is always first. If the user provided
-    // a style reference, we blur the face region before sending it to
-    // Nano Banana. This preserves composition, lighting, pose, wardrobe,
-    // and color grading — but removes the facial identity signal so
-    // Nano Banana generates a new face instead of cloning the reference.
+    // Reference images array — order matters for Nano Banana:
+    //   [0] Product 3D render (identity preservation — pixel-perfect)
+    //   [1] Style reference (composition/lighting/pose — face blurred)
+    //   [2] Model headshot (face identity — the aimily model's face)
+    //
+    // Any of [1] or [2] may be absent. When both are present, the prompt
+    // instructs Nano Banana which image provides what signal.
     const referenceImages = [product_image_url];
+
+    // Style reference — blur the face before sending
     if (style_reference_url) {
       try {
         const blurredBuffer = await blurFaceInStyleReference(style_reference_url);
-        // Upload the blurred version to Supabase Storage so Nano Banana
-        // can access it via URL. Use a temp name — it's not user-facing.
         if (collectionPlanId) {
           const upload = await uploadToStorage(
             collectionPlanId,
@@ -400,16 +442,17 @@ export async function POST(req: NextRequest) {
           );
           referenceImages.push(upload.publicUrl);
         } else {
-          // No collection context — fall back to passing the original
-          // (face blur requires storage to host the processed image)
           referenceImages.push(style_reference_url);
         }
       } catch (blurErr) {
-        // If face blur fails, fall back to the original style reference
-        // rather than blocking the entire generation. Log for debugging.
         console.error('[Editorial] Face blur failed, using original:', blurErr);
         referenceImages.push(style_reference_url);
       }
+    }
+
+    // Model headshot — the aimily model's face as identity reference
+    if (aiModel?.headshot_url) {
+      referenceImages.push(aiModel.headshot_url);
     }
 
     const generatedUrl = await createAndPoll(prompt, referenceImages);
