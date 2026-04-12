@@ -1625,6 +1625,7 @@ export const en = {
     editorialDesc: 'Generate editorial photography from your favorite product visuals or upload real shoots.',
     selectSourceImage: 'Select Source Image',
     starVisualsFirst: 'Star some visuals in the Product Visuals card first, or upload your own.',
+    noSourceImages: 'Complete the 3D render step in the Design phase, or upload your own image.',
     artDirection: 'Art Direction (optional)',
     artDirectionPlaceholder: 'E.g. dramatic side lighting, against raw concrete wall, model looking away...',
     generateEditorial: 'Generate Editorial',

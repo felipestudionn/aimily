@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/api-auth';
 import { uploadBase64, uploadFromUrl, saveAssetRecord, type AssetType } from '@/lib/storage';
 
-const VALID_ASSET_TYPES: AssetType[] = ['moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model'];
+const VALID_ASSET_TYPES: AssetType[] = ['moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model', 'still_life', 'editorial'];
 
 /**
  * POST /api/storage/upload

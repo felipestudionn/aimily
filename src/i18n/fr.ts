@@ -1579,6 +1579,7 @@ export const fr: Dictionary = {
     editorialDesc: 'Générez de la photographie éditoriale à partir de vos visuels favoris ou importez de vrais shootings.',
     selectSourceImage: 'Sélectionner l\'image source',
     starVisualsFirst: 'Mettez d\'abord des visuels en favori dans la carte Visuels Produit, ou importez les vôtres.',
+    noSourceImages: 'Complétez l\'étape de rendu 3D dans la phase Design, ou importez votre propre image.',
     artDirection: 'Direction artistique (optionnel)',
     artDirectionPlaceholder: 'Ex. éclairage latéral dramatique, contre un mur de béton brut, mannequin regardant ailleurs...',
     generateEditorial: 'Générer l\'éditorial',

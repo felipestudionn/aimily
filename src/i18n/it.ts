@@ -1579,6 +1579,7 @@ export const it: Dictionary = {
     editorialDesc: 'Genera fotografia editoriale dai tuoi visual di prodotto preferiti o carica scatti reali.',
     selectSourceImage: 'Seleziona Immagine Sorgente',
     starVisualsFirst: 'Aggiungi prima ai preferiti alcuni visual nella scheda Visual di Prodotto, o carica i tuoi.',
+    noSourceImages: 'Completa il passaggio del render 3D nella fase Design, o carica la tua immagine.',
     artDirection: 'Direzione Artistica (opzionale)',
     artDirectionPlaceholder: 'Es. illuminazione laterale drammatica, sfondo cemento grezzo, modello/a con sguardo distante...',
     generateEditorial: 'Genera Editoriale',

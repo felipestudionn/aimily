@@ -1579,6 +1579,7 @@ export const de: Dictionary = {
     editorialDesc: 'Generieren Sie Editorial-Fotografie aus Ihren Favoriten-Visuals oder laden Sie echte Shootings hoch.',
     selectSourceImage: 'Quellbild auswählen',
     starVisualsFirst: 'Markieren Sie zuerst einige Visuals in der Produkt-Visuals-Karte als Favorit, oder laden Sie eigene hoch.',
+    noSourceImages: 'Schließen Sie den 3D-Render-Schritt in der Designphase ab oder laden Sie ein eigenes Bild hoch.',
     artDirection: 'Art Direction (optional)',
     artDirectionPlaceholder: 'Z. B. Dramatisches Seitenlicht, vor roher Betonwand, Model blickt weg...',
     generateEditorial: 'Editorial generieren',

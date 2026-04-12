@@ -1493,6 +1493,7 @@ export const no: Dictionary = {
     editorialDesc: 'Generer redaksjonell fotografering fra favorittproduktibildene dine eller last opp ekte bilder.',
     selectSourceImage: 'Velg kildebilde',
     starVisualsFirst: 'Merk noen bilder som favoritter i Produktvisualisering-kortet først, eller last opp egne.',
+    noSourceImages: 'Fullfør 3D-gjengivelsestrinnet i designfasen, eller last opp ditt eget bilde.',
     artDirection: 'Art direction (valgfritt)',
     artDirectionPlaceholder: 'F.eks. dramatisk sidelys, mot rå betongvegg, modellen ser bort...',
     generateEditorial: 'Generer redaksjonelt',

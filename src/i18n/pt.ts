@@ -1566,6 +1566,7 @@ export const pt: Dictionary = {
     editorialDesc: 'Gere fotografia editorial a partir dos seus visuais favoritos ou envie fotos reais.',
     selectSourceImage: 'Selecionar Imagem Fonte',
     starVisualsFirst: 'Marque visuais como favoritos no cartão de Visuais de Produto, ou envie os seus.',
+    noSourceImages: 'Conclua a etapa de render 3D na fase de Design, ou envie sua própria imagem.',
     artDirection: 'Direção Artística (opcional)',
     artDirectionPlaceholder: 'Ex. iluminação lateral dramática, contra parede de concreto, modelo olhando para o lado...',
     generateEditorial: 'Gerar Editorial',

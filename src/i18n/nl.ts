@@ -1579,6 +1579,7 @@ export const nl: Dictionary = {
     editorialDesc: 'Genereer editorial-fotografie uit uw favoriete visuals of upload echte shootings.',
     selectSourceImage: 'Bronafbeelding selecteren',
     starVisualsFirst: 'Markeer eerst enkele visuals als favoriet in de productvisuals-kaart, of upload eigen afbeeldingen.',
+    noSourceImages: 'Voltooi de 3D-renderstap in de ontwerpfase, of upload uw eigen afbeelding.',
     artDirection: 'Art direction (optioneel)',
     artDirectionPlaceholder: 'Bijv. dramatisch zijlicht, voor rauwe betonnen muur, model kijkt weg...',
     generateEditorial: 'Editorial genereren',

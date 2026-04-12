@@ -111,8 +111,8 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
   >('value');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
+  // fileInputRef and videoInputRef moved into EditorialTab/VideoTab
+  // respectively, so each tab owns its own upload lifecycle.
 
   /* ── Lookbook pages for active story ── */
   const activeStoryForLookbook = activeStoryId || stories[0]?.id || undefined;
@@ -166,6 +166,21 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         (activeStory ? g.story_id === activeStory.id || g.input_data?.sku_id && activeStory.skus.some(s => s.id === g.input_data?.sku_id) : true)
     );
   }, [generations, activeStory]);
+
+  // SKU 3D renders as base source images for Editorial/Video tabs.
+  // These are always available when the SKU has reached the 3D render
+  // step in the design phase — no "favorite" gate required.
+  const skuSourceImages = useMemo(() => {
+    const storySkus = activeStory?.skus || [];
+    return storySkus
+      .filter((sk) => sk.render_urls?.['3d'])
+      .map((sk) => ({
+        url: sk.render_urls!['3d'] as string,
+        skuName: sk.name,
+        key: `sku-3d-${sk.id}`,
+        badge: '3D' as const,
+      }));
+  }, [activeStory]);
 
   const totalContent = editorialGens.length + videoGens.length + lookbookPages.length;
 
@@ -711,6 +726,8 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           <EditorialTab
             generations={editorialGens}
             favoriteVisuals={favoriteVisuals}
+            skuSourceImages={skuSourceImages}
+            collectionPlanId={collectionPlanId}
             generating={generating?.type === 'editorial'}
             prompt={editorialPrompt}
             onPromptChange={setEditorialPrompt}
@@ -718,7 +735,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             onToggleFavorite={handleToggleFavorite}
             onDelete={handleDeleteGeneration}
             onLightbox={setLightboxUrl}
-            fileInputRef={fileInputRef}
+            onError={setErrorMessage}
           />
         )}
 
@@ -727,6 +744,8 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           <VideoTab
             generations={videoGens}
             favoriteVisuals={favoriteVisuals}
+            skuSourceImages={skuSourceImages}
+            collectionPlanId={collectionPlanId}
             generating={generating?.type === 'video'}
             selectedMotion={selectedMotion}
             onMotionChange={setSelectedMotion}
@@ -746,7 +765,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
             onToggleFavorite={handleToggleFavorite}
             onDelete={handleDeleteGeneration}
             onVideoPreview={setVideoPreviewUrl}
-            videoInputRef={videoInputRef}
+            onError={setErrorMessage}
           />
         )}
       </div>
@@ -1011,11 +1030,41 @@ function LookbookTab({
   );
 }
 
+/* ── Shared type for source images across Editorial and Video tabs ── */
+
+interface SourceImage {
+  url: string;
+  skuName: string;
+  key: string;
+  badge?: '3D' | 'fav' | 'upload';
+}
+
+/**
+ * Read a File as a base64 data URL. Returns the raw base64 string
+ * (without the "data:...;base64," prefix) and the MIME type.
+ */
+function readFileAsBase64(file: File): Promise<{ base64: string; mimeType: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // result is "data:<mime>;base64,<data>"
+      const [header, data] = result.split(',');
+      const mimeType = header.match(/data:(.*);/)?.[1] || file.type || 'image/png';
+      resolve({ base64: data, mimeType });
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 /* ── EDITORIAL TAB ── */
 
 function EditorialTab({
   generations,
   favoriteVisuals,
+  skuSourceImages,
+  collectionPlanId,
   generating,
   prompt,
   onPromptChange,
@@ -1023,10 +1072,12 @@ function EditorialTab({
   onToggleFavorite,
   onDelete,
   onLightbox,
-  fileInputRef,
+  onError,
 }: {
   generations: AiGeneration[];
   favoriteVisuals: AiGeneration[];
+  skuSourceImages: SourceImage[];
+  collectionPlanId: string;
   generating: boolean;
   prompt: string;
   onPromptChange: (v: string) => void;
@@ -1034,23 +1085,85 @@ function EditorialTab({
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
   onLightbox: (url: string) => void;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  onError: (msg: string | null) => void;
 }) {
   const t = useTranslation();
   const [selectedSourceIdx, setSelectedSourceIdx] = useState<number | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<SourceImage[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Source images: favorite visuals from ProductVisualsCard
+  // Source images: SKU 3D renders (always present when design phase
+  // is done) + favorite visuals + user-uploaded photos. Deduplicate
+  // by URL in case the same render appears in both SKU list and
+  // as a favorited generation.
   const sourceImages = useMemo(() => {
-    return favoriteVisuals
+    const favImages: SourceImage[] = favoriteVisuals
       .filter((g) => g.output_data?.images?.length)
       .flatMap((g) =>
         (g.output_data?.images || []).map((img, i) => ({
           url: img.url,
           skuName: (g.input_data?.sku_name as string) || '',
-          key: `${g.id}-${i}`,
+          key: `fav-${g.id}-${i}`,
+          badge: 'fav' as const,
         }))
       );
-  }, [favoriteVisuals]);
+
+    // Deduplicate: SKU sources first, then favorites that aren't
+    // already present, then uploads.
+    const seen = new Set<string>();
+    const result: SourceImage[] = [];
+    for (const img of [...skuSourceImages, ...favImages, ...uploadedImages]) {
+      if (!seen.has(img.url)) {
+        seen.add(img.url);
+        result.push(img);
+      }
+    }
+    return result;
+  }, [favoriteVisuals, skuSourceImages, uploadedImages]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset the input so the same file can be re-selected if needed
+    e.target.value = '';
+
+    setUploading(true);
+    onError(null);
+    try {
+      const { base64, mimeType } = await readFileAsBase64(file);
+      const res = await fetch('/api/storage/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          assetType: 'editorial',
+          name: file.name,
+          base64,
+          mimeType,
+          phase: 'marketing',
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Upload failed (${res.status})`);
+      }
+      const data = await res.json();
+      setUploadedImages((prev) => [
+        ...prev,
+        {
+          url: data.publicUrl,
+          skuName: file.name.replace(/\.[^.]+$/, ''),
+          key: `upload-${Date.now()}`,
+          badge: 'upload' as const,
+        },
+      ]);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -1071,7 +1184,7 @@ function EditorialTab({
         </p>
         {sourceImages.length === 0 ? (
           <p className="text-xs text-carbon/25 font-light py-4">
-            {t.marketingPage.starVisualsFirst}
+            {t.marketingPage.noSourceImages}
           </p>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
@@ -1079,13 +1192,18 @@ function EditorialTab({
               <button
                 key={img.key}
                 onClick={() => setSelectedSourceIdx(idx)}
-                className={`aspect-square border overflow-hidden transition-all ${
+                className={`relative aspect-square border overflow-hidden transition-all ${
                   selectedSourceIdx === idx
                     ? 'border-carbon border-2 shadow-md'
                     : 'border-carbon/[0.06] hover:border-carbon/20'
                 }`}
               >
                 <img src={img.url} alt={img.skuName} className="w-full h-full object-cover" />
+                {img.badge && (
+                  <span className="absolute bottom-0.5 left-0.5 text-[7px] font-medium tracking-wider uppercase bg-white/90 text-carbon/50 px-1 py-px">
+                    {img.badge === '3D' ? '3D' : img.badge === 'upload' ? '↑' : '★'}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -1105,7 +1223,7 @@ function EditorialTab({
         />
       </div>
 
-      {/* Generate button */}
+      {/* Generate + Upload buttons */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => {
@@ -1128,13 +1246,15 @@ function EditorialTab({
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          onChange={handleFileUpload}
           className="hidden"
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors"
+          disabled={uploading}
+          className="flex items-center gap-2 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors disabled:opacity-40"
         >
-          <Upload className="h-3.5 w-3.5" />
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
           {t.marketingPage.uploadPhoto}
         </button>
 
@@ -1233,6 +1353,8 @@ interface VideoShotlist {
 function VideoTab({
   generations,
   favoriteVisuals,
+  skuSourceImages,
+  collectionPlanId,
   generating,
   selectedMotion,
   onMotionChange,
@@ -1252,10 +1374,12 @@ function VideoTab({
   onToggleFavorite,
   onDelete,
   onVideoPreview,
-  videoInputRef,
+  onError,
 }: {
   generations: AiGeneration[];
   favoriteVisuals: AiGeneration[];
+  skuSourceImages: SourceImage[];
+  collectionPlanId: string;
   generating: boolean;
   selectedMotion: string;
   onMotionChange: (v: string) => void;
@@ -1275,22 +1399,78 @@ function VideoTab({
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
   onVideoPreview: (url: string) => void;
-  videoInputRef: React.RefObject<HTMLInputElement | null>;
+  onError: (msg: string | null) => void;
 }) {
   const t = useTranslation();
   const [selectedSourceIdx, setSelectedSourceIdx] = useState<number | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<SourceImage[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
+  // Same source image merge as EditorialTab — SKU 3D renders first,
+  // then favorites, then uploads. Deduplicated by URL.
   const sourceImages = useMemo(() => {
-    return favoriteVisuals
+    const favImages: SourceImage[] = favoriteVisuals
       .filter((g) => g.output_data?.images?.length)
       .flatMap((g) =>
         (g.output_data?.images || []).map((img, i) => ({
           url: img.url,
           skuName: (g.input_data?.sku_name as string) || '',
-          key: `${g.id}-${i}`,
+          key: `fav-${g.id}-${i}`,
+          badge: 'fav' as const,
         }))
       );
-  }, [favoriteVisuals]);
+    const seen = new Set<string>();
+    const result: SourceImage[] = [];
+    for (const img of [...skuSourceImages, ...favImages, ...uploadedImages]) {
+      if (!seen.has(img.url)) {
+        seen.add(img.url);
+        result.push(img);
+      }
+    }
+    return result;
+  }, [favoriteVisuals, skuSourceImages, uploadedImages]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setUploading(true);
+    onError(null);
+    try {
+      const { base64, mimeType } = await readFileAsBase64(file);
+      const res = await fetch('/api/storage/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          assetType: 'video',
+          name: file.name,
+          base64,
+          mimeType,
+          phase: 'marketing',
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Upload failed (${res.status})`);
+      }
+      const data = await res.json();
+      setUploadedImages((prev) => [
+        ...prev,
+        {
+          url: data.publicUrl,
+          skuName: file.name.replace(/\.[^.]+$/, ''),
+          key: `upload-${Date.now()}`,
+          badge: 'upload' as const,
+        },
+      ]);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -1311,7 +1491,7 @@ function VideoTab({
         </p>
         {sourceImages.length === 0 ? (
           <p className="text-xs text-carbon/25 font-light py-4">
-            {t.marketingPage.starVisualsVideo}
+            {t.marketingPage.noSourceImages}
           </p>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
@@ -1319,13 +1499,18 @@ function VideoTab({
               <button
                 key={img.key}
                 onClick={() => setSelectedSourceIdx(idx)}
-                className={`aspect-square border overflow-hidden transition-all ${
+                className={`relative aspect-square border overflow-hidden transition-all ${
                   selectedSourceIdx === idx
                     ? 'border-carbon border-2 shadow-md'
                     : 'border-carbon/[0.06] hover:border-carbon/20'
                 }`}
               >
                 <img src={img.url} alt={img.skuName} className="w-full h-full object-cover" />
+                {img.badge && (
+                  <span className="absolute bottom-0.5 left-0.5 text-[7px] font-medium tracking-wider uppercase bg-white/90 text-carbon/50 px-1 py-px">
+                    {img.badge === '3D' ? '3D' : img.badge === 'upload' ? '↑' : '★'}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -1560,15 +1745,17 @@ function VideoTab({
         <input
           ref={videoInputRef}
           type="file"
-          accept="video/*"
+          accept="image/*"
+          onChange={handleFileUpload}
           className="hidden"
         />
         <button
           onClick={() => videoInputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors"
+          disabled={uploading}
+          className="flex items-center gap-2 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors disabled:opacity-40"
         >
-          <Upload className="h-3.5 w-3.5" />
-          {t.marketingPage.uploadVideo}
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          {t.marketingPage.uploadPhoto}
         </button>
 
         {generating && (

@@ -1493,6 +1493,7 @@ export const sv: Dictionary = {
     editorialDesc: 'Generera redaktionell fotografi från dina favoritproduktbilder eller ladda upp riktiga fotograferingar.',
     selectSourceImage: 'Välj källbild',
     starVisualsFirst: 'Stjärnmarkera bilder i Produktvisuellt material-kortet först, eller ladda upp egna.',
+    noSourceImages: 'Slutför 3D-renderingssteget i designfasen, eller ladda upp en egen bild.',
     artDirection: 'Art direction (valfritt)',
     artDirectionPlaceholder: 'T.ex. dramatiskt sidoljus, mot rå betongvägg, modellen tittar bort...',
     generateEditorial: 'Generera redaktionellt',
