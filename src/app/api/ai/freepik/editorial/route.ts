@@ -102,6 +102,12 @@ async function createAndPoll(
  * contract is identical — Nano Banana's reference compositing must
  * keep the 3D render pixel-perfect.
  */
+interface ModelDirectives {
+  complexion?: string;
+  age?: string;
+  hair?: string;
+}
+
 function buildPrompt(params: {
   productName: string;
   category: string | undefined;
@@ -109,8 +115,9 @@ function buildPrompt(params: {
   story?: StoryContext;
   userPrompt?: string;
   hasStyleReference?: boolean;
+  modelDirectives?: ModelDirectives;
 }): string {
-  const { productName, category, scene, story, userPrompt, hasStyleReference } = params;
+  const { productName, category, scene, story, userPrompt, hasStyleReference, modelDirectives } = params;
 
   const productType =
     category === 'CALZADO'
@@ -180,6 +187,48 @@ function buildPrompt(params: {
   parts.push(
     `• The model's styling, wardrobe, hair, and attitude should serve the story (see EDITORIAL DIRECTION below) and NEVER compete with or obscure the product.`
   );
+
+  // 2b. Model appearance directives — user-selected casting brief.
+  if (modelDirectives) {
+    const complexionMap: Record<string, string> = {
+      light: 'light / fair skin tone',
+      medium: 'medium skin tone',
+      olive: 'olive / Mediterranean skin tone',
+      tan: 'tan / warm brown skin tone',
+      dark: 'dark / deep brown skin tone',
+    };
+    const ageMap: Record<string, string> = {
+      '20s': 'in their early-to-mid 20s',
+      '30s': 'in their early-to-mid 30s',
+      '40s': 'in their early-to-mid 40s',
+      '50s': 'in their 50s, mature and confident',
+    };
+    const hairMap: Record<string, string> = {
+      short_straight: 'short straight hair',
+      short_curly: 'short curly or coily hair',
+      medium_straight: 'medium-length straight hair',
+      medium_wavy: 'medium-length wavy hair',
+      long_straight: 'long straight hair',
+      long_curly: 'long curly hair',
+      buzz: 'buzz cut or very short cropped hair',
+      updo: 'hair styled up in a bun or updo',
+    };
+
+    const dirParts: string[] = [];
+    if (modelDirectives.complexion && modelDirectives.complexion !== 'any') {
+      dirParts.push(complexionMap[modelDirectives.complexion] || modelDirectives.complexion);
+    }
+    if (modelDirectives.age && modelDirectives.age !== 'any') {
+      dirParts.push(ageMap[modelDirectives.age] || `approximately ${modelDirectives.age}`);
+    }
+    if (modelDirectives.hair && modelDirectives.hair !== 'any') {
+      dirParts.push(hairMap[modelDirectives.hair] || modelDirectives.hair.replace('_', ' '));
+    }
+
+    if (dirParts.length > 0) {
+      parts.push(`MODEL CASTING BRIEF: the model should have ${dirParts.join(', ')}. These are the selected appearance directives — follow them precisely.`);
+    }
+  }
 
   // 3. Product placement — how the product relates to the model.
   parts.push(`PRODUCT PLACEMENT: the ${productType} is ${wearContext}`);
@@ -297,6 +346,7 @@ export async function POST(req: NextRequest) {
       scene,
       story_context,
       user_prompt,
+      model_directives,
       collectionPlanId,
     } = await req.json();
 
@@ -326,6 +376,7 @@ export async function POST(req: NextRequest) {
       story: story_context,
       userPrompt: user_prompt,
       hasStyleReference: !!style_reference_url,
+      modelDirectives: model_directives || undefined,
     });
 
     // Reference images: product is always first. If the user provided

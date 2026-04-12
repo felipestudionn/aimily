@@ -241,7 +241,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         }
       : undefined;
 
-  const handleEditorialGenerate = async (sourceImageUrl: string, skuName?: string, styleRefUrl?: string) => {
+  const handleEditorialGenerate = async (sourceImageUrl: string, skuName?: string, styleRefUrl?: string, modelDirectives?: { complexion: string; age: string; hair: string }) => {
     if (!user) return;
     setGenerating({ type: 'editorial' });
     setErrorMessage(null);
@@ -266,6 +266,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           scene: 'editorial',
           story_context: storyCtx,
           user_prompt: editorialPrompt || undefined,
+          model_directives: modelDirectives || undefined,
           collectionPlanId,
         }),
       });
@@ -1082,7 +1083,7 @@ function EditorialTab({
   generating: boolean;
   prompt: string;
   onPromptChange: (v: string) => void;
-  onGenerate: (productUrl: string, skuName?: string, styleRefUrl?: string) => void;
+  onGenerate: (productUrl: string, skuName?: string, styleRefUrl?: string, modelDirectives?: { complexion: string; age: string; hair: string }) => void;
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
   onLightbox: (url: string) => void;
@@ -1179,6 +1180,11 @@ function EditorialTab({
     }
   };
 
+  // ── Picker 3: Model appearance directives ──
+  const [modelComplexion, setModelComplexion] = useState('any');
+  const [modelAge, setModelAge] = useState('any');
+  const [modelHair, setModelHair] = useState('any');
+
   const selectedProduct = selectedProductIdx !== null ? productImages[selectedProductIdx] : null;
   const selectedStyle = selectedStyleIdx !== null ? styleImages[selectedStyleIdx] : null;
 
@@ -1271,6 +1277,67 @@ function EditorialTab({
         </div>
       </div>
 
+      {/* ── Picker 3: Model appearance ── */}
+      <div>
+        <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
+          {t.marketingPage.editorialModelLabel}
+        </p>
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Complexion */}
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-light text-carbon/40">{t.marketingPage.modelComplexion}</label>
+            <select
+              value={modelComplexion}
+              onChange={(e) => setModelComplexion(e.target.value)}
+              className="text-xs font-light text-carbon bg-white border border-carbon/[0.06] px-3 py-1.5 focus:outline-none focus:border-carbon/20"
+            >
+              <option value="any">{t.marketingPage.modelAny}</option>
+              <option value="light">{t.marketingPage.modelComplexionLight}</option>
+              <option value="medium">{t.marketingPage.modelComplexionMedium}</option>
+              <option value="olive">{t.marketingPage.modelComplexionOlive}</option>
+              <option value="tan">{t.marketingPage.modelComplexionTan}</option>
+              <option value="dark">{t.marketingPage.modelComplexionDark}</option>
+            </select>
+          </div>
+
+          {/* Age range */}
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-light text-carbon/40">{t.marketingPage.modelAge}</label>
+            <select
+              value={modelAge}
+              onChange={(e) => setModelAge(e.target.value)}
+              className="text-xs font-light text-carbon bg-white border border-carbon/[0.06] px-3 py-1.5 focus:outline-none focus:border-carbon/20"
+            >
+              <option value="any">{t.marketingPage.modelAny}</option>
+              <option value="20s">{t.marketingPage.modelAge20s}</option>
+              <option value="30s">{t.marketingPage.modelAge30s}</option>
+              <option value="40s">{t.marketingPage.modelAge40s}</option>
+              <option value="50s">{t.marketingPage.modelAge50s}</option>
+            </select>
+          </div>
+
+          {/* Hair */}
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] font-light text-carbon/40">{t.marketingPage.modelHair}</label>
+            <select
+              value={modelHair}
+              onChange={(e) => setModelHair(e.target.value)}
+              className="text-xs font-light text-carbon bg-white border border-carbon/[0.06] px-3 py-1.5 focus:outline-none focus:border-carbon/20"
+            >
+              <option value="any">{t.marketingPage.modelAny}</option>
+              <option value="short_straight">{t.marketingPage.modelHairShortStraight}</option>
+              <option value="short_curly">{t.marketingPage.modelHairShortCurly}</option>
+              <option value="medium_straight">{t.marketingPage.modelHairMediumStraight}</option>
+              <option value="medium_wavy">{t.marketingPage.modelHairMediumWavy}</option>
+              <option value="long_straight">{t.marketingPage.modelHairLongStraight}</option>
+              <option value="long_curly">{t.marketingPage.modelHairLongCurly}</option>
+              <option value="buzz">{t.marketingPage.modelHairBuzz}</option>
+              <option value="updo">{t.marketingPage.modelHairUpdo}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Art direction prompt (text, additional to the visual ref) */}
       <div>
         <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 block mb-2">
@@ -1292,7 +1359,8 @@ function EditorialTab({
               onGenerate(
                 selectedProduct.url,
                 selectedProduct.skuName,
-                selectedStyle?.url
+                selectedStyle?.url,
+                { complexion: modelComplexion, age: modelAge, hair: modelHair }
               );
             }
           }}
