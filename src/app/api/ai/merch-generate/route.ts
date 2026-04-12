@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
   const type = body.type as GenerationType;
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
+  const collectionPlanId = body.collectionPlanId as string | undefined;
 
   // If pricing-assisted has reference brands, research their pricing first
   if (type === 'pricing-assisted' && input.referenceBrands) {
@@ -59,6 +60,21 @@ export async function POST(req: NextRequest) {
       temperature: prompt.temperature,
       language,
     });
+
+    // CIS: capture merchandising AI decisions (fire-and-forget)
+    if (collectionPlanId && data) {
+      const { recordDecision } = await import('@/lib/collection-intelligence');
+      recordDecision({
+        collectionPlanId,
+        domain: 'merchandising', subdomain: type.split('-')[0], key: `merch_${type}`,
+        value: data,
+        source: 'ai_recommendation',
+        sourcePhase: 'merchandising', sourceComponent: 'MerchBlock',
+        tags: ['affects_pricing', 'affects_production'],
+        userId: user.id,
+      }).catch((err: unknown) => console.error('[CIS] merch generation capture failed:', err));
+    }
+
     return NextResponse.json({ result: data, model, fallback });
   } catch (error) {
     console.error('Merch generation error:', error);

@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
   const type = body.type as GenerationType;
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
+  const collectionPlanId = body.collectionPlanId as string | undefined;
 
   // ══════════════════════════════════════════════════════════
   // TRENDS: Perplexity Sonar DIRECT — 1 call, returns JSON
@@ -130,6 +131,21 @@ export async function POST(req: NextRequest) {
         maxTokens: prompt.maxTokens,
         language,
       });
+
+      // CIS: capture creative text generation (fire-and-forget)
+      if (collectionPlanId) {
+        const { recordDecision } = await import('@/lib/collection-intelligence');
+        recordDecision({
+          collectionPlanId,
+          domain: 'creative', subdomain: 'identity', key: `creative_${type}`,
+          value: text.trim(),
+          source: 'ai_recommendation',
+          sourcePhase: 'creative', sourceComponent: 'CreativeBlock',
+          tags: ['affects_content', 'affects_photography'],
+          userId: user.id,
+        }).catch((err: unknown) => console.error('[CIS] creative text capture failed:', err));
+      }
+
       return NextResponse.json({ result: text.trim(), model, fallback });
     }
 
@@ -140,6 +156,21 @@ export async function POST(req: NextRequest) {
       maxTokens: prompt.maxTokens,
       language,
     });
+
+    // CIS: capture creative JSON generation (fire-and-forget)
+    if (collectionPlanId && data) {
+      const { recordDecision } = await import('@/lib/collection-intelligence');
+      recordDecision({
+        collectionPlanId,
+        domain: 'creative', subdomain: 'identity', key: `creative_${type}`,
+        value: data,
+        source: 'ai_recommendation',
+        sourcePhase: 'creative', sourceComponent: 'CreativeBlock',
+        tags: ['affects_content', 'affects_photography'],
+        userId: user.id,
+      }).catch((err: unknown) => console.error('[CIS] creative JSON capture failed:', err));
+    }
+
     return NextResponse.json({ result: data, model, fallback });
   } catch (error) {
     console.error('Creative generation error:', error);

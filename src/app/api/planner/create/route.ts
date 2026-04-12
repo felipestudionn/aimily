@@ -99,6 +99,30 @@ export async function POST(req: NextRequest) {
       console.error('Error creating default timeline:', timelineError);
     }
 
+    // CIS: capture initial collection plan decisions from setup_data (fire-and-forget)
+    if (data && setup_data && user_id) {
+      const { recordDecisions } = await import('@/lib/collection-intelligence');
+      const base = { collectionPlanId: data.id, sourcePhase: 'merchandising', sourceComponent: 'CollectionWizard', userId: user_id };
+      const decisions: Parameters<typeof recordDecisions>[0] = [];
+
+      if (setup_data.total_sales_target != null) {
+        decisions.push({ ...base, domain: 'merchandising', subdomain: 'budget', key: 'total_sales_target', value: setup_data.total_sales_target, tags: ['affects_pricing', 'affects_finance'] });
+      }
+      if (setup_data.avg_price_target != null) {
+        decisions.push({ ...base, domain: 'merchandising', subdomain: 'pricing', key: 'avg_price_target', value: setup_data.avg_price_target, tags: ['affects_pricing', 'affects_production'] });
+      }
+      if (setup_data.price_range) {
+        decisions.push({ ...base, domain: 'merchandising', subdomain: 'pricing', key: 'price_range', value: setup_data.price_range, tags: ['affects_pricing', 'affects_production'] });
+      }
+      if (setup_data.families?.length) {
+        decisions.push({ ...base, domain: 'merchandising', subdomain: 'structure', key: 'families_selected', value: setup_data.families, tags: ['affects_production', 'affects_content'] });
+      }
+
+      if (decisions.length > 0) {
+        recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] planner create capture failed:', err));
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('Create plan error:', error);

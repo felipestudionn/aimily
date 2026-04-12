@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { images, language } = body as { images: ImageData[]; language?: 'en' | 'es' };
+    const { images, language, collectionPlanId } = body as { images: ImageData[]; language?: 'en' | 'es'; collectionPlanId?: string };
 
     if (!images || images.length === 0) {
       return NextResponse.json(
@@ -144,14 +144,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // If only one batch, return directly
-    if (batchResults.length === 1) {
-      return NextResponse.json(batchResults[0]);
+    // If only one batch, use directly; otherwise merge
+    const finalResult = batchResults.length === 1
+      ? batchResults[0]
+      : await mergeAnalysisResults(batchResults, language);
+
+    // CIS: capture moodboard analysis (fire-and-forget)
+    if (collectionPlanId && finalResult) {
+      const { recordDecision } = await import('@/lib/collection-intelligence');
+      recordDecision({
+        collectionPlanId,
+        domain: 'creative', subdomain: 'inspiration', key: 'moodboard_analysis',
+        value: finalResult,
+        source: 'ai_recommendation',
+        sourcePhase: 'creative', sourceComponent: 'MoodboardAnalysis',
+        tags: ['affects_photography', 'affects_content'],
+        userId: user.id,
+      }).catch((err: unknown) => console.error('[CIS] moodboard analysis capture failed:', err));
     }
 
-    // Merge results from multiple batches using AI
-    const mergedResult = await mergeAnalysisResults(batchResults, language);
-    return NextResponse.json(mergedResult);
+    return NextResponse.json(finalResult);
 
   } catch (error) {
     console.error('[Moodboard] Analysis error:', error);

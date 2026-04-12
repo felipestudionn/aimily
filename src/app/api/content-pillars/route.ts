@@ -61,6 +61,21 @@ export async function POST(req: NextRequest) {
         .insert(body.pillars)
         .select();
       if (error) throw error;
+
+      // CIS: capture content pillar decisions (fire-and-forget)
+      if (data?.length) {
+        const planId = body.pillars[0].collection_plan_id;
+        const { recordDecision } = await import('@/lib/collection-intelligence');
+        recordDecision({
+          collectionPlanId: planId,
+          domain: 'marketing', subdomain: 'content', key: 'pillar_themes',
+          value: data.map((p: { name: string }) => p.name),
+          sourcePhase: 'marketing', sourceComponent: 'ContentPillarsCard',
+          tags: ['affects_content', 'affects_seo'],
+          userId: user.id,
+        }).catch((err: unknown) => console.error('[CIS] content pillars bulk capture failed:', err));
+      }
+
       return NextResponse.json(data, { status: 201 });
     }
 
@@ -82,6 +97,20 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // CIS: capture single content pillar decision (fire-and-forget)
+    if (data) {
+      const { recordDecision } = await import('@/lib/collection-intelligence');
+      recordDecision({
+        collectionPlanId: body.collection_plan_id,
+        domain: 'marketing', subdomain: 'content', key: 'pillar_themes',
+        value: [data.name],
+        sourcePhase: 'marketing', sourceComponent: 'ContentPillarsCard',
+        tags: ['affects_content', 'affects_seo'],
+        userId: user.id,
+      }).catch((err: unknown) => console.error('[CIS] content pillar capture failed:', err));
+    }
+
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error('Error creating content_pillar:', error);

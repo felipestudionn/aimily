@@ -119,6 +119,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // CIS: capture SKU creation decisions (fire-and-forget)
+    if (data) {
+      const { recordDecisions } = await import('@/lib/collection-intelligence');
+      const base = { collectionPlanId: collection_plan_id, sourcePhase: 'merchandising', sourceComponent: 'RangePlan', userId: user.id };
+      const decisions: Parameters<typeof recordDecisions>[0] = [
+        { ...base, domain: 'merchandising', subdomain: 'structure', key: 'total_sku_count', value: 1, tags: ['affects_content', 'affects_production'] },
+      ];
+      if (data.family) {
+        decisions.push({ ...base, domain: 'merchandising', subdomain: 'structure', key: 'families_selected', value: [data.family], tags: ['affects_content', 'affects_production'] });
+      }
+      if (data.pvp != null) {
+        decisions.push({ ...base, domain: 'merchandising', subdomain: 'pricing', key: 'price_range', value: { min: data.pvp, max: data.pvp }, tags: ['affects_pricing', 'affects_content'] });
+      }
+      recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] SKU creation capture failed:', err));
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('POST SKU error:', error);
