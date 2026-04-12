@@ -107,8 +107,9 @@ function buildPrompt(params: {
   scene: string | undefined;
   story?: StoryContext;
   userPrompt?: string;
+  hasStyleReference?: boolean;
 }): string {
-  const { productName, category, scene, story, userPrompt } = params;
+  const { productName, category, scene, story, userPrompt, hasStyleReference } = params;
 
   const productType =
     category === 'CALZADO'
@@ -228,6 +229,17 @@ function buildPrompt(params: {
     `REJECT LIST (the final image MUST NOT contain): no text, no captions, no watermarks, no logos, no added brand markings, no multiple copies of the product, no second model, no visible crowd, no distorted anatomy (extra fingers, merged limbs, missing features), no CGI/plastic skin textures, no surreal dreamlike backgrounds, no motion blur on the product, no product obscured or cropped out of frame.`
   );
 
+  // 9. Visual style reference — when the user provides a second image
+  // as art direction. The first reference_image is always the product;
+  // the second is this style reference. Tell Nano Banana to use it for
+  // composition, lighting, pose, and mood — but never to copy the
+  // products/garments from the style reference.
+  if (hasStyleReference) {
+    parts.push(
+      `STYLE REFERENCE (second reference image): A second image is provided as VISUAL ART DIRECTION. Match its composition, lighting mood, camera angle, color grading, pose energy, and editorial atmosphere as closely as possible. However, the PRODUCT in the final image must be ONLY the ${productType} from the first reference image — do NOT copy or include any products, garments, shoes, or accessories visible in the style reference image. The style reference dictates HOW the shot looks; the first reference dictates WHAT product appears.`
+    );
+  }
+
   if (userPrompt) parts.push(`ADDITIONAL ART DIRECTION: ${userPrompt}.`);
 
   return parts.join(' ');
@@ -247,6 +259,7 @@ export async function POST(req: NextRequest) {
 
     const {
       product_image_url,
+      style_reference_url,
       product_name,
       category,
       scene,
@@ -280,9 +293,17 @@ export async function POST(req: NextRequest) {
       scene,
       story: story_context,
       userPrompt: user_prompt,
+      hasStyleReference: !!style_reference_url,
     });
 
-    const generatedUrl = await createAndPoll(prompt, [product_image_url]);
+    // Reference images: product is always first. If the user provided
+    // a style reference (a photo that shows the desired composition,
+    // lighting, pose, mood), it goes second. Nano Banana composites
+    // the product identity from image 1 into the aesthetic of image 2.
+    const referenceImages = [product_image_url];
+    if (style_reference_url) referenceImages.push(style_reference_url);
+
+    const generatedUrl = await createAndPoll(prompt, referenceImages);
     if (!generatedUrl) {
       return NextResponse.json(
         { error: 'Editorial generation failed' },

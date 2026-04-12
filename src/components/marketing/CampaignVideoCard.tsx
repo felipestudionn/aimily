@@ -241,7 +241,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         }
       : undefined;
 
-  const handleEditorialGenerate = async (sourceImageUrl: string, skuName?: string) => {
+  const handleEditorialGenerate = async (sourceImageUrl: string, skuName?: string, styleRefUrl?: string) => {
     if (!user) return;
     setGenerating({ type: 'editorial' });
     setErrorMessage(null);
@@ -261,6 +261,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           product_image_url: sourceImageUrl,
+          style_reference_url: styleRefUrl || undefined,
           product_name: skuName || 'fashion product',
           scene: 'editorial',
           story_context: storyCtx,
@@ -1081,23 +1082,41 @@ function EditorialTab({
   generating: boolean;
   prompt: string;
   onPromptChange: (v: string) => void;
-  onGenerate: (imageUrl: string, skuName?: string) => void;
+  onGenerate: (productUrl: string, skuName?: string, styleRefUrl?: string) => void;
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
   onLightbox: (url: string) => void;
   onError: (msg: string | null) => void;
 }) {
   const t = useTranslation();
-  const [selectedSourceIdx, setSelectedSourceIdx] = useState<number | null>(null);
-  const [uploadedImages, setUploadedImages] = useState<SourceImage[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Source images: SKU 3D renders (always present when design phase
-  // is done) + favorite visuals + user-uploaded photos. Deduplicate
-  // by URL in case the same render appears in both SKU list and
-  // as a favorited generation.
-  const sourceImages = useMemo(() => {
+  // ── Picker 1: Product (3D renders only) ──
+  const [selectedProductIdx, setSelectedProductIdx] = useState<number | null>(null);
+  const productImages = useMemo(() => {
+    // Product picker: ONLY 3D renders from design phase.
+    // These are clean product-only images that Nano Banana composites
+    // into the editorial scene. No favorites, no model shots.
+    return skuSourceImages;
+  }, [skuSourceImages]);
+
+  // Auto-select first product when available
+  useEffect(() => {
+    if (selectedProductIdx === null && productImages.length > 0) {
+      setSelectedProductIdx(0);
+    }
+  }, [selectedProductIdx, productImages.length]);
+
+  // ── Picker 2: Style reference (favorites + uploads) ──
+  const [selectedStyleIdx, setSelectedStyleIdx] = useState<number | null>(null);
+  const [uploadedStyleRefs, setUploadedStyleRefs] = useState<SourceImage[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const styleInputRef = useRef<HTMLInputElement>(null);
+
+  // Style reference picker: favorited visuals (try-on, editorial,
+  // still-life — any visual the user already liked) + uploaded
+  // reference photos. These provide the visual art direction:
+  // composition, lighting, pose, mood. NOT the product.
+  const styleImages = useMemo(() => {
     const favImages: SourceImage[] = favoriteVisuals
       .filter((g) => g.output_data?.images?.length)
       .flatMap((g) =>
@@ -1108,35 +1127,21 @@ function EditorialTab({
           badge: 'fav' as const,
         }))
       );
-
-    // Deduplicate: SKU sources first, then favorites that aren't
-    // already present, then uploads.
     const seen = new Set<string>();
     const result: SourceImage[] = [];
-    for (const img of [...skuSourceImages, ...favImages, ...uploadedImages]) {
+    for (const img of [...favImages, ...uploadedStyleRefs]) {
       if (!seen.has(img.url)) {
         seen.add(img.url);
         result.push(img);
       }
     }
     return result;
-  }, [favoriteVisuals, skuSourceImages, uploadedImages]);
+  }, [favoriteVisuals, uploadedStyleRefs]);
 
-  // Auto-select the first source image when sources become available
-  // and nothing is selected. Eliminates the "click to select" friction
-  // that confused users when only 1-2 images exist.
-  useEffect(() => {
-    if (selectedSourceIdx === null && sourceImages.length > 0) {
-      setSelectedSourceIdx(0);
-    }
-  }, [selectedSourceIdx, sourceImages.length]);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleStyleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset the input so the same file can be re-selected if needed
     e.target.value = '';
-
     setUploading(true);
     onError(null);
     try {
@@ -1158,21 +1163,24 @@ function EditorialTab({
         throw new Error(data.error || `Upload failed (${res.status})`);
       }
       const data = await res.json();
-      setUploadedImages((prev) => [
-        ...prev,
-        {
-          url: data.publicUrl,
-          skuName: file.name.replace(/\.[^.]+$/, ''),
-          key: `upload-${Date.now()}`,
-          badge: 'upload' as const,
-        },
-      ]);
+      const newImg: SourceImage = {
+        url: data.publicUrl,
+        skuName: file.name.replace(/\.[^.]+$/, ''),
+        key: `upload-${Date.now()}`,
+        badge: 'upload' as const,
+      };
+      setUploadedStyleRefs((prev) => [...prev, newImg]);
+      // Auto-select the just-uploaded image
+      setSelectedStyleIdx(styleImages.length);
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploading(false);
     }
   };
+
+  const selectedProduct = selectedProductIdx !== null ? productImages[selectedProductIdx] : null;
+  const selectedStyle = selectedStyleIdx !== null ? styleImages[selectedStyleIdx] : null;
 
   return (
     <div className="space-y-6">
@@ -1186,40 +1194,84 @@ function EditorialTab({
         </p>
       </div>
 
-      {/* Source image selection */}
+      {/* ── Picker 1: Product ── */}
       <div>
         <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
-          {t.marketingPage.selectSourceImage}
+          {t.marketingPage.editorialProductLabel}
         </p>
-        {sourceImages.length === 0 ? (
+        {productImages.length === 0 ? (
           <p className="text-xs text-carbon/25 font-light py-4">
             {t.marketingPage.noSourceImages}
           </p>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-            {sourceImages.map((img, idx) => (
+            {productImages.map((img, idx) => (
               <button
                 key={img.key}
-                onClick={() => setSelectedSourceIdx(idx)}
+                onClick={() => setSelectedProductIdx(idx)}
                 className={`relative aspect-square border overflow-hidden transition-all ${
-                  selectedSourceIdx === idx
+                  selectedProductIdx === idx
                     ? 'border-carbon border-2 shadow-md'
                     : 'border-carbon/[0.06] hover:border-carbon/20'
                 }`}
               >
                 <img src={img.url} alt={img.skuName} className="w-full h-full object-cover" />
-                {img.badge && (
-                  <span className="absolute bottom-0.5 left-0.5 text-[7px] font-medium tracking-wider uppercase bg-white/90 text-carbon/50 px-1 py-px">
-                    {img.badge === '3D' ? '3D' : img.badge === 'upload' ? '↑' : '★'}
-                  </span>
-                )}
+                <span className="absolute bottom-0.5 left-0.5 text-[7px] font-medium tracking-wider uppercase bg-white/90 text-carbon/50 px-1 py-px">3D</span>
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Art direction prompt */}
+      {/* ── Picker 2: Style reference (optional) ── */}
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+            {t.marketingPage.editorialStyleLabel}
+          </p>
+          <span className="text-[9px] font-light text-carbon/20 italic">
+            {t.marketingPage.editorialStyleOptional}
+          </span>
+        </div>
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+          {styleImages.map((img, idx) => (
+            <button
+              key={img.key}
+              onClick={() => setSelectedStyleIdx(selectedStyleIdx === idx ? null : idx)}
+              className={`relative aspect-square border overflow-hidden transition-all ${
+                selectedStyleIdx === idx
+                  ? 'border-carbon border-2 shadow-md'
+                  : 'border-carbon/[0.06] hover:border-carbon/20'
+              }`}
+            >
+              <img src={img.url} alt={img.skuName} className="w-full h-full object-cover" />
+              {img.badge && (
+                <span className="absolute bottom-0.5 left-0.5 text-[7px] font-medium tracking-wider uppercase bg-white/90 text-carbon/50 px-1 py-px">
+                  {img.badge === 'upload' ? '↑' : '★'}
+                </span>
+              )}
+            </button>
+          ))}
+          {/* Upload style reference button inline */}
+          <button
+            onClick={() => styleInputRef.current?.click()}
+            disabled={uploading}
+            className="aspect-square border border-dashed border-carbon/[0.12] flex flex-col items-center justify-center gap-1 text-carbon/25 hover:text-carbon/50 hover:border-carbon/25 transition-colors disabled:opacity-40"
+          >
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            <span className="text-[8px] uppercase tracking-wider">{t.marketingPage.uploadPhoto}</span>
+          </button>
+          <input
+            ref={styleInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleStyleUpload}
+            className="hidden"
+          />
+        </div>
+      </div>
+
+      {/* Art direction prompt (text, additional to the visual ref) */}
       <div>
         <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 block mb-2">
           {t.marketingPage.artDirection}
@@ -1232,15 +1284,19 @@ function EditorialTab({
         />
       </div>
 
-      {/* Generate + Upload buttons */}
+      {/* Generate button */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => {
-            if (selectedSourceIdx !== null && sourceImages[selectedSourceIdx]) {
-              onGenerate(sourceImages[selectedSourceIdx].url, sourceImages[selectedSourceIdx].skuName);
+            if (selectedProduct) {
+              onGenerate(
+                selectedProduct.url,
+                selectedProduct.skuName,
+                selectedStyle?.url
+              );
             }
           }}
-          disabled={generating || selectedSourceIdx === null}
+          disabled={generating || !selectedProduct}
           className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.1em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {generating ? (
@@ -1249,22 +1305,6 @@ function EditorialTab({
             <ImageIcon className="h-4 w-4" />
           )}
           {t.marketingPage.generateEditorial}
-        </button>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 px-4 py-3 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon hover:border-carbon/20 transition-colors disabled:opacity-40"
-        >
-          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-          {t.marketingPage.uploadPhoto}
         </button>
 
         {generating && (
