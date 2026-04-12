@@ -329,13 +329,26 @@ function buildPrompt(params: {
   // blurred, so this headshot is the ONLY face Nano Banana can latch onto.
   if (hasModelHeadshot) {
     parts.push(
-      `MODEL HEADSHOT (last reference image): The last reference image is a headshot of the SPECIFIC model who must appear in the final photograph. Use THIS person's face, facial features, skin tone, and hair as the model in the scene. The face in the final image must closely match this headshot — same person, same features, same identity. This is the casting selection — this specific model was chosen by the creative director.`
+      `MODEL HEADSHOT — HIGHEST PRIORITY REFERENCE (last reference image): The last reference image is a headshot of the EXACT model who MUST appear in the final photograph. This is the most important reference of all three — it defines WHO appears in the image.`
+    );
+    parts.push(
+      `FACE IDENTITY (non-negotiable, overrides everything else): The person in the final image must have the EXACT SAME face as this headshot — same facial structure, same jawline, same nose shape, same lip shape, same eye shape, same eyebrow shape, same complexion, same skin tone. This is NOT a suggestion, this is the #1 priority of the entire generation. If the face does not match the headshot, the image is WRONG.`
+    );
+    parts.push(
+      `HAIR IDENTITY (non-negotiable): The person in the final image must have the EXACT SAME hair as the headshot — same hair color, same hair length, same hair texture (straight/wavy/curly/braided), same hair style. Do NOT change the hair from the headshot under any circumstance. The hair is part of this model's identity.`
+    );
+    parts.push(
+      `MODEL ATTITUDE: The model's facial expression and body language should match the energy of the headshot — the same confidence, the same editorial intensity, the same attitude. This specific model was CAST for this shot by the creative director because of her unique look and presence. Preserve that.`
     );
 
     // When we have both a style ref AND a model headshot, clarify the roles
     if (hasStyleReference) {
       parts.push(
-        `REFERENCE IMAGE ROLES SUMMARY: Image 1 = product (preserve exactly). Image 2 = style/composition/lighting/pose (follow the scene direction, ignore the blurred face). Image 3 = model headshot (use this person's face and identity).`
+        `REFERENCE IMAGE PRIORITY ORDER (most important first): #1 PRIORITY = Image 3 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical to this reference. #3 PRIORITY = Image 2 (style reference) — use for composition, lighting, pose, camera angle, and mood only. The face in Image 2 is blurred on purpose — IGNORE it completely and use the face from Image 3 instead.`
+      );
+    } else {
+      parts.push(
+        `REFERENCE IMAGE PRIORITY ORDER: #1 PRIORITY = Image 2 (model headshot) — the face, hair, skin tone, and attitude MUST match this person exactly. #2 PRIORITY = Image 1 (product) — the product must be pixel-perfect identical.`
       );
     }
   }
