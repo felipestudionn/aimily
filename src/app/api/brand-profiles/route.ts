@@ -90,6 +90,35 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // CIS: capture brand profile decisions (fire-and-forget)
+    if (data && profile?.collection_plan_id) {
+      const { recordDecisions } = await import('@/lib/collection-intelligence');
+      const planId = profile.collection_plan_id;
+      const decisions: Parameters<typeof recordDecisions>[0] = [];
+      const base = { collectionPlanId: planId, sourcePhase: 'creative', sourceComponent: 'BrandProfileCard', userId: user.id };
+
+      if (data.brand_name) decisions.push({ ...base, domain: 'creative', subdomain: 'identity', key: 'brand_name', value: data.brand_name, tags: ['affects_content', 'affects_seo', 'affects_sales'] });
+      if (data.tagline) decisions.push({ ...base, domain: 'creative', subdomain: 'identity', key: 'tagline', value: data.tagline, tags: ['affects_content', 'affects_seo'] });
+      if (data.brand_story) decisions.push({ ...base, domain: 'creative', subdomain: 'identity', key: 'brand_story', value: data.brand_story, tags: ['affects_content'] });
+      if (data.brand_voice) {
+        if (data.brand_voice.tone) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'tone', value: data.brand_voice.tone, sourcePhase: 'marketing', tags: ['affects_content'] });
+        if (data.brand_voice.personality) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'personality', value: data.brand_voice.personality, sourcePhase: 'marketing', tags: ['affects_content'] });
+        if (data.brand_voice.keywords?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'vocabulary', value: data.brand_voice.keywords, sourcePhase: 'marketing', tags: ['affects_content', 'affects_seo'] });
+        if (data.brand_voice.doNot?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'dont_rules', value: data.brand_voice.doNot, sourcePhase: 'marketing', tags: ['affects_content'] });
+      }
+      if (data.target_audience) {
+        if (data.target_audience.demographics) decisions.push({ ...base, domain: 'creative', subdomain: 'target', key: 'demographics', value: data.target_audience.demographics, tags: ['affects_content', 'affects_pricing', 'affects_channels'] });
+        if (data.target_audience.psychographics) decisions.push({ ...base, domain: 'creative', subdomain: 'target', key: 'psychographics', value: data.target_audience.psychographics, tags: ['affects_content'] });
+        if (data.target_audience.lifestyle) decisions.push({ ...base, domain: 'creative', subdomain: 'target', key: 'lifestyle', value: data.target_audience.lifestyle, tags: ['affects_content', 'affects_photography'] });
+      }
+      if (data.primary_colors?.length) decisions.push({ ...base, domain: 'creative', subdomain: 'color', key: 'primary_palette', value: data.primary_colors, tags: ['affects_photography', 'affects_web'] });
+      if (data.competitors?.length) decisions.push({ ...base, domain: 'creative', subdomain: 'inspiration', key: 'competitors', value: data.competitors, tags: ['affects_pricing', 'affects_content'] });
+
+      if (decisions.length > 0) {
+        recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] brand profile capture failed:', err));
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('PATCH brand profile error:', error);

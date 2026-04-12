@@ -164,6 +164,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // CIS: capture story decisions (fire-and-forget)
+    if (data?.length && planId) {
+      const { recordDecisions } = await import('@/lib/collection-intelligence');
+      const storyArcs = data.map((s: Record<string, unknown>) => ({
+        name: s.name as string,
+        narrative: (s.narrative as string) || '',
+        mood: s.mood || [],
+      }));
+      const editorialHooks = data
+        .map((s: Record<string, unknown>) => s.editorial_hook as string)
+        .filter(Boolean);
+      const base = { collectionPlanId: planId, sourcePhase: 'marketing', sourceComponent: 'StoriesCard', userId: user.id };
+      recordDecisions([
+        { ...base, domain: 'marketing', subdomain: 'stories', key: 'story_arcs', value: storyArcs, tags: ['affects_content', 'affects_photography'] },
+        ...(editorialHooks.length ? [{ ...base, domain: 'marketing', subdomain: 'stories', key: 'editorial_hooks', value: editorialHooks, tags: ['affects_content', 'affects_seo'] }] : []),
+      ]).catch((err: unknown) => console.error('[CIS] stories capture failed:', err));
+    }
+
     const payload = Array.isArray(body.stories)
       ? { stories: data, assignment_summary: assignmentSummary }
       : data[0];

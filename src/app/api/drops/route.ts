@@ -87,6 +87,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // CIS: capture drop decision (fire-and-forget)
+    if (data) {
+      const { recordDecision } = await import('@/lib/collection-intelligence');
+      recordDecision({
+        collectionPlanId: collection_plan_id,
+        domain: 'sales', subdomain: 'drops', key: `drop_${data.drop_number}`,
+        value: { name: data.name, launch_date: data.launch_date, weeks_active: data.weeks_active, channels: data.channels },
+        sourcePhase: 'marketing', sourceComponent: 'GoToMarketDashboard',
+        tags: ['affects_marketing', 'affects_production'],
+        userId: user.id,
+      }).catch((err: unknown) => console.error('[CIS] drop capture failed:', err));
+    }
+
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error('Drops POST error:', error);

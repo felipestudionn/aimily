@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
       .eq('collection_plan_id', body.collection_plan_id)
       .maybeSingle();
 
+    let result;
     if (existing) {
       const { data, error } = await supabaseAdmin
         .from('brand_voice_config')
@@ -60,17 +61,31 @@ export async function POST(req: NextRequest) {
         .select()
         .single();
       if (error) throw error;
-      return NextResponse.json(data);
+      result = data;
+    } else {
+      const { data, error } = await supabaseAdmin
+        .from('brand_voice_config')
+        .insert(body)
+        .select()
+        .single();
+      if (error) throw error;
+      result = data;
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('brand_voice_config')
-      .insert(body)
-      .select()
-      .single();
+    // CIS: capture voice decisions (fire-and-forget)
+    if (result && body.collection_plan_id) {
+      const { recordDecisions } = await import('@/lib/collection-intelligence');
+      const base = { collectionPlanId: body.collection_plan_id, sourcePhase: 'marketing', sourceComponent: 'BrandVoiceConfig', userId: user.id };
+      const decisions: Parameters<typeof recordDecisions>[0] = [];
+      if (result.personality) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'personality', value: result.personality, tags: ['affects_content'] });
+      if (result.tone) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'tone', value: result.tone, tags: ['affects_content'] });
+      if (result.do_rules?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'do_rules', value: result.do_rules, tags: ['affects_content'] });
+      if (result.dont_rules?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'dont_rules', value: result.dont_rules, tags: ['affects_content'] });
+      if (result.vocabulary?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'vocabulary', value: result.vocabulary, tags: ['affects_content', 'affects_seo'] });
+      if (decisions.length) recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] voice config capture failed:', err));
+    }
 
-    if (error) throw error;
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(result, { status: existing ? 200 : 201 });
   } catch (error) {
     console.error('Error saving brand_voice_config:', error);
     const message = error instanceof Error ? error.message : 'Failed to save';

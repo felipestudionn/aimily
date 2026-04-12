@@ -9,6 +9,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { compilePromptContext as compileCIS } from '@/lib/collection-intelligence';
 
 // ─── Sub-context types ───
 
@@ -204,9 +205,16 @@ export async function buildPromptContext(
 
   const plan = planRes.data;
   const setupData = plan?.setup_data ?? {};
-  const brandDna = setupData.brand_dna ?? {};
-  const consumer = setupData.consumer ?? {};
-  const creative = setupData.creative ?? {};
+
+  // CIS: read decisions for brand identity, consumer, creative direction,
+  // and merchandising context. These were previously read from setup_data
+  // paths (brand_dna, consumer, creative, merchandising) that were NEVER
+  // written — every placeholder received an empty string. CIS fixes this
+  // by reading from the collection_decisions table where real user
+  // decisions are captured as they happen across all blocks.
+  const cis = await compileCIS(collectionPlanId, 'full');
+
+  // Fallback to setup_data for fields that WERE populated (pricing/budget)
   const merchandising = setupData.merchandising ?? {};
 
   const skus = (skusRes.data ?? []).map((s: Record<string, unknown>) => ({
@@ -302,27 +310,29 @@ export async function buildPromptContext(
 
   return {
     season: plan?.season ?? '',
-    brand_name: brandDna.name ?? '',
+    // CIS-powered fields (previously empty from setup_data)
+    brand_name: (cis.brand_name as string) || '',
     brand_dna: {
       voice: {
-        tone: brandDna.voice?.tone ?? '',
-        personality: brandDna.voice?.personality ?? '',
-        keywords: brandDna.voice?.keywords ?? [],
-        doNot: brandDna.voice?.doNot ?? [],
+        tone: (cis.brand_voice_tone as string) || '',
+        personality: (cis.brand_voice_personality as string) || '',
+        keywords: Array.isArray(cis.vocabulary) ? cis.vocabulary as string[] : [],
+        doNot: Array.isArray(cis.dont_rules) ? cis.dont_rules as string[] : [],
       },
-      values: brandDna.values ?? [],
-      visual_identity: brandDna.visual_identity ?? '',
+      values: [],
+      visual_identity: (cis.visual_direction as string) || '',
     },
     consumer_profile: {
-      demographics: consumer.demographics ?? '',
-      psychographics: consumer.psychographics ?? '',
-      lifestyle: consumer.lifestyle ?? '',
+      demographics: (cis.consumer_demographics as string) || '',
+      psychographics: (cis.consumer_psychographics as string) || '',
+      lifestyle: (cis.consumer_lifestyle as string) || '',
     },
-    collection_vibe: creative.vibe ?? '',
-    selected_trends: creative.selected_trends ?? [],
-    moodboard_summary: creative.moodboard_summary ?? '',
-    reference_brands: creative.reference_brands ?? [],
-    total_sales_target: merchandising.total_sales_target ?? 0,
+    collection_vibe: (cis.collection_vibe as string) || '',
+    selected_trends: Array.isArray(cis.selected_trends) ? cis.selected_trends as string[] : [],
+    moodboard_summary: (cis.moodboard_summary as string) || '',
+    reference_brands: Array.isArray(cis.reference_brands) ? cis.reference_brands as string[] : [],
+    // Setup_data fields that WERE populated (pricing/budget fallback)
+    total_sales_target: (cis.total_sales_target as number) || merchandising.total_sales_target || setupData.totalSalesTarget || 0,
     channels: merchandising.channels ?? [],
     markets: merchandising.markets ?? [],
     price_range: {
