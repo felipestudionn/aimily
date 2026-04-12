@@ -32,6 +32,7 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
     loading: gensLoading,
     toggleFavorite,
     deleteGeneration,
+    refetch: refetchGenerations,
   } = useAiGenerations(collectionPlanId);
 
   const [expanded, setExpanded] = useState(false);
@@ -316,10 +317,13 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
                 {/* Evolution Strip */}
                 <ContentEvolutionStrip
                   sku={selectedSku}
+                  collectionPlanId={collectionPlanId}
                   generations={generations}
                   onToggleFavorite={handleToggleFavorite}
                   onDeleteGeneration={handleDeleteGeneration}
                   onLightbox={setLightboxUrl}
+                  onError={setErrorMessage}
+                  onRefetchGenerations={refetchGenerations}
                 />
               </div>
             ) : (
