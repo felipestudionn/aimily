@@ -181,7 +181,7 @@ function buildPrompt(params: {
     `• EXACTLY ONE human model in the frame. No crowds, no secondary models, no background humans in focus.`
   );
   parts.push(
-    `• The model is a real-looking, natural human — realistic skin texture, realistic proportions, realistic hair. No CGI, no plastic skin, no over-smoothed retouching, no extra fingers or limbs.`
+    `• The model is a real-looking, natural human with CORRECT ANATOMY: exactly 2 arms, exactly 2 legs, exactly 2 feet, exactly 5 fingers per hand. Realistic skin texture, realistic proportions, realistic hair. No CGI, no plastic skin, no over-smoothed retouching. VERIFY the limb count before finalizing — extra or merged limbs are the #1 most common error to avoid.`
   );
   parts.push(
     `• Natural confident pose appropriate to the scene. No stiff mannequin poses, no awkward hand positions, no disembodied limbs.`
@@ -285,7 +285,7 @@ function buildPrompt(params: {
     'no text, no captions, no watermarks, no logos, no added brand markings',
     'no multiple copies of the product',
     'no second model, no visible crowd',
-    'no distorted anatomy (extra fingers, merged limbs, missing features)',
+    'no distorted anatomy — EXACTLY two arms, EXACTLY two legs, EXACTLY two feet, EXACTLY ten fingers, EXACTLY ten toes. No extra limbs, no merged limbs, no missing limbs, no third leg, no phantom arm. Count the limbs before rendering.',
     'no CGI/plastic skin textures',
     'no surreal dreamlike backgrounds',
     'no motion blur on the product',
