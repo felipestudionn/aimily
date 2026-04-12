@@ -5,7 +5,8 @@ import {
   usageDeniedResponse,
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
-import { persistAsset } from '@/lib/storage';
+import { persistAsset, uploadToStorage } from '@/lib/storage';
+import { blurFaceInStyleReference } from '@/lib/face-blur';
 
 /* ═══════════════════════════════════════════════════════════════
    Editorial — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
@@ -328,11 +329,37 @@ export async function POST(req: NextRequest) {
     });
 
     // Reference images: product is always first. If the user provided
-    // a style reference (a photo that shows the desired composition,
-    // lighting, pose, mood), it goes second. Nano Banana composites
-    // the product identity from image 1 into the aesthetic of image 2.
+    // a style reference, we blur the face region before sending it to
+    // Nano Banana. This preserves composition, lighting, pose, wardrobe,
+    // and color grading — but removes the facial identity signal so
+    // Nano Banana generates a new face instead of cloning the reference.
     const referenceImages = [product_image_url];
-    if (style_reference_url) referenceImages.push(style_reference_url);
+    if (style_reference_url) {
+      try {
+        const blurredBuffer = await blurFaceInStyleReference(style_reference_url);
+        // Upload the blurred version to Supabase Storage so Nano Banana
+        // can access it via URL. Use a temp name — it's not user-facing.
+        if (collectionPlanId) {
+          const upload = await uploadToStorage(
+            collectionPlanId,
+            'editorial',
+            `style-ref-blurred-${Date.now()}.jpg`,
+            blurredBuffer,
+            'image/jpeg'
+          );
+          referenceImages.push(upload.publicUrl);
+        } else {
+          // No collection context — fall back to passing the original
+          // (face blur requires storage to host the processed image)
+          referenceImages.push(style_reference_url);
+        }
+      } catch (blurErr) {
+        // If face blur fails, fall back to the original style reference
+        // rather than blocking the entire generation. Log for debugging.
+        console.error('[Editorial] Face blur failed, using original:', blurErr);
+        referenceImages.push(style_reference_url);
+      }
+    }
 
     const generatedUrl = await createAndPoll(prompt, referenceImages);
     if (!generatedUrl) {
