@@ -1,7 +1,7 @@
 'use client';
 
 import type { TimelineMilestone } from '@/types/timeline';
-import { StoriesCard } from './StoriesCard';
+import { SalesDashboardCard } from './SalesDashboardCard';
 import { ProductVisualsCard } from './ProductVisualsCard';
 import { CampaignVideoCard } from './CampaignVideoCard';
 import { ContentStrategyCard } from './ContentStrategyCard';
@@ -32,7 +32,7 @@ export function MarketingCreationScreen({ collectionPlanId }: Props) {
 
       {/* 2×2 Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <StoriesCard collectionPlanId={collectionPlanId} />
+        <SalesDashboardCard collectionPlanId={collectionPlanId} />
         <ProductVisualsCard collectionPlanId={collectionPlanId} />
         <CampaignVideoCard collectionPlanId={collectionPlanId} />
         <ContentStrategyCard collectionPlanId={collectionPlanId} />
