@@ -7,6 +7,7 @@ import {
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset, uploadToStorage } from '@/lib/storage';
 import { compositeModelOntoStyleRef, blurFaceInStyleReference } from '@/lib/face-blur';
+import sharp from 'sharp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -516,7 +517,105 @@ export async function POST(req: NextRequest) {
       referenceImages.push(aiModel.headshot_url);
     }
 
-    const generatedUrl = await createAndPoll(prompt, referenceImages);
+    // Choose generation engine:
+    // - When an aimily MODEL is selected → GPT Image 1.5 (best face fidelity)
+    // - When no model (product ± style ref only) → Nano Banana (good for scenes)
+    let generatedUrl: string | null = null;
+    let providerUsed = 'freepik-nano-banana';
+
+    if (aiModel?.headshot_url && process.env.OPENAI_API_KEY) {
+      // ═══ GPT IMAGE 1.5 PATH ═══
+      // OpenAI's images/edits with input_fidelity="high" preserves face identity
+      // much better than Nano Banana's generic reference_images.
+      // We pass multiple images and reference each by index in the prompt.
+      providerUsed = 'openai-gpt-image-1.5';
+
+      // Fetch all images as PNG buffers
+      const fetchAsPng = async (url: string): Promise<Buffer> => {
+        const res = await fetch(url);
+        const buf = Buffer.from(await res.arrayBuffer());
+        return await sharp(buf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+      };
+
+      const productPng = await fetchAsPng(product_image_url);
+      const headshotPng = await fetchAsPng(aiModel.headshot_url);
+
+      const formData = new FormData();
+      formData.append('model', 'gpt-image-1.5');
+      formData.append('image[]', new Blob([productPng], { type: 'image/png' }), 'product.png');
+      formData.append('image[]', new Blob([headshotPng], { type: 'image/png' }), 'model.png');
+
+      // If we have a style reference, add it too (face composited or blurred)
+      if (style_reference_url) {
+        try {
+          const compositedBuffer = await compositeModelOntoStyleRef(style_reference_url, aiModel.headshot_url);
+          const compositedPng = await sharp(compositedBuffer).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+          formData.append('image[]', new Blob([compositedPng], { type: 'image/png' }), 'style.png');
+        } catch {
+          const styleRes = await fetch(style_reference_url);
+          const styleBuf = Buffer.from(await styleRes.arrayBuffer());
+          const stylePng = await sharp(styleBuf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+          formData.append('image[]', new Blob([stylePng], { type: 'image/png' }), 'style.png');
+        }
+      }
+
+      // Build a GPT-specific prompt that references images by index
+      const gptPrompt = [
+        `HIGH-END EDITORIAL FASHION PHOTOGRAPH.`,
+        `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
+        `Image 2 shows the EXACT model who must appear. Her face, facial features, hair color, hair length, hair style, skin tone, and overall appearance MUST be identical to Image 2. Do NOT change her face or hair in any way. This is non-negotiable.`,
+        style_reference_url
+          ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
+          : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
+        category === 'CALZADO'
+          ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
+          : '',
+        `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
+        `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
+        user_prompt ? `Additional direction: ${user_prompt}` : '',
+      ].filter(Boolean).join(' ');
+
+      formData.append('prompt', gptPrompt);
+      formData.append('n', '1');
+      formData.append('size', '1024x1536');
+      formData.append('quality', 'high');
+      formData.append('input_fidelity', 'high');
+
+      const gptRes = await fetch('https://api.openai.com/v1/images/edits', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: formData,
+      });
+
+      if (!gptRes.ok) {
+        const errText = await gptRes.text();
+        console.error('[Editorial GPT] OpenAI error:', gptRes.status, errText.slice(0, 500));
+        // Fallback to Nano Banana
+        generatedUrl = await createAndPoll(prompt, referenceImages);
+        providerUsed = 'freepik-nano-banana-fallback';
+      } else {
+        const gptData = await gptRes.json();
+        if (gptData.data?.[0]?.b64_json) {
+          // Upload base64 to storage
+          const imgBuffer = Buffer.from(gptData.data[0].b64_json, 'base64');
+          if (collectionPlanId) {
+            const upload = await uploadToStorage(
+              collectionPlanId, 'editorial',
+              `editorial-gpt-${Date.now()}.png`, imgBuffer, 'image/png'
+            );
+            generatedUrl = upload.publicUrl;
+          } else {
+            generatedUrl = `data:image/png;base64,${gptData.data[0].b64_json}`;
+          }
+        } else if (gptData.data?.[0]?.url) {
+          generatedUrl = gptData.data[0].url;
+        }
+      }
+    } else {
+      // ═══ NANO BANANA PATH (no model selected) ═══
+      generatedUrl = await createAndPoll(prompt, referenceImages);
+    }
+
     if (!generatedUrl) {
       return NextResponse.json(
         { error: 'Editorial generation failed' },
@@ -527,7 +626,7 @@ export async function POST(req: NextRequest) {
     // Persist to Supabase Storage if we know the collection plan
     let finalUrl = generatedUrl;
     let assetId: string | null = null;
-    if (collectionPlanId) {
+    if (collectionPlanId && !generatedUrl.startsWith('data:')) {
       try {
         const result = await persistAsset({
           collectionPlanId,
@@ -536,9 +635,9 @@ export async function POST(req: NextRequest) {
           sourceUrl: generatedUrl,
           phase: 'marketing',
           metadata: {
-            prompt,
+            prompt: providerUsed === 'openai-gpt-image-1.5' ? '(GPT prompt)' : prompt,
             scene,
-            provider: 'freepik-nano-banana',
+            provider: providerUsed,
           },
           uploadedBy: user!.id,
         });
@@ -553,7 +652,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       images: [{ url: finalUrl, assetId, originalUrl: generatedUrl }],
-      provider: 'freepik-nano-banana',
+      provider: providerUsed,
     });
   } catch (error) {
     console.error('[Editorial] Error:', error);
