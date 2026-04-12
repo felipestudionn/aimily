@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Film,
   ChevronLeft,
@@ -1122,6 +1122,15 @@ function EditorialTab({
     return result;
   }, [favoriteVisuals, skuSourceImages, uploadedImages]);
 
+  // Auto-select the first source image when sources become available
+  // and nothing is selected. Eliminates the "click to select" friction
+  // that confused users when only 1-2 images exist.
+  useEffect(() => {
+    if (selectedSourceIdx === null && sourceImages.length > 0) {
+      setSelectedSourceIdx(0);
+    }
+  }, [selectedSourceIdx, sourceImages.length]);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1430,6 +1439,13 @@ function VideoTab({
     }
     return result;
   }, [favoriteVisuals, skuSourceImages, uploadedImages]);
+
+  // Auto-select the first source image when sources become available
+  useEffect(() => {
+    if (selectedSourceIdx === null && sourceImages.length > 0) {
+      setSelectedSourceIdx(0);
+    }
+  }, [selectedSourceIdx, sourceImages.length]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
