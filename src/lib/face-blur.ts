@@ -41,14 +41,18 @@ async function fetchImageBuffer(url: string): Promise<Buffer> {
  * portion of the image, sized to cover a typical head+neck area.
  */
 function createFaceMask(width: number, height: number): Buffer {
-  // Face center: horizontally centered, vertically at ~15% from top
+  // Face + hair center: horizontally centered, vertically at ~18% from top
+  // The mask must be LARGE enough to cover the entire head INCLUDING
+  // all hair (long hair, updos, voluminous styles). If hair leaks
+  // through, Nano Banana copies the hair style from the style reference
+  // instead of from the selected aimily model headshot.
   const cx = Math.round(width / 2);
-  const cy = Math.round(height * 0.15);
+  const cy = Math.round(height * 0.18);
 
-  // Ellipse size: wide enough for a face + hair, tall enough for
-  // head + partial neck. Scales with image dimensions.
-  const rx = Math.round(width * 0.18);
-  const ry = Math.round(height * 0.13);
+  // Generous ellipse: covers head + full hair + neck + upper shoulders.
+  // Better to blur too much (shoulders/neck) than too little (hair tips).
+  const rx = Math.round(width * 0.35);
+  const ry = Math.round(height * 0.22);
 
   const svg = Buffer.from(
     `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
