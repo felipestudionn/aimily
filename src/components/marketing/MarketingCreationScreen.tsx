@@ -3,8 +3,8 @@
 import type { TimelineMilestone } from '@/types/timeline';
 import { SalesDashboardCard } from './SalesDashboardCard';
 import { ContentStudioCard } from './ContentStudioCard';
-import { CampaignVideoCard } from './CampaignVideoCard';
-import { ContentStrategyCard } from './ContentStrategyCard';
+import { CommunicationsCard } from './CommunicationsCard';
+import { PointOfSaleCard } from './PointOfSaleCard';
 import { useTranslation } from '@/i18n';
 
 interface Props {
@@ -12,6 +12,22 @@ interface Props {
   milestones: TimelineMilestone[];
 }
 
+/**
+ * Marketing Block 4 — 4-card grid (restructured 2026-04-12):
+ *
+ *   [1] Sales Dashboard      — KPIs, revenue curve, drops, stories commercial
+ *   [2] Content Studio       — Per-SKU visual pipeline (4 levels) + model roster
+ *   [3] Communications       — Copy, social, email, brand voice, SEO
+ *   [4] Point of Sale        — Web store, wholesale orders, distribution
+ *
+ * Previous structure (before restructure):
+ *   Stories, Product Visuals, Campaign & Video, Content Strategy
+ *
+ * The legacy cards (StoriesCard, ProductVisualsCard, CampaignVideoCard)
+ * still exist and are accessible from within the new cards where
+ * relevant (e.g., still life generation links to ProductVisualsCard,
+ * editorial generation links to CampaignVideoCard).
+ */
 export function MarketingCreationScreen({ collectionPlanId }: Props) {
   const t = useTranslation();
 
@@ -34,8 +50,8 @@ export function MarketingCreationScreen({ collectionPlanId }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <SalesDashboardCard collectionPlanId={collectionPlanId} />
         <ContentStudioCard collectionPlanId={collectionPlanId} />
-        <CampaignVideoCard collectionPlanId={collectionPlanId} />
-        <ContentStrategyCard collectionPlanId={collectionPlanId} />
+        <CommunicationsCard collectionPlanId={collectionPlanId} />
+        <PointOfSaleCard collectionPlanId={collectionPlanId} />
       </div>
     </div>
   );
