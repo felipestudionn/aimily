@@ -2,7 +2,7 @@
 
 import type { TimelineMilestone } from '@/types/timeline';
 import { SalesDashboardCard } from './SalesDashboardCard';
-import { ProductVisualsCard } from './ProductVisualsCard';
+import { ContentStudioCard } from './ContentStudioCard';
 import { CampaignVideoCard } from './CampaignVideoCard';
 import { ContentStrategyCard } from './ContentStrategyCard';
 import { useTranslation } from '@/i18n';
@@ -33,7 +33,7 @@ export function MarketingCreationScreen({ collectionPlanId }: Props) {
       {/* 2×2 Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <SalesDashboardCard collectionPlanId={collectionPlanId} />
-        <ProductVisualsCard collectionPlanId={collectionPlanId} />
+        <ContentStudioCard collectionPlanId={collectionPlanId} />
         <CampaignVideoCard collectionPlanId={collectionPlanId} />
         <ContentStrategyCard collectionPlanId={collectionPlanId} />
       </div>
