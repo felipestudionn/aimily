@@ -119,9 +119,13 @@ function buildPrompt(params: {
         : 'fashion accessory';
 
   // How the model interacts with the product per category.
+  // For footwear: absolutely critical that it is ON THE FEET, not held
+  // in hand, placed on a table, or used as a prop. Nano Banana defaults
+  // to "holding" when the reference image is a flat product shot, so
+  // the instruction must be explicit and repeated.
   const wearContext =
     category === 'CALZADO'
-      ? 'worn on the feet of a single human model. Frame from mid-thigh down OR full body so the footwear is unambiguously visible and recognizable as the hero of the shot. The model stands, walks, or poses naturally — never seated on the ground hiding the shoes.'
+      ? 'WORN ON THE FEET of the model — the shoes/sandals MUST be on the model\'s feet, visible, and recognizable. The model is STANDING, WALKING, or POSING with the footwear on their feet. NEVER holding the footwear in their hands, NEVER placing it on a surface, NEVER carrying it as a handbag or prop. Frame: full body or mid-thigh down so both feet are visible. The footwear is the hero product of the shot.'
       : category === 'ROPA'
         ? 'worn by a single human model in a three-quarter or full-length editorial pose. The garment drapes naturally, shows its fabric weight and silhouette, and is the unambiguous hero of the frame.'
         : 'carried, worn, or held by a single human model in a pose that keeps the product prominent and well-lit. The model supports the product, not the other way around.';
@@ -225,8 +229,23 @@ function buildPrompt(params: {
   );
 
   // 8. Reject list — things Claude must actively refuse.
+  const rejectItems = [
+    'no text, no captions, no watermarks, no logos, no added brand markings',
+    'no multiple copies of the product',
+    'no second model, no visible crowd',
+    'no distorted anatomy (extra fingers, merged limbs, missing features)',
+    'no CGI/plastic skin textures',
+    'no surreal dreamlike backgrounds',
+    'no motion blur on the product',
+    'no product obscured or cropped out of frame',
+  ];
+  if (category === 'CALZADO') {
+    rejectItems.push(
+      'NEVER show the model holding footwear in their hands — shoes/sandals must ONLY appear on the feet'
+    );
+  }
   parts.push(
-    `REJECT LIST (the final image MUST NOT contain): no text, no captions, no watermarks, no logos, no added brand markings, no multiple copies of the product, no second model, no visible crowd, no distorted anatomy (extra fingers, merged limbs, missing features), no CGI/plastic skin textures, no surreal dreamlike backgrounds, no motion blur on the product, no product obscured or cropped out of frame.`
+    `REJECT LIST (the final image MUST NOT contain): ${rejectItems.join(', ')}.`
   );
 
   // 9. Visual style reference — when the user provides a second image
@@ -236,7 +255,19 @@ function buildPrompt(params: {
   // products/garments from the style reference.
   if (hasStyleReference) {
     parts.push(
-      `STYLE REFERENCE (second reference image): A second image is provided as VISUAL ART DIRECTION. Match its composition, lighting mood, camera angle, color grading, pose energy, and editorial atmosphere as closely as possible. However, the PRODUCT in the final image must be ONLY the ${productType} from the first reference image — do NOT copy or include any products, garments, shoes, or accessories visible in the style reference image. The style reference dictates HOW the shot looks; the first reference dictates WHAT product appears.`
+      `STYLE REFERENCE (second reference image): A second image is provided as VISUAL ART DIRECTION. Match its composition, lighting mood, camera angle, color grading, pose energy, and editorial atmosphere as closely as possible.`
+    );
+    parts.push(
+      `CRITICAL — STYLE REFERENCE RULES:`
+    );
+    parts.push(
+      `• The PRODUCT in the final image must be ONLY the ${productType} from the first reference image — do NOT copy or include any products, garments, shoes, or accessories visible in the style reference image.`
+    );
+    parts.push(
+      `• MODEL IDENTITY: the model in the final image should have a SIMILAR look and vibe to the person in the style reference — similar styling, similar body language, similar energy, similar complexion range, similar hair style direction. BUT the face and specific identity must be SLIGHTLY DIFFERENT — not a clone, not a copy, but a believable variation. Think "same casting brief, different model." This preserves the editorial direction while avoiding likeness rights issues.`
+    );
+    parts.push(
+      `• The style reference dictates HOW the shot looks (composition, lighting, mood, pose); the first reference dictates WHAT product appears.`
     );
   }
 
