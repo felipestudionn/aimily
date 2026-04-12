@@ -1,68 +1,99 @@
 /**
  * Face preprocessing for editorial style reference images.
  *
- * STRATEGY v3 (2026-04-12): Instead of blurring the face (which still
- * let hair/identity leak through), we now COMPOSITE the aimily model's
- * headshot onto the style reference. The result is a single image that
- * has the style reference's body/pose/lighting/wardrobe WITH the aimily
- * model's face and hair. Nano Banana then only receives 2 reference
- * images (product + composited style) instead of 3, which eliminates
- * the identity conflict entirely.
+ * STRATEGY v4 (2026-04-12): Use Claude Vision to detect the exact face
+ * position in the style reference, then composite the aimily model's
+ * headshot precisely over it. No more heuristic guessing.
  *
- * Approach:
- * 1. Take the style reference (full editorial photo)
- * 2. Take the aimily model headshot (casting Polaroid)
- * 3. Resize the headshot to fit the head region of the style reference
- * 4. Composite the headshot over the head area with a soft circular mask
- * 5. Result: style reference body + model face/hair = perfect input
+ * Flow:
+ * 1. Send style reference to Claude Sonnet Vision: "where is the face?"
+ * 2. Get back {x, y, width, height} as percentage of image dimensions
+ * 3. Resize model headshot to match that exact region
+ * 4. Composite with soft circular mask
+ * 5. Result: style reference body + model face/hair = one clean image
  *
- * Fallback: if compositing fails for any reason, fall back to the
- * previous blur strategy so generation isn't blocked.
+ * Nano Banana then receives only 2 references: product + composited style.
+ * Zero identity conflict.
  */
 
 import sharp from 'sharp';
+import Anthropic from '@anthropic-ai/sdk';
 
-/**
- * Download an image from a URL and return it as a Buffer.
- */
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
 async function fetchImageBuffer(url: string): Promise<Buffer> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
-  const arrayBuffer = await res.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  return Buffer.from(await res.arrayBuffer());
 }
 
 /**
- * Create a circular gradient mask for smooth blending.
+ * Use Claude Vision to detect the face bounding box in an image.
+ * Returns {x, y, w, h} as fractions of image dimensions (0-1).
  */
-function createCircleMask(size: number): Buffer {
-  const r = Math.round(size / 2);
-  // Radial gradient from white center to transparent edge for soft blend
+async function detectFacePosition(imageBuffer: Buffer): Promise<{
+  x: number; y: number; w: number; h: number;
+}> {
+  if (!ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY not configured for face detection');
+  }
+
+  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+  const base64 = imageBuffer.toString('base64');
+  const meta = await sharp(imageBuffer).metadata();
+  const mediaType = meta.format === 'png' ? 'image/png' : 'image/jpeg';
+
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 200,
+    messages: [{
+      role: 'user',
+      content: [
+        {
+          type: 'image',
+          source: { type: 'base64', media_type: mediaType, data: base64 },
+        },
+        {
+          type: 'text',
+          text: 'Look at this fashion photograph. Find the person\'s HEAD (face + hair). Return ONLY a JSON object with the bounding box as fractions of the image dimensions (0 to 1): {"x": left_edge, "y": top_edge, "w": width, "h": height}. The box should include the entire head from the top of the hair to the chin, and from ear to ear including all hair. Return ONLY the JSON, no other text.',
+        },
+      ],
+    }],
+  });
+
+  const text = response.content[0].type === 'text' ? response.content[0].text : '';
+  const match = text.match(/\{[^}]+\}/);
+  if (!match) throw new Error('Claude did not return face coordinates');
+
+  const coords = JSON.parse(match[0]);
+  return {
+    x: Math.max(0, Math.min(1, Number(coords.x) || 0.3)),
+    y: Math.max(0, Math.min(1, Number(coords.y) || 0.05)),
+    w: Math.max(0.05, Math.min(0.8, Number(coords.w) || 0.3)),
+    h: Math.max(0.05, Math.min(0.8, Number(coords.h) || 0.2)),
+  };
+}
+
+function createCircleMask(width: number, height: number): Buffer {
+  const rx = Math.round(width / 2);
+  const ry = Math.round(height / 2);
   return Buffer.from(
-    `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="g">
+        <radialGradient id="g" cx="50%" cy="50%">
           <stop offset="0%" stop-color="white" stop-opacity="1"/>
-          <stop offset="60%" stop-color="white" stop-opacity="1"/>
+          <stop offset="55%" stop-color="white" stop-opacity="1"/>
           <stop offset="100%" stop-color="white" stop-opacity="0"/>
         </radialGradient>
       </defs>
-      <circle cx="${r}" cy="${r}" r="${r}" fill="url(#g)"/>
+      <ellipse cx="${rx}" cy="${ry}" rx="${rx}" ry="${ry}" fill="url(#g)"/>
     </svg>`
   );
 }
 
 /**
- * Composite the aimily model's head onto the style reference image.
- *
- * The headshot is resized to match the approximate head size in the
- * style reference (based on the image dimensions — editorial fashion
- * photos follow consistent framing conventions), then overlaid with
- * a soft circular mask for natural blending.
- *
- * @param styleRefUrl - URL of the style reference image
- * @param modelHeadshotUrl - URL of the aimily model headshot
- * @returns Buffer of the composited JPEG image
+ * Composite the aimily model's head onto the style reference image,
+ * using Claude Vision to detect the exact face position.
  */
 export async function compositeModelOntoStyleRef(
   styleRefUrl: string,
@@ -77,42 +108,40 @@ export async function compositeModelOntoStyleRef(
   const styleW = styleMeta.width!;
   const styleH = styleMeta.height!;
 
-  // Estimate head size in the style reference based on image dimensions.
-  // In editorial fashion photos (full body / three-quarter):
-  // - Head width ≈ 20-30% of image width
-  // - Head is in the upper 25% of the image
-  const headSize = Math.round(styleW * 0.28);
-  const headX = Math.round(styleW / 2 - headSize / 2);
-  const headY = Math.round(styleH * 0.02); // Very top with small margin
+  // Detect face position using Claude Vision
+  const face = await detectFacePosition(styleBuffer);
 
-  // Resize the headshot to fit the head area, crop to square from top
+  // Convert fractions to pixels
+  const faceX = Math.round(face.x * styleW);
+  const faceY = Math.round(face.y * styleH);
+  const faceW = Math.round(face.w * styleW);
+  const faceH = Math.round(face.h * styleH);
+
+  // Resize model headshot to match the detected face region
   const resizedHeadshot = await sharp(headshotBuffer)
-    .resize(headSize, headSize, { fit: 'cover', position: 'top' })
+    .resize(faceW, faceH, { fit: 'cover', position: 'top' })
     .toBuffer();
 
-  // Create soft circular mask for natural blending
-  const maskSvg = createCircleMask(headSize);
+  // Create soft elliptical mask
+  const maskSvg = createCircleMask(faceW, faceH);
   const mask = await sharp(maskSvg)
-    .resize(headSize, headSize)
+    .resize(faceW, faceH)
     .grayscale()
     .toBuffer();
 
-  // Apply mask to headshot (makes edges transparent)
+  // Apply mask to headshot
   const maskedHeadshot = await sharp(resizedHeadshot)
     .ensureAlpha()
-    .composite([{
-      input: mask,
-      blend: 'dest-in' as const,
-    }])
+    .composite([{ input: mask, blend: 'dest-in' as const }])
     .png()
     .toBuffer();
 
-  // Composite masked headshot onto the style reference
+  // Composite onto style reference at the exact detected position
   const result = await sharp(styleBuffer)
     .composite([{
       input: maskedHeadshot,
-      top: headY,
-      left: headX,
+      top: faceY,
+      left: faceX,
       blend: 'over' as const,
     }])
     .jpeg({ quality: 90 })
@@ -122,7 +151,7 @@ export async function compositeModelOntoStyleRef(
 }
 
 /**
- * Legacy blur function — kept as fallback if compositing fails.
+ * Legacy blur function — kept as fallback.
  */
 export async function blurFaceInStyleReference(
   imageUrl: string
@@ -132,10 +161,21 @@ export async function blurFaceInStyleReference(
   const width = metadata.width!;
   const height = metadata.height!;
 
-  const cx = Math.round(width / 2);
-  const cy = Math.round(height * 0.18);
-  const rx = Math.round(width * 0.35);
-  const ry = Math.round(height * 0.22);
+  // Use Claude Vision for precise blur too
+  let cx: number, cy: number, rx: number, ry: number;
+  try {
+    const face = await detectFacePosition(originalBuffer);
+    cx = Math.round((face.x + face.w / 2) * width);
+    cy = Math.round((face.y + face.h / 2) * height);
+    rx = Math.round((face.w / 2) * width * 1.3); // 30% larger than detected
+    ry = Math.round((face.h / 2) * height * 1.3);
+  } catch {
+    // Fallback to heuristic if Vision fails
+    cx = Math.round(width / 2);
+    cy = Math.round(height * 0.18);
+    rx = Math.round(width * 0.35);
+    ry = Math.round(height * 0.22);
+  }
 
   const maskSvg = Buffer.from(
     `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
