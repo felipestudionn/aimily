@@ -264,7 +264,7 @@ function buildPrompt(params: {
       `• The PRODUCT in the final image must be ONLY the ${productType} from the first reference image — do NOT copy or include any products, garments, shoes, or accessories visible in the style reference image.`
     );
     parts.push(
-      `• MODEL IDENTITY: the model in the final image should have a SIMILAR look and vibe to the person in the style reference — similar styling, similar body language, similar energy, similar complexion range, similar hair style direction. BUT the face and specific identity must be SLIGHTLY DIFFERENT — not a clone, not a copy, but a believable variation. Think "same casting brief, different model." This preserves the editorial direction while avoiding likeness rights issues.`
+      `• MODEL IDENTITY (non-negotiable): keep EVERYTHING from the style reference — same pose, same body language, same styling, same energy, same complexion, same hair direction, same wardrobe vibe. The ONLY thing that MUST change is the FACE: generate a DIFFERENT face with different facial features (different eyes, different nose, different jawline, different lip shape). The body, pose, lighting, composition, and mood stay identical to the reference. Think "same photo reshoot with a different model from the same agency." This is a legal requirement — the face must not match the reference person.`
     );
     parts.push(
       `• The style reference dictates HOW the shot looks (composition, lighting, mood, pose); the first reference dictates WHAT product appears.`
