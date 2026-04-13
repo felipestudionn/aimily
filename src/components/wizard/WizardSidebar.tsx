@@ -134,13 +134,13 @@ export function WizardSidebar({
   /* ── SKU phase counts for Design badges ── */
   const { skus } = useSkus(collectionId);
   const skuPhaseCounts = useMemo(() => {
-    const counts: Record<string, number> = { sketch: 0, prototyping: 0, production: 0, selection: 0 };
+    const counts: Record<string, number> = { sketch: 0, prototyping: 0, production: 0, 'final-selection': 0 };
     for (const sku of skus) {
       const phase = sku.design_phase || 'range_plan';
       if (phase === 'range_plan' || phase === 'sketch') counts.sketch++;
       if (phase === 'prototyping') counts.prototyping++;
       if (phase === 'production') counts.production++;
-      if (phase === 'production' || phase === 'completed') counts.selection++;
+      if (phase === 'production' || phase === 'completed') counts['final-selection']++;
     }
     return counts;
   }, [skus]);
@@ -204,6 +204,11 @@ export function WizardSidebar({
 
   function getSubItemState(sub: SidebarSubItem, block: SidebarBlock): 'active' | 'completed' | 'locked' | 'available' {
     if (isSubItemActive(sub, block)) return 'active';
+
+    // Design phase filters (with ?phase=) are never locked — they're just Builder views
+    const hasPhaseParam = getRouteParam(sub.route, 'phase');
+    if (hasPhaseParam) return 'available';
+
     if (!sub.phaseId) return 'available';
     const ps = phaseMap.get(sub.phaseId);
     if (!ps) return 'available';
