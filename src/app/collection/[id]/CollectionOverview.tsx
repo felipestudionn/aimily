@@ -177,12 +177,25 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
         {/* ── Collection title ── */}
         <div className="text-center mb-12">
-          <p className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mb-3">
-            {plan.season || 'Collection'}
-          </p>
           <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.1]">
             {plan.name}
           </h1>
+          {plan.setup_data?.productCategory && (
+            <p className="text-[13px] font-medium text-carbon/40 tracking-[-0.02em] mt-3">
+              {(() => {
+                const cat = plan.setup_data.productCategory;
+                const labels: Record<string, string> = {
+                  'ROPA': 'Apparel',
+                  'CALZADO': 'Footwear',
+                  'ACCESORIOS': 'Accessories',
+                };
+                return labels[cat] || cat;
+              })()}
+              {plan.setup_data?.families?.length > 0 && (
+                <> · {plan.setup_data.families.join(' · ')}</>
+              )}
+            </p>
+          )}
         </div>
 
         {/* ── View switch ── */}
