@@ -2951,8 +2951,58 @@ export default function CreativeBrandPage() {
         {/* Step Content */}
         {step.blocks.length > 0 ? (
           <div className="relative">
-            {/* ─── EXPANDED VIEW ─── */}
-            {expandedBlock && (
+            {/* ─── CLEAN WORKSPACE VIEW (from sidebar) ─── */}
+            {blockParam && expandedBlock && (() => {
+              const block = step.blocks.find((b) => b.id === expandedBlock);
+              if (!block) return null;
+              const state = getBlockState(block.id);
+              const hideModePillsClean = block.id === 'moodboard';
+              return (
+                <div className="max-w-[900px]">
+                  {/* Mode selector */}
+                  {!hideModePillsClean && (
+                    <div className="mb-10">
+                      <SegmentedPill
+                        options={INPUT_MODES.map((m) => ({
+                          id: m.id,
+                          label: modeNameMap[m.id] || m.label,
+                        }))}
+                        value={state.mode}
+                        onChange={(modeId) => updateBlockData(block.id, { mode: modeId })}
+                        description={modeDescMap[state.mode] || INPUT_MODES.find((m) => m.id === state.mode)?.description}
+                        size="md"
+                      />
+                    </div>
+                  )}
+
+                  {/* Content */}
+                  <ExpandedBlockContent
+                    blockId={block.id}
+                    stepId={step.id}
+                    mode={state.mode}
+                    data={state.data}
+                    onChange={(newData) => updateBlockData(block.id, { data: newData })}
+                    collectionContext={collectionContext}
+                    consumerProfile={consumerProfile}
+                    vibeText={vibeText}
+                  />
+
+                  {/* Confirm */}
+                  <div className="mt-16 flex justify-end pt-8 border-t border-carbon/[0.06]">
+                    <button
+                      onClick={() => handleConfirm(block.id)}
+                      className="inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white hover:bg-carbon/90 transition-all"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {state.confirmed ? 'Confirmed' : t.creative.confirmContinue}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ─── LEGACY EXPANDED VIEW (direct access, no blockParam) ─── */}
+            {!blockParam && expandedBlock && (
               <div className="flex gap-4">
                 {/* Collapsed sidebar icons — hidden on mobile */}
                 <div className="hidden sm:flex flex-col gap-3 pt-1 w-14 shrink-0">
@@ -2979,7 +3029,6 @@ export default function CreativeBrandPage() {
                         ) : (
                           <Icon className="h-4.5 w-4.5 text-carbon/35 group-hover/icon:text-carbon/60 transition-colors" />
                         )}
-                        {/* Tooltip */}
                         <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">
                           {blockNameMap[block.id] || block.name}
                         </div>
@@ -3003,7 +3052,6 @@ export default function CreativeBrandPage() {
                     const state = getBlockState(block.id);
                     return (
                       <div className="p-4 sm:p-10 lg:p-12 flex flex-col h-full min-h-[inherit]">
-                        {/* Header row */}
                         <div className="flex items-start justify-between mb-6 sm:mb-8">
                           <div className="flex items-center gap-3 sm:gap-4">
                             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-carbon/[0.04] flex items-center justify-center shrink-0">
@@ -3024,7 +3072,6 @@ export default function CreativeBrandPage() {
                           </button>
                         </div>
 
-                        {/* Mode Pills (not for moodboard) */}
                         {!hideModePills && (
                           <div className="mb-6 sm:mb-8">
                             <SegmentedPill
@@ -3040,7 +3087,6 @@ export default function CreativeBrandPage() {
                           </div>
                         )}
 
-                        {/* Dynamic Content */}
                         <div className="flex-1">
                           <ExpandedBlockContent
                             blockId={block.id}
@@ -3054,7 +3100,6 @@ export default function CreativeBrandPage() {
                           />
                         </div>
 
-                        {/* Confirm — pinned to bottom */}
                         <div className="mt-auto flex items-center justify-between pt-4 sm:pt-6 border-t border-carbon/[0.06] gap-3">
                           <button
                             onClick={handleCollapse}
