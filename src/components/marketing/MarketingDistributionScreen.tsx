@@ -19,7 +19,7 @@ export function MarketingDistributionScreen({ collectionPlanId, milestones }: Pr
     <div className="px-4 sm:px-6 md:px-12 lg:px-16 py-12">
       {/* Header */}
       <div className="mb-10">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3">
+        <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-3">
           {t.marketingPage.sectionLabel}
         </p>
         <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-carbon tracking-tight leading-[1.15]">

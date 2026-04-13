@@ -33,7 +33,7 @@ export function CompetitorMap({ competitors, onUpdate }: Props) {
   };
 
   return (
-    <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Swords className="h-4 w-4 text-carbon/40" />
@@ -61,21 +61,21 @@ export function CompetitorMap({ competitors, onUpdate }: Props) {
               value={c.name}
               onChange={(e) => updateItem(i, { name: e.target.value })}
               placeholder={t.brandPage.competitorName}
-              className="px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+              className="px-3 py-2 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
             />
             <input
               type="text"
               value={c.positioning}
               onChange={(e) => updateItem(i, { positioning: e.target.value })}
               placeholder={t.brandPage.positioning}
-              className="px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+              className="px-3 py-2 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
             />
             <input
               type="text"
               value={c.priceRange}
               onChange={(e) => updateItem(i, { priceRange: e.target.value })}
               placeholder={t.brandPage.priceRange}
-              className="px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+              className="px-3 py-2 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
             />
             <button
               onClick={() => remove(i)}

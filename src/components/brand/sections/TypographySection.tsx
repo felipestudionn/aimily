@@ -32,7 +32,7 @@ export function TypographySection({ typography, onUpdate }: Props) {
   };
 
   return (
-    <div className="bg-white border border-carbon/[0.06] p-6 space-y-5">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 space-y-5">
       <div className="flex items-center gap-2">
         <Type className="h-4 w-4 text-carbon/40" />
         <h2 className="font-light text-carbon tracking-tight">{tr.brandPage.typographyTitle}</h2>
@@ -47,12 +47,12 @@ export function TypographySection({ typography, onUpdate }: Props) {
             value={t.primary.family}
             onChange={(e) => update({ primary: { ...t.primary, family: e.target.value } })}
             placeholder={tr.brandPage.fontFamily}
-            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+            className="w-full px-3 py-2 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
           <select
             value={t.primary.weight}
             onChange={(e) => update({ primary: { ...t.primary, weight: e.target.value } })}
-            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+            className="w-full px-3 py-2 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           >
             <option value="300">Light (300)</option>
             <option value="400">Regular (400)</option>
@@ -78,12 +78,12 @@ export function TypographySection({ typography, onUpdate }: Props) {
             value={t.secondary.family}
             onChange={(e) => update({ secondary: { ...t.secondary, family: e.target.value } })}
             placeholder={tr.brandPage.fontFamily}
-            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+            className="w-full px-3 py-2 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           />
           <select
             value={t.secondary.weight}
             onChange={(e) => update({ secondary: { ...t.secondary, weight: e.target.value } })}
-            className="w-full px-3 py-2 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+            className="w-full px-3 py-2 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
           >
             <option value="300">Light (300)</option>
             <option value="400">Regular (400)</option>

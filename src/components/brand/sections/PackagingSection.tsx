@@ -15,7 +15,7 @@ export function PackagingSection({ notes, onUpdate }: Props) {
   const [text, setText] = useState(notes || '');
 
   return (
-    <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Package className="h-4 w-4 text-carbon/40" />
         <h2 className="font-light text-carbon tracking-tight">{t.brandPage.packagingTitle}</h2>

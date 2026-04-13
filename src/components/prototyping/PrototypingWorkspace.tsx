@@ -67,7 +67,7 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
     <div className="max-w-5xl mx-auto px-4 pt-10 pb-16 space-y-10">
       {/* Phase Header */}
       <div>
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-4">
+        <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-4">
           {language === 'es' ? info.nameEs : info.name}
         </p>
         <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
@@ -76,7 +76,7 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
       </div>
 
       {/* Progress Card */}
-      <div className="relative bg-white border border-carbon/[0.06] p-4 sm:p-6 md:p-8 overflow-hidden">
+      <div className="relative bg-white border border-carbon/[0.06] rounded-[20px] p-4 sm:p-6 md:p-8 overflow-hidden">
         <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
           <div className="h-full bg-carbon transition-all duration-700" style={{ width: `${progress}%` }} />
         </div>
@@ -131,8 +131,8 @@ export function PrototypingWorkspace({ milestones }: PrototypingWorkspaceProps) 
       )}
 
       {/* Milestones Checklist */}
-      <div className="bg-white border border-carbon/[0.06] p-4 sm:p-6 md:p-8">
-        <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-6">{t.workspace.milestones}</p>
+      <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-4 sm:p-6 md:p-8">
+        <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-6">{t.workspace.milestones}</p>
         <div className="space-y-4">
           {phaseMilestones.map((m) => (
             <div key={m.id} className="flex items-center gap-2 sm:gap-4">

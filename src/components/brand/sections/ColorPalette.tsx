@@ -28,28 +28,28 @@ function ColorRow({
         type="color"
         value={color.hex || '#000000'}
         onChange={(e) => onChange({ ...color, hex: e.target.value })}
-        className="w-10 h-10 rounded-lg border border-carbon/[0.08] cursor-pointer p-0.5"
+        className="w-10 h-10 rounded-[12px] border border-carbon/[0.08] cursor-pointer p-0.5"
       />
       <input
         type="text"
         value={color.hex}
         onChange={(e) => onChange({ ...color, hex: e.target.value })}
         placeholder="#000000"
-        className="w-24 px-2 py-1.5 rounded-lg border border-carbon/[0.08] text-xs font-mono focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+        className="w-24 px-2 py-1.5 rounded-[12px] border border-carbon/[0.08] text-xs font-mono focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
       />
       <input
         type="text"
         value={color.name}
         onChange={(e) => onChange({ ...color, name: e.target.value })}
         placeholder={colorNamePlaceholder}
-        className="flex-1 px-3 py-1.5 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+        className="flex-1 px-3 py-1.5 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
       />
       <input
         type="text"
         value={color.pantone || ''}
         onChange={(e) => onChange({ ...color, pantone: e.target.value })}
         placeholder="Pantone"
-        className="w-28 px-3 py-1.5 rounded-lg border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
+        className="w-28 px-3 py-1.5 rounded-[12px] border border-carbon/[0.08] text-sm focus:outline-none focus:ring-2 focus:ring-carbon/20 focus:border-carbon/20"
       />
       <button onClick={onRemove} className="p-1.5 text-carbon/20 hover:text-red-400">
         <Trash2 className="h-3.5 w-3.5" />
@@ -120,7 +120,7 @@ export function ColorPalette({ primaryColors, secondaryColors, onUpdate }: Props
   const [secondary, setSecondary] = useState<BrandColor[]>(secondaryColors || []);
 
   return (
-    <div className="bg-white border border-carbon/[0.06] p-6 space-y-6">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 space-y-6">
       <div className="flex items-center gap-2">
         <Palette className="h-4 w-4 text-carbon/40" />
         <h2 className="font-light text-carbon tracking-tight">{t.brandPage.colorPaletteTitle}</h2>
