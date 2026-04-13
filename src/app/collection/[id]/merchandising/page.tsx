@@ -103,7 +103,7 @@ function PriorityBadge({ priority, onCycle }: { priority?: Priority | string; on
     <button
       type="button"
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCycle(); }}
-      className={`px-2.5 py-1 text-[10px] font-semibold tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${style}`}
+      className={`px-3 py-1 rounded-full text-[10px] font-semibold tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${style}`}
       title="Click to change priority"
     >
       {label}
@@ -164,14 +164,14 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
       {mode === 'free' && (
         <div className="space-y-4">
           {families.map((fam, fi) => (
-            <div key={fi} className="border border-carbon/[0.08] p-5 space-y-3">
+            <div key={fi} className="border border-carbon/[0.06] rounded-[16px] p-5 space-y-3">
               <div className="flex items-center gap-3">
                 <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
                 <input
                   value={fam.name}
                   onChange={(e) => updateFamilyName(fi, e.target.value)}
                   placeholder={t.merchandising.familyNamePlaceholder}
-                  className="flex-1 px-3 py-2.5 text-sm font-medium text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none"
+                  className="flex-1 px-3 py-2.5 text-sm font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
                 />
                 <button onClick={() => removeFamily(fi)} className="text-carbon/30 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
               </div>
@@ -182,7 +182,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
                     value={sub}
                     onChange={(e) => updateSubcategory(fi, si, e.target.value)}
                     placeholder={t.merchandising.subcategoryPlaceholder}
-                    className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none"
+                    className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
                   />
                   <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
                 </div>
@@ -192,7 +192,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               </button>
             </div>
           ))}
-          <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
+          <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase rounded-full border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
             <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
           </button>
         </div>
@@ -206,7 +206,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               value={(data.direction as string) || ''}
               onChange={(e) => onChange({ ...data, direction: e.target.value })}
               placeholder={t.merchandising.directionFamiliesPlaceholder}
-              className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed placeholder:text-carbon/40"
+              className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
             />
           </div>
           <button
@@ -219,7 +219,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               setGenerating(false);
             }}
             disabled={generating || !(data.direction as string)?.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             {t.merchandising.suggestFamilies}
@@ -230,15 +230,15 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
             <div className="space-y-3 pt-2">
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.aiSuggestion} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
               {families.map((fam, fi) => (
-                <div key={fi} className="border border-carbon/[0.08] p-4 space-y-2">
+                <div key={fi} className="border border-carbon/[0.06] rounded-[16px] p-4 space-y-2">
                   <div className="flex items-center gap-3">
                     <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
-                    <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                    <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                   </div>
                   {fam.subcategories.map((sub, si) => (
                     <div key={si} className="flex items-center gap-2 ml-4">
                       <span className="text-carbon/20 text-xs">{'\u2514'}</span>
-                      <input value={sub} onChange={(e) => updateSubcategory(fi, si, e.target.value)} className="flex-1 px-3 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                      <input value={sub} onChange={(e) => updateSubcategory(fi, si, e.target.value)} className="flex-1 px-3 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                       <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
                     </div>
                   ))}
@@ -265,7 +265,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               setGenerating(false);
             }}
             disabled={generating}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             {families.length > 0 ? t.merchandising.regenerate : t.merchandising.proposeFamilies}
@@ -276,23 +276,23 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
             <div className="space-y-3 pt-2">
               <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.aiSuggestion} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
               {families.map((fam, fi) => (
-                <div key={fi} className="border border-carbon/[0.08] p-4 space-y-2">
+                <div key={fi} className="border border-carbon/[0.06] rounded-[16px] p-4 space-y-2">
                   <div className="flex items-center gap-3">
                     <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
-                    <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                    <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                     <button onClick={() => removeFamily(fi)} className="text-carbon/30 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
                   </div>
                   {fam.subcategories.map((sub, si) => (
                     <div key={si} className="flex items-center gap-2 ml-4">
                       <span className="text-carbon/20 text-xs">{'\u2514'}</span>
-                      <input value={sub} onChange={(e) => updateSubcategory(fi, si, e.target.value)} className="flex-1 px-3 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                      <input value={sub} onChange={(e) => updateSubcategory(fi, si, e.target.value)} className="flex-1 px-3 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                       <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
                     </div>
                   ))}
                   <button onClick={() => addSubcategory(fi)} className="ml-4 text-xs text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> {t.merchandising.add}</button>
                 </div>
               ))}
-              <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
+              <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase rounded-full border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
                 <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
               </button>
             </div>
@@ -344,9 +344,9 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                 <div key={si} className="flex items-center gap-3 ml-4">
                   <span className="text-sm text-carbon/60 w-40 truncate">{sub.name}</span>
                   <span className="text-xs text-carbon/30">{t.merchandising.minPrice}</span>
-                  <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                  <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                   <span className="text-xs text-carbon/30">{t.merchandising.maxPrice}</span>
-                  <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                  <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                 </div>
               ))}
             </div>
@@ -370,7 +370,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                   value={(data.direction as string) || ''}
                   onChange={(e) => onChange({ ...data, direction: e.target.value })}
                   placeholder={t.merchandising.pricingDirectionPlaceholder}
-                  className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed placeholder:text-carbon/40"
+                  className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
                 />
               </div>
               <div>
@@ -380,7 +380,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                   value={(data.referenceBrands as string) || ''}
                   onChange={(e) => onChange({ ...data, referenceBrands: e.target.value })}
                   placeholder={t.merchandising.referenceBrandsPlaceholder}
-                  className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/40"
+                  className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
                 />
                 <p className="text-[10px] text-carbon/40 mt-1.5">{t.merchandising.referenceBrandsHint}</p>
               </div>
@@ -402,7 +402,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
               setGenerating(false);
             }}
             disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             {mode === 'assisted' ? t.merchandising.suggestPricing : t.merchandising.generatePricingMatrix}
@@ -427,9 +427,9 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-carbon/60 w-40 truncate" title={sub.name}>{sub.name}</span>
                         <span className="text-xs text-carbon/30">{t.merchandising.minPrice}</span>
-                        <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                        <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                         <span className="text-xs text-carbon/30">{t.merchandising.maxPrice}</span>
-                        <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                        <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                       </div>
                       {sub.rationale && <div className="text-[10px] text-carbon/40 italic ml-0.5">{sub.rationale}</div>}
                     </div>
@@ -553,9 +553,9 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
           {markets.map((m, i) => (
             <div key={i} className="flex items-center gap-2 mb-2">
               <input value={m.name} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], name: e.target.value }; onChange({ ...data, markets: u }); }}
-                placeholder={t.merchandising.marketNamePlaceholder} className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                placeholder={t.merchandising.marketNamePlaceholder} className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
               <input value={m.region} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], region: e.target.value }; onChange({ ...data, markets: u }); }}
-                placeholder={t.merchandising.regionPlaceholder} className="w-32 px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                placeholder={t.merchandising.regionPlaceholder} className="w-32 px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
               <button onClick={() => onChange({ ...data, markets: markets.filter((_, j) => j !== i) })} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
             </div>
           ))}
@@ -578,7 +578,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
                 value={(data.direction as string) || ''}
                 onChange={(e) => onChange({ ...data, direction: e.target.value })}
                 placeholder={t.merchandising.marketDirectionPlaceholder}
-                className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed placeholder:text-carbon/40"
+                className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
               />
             </div>
           )}
@@ -594,7 +594,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
               setGenerating(false);
             }}
             disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             {mode === 'assisted' ? t.merchandising.suggestMarkets : t.merchandising.recommendMarkets}
@@ -699,7 +699,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
               <div key={f.key}>
                 <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{f.label}</label>
                 <input type={f.type} value={(data[f.key] as number) || ''} onChange={(e) => onChange({ ...data, [f.key]: Number(e.target.value) })}
-                  placeholder={f.placeholder} className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/40" />
+                  placeholder={f.placeholder} className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30" />
               </div>
             ))}
           </div>
@@ -711,7 +711,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                 <div key={s.name} className="flex items-center gap-2">
                   <span className="text-xs text-carbon/60">{s.name}</span>
                   <input type="number" value={s.percentage} onChange={(e) => { const u = [...typeSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, typeSegmentation: u }); }}
-                    className="w-16 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none text-center" />
+                    className="w-16 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors text-center" />
                   <span className="text-xs text-carbon/30">%</span>
                 </div>
               ))}
@@ -724,7 +724,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                 <div key={s.name} className="flex items-center gap-2">
                   <span className="text-xs text-carbon/60">{s.name}</span>
                   <input type="number" value={s.percentage} onChange={(e) => { const u = [...newnessSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, newnessSegmentation: u }); }}
-                    className="w-16 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none text-center" />
+                    className="w-16 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors text-center" />
                   <span className="text-xs text-carbon/30">%</span>
                 </div>
               ))}
@@ -816,7 +816,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
               setGenerating(false);
             }}
             disabled={generating || (mode === 'assisted' && !(data.growthModel as string))}
-            className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             {mode === 'assisted' ? t.merchandising.suggestBudget : t.merchandising.generateFinancialPlan}
@@ -873,7 +873,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                   <div key={f.key}>
                     <label className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">{f.label}</label>
                     <input type={f.type} value={(data[f.key] as number) || ''} onChange={(e) => onChange({ ...data, [f.key]: Number(e.target.value) })}
-                      className="w-full px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none" />
+                      className="w-full px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
                   </div>
                 ))}
               </div>
