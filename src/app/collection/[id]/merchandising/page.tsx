@@ -8,6 +8,7 @@ import { useWorkspaceData } from '@/hooks/useWorkspaceData';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
+import { DecisionCard } from '@/components/workspace/DecisionCard';
 
 /* ─── AI generation helper ─── */
 async function generateMerch(
@@ -1081,21 +1082,23 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   /* ── Card name map for clean workspace header ── */
   const m = t.merchandising as Record<string, string>;
   const cardNameMap: Record<string, string> = {
-    'families': m[language === 'es' ? CARD_KEYS.families.nameEs : CARD_KEYS.families.name] || 'Families & Pricing',
-    'pricing': m[language === 'es' ? CARD_KEYS.pricing.nameEs : CARD_KEYS.pricing.name] || 'Pricing',
-    'channels': m[language === 'es' ? CARD_KEYS.channels.nameEs : CARD_KEYS.channels.name] || 'Channels & Markets',
-    'budget': m[language === 'es' ? CARD_KEYS.budget.nameEs : CARD_KEYS.budget.name] || 'Budget & Financials',
+    'families': m[language === 'es' ? 'productFamiliesEs' : 'productFamilies'] || 'Product Families & Pricing',
+    'channels': m[language === 'es' ? 'channelsMarketsEs' : 'channelsMarkets'] || 'Channels & Markets',
+    'budget': m[language === 'es' ? 'budgetFinancialsEs' : 'budgetFinancials'] || 'Budget & Financials',
   };
 
   /* ═══ CLEAN WORKSPACE VIEW (from sidebar with ?block= param) ═══ */
-  if (blockParam && MERCH_CARDS.find(c => c.id === blockParam)) {
-    const card = MERCH_CARDS.find(c => c.id === blockParam)!;
-    const state = getCardState(card.id);
+  if (blockParam && (blockParam === 'families' || blockParam === 'channels' || blockParam === 'budget')) {
+    // For families, use families card state; for others, use their own
+    const cardId = blockParam === 'families' ? 'families' : blockParam;
+    const state = getCardState(cardId);
+    // Also get pricing state for the merged families+pricing view
+    const pricingState = getCardState('pricing');
 
     return (
       <div className="min-h-[80vh]">
-        <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16">
-          {/* Header — centered, matches template */}
+        <div className="px-6 md:px-12 lg:px-16 pt-12 md:pt-16">
+          {/* Header — centered */}
           <div className="text-center mb-8">
             <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
               {collectionContext.collectionName || 'Collection'}
@@ -1113,7 +1116,10 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                 label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
               }))}
               value={state.mode}
-              onChange={(modeId) => updateCardData(card.id, { mode: modeId })}
+              onChange={(modeId) => {
+                updateCardData(cardId, { mode: modeId });
+                if (blockParam === 'families') updateCardData('pricing', { mode: modeId });
+              }}
               size="md"
             />
             <p className="text-[13px] text-carbon/35 tracking-[-0.01em]">
@@ -1121,18 +1127,62 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </p>
           </div>
 
-          {/* Content — full width for card grid */}
-          <ExpandedCardContent
-            cardId={card.id} mode={state.mode} data={state.data}
-            onChange={(newData) => updateCardData(card.id, { data: newData })}
-            collectionContext={collectionContext} familiesData={familiesData}
-            familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
-          />
+          {/* Content — card grid layout per block type */}
+          {blockParam === 'families' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
+              {/* Left: Families */}
+              <DecisionCard title={m.productFamilies || 'Product Families'} className="flex flex-col">
+                <FamiliesContent
+                  mode={state.mode} data={state.data}
+                  onChange={(newData) => updateCardData('families', { data: newData })}
+                  collectionContext={collectionContext}
+                />
+              </DecisionCard>
+
+              {/* Right 2 cols: Pricing */}
+              <DecisionCard title={m.pricing || 'Pricing'} span={2} className="flex flex-col">
+                <PricingContent
+                  mode={state.mode} data={pricingState.data}
+                  onChange={(newData) => updateCardData('pricing', { data: newData })}
+                  collectionContext={collectionContext} familiesData={familiesData}
+                />
+              </DecisionCard>
+            </div>
+          )}
+
+          {blockParam === 'channels' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
+              <DecisionCard title={m.distributionChannels || 'Channels'} className="flex flex-col">
+                {/* Inline DTC + Wholesale toggles */}
+                <ChannelsContent
+                  mode={state.mode} data={state.data}
+                  onChange={(newData) => updateCardData('channels', { data: newData })}
+                  collectionContext={collectionContext}
+                />
+              </DecisionCard>
+            </div>
+          )}
+
+          {blockParam === 'budget' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
+              <DecisionCard title={m.budgetFinancials || 'Budget & Financials'} span={3} className="flex flex-col">
+                <BudgetContent
+                  mode={state.mode} data={state.data}
+                  onChange={(newData) => updateCardData('budget', { data: newData })}
+                  collectionContext={collectionContext}
+                  familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
+                />
+              </DecisionCard>
+            </div>
+          )}
 
           {/* Confirm — centered */}
-          <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
+          <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
             <button
-              onClick={() => handleConfirm(card.id)}
+              onClick={() => {
+                handleConfirm(cardId);
+                if (blockParam === 'families') handleConfirm('pricing');
+              }}
               className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
                 state.confirmed
                   ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'

@@ -66,12 +66,12 @@ export function DecisionCard({
         <div className="flex items-start justify-between mb-5">
           <div>
             {title && (
-              <h3 className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon">
+              <h3 className="text-[15px] font-semibold tracking-[-0.02em] text-carbon">
                 {title}
               </h3>
             )}
             {description && (
-              <p className="text-[13px] text-carbon/45 mt-1.5 leading-relaxed">
+              <p className="text-[13px] text-carbon/40 mt-1 leading-relaxed">
                 {description}
               </p>
             )}
