@@ -904,6 +904,20 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setUploadProgress('');
   };
 
+  // Listen for Pinterest OAuth popup callback
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'pinterest_connected') {
+        // OAuth succeeded — now load boards
+        handlePinterestConnect();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Pinterest: connect or load boards
   const handlePinterestConnect = async () => {
     setPinterestLoading(true);
