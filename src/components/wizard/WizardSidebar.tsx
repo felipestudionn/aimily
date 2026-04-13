@@ -52,7 +52,7 @@ interface SidebarBlock {
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
-    label: 'Creative & Brand',
+    label: 'Creative Direction & Brand',
     icon: Feather,
     route: 'creative',
     phaseIds: ['product', 'brand'],

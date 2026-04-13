@@ -39,7 +39,7 @@ const BLOCK_DEFS: BlockDef[] = [
   {
     phase: 'creative',
     number: '01',
-    title: 'Creative & Brand',
+    title: 'Creative Direction & Brand',
     description: 'Vision, research, and brand identity for your collection.',
     route: 'creative',
     subBlocks: [
