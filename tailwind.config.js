@@ -18,9 +18,10 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ["'Helvetica Neue'", "'Helvetica'", "'Arial'", "sans-serif"],
+        display: ["var(--font-display)", "'Georgia'", "serif"],
       },
       colors: {
-        /* Aimily palette */
+        /* ─── Aimily palette ─── */
         crema: "#F5F1E8",
         carbon: "#282A29",
         texto: "#191919",
@@ -28,7 +29,7 @@ module.exports = {
         error: "#A0463C",
         success: "#2d6a4f",
         warning: "#c77000",
-        /* shadcn/ui semantic tokens */
+        /* ─── shadcn/ui semantic tokens ─── */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -64,9 +65,25 @@ module.exports = {
         },
       },
       borderRadius: {
+        /* ─── Design system radii ─── */
+        'card': '16px',
+        'input': '10px',
+        'pill': '9999px',
+        'btn': '10px',
         lg: "var(--radius)",
         md: "calc(var(--radius))",
         sm: "calc(var(--radius))",
+      },
+      boxShadow: {
+        /* ─── Single elevation system ─── */
+        'card': '0 2px 24px rgba(0, 0, 0, 0.04)',
+        'card-hover': '0 4px 32px rgba(0, 0, 0, 0.07)',
+        'dropdown': '0 8px 32px rgba(0, 0, 0, 0.12)',
+      },
+      spacing: {
+        /* ─── 8pt grid named stops ─── */
+        '18': '4.5rem',   /* 72px */
+        '22': '5.5rem',   /* 88px */
       },
       keyframes: {
         "accordion-down": {

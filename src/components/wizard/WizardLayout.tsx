@@ -18,6 +18,10 @@ interface WizardLayoutProps {
   setupData?: Record<string, unknown> | null;
 }
 
+/* ── Sidebar widths (must match WizardSidebar constants + padding) ── */
+const SIDEBAR_COLLAPSED = 72;  // 48px card + 12px padding each side
+const SIDEBAR_EXPANDED = 256;  // 232px card + 12px padding each side
+
 export function WizardLayout({
   children,
   collectionId,
@@ -32,6 +36,8 @@ export function WizardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [displayName, setDisplayName] = useState(collectionName);
 
+  const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
+
   return (
     <TimelineProvider collectionPlanId={collectionId} initialMilestones={milestones}>
       {/* ── Persistent top navbar — shifts right for sidebar ── */}
@@ -39,11 +45,11 @@ export function WizardLayout({
         variant="workspace"
         collectionName={displayName}
         collectionId={collectionId}
-        sidebarWidth={sidebarCollapsed ? 52 : 200}
+        sidebarWidth={sidebarWidth}
         onCollectionRename={setDisplayName}
       />
 
-      {/* ── Sidebar below navbar ── */}
+      {/* ── Floating sidebar ── */}
       <WizardSidebar
         collectionId={collectionId}
         collectionName={displayName}
@@ -56,18 +62,20 @@ export function WizardLayout({
         onCollapsedChange={setSidebarCollapsed}
       />
 
-      {/* Mobile hamburger button — below navbar */}
+      {/* Mobile hamburger — floating pill */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className="md:hidden fixed top-[72px] left-4 z-30 w-10 h-10 bg-carbon text-crema flex items-center justify-center shadow-lg"
+        className="md:hidden fixed top-[72px] left-4 z-30 w-10 h-10 rounded-full bg-white shadow-card text-carbon/60 flex items-center justify-center hover:shadow-card-hover transition-shadow"
         aria-label="Open menu"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="h-4 w-4" />
       </button>
 
-      <main className={`ml-0 pt-16 min-h-screen transition-all duration-300 ${
-        sidebarCollapsed ? 'md:ml-[52px]' : 'md:ml-[200px]'
-      }`}>
+      {/* ── Main content — offset by sidebar width ── */}
+      <main
+        className="ml-0 pt-16 min-h-screen transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        style={{ marginLeft: `${sidebarWidth}px` }}
+      >
         {children}
       </main>
     </TimelineProvider>

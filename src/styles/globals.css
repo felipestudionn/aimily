@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    /* Aimily Design System */
-    --crema: #FAEFE0;
+    /* ─── Aimily Design System ─── */
+    --crema: #F5F1E8;
     --carbon: #282A29;
     --texto: #191919;
     --gris: #D8D8D8;
@@ -14,7 +14,7 @@
     --success: #2d6a4f;
     --warning: #c77000;
 
-    /* shadcn/ui mappings → Aimily palette */
+    /* ─── shadcn/ui mappings → Aimily palette ─── */
     --background: 37 71% 93%;       /* crema #FAEFE0 */
     --foreground: 160 3% 10%;       /* texto #191919 */
     --card: 0 0% 100%;              /* blanco */
@@ -34,7 +34,13 @@
     --border: 0 0% 85%;             /* gris */
     --input: 0 0% 85%;
     --ring: 156 4% 16%;             /* carbon */
-    --radius: 6px;                  /* modern editorial — 6px cards, rounded-full pills */
+    --radius: 6px;
+
+    /* ─── Opacity scale (4 levels only) ─── */
+    --opacity-primary: 1;
+    --opacity-secondary: 0.50;
+    --opacity-tertiary: 0.25;
+    --opacity-ghost: 0.08;
   }
 }
 
@@ -50,6 +56,149 @@
   }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM — Semantic Typography Classes
+   Use these in new/redesigned components.
+   Each class sets: size, weight, line-height, tracking.
+   ══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* ── Display: collection names, page titles (Instrument Serif) ── */
+  .type-display {
+    font-family: var(--font-display), 'Georgia', serif;
+    font-size: 2rem;        /* 32px */
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    color: var(--carbon);
+  }
+  .type-display-sm {
+    font-family: var(--font-display), 'Georgia', serif;
+    font-size: 1.5rem;      /* 24px */
+    font-weight: 400;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--carbon);
+  }
+
+  /* ── Heading: section titles within workspace (Helvetica) ── */
+  .type-heading {
+    font-size: 1.25rem;     /* 20px */
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--carbon);
+  }
+
+  /* ── Nav: sidebar items, block names (Helvetica) ── */
+  .type-nav {
+    font-size: 0.875rem;    /* 14px */
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0;
+    color: var(--carbon);
+  }
+
+  /* ── Body: paragraphs, form text (Helvetica) ── */
+  .type-body {
+    font-size: 0.875rem;    /* 14px */
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0;
+    color: var(--carbon);
+  }
+
+  /* ── Label: pills, tags, secondary nav (Helvetica) ── */
+  .type-label {
+    font-size: 0.8125rem;   /* 13px */
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0;
+    color: var(--carbon);
+  }
+
+  /* ── Caption: meta, dates, hints (Helvetica) ── */
+  .type-caption {
+    font-size: 0.75rem;     /* 12px */
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0;
+    color: rgba(40, 42, 41, 0.50);
+  }
+
+  /* ── Section header: UPPERCASE group labels (Helvetica) ── */
+  .type-section {
+    font-size: 0.6875rem;   /* 11px */
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(40, 42, 41, 0.25);
+  }
+
+  /* ── Pill component ── */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;  /* 6px 14px */
+    font-size: 0.8125rem;        /* 13px */
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: 0;
+    border-radius: 9999px;
+    transition: all 150ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .pill-default {
+    background: transparent;
+    border: 1px solid rgba(40, 42, 41, 0.08);
+    color: rgba(40, 42, 41, 0.40);
+  }
+  .pill-default:hover {
+    background: rgba(40, 42, 41, 0.04);
+    color: rgba(40, 42, 41, 0.60);
+  }
+  .pill-active {
+    background: var(--carbon);
+    border: 1px solid var(--carbon);
+    color: var(--crema);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  .pill-completed {
+    background: rgba(40, 42, 41, 0.04);
+    border: 1px solid rgba(40, 42, 41, 0.04);
+    color: rgba(40, 42, 41, 0.50);
+  }
+
+  /* ── Floating card surface ── */
+  .surface-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.04);
+  }
+  .surface-card-hover:hover {
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LEGACY — Font size overrides for backward compatibility.
+   These keep the 949 existing usages of text-[11px] etc working.
+   New components should use .type-* classes above instead.
+   TODO: migrate file-by-file then remove these.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Global font size boost — bump ~1px for readability */
+.text-\[9px\]  { font-size: 0.875rem !important; }  /* 9→14px */
+.text-\[10px\] { font-size: 0.875rem !important; }  /* 10→14px */
+.text-\[11px\] { font-size: 0.875rem !important; }  /* 11→14px */
+.text-xs       { font-size: 0.8125rem !important; } /* 12→13px */
+.text-sm       { font-size: 0.9375rem !important; } /* 14→15px */
+.text-base     { font-size: 1.0625rem !important; } /* 16→17px */
+.text-lg       { font-size: 1.1875rem !important; } /* 18→19px */
+.text-xl       { font-size: 1.3125rem !important; } /* 20→21px */
+.text-2xl      { font-size: 1.5625rem !important; } /* 24→25px */
+
 /* ── Global subtle rounding (outside @layer for higher specificity) ── */
 button, [role="button"],
 input, textarea, select {
@@ -63,20 +212,10 @@ input, textarea, select {
   border-radius: 9999px !important;
 }
 
-/* ── Global font size boost ──
-   Bump everything up ~1px for better readability.
-   Single place to tune all text sizes across the app. */
-.text-\[9px\]  { font-size: 0.875rem !important; }  /* 9→14px (min legible) */
-.text-\[10px\] { font-size: 0.875rem !important; }  /* 10→14px (min legible) */
-.text-\[11px\] { font-size: 0.875rem !important; }  /* 11→14px */
-.text-xs       { font-size: 0.8125rem !important; } /* 12→13px */
-.text-sm       { font-size: 0.9375rem !important; } /* 14→15px */
-.text-base     { font-size: 1.0625rem !important; } /* 16→17px */
-.text-lg       { font-size: 1.1875rem !important; } /* 18→19px */
-.text-xl       { font-size: 1.3125rem !important; } /* 20→21px */
-.text-2xl      { font-size: 1.5625rem !important; } /* 24→25px */
+/* ══════════════════════════════════════════════════════════════
+   Aimily Button Styles
+   ══════════════════════════════════════════════════════════════ */
 
-/* Aimily Button Styles */
 .btn-primary {
   @apply inline-flex items-center justify-center px-8 py-3 text-sm font-medium tracking-wide uppercase transition-colors;
   background-color: var(--carbon);
@@ -97,14 +236,18 @@ input, textarea, select {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Responsive Typography */
+/* ══════════════════════════════════════════════════════════════
+   Responsive Typography
+   ══════════════════════════════════════════════════════════════ */
+
 @media (max-width: 640px) {
   h1, .h1 { font-size: 2.25rem; line-height: 1.2; }
   h2, .h2 { font-size: 1.875rem; line-height: 1.3; }
   h3, .h3 { font-size: 1.5rem; line-height: 1.4; }
+  .type-display { font-size: 1.5rem; }
+  .type-display-sm { font-size: 1.25rem; }
 }
 
-/* Mobile Optimizations */
 @media (max-width: 768px) {
   .container {
     padding-left: 1rem;
@@ -112,41 +255,62 @@ input, textarea, select {
   }
 }
 
-/* Entrance animations */
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* ══════════════════════════════════════════════════════════════
+   Animations
+   ══════════════════════════════════════════════════════════════ */
 
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .animate-fade-in-up {
   animation: fade-in-up 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   opacity: 0;
 }
-
 .animate-delay-100 { animation-delay: 100ms; }
 .animate-delay-200 { animation-delay: 200ms; }
 .animate-delay-300 { animation-delay: 300ms; }
 .animate-delay-400 { animation-delay: 400ms; }
 .animate-delay-500 { animation-delay: 500ms; }
 
-/* Wizard sidebar expand animation */
-@keyframes wizard-expand {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 500px;
-  }
+/* ── Workspace content transitions ── */
+@keyframes content-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes content-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.content-enter {
+  animation: content-fade-in 180ms ease-out forwards;
+  animation-delay: 40ms;
+  opacity: 0;
 }
 
+/* ── Sidebar sub-items expand/collapse ── */
+@keyframes substeps-expand {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 500px; }
+}
+@keyframes substeps-collapse {
+  from { opacity: 1; max-height: 500px; }
+  to { opacity: 0; max-height: 0; }
+}
+.substeps-enter {
+  animation: substeps-expand 200ms ease-out forwards;
+  overflow: hidden;
+}
+.substeps-exit {
+  animation: substeps-collapse 150ms ease-in forwards;
+  overflow: hidden;
+}
+
+/* Legacy wizard sidebar expand */
+@keyframes wizard-expand {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 500px; }
+}
 .wizard-expand {
   animation: wizard-expand 0.25s ease-out forwards;
   overflow: hidden;
@@ -157,12 +321,10 @@ input, textarea, select {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.5); }
   to { opacity: 1; transform: scale(1); }
@@ -189,44 +351,23 @@ input, textarea, select {
   pointer-events: none;
 }
 
-/* Thin scrollbar for wizard sidebar */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 3px;
-}
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-}
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
+/* ══════════════════════════════════════════════════════════════
+   Scrollbar styles
+   ══════════════════════════════════════════════════════════════ */
 
-/* Subtle scrollbar for light-bg containers (Pinterest grids, etc.) */
+.scrollbar-thin::-webkit-scrollbar { width: 3px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
 .scrollbar-subtle {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
-.scrollbar-subtle::-webkit-scrollbar {
-  width: 4px;
-}
-.scrollbar-subtle::-webkit-scrollbar-track {
-  background: transparent;
-}
-.scrollbar-subtle::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 2px;
-}
-.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
+.scrollbar-subtle::-webkit-scrollbar { width: 4px; }
+.scrollbar-subtle::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-subtle::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 2px; }
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
 
-/* Hide scrollbar completely */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }

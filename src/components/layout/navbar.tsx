@@ -48,7 +48,7 @@ function CollectionNameBreadcrumb({ name, collectionId, isDark, onRename }: {
 
   return (
     <>
-      <span className={`text-[11px] ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>/</span>
+      <span className={`type-caption ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>›</span>
       {editing ? (
         <input
           ref={inputRef}
@@ -57,14 +57,14 @@ function CollectionNameBreadcrumb({ name, collectionId, isDark, onRename }: {
           onBlur={save}
           onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setValue(name); setEditing(false); } }}
           disabled={saving}
-          className={`text-[11px] font-medium tracking-[0.05em] max-w-[200px] bg-transparent border-b outline-none transition-colors ${
+          className={`type-caption font-medium max-w-[200px] bg-transparent border-b outline-none transition-colors ${
             isDark ? 'text-crema/70 border-crema/20' : 'text-carbon/60 border-carbon/20'
           }`}
         />
       ) : (
         <button
           onClick={() => setEditing(true)}
-          className={`text-[11px] font-medium tracking-[0.05em] truncate max-w-[200px] transition-colors cursor-text ${
+          className={`type-caption font-medium truncate max-w-[200px] transition-colors cursor-text ${
             isDark ? 'text-crema/50 hover:text-crema/80' : 'text-carbon/40 hover:text-carbon/70'
           }`}
           title="Click to rename"
@@ -102,24 +102,24 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
     const isDark = variant === 'workspace-dark';
     return (
       <div
-        className={`fixed top-0 right-0 z-50 transition-all duration-200 ${
+        className={`fixed top-0 right-0 z-40 transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           isDark
             ? 'bg-transparent'
-            : 'bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03]'
+            : 'bg-crema/80 backdrop-blur-sm'
         }`}
         style={{ left: sidebarWidth }}
       >
-        <div className="flex h-16 items-center justify-between px-6 md:px-10">
+        <div className="flex h-16 items-center justify-between px-6 md:px-8">
           {/* Left: logo + breadcrumb */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link href="/my-collections" className="flex items-center">
               <Image
                 src={isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png'}
                 alt="aimily"
                 width={774}
                 height={96}
-                className={`object-contain h-8 w-auto transition-opacity ${
-                  isDark ? 'opacity-60 hover:opacity-90' : 'opacity-70 hover:opacity-100'
+                className={`object-contain h-6 w-auto transition-opacity ${
+                  isDark ? 'opacity-60 hover:opacity-90' : 'opacity-40 hover:opacity-70'
                 }`}
                 priority
                 unoptimized
@@ -141,7 +141,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
             {user && (
               <Link
                 href="/account"
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-medium hover:opacity-80 transition-all ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center type-label hover:opacity-80 transition-all ${
                   isDark ? 'bg-crema/15 text-crema/70' : 'bg-carbon text-crema'
                 }`}
                 title={t.common.account}
