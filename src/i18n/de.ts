@@ -1365,6 +1365,7 @@ export const de: Dictionary = {
     productionOrders: 'Produktionsaufträge',
     qualityControl: 'Qualitätskontrolle',
     logistics: 'Logistik',
+    packaging: 'Packaging',
   },
 
   // ─── Calendar ───

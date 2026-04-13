@@ -5,6 +5,7 @@ import { SalesDashboardCard } from './SalesDashboardCard';
 import { ContentStudioCard } from './ContentStudioCard';
 import { CommunicationsCard } from './CommunicationsCard';
 import { PointOfSaleCard } from './PointOfSaleCard';
+import { VisualIdentityCard } from './VisualIdentityCard';
 import { useTranslation } from '@/i18n';
 
 interface Props {
@@ -46,12 +47,13 @@ export function MarketingCreationScreen({ collectionPlanId }: Props) {
         </p>
       </div>
 
-      {/* 2×2 Card Grid */}
+      {/* Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <SalesDashboardCard collectionPlanId={collectionPlanId} />
         <ContentStudioCard collectionPlanId={collectionPlanId} />
         <CommunicationsCard collectionPlanId={collectionPlanId} />
         <PointOfSaleCard collectionPlanId={collectionPlanId} />
+        <VisualIdentityCard collectionPlanId={collectionPlanId} />
       </div>
     </div>
   );

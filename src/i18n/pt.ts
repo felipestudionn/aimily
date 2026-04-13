@@ -1007,6 +1007,7 @@ export const pt: Dictionary = {
     productionOrders: 'Ordens de Produção',
     qualityControl: 'Controle de Qualidade',
     logistics: 'Logística',
+    packaging: 'Packaging',
   },
 
   // ─── Termos de Serviço ───

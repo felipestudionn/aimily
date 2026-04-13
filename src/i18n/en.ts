@@ -1405,6 +1405,7 @@ export const en = {
     productionOrders: 'Production Orders',
     qualityControl: 'Quality Control',
     logistics: 'Logistics',
+    packaging: 'Packaging',
   },
 
   // ─── Calendar ───

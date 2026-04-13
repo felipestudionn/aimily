@@ -9,7 +9,7 @@ export type OrderStatus =
   | 'shipped'
   | 'delivered';
 
-export type ProductionTab = 'orders' | 'qc' | 'logistics';
+export type ProductionTab = 'orders' | 'qc' | 'logistics' | 'packaging';
 
 export interface LineItem {
   sku_id: string;

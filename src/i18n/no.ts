@@ -1290,6 +1290,7 @@ export const no: Dictionary = {
     productionOrders: 'Produksjonsordrer',
     qualityControl: 'Kvalitetskontroll',
     logistics: 'Logistikk',
+    packaging: 'Packaging',
   },
 
   // ─── Calendar ───

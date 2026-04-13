@@ -6,10 +6,12 @@ import {
   ClipboardList,
   ClipboardCheck,
   Truck,
+  Package,
   Loader2,
 } from 'lucide-react';
 import { useProductionOrders } from '@/hooks/useProductionOrders';
 import { useSkus } from '@/hooks/useSkus';
+import { useBrandProfile } from '@/hooks/useBrandProfile';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { TimelineMilestone } from '@/types/timeline';
@@ -18,11 +20,13 @@ import type { ProductionTab } from '@/types/production';
 import { OrderTracker } from './sections/OrderTracker';
 import { QcTracker } from './sections/QcTracker';
 import { LogisticsTracker } from './sections/LogisticsTracker';
+import { PackagingSection } from '@/components/brand/sections/PackagingSection';
 
-const TAB_IDS: { id: ProductionTab; tKey: 'productionOrders' | 'qualityControl' | 'logistics'; icon: React.ElementType }[] = [
+const TAB_IDS: { id: ProductionTab; tKey: 'productionOrders' | 'qualityControl' | 'logistics' | 'packaging'; icon: React.ElementType }[] = [
   { id: 'orders', tKey: 'productionOrders', icon: ClipboardList },
   { id: 'qc', tKey: 'qualityControl', icon: ClipboardCheck },
   { id: 'logistics', tKey: 'logistics', icon: Truck },
+  { id: 'packaging', tKey: 'packaging', icon: Package },
 ];
 
 interface ProductionWorkspaceProps {
@@ -45,6 +49,7 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
   } = useProductionOrders(collectionId);
 
   const { skus, loading: skusLoading } = useSkus(collectionId);
+  const { profile: brandProfile, debouncedUpdate: brandUpdate } = useBrandProfile(collectionId);
 
   // Production workspace milestones (dd-15 to dd-18)
   const phaseMilestones = milestones.filter((m) => ['dd-15', 'dd-16', 'dd-17', 'dd-18'].includes(m.id));
@@ -136,6 +141,13 @@ export function ProductionWorkspace({ milestones }: ProductionWorkspaceProps) {
 
       {activeTab === 'logistics' && (
         <LogisticsTracker orders={orders} onUpdate={updateOrder} />
+      )}
+
+      {activeTab === 'packaging' && brandProfile && (
+        <PackagingSection
+          notes={brandProfile.packaging_notes}
+          onUpdate={brandUpdate}
+        />
       )}
 
       {/* Milestones Checklist */}

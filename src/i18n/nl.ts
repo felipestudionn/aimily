@@ -1365,6 +1365,7 @@ export const nl: Dictionary = {
     productionOrders: 'Productieorders',
     qualityControl: 'Kwaliteitscontrole',
     logistics: 'Logistiek',
+    packaging: 'Packaging',
   },
 
   // ─── Calendar ───
