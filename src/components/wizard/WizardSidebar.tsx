@@ -169,6 +169,9 @@ export function WizardSidebar({
     return total > 0 ? Math.round((completed / total) * 100) : 0;
   }
 
+  /* ── Active workspace route from WorkspaceShell (state-based navigation) ── */
+  const wsRoute = workspaceNav?.viewState.type === 'workspace' ? workspaceNav.viewState.route : null;
+
   /* Route matching helpers — handle routes with query params (e.g. product?phase=sketch) */
   function getRoutePath(route: string): string {
     return route.split('?')[0];
@@ -181,6 +184,14 @@ export function WizardSidebar({
   }
 
   function isBlockActive(block: SidebarBlock): boolean {
+    // If WorkspaceShell has an active workspace, match against its route
+    if (wsRoute) {
+      const wsBase = getRoutePath(wsRoute);
+      const blockPath = getRoutePath(block.route);
+      if (wsBase === blockPath) return true;
+      return block.subItems.some(sub => getRoutePath(sub.route) === wsBase);
+    }
+
     const blockPath = getRoutePath(block.route);
     if (pathname?.startsWith(`${basePath}/${blockPath}`)) return true;
     return block.subItems.some(sub => {
@@ -190,6 +201,34 @@ export function WizardSidebar({
   }
 
   function isSubItemActive(sub: SidebarSubItem, block: SidebarBlock): boolean {
+    // If WorkspaceShell has an active workspace, match against its route
+    if (wsRoute) {
+      // Exact route match (including query params)
+      if (sub.route === wsRoute) return true;
+
+      // Match base path + query params separately
+      const wsBase = getRoutePath(wsRoute);
+      const subBase = getRoutePath(sub.route);
+      if (wsBase !== subBase) return false;
+
+      // Check query param match
+      const wsPhase = getRouteParam(wsRoute, 'phase');
+      const wsBlock = getRouteParam(wsRoute, 'block');
+      const subPhase = getRouteParam(sub.route, 'phase');
+      const subBlock = getRouteParam(sub.route, 'block');
+
+      if (subPhase) return subPhase === wsPhase;
+      if (subBlock) return subBlock === wsBlock;
+
+      // No query params on sub-item — active if workspace also has no relevant params
+      if (!wsPhase && !wsBlock) {
+        const firstWithSameRoute = block.subItems.find(s => getRoutePath(s.route) === subBase && !getRouteParam(s.route, 'phase') && !getRouteParam(s.route, 'block'));
+        return firstWithSameRoute?.id === sub.id;
+      }
+      return false;
+    }
+
+    // Fallback: pathname-based matching (normal Next.js navigation)
     const subRoutePath = getRoutePath(sub.route);
     const subPath = `${basePath}/${subRoutePath}`;
     const onThisRoute = pathname === subPath || pathname?.startsWith(`${subPath}/`) || false;

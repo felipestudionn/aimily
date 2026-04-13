@@ -2993,9 +2993,9 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
               const hideModePillsClean = block.id === 'moodboard';
               return (
                 <div>
-                  {/* Mode selector — centered */}
+                  {/* Mode selector — centered below title */}
                   {!hideModePillsClean && (
-                    <div className="mb-10 flex justify-center">
+                    <div className="mb-10 flex flex-col items-center gap-3">
                       <SegmentedPill
                         options={INPUT_MODES.map((m) => ({
                           id: m.id,
@@ -3003,9 +3003,11 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                         }))}
                         value={state.mode}
                         onChange={(modeId) => updateBlockData(block.id, { mode: modeId })}
-                        description={modeDescMap[state.mode] || INPUT_MODES.find((m) => m.id === state.mode)?.description}
                         size="md"
                       />
+                      <p className="text-[13px] text-carbon/35 tracking-[-0.01em]">
+                        {modeDescMap[state.mode] || INPUT_MODES.find((m) => m.id === state.mode)?.description}
+                      </p>
                     </div>
                   )}
 
