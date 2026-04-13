@@ -2373,7 +2373,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         </div>
         <button
           onClick={handleValidate}
-          className={`flex items-center gap-2 px-6 sm:px-8 py-3 text-[11px] font-medium tracking-[0.15em] uppercase transition-colors ${
+          className={`flex items-center gap-2 px-6 sm:px-8 py-3 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-colors ${
             validated
               ? 'bg-carbon/[0.08] text-carbon/60 hover:text-carbon hover:bg-carbon/[0.12]'
               : 'bg-carbon text-crema hover:bg-carbon/90'
@@ -2403,7 +2403,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
           {vibeKeywords && (
             <div className="flex flex-wrap gap-2 mt-6">
               {vibeKeywords.split(',').map((kw, i) => (
-                <span key={i} className="px-3 py-1 text-[10px] tracking-[0.15em] uppercase border border-crema/20 text-crema/60">
+                <span key={i} className="px-3.5 py-1 rounded-full text-[10px] tracking-[0.08em] uppercase border border-crema/20 text-crema/60">
                   {kw.trim()}
                 </span>
               ))}
@@ -2416,7 +2416,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
       {(hasMoodboard || hasAnything) && (
         <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+            <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/30">
               Moodboard {hasMoodboard ? `· ${moodboardImages.length}` : ''}
             </div>
             <button
@@ -2477,7 +2477,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         {hasBrand && (
           <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">Brand DNA</div>
+              <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/30">Brand DNA</div>
               <button
                 onClick={() => setEditingBrand(!editingBrand)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
@@ -2550,7 +2550,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         {(hasConsumer || hasAnything) && (
           <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+              <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/30">
                 Target Consumer{consumerProposals.length > 1 ? 's' : ''} {hasConsumer ? `· ${consumerProposals.length}` : ''}
               </div>
               <button
@@ -2603,7 +2603,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
       {(hasTrends || hasAnything) && (
         <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+            <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/30">
               Trend Direction {hasTrends ? `· ${allTrends.length}` : ''}
             </div>
             <button
@@ -2656,7 +2656,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
       {(hasCompetitors || hasAnything) && (
         <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
+            <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/30">
               Competitive Landscape {hasCompetitors ? `· ${competitors.length}` : ''}
             </div>
             <button
