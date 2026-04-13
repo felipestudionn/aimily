@@ -168,7 +168,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           </p>
           {/* Block title — appears large when inside a block */}
           <div className={`overflow-hidden transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            activeBlock ? 'max-h-[80px] opacity-100' : 'max-h-0 opacity-0'
+            activeBlock ? 'max-h-[120px] opacity-100' : 'max-h-0 opacity-0'
           }`}>
             <h2 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.1]">
               {activeBlock?.title}
