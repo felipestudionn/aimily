@@ -2740,22 +2740,6 @@ export default function CreativeBrandPage() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [collectionContext, setCollectionContext] = useState({ season: '', collectionName: '' });
 
-  // Auto-set the correct step when a block param is provided
-  useEffect(() => {
-    if (blockParam) {
-      setExpandedBlock(blockParam);
-      // Map block IDs to their step index
-      const blockToStep: Record<string, number> = {
-        'consumer': 0, 'vibe': 0, 'moodboard': 0, 'brand-dna': 0,
-        'global-trends': 1, 'deep-dive': 1, 'live-signals': 1, 'competitors': 1,
-      };
-      const stepIdx = blockToStep[blockParam];
-      if (stepIdx !== undefined) {
-        persistData((prev) => ({ ...prev, activeStep: stepIdx }));
-      }
-    }
-  }, [blockParam]);
-
   // Persist block data + active step to Supabase (auto-save with 1s debounce)
   const { data: persisted, save: persistData, loading: persistLoading } =
     useWorkspaceData<{ blockData: BlockData; activeStep: number }>(
@@ -2777,6 +2761,21 @@ export default function CreativeBrandPage() {
   const setActiveStep = useCallback((step: number) => {
     persistData((prev) => ({ ...prev, activeStep: step }));
   }, [persistData]);
+
+  // Auto-set the correct step when a block param is provided
+  useEffect(() => {
+    if (blockParam) {
+      setExpandedBlock(blockParam);
+      const blockToStep: Record<string, number> = {
+        'consumer': 0, 'vibe': 0, 'moodboard': 0, 'brand-dna': 0,
+        'global-trends': 1, 'deep-dive': 1, 'live-signals': 1, 'competitors': 1,
+      };
+      const stepIdx = blockToStep[blockParam];
+      if (stepIdx !== undefined && activeStep !== stepIdx) {
+        setActiveStep(stepIdx);
+      }
+    }
+  }, [blockParam]);
 
   // Fetch collection name + season for AI prompts
   useEffect(() => {
