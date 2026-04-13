@@ -730,14 +730,29 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
 
   return (
     <div className="space-y-6">
-      {/* ═══ FREE — 4 KPI cards stacked vertically ═══ */}
+      {/* ═══ FREE — 4 KPI cards in a row (like sub-block cards) ═══ */}
       {mode === 'free' && (
         <div className="space-y-5">
-          <div className="grid grid-cols-1 gap-4">
-            {kpiCards.map(kpi => <KpiCard key={kpi.key} kpi={kpi} />)}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            {kpiCards.map(kpi => (
+              <div key={kpi.key} className="bg-white rounded-[20px] p-8 flex flex-col min-h-[280px]">
+                <p className="text-[13px] text-carbon/40 mb-auto">{kpi.label}</p>
+                <div className="flex items-baseline gap-1 mt-6">
+                  {kpi.prefix && <span className="text-[20px] font-medium text-carbon/25">{kpi.prefix}</span>}
+                  <input
+                    type="number"
+                    value={(data[kpi.key] as number) || ''}
+                    onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+                    placeholder="0"
+                    className="text-[48px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/[0.06] leading-none"
+                  />
+                </div>
+                {kpi.suffix && <span className="text-[16px] font-medium text-carbon/25 mt-1">{kpi.suffix}</span>}
+              </div>
+            ))}
           </div>
           <div className="bg-white rounded-[20px] p-6 md:p-8 space-y-4">
-            <p className="text-[13px] text-carbon/40 mb-2">Segmentation</p>
+            <p className="text-[14px] font-semibold text-carbon/40 tracking-[-0.02em] mb-2">Segmentation</p>
             <SegRow label="Product" segs={typeSeg} dataKey="typeSegmentation" />
             <SegRow label="Newness" segs={newnessSeg} dataKey="newnessSegmentation" />
           </div>
