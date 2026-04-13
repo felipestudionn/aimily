@@ -110,15 +110,6 @@ function BlockCard({
       href={getCtaRoute()}
       className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
     >
-      {/* Progress bar — thin line at top of card */}
-      <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-[20px] overflow-hidden">
-        <div className="h-full bg-carbon/[0.06] w-full" />
-        <div
-          className="absolute top-0 left-0 h-full bg-carbon/40 transition-all duration-700 rounded-r-full"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
       {/* Block number */}
       <div className="mb-10">
         <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
@@ -150,6 +141,14 @@ function BlockCard({
           {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
           {isComplete && <Check className="h-3.5 w-3.5" />}
         </div>
+      </div>
+
+      {/* Progress pill — below CTA */}
+      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
+          style={{ width: `${progress}%` }}
+        />
       </div>
     </Link>
   );
