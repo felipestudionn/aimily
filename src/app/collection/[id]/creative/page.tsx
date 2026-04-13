@@ -1163,99 +1163,89 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
   const t = useTranslation();
   const colors = (data.colors as string[]) || [];
 
-  // Parse hex from "hex (role)" format
   const parseHex = (c: string) => c.replace(/\s*\(.*\)/, '').trim();
-
   const updateColor = (idx: number, hex: string) => {
     const updated = [...colors];
     updated[idx] = hex;
     onChange({ ...data, colors: updated });
   };
-
   const addColor = () => onChange({ ...data, colors: [...colors, '#cccccc'] });
   const removeColor = (idx: number) => onChange({ ...data, colors: colors.filter((_, i) => i !== idx) });
 
   return (
-    <div className="space-y-5 border border-carbon/20 p-5 sm:p-6 bg-carbon/[0.02]">
-      <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
-        {t.creative.brandIdentity} <span className="text-carbon/40">({t.creative.editable})</span>
-      </p>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
+      {/* Left column: Brand Name + Colors stacked */}
+      <div className="flex flex-col gap-5">
+        <DecisionCard title={t.creative.brandName}>
+          <input
+            type="text"
+            value={(data.brandName as string) || ''}
+            onChange={(e) => onChange({ ...data, brandName: e.target.value })}
+            className="w-full px-4 py-3 text-[15px] font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
+          />
+        </DecisionCard>
 
-      {/* Brand Name */}
-      <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.brandName}</label>
-        <input
-          type="text"
-          value={(data.brandName as string) || ''}
-          onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-          className="w-full px-3 py-2 text-sm font-medium text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
-        />
+        <DecisionCard title={t.creative.colorsLabel} className="flex-1">
+          <div className="flex flex-wrap items-center gap-3">
+            {colors.map((c, i) => {
+              const hex = parseHex(c);
+              return (
+                <div key={i} className="flex items-center gap-2 group">
+                  <input
+                    type="color"
+                    value={hex.startsWith('#') ? hex : '#cccccc'}
+                    onChange={(e) => updateColor(i, e.target.value)}
+                    className="w-8 h-8 rounded-[8px] border border-carbon/[0.08] cursor-pointer p-0 appearance-none"
+                    style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }}
+                  />
+                  <input
+                    type="text"
+                    value={c}
+                    onChange={(e) => updateColor(i, e.target.value)}
+                    className="w-28 px-3 py-1.5 text-[11px] text-carbon bg-carbon/[0.03] rounded-[8px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none"
+                  />
+                  <button onClick={() => removeColor(i)} className="w-5 h-5 rounded-full text-carbon/20 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+            <button onClick={addColor} className="w-8 h-8 rounded-[8px] border border-dashed border-carbon/[0.15] flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:border-carbon/30 transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </DecisionCard>
+
+        <DecisionCard title={t.creative.typographyLabel}>
+          <input
+            type="text"
+            value={(data.typography as string) || ''}
+            onChange={(e) => onChange({ ...data, typography: e.target.value })}
+            placeholder={t.creative.typographyPlaceholder}
+            className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+          />
+        </DecisionCard>
       </div>
 
-      {/* Colors */}
-      <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.colorsLabel}</label>
-        <div className="flex flex-wrap items-center gap-3">
-          {colors.map((c, i) => {
-            const hex = parseHex(c);
-            return (
-              <div key={i} className="flex items-center gap-1.5 group">
-                <input
-                  type="color"
-                  value={hex.startsWith('#') ? hex : '#cccccc'}
-                  onChange={(e) => updateColor(i, e.target.value)}
-                  className="w-9 h-9 border border-carbon/[0.12] cursor-pointer p-0"
-                />
-                <input
-                  type="text"
-                  value={c}
-                  onChange={(e) => updateColor(i, e.target.value)}
-                  className="w-28 px-2 py-1.5 text-[11px] text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none"
-                />
-                <button onClick={() => removeColor(i)} className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            );
-          })}
-          <button onClick={addColor} className="w-9 h-9 border border-dashed border-carbon/[0.15] flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:border-carbon/30 transition-colors">
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
+      {/* Right 2 columns: Voice & Tone + Visual Identity */}
+      <div className="lg:col-span-2 flex flex-col gap-5">
+        <DecisionCard title={t.creative.voiceTone} className="flex-1 flex flex-col">
+          <textarea
+            value={(data.tone as string) || ''}
+            onChange={(e) => onChange({ ...data, tone: e.target.value })}
+            placeholder={t.creative.voiceTonePlaceholder}
+            className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+          />
+        </DecisionCard>
 
-      {/* Tone */}
-      <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.voiceTone}</label>
-        <textarea
-          value={(data.tone as string) || ''}
-          onChange={(e) => onChange({ ...data, tone: e.target.value })}
-          placeholder={t.creative.voiceTonePlaceholder}
-          className="w-full h-20 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
-        />
-      </div>
-
-      {/* Typography */}
-      <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.typographyLabel}</label>
-        <input
-          type="text"
-          value={(data.typography as string) || ''}
-          onChange={(e) => onChange({ ...data, typography: e.target.value })}
-          placeholder={t.creative.typographyPlaceholder}
-          className="w-full px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors placeholder:text-carbon/40"
-        />
-      </div>
-
-      {/* Style */}
-      <div>
-        <label className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/60 mb-1.5 block">{t.creative.visualIdentity}</label>
-        <textarea
-          value={(data.style as string) || ''}
-          onChange={(e) => onChange({ ...data, style: e.target.value })}
-          placeholder={t.creative.visualIdentityPlaceholder}
-          className="w-full h-20 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
-        />
+        <DecisionCard title={t.creative.visualIdentity} className="flex-1 flex flex-col">
+          <textarea
+            value={(data.style as string) || ''}
+            onChange={(e) => onChange({ ...data, style: e.target.value })}
+            placeholder={t.creative.visualIdentityPlaceholder}
+            className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+          />
+        </DecisionCard>
       </div>
     </div>
   );
@@ -1427,17 +1417,17 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
 
   // ── Save + Back buttons (shared) ──
   const renderSaveBar = () => (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 mt-6">
       <button
         onClick={goBackToLevel1}
-        className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase"
+        className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium text-carbon/40 hover:text-carbon/60 bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-all"
       >
         {`\u2190 ${t.creative.changeOption || 'Change option'}`}
       </button>
       <button
         onClick={handleSaveBrand}
         disabled={saving}
-        className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
+        className="ml-auto inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-40"
       >
         {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
         {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
