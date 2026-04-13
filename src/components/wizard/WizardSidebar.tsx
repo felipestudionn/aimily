@@ -14,25 +14,82 @@ import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
 import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
 import type { TimelinePhase } from '@/types/timeline';
-import { useTranslation } from '@/i18n';
 
 /* ══════════════════════════════════════════════════════════════
-   Block definitions — 4 blocks, numbered 01-04
+   Sidebar data model
+
+   Each block has sub-items that represent the REAL content.
+   Sub-items with unique routes are navigable pills.
+   Sub-items sharing a route are shown as content hints.
+
+   phaseId links to wizard-phases.ts for status tracking.
+   All existing routes and connections are preserved.
    ══════════════════════════════════════════════════════════════ */
+
+interface SidebarSubItem {
+  id: string;
+  label: string;
+  route: string;           // route segment after /collection/[id]/
+  phaseId?: WizardPhaseId; // for status from milestone system
+  hint?: string;           // content summary below the item
+}
 
 interface SidebarBlock {
   id: TimelinePhase;
   number: string;
   label: string;
-  route: string;
-  phaseIds: WizardPhaseId[];
+  route: string;              // main block route
+  phaseIds: WizardPhaseId[];  // for block-level progress calc
+  subItems: SidebarSubItem[];
 }
 
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
-  { id: 'creative',    number: '01', label: 'Creative & Brand',   route: 'creative',           phaseIds: ['product', 'brand'] },
-  { id: 'planning',    number: '02', label: 'Merchandising',      route: 'merchandising',      phaseIds: ['merchandising'] },
-  { id: 'development', number: '03', label: 'Design & Dev',       route: 'product',            phaseIds: ['design', 'prototyping', 'sampling', 'production'] },
-  { id: 'go_to_market', number: '04', label: 'Marketing',         route: 'marketing/creation', phaseIds: ['marketing-creation', 'marketing-distribution'] },
+  {
+    id: 'creative',
+    number: '01',
+    label: 'Creative & Brand',
+    route: 'creative',
+    phaseIds: ['product', 'brand'],
+    subItems: [
+      { id: 'creative-vision', label: 'Creative Vision', route: 'creative', phaseId: 'product', hint: 'Consumer · Vibe · Moodboard · Trends' },
+      { id: 'brand-identity', label: 'Brand Identity', route: 'brand', phaseId: 'brand', hint: 'DNA · Voice · Color Story' },
+    ],
+  },
+  {
+    id: 'planning',
+    number: '02',
+    label: 'Merchandising',
+    route: 'merchandising',
+    phaseIds: ['merchandising'],
+    subItems: [
+      { id: 'merchandising', label: 'Range Planning', route: 'merchandising', phaseId: 'merchandising', hint: 'Families · Pricing · Channels · Budget' },
+    ],
+  },
+  {
+    id: 'development',
+    number: '03',
+    label: 'Design & Dev',
+    route: 'product',
+    phaseIds: ['design', 'prototyping', 'sampling', 'production'],
+    subItems: [
+      { id: 'builder', label: 'Collection Builder', route: 'product', hint: 'SKU grid · Range plan' },
+      { id: 'design', label: 'Sketch & Color', route: 'design', phaseId: 'design' },
+      { id: 'prototyping', label: 'Prototyping', route: 'prototyping', phaseId: 'prototyping' },
+      { id: 'sampling', label: 'Selection & Catalog', route: 'sampling', phaseId: 'sampling' },
+      { id: 'production', label: 'Production', route: 'production', phaseId: 'production' },
+    ],
+  },
+  {
+    id: 'go_to_market',
+    number: '04',
+    label: 'Marketing',
+    route: 'marketing/creation',
+    phaseIds: ['marketing-creation', 'marketing-distribution'],
+    subItems: [
+      { id: 'marketing-creation', label: 'Content & Strategy', route: 'marketing/creation', phaseId: 'marketing-creation', hint: 'Sales · Studio · Comms · POS' },
+      { id: 'marketing-distribution', label: 'Distribution & Launch', route: 'marketing/distribution', phaseId: 'marketing-distribution', hint: 'GTM · Calendar · Paid · Launch' },
+    ],
+  },
 ];
 
 const COLLAPSED_W = 72;
@@ -62,7 +119,6 @@ export function WizardSidebar({
   onCollapsedChange,
 }: WizardSidebarProps) {
   const pathname = usePathname();
-  const t = useTranslation();
   const { milestones } = useTimeline();
   const { phases } = useWizardState(milestones);
   const [pinned, setPinned] = useState(false);
@@ -96,16 +152,26 @@ export function WizardSidebar({
   }
 
   function isBlockActive(block: SidebarBlock): boolean {
-    const blockPath = `${basePath}/${block.route}`;
-    if (pathname?.startsWith(blockPath)) return true;
-    return block.phaseIds.some((id) => {
-      const ps = phaseMap.get(id);
-      return ps ? pathname?.startsWith(`${basePath}/${ps.phase.path}`) : false;
-    });
+    // Check main block route
+    if (pathname?.startsWith(`${basePath}/${block.route}`)) return true;
+    // Check all sub-item routes
+    return block.subItems.some(sub => pathname?.startsWith(`${basePath}/${sub.route}`));
   }
 
-  function getActiveBlock(): SidebarBlock | null {
-    return SIDEBAR_BLOCKS.find(b => isBlockActive(b)) || null;
+  function isSubItemActive(sub: SidebarSubItem): boolean {
+    const subPath = `${basePath}/${sub.route}`;
+    // Exact match or starts-with for nested routes
+    return pathname === subPath || pathname?.startsWith(`${subPath}/`) || false;
+  }
+
+  function getSubItemState(sub: SidebarSubItem): 'active' | 'completed' | 'locked' | 'available' {
+    if (isSubItemActive(sub)) return 'active';
+    if (!sub.phaseId) return 'available';
+    const ps = phaseMap.get(sub.phaseId);
+    if (!ps) return 'available';
+    if (ps.state === 'completed') return 'completed';
+    if (ps.state === 'locked') return 'locked';
+    return 'available';
   }
 
   /* ── Hover expand ── */
@@ -126,16 +192,10 @@ export function WizardSidebar({
     onCollapsedChange?.(!next);
   }, [pinned, onCollapsedChange]);
 
-  /* ── Get sub-phases for the active block ── */
-  const activeBlock = getActiveBlock();
-  const activeSubPhases = activeBlock
-    ? activeBlock.phaseIds.map((id) => phaseMap.get(id)).filter(Boolean) as WizardPhaseStatus[]
-    : [];
-
   /* ── Utility links ── */
   const utilityLinks = [
-    { id: 'calendar', path: '/calendar', label: t.overview?.calendar || 'Calendar', Icon: CalendarDays },
-    { id: 'presentation', path: '/presentation', label: (t.overview as Record<string, string>)?.presentation || 'Presentation', Icon: Presentation },
+    { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
+    { id: 'presentation', path: '/presentation', label: 'Presentation', Icon: Presentation },
     { id: 'overview', path: '', label: 'Dashboard', Icon: LayoutDashboard },
   ];
 
@@ -169,14 +229,12 @@ export function WizardSidebar({
           {/* ── Collection info ── */}
           <div className={`shrink-0 ${collapsed ? 'px-0 pt-5 pb-4' : 'px-5 pt-5 pb-4'}`}>
             {collapsed ? (
-              /* Collapsed: initials only */
               <Link href={basePath} className="flex items-center justify-center">
                 <span className="type-label text-carbon/30">
                   {collectionName?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
                 </span>
               </Link>
             ) : (
-              /* Expanded: full info */
               <>
                 <Link href={basePath} className="block group">
                   <h2 className="type-nav text-carbon truncate group-hover:text-carbon/70 transition-colors">
@@ -201,7 +259,7 @@ export function WizardSidebar({
           <div className={`shrink-0 ${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06]`} />
 
           {/* ── Block Navigation ── */}
-          <nav className="flex-1 overflow-y-auto py-4 scrollbar-subtle">
+          <nav className="flex-1 overflow-y-auto py-3 scrollbar-subtle">
             {SIDEBAR_BLOCKS.map((block) => {
               const blockActive = isBlockActive(block);
               const blockProgress = getBlockProgress(block);
@@ -209,10 +267,9 @@ export function WizardSidebar({
               const allLocked = block.id === 'development' ? false : blockPhases.every((p) => p.state === 'locked');
               const allCompleted = blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
               const blockHref = `${basePath}/${block.route}`;
-              const showSubSteps = blockActive && activeSubPhases.length > 1;
 
               return (
-                <div key={block.id} className="mb-1">
+                <div key={block.id} className={`${blockActive ? 'mb-2' : 'mb-1'}`}>
                   {collapsed ? (
                     /* ── Collapsed: number only ── */
                     <Link
@@ -240,35 +297,30 @@ export function WizardSidebar({
                       )}
                     </Link>
                   ) : (
-                    /* ── Expanded: full block row + sub-steps ── */
+                    /* ── Expanded: block header + sub-items ── */
                     <>
-                      <Link
-                        href={allLocked ? '#' : blockHref}
-                        onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                        className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-[10px] transition-all ${
-                          allLocked ? 'cursor-not-allowed opacity-25'
-                          : blockActive ? 'bg-carbon/[0.04]'
-                          : 'hover:bg-carbon/[0.03]'
-                        }`}
-                      >
-                        {/* Number */}
+                      {/* Block header — number + label */}
+                      <div className={`flex items-center gap-3 mx-2 px-3 py-2 ${
+                        allLocked ? 'opacity-25' : ''
+                      }`}>
                         <span className={`text-[11px] font-semibold tabular-nums w-5 shrink-0 ${
                           blockActive ? 'text-carbon/50' : 'text-carbon/20'
                         }`}>
                           {block.number}
                         </span>
 
-                        {/* Label */}
-                        <span className={`type-nav flex-1 truncate transition-colors ${
-                          allLocked ? ''
-                          : allCompleted ? 'text-carbon/40'
-                          : blockActive ? 'text-carbon'
-                          : 'text-carbon/50'
-                        }`}>
+                        <Link
+                          href={allLocked ? '#' : blockHref}
+                          onClick={(e) => { if (allLocked) e.preventDefault(); }}
+                          className={`type-nav flex-1 truncate transition-colors ${
+                            allCompleted ? 'text-carbon/40'
+                            : blockActive ? 'text-carbon'
+                            : 'text-carbon/50 hover:text-carbon/70'
+                          }`}
+                        >
                           {block.label}
-                        </span>
+                        </Link>
 
-                        {/* Status */}
                         {allCompleted ? (
                           <Check className="h-3.5 w-3.5 text-carbon/20 shrink-0" strokeWidth={2} />
                         ) : blockProgress > 0 ? (
@@ -276,35 +328,52 @@ export function WizardSidebar({
                             {blockProgress}
                           </span>
                         ) : null}
-                      </Link>
+                      </div>
 
-                      {/* ── Sub-step pills (only for active block) ── */}
-                      {showSubSteps && (
-                        <div className="substeps-enter flex flex-col gap-1 mx-2 mt-1 mb-1 pl-8 pr-2">
-                          {activeSubPhases.map((ps) => {
-                            const isCompleted = ps.state === 'completed';
-                            const phasePath = `${basePath}/${ps.phase.path}`;
-                            const isActive = pathname?.startsWith(phasePath);
+                      {/* ── Sub-items: always visible ── */}
+                      <div className="flex flex-col gap-0.5 ml-[32px] mr-2 mt-0.5 mb-2">
+                        {block.subItems.map((sub) => {
+                          const state = getSubItemState(sub);
+                          const subHref = `${basePath}/${sub.route}`;
+                          const isLocked = state === 'locked';
 
-                            return (
-                              <Link
-                                key={ps.phase.id}
-                                href={phasePath}
-                                className={`pill ${
-                                  isActive ? 'pill-active'
-                                  : isCompleted ? 'pill-completed'
-                                  : 'pill-default'
-                                }`}
-                              >
-                                <span className="truncate">{ps.phase.name}</span>
-                                {isCompleted && !isActive && (
-                                  <Check className="h-3 w-3 shrink-0 opacity-50" strokeWidth={2} />
+                          return (
+                            <Link
+                              key={sub.id}
+                              href={isLocked ? '#' : subHref}
+                              onClick={(e) => { if (isLocked) e.preventDefault(); }}
+                              className={`group flex flex-col px-3 py-1.5 rounded-[8px] transition-all ${
+                                state === 'active'
+                                  ? 'bg-carbon text-white'
+                                  : state === 'completed'
+                                  ? 'text-carbon/35 hover:bg-carbon/[0.03] hover:text-carbon/50'
+                                  : state === 'locked'
+                                  ? 'text-carbon/20 cursor-not-allowed'
+                                  : 'text-carbon/50 hover:bg-carbon/[0.03] hover:text-carbon/70'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className={`type-label truncate flex-1 ${
+                                  state === 'active' ? 'text-white' : ''
+                                }`}>
+                                  {sub.label}
+                                </span>
+                                {state === 'completed' && (
+                                  <Check className="h-3 w-3 shrink-0 text-carbon/20" strokeWidth={2} />
                                 )}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
+                              </div>
+                              {/* Content hint */}
+                              {sub.hint && (
+                                <span className={`text-[11px] font-normal leading-tight mt-0.5 truncate ${
+                                  state === 'active' ? 'text-white/50' : 'text-carbon/20'
+                                }`}>
+                                  {sub.hint}
+                                </span>
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </div>
                     </>
                   )}
                 </div>
