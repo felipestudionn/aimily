@@ -160,16 +160,19 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
         {/* ── Title area ── */}
         <div className="text-center mb-12">
-          <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.1]">
-            {plan.name}
-          </h1>
-          {/* Sub-title when inside a block */}
-          <div className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            activeBlock ? 'max-h-[40px] opacity-100 mt-3' : 'max-h-0 opacity-0 mt-0'
+          {/* Collection name — shrinks when inside a block */}
+          <p className={`font-medium text-carbon/40 tracking-[-0.02em] transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+            activeBlock ? 'text-[14px] mb-2 opacity-100' : 'text-[36px] md:text-[46px] mb-0 opacity-100 !text-carbon'
           }`}>
-            <p className="text-[16px] font-medium text-carbon/40 tracking-[-0.02em]">
+            {plan.name}
+          </p>
+          {/* Block title — appears large when inside a block */}
+          <div className={`overflow-hidden transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+            activeBlock ? 'max-h-[80px] opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <h2 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.1]">
               {activeBlock?.title}
-            </p>
+            </h2>
           </div>
         </div>
 
@@ -204,8 +207,8 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
         {/* ── Cards area ── */}
         {view === 'blocks' && (
-          <div className={`max-w-[1300px] mx-auto transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            animating ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+          <div className={`max-w-[1300px] mx-auto transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+            animating ? 'opacity-0 scale-[0.96] translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}>
             {!expandedBlock ? (
               /* ═══ TOP LEVEL — 4 block cards ═══ */
@@ -267,8 +270,8 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                   <Link
                     key={sub.id}
                     href={`/collection/${collectionId}/${sub.route}`}
-                    className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-                    style={{ animationDelay: `${idx * 80}ms` }}
+                    className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] animate-fade-in-up"
+                    style={{ animationDelay: `${idx * 100}ms` }}
                   >
                     <div className="mb-10">
                       <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
