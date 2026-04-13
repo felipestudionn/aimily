@@ -60,8 +60,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
-      { id: 'families', label: 'Product Families', route: 'merchandising', phaseId: 'merchandising' },
-      { id: 'pricing', label: 'Pricing', route: 'merchandising', phaseId: 'merchandising' },
+      { id: 'families-pricing', label: 'Families & Pricing', route: 'merchandising', phaseId: 'merchandising' },
       { id: 'channels', label: 'Channels & Markets', route: 'merchandising', phaseId: 'merchandising' },
       { id: 'budget', label: 'Budget & Financials', route: 'merchandising', phaseId: 'merchandising' },
       { id: 'builder-merch', label: 'Collection Builder', route: 'product' },
