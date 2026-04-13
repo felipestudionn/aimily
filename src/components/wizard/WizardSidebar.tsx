@@ -11,17 +11,7 @@ import {
   Presentation,
   X,
   ChevronLeft,
-  ChevronUp,
-  Gem,
-  LayoutList,
-  Compass,
-  TrendingUp,
-  Grid3X3,
-  PenTool,
-  Box,
-  Scissors,
-  Factory,
-  Megaphone,
+  ChevronDown,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -46,8 +36,7 @@ interface SidebarSubItem {
 interface SidebarBlock {
   id: TimelinePhase;
   label: string;
-  icon: React.ElementType;
-  route: string;           // default block route
+  route: string;
   phaseIds: WizardPhaseId[];
   subItems: SidebarSubItem[];
 }
@@ -56,7 +45,6 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
     label: 'Creative & Brand',
-    icon: Gem,
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
@@ -68,7 +56,6 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'planning',
     label: 'Merchandising & Planning',
-    icon: LayoutList,
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
@@ -82,7 +69,6 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'development',
     label: 'Design & Development',
-    icon: Compass,
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
@@ -96,7 +82,6 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'go_to_market',
     label: 'Marketing & Sales',
-    icon: TrendingUp,
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
@@ -276,9 +261,10 @@ export function WizardSidebar({
           <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06] shrink-0`} />
 
           {/* ═══════════════════════════════════════════
-               Block navigation
+               Block navigation — Hioline style
+               Bold headers, no icons, generous space
                ═══════════════════════════════════════════ */}
-          <nav className="flex-1 overflow-y-auto scrollbar-subtle pt-4 px-3">
+          <nav className="flex-1 overflow-y-auto scrollbar-subtle pt-6 px-6">
             {SIDEBAR_BLOCKS.map((block) => {
               const blockActive = isBlockActive(block);
               const blockProgress = getBlockProgress(block);
@@ -287,10 +273,9 @@ export function WizardSidebar({
               const allCompleted = blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
               const blockHref = `${basePath}/${block.route}`;
               const isExpanded = expandedBlocks.has(block.id);
-              const BlockIcon = block.icon;
 
               return (
-                <div key={block.id} className="mb-2">
+                <div key={block.id} className="mb-7">
                   {collapsed ? (
                     <Link
                       href={allLocked ? '#' : blockHref}
@@ -302,50 +287,37 @@ export function WizardSidebar({
                       }`}
                       title={block.label}
                     >
-                      <BlockIcon className={`h-[18px] w-[18px] ${
-                        blockActive ? 'text-carbon' : 'text-carbon/40'
-                      }`} strokeWidth={1.5} />
+                      <span className={`text-[14px] font-bold ${
+                        blockActive ? 'text-carbon' : 'text-carbon/35'
+                      }`}>
+                        {block.label.charAt(0)}
+                      </span>
                     </Link>
                   ) : (
                     <>
-                      {/* ── Block header ── */}
+                      {/* ── Block header: bold text + chevron ── */}
                       <button
                         onClick={() => !allLocked && toggleBlock(block.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all text-left ${
-                          allLocked ? 'opacity-25 cursor-not-allowed'
-                          : 'hover:bg-carbon/[0.03]'
+                        className={`w-full flex items-center justify-between mb-3 text-left ${
+                          allLocked ? 'opacity-25 cursor-not-allowed' : ''
                         }`}
                       >
-                        <BlockIcon className={`h-[18px] w-[18px] shrink-0 ${
-                          blockActive ? 'text-carbon' : 'text-carbon/50'
-                        }`} strokeWidth={1.5} />
-
-                        <span className={`text-[15px] font-semibold flex-1 truncate ${
+                        <span className={`text-[16px] font-bold tracking-[-0.01em] ${
                           allLocked ? 'text-carbon/30'
-                          : allCompleted ? 'text-carbon/50'
+                          : allCompleted ? 'text-carbon/45'
                           : 'text-carbon'
                         }`}>
                           {block.label}
                         </span>
 
-                        {allCompleted ? (
-                          <Check className="h-4 w-4 text-carbon/30 shrink-0" strokeWidth={2} />
-                        ) : blockProgress > 0 ? (
-                          <span className="text-[12px] font-normal tabular-nums text-carbon/25 shrink-0 px-1.5 py-0.5 rounded-full border border-carbon/[0.08]">
-                            {blockProgress}
-                          </span>
-                        ) : null}
-
-                        {!allLocked && (
-                          <ChevronUp className={`h-4 w-4 text-carbon/25 shrink-0 transition-transform duration-200 ${
-                            isExpanded ? '' : 'rotate-180'
-                          }`} />
-                        )}
+                        <ChevronDown className={`h-4 w-4 text-carbon/30 shrink-0 transition-transform duration-200 ${
+                          isExpanded ? 'rotate-180' : ''
+                        }`} />
                       </button>
 
                       {/* ── Sub-items ── */}
                       {isExpanded && (
-                        <div className="mt-1 mb-3 ml-[30px] pl-4 border-l-2 border-carbon/[0.06]">
+                        <div className="flex flex-col gap-1">
                           {block.subItems.map((sub) => {
                             const state = getSubItemState(sub, block);
                             const subHref = `${basePath}/${sub.route}`;
@@ -356,17 +328,17 @@ export function WizardSidebar({
                                 key={sub.id}
                                 href={isLocked ? '#' : subHref}
                                 onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                                className={`flex items-center gap-2 py-2 pr-3 transition-all ${
+                                className={`flex items-center justify-between py-2 transition-colors ${
                                   state === 'active'
                                     ? 'text-carbon'
                                     : state === 'locked'
                                     ? 'text-carbon/20 cursor-not-allowed'
                                     : state === 'completed'
-                                    ? 'text-carbon/40 hover:text-carbon/60'
-                                    : 'text-carbon/50 hover:text-carbon/80'
+                                    ? 'text-carbon/35 hover:text-carbon/55'
+                                    : 'text-carbon/50 hover:text-carbon'
                                 }`}
                               >
-                                <span className={`text-[14px] truncate flex-1 ${
+                                <span className={`text-[14px] ${
                                   state === 'active' ? 'font-semibold' : 'font-normal'
                                 }`}>
                                   {sub.label}
