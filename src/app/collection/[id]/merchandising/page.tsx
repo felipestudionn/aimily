@@ -1127,11 +1127,10 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </p>
           </div>
 
-          {/* Content — card grid layout per block type */}
+          {/* Content — balanced 2-column card grid, centered */}
           {blockParam === 'families' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
-              {/* Left: Families */}
-              <DecisionCard title={m.productFamilies || 'Product Families'} className="flex flex-col">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
+              <DecisionCard title="Product Families" className="flex flex-col">
                 <FamiliesContent
                   mode={state.mode} data={state.data}
                   onChange={(newData) => updateCardData('families', { data: newData })}
@@ -1139,8 +1138,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                 />
               </DecisionCard>
 
-              {/* Right 2 cols: Pricing */}
-              <DecisionCard title={m.pricing || 'Pricing'} span={2} className="flex flex-col">
+              <DecisionCard title="Pricing" className="flex flex-col">
                 <PricingContent
                   mode={state.mode} data={pricingState.data}
                   onChange={(newData) => updateCardData('pricing', { data: newData })}
@@ -1151,27 +1149,77 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
           )}
 
           {blockParam === 'channels' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
-              <DecisionCard title={m.distributionChannels || 'Channels'} className="flex flex-col">
-                {/* Inline DTC + Wholesale toggles */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
+              <DecisionCard title="Distribution Channels" className="flex flex-col">
+                {/* Extract just the channel toggles from ChannelsContent */}
                 <ChannelsContent
                   mode={state.mode} data={state.data}
                   onChange={(newData) => updateCardData('channels', { data: newData })}
                   collectionContext={collectionContext}
                 />
               </DecisionCard>
+
+              <DecisionCard title="Target Markets" className="flex flex-col">
+                <div className="text-[13px] text-carbon/30">
+                  {(() => {
+                    type Market = { name: string; region: string; selected?: boolean };
+                    const mkts = (getCardState('channels').data.markets as Market[]) || [];
+                    const selected = mkts.filter(m => m.selected !== false);
+                    if (selected.length > 0) {
+                      return (
+                        <div className="space-y-2">
+                          {selected.map((mk, i) => (
+                            <div key={i} className="flex items-center justify-between py-2 border-b border-carbon/[0.04] last:border-0">
+                              <span className="text-[14px] text-carbon">{mk.name}</span>
+                              <span className="text-[12px] text-carbon/40">{mk.region}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return <p className="text-[14px] text-carbon/30 py-4">Markets will appear here after channel configuration</p>;
+                  })()}
+                </div>
+              </DecisionCard>
             </div>
           )}
 
           {blockParam === 'budget' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
-              <DecisionCard title={m.budgetFinancials || 'Budget & Financials'} span={3} className="flex flex-col">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
+              <DecisionCard title="Budget & Financials" className="flex flex-col">
                 <BudgetContent
                   mode={state.mode} data={state.data}
                   onChange={(newData) => updateCardData('budget', { data: newData })}
                   collectionContext={collectionContext}
                   familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
                 />
+              </DecisionCard>
+
+              <DecisionCard title="Summary" className="flex flex-col">
+                <div className="space-y-4">
+                  {(state.data.salesTarget as number) > 0 ? (
+                    <>
+                      <div className="flex items-baseline justify-between py-2 border-b border-carbon/[0.04]">
+                        <span className="text-[14px] text-carbon/50">Sales Target</span>
+                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">€{((state.data.salesTarget as number) || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between py-2 border-b border-carbon/[0.04]">
+                        <span className="text-[14px] text-carbon/50">Target Margin</span>
+                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">{(state.data.targetMargin as number) || 0}%</span>
+                      </div>
+                      <div className="flex items-baseline justify-between py-2 border-b border-carbon/[0.04]">
+                        <span className="text-[14px] text-carbon/50">Avg. Discount</span>
+                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">{(state.data.avgDiscount as number) || 0}%</span>
+                      </div>
+                      <div className="flex items-baseline justify-between py-2">
+                        <span className="text-[14px] text-carbon/50">Sell-Through</span>
+                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">{(state.data.sellThroughMonths as number) || 0} mo</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-[14px] text-carbon/30 py-4">Financial summary will appear here</p>
+                  )}
+                </div>
               </DecisionCard>
             </div>
           )}
