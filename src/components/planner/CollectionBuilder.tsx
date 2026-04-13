@@ -22,6 +22,7 @@ import { SkuLifecycleProvider, EMPTY_DESIGN_DATA, type DesignWorkspaceData } fro
 interface CollectionBuilderProps {
   setupData: SetupData;
   collectionPlanId: string;
+  initialPhaseFilter?: string;
 }
 
 /* ── SkuCardPill — mini sliding pill for Sketch/AI toggle on cards ── */
@@ -77,7 +78,7 @@ function SkuCardPill({ hasRender, showRender, isGenerating, onToggle }: {
   );
 }
 
-export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBuilderProps) {
+export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFilter }: CollectionBuilderProps) {
   const { language } = useLanguage();
   const t = useTranslation();
   const [name, setName] = useState('');
@@ -110,7 +111,21 @@ export function CollectionBuilder({ setupData, collectionPlanId }: CollectionBui
   const [selectedImports, setSelectedImports] = useState<Set<string>>(new Set());
   const [importingSkus, setImportingSkus] = useState(false);
 
-  const { skus, addSku, updateSku, deleteSku, loading, refetch } = useSkus(collectionPlanId);
+  const { skus: allSkus, addSku, updateSku, deleteSku, loading, refetch } = useSkus(collectionPlanId);
+
+  /* ── Phase filter from sidebar navigation ── */
+  const PHASE_FILTER_MAP: Record<string, string[]> = {
+    sketch: ['range_plan', 'sketch'],
+    prototyping: ['prototyping'],
+    production: ['production'],
+    selection: ['production', 'completed'],
+  };
+  const [phaseFilter, setPhaseFilter] = useState<string | null>(initialPhaseFilter || null);
+  const skus = useMemo(() => {
+    if (!phaseFilter || !PHASE_FILTER_MAP[phaseFilter]) return allSkus;
+    const allowedPhases = PHASE_FILTER_MAP[phaseFilter];
+    return allSkus.filter(s => allowedPhases.includes(s.design_phase || 'range_plan'));
+  }, [allSkus, phaseFilter]);
 
   // ── Lifecycle hooks (for SKU detail modal) ──
   const { colorways, addColorway, updateColorway, deleteColorway } = useColorways(collectionPlanId);

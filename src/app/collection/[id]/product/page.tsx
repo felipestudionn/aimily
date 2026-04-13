@@ -5,6 +5,7 @@ import type { CollectionPlan, SetupData, ProductFamily, PriceSegment, ProductTyp
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ phase?: string }>;
 }
 
 /**
@@ -128,8 +129,9 @@ async function bridgeMerchToSetup(planId: string, plan: CollectionPlan): Promise
   return { ...plan, setup_data: setupData };
 }
 
-export default async function ProductPage({ params }: PageProps) {
+export default async function ProductPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { phase } = await searchParams;
 
   const { data: plan, error } = await supabaseAdmin
     .from('collection_plans')
@@ -142,5 +144,5 @@ export default async function ProductPage({ params }: PageProps) {
   // Bridge merchandising data → setup_data if needed
   const enrichedPlan = await bridgeMerchToSetup(id, plan as CollectionPlan);
 
-  return <PlannerDashboard plan={enrichedPlan} />;
+  return <PlannerDashboard plan={enrichedPlan} initialPhaseFilter={phase} />;
 }

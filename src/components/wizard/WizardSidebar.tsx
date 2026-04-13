@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import {
   CalendarDays,
@@ -72,10 +72,10 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
-      { id: 'sketch', label: 'Sketch & Color', route: 'product', phaseId: 'design' },
-      { id: 'prototyping', label: 'Prototyping', route: 'product', phaseId: 'prototyping' },
-      { id: 'production', label: 'Production', route: 'product', phaseId: 'production' },
-      { id: 'final-selection', label: 'Final Selection', route: 'product', phaseId: 'sampling' },
+      { id: 'sketch', label: 'Sketch & Color', route: 'product?phase=sketch', phaseId: 'design' },
+      { id: 'prototyping', label: 'Prototyping', route: 'product?phase=prototyping', phaseId: 'prototyping' },
+      { id: 'production', label: 'Production', route: 'product?phase=production', phaseId: 'production' },
+      { id: 'final-selection', label: 'Final Selection', route: 'product?phase=selection', phaseId: 'sampling' },
     ],
   },
   {
@@ -118,6 +118,7 @@ export function WizardSidebar({
   onCollapsedChange,
 }: WizardSidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { milestones } = useTimeline();
   const { phases } = useWizardState(milestones);
   const [collapsed, setCollapsed] = useState(false);
@@ -140,21 +141,47 @@ export function WizardSidebar({
     return total > 0 ? Math.round((completed / total) * 100) : 0;
   }
 
+  /* Route matching helpers — handle routes with query params (e.g. product?phase=sketch) */
+  function getRoutePath(route: string): string {
+    return route.split('?')[0];
+  }
+  function getRouteParam(route: string, key: string): string | null {
+    const qIdx = route.indexOf('?');
+    if (qIdx < 0) return null;
+    const params = new URLSearchParams(route.slice(qIdx));
+    return params.get(key);
+  }
+
   function isBlockActive(block: SidebarBlock): boolean {
-    if (pathname?.startsWith(`${basePath}/${block.route}`)) return true;
+    const blockPath = getRoutePath(block.route);
+    if (pathname?.startsWith(`${basePath}/${blockPath}`)) return true;
     return block.subItems.some(sub => {
-      const subPath = `${basePath}/${sub.route}`;
+      const subPath = `${basePath}/${getRoutePath(sub.route)}`;
       return pathname === subPath || pathname?.startsWith(`${subPath}/`);
     });
   }
 
   function isSubItemActive(sub: SidebarSubItem, block: SidebarBlock): boolean {
-    const subPath = `${basePath}/${sub.route}`;
+    const subRoutePath = getRoutePath(sub.route);
+    const subPath = `${basePath}/${subRoutePath}`;
     const onThisRoute = pathname === subPath || pathname?.startsWith(`${subPath}/`) || false;
     if (!onThisRoute) return false;
 
-    // If multiple sub-items share a route, only highlight the first one
-    const firstWithSameRoute = block.subItems.find(s => s.route === sub.route);
+    // Check query param match for routes like product?phase=sketch
+    const expectedPhase = getRouteParam(sub.route, 'phase');
+    if (expectedPhase) {
+      return searchParams?.get('phase') === expectedPhase;
+    }
+
+    // If no query param, only highlight if no other sub-item with query param matches
+    const currentPhase = searchParams?.get('phase');
+    if (currentPhase) {
+      // A phase param is set but this sub-item doesn't have one — not active
+      return false;
+    }
+
+    // No phase param on URL and no phase param on sub-item — first match wins
+    const firstWithSameRoute = block.subItems.find(s => getRoutePath(s.route) === subRoutePath && !getRouteParam(s.route, 'phase'));
     return firstWithSameRoute?.id === sub.id;
   }
 

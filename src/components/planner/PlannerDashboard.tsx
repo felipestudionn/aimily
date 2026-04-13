@@ -11,6 +11,7 @@ import { useTimeline } from '@/contexts/TimelineContext';
 
 interface PlannerDashboardProps {
   plan: CollectionPlan;
+  initialPhaseFilter?: string;
 }
 
 const EMPTY_SETUP: SetupData = {
@@ -30,7 +31,7 @@ const EMPTY_SETUP: SetupData = {
   maxPrice: 0,
 };
 
-export function PlannerDashboard({ plan }: PlannerDashboardProps) {
+export function PlannerDashboard({ plan, initialPhaseFilter }: PlannerDashboardProps) {
   const t = useTranslation();
   const router = useRouter();
   const { updateMilestoneStatus } = useTimeline();
@@ -56,6 +57,7 @@ export function PlannerDashboard({ plan }: PlannerDashboardProps) {
       <CollectionBuilder
         setupData={setupData}
         collectionPlanId={plan.id}
+        initialPhaseFilter={initialPhaseFilter}
       />
 
       {/* What's Next section removed — SKU detail EvolutionStrip now handles the flow */}
