@@ -117,8 +117,7 @@ function BlockCard({
 
       {/* Title */}
       <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
-        {block.title}<br />
-        <span className="italic font-medium">{block.titleItalic}</span>
+        {block.title} {block.titleItalic}
       </h3>
 
       {/* Description */}
