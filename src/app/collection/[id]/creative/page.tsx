@@ -2812,6 +2812,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
       const blockToStep: Record<string, number> = {
         'consumer': 0, 'vibe': 0, 'moodboard': 0, 'brand-dna': 0,
         'global-trends': 1, 'deep-dive': 1, 'live-signals': 1, 'competitors': 1,
+        'synthesis': 2,
       };
       const stepIdx = blockToStep[blockParam];
       if (stepIdx !== undefined && activeStep !== stepIdx) {
@@ -2845,6 +2846,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     'deep-dive': t.creative.deepDive,
     'live-signals': t.creative.liveSignals,
     'competitors': t.creative.competitors,
+    'synthesis': t.creative.creativeSynthesis || 'Creative Overview',
   };
   const blockDescMap: Record<string, string> = {
     'consumer': t.creative.consumerDesc,
@@ -2991,7 +2993,10 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
         )}
 
         {/* Step Content */}
-        {step.blocks.length > 0 ? (
+        {/* ─── SYNTHESIS VIEW (Creative Overview from sidebar) ─── */}
+        {blockParam === 'synthesis' ? (
+          <CreativeSynthesisView blockData={blockData} collectionContext={collectionContext} updateBlockData={updateBlockData} />
+        ) : step.blocks.length > 0 ? (
           <div className="relative">
             {/* ─── CLEAN WORKSPACE VIEW (from sidebar) ─── */}
             {blockParam && expandedBlock && (() => {
