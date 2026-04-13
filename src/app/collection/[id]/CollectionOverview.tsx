@@ -23,6 +23,7 @@ interface SubBlockDef {
   label: string;
   description: string;
   route: string;
+  isOutput?: boolean;  // Creative Synthesis, Collection Builder — always "Open →"
 }
 
 interface BlockDef {
@@ -45,7 +46,7 @@ const BLOCK_DEFS: BlockDef[] = [
       { id: 'consumer', label: 'Consumer\nDefinition', description: 'Define your target audience, build personas, and map their lifestyle and buying behavior.', route: 'creative' },
       { id: 'moodboard', label: 'Moodboard\n& Research', description: 'Collect visual references, explore trends, and analyze competitors for your season.', route: 'creative' },
       { id: 'brand', label: 'Brand\nIdentity', description: 'Codify your brand DNA, define your voice, and design your visual identity.', route: 'brand' },
-      { id: 'synthesis', label: 'Creative\nSynthesis', description: 'Consolidate everything into a creative brief, define the collection vibe and direction.', route: 'creative' },
+      { id: 'synthesis', label: 'Creative\nBrief', description: 'Consolidate everything into a creative brief, define the collection vibe and direction.', route: 'creative', isOutput: true },
     ],
   },
   {
@@ -58,7 +59,7 @@ const BLOCK_DEFS: BlockDef[] = [
       { id: 'families', label: 'Families\n& Pricing', description: 'Define product categories, set price architecture, and structure your segments.', route: 'merchandising' },
       { id: 'channels', label: 'Channels\n& Markets', description: 'Plan your DTC and wholesale distribution across target markets.', route: 'merchandising' },
       { id: 'budget', label: 'Budget\n& Financials', description: 'Set your sales target, calculate margins, and plan sell-through rates.', route: 'merchandising' },
-      { id: 'builder', label: 'Collection\nBuilder', description: 'Build your SKU grid, validate the range plan, and organize by drops.', route: 'product' },
+      { id: 'builder', label: 'Collection\nBuilder', description: 'Build your SKU grid, validate the range plan, and organize by drops.', route: 'product', isOutput: true },
     ],
   },
   {
@@ -326,26 +327,35 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
                       <div className="flex-1" />
 
-                      {/* CTA — same system as blocks */}
+                      {/* CTA — same system as blocks, outputs always show "Open →" */}
                       <div className="flex justify-center mt-10">
-                        <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-                          isSubComplete
-                            ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
-                            : 'bg-carbon text-white group-hover:bg-carbon/90'
-                        }`}>
-                          {isSubComplete ? 'Completed' : isSubStarted ? 'Continue' : 'Start'}
-                          {!isSubComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
-                          {isSubComplete && <Pencil className="h-3 w-3 ml-0.5" />}
-                        </div>
+                        {sub.isOutput ? (
+                          <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white group-hover:bg-carbon/90 transition-all">
+                            Open
+                            <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                          </div>
+                        ) : (
+                          <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                            isSubComplete
+                              ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
+                              : 'bg-carbon text-white group-hover:bg-carbon/90'
+                          }`}>
+                            {isSubComplete ? 'Completed' : isSubStarted ? 'Continue' : 'Start'}
+                            {!isSubComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
+                            {isSubComplete && <Pencil className="h-3 w-3 ml-0.5" />}
+                          </div>
+                        )}
                       </div>
 
-                      {/* Progress pill — same as blocks */}
-                      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
-                          style={{ width: `${subProgress}%` }}
-                        />
-                      </div>
+                      {/* Progress pill — same as blocks (hidden for outputs) */}
+                      {!sub.isOutput && (
+                        <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
+                            style={{ width: `${subProgress}%` }}
+                          />
+                        </div>
+                      )}
                     </Link>
                   );
                 })}
