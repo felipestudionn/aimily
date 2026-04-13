@@ -81,10 +81,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Content, communications, and go-to-market strategy.',
     route: 'marketing/creation',
     subBlocks: [
-      { id: 'sales', label: 'Sales\nDashboard', tags: ['KPIs', 'Revenue', 'Commercial'], route: 'marketing/creation' },
-      { id: 'content', label: 'Content\nStudio', tags: ['Photography', 'Editorial', 'Campaign'], route: 'marketing/creation' },
-      { id: 'comms', label: 'Comms &\nStrategy', tags: ['Copy', 'Social Media', 'Email'], route: 'marketing/creation' },
-      { id: 'pos', label: 'Point\nof Sale', tags: ['Web Store', 'Wholesale', 'Distribution'], route: 'marketing/creation' },
+      { id: 'sales', label: 'Sales &\nPerformance', tags: ['KPIs', 'Revenue', 'Commercial'], route: 'marketing/creation' },
+      { id: 'content', label: 'Content\nCreation', tags: ['Photography', 'Editorial', 'Campaign'], route: 'marketing/creation' },
+      { id: 'comms', label: 'Communications\n& Brand Voice', tags: ['Copy', 'Social Media', 'Email'], route: 'marketing/creation' },
+      { id: 'pos', label: 'Distribution\n& Retail', tags: ['Web Store', 'Wholesale', 'Orders'], route: 'marketing/creation' },
     ],
   },
 ];
