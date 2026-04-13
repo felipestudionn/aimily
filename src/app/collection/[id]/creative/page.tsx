@@ -585,120 +585,139 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
 
   return (
     <>
-      {/* ═══ FREE MODE — 3-column card grid ═══ */}
+      {/* ═══ FREE MODE — left stack (3 small cards) + right tall card ═══ */}
       {mode === 'free' && (
-        <DecisionCardGrid columns={3}>
-          {/* Row 1: Collection Target | Age Range | Key Markets */}
-          <DecisionCard title={t.creative.collectionTarget}>
-            <GenderSelector />
-          </DecisionCard>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Left column: 3 stacked cards sharing the height */}
+          <div className="flex flex-col gap-5">
+            <DecisionCard title={t.creative.collectionTarget}>
+              <GenderSelector />
+            </DecisionCard>
 
-          <DecisionCard title={t.creative.ageRange}>
-            <div className="flex items-center gap-3">
+            <DecisionCard title={t.creative.ageRange}>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  value={(data.ageMin as string) || ''}
+                  onChange={(e) => onChange({ ...data, ageMin: e.target.value })}
+                  placeholder="Min"
+                  className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+                />
+                <span className="text-carbon/20 text-sm">—</span>
+                <input
+                  type="number"
+                  value={(data.ageMax as string) || ''}
+                  onChange={(e) => onChange({ ...data, ageMax: e.target.value })}
+                  placeholder="Max"
+                  className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+                />
+              </div>
+            </DecisionCard>
+
+            <DecisionCard title={t.creative.keyMarkets}>
               <input
-                type="number"
-                value={(data.ageMin as string) || ''}
-                onChange={(e) => onChange({ ...data, ageMin: e.target.value })}
-                placeholder="Min"
-                className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+                type="text"
+                value={(data.markets as string) || ''}
+                onChange={(e) => onChange({ ...data, markets: e.target.value })}
+                placeholder="e.g. Southern Europe, Urban professionals, Gen Z..."
+                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
               />
-              <span className="text-carbon/20 text-sm">—</span>
-              <input
-                type="number"
-                value={(data.ageMax as string) || ''}
-                onChange={(e) => onChange({ ...data, ageMax: e.target.value })}
-                placeholder="Max"
-                className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-              />
-            </div>
-          </DecisionCard>
+            </DecisionCard>
+          </div>
 
-          <DecisionCard title={t.creative.keyMarkets}>
-            <input
-              type="text"
-              value={(data.markets as string) || ''}
-              onChange={(e) => onChange({ ...data, markets: e.target.value })}
-              placeholder="e.g. Southern Europe, Urban professionals, Gen Z..."
-              className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-            />
-          </DecisionCard>
-
-          {/* Row 2: Consumer Profile — spans full width */}
-          <DecisionCard title={t.creative.targetConsumerProfile} span={3}>
+          {/* Right: Consumer Profile — tall card spanning 2 columns */}
+          <DecisionCard title={t.creative.targetConsumerProfile} span={2} className="h-full">
             <textarea
               value={(data.profile as string) || ''}
               onChange={(e) => onChange({ ...data, profile: e.target.value })}
               placeholder={t.creative.targetConsumerPlaceholder}
-              className="w-full h-44 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+              className="w-full h-full min-h-[280px] px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
             />
           </DecisionCard>
-        </DecisionCardGrid>
+        </div>
       )}
 
-      {/* ═══ ASSISTED MODE — card grid ═══ */}
+      {/* ═══ ASSISTED MODE — left stack + right tall card ═══ */}
       {mode === 'assisted' && (
-        <DecisionCardGrid columns={3}>
-          {/* Row 1: Collection Target | Direction Keywords (2 cols) */}
-          <DecisionCard title={t.creative.collectionTarget}>
-            <GenderSelector />
-          </DecisionCard>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Left column: Gender + Direction Keywords stacked */}
+          <div className="flex flex-col gap-5">
+            <DecisionCard title={t.creative.collectionTarget}>
+              <GenderSelector />
+            </DecisionCard>
 
-          <DecisionCard title={t.creative.directionKeywords} span={2}>
-            <textarea
-              value={(data.keywords as string) || ''}
-              onChange={(e) => onChange({ ...data, keywords: e.target.value })}
-              placeholder="Give direction — e.g. 'urban millennials, sustainability-conscious, mid-range luxury, European market'..."
-              className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
-            />
-            <div className="mt-4 flex items-center gap-3">
-              <button
-                onClick={async () => {
-                  setGenerating(true);
-                  setError(null);
-                  const { result, error: err } = await generateCreative('consumer-assisted', {
-                    keywords: (data.keywords as string) || '',
-                    gender: (data.gender as string) || '',
-                    ...collectionContext,
-                  }, language);
-                  if (err) { setError(err); setGenerating(false); return; }
-                  onChange({ ...data, profile: result as string });
-                  setGenerating(false);
-                }}
-                disabled={generating || !(data.keywords as string)?.trim() || !(data.gender as string)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                {t.creative.expandWithAI}
-              </button>
-              {error && <p className="text-xs text-red-600">{error}</p>}
-            </div>
-          </DecisionCard>
+            <DecisionCard title={t.creative.directionKeywords} className="flex-1">
+              <textarea
+                value={(data.keywords as string) || ''}
+                onChange={(e) => onChange({ ...data, keywords: e.target.value })}
+                placeholder="Give direction — e.g. 'urban millennials, sustainability-conscious, mid-range luxury, European market'..."
+                className="w-full h-full min-h-[120px] px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+              />
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  onClick={async () => {
+                    setGenerating(true);
+                    setError(null);
+                    const { result, error: err } = await generateCreative('consumer-assisted', {
+                      keywords: (data.keywords as string) || '',
+                      gender: (data.gender as string) || '',
+                      ...collectionContext,
+                    }, language);
+                    if (err) { setError(err); setGenerating(false); return; }
+                    onChange({ ...data, profile: result as string });
+                    setGenerating(false);
+                  }}
+                  disabled={generating || !(data.keywords as string)?.trim() || !(data.gender as string)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {t.creative.expandWithAI}
+                </button>
+                {error && <p className="text-xs text-red-600">{error}</p>}
+              </div>
+            </DecisionCard>
+          </div>
 
-          {/* Row 2: AI Generated Profile — full width */}
-          {(data.profile as string) && (
+          {/* Right: AI Generated Profile — tall card spanning 2 columns */}
+          {(data.profile as string) ? (
             <DecisionCard
               title={t.creative.aiGeneratedProfile}
               description={t.creative.editable}
-              span={3}
+              span={2}
+              className="h-full"
             >
               <textarea
                 value={(data.profile as string) || ''}
                 onChange={(e) => onChange({ ...data, profile: e.target.value })}
-                className="w-full h-40 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
+                className="w-full h-full min-h-[280px] px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
               />
             </DecisionCard>
+          ) : (
+            <DecisionCard span={2} className="h-full flex items-center justify-center">
+              <div className="text-center py-12">
+                <Sparkles className="h-8 w-8 text-carbon/[0.08] mx-auto mb-4" />
+                <p className="text-[14px] text-carbon/30 tracking-[-0.02em]">
+                  {t.creative.aiGeneratedProfile}
+                </p>
+                <p className="text-[13px] text-carbon/20 mt-1">
+                  Fill in direction keywords and generate
+                </p>
+              </div>
+            </DecisionCard>
           )}
-        </DecisionCardGrid>
+        </div>
       )}
 
-      {/* ═══ AI MODE — card grid with proposals ═══ */}
+      {/* ═══ AI MODE — left gender + right proposals ═══ */}
       {mode === 'ai' && (
-        <DecisionCardGrid columns={3}>
-          <DecisionCard title={t.creative.collectionTarget}>
-            <GenderSelector />
-          </DecisionCard>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="flex flex-col gap-5">
+            <DecisionCard title={t.creative.collectionTarget}>
+              <GenderSelector />
+            </DecisionCard>
+          </div>
 
-          <DecisionCard span={2}>
+          <DecisionCard span={2} className="h-full">
             <ConsumerProposalFlow
               data={data}
               onChange={onChange}
@@ -709,7 +728,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
               setError={setError}
             />
           </DecisionCard>
-        </DecisionCardGrid>
+        </div>
       )}
     </>
   );
