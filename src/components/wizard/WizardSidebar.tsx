@@ -281,12 +281,18 @@ export function WizardSidebar({
           {/* ═══════════════════════════════════════════
                Header: aimily logo + collection name
                ═══════════════════════════════════════════ */}
-          <div className={`shrink-0 ${collapsed ? 'px-0 pt-6 pb-4' : 'px-5 pt-7 pb-6'}`}>
+          <div className={`shrink-0 ${collapsed ? 'px-0 pt-7 pb-5' : 'px-5 pt-7 pb-6'}`}>
             {collapsed ? (
               <Link href="/my-collections" className="flex items-center justify-center">
-                <span className="text-[13px] font-bold text-carbon/60 tracking-[-0.02em]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-                  aimily
-                </span>
+                <Image
+                  src="/images/aimily-logo-black.png"
+                  alt="aimily"
+                  width={774}
+                  height={96}
+                  className="w-auto opacity-60"
+                  style={{ writingMode: 'vertical-rl', height: '60px', transform: 'rotate(180deg)' }}
+                  unoptimized
+                />
               </Link>
             ) : (
               <>
@@ -316,7 +322,7 @@ export function WizardSidebar({
                Block navigation — Hioline style
                Bold headers, no icons, generous space
                ═══════════════════════════════════════════ */}
-          <nav className="flex-1 overflow-y-auto scrollbar-subtle pt-6 px-6">
+          <nav className={`flex-1 overflow-y-auto scrollbar-subtle pt-6 ${collapsed ? 'px-2 flex flex-col items-center' : 'px-6'}`}>
             {SIDEBAR_BLOCKS.map((block) => {
               const blockActive = isBlockActive(block);
               const blockProgress = getBlockProgress(block);
@@ -332,7 +338,7 @@ export function WizardSidebar({
                     <Link
                       href={allLocked ? '#' : blockHref}
                       onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                      className={`w-10 h-10 mx-auto flex items-center justify-center rounded-[10px] transition-all ${
+                      className={`w-10 h-10 flex items-center justify-center rounded-[10px] transition-all ${
                         allLocked ? 'opacity-25 cursor-not-allowed'
                         : blockActive ? 'bg-carbon/[0.08]'
                         : 'hover:bg-carbon/[0.04]'
@@ -429,8 +435,8 @@ export function WizardSidebar({
           {/* ═══════════════════════════════════════════
                Utilities
                ═══════════════════════════════════════════ */}
-          <div className="shrink-0 px-3 pb-4">
-            <div className="border-t border-carbon/[0.12] pt-3">
+          <div className={`shrink-0 ${collapsed ? 'px-2' : 'px-3'} pb-4`}>
+            <div className={`border-t border-carbon/[0.12] pt-3 ${collapsed ? 'flex flex-col items-center' : ''}`}>
               {utilityLinks.map((item) => {
                 const fullPath = `${basePath}${item.path}`;
                 const isActive = item.path === ''
