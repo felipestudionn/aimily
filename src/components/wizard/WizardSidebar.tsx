@@ -12,23 +12,16 @@ import {
   X,
   ChevronLeft,
   ChevronUp,
-  Sparkles,
-  ShoppingBag,
+  Gem,
+  LayoutList,
+  Compass,
+  TrendingUp,
   Grid3X3,
   PenTool,
   Box,
   Scissors,
   Factory,
   Megaphone,
-  Fingerprint,
-  DollarSign,
-  Store,
-  Calculator,
-  Layers,
-  BarChart3,
-  Palette,
-  MessageSquare,
-  ShoppingCart,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -63,7 +56,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
     label: 'Creative & Brand',
-    icon: Sparkles,
+    icon: Gem,
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
@@ -75,7 +68,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'planning',
     label: 'Merchandising & Planning',
-    icon: ShoppingBag,
+    icon: LayoutList,
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
@@ -89,7 +82,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'development',
     label: 'Design & Development',
-    icon: PenTool,
+    icon: Compass,
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
@@ -103,7 +96,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'go_to_market',
     label: 'Marketing & Sales',
-    icon: Megaphone,
+    icon: TrendingUp,
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
@@ -116,7 +109,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
 ];
 
 const COLLAPSED_W = 72;
-const EXPANDED_W = 280;
+const EXPANDED_W = 300;
 
 /* ══════════════════════════════════════════════════════════════ */
 
