@@ -46,7 +46,7 @@ const BLOCK_DEFS: BlockDef[] = [
       { id: 'consumer', label: 'Consumer\nDefinition', description: 'Define your target audience, build personas, and map their lifestyle and buying behavior.', route: 'creative' },
       { id: 'moodboard', label: 'Moodboard\n& Research', description: 'Collect visual references, explore trends, and analyze competitors for your season.', route: 'creative' },
       { id: 'brand', label: 'Brand\nIdentity', description: 'Codify your brand DNA, define your voice, and design your visual identity.', route: 'brand' },
-      { id: 'synthesis', label: 'Creative\nBrief', description: 'Consolidate everything into a creative brief, define the collection vibe and direction.', route: 'creative', isOutput: true },
+      { id: 'synthesis', label: 'Creative\nOverview', description: 'Consolidate everything into a creative brief, define the collection vibe and direction.', route: 'creative', isOutput: true },
     ],
   },
   {

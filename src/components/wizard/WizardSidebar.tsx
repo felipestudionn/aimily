@@ -60,7 +60,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
       { id: 'consumer', label: 'Consumer', route: 'creative', phaseId: 'product' },
       { id: 'moodboard-research', label: 'Moodboard & Research', route: 'creative', phaseId: 'product' },
       { id: 'brand-identity', label: 'Brand Identity', route: 'brand', phaseId: 'brand' },
-      { id: 'creative-synthesis', label: 'Creative Brief', route: 'creative', isOutput: true },
+      { id: 'creative-overview', label: 'Creative Overview', route: 'creative', isOutput: true },
     ],
   },
   {
