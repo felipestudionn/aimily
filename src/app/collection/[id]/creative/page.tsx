@@ -1186,15 +1186,14 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
         </DecisionCard>
 
         <DecisionCard title={t.creative.colorsLabel} className="flex-1">
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col gap-3">
             {colors.map((c, i) => {
               const hex = parseHex(c);
-              const role = c.includes('(') ? c.match(/\(([^)]+)\)/)?.[1] || '' : '';
               return (
-                <div key={i} className="group relative flex flex-col items-center gap-2">
-                  <label className="relative cursor-pointer">
+                <div key={i} className="group flex items-center gap-3">
+                  <label className="relative cursor-pointer shrink-0">
                     <div
-                      className="w-12 h-12 rounded-full border-2 border-white shadow-[0_1px_6px_rgba(0,0,0,0.1)] transition-transform hover:scale-110"
+                      className="w-8 h-8 rounded-full border-2 border-white shadow-[0_1px_4px_rgba(0,0,0,0.1)] transition-transform hover:scale-110"
                       style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }}
                     />
                     <input
@@ -1203,28 +1202,28 @@ function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; 
                       onChange={(e) => updateColor(i, e.target.value)}
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     />
-                    <button
-                      onClick={(e) => { e.preventDefault(); removeColor(i); }}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-carbon/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
                   </label>
                   <input
                     type="text"
                     value={c}
                     onChange={(e) => updateColor(i, e.target.value)}
-                    className="w-full max-w-[100px] px-0 py-0 text-[10px] text-center text-carbon/50 bg-transparent border-none focus:outline-none focus:text-carbon truncate"
+                    className="flex-1 min-w-0 px-0 py-0 text-[12px] text-carbon/60 bg-transparent border-none focus:outline-none focus:text-carbon"
                   />
+                  <button
+                    onClick={() => removeColor(i)}
+                    className="w-5 h-5 rounded-full shrink-0 text-carbon/15 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
               );
             })}
-            <div className="flex flex-col items-center gap-2">
-              <button onClick={addColor} className="w-12 h-12 rounded-full border-2 border-dashed border-carbon/[0.12] flex items-center justify-center text-carbon/25 hover:text-carbon/50 hover:border-carbon/25 transition-all">
-                <Plus className="h-4 w-4" />
-              </button>
-              <span className="text-[10px] text-carbon/20">Add</span>
-            </div>
+            <button onClick={addColor} className="flex items-center gap-3 text-carbon/25 hover:text-carbon/50 transition-colors">
+              <div className="w-8 h-8 rounded-full border-2 border-dashed border-carbon/[0.12] flex items-center justify-center shrink-0">
+                <Plus className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-[12px]">Add color</span>
+            </button>
           </div>
         </DecisionCard>
 
