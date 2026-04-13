@@ -2895,13 +2895,13 @@ export default function CreativeBrandPage() {
   return (
     <div className="min-h-[80vh]">
       <div className={`${blockParam ? 'px-6 md:px-16 lg:px-24 pt-12 md:pt-16' : 'px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12'}`}>
-        {/* Header — clean when coming from sidebar, legacy when direct */}
+        {/* Header — centered when coming from sidebar, legacy when direct */}
         {blockParam ? (
-          <div className="mb-10">
-            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
+          <div className="text-center mb-12">
+            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
               {collectionContext.collectionName || 'Collection'}
             </p>
-            <h1 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+            <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
               {blockNameMap[blockParam] || 'Consumer Definition'}
             </h1>
           </div>
@@ -2958,10 +2958,10 @@ export default function CreativeBrandPage() {
               const state = getBlockState(block.id);
               const hideModePillsClean = block.id === 'moodboard';
               return (
-                <div className="max-w-[900px]">
-                  {/* Mode selector */}
+                <div className="max-w-[700px] mx-auto">
+                  {/* Mode selector — centered */}
                   {!hideModePillsClean && (
-                    <div className="mb-10">
+                    <div className="mb-10 flex justify-center">
                       <SegmentedPill
                         options={INPUT_MODES.map((m) => ({
                           id: m.id,
@@ -2987,11 +2987,15 @@ export default function CreativeBrandPage() {
                     vibeText={vibeText}
                   />
 
-                  {/* Confirm */}
-                  <div className="mt-16 flex justify-end pt-8 border-t border-carbon/[0.06]">
+                  {/* Confirm — centered */}
+                  <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
                     <button
                       onClick={() => handleConfirm(block.id)}
-                      className="inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white hover:bg-carbon/90 transition-all"
+                      className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                        state.confirmed
+                          ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
+                          : 'bg-carbon text-white hover:bg-carbon/90'
+                      }`}
                     >
                       <Check className="h-3.5 w-3.5" />
                       {state.confirmed ? 'Confirmed' : t.creative.confirmContinue}
