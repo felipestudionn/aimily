@@ -16,32 +16,45 @@ import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
 import type { TimelinePhase } from '@/types/timeline';
 
 /* ══════════════════════════════════════════════════════════════
-   Sidebar data model
+   Sidebar data model — maps to REAL page content
 
-   Each block has sub-items that represent the REAL content.
-   Sub-items with unique routes are navigable pills.
-   Sub-items sharing a route are shown as content hints.
-
-   phaseId links to wizard-phases.ts for status tracking.
-   All existing routes and connections are preserved.
+   Every subItem.route matches an existing Next.js route.
+   subItem.hint describes what the user will find on that page.
+   phaseId links to wizard-phases.ts for milestone tracking.
    ══════════════════════════════════════════════════════════════ */
 
 interface SidebarSubItem {
   id: string;
   label: string;
-  route: string;           // route segment after /collection/[id]/
-  phaseId?: WizardPhaseId; // for status from milestone system
-  hint?: string;           // content summary below the item
+  route: string;
+  phaseId?: WizardPhaseId;
+  hint?: string;
 }
 
 interface SidebarBlock {
   id: TimelinePhase;
   number: string;
   label: string;
-  route: string;              // main block route
-  phaseIds: WizardPhaseId[];  // for block-level progress calc
+  route: string;
+  phaseIds: WizardPhaseId[];
   subItems: SidebarSubItem[];
 }
+
+/*
+  Route reality:
+  /creative         → 3-step flow: Vision (consumer, vibe, moodboard, brand-dna),
+                      Research (trends, competitors), Synthesis
+  /brand            → Brand workspace: Profile (naming, story, voice, audience),
+                      Visual Identity (colors, typography), Packaging
+  /merchandising    → 4 cards: Families, Pricing, Channels, Budget
+  /product          → Collection Builder (SKU grid + range plan hub)
+  /design           → Sketch & Color workspace
+  /prototyping      → Prototyping workspace
+  /sampling         → Selection & Catalog workspace
+  /production       → Production & Logistics workspace
+  /marketing/creation     → 4 cards: Sales Dashboard, Content Studio, Comms, POS
+  /marketing/distribution → 4 cards: GTM plan, Content Calendar, Paid Growth, Launch
+*/
 
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
@@ -51,8 +64,8 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
-      { id: 'creative-vision', label: 'Creative Vision', route: 'creative', phaseId: 'product', hint: 'Consumer · Vibe · Moodboard · Trends' },
-      { id: 'brand-identity', label: 'Brand Identity', route: 'brand', phaseId: 'brand', hint: 'DNA · Voice · Color Story' },
+      { id: 'creative', label: 'Creative Direction', route: 'creative', phaseId: 'product', hint: 'Consumer · Vibe · Moodboard · Trends' },
+      { id: 'brand', label: 'Brand Identity', route: 'brand', phaseId: 'brand', hint: 'Profile · Visual · Packaging' },
     ],
   },
   {
@@ -86,8 +99,8 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
-      { id: 'marketing-creation', label: 'Content & Strategy', route: 'marketing/creation', phaseId: 'marketing-creation', hint: 'Sales · Studio · Comms · POS' },
-      { id: 'marketing-distribution', label: 'Distribution & Launch', route: 'marketing/distribution', phaseId: 'marketing-distribution', hint: 'GTM · Calendar · Paid · Launch' },
+      { id: 'mkt-creation', label: 'Content & Strategy', route: 'marketing/creation', phaseId: 'marketing-creation', hint: 'Sales · Studio · Comms · POS' },
+      { id: 'mkt-distribution', label: 'Distribution & Launch', route: 'marketing/distribution', phaseId: 'marketing-distribution', hint: 'GTM · Calendar · Paid · Launch' },
     ],
   },
 ];
@@ -130,7 +143,6 @@ export function WizardSidebar({
   const basePath = `/collection/${collectionId}`;
   const phaseMap = new Map(phases.map((ps) => [ps.phase.id, ps]));
 
-  // Time remaining
   const daysUntilLaunch = launchDate
     ? Math.ceil((new Date(launchDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
@@ -152,15 +164,15 @@ export function WizardSidebar({
   }
 
   function isBlockActive(block: SidebarBlock): boolean {
-    // Check main block route
     if (pathname?.startsWith(`${basePath}/${block.route}`)) return true;
-    // Check all sub-item routes
-    return block.subItems.some(sub => pathname?.startsWith(`${basePath}/${sub.route}`));
+    return block.subItems.some(sub => {
+      const subPath = `${basePath}/${sub.route}`;
+      return pathname === subPath || pathname?.startsWith(`${subPath}/`);
+    });
   }
 
   function isSubItemActive(sub: SidebarSubItem): boolean {
     const subPath = `${basePath}/${sub.route}`;
-    // Exact match or starts-with for nested routes
     return pathname === subPath || pathname?.startsWith(`${subPath}/`) || false;
   }
 
@@ -201,7 +213,6 @@ export function WizardSidebar({
 
   return (
     <>
-      {/* ── Mobile backdrop ── */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onMobileClose} />
       )}
@@ -214,7 +225,6 @@ export function WizardSidebar({
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
-        {/* ── The floating white card ── */}
         <div className="surface-card h-full flex flex-col overflow-hidden">
 
           {/* ── Mobile close ── */}
@@ -227,7 +237,7 @@ export function WizardSidebar({
           </button>
 
           {/* ── Collection info ── */}
-          <div className={`shrink-0 ${collapsed ? 'px-0 pt-5 pb-4' : 'px-5 pt-5 pb-4'}`}>
+          <div className={`shrink-0 ${collapsed ? 'px-0 pt-5 pb-4' : 'px-5 pt-6 pb-5'}`}>
             {collapsed ? (
               <Link href={basePath} className="flex items-center justify-center">
                 <span className="type-label text-carbon/30">
@@ -237,16 +247,16 @@ export function WizardSidebar({
             ) : (
               <>
                 <Link href={basePath} className="block group">
-                  <h2 className="type-nav text-carbon truncate group-hover:text-carbon/70 transition-colors">
+                  <h2 className="font-display text-[18px] text-carbon truncate group-hover:text-carbon/70 transition-colors leading-tight">
                     {displayName}
                   </h2>
                 </Link>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1.5">
                   {season && (
                     <span className="type-caption text-carbon/25">{season}</span>
                   )}
                   {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
-                    <span className="type-caption text-carbon/25">
+                    <span className="type-caption text-carbon/20">
                       {weeksLeft > 0 && <>{weeksLeft}w </>}{daysLeft}d
                     </span>
                   )}
@@ -255,12 +265,9 @@ export function WizardSidebar({
             )}
           </div>
 
-          {/* ── Separator ── */}
-          <div className={`shrink-0 ${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06]`} />
-
           {/* ── Block Navigation ── */}
-          <nav className="flex-1 overflow-y-auto py-3 scrollbar-subtle">
-            {SIDEBAR_BLOCKS.map((block) => {
+          <nav className="flex-1 overflow-y-auto scrollbar-subtle">
+            {SIDEBAR_BLOCKS.map((block, blockIdx) => {
               const blockActive = isBlockActive(block);
               const blockProgress = getBlockProgress(block);
               const blockPhases = block.phaseIds.map((id) => phaseMap.get(id)).filter(Boolean) as WizardPhaseStatus[];
@@ -269,7 +276,12 @@ export function WizardSidebar({
               const blockHref = `${basePath}/${block.route}`;
 
               return (
-                <div key={block.id} className={`${blockActive ? 'mb-2' : 'mb-1'}`}>
+                <div key={block.id}>
+                  {/* ── Block separator (between blocks, not before first) ── */}
+                  {blockIdx > 0 && (
+                    <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.05] my-2`} />
+                  )}
+
                   {collapsed ? (
                     /* ── Collapsed: number only ── */
                     <Link
@@ -282,7 +294,7 @@ export function WizardSidebar({
                       }`}
                       title={block.label}
                     >
-                      <span className={`text-[11px] font-semibold tabular-nums transition-colors ${
+                      <span className={`text-[12px] font-bold tabular-nums transition-colors ${
                         allCompleted ? 'text-carbon/25'
                         : blockActive ? 'text-carbon'
                         : 'text-carbon/30'
@@ -299,12 +311,12 @@ export function WizardSidebar({
                   ) : (
                     /* ── Expanded: block header + sub-items ── */
                     <>
-                      {/* Block header — number + label */}
-                      <div className={`flex items-center gap-3 mx-2 px-3 py-2 ${
+                      {/* ── Block header: SECTION level ── */}
+                      <div className={`flex items-center gap-2.5 px-5 pt-3 pb-1.5 ${
                         allLocked ? 'opacity-25' : ''
                       }`}>
-                        <span className={`text-[11px] font-semibold tabular-nums w-5 shrink-0 ${
-                          blockActive ? 'text-carbon/50' : 'text-carbon/20'
+                        <span className={`text-[11px] font-bold tabular-nums shrink-0 ${
+                          blockActive ? 'text-carbon/40' : 'text-carbon/15'
                         }`}>
                           {block.number}
                         </span>
@@ -312,26 +324,26 @@ export function WizardSidebar({
                         <Link
                           href={allLocked ? '#' : blockHref}
                           onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                          className={`type-nav flex-1 truncate transition-colors ${
-                            allCompleted ? 'text-carbon/40'
-                            : blockActive ? 'text-carbon'
-                            : 'text-carbon/50 hover:text-carbon/70'
+                          className={`type-section flex-1 truncate transition-colors ${
+                            allLocked ? '!text-carbon/15'
+                            : blockActive ? '!text-carbon/50'
+                            : '!text-carbon/25 hover:!text-carbon/40'
                           }`}
                         >
                           {block.label}
                         </Link>
 
                         {allCompleted ? (
-                          <Check className="h-3.5 w-3.5 text-carbon/20 shrink-0" strokeWidth={2} />
+                          <Check className="h-3 w-3 text-carbon/20 shrink-0" strokeWidth={2} />
                         ) : blockProgress > 0 ? (
-                          <span className="text-[12px] font-normal tabular-nums text-carbon/15 shrink-0">
+                          <span className="text-[11px] font-normal tabular-nums text-carbon/15 shrink-0">
                             {blockProgress}
                           </span>
                         ) : null}
                       </div>
 
-                      {/* ── Sub-items: always visible ── */}
-                      <div className="flex flex-col gap-0.5 ml-[32px] mr-2 mt-0.5 mb-2">
+                      {/* ── Sub-items ── */}
+                      <div className="flex flex-col gap-0.5 mx-2 mb-1">
                         {block.subItems.map((sub) => {
                           const state = getSubItemState(sub);
                           const subHref = `${basePath}/${sub.route}`;
@@ -342,18 +354,18 @@ export function WizardSidebar({
                               key={sub.id}
                               href={isLocked ? '#' : subHref}
                               onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                              className={`group flex flex-col px-3 py-1.5 rounded-[8px] transition-all ${
+                              className={`group flex flex-col px-3 py-2 rounded-[8px] transition-all ${
                                 state === 'active'
                                   ? 'bg-carbon text-white'
                                   : state === 'completed'
-                                  ? 'text-carbon/35 hover:bg-carbon/[0.03] hover:text-carbon/50'
+                                  ? 'text-carbon/40 hover:bg-carbon/[0.03] hover:text-carbon/55'
                                   : state === 'locked'
                                   ? 'text-carbon/20 cursor-not-allowed'
-                                  : 'text-carbon/50 hover:bg-carbon/[0.03] hover:text-carbon/70'
+                                  : 'text-carbon/60 hover:bg-carbon/[0.03] hover:text-carbon/75'
                               }`}
                             >
                               <div className="flex items-center gap-2">
-                                <span className={`type-label truncate flex-1 ${
+                                <span className={`text-[13px] font-medium truncate flex-1 leading-snug ${
                                   state === 'active' ? 'text-white' : ''
                                 }`}>
                                   {sub.label}
@@ -362,10 +374,9 @@ export function WizardSidebar({
                                   <Check className="h-3 w-3 shrink-0 text-carbon/20" strokeWidth={2} />
                                 )}
                               </div>
-                              {/* Content hint */}
                               {sub.hint && (
                                 <span className={`text-[11px] font-normal leading-tight mt-0.5 truncate ${
-                                  state === 'active' ? 'text-white/50' : 'text-carbon/20'
+                                  state === 'active' ? 'text-white/40' : 'text-carbon/20'
                                 }`}>
                                   {sub.hint}
                                 </span>
@@ -381,48 +392,48 @@ export function WizardSidebar({
             })}
           </nav>
 
-          {/* ── Separator ── */}
-          <div className={`shrink-0 ${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06]`} />
+          {/* ── Bottom: utilities ── */}
+          <div className="shrink-0">
+            <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06]`} />
+            <div className="py-3">
+              {utilityLinks.map((item) => {
+                const fullPath = `${basePath}${item.path}`;
+                const isActive = item.path === ''
+                  ? pathname === basePath || pathname === `${basePath}/`
+                  : pathname?.startsWith(fullPath);
 
-          {/* ── Utility links ── */}
-          <div className="shrink-0 py-3">
-            {utilityLinks.map((item) => {
-              const fullPath = `${basePath}${item.path}`;
-              const isActive = item.path === ''
-                ? pathname === basePath || pathname === `${basePath}/`
-                : pathname?.startsWith(fullPath);
+                return (
+                  <Link
+                    key={item.id}
+                    href={fullPath}
+                    className={`flex items-center ${
+                      collapsed ? 'justify-center h-10 mx-2 rounded-[10px]' : 'gap-3 mx-2 px-3 py-2 rounded-[10px]'
+                    } transition-all ${
+                      isActive
+                        ? 'bg-carbon/[0.04] text-carbon'
+                        : 'text-carbon/35 hover:text-carbon/60 hover:bg-carbon/[0.03]'
+                    }`}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <item.Icon className={`${collapsed ? 'h-4 w-4' : 'h-[15px] w-[15px]'} shrink-0`} />
+                    {!collapsed && (
+                      <span className="type-caption font-medium">{item.label}</span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
 
-              return (
-                <Link
-                  key={item.id}
-                  href={fullPath}
-                  className={`flex items-center ${
-                    collapsed ? 'justify-center h-10 mx-2 rounded-[10px]' : 'gap-3 mx-2 px-3 py-2 rounded-[10px]'
-                  } transition-all ${
-                    isActive
-                      ? 'bg-carbon/[0.04] text-carbon'
-                      : 'text-carbon/35 hover:text-carbon/60 hover:bg-carbon/[0.03]'
-                  }`}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <item.Icon className={`${collapsed ? 'h-4 w-4' : 'h-[15px] w-[15px]'} shrink-0`} />
-                  {!collapsed && (
-                    <span className="type-caption font-medium">{item.label}</span>
-                  )}
-                </Link>
-              );
-            })}
+            {/* Pin toggle */}
+            {!collapsed && (
+              <button
+                onClick={handleTogglePin}
+                className="w-full shrink-0 py-3 type-section text-carbon/15 hover:text-carbon/35 transition-colors border-t border-carbon/[0.06] text-center"
+              >
+                {pinned ? 'Unpin' : 'Pin'}
+              </button>
+            )}
           </div>
-
-          {/* ── Pin toggle (expanded only) ── */}
-          {!collapsed && (
-            <button
-              onClick={handleTogglePin}
-              className="shrink-0 py-3 type-section text-carbon/15 hover:text-carbon/35 transition-colors border-t border-carbon/[0.06] text-center"
-            >
-              {pinned ? 'Unpin' : 'Pin'}
-            </button>
-          )}
         </div>
       </aside>
     </>
