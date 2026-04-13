@@ -571,7 +571,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
     <>
       {/* ═══ FREE MODE — left stack (3 small cards) + right tall card ═══ */}
       {mode === 'free' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc(100vh-320px)]">
           {/* Left column: 3 stacked cards sharing the height */}
           <div className="flex flex-col gap-5">
             <DecisionCard title={t.creative.collectionTarget}>
@@ -609,13 +609,13 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
             </DecisionCard>
           </div>
 
-          {/* Right: Consumer Profile — tall card spanning 2 columns */}
-          <DecisionCard title={t.creative.targetConsumerProfile} span={2} className="h-full">
+          {/* Right: Consumer Profile — fills available height */}
+          <DecisionCard title={t.creative.targetConsumerProfile} span={2} className="flex flex-col">
             <textarea
               value={(data.profile as string) || ''}
               onChange={(e) => onChange({ ...data, profile: e.target.value })}
               placeholder={t.creative.targetConsumerPlaceholder}
-              className="w-full h-full min-h-[280px] px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+              className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
             />
           </DecisionCard>
         </div>
@@ -623,21 +623,21 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
 
       {/* ═══ ASSISTED MODE — left stack + right tall card ═══ */}
       {mode === 'assisted' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc(100vh-320px)]">
           {/* Left column: Gender + Direction Keywords stacked */}
           <div className="flex flex-col gap-5">
             <DecisionCard title={t.creative.collectionTarget}>
               <GenderSelector />
             </DecisionCard>
 
-            <DecisionCard title={t.creative.directionKeywords} className="flex-1">
+            <DecisionCard title={t.creative.directionKeywords} className="flex-1 flex flex-col">
               <textarea
                 value={(data.keywords as string) || ''}
                 onChange={(e) => onChange({ ...data, keywords: e.target.value })}
                 placeholder="Give direction — e.g. 'urban millennials, sustainability-conscious, mid-range luxury, European market'..."
-                className="w-full h-full min-h-[120px] px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+                className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
               />
-              <div className="mt-4 flex items-center gap-3">
+              <div className="mt-4 flex items-center gap-3 shrink-0">
                 <button
                   onClick={async () => {
                     setGenerating(true);
@@ -662,22 +662,22 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
             </DecisionCard>
           </div>
 
-          {/* Right: AI Generated Profile — tall card spanning 2 columns */}
+          {/* Right: AI Generated Profile — fills available height */}
           {(data.profile as string) ? (
             <DecisionCard
               title={t.creative.aiGeneratedProfile}
               description={t.creative.editable}
               span={2}
-              className="h-full"
+              className="flex flex-col"
             >
               <textarea
                 value={(data.profile as string) || ''}
                 onChange={(e) => onChange({ ...data, profile: e.target.value })}
-                className="w-full h-full min-h-[280px] px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
+                className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
               />
             </DecisionCard>
           ) : (
-            <DecisionCard span={2} className="h-full flex items-center justify-center">
+            <DecisionCard span={2} className="flex items-center justify-center">
               <div className="text-center py-12">
                 <Sparkles className="h-8 w-8 text-carbon/[0.08] mx-auto mb-4" />
                 <p className="text-[14px] text-carbon/30 tracking-[-0.02em]">
@@ -694,7 +694,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
 
       {/* ═══ AI MODE — left (gender + reference) + right proposals ═══ */}
       {mode === 'ai' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc(100vh-320px)]">
           <div className="flex flex-col gap-5">
             <DecisionCard title={t.creative.collectionTarget}>
               <GenderSelector />
