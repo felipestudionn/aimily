@@ -249,7 +249,7 @@ export function WizardSidebar({
                   />
                 </Link>
                 <Link href={basePath} className="block group">
-                  <p className="text-[13px] font-medium text-carbon/80 group-hover:text-carbon transition-colors truncate">
+                  <p className="text-[13px] font-medium text-carbon transition-colors truncate">
                     {displayName}
                   </p>
                 </Link>
@@ -258,7 +258,7 @@ export function WizardSidebar({
           </div>
 
           {/* ── Separator ── */}
-          <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06] shrink-0`} />
+          <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.12] shrink-0`} />
 
           {/* ═══════════════════════════════════════════
                Block navigation — Hioline style
@@ -288,7 +288,7 @@ export function WizardSidebar({
                       title={block.label}
                     >
                       <span className={`text-[14px] font-bold ${
-                        blockActive ? 'text-carbon' : 'text-carbon/35'
+                        blockActive ? 'text-carbon' : 'text-carbon'
                       }`}>
                         {block.label.charAt(0)}
                       </span>
@@ -305,8 +305,7 @@ export function WizardSidebar({
                           onClick={(e) => { if (allLocked) e.preventDefault(); }}
                           className={`text-[15px] font-bold tracking-[-0.01em] flex-1 truncate transition-colors ${
                             allLocked ? 'text-carbon/30 cursor-not-allowed'
-                            : allCompleted ? 'text-carbon/45 hover:text-carbon/60'
-                            : 'text-carbon hover:text-carbon/70'
+                            : 'text-carbon'
                           }`}
                         >
                           {block.label}
@@ -318,7 +317,7 @@ export function WizardSidebar({
                             allLocked ? 'cursor-not-allowed' : 'hover:bg-carbon/[0.06]'
                           }`}
                         >
-                          <ChevronDown className={`h-4 w-4 text-carbon/30 transition-transform duration-200 ${
+                          <ChevronDown className={`h-4 w-4 text-carbon/60 transition-transform duration-200 ${
                             isExpanded ? 'rotate-180' : ''
                           }`} />
                         </button>
@@ -326,7 +325,7 @@ export function WizardSidebar({
 
                       {/* ── Sub-items with connector line ── */}
                       {isExpanded && (
-                        <div className="ml-1 pl-5 border-l border-carbon/[0.08] flex flex-col">
+                        <div className="ml-1 pl-5 border-l border-carbon/[0.15] flex flex-col">
                           {block.subItems.map((sub) => {
                             const state = getSubItemState(sub, block);
                             const subHref = `${basePath}/${sub.route}`;
@@ -338,13 +337,9 @@ export function WizardSidebar({
                                 href={isLocked ? '#' : subHref}
                                 onClick={(e) => { if (isLocked) e.preventDefault(); }}
                                 className={`flex items-center justify-between py-2 transition-colors ${
-                                  state === 'active'
-                                    ? 'text-carbon'
-                                    : state === 'locked'
-                                    ? 'text-carbon/20 cursor-not-allowed'
-                                    : state === 'completed'
-                                    ? 'text-carbon/35 hover:text-carbon/55'
-                                    : 'text-carbon/50 hover:text-carbon'
+                                  state === 'locked'
+                                    ? 'text-carbon/25 cursor-not-allowed'
+                                    : 'text-carbon'
                                 }`}
                               >
                                 <span className={`text-[14px] ${
@@ -354,7 +349,7 @@ export function WizardSidebar({
                                 </span>
 
                                 {state === 'completed' && (
-                                  <Check className="h-3.5 w-3.5 shrink-0 text-carbon/25" strokeWidth={2} />
+                                  <Check className="h-3.5 w-3.5 shrink-0 text-carbon" strokeWidth={2} />
                                 )}
                               </Link>
                             );
@@ -372,7 +367,7 @@ export function WizardSidebar({
                Utilities
                ═══════════════════════════════════════════ */}
           <div className="shrink-0 px-3 pb-4">
-            <div className="border-t border-carbon/[0.06] pt-3">
+            <div className="border-t border-carbon/[0.12] pt-3">
               {utilityLinks.map((item) => {
                 const fullPath = `${basePath}${item.path}`;
                 const isActive = item.path === ''
@@ -388,7 +383,7 @@ export function WizardSidebar({
                     } transition-all ${
                       isActive
                         ? 'bg-carbon/[0.06] text-carbon'
-                        : 'text-carbon/40 hover:text-carbon/70 hover:bg-carbon/[0.04]'
+                        : 'text-carbon hover:bg-carbon/[0.04]'
                     }`}
                     title={collapsed ? item.label : undefined}
                   >
