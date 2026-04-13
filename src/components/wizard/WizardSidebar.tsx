@@ -295,14 +295,15 @@ export function WizardSidebar({
                     </Link>
                   ) : (
                     <>
-                      {/* ── Block header: bold text + chevron ── */}
+                      {/* ── Block header: pill with subtle bg ── */}
                       <button
                         onClick={() => !allLocked && toggleBlock(block.id)}
-                        className={`w-full flex items-center justify-between mb-3 text-left ${
-                          allLocked ? 'opacity-25 cursor-not-allowed' : ''
+                        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-full mb-3 text-left transition-colors ${
+                          allLocked ? 'opacity-25 cursor-not-allowed'
+                          : 'bg-carbon/[0.04] hover:bg-carbon/[0.06]'
                         }`}
                       >
-                        <span className={`text-[16px] font-bold tracking-[-0.01em] ${
+                        <span className={`text-[15px] font-bold tracking-[-0.01em] ${
                           allLocked ? 'text-carbon/30'
                           : allCompleted ? 'text-carbon/45'
                           : 'text-carbon'
@@ -315,9 +316,9 @@ export function WizardSidebar({
                         }`} />
                       </button>
 
-                      {/* ── Sub-items ── */}
+                      {/* ── Sub-items with connector line ── */}
                       {isExpanded && (
-                        <div className="flex flex-col gap-1">
+                        <div className="ml-1 pl-5 border-l border-carbon/[0.08] flex flex-col">
                           {block.subItems.map((sub) => {
                             const state = getSubItemState(sub, block);
                             const subHref = `${basePath}/${sub.route}`;
@@ -328,7 +329,7 @@ export function WizardSidebar({
                                 key={sub.id}
                                 href={isLocked ? '#' : subHref}
                                 onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                                className={`flex items-center justify-between py-2 transition-colors ${
+                                className={`flex items-center justify-between py-2.5 transition-colors ${
                                   state === 'active'
                                     ? 'text-carbon'
                                     : state === 'locked'
