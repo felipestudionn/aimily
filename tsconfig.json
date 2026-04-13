@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "node_modules",
-    "merch-mind-planner"
+    "merch-mind-planner",
+    "references"
   ]
 }

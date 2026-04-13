@@ -329,7 +329,7 @@ export function WizardSidebar({
               const blockPhases = block.phaseIds.map((id) => phaseMap.get(id)).filter(Boolean) as WizardPhaseStatus[];
               const allLocked = block.id === 'development' ? false : blockPhases.every((p) => p.state === 'locked');
               const allCompleted = blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
-              const blockHref = `${basePath}/${block.route}`;
+              const blockHref = `${basePath}?block=${block.id}`;
               const isExpanded = expandedBlocks.has(block.id);
 
               return (

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowRight, Check, ArrowLeft } from 'lucide-react';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
@@ -106,11 +106,20 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const { id } = useParams();
   const collectionId = id as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const milestones = timeline?.milestones || [];
   const [view, setView] = useState<ViewMode>('blocks');
   const [expandedBlock, setExpandedBlock] = useState<TimelinePhase | null>(null);
   const [animating, setAnimating] = useState(false);
   const t = useTranslation();
+
+  // Open block sub-dashboard when ?block= param is present
+  useEffect(() => {
+    const blockParam = searchParams?.get('block') as TimelinePhase | null;
+    if (blockParam && BLOCK_DEFS.find(b => b.phase === blockParam)) {
+      setExpandedBlock(blockParam);
+    }
+  }, [searchParams]);
 
   const wizardPhases = computeWizardState(milestones);
   const BLOCK_TO_PHASE_IDS: Record<TimelinePhase, string[]> = {
@@ -148,9 +157,11 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     setAnimating(true);
     setTimeout(() => {
       setExpandedBlock(null);
+      // Clear the ?block= param from URL
+      router.replace(`/collection/${collectionId}`, { scroll: false });
       setTimeout(() => setAnimating(false), 50);
     }, 300);
-  }, []);
+  }, [router, collectionId]);
 
   const activeBlock = expandedBlock ? BLOCK_DEFS.find(b => b.phase === expandedBlock) : null;
 
