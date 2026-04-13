@@ -6,15 +6,16 @@ import type { ReactNode, ComponentType } from 'react';
 /* ══════════════════════════════════════════════════════════════
    ViewPort — Animated view container
 
-   Manages mounting/unmounting of content with Daniel Cross
-   spring animations:
-   - Exit:  opacity 0, scale 0.96, translateY 8px
-   - Enter: opacity 1, scale 1,    translateY 0, staggered
-   - Timing: cubic-bezier(0.32, 0.72, 0, 1), 400-500ms
+   Manages mounting/unmounting of content with smooth spring
+   animations inspired by Daniel Cross / iPad-like transitions:
+   - Exit:  opacity 0, scale 0.98, translateY 6px (subtle, fast)
+   - Enter: opacity 1, scale 1,    translateY 0   (spring, slightly slower)
+   - Timing: cubic-bezier(0.32, 0.72, 0, 1)
    ══════════════════════════════════════════════════════════════ */
 
-const TRANSITION_DURATION = 400;  // ms
-const ENTER_DELAY = 60;           // ms delay before enter animation starts
+const EXIT_DURATION = 250;   // ms — fast, subtle exit
+const ENTER_DURATION = 450;  // ms — slightly slower, smooth spring enter
+const SWAP_DELAY = 30;       // ms — tiny gap between exit and enter for DOM swap
 
 interface ViewPortProps {
   /** Children = Next.js page content (dashboard / deep-linked workspace) */
@@ -25,8 +26,6 @@ interface ViewPortProps {
   WorkspaceComponent: ComponentType<WorkspaceComponentProps> | null;
   /** Props to pass to the workspace component */
   workspaceProps: WorkspaceComponentProps;
-  /** Callback when exit animation completes (before enter) */
-  onExitComplete?: () => void;
 }
 
 export interface WorkspaceComponentProps {
@@ -36,17 +35,19 @@ export interface WorkspaceComponentProps {
   blockParam?: string;
 }
 
-/** Loading skeleton shown while workspace component loads */
+/** Loading skeleton — matches card grid layout for seamless feel */
 function WorkspaceLoadingSkeleton() {
   return (
-    <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-16 animate-pulse">
+    <div className="px-6 md:px-12 lg:px-16 pt-12 md:pt-16 pb-16 animate-pulse">
       <div className="text-center mb-12">
-        <div className="h-4 w-32 bg-carbon/[0.06] rounded mx-auto mb-4" />
-        <div className="h-10 w-64 bg-carbon/[0.06] rounded mx-auto" />
+        <div className="h-4 w-32 bg-carbon/[0.06] rounded-full mx-auto mb-4" />
+        <div className="h-10 w-64 bg-carbon/[0.06] rounded-full mx-auto" />
       </div>
-      <div className="max-w-[900px] mx-auto space-y-6">
-        <div className="h-48 bg-carbon/[0.04] rounded-[20px]" />
-        <div className="h-32 bg-carbon/[0.04] rounded-[20px]" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="h-40 bg-white rounded-[20px]" />
+        <div className="h-40 bg-white rounded-[20px]" />
+        <div className="h-40 bg-white rounded-[20px]" />
+        <div className="h-56 bg-white rounded-[20px] col-span-3" />
       </div>
     </div>
   );
@@ -84,37 +85,56 @@ export function ViewPort({
 
     cleanup();
 
-    // Phase 1: Exit current content
+    // Phase 1: Exit current content (fast, subtle)
     setPhase('exiting');
 
-    // Phase 2: After exit animation, swap content and enter
+    // Phase 2: Swap content and start enter animation
     timeoutRef.current = setTimeout(() => {
       setDisplayedContent(showPage ? 'page' : 'workspace');
-      setPhase('entering');
 
-      // Phase 3: After enter animation, go idle
-      timeoutRef.current = setTimeout(() => {
-        setPhase('idle');
-      }, TRANSITION_DURATION + ENTER_DELAY);
-    }, TRANSITION_DURATION);
+      // Small RAF to ensure DOM has swapped before entering
+      requestAnimationFrame(() => {
+        setPhase('entering');
+
+        // Phase 3: After enter completes, go idle
+        timeoutRef.current = setTimeout(() => {
+          setPhase('idle');
+        }, ENTER_DURATION);
+      });
+    }, EXIT_DURATION + SWAP_DELAY);
   }, [showPage, cleanup]);
 
-  const animationClass = (() => {
+  // Dynamic styles based on phase
+  const style: React.CSSProperties = (() => {
     switch (phase) {
       case 'exiting':
-        return 'opacity-0 scale-[0.96] translate-y-2';
+        return {
+          opacity: 0,
+          transform: 'scale(0.985) translateY(4px)',
+          transition: `all ${EXIT_DURATION}ms cubic-bezier(0.32, 0.72, 0, 1)`,
+        };
       case 'entering':
-        return 'opacity-0 scale-[0.96] translate-y-2 animate-viewport-enter';
+        return {
+          opacity: 1,
+          transform: 'scale(1) translateY(0)',
+          transition: `all ${ENTER_DURATION}ms cubic-bezier(0.32, 0.72, 0, 1)`,
+        };
       case 'idle':
       default:
-        return 'opacity-100 scale-100 translate-y-0';
+        return {
+          opacity: 1,
+          transform: 'scale(1) translateY(0)',
+        };
     }
   })();
 
+  // When entering, start from the exit position
+  const enterInitialStyle: React.CSSProperties = phase === 'entering' ? {} : {};
+
   return (
     <div
-      className={`transition-all ease-[cubic-bezier(0.32,0.72,0,1)] ${animationClass}`}
-      style={{ transitionDuration: `${TRANSITION_DURATION}ms` }}
+      className="will-change-[transform,opacity]"
+      style={style}
     >
       {displayedContent === 'page' ? (
         children
