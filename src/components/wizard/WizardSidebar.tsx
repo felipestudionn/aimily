@@ -295,26 +295,34 @@ export function WizardSidebar({
                     </Link>
                   ) : (
                     <>
-                      {/* ── Block header: pill with subtle bg ── */}
-                      <button
-                        onClick={() => !allLocked && toggleBlock(block.id)}
-                        className={`w-full flex items-center justify-between px-4 py-2.5 rounded-full mb-3 text-left transition-colors ${
-                          allLocked ? 'opacity-25 cursor-not-allowed'
-                          : 'bg-carbon/[0.04] hover:bg-carbon/[0.06]'
-                        }`}
-                      >
-                        <span className={`text-[15px] font-bold tracking-[-0.01em] ${
-                          allLocked ? 'text-carbon/30'
-                          : allCompleted ? 'text-carbon/45'
-                          : 'text-carbon'
-                        }`}>
+                      {/* ── Block header: label navigates, chevron toggles ── */}
+                      <div className={`flex items-center justify-between px-4 py-2.5 rounded-full mb-3 transition-colors ${
+                        allLocked ? 'opacity-25'
+                        : 'bg-carbon/[0.04]'
+                      }`}>
+                        <Link
+                          href={allLocked ? '#' : blockHref}
+                          onClick={(e) => { if (allLocked) e.preventDefault(); }}
+                          className={`text-[15px] font-bold tracking-[-0.01em] flex-1 truncate transition-colors ${
+                            allLocked ? 'text-carbon/30 cursor-not-allowed'
+                            : allCompleted ? 'text-carbon/45 hover:text-carbon/60'
+                            : 'text-carbon hover:text-carbon/70'
+                          }`}
+                        >
                           {block.label}
-                        </span>
+                        </Link>
 
-                        <ChevronDown className={`h-4 w-4 text-carbon/30 shrink-0 transition-transform duration-200 ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`} />
-                      </button>
+                        <button
+                          onClick={() => !allLocked && toggleBlock(block.id)}
+                          className={`ml-2 p-1 rounded-full transition-colors shrink-0 ${
+                            allLocked ? 'cursor-not-allowed' : 'hover:bg-carbon/[0.06]'
+                          }`}
+                        >
+                          <ChevronDown className={`h-4 w-4 text-carbon/30 transition-transform duration-200 ${
+                            isExpanded ? 'rotate-180' : ''
+                          }`} />
+                        </button>
+                      </div>
 
                       {/* ── Sub-items with connector line ── */}
                       {isExpanded && (
