@@ -103,37 +103,46 @@ function BlockCard({
     return `/collection/${collectionId}/${block.route}`;
   };
 
+  const blockIndex = BLOCK_DEFS.indexOf(block) + 1;
+
   return (
     <Link
       href={getCtaRoute()}
-      className="group relative bg-white rounded-[16px] p-6 md:p-8 flex flex-col min-h-[280px] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
+      className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[420px] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
     >
-      {/* Progress */}
-      <span className="text-[12px] font-medium text-carbon/35 tabular-nums mb-4">
-        {progress}%
+      {/* Block number — large, ghost */}
+      <span className="text-[64px] font-bold text-carbon/[0.06] leading-none tracking-[-0.04em] mb-6">
+        0{blockIndex}.
       </span>
 
       {/* Title */}
-      <h3 className="text-[20px] md:text-[22px] font-medium text-carbon tracking-[-0.03em] leading-[1.2] mb-3">
+      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
         {block.title}<br />
-        <span className="italic">{block.titleItalic}</span>
+        <span className="italic font-medium">{block.titleItalic}</span>
       </h3>
 
       {/* Description */}
-      <p className="text-[13px] text-carbon/45 leading-relaxed tracking-[-0.02em] mb-auto">
+      <p className="text-[14px] text-carbon/50 leading-[1.6] tracking-[-0.02em]">
         {block.description}
       </p>
 
-      {/* CTA */}
-      <div className="mt-6 flex justify-center">
-        <div className={`inline-flex items-center justify-center gap-2 py-2 px-6 rounded-full text-[12px] font-semibold tracking-[-0.01em] transition-all ${
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Progress + CTA */}
+      <div className="flex items-center justify-between mt-8">
+        <span className="text-[13px] font-medium text-carbon/30 tabular-nums">
+          {progress > 0 ? `${progress}%` : ''}
+        </span>
+
+        <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
           isComplete
             ? 'bg-carbon/[0.06] text-carbon/50'
             : 'bg-carbon text-white group-hover:bg-carbon/90'
         }`}>
           {getCtaLabel()}
-          {!isComplete && <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />}
-          {isComplete && <Check className="h-3 w-3" />}
+          {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
+          {isComplete && <Check className="h-3.5 w-3.5" />}
         </div>
       </div>
     </Link>
