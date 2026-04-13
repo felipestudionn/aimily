@@ -27,19 +27,23 @@ interface SubBlockDef {
 
 /* Render description with {highlighted} words as inline pills */
 function RichDescription({ text }: { text: string }) {
-  const parts = text.split(/(\{[^}]+\})/);
+  // Remove commas that touch pill boundaries (before/after {})
+  const cleaned = text.replace(/,\s*\{/g, ' {').replace(/\}\s*,/g, '} ').replace(/\}\s*,\s*and/g, '} and');
+  const parts = cleaned.split(/(\{[^}]+\})/);
   return (
-    <p className="text-[13px] text-carbon/50 leading-[1.8] tracking-[-0.02em]">
+    <p className="text-[13px] text-carbon/50 leading-[2.4] tracking-[-0.02em]">
       {parts.map((part, i) => {
         if (part.startsWith('{') && part.endsWith('}')) {
           const word = part.slice(1, -1);
           return (
-            <span key={i} className="inline-flex px-2 py-0.5 mx-0.5 rounded-full border border-carbon/[0.10] text-[12px] font-medium text-carbon/60 align-baseline">
+            <span key={i} className="inline-flex px-2.5 py-1 mr-1 rounded-full border border-carbon/[0.10] text-[11px] font-medium text-carbon/60" style={{ marginLeft: i === 0 ? 0 : undefined }}>
               {word}
             </span>
           );
         }
-        return <span key={i}>{part}</span>;
+        // Trim leading/trailing spaces for cleaner alignment
+        const trimmed = part.replace(/^\s+/, ' ').replace(/\s+$/, ' ');
+        return <span key={i}>{trimmed}</span>;
       })}
     </p>
   );
