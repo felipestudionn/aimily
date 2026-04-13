@@ -23,7 +23,7 @@ module.exports = {
       colors: {
         /* ─── Aimily palette — Skylar Rowe tones ─── */
         crema: "#F5F1E8",           /* legacy — keep for existing pages */
-        shade: "#EDE8E1",           /* workspace bg — warm off-white (Skylar Rowe) */
+        shade: "#F0EEEA",           /* workspace bg — cool light grey (lighter than sidebar cream) */
         cream: "#F0EDE8",           /* legacy */
         light: "#F5F2F0",           /* card surfaces */
         carbon: "#282A29",

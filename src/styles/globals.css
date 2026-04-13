@@ -204,11 +204,11 @@
     color: rgba(40, 42, 41, 0.50);
   }
 
-  /* ── Floating card surface — white sidebar on warm bg (Skylar Rowe) ── */
+  /* ── Floating card surface — warm cream sidebar (Skylar Rowe) ── */
   .surface-card {
-    background: #FFFFFF;
+    background: #F5F1E8;
     border-radius: 16px;
-    box-shadow: 0 1px 12px rgba(0, 0, 0, 0.04);
+    box-shadow: none;
   }
   .surface-card-hover:hover {
     box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07);
