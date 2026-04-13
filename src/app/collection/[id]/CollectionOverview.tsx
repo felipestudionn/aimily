@@ -112,6 +112,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const [view, setView] = useState<ViewMode>('blocks');
   const [expandedBlock, setExpandedBlock] = useState<TimelinePhase | null>(null);
   const [animating, setAnimating] = useState(false);
+  const [exitingSubIdx, setExitingSubIdx] = useState<number | null>(null);
   const t = useTranslation();
 
   // Open block sub-dashboard when ?block= param is present
@@ -153,6 +154,13 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
       setTimeout(() => setAnimating(false), 50);
     }, 300);
   }, []);
+
+  const handleSubCardClick = useCallback((idx: number, route: string) => {
+    setExitingSubIdx(idx);
+    setTimeout(() => {
+      router.push(`/collection/${collectionId}/${route}`);
+    }, 500);
+  }, [router, collectionId]);
 
   const handleBack = useCallback(() => {
     setAnimating(true);
@@ -305,11 +313,17 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                   const isSubStarted = subProgress > 0;
 
                   return (
-                    <Link
+                    <button
                       key={sub.id}
-                      href={`/collection/${collectionId}/${sub.route}`}
-                      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] animate-fade-in-up"
-                      style={{ animationDelay: `${idx * 100}ms` }}
+                      onClick={() => handleSubCardClick(idx, sub.route)}
+                      className={`group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] text-left transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                        exitingSubIdx === null
+                          ? 'animate-fade-in-up hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
+                          : exitingSubIdx === idx
+                          ? 'scale-[1.04] shadow-[0_16px_48px_rgba(0,0,0,0.10)] z-10'
+                          : 'opacity-0 scale-[0.95]'
+                      }`}
+                      style={{ animationDelay: exitingSubIdx === null ? `${idx * 100}ms` : '0ms' }}
                     >
                       <div className="mb-10">
                         <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
@@ -356,7 +370,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                           />
                         </div>
                       )}
-                    </Link>
+                    </button>
                   );
                 })}
               </div>
