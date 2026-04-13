@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, ArrowLeft } from 'lucide-react';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 import { computeWizardState } from '@/lib/wizard-phases';
@@ -15,45 +15,77 @@ import { SegmentedPill } from '@/components/ui/segmented-pill';
 type ViewMode = 'blocks' | 'calendar' | 'presentation';
 
 /* ═══════════════════════════════════════════════════════════
-   Block definitions — simplified for clean dashboard cards
+   Block & sub-block definitions
    ═══════════════════════════════════════════════════════════ */
+
+interface SubBlockDef {
+  id: string;
+  label: string;
+  description: string;
+  route: string;
+}
 
 interface BlockDef {
   phase: TimelinePhase;
+  number: string;
   title: string;
-  titleItalic: string;
   description: string;
   route: string;
+  subBlocks: SubBlockDef[];
 }
 
 const BLOCK_DEFS: BlockDef[] = [
   {
     phase: 'creative',
-    title: 'Creative &',
-    titleItalic: 'Brand',
+    number: '01',
+    title: 'Creative & Brand',
     description: 'Vision, research, and brand identity for your collection.',
     route: 'creative',
+    subBlocks: [
+      { id: 'consumer', label: 'Consumer', description: 'Define your target consumer profiles and personas.', route: 'creative' },
+      { id: 'moodboard', label: 'Moodboard & Research', description: 'Visual references, trends, and competitive landscape.', route: 'creative' },
+      { id: 'brand', label: 'Brand Identity', description: 'Brand DNA, voice, visual identity, and packaging.', route: 'brand' },
+      { id: 'synthesis', label: 'Creative Synthesis', description: 'Consolidated creative brief and collection vibe.', route: 'creative' },
+    ],
   },
   {
     phase: 'planning',
-    title: 'Merchandising &',
-    titleItalic: 'Planning',
+    number: '02',
+    title: 'Merchandising & Planning',
     description: 'Product families, pricing, channels, and budget.',
     route: 'merchandising',
+    subBlocks: [
+      { id: 'families', label: 'Families & Pricing', description: 'Define product categories and price architecture.', route: 'merchandising' },
+      { id: 'channels', label: 'Channels & Markets', description: 'Distribution channels and target markets.', route: 'merchandising' },
+      { id: 'budget', label: 'Budget & Financials', description: 'Sales targets, margins, and financial planning.', route: 'merchandising' },
+      { id: 'builder', label: 'Collection Builder', description: 'Build your SKU grid from the merchandising plan.', route: 'product' },
+    ],
   },
   {
     phase: 'development',
-    title: 'Design &',
-    titleItalic: 'Development',
+    number: '03',
+    title: 'Design & Development',
     description: 'Sketch, prototype, select, and produce your collection.',
     route: 'product',
+    subBlocks: [
+      { id: 'sketch', label: 'Sketch & Color', description: 'Design sketches, colorways, and material selection.', route: 'product?phase=sketch' },
+      { id: 'prototyping', label: 'Prototyping', description: 'Proto reviews, fit sessions, and tech packs.', route: 'product?phase=prototyping' },
+      { id: 'production', label: 'Production', description: 'Size runs, factory orders, and logistics.', route: 'product?phase=production' },
+      { id: 'selection', label: 'Final Selection', description: 'Confirm the final collection lineup.', route: 'product?phase=selection' },
+    ],
   },
   {
     phase: 'go_to_market',
-    title: 'Marketing &',
-    titleItalic: 'Sales',
+    number: '04',
+    title: 'Marketing & Sales',
     description: 'Content, communications, and go-to-market strategy.',
     route: 'marketing/creation',
+    subBlocks: [
+      { id: 'sales', label: 'Sales Dashboard', description: 'KPIs, revenue tracking, and commercial overview.', route: 'marketing/creation' },
+      { id: 'content', label: 'Content Studio', description: 'Product photography, editorial, and campaign visuals.', route: 'marketing/creation' },
+      { id: 'comms', label: 'Communications', description: 'Copy, social media, email, and brand voice.', route: 'marketing/creation' },
+      { id: 'pos', label: 'Point of Sale', description: 'Web store, wholesale orders, and distribution.', route: 'marketing/creation' },
+    ],
   },
 ];
 
@@ -70,96 +102,14 @@ interface CollectionOverviewProps {
   skuCount: number;
 }
 
-function BlockCard({
-  block,
-  collectionId,
-  blockProgress,
-  allBlockProgress,
-}: {
-  block: BlockDef;
-  collectionId: string;
-  blockProgress: number;
-  allBlockProgress: Record<TimelinePhase, number>;
-}) {
-  const progress = blockProgress;
-  const isStarted = progress > 0;
-  const isComplete = progress === 100;
-
-  /* ── Smart CTA ── */
-  const merchDone = allBlockProgress.planning === 100;
-
-  const getCtaLabel = (): string => {
-    if (isComplete) return 'Completed';
-    if (block.phase === 'planning' && merchDone) return 'Open Builder';
-    if (block.phase === 'development') return 'Open Builder';
-    if (isStarted) return 'Continue';
-    return 'Start';
-  };
-
-  const getCtaRoute = (): string => {
-    if (block.phase === 'planning' && merchDone) {
-      return `/collection/${collectionId}/product`;
-    }
-    return `/collection/${collectionId}/${block.route}`;
-  };
-
-  const blockIndex = BLOCK_DEFS.indexOf(block) + 1;
-
-  return (
-    <Link
-      href={getCtaRoute()}
-      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-    >
-      {/* Block number */}
-      <div className="mb-10">
-        <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
-          0{blockIndex}.
-        </span>
-      </div>
-
-      {/* Title */}
-      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
-        {block.title} {block.titleItalic}
-      </h3>
-
-      {/* Description */}
-      <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
-        {block.description}
-      </p>
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* CTA — centered, same style for all states */}
-      <div className="flex justify-center mt-10">
-        <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-          isComplete
-            ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
-            : 'bg-carbon text-white group-hover:bg-carbon/90'
-        }`}>
-          {getCtaLabel()}
-          {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
-          {isComplete && <Check className="h-3.5 w-3.5" />}
-        </div>
-      </div>
-
-      {/* Progress pill — below CTA */}
-      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
-        <div
-          className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </Link>
-  );
-}
-
 export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverviewProps) {
   const { id } = useParams();
   const collectionId = id as string;
   const router = useRouter();
   const milestones = timeline?.milestones || [];
   const [view, setView] = useState<ViewMode>('blocks');
+  const [expandedBlock, setExpandedBlock] = useState<TimelinePhase | null>(null);
+  const [animating, setAnimating] = useState(false);
   const t = useTranslation();
 
   const wizardPhases = computeWizardState(milestones);
@@ -185,19 +135,48 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     }
   };
 
+  const handleBlockClick = useCallback((phase: TimelinePhase) => {
+    setAnimating(true);
+    // Small delay so the exit animation plays before content changes
+    setTimeout(() => {
+      setExpandedBlock(phase);
+      setTimeout(() => setAnimating(false), 50);
+    }, 300);
+  }, []);
+
+  const handleBack = useCallback(() => {
+    setAnimating(true);
+    setTimeout(() => {
+      setExpandedBlock(null);
+      setTimeout(() => setAnimating(false), 50);
+    }, 300);
+  }, []);
+
+  const activeBlock = expandedBlock ? BLOCK_DEFS.find(b => b.phase === expandedBlock) : null;
+
   return (
     <div className="min-h-[80vh]">
       <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-16">
 
-        {/* ── Collection title ── */}
+        {/* ── Title area ── */}
         <div className="text-center mb-12">
           <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.1]">
             {plan.name}
           </h1>
+          {/* Sub-title when inside a block */}
+          <div className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+            activeBlock ? 'max-h-[40px] opacity-100 mt-3' : 'max-h-0 opacity-0 mt-0'
+          }`}>
+            <p className="text-[16px] font-medium text-carbon/40 tracking-[-0.02em]">
+              {activeBlock?.title}
+            </p>
+          </div>
         </div>
 
-        {/* ── View switch ── */}
-        <div className="flex justify-center mb-12">
+        {/* ── View switch — only visible at top level ── */}
+        <div className={`flex justify-center transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          expandedBlock ? 'max-h-0 opacity-0 mb-0 overflow-hidden' : 'max-h-[60px] opacity-100 mb-12'
+        }`}>
           <SegmentedPill
             options={[
               { id: 'blocks', label: t.overview?.blocks || 'Blocks' },
@@ -210,23 +189,117 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           />
         </div>
 
-        {/* ── Blocks view — horizontal row ── */}
+        {/* ── Back button — only when inside a block ── */}
+        <div className={`flex justify-start transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          expandedBlock ? 'max-h-[60px] opacity-100 mb-8' : 'max-h-0 opacity-0 mb-0 overflow-hidden'
+        }`}>
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-2 text-[13px] font-medium text-carbon/40 hover:text-carbon transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            All blocks
+          </button>
+        </div>
+
+        {/* ── Cards area ── */}
         {view === 'blocks' && (
-          <div className="max-w-[1300px] mx-auto grid grid-cols-4 gap-5">
-            {BLOCK_DEFS.map((block) => (
-              <BlockCard
-                key={block.phase}
-                block={block}
-                collectionId={collectionId}
-                blockProgress={allBlockProgress[block.phase] || 0}
-                allBlockProgress={allBlockProgress}
-              />
-            ))}
+          <div className={`max-w-[1300px] mx-auto transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+            animating ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'
+          }`}>
+            {!expandedBlock ? (
+              /* ═══ TOP LEVEL — 4 block cards ═══ */
+              <div className="grid grid-cols-4 gap-5">
+                {BLOCK_DEFS.map((block) => {
+                  const progress = allBlockProgress[block.phase] || 0;
+                  const isComplete = progress === 100;
+                  const isStarted = progress > 0;
+                  const blockIndex = BLOCK_DEFS.indexOf(block) + 1;
+
+                  return (
+                    <button
+                      key={block.phase}
+                      onClick={() => handleBlockClick(block.phase)}
+                      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+                    >
+                      <div className="mb-10">
+                        <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                          0{blockIndex}.
+                        </span>
+                      </div>
+
+                      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                        {block.title}
+                      </h3>
+
+                      <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                        {block.description}
+                      </p>
+
+                      <div className="flex-1" />
+
+                      <div className="flex justify-center mt-10">
+                        <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                          isComplete
+                            ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
+                            : 'bg-carbon text-white group-hover:bg-carbon/90'
+                        }`}>
+                          {isComplete ? 'Completed' : isStarted ? 'Continue' : 'Start'}
+                          {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
+                          {isComplete && <Check className="h-3.5 w-3.5" />}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : activeBlock ? (
+              /* ═══ SUB-LEVEL — 4 mini-block cards inside a block ═══ */
+              <div className="grid grid-cols-4 gap-5">
+                {activeBlock.subBlocks.map((sub, idx) => (
+                  <Link
+                    key={sub.id}
+                    href={`/collection/${collectionId}/${sub.route}`}
+                    className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+                    style={{ animationDelay: `${idx * 80}ms` }}
+                  >
+                    <div className="mb-10">
+                      <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                        {activeBlock.number}.{idx + 1}
+                      </span>
+                    </div>
+
+                    <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                      {sub.label}
+                    </h3>
+
+                    <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                      {sub.description}
+                    </p>
+
+                    <div className="flex-1" />
+
+                    <div className="flex justify-center mt-10">
+                      <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white group-hover:bg-carbon/90 transition-all">
+                        Open
+                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : null}
           </div>
         )}
       </div>
 
-      {/* ── Calendar view ── */}
       {view === 'calendar' && (
         <InlineTimeline
           collectionId={collectionId}
