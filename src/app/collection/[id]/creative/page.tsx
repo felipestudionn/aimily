@@ -363,26 +363,12 @@ function ConsumerProposalFlow({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Reference input */}
-      <div>
-        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
-          {t.creative.minimalReference}
-        </label>
-        <input
-          type="text"
-          value={(data.reference as string) || ''}
-          onChange={(e) => onChange({ ...data, reference: e.target.value })}
-          placeholder="e.g. 'preppy 90s JFK' or 'streetwear enthusiasts'..."
-          className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-        />
-      </div>
-
+    <div className="space-y-5">
       {/* Generate button */}
       <button
         onClick={generateProposals}
-        disabled={generating || !(data.reference as string)?.trim() || !(data.gender as string)}
-        className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        disabled={generating || !(data.gender as string)}
+        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
         {hasProposals ? t.creative.generateNewSet : t.creative.generateConsumerProfiles}
@@ -392,58 +378,56 @@ function ConsumerProposalFlow({
 
       {/* Proposal cards */}
       {hasProposals && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/50">
-              {likedProfiles.length} {t.creative.selectedCount} · {rejectedProfiles.length} {t.creative.rejectedCount} · {proposals.filter(p => p.status === 'pending').length} {t.creative.pendingCount}
-            </p>
-          </div>
+        <div className="space-y-4">
+          <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/40">
+            {likedProfiles.length} {t.creative.selectedCount} · {rejectedProfiles.length} {t.creative.rejectedCount} · {proposals.filter(p => p.status === 'pending').length} {t.creative.pendingCount}
+          </p>
 
           {proposals.map((p, i) => (
             <div
               key={`${p.title}-${i}`}
-              className={`relative border transition-all ${
+              className={`rounded-[16px] border transition-all ${
                 p.status === 'liked'
                   ? 'border-carbon bg-carbon/[0.03]'
                   : p.status === 'rejected'
-                  ? 'border-carbon/[0.06] bg-carbon/[0.01] opacity-50'
+                  ? 'border-carbon/[0.06] bg-carbon/[0.01] opacity-40'
                   : 'border-carbon/[0.08]'
               }`}
             >
               <div className="p-5">
-                {/* Title — editable */}
+                {/* Title */}
                 {editingIdx === i ? (
                   <input
                     type="text"
                     value={p.title}
                     onChange={(e) => updateProposal(i, { title: e.target.value })}
-                    className="w-full text-sm font-medium text-carbon bg-transparent border-b border-carbon/20 focus:border-carbon focus:outline-none mb-2 pb-1"
+                    className="w-full text-[14px] font-semibold text-carbon bg-transparent border-b border-carbon/20 focus:border-carbon focus:outline-none mb-3 pb-1"
                     autoFocus
                   />
                 ) : (
-                  <div className="text-sm font-medium text-carbon mb-2">{p.title}</div>
+                  <div className="text-[14px] font-semibold text-carbon mb-3">{p.title}</div>
                 )}
 
-                {/* Description — editable */}
+                {/* Description */}
                 {editingIdx === i ? (
                   <textarea
                     value={p.desc}
                     onChange={(e) => updateProposal(i, { desc: e.target.value })}
-                    className="w-full text-xs text-carbon/80 leading-relaxed bg-transparent border border-carbon/10 focus:border-carbon/20 focus:outline-none p-2 resize-none"
+                    className="w-full text-[13px] text-carbon/70 leading-relaxed bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none p-3 resize-none"
                     rows={5}
                   />
                 ) : (
-                  <div className="text-xs text-carbon/80 leading-relaxed">{p.desc}</div>
+                  <div className="text-[13px] text-carbon/70 leading-relaxed">{p.desc}</div>
                 )}
 
-                {/* Action buttons */}
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-carbon/[0.06]">
+                {/* Action buttons — all rounded-full */}
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-carbon/[0.06]">
                   <button
                     onClick={() => updateProposal(i, { status: p.status === 'liked' ? 'pending' : 'liked' })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium tracking-wide border transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
                       p.status === 'liked'
-                        ? 'bg-carbon text-crema border-carbon'
-                        : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
+                        ? 'bg-carbon text-white'
+                        : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
                     }`}
                   >
                     <ThumbsUp className="h-3 w-3" />
@@ -451,10 +435,10 @@ function ConsumerProposalFlow({
                   </button>
                   <button
                     onClick={() => updateProposal(i, { status: p.status === 'rejected' ? 'pending' : 'rejected' })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium tracking-wide border transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
                       p.status === 'rejected'
-                        ? 'bg-red-50 text-red-600 border-red-200'
-                        : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
+                        ? 'bg-red-50 text-red-600'
+                        : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
                     }`}
                   >
                     <ThumbsDown className="h-3 w-3" />
@@ -462,10 +446,10 @@ function ConsumerProposalFlow({
                   </button>
                   <button
                     onClick={() => setEditingIdx(editingIdx === i ? null : i)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium tracking-wide border transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
                       editingIdx === i
-                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                        : 'text-carbon/60 border-carbon/[0.1] hover:border-carbon/30'
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
                     }`}
                   >
                     <Pencil className="h-3 w-3" />
@@ -473,9 +457,9 @@ function ConsumerProposalFlow({
                   </button>
                   <button
                     onClick={() => removeProposal(i)}
-                    className="ml-auto flex items-center gap-1 px-2 py-1.5 text-xs text-carbon/30 hover:text-red-500 transition-colors"
+                    className="ml-auto w-7 h-7 rounded-full flex items-center justify-center text-carbon/20 hover:text-red-500 hover:bg-red-50 transition-all"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -483,12 +467,12 @@ function ConsumerProposalFlow({
           ))}
 
           {/* Regenerate rejected + Add manual */}
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap gap-3 pt-2">
             {rejectedProfiles.length > 0 && (
               <button
                 onClick={regenerateRejected}
                 disabled={generating}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase border border-carbon/[0.12] text-carbon/70 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
               >
                 {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                 {t.creative.regenerateRejected} {rejectedProfiles.length} {t.creative.rejectedLabel}
@@ -496,7 +480,7 @@ function ConsumerProposalFlow({
             )}
             <button
               onClick={() => setAddingManual(true)}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase border border-dashed border-carbon/[0.15] text-carbon/50 hover:border-carbon/30 hover:text-carbon transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-dashed border-carbon/[0.15] text-carbon/40 hover:border-carbon/30 hover:text-carbon transition-all"
             >
               <Plus className="h-3 w-3" />
               {t.creative.addProfileManually}
@@ -505,32 +489,32 @@ function ConsumerProposalFlow({
 
           {/* Manual profile form */}
           {addingManual && (
-            <div className="border border-carbon/[0.1] p-5 space-y-3">
+            <div className="rounded-[16px] border border-carbon/[0.1] p-5 space-y-3">
               <input
                 type="text"
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
                 placeholder={t.creative.profileNamePlaceholder}
-                className="w-full px-3 py-2 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
                 autoFocus
               />
               <textarea
                 value={manualDesc}
                 onChange={(e) => setManualDesc(e.target.value)}
                 placeholder={t.creative.profileDescPlaceholder}
-                className="w-full h-28 px-3 py-2 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
+                className="w-full h-28 px-4 py-3 text-[13px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
               />
               <div className="flex gap-2">
                 <button
                   onClick={addManualProfile}
                   disabled={!manualTitle.trim() || !manualDesc.trim()}
-                  className="px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30"
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30"
                 >
                   {t.creative.addProfile}
                 </button>
                 <button
                   onClick={() => { setAddingManual(false); setManualTitle(''); setManualDesc(''); }}
-                  className="px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase text-carbon/50 border border-carbon/[0.1] hover:border-carbon/20 transition-colors"
+                  className="inline-flex items-center px-5 py-2 rounded-full text-[13px] font-medium text-carbon/50 border border-carbon/[0.1] hover:border-carbon/20 transition-colors"
                 >
                   {t.common.cancel}
                 </button>
@@ -708,12 +692,26 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
         </div>
       )}
 
-      {/* ═══ AI MODE — left gender + right proposals ═══ */}
+      {/* ═══ AI MODE — left (gender + reference) + right proposals ═══ */}
       {mode === 'ai' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="flex flex-col gap-5">
             <DecisionCard title={t.creative.collectionTarget}>
               <GenderSelector />
+            </DecisionCard>
+
+            <DecisionCard
+              title={t.creative.minimalReference}
+              pill="Optional"
+              pillVariant="muted"
+            >
+              <input
+                type="text"
+                value={(data.reference as string) || ''}
+                onChange={(e) => onChange({ ...data, reference: e.target.value })}
+                placeholder="e.g. 'preppy 90s JFK' or 'streetwear enthusiasts'..."
+                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+              />
             </DecisionCard>
           </div>
 
