@@ -94,7 +94,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
 ];
 
 const COLLAPSED_W = 72;
-const EXPANDED_W = 300;
+const EXPANDED_W = 320;
 
 /* ══════════════════════════════════════════════════════════════ */
 
