@@ -512,7 +512,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -550,7 +550,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-carbon text-crema border-carbon'
+                  ? 'bg-carbon text-white border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
               }`}
             >
@@ -580,7 +580,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               <button
                 onClick={handleGeneratePillarsVoice}
                 disabled={aiLoading}
-                className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
+                className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
               >
                 {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 {t.marketingPage.generatePillarsVoiceBtn}
@@ -590,7 +590,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {/* Content Pillars */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">
+                <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">
                   {t.marketingPage.contentPillarsHeading} ({pillars.length})
                 </p>
                 <button
@@ -603,7 +603,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               {pillarsLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
               <div className="space-y-3">
                 {pillars.map(pillar => (
-                  <div key={pillar.id} className="bg-white border border-carbon/[0.06] p-5">
+                  <div key={pillar.id} className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
                     {editingPillarId === pillar.id ? (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -661,7 +661,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {/* Brand Voice Config */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.brandVoiceHeading}</p>
+                <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.brandVoiceHeading}</p>
                 {!editingVoice && (
                   <button
                     onClick={() => { setEditingVoice(true); setVoiceForm(voiceConfig || {}); }}
@@ -674,7 +674,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               {voiceLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
 
               {editingVoice ? (
-                <div className="bg-white border border-carbon/[0.06] p-5 space-y-3">
+                <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <input value={voiceForm.personality ?? ''} onChange={e => setVoiceForm({ ...voiceForm, personality: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.personalityPlaceholder} />
                     <input value={voiceForm.tone ?? ''} onChange={e => setVoiceForm({ ...voiceForm, tone: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.tonePlaceholderField} />
@@ -684,18 +684,18 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                   <input value={(voiceForm.vocabulary ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.vocabularyPlaceholder} />
                   <textarea value={voiceForm.example_caption ?? ''} onChange={e => setVoiceForm({ ...voiceForm, example_caption: e.target.value })} className="w-full h-16 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder={t.marketingPage.exampleCaptionPlaceholder} />
                   <div className="flex gap-2">
-                    <button onClick={() => { saveVoiceConfig(voiceForm); setEditingVoice(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
+                    <button onClick={() => { saveVoiceConfig(voiceForm); setEditingVoice(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white hover:bg-carbon/90"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
                     <button onClick={() => setEditingVoice(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon/80">{t.common.cancel}</button>
                   </div>
                 </div>
               ) : voiceConfig ? (
-                <div className="bg-white border border-carbon/[0.06] p-5 space-y-3">
-                  {voiceConfig.personality && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.personalityHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.personality}</p></div>}
-                  {voiceConfig.tone && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.toneHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.tone}</p></div>}
-                  {voiceConfig.do_rules?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.doHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.do_rules.map((r, i) => <span key={i} className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
-                  {voiceConfig.dont_rules?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.dontHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.dont_rules.map((r, i) => <span key={i} className="text-[10px] bg-red-50 text-red-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
-                  {voiceConfig.vocabulary?.length ? <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.vocabularyHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.vocabulary.map((v, i) => <span key={i} className="text-[10px] bg-carbon/[0.04] text-carbon/50 px-2 py-0.5">{v}</span>)}</div></div> : null}
-                  {voiceConfig.example_caption && <div><p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1">{t.marketingPage.exampleCaptionHeading}</p><p className="text-sm font-light text-carbon/50 italic">&ldquo;{voiceConfig.example_caption}&rdquo;</p></div>}
+                <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5 space-y-3">
+                  {voiceConfig.personality && <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.personalityHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.personality}</p></div>}
+                  {voiceConfig.tone && <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.toneHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.tone}</p></div>}
+                  {voiceConfig.do_rules?.length ? <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.doHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.do_rules.map((r, i) => <span key={i} className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
+                  {voiceConfig.dont_rules?.length ? <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.dontHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.dont_rules.map((r, i) => <span key={i} className="text-[10px] bg-red-50 text-red-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
+                  {voiceConfig.vocabulary?.length ? <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.vocabularyHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.vocabulary.map((v, i) => <span key={i} className="text-[10px] bg-carbon/[0.04] text-carbon/50 px-2 py-0.5">{v}</span>)}</div></div> : null}
+                  {voiceConfig.example_caption && <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.exampleCaptionHeading}</p><p className="text-sm font-light text-carbon/50 italic">&ldquo;{voiceConfig.example_caption}&rdquo;</p></div>}
                 </div>
               ) : (
                 <p className="text-xs text-carbon/20 italic">{t.marketingPage.noBrandVoiceConfigured}</p>
@@ -714,14 +714,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {/* Selectors */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
                   <option value="">{t.marketingPage.allStoriesOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
                 <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
                   <option value="">{t.marketingPage.selectSkuPlaceholder}</option>
                   {skus.map(s => <option key={s.id} value={s.id}>{s.name} — {s.family}</option>)}
@@ -731,7 +731,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
 
             {/* B2 — copy context selector */}
             <div>
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">
+              <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">
                 {t.marketingPage.copyContextHeading}
               </p>
               <div className="flex gap-1 flex-wrap">
@@ -743,7 +743,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                     onClick={() => setSelectedCopyContext(ctx)}
                     className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
                       selectedCopyContext === ctx
-                        ? 'bg-carbon text-crema border-carbon'
+                        ? 'bg-carbon text-white border-carbon'
                         : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                     }`}
                   >
@@ -756,7 +756,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <button
               onClick={handleGenerateProductCopy}
               disabled={aiLoading || !selectedSkuId}
-              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {t.marketingPage.generateCopyBtn}
@@ -787,21 +787,21 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {/* Selectors */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.story}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.story}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
                   <option value="">{t.marketingPage.generalNoStoryOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.platform}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.platform}</p>
                 <div className="flex gap-1">
                   {PLATFORMS.map(p => (
                     <button
                       key={p.id}
                       onClick={() => setSelectedPlatform(p.id)}
                       className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
-                        selectedPlatform === p.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+                        selectedPlatform === p.id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                       }`}
                     >
                       {p.label}
@@ -814,7 +814,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <button
               onClick={handleGenerateSocial}
               disabled={aiLoading}
-              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {t.marketingPage.generateSocialTemplatesBtn}
@@ -845,7 +845,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
 
             {/* B1 — Single vs. Sequence toggle */}
             <div>
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">
+              <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">
                 {t.marketingPage.emailModeHeading}
               </p>
               <div className="inline-flex border border-carbon/[0.06] overflow-hidden">
@@ -854,7 +854,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                   onClick={() => setEmailMode('single')}
                   className={`text-xs font-light px-4 py-2 transition-colors ${
                     emailMode === 'single'
-                      ? 'bg-carbon text-crema'
+                      ? 'bg-carbon text-white'
                       : 'bg-white text-carbon/60 hover:text-carbon'
                   }`}
                 >
@@ -865,7 +865,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                   onClick={() => setEmailMode('sequence')}
                   className={`text-xs font-light px-4 py-2 border-l border-carbon/[0.06] transition-colors ${
                     emailMode === 'sequence'
-                      ? 'bg-carbon text-crema'
+                      ? 'bg-carbon text-white'
                       : 'bg-white text-carbon/60 hover:text-carbon'
                   }`}
                 >
@@ -876,14 +876,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
                   <option value="">{t.marketingPage.generalOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">
                   {emailMode === 'single'
                     ? t.marketingPage.emailTypeHeading
                     : t.marketingPage.sequenceTypeHeading}
@@ -895,7 +895,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                         key={id}
                         onClick={() => setSelectedEmailType(id)}
                         className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
-                          selectedEmailType === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+                          selectedEmailType === id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                         }`}
                       >
                         {emailTypeLabel(id)}
@@ -910,7 +910,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                         onClick={() => setSelectedSequenceType(st)}
                         className={`px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em] border transition-colors ${
                           selectedSequenceType === st
-                            ? 'bg-carbon text-crema border-carbon'
+                            ? 'bg-carbon text-white border-carbon'
                             : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                         }`}
                       >
@@ -925,7 +925,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <button
               onClick={emailMode === 'single' ? handleGenerateEmail : handleGenerateSequence}
               disabled={aiLoading}
-              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {emailMode === 'single'
@@ -943,7 +943,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {/* Sequences block (visually dominant) */}
             {groupedEmails.sequences.length > 0 && (
               <div className="space-y-4">
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
                   {t.marketingPage.emailSequencesHeading}
                 </p>
                 {groupedEmails.sequences.map(({ id, emails }) => (
@@ -962,7 +962,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             {groupedEmails.singles.length > 0 && (
               <div className={`space-y-3 ${groupedEmails.sequences.length > 0 ? 'mt-6' : ''}`}>
                 {groupedEmails.sequences.length > 0 && (
-                  <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+                  <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
                     {t.marketingPage.emailSinglesHeading}
                   </p>
                 )}
@@ -983,14 +983,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
                 <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
                   <option value="">{t.marketingPage.allStoriesOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
                 <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
                   <option value="">{t.marketingPage.selectSkuPlaceholder}</option>
                   {skus.map(s => <option key={s.id} value={s.id}>{s.name} — {s.family}</option>)}
@@ -1001,7 +1001,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <button
               onClick={handleGenerateSeo}
               disabled={aiLoading || !selectedSkuId}
-              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
+              className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
               {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {t.marketingPage.generateSeoBtn}
@@ -1035,7 +1035,7 @@ function ProductCopyRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU
   const sku = skus.find(s => s.id === copy.sku_id);
   const meta = copy.metadata as { description?: string; features?: string[]; care?: string } | null;
   return (
-    <div className="bg-white border border-carbon/[0.06] p-5">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
       <div className="flex items-start justify-between mb-2">
         <div>
           <h4 className="text-base font-light text-carbon tracking-tight">{copy.title}</h4>
@@ -1058,7 +1058,7 @@ function SocialTemplateRow({ template, stories, onDelete }: { template: SocialTe
   const t = useTranslation();
   const story = stories.find(s => s.id === template.story_id);
   return (
-    <div className="bg-white border border-carbon/[0.06] p-5">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon/[0.04] text-carbon/40 px-2 py-0.5">{template.type.replace('_', ' ')}</span>
@@ -1123,7 +1123,7 @@ function EmailSequenceGroup({
       <div className="px-5 py-4 border-b border-carbon/[0.06] flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-[9px] font-medium tracking-[0.12em] uppercase bg-carbon text-crema px-2 py-0.5">
+            <span className="text-[9px] font-medium tracking-[0.12em] uppercase bg-carbon text-white px-2 py-0.5">
               {t.marketingPage.emailSequenceBadge}
             </span>
             {typeLabel && (
@@ -1215,7 +1215,7 @@ function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template:
   const [form, setForm] = useState(template);
 
   return (
-    <div className="bg-white border border-carbon/[0.06] p-5">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon/[0.04] text-carbon/40 px-2 py-0.5">{template.email_type.replace('_', ' ')}</span>
@@ -1239,7 +1239,7 @@ function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template:
             <input value={form.cta_url ?? ''} onChange={e => setForm({ ...form, cta_url: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.ctaUrlPlaceholder} />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => { onUpdate(template.id, form); setEditing(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
+            <button onClick={() => { onUpdate(template.id, form); setEditing(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
             <button onClick={() => setEditing(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50">{t.common.cancel}</button>
           </div>
         </div>
@@ -1265,7 +1265,7 @@ function SeoRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU[]; onDe
   const sku = skus.find(s => s.id === copy.sku_id);
   const meta = copy.metadata as { meta_title?: string; meta_description?: string; alt_text?: string; keywords?: string[]; og_title?: string; og_description?: string } | null;
   return (
-    <div className="bg-white border border-carbon/[0.06] p-5">
+    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
       <div className="flex items-start justify-between mb-2">
         <div>
           <h4 className="text-base font-light text-carbon tracking-tight">{meta?.meta_title || copy.title}</h4>

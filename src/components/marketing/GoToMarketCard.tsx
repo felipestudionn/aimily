@@ -350,7 +350,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white py-3 px-4 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -383,7 +383,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           <div className="flex items-center gap-3">
             {totalPlannedSales > 0 && (
               <div className="text-right">
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.totalSalesTarget}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">{t.marketingPage.totalSalesTarget}</p>
                 <p className="text-xl font-light text-carbon tracking-tight">€{totalPlannedSales.toLocaleString()}</p>
               </div>
             )}
@@ -402,7 +402,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               onClick={() => setActivePill(pillId)}
               className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
                 activePill === pillId
-                  ? 'bg-carbon text-crema border-carbon'
+                  ? 'bg-carbon text-white border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
               }`}
             >
@@ -418,7 +418,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         {activePill === 'asistido' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
+              <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -442,7 +442,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         {activePill === 'propuesta' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
+              <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -472,10 +472,10 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           {/* Story filter */}
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-carbon/30" />
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.story}:</span>
+            <span className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.story}:</span>
             <button
               onClick={() => setActiveStoryId(null)}
-              className={`px-3 py-1.5 text-xs border transition-colors ${!activeStoryId ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+              className={`px-3 py-1.5 text-xs border transition-colors ${!activeStoryId ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
               {t.marketingPage.all}
             </button>
@@ -483,7 +483,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <button
                 key={story.id}
                 onClick={() => setActiveStoryId(story.id)}
-                className={`px-3 py-1.5 text-xs border transition-colors ${activeStoryId === story.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                className={`px-3 py-1.5 text-xs border transition-colors ${activeStoryId === story.id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
                 {story.name}
               </button>
@@ -494,12 +494,12 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
 
           {/* Channel filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.channel}:</span>
+            <span className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.channel}:</span>
             {['ALL', 'DTC', 'WHOLESALE'].map(ch => (
               <button
                 key={ch}
                 onClick={() => setChannelFilter(ch)}
-                className={`px-3 py-1.5 text-xs border transition-colors ${channelFilter === ch ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                className={`px-3 py-1.5 text-xs border transition-colors ${channelFilter === ch ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
                 {ch === 'ALL' ? t.marketingPage.all : ch}
               </button>
@@ -510,7 +510,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         {/* ── Visual Timeline ── */}
         {drops.length > 0 && (
           <div className="bg-white border border-carbon/[0.06] p-6">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.launchTimeline}</p>
+            <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-1">{t.marketingPage.launchTimeline}</p>
             <p className="text-sm font-light text-carbon/40 mb-4">{t.marketingPage.dropsAndActions}</p>
             <div className="relative">
               {/* Month labels */}
@@ -601,7 +601,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         <div className="bg-white border border-carbon/[0.06] p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.drops}</p>
+              <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-1">{t.marketingPage.drops}</p>
               <p className="text-sm font-light text-carbon/40">{t.marketingPage.dragProducts}</p>
             </div>
             <Button size="sm" onClick={() => setShowAddDrop(true)} className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -679,7 +679,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         <div className="bg-white border border-carbon/[0.06] p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.commercialActions}</p>
+              <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-1">{t.marketingPage.commercialActions}</p>
               <p className="text-sm font-light text-carbon/40">{t.marketingPage.commercialActionsDesc}</p>
             </div>
             <Button size="sm" onClick={() => setShowAddAction(true)} className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
@@ -744,7 +744,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
         <div className="bg-white border border-carbon/[0.06] p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.aiMarketValidation}</p>
+              <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-1">{t.marketingPage.aiMarketValidation}</p>
               <p className="text-sm font-light text-carbon/40">{t.marketingPage.compareWithMarket}</p>
             </div>
             <Button onClick={handleGeneratePrediction} disabled={isGenerating || drops.length === 0} className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">

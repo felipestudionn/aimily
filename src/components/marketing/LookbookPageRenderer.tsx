@@ -52,11 +52,11 @@ function CoverLayout({ images, texts, bgStyle }: { images: Item[]; texts: Item[]
       )}
       <div className="relative z-10 text-center max-w-4xl px-16">
         {heroText ? (
-          <h2 className="text-5xl md:text-6xl lg:text-7xl font-light text-crema tracking-tight leading-[0.95]">
+          <h2 className="text-5xl md:text-6xl lg:text-7xl font-light text-white tracking-tight leading-[0.95]">
             {heroText}
           </h2>
         ) : (
-          <p className="text-[10px] tracking-[0.3em] uppercase text-crema/40">Lookbook</p>
+          <p className="text-[10px] tracking-[0.3em] uppercase text-white/40">Lookbook</p>
         )}
       </div>
     </div>
@@ -72,7 +72,7 @@ function FullBleedLayout({ images, bgStyle }: { images: Item[]; bgStyle: BgStyle
         <img src={heroImage} alt="" className="w-full h-full object-cover absolute inset-0" />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <p className="text-[10px] tracking-[0.3em] uppercase text-crema/20">Blank page</p>
+          <p className="text-[10px] tracking-[0.3em] uppercase text-white/20">Blank page</p>
         </div>
       )}
     </div>
@@ -90,7 +90,7 @@ function TwoColumnLayout({ images, texts, bgStyle }: { images: Item[]; texts: It
       </div>
       <div className="flex flex-col justify-center px-16 py-16">
         {rightText && (
-          <p className="text-xl md:text-2xl font-light text-crema leading-relaxed max-w-md">
+          <p className="text-xl md:text-2xl font-light text-white leading-relaxed max-w-md">
             {rightText}
           </p>
         )}
@@ -125,12 +125,12 @@ function TextImageLayout({ images, texts, bgStyle }: { images: Item[]; texts: It
     <div className="w-full h-full min-h-screen flex flex-col bg-carbon" style={bgStyle}>
       <div className="px-16 pt-16 pb-10 max-w-4xl">
         {heroText && (
-          <h3 className="text-3xl md:text-4xl font-light text-crema tracking-tight mb-4">
+          <h3 className="text-3xl md:text-4xl font-light text-white tracking-tight mb-4">
             {heroText}
           </h3>
         )}
         {secondaryText && (
-          <p className="text-sm md:text-base font-light text-crema/60 leading-relaxed max-w-2xl">
+          <p className="text-sm md:text-base font-light text-white/60 leading-relaxed max-w-2xl">
             {secondaryText}
           </p>
         )}
@@ -153,12 +153,12 @@ function QuoteLayout({ texts, bgStyle }: { texts: Item[]; bgStyle: BgStyle }) {
           &ldquo;
         </div>
         {quote && (
-          <blockquote className="text-3xl md:text-4xl lg:text-5xl font-light text-crema leading-snug tracking-tight">
+          <blockquote className="text-3xl md:text-4xl lg:text-5xl font-light text-white leading-snug tracking-tight">
             {quote}
           </blockquote>
         )}
         {attribution && (
-          <p className="mt-10 text-[11px] tracking-[0.25em] uppercase text-crema/40">
+          <p className="mt-10 text-[11px] tracking-[0.08em] uppercase text-white/40">
             — {attribution}
           </p>
         )}

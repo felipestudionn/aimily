@@ -517,7 +517,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -553,7 +553,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
               <button
                 onClick={() => setSubTab('calendar')}
                 className={`px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase flex items-center gap-1.5 transition-colors ${
-                  subTab === 'calendar' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'
+                  subTab === 'calendar' ? 'bg-carbon text-white' : 'text-carbon/40 hover:text-carbon/60'
                 }`}
               >
                 <Calendar className="h-3.5 w-3.5" /> {t.marketingPage.contentCalendarLabel}
@@ -561,7 +561,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
               <button
                 onClick={() => setSubTab('influencer')}
                 className={`px-4 py-2 text-xs font-medium tracking-[0.08em] uppercase flex items-center gap-1.5 transition-colors ${
-                  subTab === 'influencer' ? 'bg-carbon text-crema' : 'text-carbon/40 hover:text-carbon/60'
+                  subTab === 'influencer' ? 'bg-carbon text-white' : 'text-carbon/40 hover:text-carbon/60'
                 }`}
               >
                 <Users className="h-3.5 w-3.5" /> {t.marketingPage.prContacts}
@@ -589,7 +589,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   onClick={() => setActivePill(pillId)}
                   className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
                     activePill === pillId
-                      ? 'bg-carbon text-crema border-carbon'
+                      ? 'bg-carbon text-white border-carbon'
                       : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
                   }`}
                 >
@@ -762,7 +762,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.platform}:</span>
                 <button
                   onClick={() => setPlatformFilter('ALL')}
-                  className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${platformFilter === 'ALL' ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
                   {t.marketingPage.all}
                 </button>
@@ -770,7 +770,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <button
                     key={id}
                     onClick={() => setPlatformFilter(id)}
-                    className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${platformFilter === id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                   >
                     {getPlatformLabel(t, id)}
                   </button>
@@ -785,7 +785,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.story}:</span>
                   <button
                     onClick={() => setStoryFilter(null)}
-                    className={`px-3 py-1.5 text-xs border transition-colors ${!storyFilter ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${!storyFilter ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                   >
                     {t.marketingPage.all}
                   </button>
@@ -793,7 +793,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <button
                       key={story.id}
                       onClick={() => setStoryFilter(story.name)}
-                      className={`px-3 py-1.5 text-xs border transition-colors ${storyFilter === story.name ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${storyFilter === story.name ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                     >
                       {story.name}
                     </button>
@@ -808,7 +808,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                 <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.contentType}:</span>
                 <button
                   onClick={() => setTypeFilter('ALL')}
-                  className={`px-3 py-1.5 text-xs border transition-colors ${typeFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${typeFilter === 'ALL' ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
                   {t.marketingPage.all}
                 </button>
@@ -816,7 +816,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <button
                     key={id}
                     onClick={() => setTypeFilter(id)}
-                    className={`px-3 py-1.5 text-xs border transition-colors ${typeFilter === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${typeFilter === id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                   >
                     {getContentTypeLabel(t, id)}
                   </button>
@@ -826,13 +826,13 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
               <div className="ml-auto flex items-center gap-2">
                 <button
                   onClick={() => setViewMode('month')}
-                  className={`p-2 border transition-colors ${viewMode === 'month' ? 'bg-carbon text-crema border-carbon' : 'text-carbon/40 border-carbon/[0.08] hover:border-carbon/20'}`}
+                  className={`p-2 border transition-colors ${viewMode === 'month' ? 'bg-carbon text-white border-carbon' : 'text-carbon/40 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 border transition-colors ${viewMode === 'list' ? 'bg-carbon text-crema border-carbon' : 'text-carbon/40 border-carbon/[0.08] hover:border-carbon/20'}`}
+                  className={`p-2 border transition-colors ${viewMode === 'list' ? 'bg-carbon text-white border-carbon' : 'text-carbon/40 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
                   <List className="h-4 w-4" />
                 </button>
@@ -853,7 +853,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowAddEntry(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.08em] uppercase hover:bg-carbon/90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 bg-carbon text-white text-[11px] font-medium tracking-[0.08em] uppercase hover:bg-carbon/90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 {t.marketingPage.addEntry}
@@ -1165,7 +1165,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowAddContact(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-carbon text-crema text-[11px] font-medium tracking-[0.08em] uppercase hover:bg-carbon/90 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 bg-carbon text-white text-[11px] font-medium tracking-[0.08em] uppercase hover:bg-carbon/90 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 {t.marketingPage.addContact}

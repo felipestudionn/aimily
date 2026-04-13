@@ -221,7 +221,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white py-3 px-4 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -630,7 +630,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-carbon text-crema border-carbon'
+                  ? 'bg-carbon text-white border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
               }`}
             >
@@ -649,7 +649,7 @@ export function CampaignVideoCard({ collectionPlanId }: CampaignVideoCardProps) 
                 onClick={() => setActiveStoryId(story.id)}
                 className={`px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors whitespace-nowrap ${
                   activeStory?.id === story.id
-                    ? 'bg-carbon text-crema border-carbon'
+                    ? 'bg-carbon text-white border-carbon'
                     : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                 }`}
               >
@@ -877,7 +877,7 @@ function LookbookTab({
                   ? t.marketingPage.aiComposeNeedFavorites
                   : undefined
             }
-            className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {aiComposeLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1207,7 +1207,7 @@ function EditorialTab({
 
       {/* ── Picker 1: Product ── */}
       <div>
-        <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
+        <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-3">
           {t.marketingPage.editorialProductLabel}
         </p>
         {productImages.length === 0 ? (
@@ -1237,7 +1237,7 @@ function EditorialTab({
       {/* ── Picker 2: Style reference (optional) ── */}
       <div>
         <div className="flex items-center gap-3 mb-3">
-          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+          <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
             {t.marketingPage.editorialStyleLabel}
           </p>
           <span className="text-[9px] font-light text-carbon/20 italic">
@@ -1284,7 +1284,7 @@ function EditorialTab({
 
       {/* ── Picker 3: Model appearance ── */}
       <div>
-        <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
+        <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-3">
           {t.marketingPage.editorialModelLabel}
         </p>
         <div className="flex items-center gap-4 flex-wrap">
@@ -1345,7 +1345,7 @@ function EditorialTab({
 
       {/* Art direction prompt (text, additional to the visual ref) */}
       <div>
-        <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 block mb-2">
+        <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 block mb-2">
           {t.marketingPage.artDirection}
         </label>
         <textarea
@@ -1371,7 +1371,7 @@ function EditorialTab({
             }
           }}
           disabled={generating || !selectedProduct}
-          className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.1em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.1em] bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {generating ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1616,7 +1616,7 @@ function VideoTab({
 
       {/* Source image selection */}
       <div>
-        <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
+        <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-3">
           {t.marketingPage.selectSourceImage}
         </p>
         {sourceImages.length === 0 ? (
@@ -1651,7 +1651,7 @@ function VideoTab({
       <div className="flex items-center gap-4 flex-wrap">
         {/* Motion type */}
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+          <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
             {t.marketingPage.motion}
           </label>
           <select
@@ -1669,7 +1669,7 @@ function VideoTab({
 
         {/* Quality tier (Pro default, Std draft) */}
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+          <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
             {t.marketingPage.videoQuality}
           </label>
           <div className="inline-flex border border-carbon/[0.06] overflow-hidden">
@@ -1678,7 +1678,7 @@ function VideoTab({
               onClick={() => onTierChange('pro')}
               className={`text-xs font-light px-3 py-1.5 transition-colors ${
                 tier === 'pro'
-                  ? 'bg-carbon text-crema'
+                  ? 'bg-carbon text-white'
                   : 'bg-white text-carbon/60 hover:text-carbon'
               }`}
             >
@@ -1689,7 +1689,7 @@ function VideoTab({
               onClick={() => onTierChange('std')}
               className={`text-xs font-light px-3 py-1.5 border-l border-carbon/[0.06] transition-colors ${
                 tier === 'std'
-                  ? 'bg-carbon text-crema'
+                  ? 'bg-carbon text-white'
                   : 'bg-white text-carbon/60 hover:text-carbon'
               }`}
             >
@@ -1700,7 +1700,7 @@ function VideoTab({
 
         {/* Duration */}
         <div className="flex items-center gap-2">
-          <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+          <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
             {t.marketingPage.videoDuration}
           </label>
           <div className="inline-flex border border-carbon/[0.06] overflow-hidden">
@@ -1709,7 +1709,7 @@ function VideoTab({
               onClick={() => onDurationChange('5')}
               className={`text-xs font-light px-3 py-1.5 transition-colors ${
                 duration === '5'
-                  ? 'bg-carbon text-crema'
+                  ? 'bg-carbon text-white'
                   : 'bg-white text-carbon/60 hover:text-carbon'
               }`}
             >
@@ -1720,7 +1720,7 @@ function VideoTab({
               onClick={() => onDurationChange('10')}
               className={`text-xs font-light px-3 py-1.5 border-l border-carbon/[0.06] transition-colors ${
                 duration === '10'
-                  ? 'bg-carbon text-crema'
+                  ? 'bg-carbon text-white'
                   : 'bg-white text-carbon/60 hover:text-carbon'
               }`}
             >
@@ -1732,7 +1732,7 @@ function VideoTab({
 
       {/* Direction prompt */}
       <div>
-        <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 block mb-2">
+        <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 block mb-2">
           {t.marketingPage.direction}
         </label>
         <textarea
@@ -1746,7 +1746,7 @@ function VideoTab({
       {/* B5 — Generate shotlist (text-only, cheap iteration) */}
       <div className="border border-carbon/[0.06] bg-white p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40">
+          <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/40">
             {t.marketingPage.shotlistHeading}
           </p>
           {shotlist && (
@@ -1766,7 +1766,7 @@ function VideoTab({
               {t.marketingPage.shotlistHelp}
             </p>
             <div className="flex items-center gap-2 flex-wrap">
-              <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+              <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
                 {t.marketingPage.shotlistHook}
               </label>
               {(['curiosity', 'story', 'value', 'contrarian'] as const).map((h) => (
@@ -1776,7 +1776,7 @@ function VideoTab({
                   onClick={() => onShotlistHookChange(h)}
                   className={`px-3 py-1.5 text-[11px] font-light border transition-colors ${
                     shotlistHookType === h
-                      ? 'bg-carbon text-crema border-carbon'
+                      ? 'bg-carbon text-white border-carbon'
                       : 'bg-white text-carbon/60 border-carbon/[0.06] hover:text-carbon'
                   }`}
                 >
@@ -1862,7 +1862,7 @@ function VideoTab({
             }
           }}
           disabled={generating || selectedSourceIdx === null}
-          className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.1em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.1em] bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {generating ? (
             <Loader2 className="h-4 w-4 animate-spin" />

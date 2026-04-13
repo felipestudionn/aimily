@@ -156,7 +156,7 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open || 'OPEN'}
         </div>
       </button>
@@ -217,7 +217,7 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
                 onClick={() => setCategoryFilter('ALL')}
                 className={`px-2 py-1 text-[9px] font-medium uppercase tracking-[0.08em] border transition-colors ${
                   categoryFilter === 'ALL'
-                    ? 'bg-carbon text-crema border-carbon'
+                    ? 'bg-carbon text-white border-carbon'
                     : 'bg-white text-carbon/40 border-carbon/[0.06] hover:text-carbon/70'
                 }`}
               >
@@ -229,7 +229,7 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
                   onClick={() => setCategoryFilter(cat)}
                   className={`px-2 py-1 text-[9px] font-medium uppercase tracking-[0.08em] border transition-colors ${
                     categoryFilter === cat
-                      ? 'bg-carbon text-crema border-carbon'
+                      ? 'bg-carbon text-white border-carbon'
                       : 'bg-white text-carbon/40 border-carbon/[0.06] hover:text-carbon/70'
                   }`}
                 >

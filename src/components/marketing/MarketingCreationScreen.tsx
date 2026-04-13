@@ -7,31 +7,56 @@ import { CommunicationsCard } from './CommunicationsCard';
 import { PointOfSaleCard } from './PointOfSaleCard';
 import { VisualIdentityCard } from './VisualIdentityCard';
 import { useTranslation } from '@/i18n';
+import { useSearchParams } from 'next/navigation';
 
 interface Props {
   collectionPlanId: string;
   milestones: TimelineMilestone[];
+  blockParamOverride?: string | null;
 }
 
-/**
- * Marketing Block 4 — 4-card grid (restructured 2026-04-12):
- *
- *   [1] Sales Dashboard      — KPIs, revenue curve, drops, stories commercial
- *   [2] Content Studio       — Per-SKU visual pipeline (4 levels) + model roster
- *   [3] Communications       — Copy, social, email, brand voice, SEO
- *   [4] Point of Sale        — Web store, wholesale orders, distribution
- *
- * Previous structure (before restructure):
- *   Stories, Product Visuals, Campaign & Video, Content Strategy
- *
- * The legacy cards (StoriesCard, ProductVisualsCard, CampaignVideoCard)
- * still exist and are accessible from within the new cards where
- * relevant (e.g., still life generation links to ProductVisualsCard,
- * editorial generation links to CampaignVideoCard).
- */
-export function MarketingCreationScreen({ collectionPlanId }: Props) {
-  const t = useTranslation();
+const BLOCK_NAMES: Record<string, string> = {
+  sales: 'Sales Dashboard',
+  content: 'Content Studio',
+  comms: 'Communications',
+  pos: 'Point of Sale',
+  visual: 'Visual Identity',
+};
 
+export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }: Props) {
+  const t = useTranslation();
+  const searchParams = useSearchParams();
+  const blockParam = blockParamOverride ?? searchParams?.get('block');
+
+  /* ═══ CLEAN WORKSPACE VIEW (from sidebar with ?block= param) ═══ */
+  if (blockParam && BLOCK_NAMES[blockParam]) {
+    return (
+      <div className="min-h-[80vh]">
+        <div className="px-6 md:px-12 lg:px-16 pt-12 md:pt-16">
+          {/* Header — centered, matches template */}
+          <div className="text-center mb-10">
+            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
+              Marketing & Sales
+            </p>
+            <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+              {BLOCK_NAMES[blockParam]}
+            </h1>
+          </div>
+
+          {/* Content — single card, full width */}
+          <div className="max-w-full">
+            {blockParam === 'sales' && <SalesDashboardCard collectionPlanId={collectionPlanId} />}
+            {blockParam === 'content' && <ContentStudioCard collectionPlanId={collectionPlanId} />}
+            {blockParam === 'comms' && <CommunicationsCard collectionPlanId={collectionPlanId} />}
+            {blockParam === 'pos' && <PointOfSaleCard collectionPlanId={collectionPlanId} />}
+            {blockParam === 'visual' && <VisualIdentityCard collectionPlanId={collectionPlanId} />}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ═══ LEGACY VIEW (direct access, no blockParam) ═══ */
   return (
     <div className="px-4 sm:px-6 md:px-12 lg:px-16 py-12">
       {/* Header */}

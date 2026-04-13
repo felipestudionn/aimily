@@ -189,7 +189,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open || 'OPEN'}
         </div>
       </button>
@@ -235,7 +235,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
               { icon: Calendar, label: 'Drops', value: String(kpis.dropCount) },
               { icon: Target, label: t.marketingPage.kpiSellThrough || 'Sell-through', value: `${kpis.avgSellThrough}%` },
             ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="bg-white border border-carbon/[0.06] p-4">
+              <div key={label} className="bg-white border border-carbon/[0.06] rounded-[20px] p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Icon className="h-3.5 w-3.5 text-carbon/25" />
                   <span className="text-[9px] font-medium tracking-[0.12em] uppercase text-carbon/30">{label}</span>
@@ -248,7 +248,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
 
         {/* ═══ REVENUE CURVE ═══ */}
         {revenueCurve.length > 0 && (
-          <div className="bg-white border border-carbon/[0.06] p-6">
+          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
               {t.marketingPage.revenueCurve || 'Revenue Curve'}
             </p>
@@ -272,7 +272,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
 
         {/* ═══ STORIES WITH COMMERCIAL DATA ═══ */}
         {storiesWithCommercial.length > 0 && (
-          <div className="bg-white border border-carbon/[0.06] p-6">
+          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
               {t.marketingPage.storiesCommercial || 'Stories — Commercial Overview'}
             </p>
@@ -308,7 +308,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
 
         {/* ═══ DROPS TIMELINE ═══ */}
         {dropsWithRevenue.length > 0 && (
-          <div className="bg-white border border-carbon/[0.06] p-6">
+          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
               {t.marketingPage.dropCalendar || 'Drop Calendar'}
             </p>

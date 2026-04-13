@@ -71,9 +71,9 @@ function ProductWrapper({ collectionId, blockParam }: WorkspaceComponentProps) {
 
 /* ── Wrapper: Marketing Creation (needs collectionPlanId + milestones) ── */
 
-function MarketingCreationWrapper({ collectionId }: WorkspaceComponentProps) {
+function MarketingCreationWrapper({ collectionId, blockParam }: WorkspaceComponentProps) {
   const { milestones } = useTimeline();
-  return <LazyMarketingCreation collectionPlanId={collectionId} milestones={milestones} />;
+  return <LazyMarketingCreation collectionPlanId={collectionId} milestones={milestones} blockParamOverride={blockParam} />;
 }
 
 /* ── Wrapper: Creative (passes blockParam override) ── */

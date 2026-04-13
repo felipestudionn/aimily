@@ -114,7 +114,7 @@ export function PointOfSaleCard({ collectionPlanId }: PointOfSaleCardProps) {
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open || 'OPEN'}
         </div>
       </button>
@@ -148,7 +148,7 @@ export function PointOfSaleCard({ collectionPlanId }: PointOfSaleCardProps) {
         )}
 
         {/* ═══ WEB STORE ═══ */}
-        <div className="bg-white border border-carbon/[0.06] p-6">
+        <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
           <div className="flex items-center gap-3 mb-4">
             <Globe className="h-4 w-4 text-carbon/30" />
             <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30">
@@ -167,7 +167,7 @@ export function PointOfSaleCard({ collectionPlanId }: PointOfSaleCardProps) {
         </div>
 
         {/* ═══ WHOLESALE ORDERS ═══ */}
-        <div className="bg-white border border-carbon/[0.06] p-6">
+        <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Truck className="h-4 w-4 text-carbon/30" />
@@ -222,7 +222,7 @@ export function PointOfSaleCard({ collectionPlanId }: PointOfSaleCardProps) {
                 <button
                   onClick={handleAddOrder}
                   disabled={saving || !newOrder.buyer_name.trim()}
-                  className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema disabled:opacity-40"
+                  className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white rounded-full disabled:opacity-40"
                 >
                   {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                   {t.common?.save || 'Save'}

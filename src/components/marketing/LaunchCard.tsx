@@ -356,7 +356,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white py-3 px-4 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -389,18 +389,18 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           <div className="flex items-center gap-6">
             {daysToLaunch !== null && (
               <div className="text-right">
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.countdown}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">{t.marketingPage.countdown}</p>
                 <p className="text-xl font-light text-carbon tracking-tight">
                   {daysToLaunch > 0 ? `${daysToLaunch} ${t.marketingPage.days}` : daysToLaunch === 0 ? t.marketingPage.todayLabel : `${Math.abs(daysToLaunch)}${t.marketingPage.dAgo}`}
                 </p>
               </div>
             )}
             <div className="text-right">
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.progress}</p>
+              <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">{t.marketingPage.progress}</p>
               <p className="text-xl font-light text-carbon tracking-tight">{completedPct}%</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.tasks}</p>
+              <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">{t.marketingPage.tasks}</p>
               <p className="text-xl font-light text-carbon tracking-tight">{completedCount}/{tasks.length}</p>
             </div>
           </div>
@@ -415,7 +415,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">
                   {t.marketingPage.retroHeading}
                 </p>
                 <p className="text-sm font-light text-carbon/50">
@@ -426,7 +426,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                 type="button"
                 onClick={handleGenerateRetro}
                 disabled={retroLoading}
-                className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-40"
+                className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-40"
               >
                 {retroLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -448,7 +448,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                 )}
                 {retro.wins && retro.wins.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-2">
+                    <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-2">
                       {t.marketingPage.retroWins}
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
@@ -460,7 +460,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                 )}
                 {retro.areas_for_improvement && retro.areas_for_improvement.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-2">
+                    <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-2">
                       {t.marketingPage.retroAreas}
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
@@ -472,7 +472,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                 )}
                 {retro.recommendations_next_season && retro.recommendations_next_season.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/40 mb-2">
+                    <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-2">
                       {t.marketingPage.retroRecommendations}
                     </p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
@@ -495,7 +495,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               onClick={() => setActivePill(pillId)}
               className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
                 activePill === pillId
-                  ? 'bg-carbon text-crema border-carbon'
+                  ? 'bg-carbon text-white border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
               }`}
             >
@@ -511,7 +511,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         {activePill === 'asistido' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
+              <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -540,7 +540,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         {activePill === 'propuesta' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
+              <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -565,10 +565,10 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-carbon/30" />
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.categoryLabel}:</span>
+            <span className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.categoryLabel}:</span>
             <button
               onClick={() => setCategoryFilter('ALL')}
-              className={`px-3 py-1.5 text-xs border transition-colors ${categoryFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+              className={`px-3 py-1.5 text-xs border transition-colors ${categoryFilter === 'ALL' ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
               {t.marketingPage.all}
             </button>
@@ -576,7 +576,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               <button
                 key={c.id}
                 onClick={() => setCategoryFilter(c.id)}
-                className={`px-3 py-1.5 text-xs border transition-colors ${categoryFilter === c.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                className={`px-3 py-1.5 text-xs border transition-colors ${categoryFilter === c.id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
                 {c.label}
               </button>
@@ -586,10 +586,10 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           <div className="h-5 w-px bg-carbon/10" />
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.status}:</span>
+            <span className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.status}:</span>
             <button
               onClick={() => setStatusFilter('ALL')}
-              className={`px-3 py-1.5 text-xs border transition-colors ${statusFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+              className={`px-3 py-1.5 text-xs border transition-colors ${statusFilter === 'ALL' ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
               {t.marketingPage.all}
             </button>
@@ -597,7 +597,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               <button
                 key={s.id}
                 onClick={() => setStatusFilter(s.id)}
-                className={`px-3 py-1.5 text-xs border transition-colors ${statusFilter === s.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                className={`px-3 py-1.5 text-xs border transition-colors ${statusFilter === s.id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
                 {s.label}
               </button>
@@ -607,10 +607,10 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           <div className="h-5 w-px bg-carbon/10" />
 
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.priority}:</span>
+            <span className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.priority}:</span>
             <button
               onClick={() => setPriorityFilter('ALL')}
-              className={`px-3 py-1.5 text-xs border transition-colors ${priorityFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+              className={`px-3 py-1.5 text-xs border transition-colors ${priorityFilter === 'ALL' ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
               {t.marketingPage.all}
             </button>
@@ -618,7 +618,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               <button
                 key={p.id}
                 onClick={() => setPriorityFilter(p.id)}
-                className={`px-3 py-1.5 text-xs border transition-colors ${priorityFilter === p.id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                className={`px-3 py-1.5 text-xs border transition-colors ${priorityFilter === p.id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
                 {p.label}
               </button>
@@ -632,7 +632,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
             {categoryProgress.map(cat => (
               <div key={cat.id} className="bg-white border border-carbon/[0.06] p-6">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{cat.label}</p>
+                  <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{cat.label}</p>
                   <span className="text-xs text-carbon/30">{cat.done}/{cat.total}</span>
                 </div>
                 <div className="h-2 bg-carbon/[0.04] w-full mb-2">
@@ -650,7 +650,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
         {/* ── Tasks by Category ── */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">
+            <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30">
               {t.marketingPage.tasks} ({filteredTasks.length})
             </p>
             <Button
@@ -666,7 +666,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
           {showAddTask && (
             <div className="bg-white border border-carbon/[0.06] p-6 mb-4 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newTask}</p>
+                <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.newTask}</p>
                 <button onClick={() => setShowAddTask(false)} className="text-carbon/30 hover:text-carbon">
                   <X className="h-4 w-4" />
                 </button>
@@ -740,7 +740,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                 <div key={cat.id}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                    <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{cat.label}</p>
+                    <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{cat.label}</p>
                     <span className="text-xs text-carbon/20">({catTasks.length})</span>
                   </div>
 

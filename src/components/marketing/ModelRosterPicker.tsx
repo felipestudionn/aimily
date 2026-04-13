@@ -28,7 +28,7 @@ export function ModelRosterPicker({ selectedModelId, onSelect }: ModelRosterPick
             onClick={() => setGenderTab(g)}
             className={`px-3 py-1 text-[10px] font-medium uppercase tracking-[0.1em] border transition-colors ${
               genderTab === g
-                ? 'bg-carbon text-crema border-carbon'
+                ? 'bg-carbon text-white border-carbon'
                 : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
             }`}
           >

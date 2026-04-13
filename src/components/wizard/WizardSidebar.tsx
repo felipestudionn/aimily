@@ -97,10 +97,10 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
-      { id: 'sales', label: 'Sales Dashboard', route: 'marketing/creation', phaseId: 'marketing-creation' },
-      { id: 'content-studio', label: 'Content Studio', route: 'marketing/creation', phaseId: 'marketing-creation' },
-      { id: 'communications', label: 'Communications', route: 'marketing/creation', phaseId: 'marketing-creation' },
-      { id: 'pos', label: 'Point of Sale', route: 'marketing/creation', phaseId: 'marketing-creation' },
+      { id: 'sales', label: 'Sales Dashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
+      { id: 'content-studio', label: 'Content Studio', route: 'marketing/creation?block=content', phaseId: 'marketing-creation' },
+      { id: 'communications', label: 'Communications', route: 'marketing/creation?block=comms', phaseId: 'marketing-creation' },
+      { id: 'pos', label: 'Point of Sale', route: 'marketing/creation?block=pos', phaseId: 'marketing-creation' },
     ],
   },
 ];

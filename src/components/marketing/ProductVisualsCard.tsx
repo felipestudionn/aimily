@@ -164,7 +164,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white py-3 px-4 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -368,7 +368,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
                 onClick={() => setActiveStoryId(story.id)}
                 className={`px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors whitespace-nowrap ${
                   (activeStory?.id === story.id)
-                    ? 'bg-carbon text-crema border-carbon'
+                    ? 'bg-carbon text-white border-carbon'
                     : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                 }`}
               >
@@ -381,7 +381,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
                 onClick={() => setActiveStoryId('__unassigned__')}
                 className={`px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors whitespace-nowrap ${
                   activeStoryId === '__unassigned__'
-                    ? 'bg-carbon text-crema border-carbon'
+                    ? 'bg-carbon text-white border-carbon'
                     : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
                 }`}
               >
@@ -411,7 +411,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
         {/* Look picker — signed still life editorial directions (Hereu / Khaite / Jacquemus / Bottega).
             Each preset is a full DoP look, not just a background label. */}
         <div className="mb-8">
-          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-3">
+          <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-3">
             {t.marketingPage.scene}
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -423,13 +423,13 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
                   onClick={() => setSelectedScene(s.id)}
                   className={`text-left px-4 py-3 border transition-colors ${
                     active
-                      ? 'bg-carbon text-crema border-carbon'
+                      ? 'bg-carbon text-white border-carbon'
                       : 'bg-white text-carbon border-carbon/[0.06] hover:border-carbon/20'
                   }`}
                 >
                   <span
                     className={`block text-[11px] font-medium tracking-[0.08em] uppercase ${
-                      active ? 'text-crema' : 'text-carbon'
+                      active ? 'text-white' : 'text-carbon'
                     }`}
                   >
                     {s.label}
@@ -437,7 +437,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
                   {s.hint && (
                     <span
                       className={`block text-[10px] font-light leading-snug mt-1 ${
-                        active ? 'text-crema/60' : 'text-carbon/40'
+                        active ? 'text-white/60' : 'text-carbon/40'
                       }`}
                     >
                       {s.hint}
@@ -454,7 +454,7 @@ export function ProductVisualsCard({ collectionPlanId }: ProductVisualsCardProps
           {/* Model selector for try-on */}
           {models.length > 0 && (
             <div className="flex items-center gap-2">
-              <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+              <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
                 <Users className="h-3 w-3 inline mr-1" />
                 {t.marketingPage.model}
               </label>

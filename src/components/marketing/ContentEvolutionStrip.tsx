@@ -250,7 +250,7 @@ export function ContentEvolutionStrip({
               disabled={isDisabled}
               className={`flex-1 flex items-center justify-between gap-2 px-3 py-2.5 border transition-all ${
                 isExpanded
-                  ? 'bg-carbon text-crema border-carbon'
+                  ? 'bg-carbon text-white border-carbon'
                   : isDisabled
                     ? 'bg-carbon/[0.02] text-carbon/20 border-carbon/[0.04] cursor-not-allowed'
                     : 'bg-white text-carbon/60 border-carbon/[0.06] hover:border-carbon/20'
@@ -427,7 +427,7 @@ export function ContentEvolutionStrip({
                           <img src={styleRefUrl} alt="" className="w-full h-full object-cover" />
                           <button
                             onClick={() => setStyleRefUrl(null)}
-                            className="absolute top-0 right-0 bg-carbon text-crema w-4 h-4 flex items-center justify-center text-[8px]"
+                            className="absolute top-0 right-0 bg-carbon text-white w-4 h-4 flex items-center justify-center text-[8px]"
                           >
                             ×
                           </button>
@@ -468,7 +468,7 @@ export function ContentEvolutionStrip({
                   <button
                     onClick={handleEditorialGenerate}
                     disabled={generating}
-                    className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.1em] bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium uppercase tracking-[0.1em] bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {generating ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

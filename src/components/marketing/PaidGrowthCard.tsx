@@ -312,7 +312,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white py-3 px-4 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -345,12 +345,12 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
           <div className="flex items-center gap-6">
             {totalBudget > 0 && (
               <div className="text-right">
-                <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.totalBudget}</p>
+                <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">{t.marketingPage.totalBudget}</p>
                 <p className="text-xl font-light text-carbon tracking-tight">€{totalBudget.toLocaleString()}</p>
               </div>
             )}
             <div className="text-right">
-              <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">{t.marketingPage.campaigns}</p>
+              <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">{t.marketingPage.campaigns}</p>
               <p className="text-xl font-light text-carbon tracking-tight">{campaigns.length}</p>
             </div>
           </div>
@@ -368,7 +368,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               onClick={() => setActivePill(pillId)}
               className={`px-4 py-2.5 text-xs font-medium tracking-[0.08em] uppercase border transition-all ${
                 activePill === pillId
-                  ? 'bg-carbon text-crema border-carbon'
+                  ? 'bg-carbon text-white border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'
               }`}
             >
@@ -384,7 +384,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         {activePill === 'asistido' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
+              <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -420,7 +420,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         {activePill === 'propuesta' && (
           <div className="bg-white border border-carbon/[0.06] p-6 space-y-4">
             <div>
-              <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
+              <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -449,10 +449,10 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-carbon/30" />
-            <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.platform}:</span>
+            <span className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.platform}:</span>
             <button
               onClick={() => setPlatformFilter('ALL')}
-              className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+              className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === 'ALL' ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
             >
               {t.marketingPage.all}
             </button>
@@ -460,7 +460,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               <button
                 key={id}
                 onClick={() => setPlatformFilter(id)}
-                className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === id ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                className={`px-3 py-1.5 text-xs border transition-colors ${platformFilter === id ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
               >
                 {getPaidPlatformLabel(t, id)}
               </button>
@@ -471,10 +471,10 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
             <>
               <div className="h-5 w-px bg-carbon/10" />
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.drop}:</span>
+                <span className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.drop}:</span>
                 <button
                   onClick={() => setDropFilter('ALL')}
-                  className={`px-3 py-1.5 text-xs border transition-colors ${dropFilter === 'ALL' ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                  className={`px-3 py-1.5 text-xs border transition-colors ${dropFilter === 'ALL' ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                 >
                   {t.marketingPage.all}
                 </button>
@@ -482,7 +482,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   <button
                     key={d.id}
                     onClick={() => setDropFilter(d.name)}
-                    className={`px-3 py-1.5 text-xs border transition-colors ${dropFilter === d.name ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${dropFilter === d.name ? 'bg-carbon text-white border-carbon' : 'bg-white text-carbon/50 border-carbon/[0.08] hover:border-carbon/20'}`}
                   >
                     {d.name}
                   </button>
@@ -497,7 +497,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
           <div className="grid grid-cols-2 gap-5">
             {/* By Platform */}
             <div className="bg-white border border-carbon/[0.06] p-6">
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.budgetByPlatform}</p>
+              <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-1">{t.marketingPage.budgetByPlatform}</p>
               <div className="space-y-3 mt-4">
                 {budgetByPlatform.map(([platform, amount]) => {
                   const pct = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
@@ -521,7 +521,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
 
             {/* By Drop */}
             <div className="bg-white border border-carbon/[0.06] p-6">
-              <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-1">{t.marketingPage.budgetByDrop}</p>
+              <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30 mb-1">{t.marketingPage.budgetByDrop}</p>
               <div className="space-y-3 mt-4">
                 {budgetByDrop.map(([drop, amount]) => {
                   const pct = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
@@ -548,7 +548,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
         {/* ── Campaigns List ── */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30">
+            <p className="text-xs font-medium tracking-[0.08em] uppercase text-carbon/30">
               {t.marketingPage.campaigns} ({filteredCampaigns.length})
             </p>
             <Button
@@ -564,7 +564,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
           {showAddCampaign && (
             <div className="bg-white border border-carbon/[0.06] p-6 mb-4 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newCampaign}</p>
+                <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">{t.marketingPage.newCampaign}</p>
                 <button onClick={() => setShowAddCampaign(false)} className="text-carbon/30 hover:text-carbon">
                   <X className="h-4 w-4" />
                 </button>
@@ -736,7 +736,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                     <div className="flex items-center justify-between mb-3">
                       <button
                         onClick={() => setEditingAdSets(isEditingAdSets ? null : campaign.id)}
-                        className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/30 hover:text-carbon/50 transition-colors flex items-center gap-1"
+                        className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/30 hover:text-carbon/50 transition-colors flex items-center gap-1"
                       >
                         <BarChart3 className="h-3 w-3" />
                         {t.marketingPage.adSetsLabel} ({adSets.length})

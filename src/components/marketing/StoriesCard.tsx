@@ -151,7 +151,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
           )}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-crema py-3 px-4 text-[11px] font-medium uppercase tracking-[0.15em] group-hover:bg-carbon/90 transition-colors">
+        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white py-3 px-4 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
           {t.marketingPage.open}
         </div>
       </button>
@@ -395,7 +395,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
               }}
               className={`px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-carbon text-crema border-carbon'
+                  ? 'bg-carbon text-white border-carbon'
                   : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
               }`}
             >
@@ -415,7 +415,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
               </p>
               <button
                 onClick={handleAddStory}
-                className="flex items-center gap-2 bg-carbon text-crema px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors"
+                className="flex items-center gap-2 bg-carbon text-white px-4 py-2 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors"
               >
                 <Plus className="h-3.5 w-3.5" /> {t.marketingPage.addStory}
               </button>
@@ -500,7 +500,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
             <button
               onClick={() => generateStories('assist')}
               disabled={aiLoading || !userDirection.trim()}
-              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {aiLoading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -546,7 +546,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
 
             {/* B3 — optional consumer voice signals */}
             <div className="space-y-2">
-              <label className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30">
+              <label className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30">
                 {t.marketingPage.consumerSignalsLabel}
               </label>
               <textarea
@@ -563,7 +563,7 @@ export function StoriesCard({ collectionPlanId }: StoriesCardProps) {
             <button
               onClick={() => generateStories('generate')}
               disabled={aiLoading}
-              className="flex items-center gap-2 bg-carbon text-crema px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {aiLoading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -815,7 +815,7 @@ function AiDraftsPreview({
   return (
     <div className="space-y-4 mt-6">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">
+        <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40">
           {t.marketingPage.aiProposalReview}
         </p>
         <div className="flex gap-2">
@@ -827,7 +827,7 @@ function AiDraftsPreview({
           </button>
           <button
             onClick={onConfirm}
-            className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-crema hover:bg-carbon/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white hover:bg-carbon/90 transition-colors"
           >
             <Check className="h-3.5 w-3.5" /> {t.marketingPage.confirmAndSave}
           </button>
@@ -836,7 +836,7 @@ function AiDraftsPreview({
 
       {drafts.rationale && (
         <div className="bg-carbon/[0.02] border border-carbon/[0.06] p-4">
-          <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/30 mb-1">
+          <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-1">
             {t.marketingPage.aiRationale}
           </p>
           <p className="text-sm font-light text-carbon/60 leading-relaxed">
@@ -897,7 +897,7 @@ function AiDraftsPreview({
           />
           {/* SKU assignments */}
           <div>
-            <p className="text-[10px] font-medium tracking-[0.15em] uppercase text-carbon/25 mb-1.5">
+            <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1.5">
               {t.marketingPage.assignedSkus} ({draft.sku_ids.length})
             </p>
             <div className="flex flex-wrap gap-1.5">
