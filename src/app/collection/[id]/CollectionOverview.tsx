@@ -110,10 +110,17 @@ function BlockCard({
       href={getCtaRoute()}
       className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
     >
-      {/* Block number — large, ghost */}
-      <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em] mb-10">
-        0{blockIndex}.
-      </span>
+      {/* Top row: block number + progress */}
+      <div className="flex items-start justify-between mb-10">
+        <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+          0{blockIndex}.
+        </span>
+        {progress > 0 && (
+          <span className="text-[13px] font-medium text-carbon/30 tabular-nums mt-2">
+            {progress}%
+          </span>
+        )}
+      </div>
 
       {/* Title */}
       <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
@@ -128,15 +135,11 @@ function BlockCard({
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Progress + CTA */}
-      <div className="flex items-center justify-between mt-10">
-        <span className="text-[13px] font-medium text-carbon/30 tabular-nums">
-          {progress > 0 ? `${progress}%` : ''}
-        </span>
-
+      {/* CTA — centered, same style for all states */}
+      <div className="flex justify-center mt-10">
         <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
           isComplete
-            ? 'bg-carbon/[0.06] text-carbon/50'
+            ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
             : 'bg-carbon text-white group-hover:bg-carbon/90'
         }`}>
           {getCtaLabel()}
