@@ -20,21 +20,33 @@ import {
   Scissors,
   Factory,
   Megaphone,
-  Rocket,
   Fingerprint,
+  DollarSign,
+  Store,
+  Calculator,
+  Layers,
+  BarChart3,
+  Palette,
+  MessageSquare,
+  ShoppingCart,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
 import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
 import type { TimelinePhase } from '@/types/timeline';
 
-/* ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   Sidebar data model
+
+   Every sub-item maps to a REAL existing route.
+   Items sharing a route = they live on the same page.
+   phaseId = milestone tracking from wizard-phases.ts.
+   ══════════════════════════════════════════════════════════════ */
 
 interface SidebarSubItem {
   id: string;
   label: string;
-  route: string;
-  icon: React.ElementType;
+  route: string;           // route segment after /collection/[id]/
   phaseId?: WizardPhaseId;
 }
 
@@ -42,7 +54,7 @@ interface SidebarBlock {
   id: TimelinePhase;
   label: string;
   icon: React.ElementType;
-  route: string;
+  route: string;           // default block route
   phaseIds: WizardPhaseId[];
   subItems: SidebarSubItem[];
 }
@@ -50,54 +62,61 @@ interface SidebarBlock {
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
-    label: 'Creative',
+    label: 'Creative & Brand',
     icon: Sparkles,
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
-      { id: 'creative', label: 'Creative Direction', route: 'creative', icon: Sparkles, phaseId: 'product' },
-      { id: 'brand', label: 'Brand Identity', route: 'brand', icon: Fingerprint, phaseId: 'brand' },
+      { id: 'creative-direction', label: 'Creative Direction', route: 'creative', phaseId: 'product' },
+      { id: 'brand-identity', label: 'Brand Identity', route: 'brand', phaseId: 'brand' },
+      { id: 'creative-synthesis', label: 'Creative Synthesis', route: 'creative' },
     ],
   },
   {
     id: 'planning',
-    label: 'Merchandising',
+    label: 'Merchandising & Planning',
     icon: ShoppingBag,
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
-      { id: 'merchandising', label: 'Range Planning', route: 'merchandising', icon: ShoppingBag, phaseId: 'merchandising' },
+      { id: 'families', label: 'Product Families', route: 'merchandising', phaseId: 'merchandising' },
+      { id: 'pricing', label: 'Pricing', route: 'merchandising', phaseId: 'merchandising' },
+      { id: 'channels', label: 'Channels & Markets', route: 'merchandising', phaseId: 'merchandising' },
+      { id: 'budget', label: 'Budget & Financials', route: 'merchandising', phaseId: 'merchandising' },
+      { id: 'builder-merch', label: 'Collection Builder', route: 'product' },
     ],
   },
   {
     id: 'development',
-    label: 'Design',
+    label: 'Design & Development',
     icon: PenTool,
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
-      { id: 'builder', label: 'Collection Builder', route: 'product', icon: Grid3X3 },
-      { id: 'design', label: 'Sketch & Color', route: 'design', icon: PenTool, phaseId: 'design' },
-      { id: 'prototyping', label: 'Prototyping', route: 'prototyping', icon: Box, phaseId: 'prototyping' },
-      { id: 'sampling', label: 'Selection & Catalog', route: 'sampling', icon: Scissors, phaseId: 'sampling' },
-      { id: 'production', label: 'Production', route: 'production', icon: Factory, phaseId: 'production' },
+      { id: 'builder-design', label: 'Collection Builder', route: 'product' },
+      { id: 'sketch', label: 'Sketch & Color', route: 'design', phaseId: 'design' },
+      { id: 'prototyping', label: 'Prototyping', route: 'prototyping', phaseId: 'prototyping' },
+      { id: 'selection', label: 'Selection & Catalog', route: 'sampling', phaseId: 'sampling' },
+      { id: 'production', label: 'Production', route: 'production', phaseId: 'production' },
     ],
   },
   {
     id: 'go_to_market',
-    label: 'Marketing',
+    label: 'Marketing & Sales',
     icon: Megaphone,
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
-      { id: 'mkt-creation', label: 'Content & Strategy', route: 'marketing/creation', icon: Megaphone, phaseId: 'marketing-creation' },
-      { id: 'mkt-distribution', label: 'Distribution & Launch', route: 'marketing/distribution', icon: Rocket, phaseId: 'marketing-distribution' },
+      { id: 'sales', label: 'Sales Dashboard', route: 'marketing/creation', phaseId: 'marketing-creation' },
+      { id: 'content-studio', label: 'Content Studio', route: 'marketing/creation', phaseId: 'marketing-creation' },
+      { id: 'communications', label: 'Communications', route: 'marketing/creation', phaseId: 'marketing-creation' },
+      { id: 'pos', label: 'Point of Sale', route: 'marketing/creation', phaseId: 'marketing-creation' },
     ],
   },
 ];
 
 const COLLAPSED_W = 72;
-const EXPANDED_W = 272;
+const EXPANDED_W = 280;
 
 /* ══════════════════════════════════════════════════════════════ */
 
@@ -152,13 +171,18 @@ export function WizardSidebar({
     });
   }
 
-  function isSubItemActive(sub: SidebarSubItem): boolean {
+  function isSubItemActive(sub: SidebarSubItem, block: SidebarBlock): boolean {
     const subPath = `${basePath}/${sub.route}`;
-    return pathname === subPath || pathname?.startsWith(`${subPath}/`) || false;
+    const onThisRoute = pathname === subPath || pathname?.startsWith(`${subPath}/`) || false;
+    if (!onThisRoute) return false;
+
+    // If multiple sub-items share a route, only highlight the first one
+    const firstWithSameRoute = block.subItems.find(s => s.route === sub.route);
+    return firstWithSameRoute?.id === sub.id;
   }
 
-  function getSubItemState(sub: SidebarSubItem): 'active' | 'completed' | 'locked' | 'available' {
-    if (isSubItemActive(sub)) return 'active';
+  function getSubItemState(sub: SidebarSubItem, block: SidebarBlock): 'active' | 'completed' | 'locked' | 'available' {
+    if (isSubItemActive(sub, block)) return 'active';
     if (!sub.phaseId) return 'available';
     const ps = phaseMap.get(sub.phaseId);
     if (!ps) return 'available';
@@ -202,7 +226,7 @@ export function WizardSidebar({
       >
         <div className="surface-card h-full flex flex-col overflow-hidden relative">
 
-          {/* ── Collapse chevron on edge ── */}
+          {/* ── Collapse chevron ── */}
           <button
             onClick={handleToggleCollapse}
             className="absolute -right-3 top-8 w-6 h-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.12)] flex items-center justify-center hover:shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-shadow z-10 hidden md:flex"
@@ -259,7 +283,7 @@ export function WizardSidebar({
           <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06] shrink-0`} />
 
           {/* ═══════════════════════════════════════════
-               Block navigation — expandable sections
+               Block navigation
                ═══════════════════════════════════════════ */}
           <nav className="flex-1 overflow-y-auto scrollbar-subtle pt-4 px-3">
             {SIDEBAR_BLOCKS.map((block) => {
@@ -275,7 +299,6 @@ export function WizardSidebar({
               return (
                 <div key={block.id} className="mb-2">
                   {collapsed ? (
-                    /* ── Collapsed: block icon ── */
                     <Link
                       href={allLocked ? '#' : blockHref}
                       onClick={(e) => { if (allLocked) e.preventDefault(); }}
@@ -292,7 +315,7 @@ export function WizardSidebar({
                     </Link>
                   ) : (
                     <>
-                      {/* ── Block header: icon + label (BLACK) + chevron ── */}
+                      {/* ── Block header ── */}
                       <button
                         onClick={() => !allLocked && toggleBlock(block.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all text-left ${
@@ -327,11 +350,11 @@ export function WizardSidebar({
                         )}
                       </button>
 
-                      {/* ── Sub-items: indented lines with contained connector ── */}
+                      {/* ── Sub-items ── */}
                       {isExpanded && (
-                        <div className="mt-1 mb-1 ml-[30px] pl-4 border-l-2 border-carbon/[0.06] rounded-bl-sm">
+                        <div className="mt-1 mb-3 ml-[30px] pl-4 border-l-2 border-carbon/[0.06]">
                           {block.subItems.map((sub) => {
-                            const state = getSubItemState(sub);
+                            const state = getSubItemState(sub, block);
                             const subHref = `${basePath}/${sub.route}`;
                             const isLocked = state === 'locked';
 
