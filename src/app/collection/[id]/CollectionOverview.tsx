@@ -21,32 +21,8 @@ type ViewMode = 'blocks' | 'calendar' | 'presentation';
 interface SubBlockDef {
   id: string;
   label: string;
-  description: string;  // use {word} to highlight as inline tag
+  description: string;
   route: string;
-}
-
-/* Render description with {highlighted} words as inline pills */
-function RichDescription({ text }: { text: string }) {
-  // Remove commas that touch pill boundaries (before/after {})
-  const cleaned = text.replace(/,\s*\{/g, ' {').replace(/\}\s*,/g, '} ').replace(/\}\s*,\s*and/g, '} and');
-  const parts = cleaned.split(/(\{[^}]+\})/);
-  return (
-    <p className="text-[13px] text-carbon/50 leading-[2.4] tracking-[-0.02em]">
-      {parts.map((part, i) => {
-        if (part.startsWith('{') && part.endsWith('}')) {
-          const word = part.slice(1, -1);
-          return (
-            <span key={i} className="inline-flex px-2.5 py-1 mr-1 rounded-full border border-carbon/[0.10] text-[11px] font-medium text-carbon/60" style={{ marginLeft: i === 0 ? 0 : undefined }}>
-              {word}
-            </span>
-          );
-        }
-        // Trim leading/trailing spaces for cleaner alignment
-        const trimmed = part.replace(/^\s+/, ' ').replace(/\s+$/, ' ');
-        return <span key={i}>{trimmed}</span>;
-      })}
-    </p>
-  );
 }
 
 interface BlockDef {
@@ -66,10 +42,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Vision, research, and brand identity for your collection.',
     route: 'creative',
     subBlocks: [
-      { id: 'consumer', label: 'Consumer\nDefinition', description: 'Define your {target audience}, build {personas}, and map their {lifestyle} and buying behavior.', route: 'creative' },
-      { id: 'moodboard', label: 'Moodboard\n& Research', description: 'Collect {visual references}, explore {trends}, and analyze {competitors} for your season.', route: 'creative' },
-      { id: 'brand', label: 'Brand\nIdentity', description: 'Codify your {brand DNA}, define your {voice}, and design your {visual identity}.', route: 'brand' },
-      { id: 'synthesis', label: 'Creative\nSynthesis', description: 'Consolidate everything into a {creative brief}, define the {collection vibe} and {direction}.', route: 'creative' },
+      { id: 'consumer', label: 'Consumer\nDefinition', description: 'Define your target audience, build personas, and map their lifestyle and buying behavior.', route: 'creative' },
+      { id: 'moodboard', label: 'Moodboard\n& Research', description: 'Collect visual references, explore trends, and analyze competitors for your season.', route: 'creative' },
+      { id: 'brand', label: 'Brand\nIdentity', description: 'Codify your brand DNA, define your voice, and design your visual identity.', route: 'brand' },
+      { id: 'synthesis', label: 'Creative\nSynthesis', description: 'Consolidate everything into a creative brief, define the collection vibe and direction.', route: 'creative' },
     ],
   },
   {
@@ -79,10 +55,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Product families, pricing, channels, and budget.',
     route: 'merchandising',
     subBlocks: [
-      { id: 'families', label: 'Families\n& Pricing', description: 'Define {product categories}, set {price architecture}, and structure your {segments}.', route: 'merchandising' },
-      { id: 'channels', label: 'Channels\n& Markets', description: 'Plan your {DTC} and {wholesale} distribution across {target markets}.', route: 'merchandising' },
-      { id: 'budget', label: 'Budget\n& Financials', description: 'Set your {sales target}, calculate {margins}, and plan {sell-through} rates.', route: 'merchandising' },
-      { id: 'builder', label: 'Collection\nBuilder', description: 'Build your {SKU grid}, validate the {range plan}, and organize by {drops}.', route: 'product' },
+      { id: 'families', label: 'Families\n& Pricing', description: 'Define product categories, set price architecture, and structure your segments.', route: 'merchandising' },
+      { id: 'channels', label: 'Channels\n& Markets', description: 'Plan your DTC and wholesale distribution across target markets.', route: 'merchandising' },
+      { id: 'budget', label: 'Budget\n& Financials', description: 'Set your sales target, calculate margins, and plan sell-through rates.', route: 'merchandising' },
+      { id: 'builder', label: 'Collection\nBuilder', description: 'Build your SKU grid, validate the range plan, and organize by drops.', route: 'product' },
     ],
   },
   {
@@ -92,10 +68,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Sketch, prototype, select, and produce your collection.',
     route: 'product',
     subBlocks: [
-      { id: 'sketch', label: 'Sketch\n& Color', description: 'Create {sketches}, define {colorways}, and select {materials} for each SKU.', route: 'product?phase=sketch' },
-      { id: 'prototyping', label: 'Proto\n& Fitting', description: 'Review {prototypes}, run {fit sessions}, and finalize {tech packs}.', route: 'product?phase=prototyping' },
-      { id: 'production', label: 'Production\n& Logistics', description: 'Send {size runs}, manage {factory orders}, and coordinate {logistics}.', route: 'product?phase=production' },
-      { id: 'selection', label: 'Final\nSelection', description: 'Conduct the {line review}, confirm the {final lineup} for your collection.', route: 'product?phase=selection' },
+      { id: 'sketch', label: 'Sketch\n& Color', description: 'Create sketches, define colorways, and select materials for each SKU.', route: 'product?phase=sketch' },
+      { id: 'prototyping', label: 'Proto\n& Fitting', description: 'Review prototypes, run fit sessions, and finalize tech packs.', route: 'product?phase=prototyping' },
+      { id: 'production', label: 'Production\n& Logistics', description: 'Send size runs, manage factory orders, and coordinate logistics.', route: 'product?phase=production' },
+      { id: 'selection', label: 'Final\nSelection', description: 'Conduct the line review and confirm the final lineup for your collection.', route: 'product?phase=selection' },
     ],
   },
   {
@@ -105,10 +81,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Content, communications, and go-to-market strategy.',
     route: 'marketing/creation',
     subBlocks: [
-      { id: 'sales', label: 'Sales &\nPerformance', description: '{Revenue} forecasting, {drop planning}, and commercial {KPIs} for your collection.', route: 'marketing/creation' },
-      { id: 'content', label: 'Content\nCreation', description: 'Visual content per SKU: {e-commerce}, {still life}, {editorial}, and {campaign} shoots.', route: 'marketing/creation' },
-      { id: 'comms', label: 'Communications\n& Brand Voice', description: '{Copy}, {SEO}, {social} templates, {email} sequences, and brand voice.', route: 'marketing/creation' },
-      { id: 'pos', label: 'Distribution\n& Retail', description: 'Connect your {web store}, track {wholesale} orders, and manage {distribution}.', route: 'marketing/creation' },
+      { id: 'sales', label: 'Sales &\nPerformance', description: 'Revenue forecasting, drop planning, and commercial KPIs for your collection.', route: 'marketing/creation' },
+      { id: 'content', label: 'Content\nCreation', description: 'Visual content per SKU: e-commerce, still life, editorial, and campaign shoots.', route: 'marketing/creation' },
+      { id: 'comms', label: 'Communications\n& Brand Voice', description: 'Copy, SEO, social templates, email sequences, and brand voice.', route: 'marketing/creation' },
+      { id: 'pos', label: 'Distribution\n& Retail', description: 'Connect your web store, track wholesale orders, and manage distribution.', route: 'marketing/creation' },
     ],
   },
 ];
@@ -307,7 +283,9 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       {sub.label}
                     </h3>
 
-                    <RichDescription text={sub.description} />
+                    <p className="text-[14px] text-carbon/45 leading-[1.7] tracking-[-0.02em]">
+                      {sub.description}
+                    </p>
 
                     <div className="flex-1" />
 
