@@ -1,6 +1,6 @@
 'use client';
 
-import { WizardLayout } from '@/components/wizard/WizardLayout';
+import { WorkspaceShell } from '@/components/workspace/WorkspaceShell';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import type { TimelineMilestone } from '@/types/timeline';
 
@@ -27,7 +27,7 @@ export function CollectionHubShell({
 }: CollectionHubShellProps) {
   return (
     <SubscriptionGate>
-      <WizardLayout
+      <WorkspaceShell
         collectionId={collectionId}
         collectionName={collectionName}
         season={season}
@@ -37,7 +37,7 @@ export function CollectionHubShell({
         setupData={setupData}
       >
         {children}
-      </WizardLayout>
+      </WorkspaceShell>
     </SubscriptionGate>
   );
 }

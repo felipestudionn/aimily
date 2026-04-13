@@ -2729,13 +2729,13 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
    Main Page Component
    ═══════════════════════════════════════════════════════════ */
 
-export default function CreativeBrandPage() {
+export default function CreativeBrandPage({ blockParamOverride }: { blockParamOverride?: string | null }) {
   const t = useTranslation();
   const { id } = useParams();
   const collectionId = id as string;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const blockParam = searchParams?.get('block');
+  const blockParam = blockParamOverride ?? searchParams?.get('block');
   const [expandedBlock, setExpandedBlock] = useState<string | null>(blockParam || null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [collectionContext, setCollectionContext] = useState({ season: '', collectionName: '' });

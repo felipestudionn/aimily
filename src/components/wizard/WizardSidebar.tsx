@@ -21,6 +21,7 @@ import {
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
 import { useSkus } from '@/hooks/useSkus';
+import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
 import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
 import type { TimelinePhase } from '@/types/timeline';
 
@@ -133,6 +134,7 @@ export function WizardSidebar({
   const searchParams = useSearchParams();
   const { milestones } = useTimeline();
   const { phases } = useWizardState(milestones);
+  const workspaceNav = useWorkspaceNavigationOptional();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedBlocks, setExpandedBlocks] = useState<Set<TimelinePhase>>(
     new Set(SIDEBAR_BLOCKS.map((b) => b.id))
@@ -332,12 +334,20 @@ export function WizardSidebar({
               const blockHref = `${basePath}?block=${block.id}`;
               const isExpanded = expandedBlocks.has(block.id);
 
+              const handleBlockNav = (e: React.MouseEvent) => {
+                if (allLocked) { e.preventDefault(); return; }
+                if (workspaceNav) {
+                  e.preventDefault();
+                  workspaceNav.navigateToSubDashboard(block.id);
+                }
+              };
+
               return (
                 <div key={block.id} className="mb-5">
                   {collapsed ? (
                     <Link
                       href={allLocked ? '#' : blockHref}
-                      onClick={(e) => { if (allLocked) e.preventDefault(); }}
+                      onClick={handleBlockNav}
                       className={`w-10 h-10 flex items-center justify-center rounded-[10px] transition-all ${
                         allLocked ? 'opacity-25 cursor-not-allowed'
                         : blockActive ? 'bg-carbon/[0.08]'
@@ -358,7 +368,7 @@ export function WizardSidebar({
                       }`}>
                         <Link
                           href={allLocked ? '#' : blockHref}
-                          onClick={(e) => { if (allLocked) e.preventDefault(); }}
+                          onClick={handleBlockNav}
                           className={`text-[15px] font-bold tracking-[-0.01em] flex-1 truncate transition-colors ${
                             allLocked ? 'text-carbon/30 cursor-not-allowed'
                             : 'text-carbon'
@@ -387,11 +397,20 @@ export function WizardSidebar({
                             const subHref = `${basePath}/${sub.route}`;
                             const isLocked = state === 'locked';
 
+                            const handleSubNav = (e: React.MouseEvent) => {
+                              if (isLocked) { e.preventDefault(); return; }
+                              if (workspaceNav) {
+                                e.preventDefault();
+                                const routeBase = sub.route.split('?')[0];
+                                workspaceNav.navigateToWorkspace(routeBase, sub.route);
+                              }
+                            };
+
                             return (
                               <Link
                                 key={sub.id}
                                 href={isLocked ? '#' : subHref}
-                                onClick={(e) => { if (isLocked) e.preventDefault(); }}
+                                onClick={handleSubNav}
                                 className={`flex items-center justify-between py-2 px-3 -mx-3 rounded-[10px] transition-all ${
                                   state === 'active'
                                     ? 'bg-carbon text-white'
@@ -445,10 +464,19 @@ export function WizardSidebar({
                   ? pathname === basePath || pathname === `${basePath}/`
                   : pathname?.startsWith(fullPath);
 
+                const handleUtilityNav = (e: React.MouseEvent) => {
+                  // Dashboard link uses workspace navigation to go back to page mode
+                  if (item.id === 'overview' && workspaceNav) {
+                    e.preventDefault();
+                    workspaceNav.navigateToDashboard();
+                  }
+                };
+
                 return (
                   <Link
                     key={item.id}
                     href={fullPath}
+                    onClick={handleUtilityNav}
                     className={`flex items-center ${
                       collapsed ? 'justify-center h-10 rounded-[10px]' : 'gap-3 px-3 py-2.5 rounded-[10px]'
                     } transition-all ${

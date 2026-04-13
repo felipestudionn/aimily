@@ -11,6 +11,7 @@ import InlineTimeline from './InlineTimeline';
 import { useTranslation } from '@/i18n';
 import { useRouter } from 'next/navigation';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
+import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
 
 type ViewMode = 'blocks' | 'calendar' | 'presentation';
 
@@ -114,6 +115,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const [animating, setAnimating] = useState(false);
   const [exitingSubIdx, setExitingSubIdx] = useState<number | null>(null);
   const t = useTranslation();
+  const workspaceNav = useWorkspaceNavigationOptional();
 
   // Open block sub-dashboard when ?block= param is present
   useEffect(() => {
@@ -158,14 +160,22 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const handleSubCardClick = useCallback((idx: number, route: string) => {
     setExitingSubIdx(idx);
     setTimeout(() => {
-      router.push(`/collection/${collectionId}/${route}`);
+      if (workspaceNav) {
+        // Use WorkspaceShell state-based navigation (animated, no page flash)
+        const routeBase = route.split('?')[0];
+        workspaceNav.navigateToWorkspace(routeBase, route);
+      } else {
+        // Fallback: regular Next.js navigation
+        router.push(`/collection/${collectionId}/${route}`);
+      }
     }, 500);
-  }, [router, collectionId]);
+  }, [router, collectionId, workspaceNav]);
 
   const handleBack = useCallback(() => {
     setAnimating(true);
     setTimeout(() => {
       setExpandedBlock(null);
+      setExitingSubIdx(null);
       // Clear the ?block= param from URL
       router.replace(`/collection/${collectionId}`, { scroll: false });
       setTimeout(() => setAnimating(false), 50);
