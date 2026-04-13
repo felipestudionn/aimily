@@ -8,6 +8,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   Check,
+  ArrowRight,
   Presentation,
   X,
   ChevronLeft,
@@ -30,8 +31,9 @@ import type { TimelinePhase } from '@/types/timeline';
 interface SidebarSubItem {
   id: string;
   label: string;
-  route: string;           // route segment after /collection/[id]/
+  route: string;
   phaseId?: WizardPhaseId;
+  isOutput?: boolean;      // true = consolidation step (shows → instead of ✓)
 }
 
 interface SidebarBlock {
@@ -50,9 +52,9 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     phaseIds: ['product', 'brand'],
     subItems: [
       { id: 'consumer', label: 'Consumer', route: 'creative', phaseId: 'product' },
-      { id: 'moodboard-research', label: 'Moodboard & Research', route: 'creative' },
+      { id: 'moodboard-research', label: 'Moodboard & Research', route: 'creative', phaseId: 'product' },
       { id: 'brand-identity', label: 'Brand Identity', route: 'brand', phaseId: 'brand' },
-      { id: 'creative-synthesis', label: 'Creative Synthesis', route: 'creative' },
+      { id: 'creative-synthesis', label: 'Creative Synthesis', route: 'creative', isOutput: true },
     ],
   },
   {
@@ -64,7 +66,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
       { id: 'families-pricing', label: 'Families & Pricing', route: 'merchandising', phaseId: 'merchandising' },
       { id: 'channels', label: 'Channels & Markets', route: 'merchandising', phaseId: 'merchandising' },
       { id: 'budget', label: 'Budget & Financials', route: 'merchandising', phaseId: 'merchandising' },
-      { id: 'builder-merch', label: 'Collection Builder', route: 'product' },
+      { id: 'builder-merch', label: 'Collection Builder', route: 'product', isOutput: true },
     ],
   },
   {
@@ -389,14 +391,20 @@ export function WizardSidebar({
                                   {sub.label}
                                 </span>
 
+                                {/* Output items (Creative Synthesis, Collection Builder) → arrow */}
+                                {sub.isOutput && (
+                                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-carbon/40" strokeWidth={2} />
+                                )}
+
                                 {/* SKU count badge for Design phase sub-items */}
-                                {skuPhaseCounts[sub.id] > 0 && (
+                                {!sub.isOutput && skuPhaseCounts[sub.id] > 0 && (
                                   <span className="text-[12px] font-normal text-carbon/40 tabular-nums">
                                     {skuPhaseCounts[sub.id]}
                                   </span>
                                 )}
 
-                                {state === 'completed' && !skuPhaseCounts[sub.id] && (
+                                {/* Check for completed non-output items */}
+                                {!sub.isOutput && state === 'completed' && !skuPhaseCounts[sub.id] && (
                                   <Check className="h-3.5 w-3.5 shrink-0 text-carbon" strokeWidth={2} />
                                 )}
                               </Link>
