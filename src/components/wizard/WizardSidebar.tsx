@@ -9,38 +9,36 @@ import {
   Check,
   Presentation,
   X,
+  ChevronLeft,
+  Sparkles,
+  Palette,
+  ShoppingBag,
+  Grid3X3,
+  PenTool,
+  Box,
+  Scissors,
+  Factory,
+  Megaphone,
+  Rocket,
+  Fingerprint,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
 import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
 import type { TimelinePhase } from '@/types/timeline';
 
-/* ══════════════════════════════════════════════════════════════
-   Route reality — every route maps to what the user SEES:
-
-   /creative         → Creative Direction (consumer, vibe, moodboard, trends)
-   /brand            → Brand Identity (profile, visual, packaging)
-   /merchandising    → Range Planning (families, pricing, channels, budget)
-   /product          → Collection Builder (SKU grid)
-   /design           → Sketch & Color
-   /prototyping      → Prototyping
-   /sampling         → Selection & Catalog
-   /production       → Production
-   /marketing/creation     → Content & Strategy (sales, studio, comms, POS)
-   /marketing/distribution → Distribution & Launch (GTM, calendar, paid, launch)
-   ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════ */
 
 interface SidebarSubItem {
   id: string;
   label: string;
   route: string;
+  icon: React.ElementType;
   phaseId?: WizardPhaseId;
-  hint?: string;
 }
 
 interface SidebarBlock {
   id: TimelinePhase;
-  number: string;
   label: string;
   route: string;
   phaseIds: WizardPhaseId[];
@@ -50,54 +48,50 @@ interface SidebarBlock {
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
-    number: '01',
     label: 'Creative & Brand',
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
-      { id: 'creative', label: 'Creative Direction', route: 'creative', phaseId: 'product', hint: 'Consumer · Vibe · Moodboard · Trends' },
-      { id: 'brand', label: 'Brand Identity', route: 'brand', phaseId: 'brand', hint: 'Profile · Visual · Packaging' },
+      { id: 'creative', label: 'Creative Direction', route: 'creative', icon: Sparkles, phaseId: 'product' },
+      { id: 'brand', label: 'Brand Identity', route: 'brand', icon: Fingerprint, phaseId: 'brand' },
     ],
   },
   {
     id: 'planning',
-    number: '02',
     label: 'Merchandising',
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
-      { id: 'merchandising', label: 'Range Planning', route: 'merchandising', phaseId: 'merchandising', hint: 'Families · Pricing · Channels · Budget' },
+      { id: 'merchandising', label: 'Range Planning', route: 'merchandising', icon: ShoppingBag, phaseId: 'merchandising' },
     ],
   },
   {
     id: 'development',
-    number: '03',
     label: 'Design & Dev',
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
-      { id: 'builder', label: 'Collection Builder', route: 'product', hint: 'SKU grid · Range plan' },
-      { id: 'design', label: 'Sketch & Color', route: 'design', phaseId: 'design' },
-      { id: 'prototyping', label: 'Prototyping', route: 'prototyping', phaseId: 'prototyping' },
-      { id: 'sampling', label: 'Selection & Catalog', route: 'sampling', phaseId: 'sampling' },
-      { id: 'production', label: 'Production', route: 'production', phaseId: 'production' },
+      { id: 'builder', label: 'Collection Builder', route: 'product', icon: Grid3X3 },
+      { id: 'design', label: 'Sketch & Color', route: 'design', icon: PenTool, phaseId: 'design' },
+      { id: 'prototyping', label: 'Prototyping', route: 'prototyping', icon: Box, phaseId: 'prototyping' },
+      { id: 'sampling', label: 'Selection & Catalog', route: 'sampling', icon: Scissors, phaseId: 'sampling' },
+      { id: 'production', label: 'Production', route: 'production', icon: Factory, phaseId: 'production' },
     ],
   },
   {
     id: 'go_to_market',
-    number: '04',
     label: 'Marketing',
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
-      { id: 'mkt-creation', label: 'Content & Strategy', route: 'marketing/creation', phaseId: 'marketing-creation', hint: 'Sales · Studio · Comms · POS' },
-      { id: 'mkt-distribution', label: 'Distribution & Launch', route: 'marketing/distribution', phaseId: 'marketing-distribution', hint: 'GTM · Calendar · Paid · Launch' },
+      { id: 'mkt-creation', label: 'Content & Strategy', route: 'marketing/creation', icon: Megaphone, phaseId: 'marketing-creation' },
+      { id: 'mkt-distribution', label: 'Distribution & Launch', route: 'marketing/distribution', icon: Rocket, phaseId: 'marketing-distribution' },
     ],
   },
 ];
 
 const COLLAPSED_W = 72;
-const EXPANDED_W = 260;
+const EXPANDED_W = 272;
 
 /* ══════════════════════════════════════════════════════════════ */
 
@@ -195,51 +189,56 @@ export function WizardSidebar({
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
-        <div className="surface-card h-full flex flex-col overflow-hidden">
+        <div className="surface-card h-full flex flex-col overflow-hidden relative">
 
+          {/* ── Collapse toggle — clean circle chevron ── */}
+          <button
+            onClick={handleToggleCollapse}
+            className="absolute -right-3 top-7 w-6 h-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.12)] flex items-center justify-center hover:shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-shadow z-10 hidden md:flex"
+          >
+            <ChevronLeft className={`h-3.5 w-3.5 text-carbon/50 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* ── Mobile close ── */}
           <button
             onClick={onMobileClose}
-            className="md:hidden absolute right-3 top-4 w-7 h-7 flex items-center justify-center rounded-full hover:bg-carbon/[0.04] transition-colors"
+            className="md:hidden absolute right-4 top-5 w-7 h-7 flex items-center justify-center rounded-full hover:bg-carbon/[0.04] transition-colors"
             aria-label="Close"
           >
             <X className="h-4 w-4 text-carbon/50" />
           </button>
 
-          {/* ══════════════════════════════════════════════
-               Collection name — the biggest text element
-               ══════════════════════════════════════════════ */}
-          <div className={`shrink-0 ${collapsed ? 'px-0 pt-6 pb-5' : 'px-6 pt-6 pb-5'}`}>
+          {/* ═══════════════════════════════════════════
+               Collection header
+               ═══════════════════════════════════════════ */}
+          <div className={`shrink-0 ${collapsed ? 'px-0 pt-7 pb-6' : 'px-6 pt-7 pb-6'}`}>
             {collapsed ? (
               <Link href={basePath} className="flex items-center justify-center">
-                <span className="text-[14px] font-bold text-carbon/50">
+                <span className="text-[15px] font-bold text-carbon">
                   {collectionName?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
                 </span>
               </Link>
             ) : (
               <>
                 <Link href={basePath} className="block group">
-                  <h2 className="font-display text-[20px] text-carbon leading-tight group-hover:text-carbon/70 transition-colors">
+                  <h2 className="text-[16px] font-semibold text-carbon leading-snug group-hover:text-carbon/70 transition-colors tracking-tight">
                     {displayName}
                   </h2>
                 </Link>
-                <div className="flex items-center gap-2 mt-2">
-                  {season && (
-                    <span className="text-[12px] text-carbon/40">{season}</span>
-                  )}
+                <p className="text-[13px] text-carbon/35 mt-1.5">
+                  {season}
                   {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
-                    <span className="text-[12px] text-carbon/30">
-                      · {weeksLeft > 0 && <>{weeksLeft}w </>}{daysLeft}d
-                    </span>
+                    <> · {weeksLeft > 0 && <>{weeksLeft}w </>}{daysLeft}d</>
                   )}
-                </div>
+                </p>
               </>
             )}
           </div>
 
-          {/* ══════════════════════════════════════════════
-               Navigation — blocks are BOLD, sub-items are medium
-               ══════════════════════════════════════════════ */}
-          <nav className="flex-1 overflow-y-auto scrollbar-subtle">
+          {/* ═══════════════════════════════════════════
+               Block navigation
+               ═══════════════════════════════════════════ */}
+          <nav className="flex-1 overflow-y-auto scrollbar-subtle px-3">
             {SIDEBAR_BLOCKS.map((block) => {
               const blockActive = isBlockActive(block);
               const blockProgress = getBlockProgress(block);
@@ -249,92 +248,84 @@ export function WizardSidebar({
               const blockHref = `${basePath}/${block.route}`;
 
               return (
-                <div key={block.id} className="mb-1">
+                <div key={block.id} className="mb-6">
                   {collapsed ? (
-                    <Link
-                      href={allLocked ? '#' : blockHref}
-                      onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                      className={`relative flex items-center justify-center h-12 mx-1 rounded-[12px] transition-all ${
-                        allLocked ? 'cursor-not-allowed opacity-30'
-                        : blockActive ? 'bg-carbon/[0.05]'
-                        : 'hover:bg-carbon/[0.03]'
-                      }`}
-                      title={block.label}
-                    >
-                      <span className={`text-[13px] font-semibold truncate transition-colors ${
-                        blockActive ? 'text-carbon' : 'text-carbon/40'
-                      }`}>
-                        {block.label.split(' ')[0].charAt(0)}
-                      </span>
-                      {allCompleted && (
-                        <Check className="h-3 w-3 text-carbon/30 absolute bottom-1.5" strokeWidth={2.5} />
-                      )}
-                    </Link>
+                    /* ── Collapsed: first sub-item icon ── */
+                    <div className="flex flex-col items-center gap-2">
+                      {block.subItems.slice(0, 2).map((sub) => {
+                        const state = getSubItemState(sub);
+                        const Icon = sub.icon;
+                        return (
+                          <Link
+                            key={sub.id}
+                            href={`${basePath}/${sub.route}`}
+                            className={`w-10 h-10 flex items-center justify-center rounded-[10px] transition-all ${
+                              state === 'active' ? 'bg-carbon/[0.06]'
+                              : 'hover:bg-carbon/[0.04]'
+                            }`}
+                            title={sub.label}
+                          >
+                            <Icon className={`h-[18px] w-[18px] ${
+                              state === 'active' ? 'text-carbon'
+                              : state === 'completed' ? 'text-carbon/30'
+                              : 'text-carbon/40'
+                            }`} strokeWidth={1.5} />
+                          </Link>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <>
-                      {/* ── BLOCK HEADER: the most prominent level ── */}
-                      <Link
-                        href={allLocked ? '#' : blockHref}
-                        onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                        className={`flex items-center px-6 pt-5 pb-2 transition-colors ${
-                          allLocked ? 'opacity-30 cursor-not-allowed' : 'group'
-                        }`}
-                      >
-                        <span className={`text-[15px] font-semibold tracking-[-0.01em] truncate flex-1 transition-colors ${
-                          allCompleted ? 'text-carbon/40'
-                          : blockActive ? 'text-carbon'
-                          : 'text-carbon/70 group-hover:text-carbon'
-                        }`}>
-                          {block.label}
-                        </span>
-                        {allCompleted ? (
-                          <Check className="h-3.5 w-3.5 text-carbon/30 shrink-0" strokeWidth={2} />
-                        ) : blockProgress > 0 ? (
-                          <span className="text-[12px] font-normal tabular-nums text-carbon/25 shrink-0">
-                            {blockProgress}
-                          </span>
-                        ) : null}
-                      </Link>
+                      {/* ── Section header ── */}
+                      <p className={`text-[11px] font-semibold tracking-[0.06em] uppercase px-3 mb-3 flex items-center ${
+                        allLocked ? 'text-carbon/15' : 'text-carbon/30'
+                      }`}>
+                        <span className="truncate">{block.label}</span>
+                        {allCompleted && (
+                          <Check className="h-3 w-3 text-carbon/25 ml-auto shrink-0" strokeWidth={2.5} />
+                        )}
+                        {!allCompleted && blockProgress > 0 && (
+                          <span className="text-[10px] font-normal text-carbon/20 ml-auto">{blockProgress}%</span>
+                        )}
+                      </p>
 
-                      {/* ── SUB-ITEMS: secondary level, clearly nested ── */}
-                      <div className="flex flex-col gap-px px-3 pb-2">
+                      {/* ── Nav items ── */}
+                      <div className="flex flex-col gap-0.5">
                         {block.subItems.map((sub) => {
                           const state = getSubItemState(sub);
                           const subHref = `${basePath}/${sub.route}`;
                           const isLocked = state === 'locked';
+                          const Icon = sub.icon;
 
                           return (
                             <Link
                               key={sub.id}
                               href={isLocked ? '#' : subHref}
                               onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                              className={`group/item flex flex-col px-3 py-2 rounded-[10px] transition-all ${
+                              className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all ${
                                 state === 'active'
-                                  ? 'bg-carbon'
+                                  ? 'bg-carbon/[0.06]'
                                   : state === 'locked'
-                                  ? 'opacity-30 cursor-not-allowed'
+                                  ? 'opacity-25 cursor-not-allowed'
                                   : 'hover:bg-carbon/[0.04]'
                               }`}
                             >
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[14px] font-medium truncate flex-1 transition-colors ${
-                                  state === 'active' ? 'text-white'
-                                  : state === 'completed' ? 'text-carbon/50'
-                                  : 'text-carbon/80 group-hover/item:text-carbon'
-                                }`}>
-                                  {sub.label}
-                                </span>
-                                {state === 'completed' && (
-                                  <Check className="h-3.5 w-3.5 shrink-0 text-carbon/25" strokeWidth={2} />
-                                )}
-                              </div>
-                              {sub.hint && (
-                                <span className={`text-[12px] leading-tight mt-0.5 truncate ${
-                                  state === 'active' ? 'text-white/50'
-                                  : 'text-carbon/30'
-                                }`}>
-                                  {sub.hint}
-                                </span>
+                              <Icon className={`h-[18px] w-[18px] shrink-0 ${
+                                state === 'active' ? 'text-carbon'
+                                : state === 'completed' ? 'text-carbon/35'
+                                : 'text-carbon/40'
+                              }`} strokeWidth={1.5} />
+
+                              <span className={`text-[14px] truncate transition-colors ${
+                                state === 'active' ? 'font-semibold text-carbon'
+                                : state === 'completed' ? 'font-normal text-carbon/40'
+                                : 'font-medium text-carbon/70'
+                              }`}>
+                                {sub.label}
+                              </span>
+
+                              {state === 'completed' && (
+                                <Check className="h-3.5 w-3.5 shrink-0 text-carbon/25 ml-auto" strokeWidth={2} />
                               )}
                             </Link>
                           );
@@ -347,12 +338,11 @@ export function WizardSidebar({
             })}
           </nav>
 
-          {/* ══════════════════════════════════════════════
+          {/* ═══════════════════════════════════════════
                Utilities
-               ══════════════════════════════════════════════ */}
-          <div className="shrink-0">
-            <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06]`} />
-            <div className="py-3">
+               ═══════════════════════════════════════════ */}
+          <div className="shrink-0 px-3 pb-4">
+            <div className="border-t border-carbon/[0.06] pt-3">
               {utilityLinks.map((item) => {
                 const fullPath = `${basePath}${item.path}`;
                 const isActive = item.path === ''
@@ -364,29 +354,22 @@ export function WizardSidebar({
                     key={item.id}
                     href={fullPath}
                     className={`flex items-center ${
-                      collapsed ? 'justify-center h-10 mx-2 rounded-[10px]' : 'gap-3 mx-2 px-4 py-2 rounded-[10px]'
+                      collapsed ? 'justify-center h-10 rounded-[10px]' : 'gap-3 px-3 py-2.5 rounded-[10px]'
                     } transition-all ${
                       isActive
-                        ? 'bg-carbon/[0.05] text-carbon'
-                        : 'text-carbon/40 hover:text-carbon/70 hover:bg-carbon/[0.03]'
+                        ? 'bg-carbon/[0.06] text-carbon'
+                        : 'text-carbon/40 hover:text-carbon/70 hover:bg-carbon/[0.04]'
                     }`}
                     title={collapsed ? item.label : undefined}
                   >
-                    <item.Icon className={`${collapsed ? 'h-[18px] w-[18px]' : 'h-4 w-4'} shrink-0`} />
+                    <item.Icon className={`h-[18px] w-[18px] shrink-0`} strokeWidth={1.5} />
                     {!collapsed && (
-                      <span className="text-[13px] font-medium">{item.label}</span>
+                      <span className={`text-[14px] ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
                     )}
                   </Link>
                 );
               })}
             </div>
-
-            <button
-              onClick={handleToggleCollapse}
-              className="w-full shrink-0 py-3 text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/20 hover:text-carbon/40 transition-colors border-t border-carbon/[0.06] text-center"
-            >
-              {collapsed ? 'Expand' : 'Collapse'}
-            </button>
           </div>
         </div>
       </aside>
