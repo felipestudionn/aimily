@@ -1012,7 +1012,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[180px] disabled:opacity-50"
+          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[140px] rounded-[20px] disabled:opacity-50"
         >
           {uploading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <Upload className="h-6 w-6 text-carbon/30" />}
           <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
@@ -1027,7 +1027,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         <button
           onClick={handlePinterestConnect}
           disabled={pinterestLoading}
-          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[180px] disabled:opacity-50"
+          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[140px] rounded-[20px] disabled:opacity-50"
         >
           {pinterestLoading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <ExternalLink className="h-6 w-6 text-carbon/30" />}
           <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
@@ -1127,13 +1127,13 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
       {images.length > 0 && (
         <div>
           <p className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-3">{images.length} {t.creative.images}</p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2">
             {images.map((img, i) => (
-              <div key={i} className="relative aspect-square bg-carbon/[0.04] overflow-hidden group">
+              <div key={i} className="relative aspect-square bg-carbon/[0.04] rounded-[10px] overflow-hidden group">
                 <img src={img} alt="" className="w-full h-full object-cover" />
                 <button
                   onClick={() => onChange({ ...data, images: images.filter((_, j) => j !== i) })}
-                  className="absolute top-1 right-1 w-5 h-5 bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -2335,8 +2335,8 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
   if (!hasAnything) {
     return (
-      <div className="bg-white border border-carbon/[0.06] p-6 sm:p-12 lg:p-16 min-h-[300px] flex flex-col items-center justify-center text-center">
-        <div className="w-14 h-14 bg-carbon/[0.04] flex items-center justify-center mb-6">
+      <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-12 lg:p-16 min-h-[300px] flex flex-col items-center justify-center text-center">
+        <div className="w-14 h-14 bg-carbon/[0.04] rounded-[14px] flex items-center justify-center mb-6">
           <Sparkles className="h-6 w-6 text-carbon/30" />
         </div>
         <h3 className="text-2xl font-light text-carbon tracking-tight mb-3">Creative Synthesis</h3>
@@ -2350,7 +2350,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
   return (
     <div className="space-y-6">
       {/* ── Validate Button — prominent at top ── */}
-      <div className={`p-6 sm:p-8 border flex items-center justify-between ${
+      <div className={`p-6 sm:p-8 border rounded-[20px] flex items-center justify-between ${
         validated ? 'bg-carbon/[0.02] border-carbon/[0.12]' : 'bg-white border-carbon/[0.06]'
       }`}>
         <div>
@@ -2376,7 +2376,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
       {/* ── Hero: Collection + Vibe Statement ── */}
       {hasVibe && (
-        <div className="bg-carbon text-crema p-8 sm:p-12 lg:p-16">
+        <div className="bg-carbon text-crema p-8 sm:p-12 lg:p-16 rounded-[20px]">
           <div className="text-[10px] font-medium tracking-[0.3em] uppercase text-crema/40 mb-4">
             {collectionContext.collectionName}
           </div>
@@ -2404,7 +2404,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
       {/* ── Moodboard — compact grid with edit controls ── */}
       {(hasMoodboard || hasAnything) && (
-        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+        <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4">
             <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
               Moodboard {hasMoodboard ? `· ${moodboardImages.length}` : ''}
@@ -2428,11 +2428,11 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
             <>
               <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-1.5">
                 {visibleImages.map((url, i) => (
-                  <div key={i} className="group relative aspect-square bg-carbon/[0.04] overflow-hidden">
+                  <div key={i} className="group relative aspect-square bg-carbon/[0.04] rounded-[8px] overflow-hidden">
                     <img src={url} alt="" className="w-full h-full object-cover" />
                     <button
                       onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 w-5 h-5 bg-carbon/80 text-crema flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-carbon/80 text-crema flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -2465,7 +2465,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
       {/* ── Brand DNA + Consumer — Side by Side, editable ── */}
       <div className={`grid gap-6 ${hasBrand && hasConsumer ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
         {hasBrand && (
-          <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
             <div className="flex items-center justify-between mb-4">
               <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">Brand DNA</div>
               <button
@@ -2538,7 +2538,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         )}
 
         {(hasConsumer || hasAnything) && (
-          <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
             <div className="flex items-center justify-between mb-4">
               <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
                 Target Consumer{consumerProposals.length > 1 ? 's' : ''} {hasConsumer ? `· ${consumerProposals.length}` : ''}
@@ -2591,7 +2591,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
       {/* ── Trend Direction — editable ── */}
       {(hasTrends || hasAnything) && (
-        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+        <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4">
             <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
               Trend Direction {hasTrends ? `· ${allTrends.length}` : ''}
@@ -2644,7 +2644,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
       {/* ── Competitive Landscape — editable ── */}
       {(hasCompetitors || hasAnything) && (
-        <div className="bg-white border border-carbon/[0.06] p-6 sm:p-8">
+        <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4">
             <div className="text-[10px] font-medium tracking-[0.25em] uppercase text-carbon/30">
               Competitive Landscape {hasCompetitors ? `· ${competitors.length}` : ''}
