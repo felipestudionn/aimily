@@ -687,26 +687,69 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
         <div className="space-y-5">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
             {kpiCards.map(kpi => (
-              <div key={kpi.key} className="bg-white rounded-[20px] p-8 flex flex-col min-h-[280px]">
-                <p className="text-[13px] text-carbon/40 mb-auto">{kpi.label}</p>
-                <div className="flex items-baseline gap-1 mt-6">
-                  {kpi.prefix && <span className="text-[20px] font-medium text-carbon/25">{kpi.prefix}</span>}
-                  <input
-                    type="number"
-                    value={(data[kpi.key] as number) || ''}
-                    onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-                    placeholder="0"
-                    className="text-[48px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/[0.06] leading-none"
-                  />
+              <div key={kpi.key} className="bg-white rounded-[20px] p-8 flex flex-col min-h-[300px]">
+                <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
+                  {kpi.label}
+                </h3>
+                <p className="text-[13px] text-carbon/30">
+                  {kpi.key === 'salesTarget' && 'Total revenue target for this collection'}
+                  {kpi.key === 'targetMargin' && 'Gross margin percentage goal'}
+                  {kpi.key === 'avgDiscount' && 'Average markdown expected'}
+                  {kpi.key === 'sellThroughMonths' && 'Time to sell full inventory'}
+                </p>
+                <div className="mt-auto">
+                  <div className="flex items-baseline gap-1">
+                    {kpi.prefix && <span className="text-[24px] font-semibold text-carbon/20">{kpi.prefix}</span>}
+                    <input
+                      type="number"
+                      value={(data[kpi.key] as number) || ''}
+                      onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+                      placeholder="0"
+                      className="text-[52px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/[0.05] leading-none"
+                    />
+                  </div>
+                  {kpi.suffix && <span className="text-[14px] font-medium text-carbon/20 mt-1 block">{kpi.suffix}</span>}
                 </div>
-                {kpi.suffix && <span className="text-[16px] font-medium text-carbon/25 mt-1">{kpi.suffix}</span>}
               </div>
             ))}
           </div>
-          <div className="bg-white rounded-[20px] p-6 md:p-8 space-y-4">
-            <p className="text-[14px] font-semibold text-carbon/40 tracking-[-0.02em] mb-2">Segmentation</p>
-            <SegRow label="Product" segs={typeSeg} dataKey="typeSegmentation" />
-            <SegRow label="Newness" segs={newnessSeg} dataKey="newnessSegmentation" />
+
+          {/* Segmentation — 2 cards side by side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="bg-white rounded-[20px] p-8">
+              <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Product Type</h3>
+              <p className="text-[13px] text-carbon/30 mb-6">Revenue vs Image vs Entry split</p>
+              <div className="space-y-3">
+                {typeSeg.map((s, i) => (
+                  <div key={s.name} className="flex items-center justify-between">
+                    <span className="text-[14px] text-carbon/60">{s.name}</span>
+                    <div className="flex items-center gap-2">
+                      <input type="number" value={s.percentage}
+                        onChange={(e) => { const u = [...typeSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, typeSegmentation: u }); }}
+                        className="w-16 px-3 py-2 text-[18px] font-bold text-carbon text-center bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none" />
+                      <span className="text-[14px] text-carbon/25">%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-white rounded-[20px] p-8">
+              <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Newness Split</h3>
+              <p className="text-[13px] text-carbon/30 mb-6">New designs vs carry-over ratio</p>
+              <div className="space-y-3">
+                {newnessSeg.map((s, i) => (
+                  <div key={s.name} className="flex items-center justify-between">
+                    <span className="text-[14px] text-carbon/60">{s.name}</span>
+                    <div className="flex items-center gap-2">
+                      <input type="number" value={s.percentage}
+                        onChange={(e) => { const u = [...newnessSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, newnessSegmentation: u }); }}
+                        className="w-16 px-3 py-2 text-[18px] font-bold text-carbon text-center bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none" />
+                      <span className="text-[14px] text-carbon/25">%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
