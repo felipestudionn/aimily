@@ -49,7 +49,7 @@ Color pickers:      rounded-[8px]
 ```
 Collection name:  text-[13px] font-medium text-carbon/35 tracking-[-0.02em]
 Workspace title:  text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em]
-Card titles:      text-[15px] font-semibold tracking-[-0.02em] text-carbon (normal case, NOT uppercase)
+Card titles:      text-[20px] font-semibold tracking-[-0.03em] text-carbon leading-tight (normal case, NOT uppercase)
 Body:             text-[14px] or text-sm
 Subtle:           text-[13px] text-carbon/35
 ```
