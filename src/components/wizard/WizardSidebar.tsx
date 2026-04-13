@@ -204,12 +204,12 @@ export function WizardSidebar({
       >
         <div className="surface-card h-full flex flex-col overflow-hidden relative">
 
-          {/* ── Collapse chevron ── */}
+          {/* ── Collapse button — black circle with white chevron ── */}
           <button
             onClick={handleToggleCollapse}
-            className="absolute -right-3 top-8 w-6 h-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.12)] flex items-center justify-center hover:shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-shadow z-10 hidden md:flex"
+            className="absolute -right-4 top-8 w-8 h-8 rounded-full bg-carbon flex items-center justify-center hover:bg-carbon/85 transition-colors z-10 hidden md:flex shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
           >
-            <ChevronLeft className={`h-3.5 w-3.5 text-carbon/50 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} />
+            <ChevronLeft className={`h-4 w-4 text-white transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} />
           </button>
 
           {/* ── Mobile close ── */}
