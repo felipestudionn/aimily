@@ -110,16 +110,32 @@ function BlockCard({
       href={getCtaRoute()}
       className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
     >
-      {/* Top row: block number + progress */}
+      {/* Top row: block number + progress ring */}
       <div className="flex items-start justify-between mb-10">
         <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
           0{blockIndex}.
         </span>
-        {progress > 0 && (
-          <span className="text-[13px] font-medium text-carbon/30 tabular-nums mt-2">
-            {progress}%
+        <div className="relative w-11 h-11 mt-1">
+          {/* Background ring */}
+          <svg className="w-11 h-11 -rotate-90" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="2.5" />
+            {progress > 0 && (
+              <circle
+                cx="22" cy="22" r="18" fill="none"
+                stroke="rgba(0,0,0,0.8)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 18}`}
+                strokeDashoffset={`${2 * Math.PI * 18 * (1 - progress / 100)}`}
+                className="transition-all duration-700"
+              />
+            )}
+          </svg>
+          {/* Percentage text */}
+          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-carbon/60 tabular-nums">
+            {progress}
           </span>
-        )}
+        </div>
       </div>
 
       {/* Title */}

@@ -48,7 +48,8 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
-      { id: 'creative-direction', label: 'Creative Direction', route: 'creative', phaseId: 'product' },
+      { id: 'consumer', label: 'Consumer', route: 'creative', phaseId: 'product' },
+      { id: 'moodboard-research', label: 'Moodboard & Research', route: 'creative' },
       { id: 'brand-identity', label: 'Brand Identity', route: 'brand', phaseId: 'brand' },
       { id: 'creative-synthesis', label: 'Creative Synthesis', route: 'creative' },
     ],
