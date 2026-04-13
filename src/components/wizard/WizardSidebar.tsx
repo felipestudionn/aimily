@@ -72,11 +72,10 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
-      { id: 'builder-design', label: 'Collection Builder', route: 'product' },
-      { id: 'sketch', label: 'Sketch & Color', route: 'design', phaseId: 'design' },
-      { id: 'prototyping', label: 'Prototyping', route: 'prototyping', phaseId: 'prototyping' },
-      { id: 'selection', label: 'Selection & Catalog', route: 'sampling', phaseId: 'sampling' },
-      { id: 'production', label: 'Production', route: 'production', phaseId: 'production' },
+      { id: 'sketch', label: 'Sketch & Color', route: 'product', phaseId: 'design' },
+      { id: 'prototyping', label: 'Prototyping', route: 'product', phaseId: 'prototyping' },
+      { id: 'production', label: 'Production', route: 'product', phaseId: 'production' },
+      { id: 'final-selection', label: 'Final Selection', route: 'product', phaseId: 'sampling' },
     ],
   },
   {
