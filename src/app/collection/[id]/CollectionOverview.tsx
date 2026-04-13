@@ -21,7 +21,7 @@ type ViewMode = 'blocks' | 'calendar' | 'presentation';
 interface SubBlockDef {
   id: string;
   label: string;
-  description: string;
+  tags: string[];
   route: string;
 }
 
@@ -42,10 +42,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Vision, research, and brand identity for your collection.',
     route: 'creative',
     subBlocks: [
-      { id: 'consumer', label: 'Consumer', description: 'Define your target consumer profiles and personas.', route: 'creative' },
-      { id: 'moodboard', label: 'Moodboard & Research', description: 'Visual references, trends, and competitive landscape.', route: 'creative' },
-      { id: 'brand', label: 'Brand Identity', description: 'Brand DNA, voice, visual identity, and packaging.', route: 'brand' },
-      { id: 'synthesis', label: 'Creative Synthesis', description: 'Consolidated creative brief and collection vibe.', route: 'creative' },
+      { id: 'consumer', label: 'Consumer', tags: ['Personas', 'Target Audience', 'Demographics'], route: 'creative' },
+      { id: 'moodboard', label: 'Moodboard & Research', tags: ['Visual References', 'Trends', 'Competitors'], route: 'creative' },
+      { id: 'brand', label: 'Brand Identity', tags: ['Brand DNA', 'Visual Identity', 'Packaging'], route: 'brand' },
+      { id: 'synthesis', label: 'Creative Synthesis', tags: ['Collection Vibe', 'Creative Brief', 'Direction'], route: 'creative' },
     ],
   },
   {
@@ -55,10 +55,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Product families, pricing, channels, and budget.',
     route: 'merchandising',
     subBlocks: [
-      { id: 'families', label: 'Families & Pricing', description: 'Define product categories and price architecture.', route: 'merchandising' },
-      { id: 'channels', label: 'Channels & Markets', description: 'Distribution channels and target markets.', route: 'merchandising' },
-      { id: 'budget', label: 'Budget & Financials', description: 'Sales targets, margins, and financial planning.', route: 'merchandising' },
-      { id: 'builder', label: 'Collection Builder', description: 'Build your SKU grid from the merchandising plan.', route: 'product' },
+      { id: 'families', label: 'Families & Pricing', tags: ['Categories', 'Price Architecture', 'Segments'], route: 'merchandising' },
+      { id: 'channels', label: 'Channels & Markets', tags: ['DTC', 'Wholesale', 'Target Markets'], route: 'merchandising' },
+      { id: 'budget', label: 'Budget & Financials', tags: ['Sales Target', 'Margins', 'Sell-through'], route: 'merchandising' },
+      { id: 'builder', label: 'Collection Builder', tags: ['SKU Grid', 'Range Plan', 'Drops'], route: 'product' },
     ],
   },
   {
@@ -68,10 +68,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Sketch, prototype, select, and produce your collection.',
     route: 'product',
     subBlocks: [
-      { id: 'sketch', label: 'Sketch & Color', description: 'Design sketches, colorways, and material selection.', route: 'product?phase=sketch' },
-      { id: 'prototyping', label: 'Prototyping', description: 'Proto reviews, fit sessions, and tech packs.', route: 'product?phase=prototyping' },
-      { id: 'production', label: 'Production', description: 'Size runs, factory orders, and logistics.', route: 'product?phase=production' },
-      { id: 'selection', label: 'Final Selection', description: 'Confirm the final collection lineup.', route: 'product?phase=selection' },
+      { id: 'sketch', label: 'Sketch & Color', tags: ['Sketches', 'Colorways', 'Materials'], route: 'product?phase=sketch' },
+      { id: 'prototyping', label: 'Prototyping', tags: ['Proto Review', 'Fit Sessions', 'Tech Packs'], route: 'product?phase=prototyping' },
+      { id: 'production', label: 'Production', tags: ['Size Runs', 'Factory Orders', 'Logistics'], route: 'product?phase=production' },
+      { id: 'selection', label: 'Final Selection', tags: ['Line Review', 'Final Lineup', 'Confirmation'], route: 'product?phase=selection' },
     ],
   },
   {
@@ -81,10 +81,10 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Content, communications, and go-to-market strategy.',
     route: 'marketing/creation',
     subBlocks: [
-      { id: 'sales', label: 'Sales Dashboard', description: 'KPIs, revenue tracking, and commercial overview.', route: 'marketing/creation' },
-      { id: 'content', label: 'Content Studio', description: 'Product photography, editorial, and campaign visuals.', route: 'marketing/creation' },
-      { id: 'comms', label: 'Communications', description: 'Copy, social media, email, and brand voice.', route: 'marketing/creation' },
-      { id: 'pos', label: 'Point of Sale', description: 'Web store, wholesale orders, and distribution.', route: 'marketing/creation' },
+      { id: 'sales', label: 'Sales Dashboard', tags: ['KPIs', 'Revenue', 'Commercial'], route: 'marketing/creation' },
+      { id: 'content', label: 'Content Studio', tags: ['Photography', 'Editorial', 'Campaign'], route: 'marketing/creation' },
+      { id: 'comms', label: 'Communications', tags: ['Copy', 'Social Media', 'Email'], route: 'marketing/creation' },
+      { id: 'pos', label: 'Point of Sale', tags: ['Web Store', 'Wholesale', 'Distribution'], route: 'marketing/creation' },
     ],
   },
 ];
@@ -279,13 +279,17 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       </span>
                     </div>
 
-                    <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                    <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-6">
                       {sub.label}
                     </h3>
 
-                    <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
-                      {sub.description}
-                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {sub.tags.map((tag) => (
+                        <span key={tag} className="px-3 py-1.5 rounded-full border border-carbon/[0.10] text-[12px] font-medium text-carbon/50 tracking-[-0.01em]">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
 
                     <div className="flex-1" />
 
