@@ -108,7 +108,7 @@ function BlockCard({
   return (
     <Link
       href={getCtaRoute()}
-      className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[420px] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+      className="group relative bg-white rounded-[20px] p-10 md:p-12 flex flex-col min-h-[420px] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
     >
       {/* Block number — large, ghost */}
       <span className="text-[64px] font-bold text-carbon/[0.06] leading-none tracking-[-0.04em] mb-6">
@@ -206,7 +206,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
         {/* ── Blocks view — horizontal row ── */}
         {view === 'blocks' && (
-          <div className="max-w-[1100px] mx-auto grid grid-cols-4 gap-4">
+          <div className="max-w-[1300px] mx-auto grid grid-cols-4 gap-5">
             {BLOCK_DEFS.map((block) => (
               <BlockCard
                 key={block.phase}
