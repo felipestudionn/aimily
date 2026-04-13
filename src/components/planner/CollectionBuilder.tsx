@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,14 +114,15 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
   const { skus: allSkus, addSku, updateSku, deleteSku, loading, refetch } = useSkus(collectionPlanId);
 
-  /* ── Phase filter from sidebar navigation ── */
+  /* ── Phase filter from sidebar navigation (reads URL ?phase= directly) ── */
+  const currentSearchParams = useSearchParams();
+  const phaseFilter = currentSearchParams?.get('phase') || null;
   const PHASE_FILTER_MAP: Record<string, string[]> = {
     sketch: ['range_plan', 'sketch'],
     prototyping: ['prototyping'],
     production: ['production'],
     selection: ['production', 'completed'],
   };
-  const [phaseFilter, setPhaseFilter] = useState<string | null>(initialPhaseFilter || null);
   const skus = useMemo(() => {
     if (!phaseFilter || !PHASE_FILTER_MAP[phaseFilter]) return allSkus;
     const allowedPhases = PHASE_FILTER_MAP[phaseFilter];
