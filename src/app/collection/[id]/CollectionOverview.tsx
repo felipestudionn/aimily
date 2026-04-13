@@ -108,20 +108,20 @@ function BlockCard({
   return (
     <Link
       href={getCtaRoute()}
-      className="group relative bg-white rounded-[20px] p-10 md:p-12 flex flex-col min-h-[420px] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
     >
       {/* Block number — large, ghost */}
-      <span className="text-[64px] font-bold text-carbon/[0.06] leading-none tracking-[-0.04em] mb-6">
+      <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em] mb-10">
         0{blockIndex}.
       </span>
 
       {/* Title */}
-      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
+      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
         {block.title} {block.titleItalic}
       </h3>
 
       {/* Description */}
-      <p className="text-[14px] text-carbon/50 leading-[1.6] tracking-[-0.02em]">
+      <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
         {block.description}
       </p>
 
@@ -129,7 +129,7 @@ function BlockCard({
       <div className="flex-1" />
 
       {/* Progress + CTA */}
-      <div className="flex items-center justify-between mt-8">
+      <div className="flex items-center justify-between mt-10">
         <span className="text-[13px] font-medium text-carbon/30 tabular-nums">
           {progress > 0 ? `${progress}%` : ''}
         </span>
