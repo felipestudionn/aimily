@@ -21,11 +21,15 @@ module.exports = {
         display: ["var(--font-display)", "'Georgia'", "serif"],
       },
       colors: {
-        /* ─── Aimily palette ─── */
-        crema: "#F5F1E8",
+        /* ─── Aimily palette — based on Daniel Cross Framer template ─── */
+        crema: "#F5F1E8",           /* legacy — keep for existing pages */
+        shade: "#E9E6E2",           /* page background — Framer /Shade */
+        cream: "#EDEAE7",           /* sidebar surface — Framer /Cream */
+        light: "#F5F2F0",           /* card surfaces — Framer /light */
         carbon: "#282A29",
         texto: "#191919",
-        gris: "#D8D8D8",
+        grey: "#757575",            /* secondary text — Framer /Grey */
+        gris: "#D8D8D8",           /* legacy borders */
         error: "#A0463C",
         success: "#2d6a4f",
         warning: "#c77000",

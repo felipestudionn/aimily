@@ -48,7 +48,7 @@ export default async function CollectionHubLayout({ children, params }: LayoutPr
   if (!data) notFound();
 
   return (
-    <div className="min-h-screen bg-crema">
+    <div className="min-h-screen bg-shade">
       <CollectionHubShell
         collectionId={id}
         collectionName={data.plan.name}

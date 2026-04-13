@@ -105,7 +105,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
         className={`fixed top-0 right-0 z-40 transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           isDark
             ? 'bg-transparent'
-            : 'bg-crema/80 backdrop-blur-sm'
+            : 'bg-shade/80 backdrop-blur-sm'
         }`}
         style={{ left: sidebarWidth }}
       >

@@ -63,78 +63,112 @@
    ══════════════════════════════════════════════════════════════ */
 
 @layer components {
-  /* ── Display: collection names, page titles (Instrument Serif) ── */
-  .type-display {
-    font-family: var(--font-display), 'Georgia', serif;
-    font-size: 2rem;        /* 32px */
-    font-weight: 400;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-    color: var(--carbon);
-  }
-  .type-display-sm {
-    font-family: var(--font-display), 'Georgia', serif;
-    font-size: 1.5rem;      /* 24px */
-    font-weight: 400;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-    color: var(--carbon);
+  /*
+   * Typography scale — based on Daniel Cross / Framer template.
+   * Font: Helvetica Neue (our equivalent of Inter Display).
+   * Key: NEGATIVE letter-spacing on everything except section headers.
+   * Framer uses -0.02em to -0.04em — this is what makes it feel premium.
+   */
+
+  /* ── H1: hero titles, page headings — Framer /Heading 1 ── */
+  .type-h1 {
+    font-size: 2.875rem;    /* 46px */
+    font-weight: 500;
+    line-height: 1.1em;
+    letter-spacing: -0.03em;
+    color: rgb(0, 0, 0);
   }
 
-  /* ── Heading: section titles within workspace (Helvetica) ── */
-  .type-heading {
+  /* ── H2: section titles — Framer /Heading 2 ── */
+  .type-h2 {
+    font-size: 2.5rem;      /* 40px */
+    font-weight: 500;
+    line-height: 1.2em;
+    letter-spacing: -0.02em;
+    color: rgb(0, 0, 0);
+  }
+
+  /* ── H3: card titles, workspace headers — Framer /Heading 3 ── */
+  .type-h3 {
+    font-size: 2.25rem;     /* 36px */
+    font-weight: 500;
+    line-height: 1.4em;
+    letter-spacing: -0.04em;
+    color: rgb(0, 0, 0);
+  }
+
+  /* ── H4: sub-headers — Framer /Heading 4 ── */
+  .type-h4 {
+    font-size: 1.5rem;      /* 24px */
+    font-weight: 500;
+    line-height: 1em;
+    letter-spacing: -0.04em;
+    color: rgb(0, 0, 0);
+  }
+
+  /* ── Text 20: large body — Framer /Text 20 ── */
+  .type-text-20 {
     font-size: 1.25rem;     /* 20px */
     font-weight: 500;
-    line-height: 1.3;
-    letter-spacing: -0.01em;
-    color: var(--carbon);
+    line-height: 1.5em;
+    letter-spacing: -0.04em;
+    color: rgb(0, 0, 0);
   }
 
-  /* ── Nav: sidebar items, block names (Helvetica) ── */
-  .type-nav {
+  /* ── Text 18: medium body — Framer /Text 18 ── */
+  .type-text-18 {
+    font-size: 1.125rem;    /* 18px */
+    font-weight: 500;
+    line-height: 1.5em;
+    letter-spacing: -0.04em;
+    color: rgb(0, 0, 0);
+  }
+
+  /* ── Text 16: body text — Framer /Text 16 ── */
+  .type-text-16 {
+    font-size: 1rem;        /* 16px */
+    font-weight: 500;
+    line-height: 1.6em;
+    letter-spacing: -0.02em;
+    color: rgb(0, 0, 0);
+  }
+
+  /* ── Text 14: nav items, small body — Framer /Text 14 ── */
+  .type-text-14 {
     font-size: 0.875rem;    /* 14px */
     font-weight: 500;
-    line-height: 1.5;
-    letter-spacing: 0;
-    color: var(--carbon);
+    line-height: 1.5em;
+    letter-spacing: -0.04em;
+    color: rgb(0, 0, 0);
   }
 
-  /* ── Body: paragraphs, form text (Helvetica) ── */
-  .type-body {
-    font-size: 0.875rem;    /* 14px */
-    font-weight: 400;
-    line-height: 1.5;
-    letter-spacing: 0;
-    color: var(--carbon);
-  }
-
-  /* ── Label: pills, tags, secondary nav (Helvetica) ── */
-  .type-label {
-    font-size: 0.8125rem;   /* 13px */
-    font-weight: 500;
-    line-height: 1.5;
-    letter-spacing: 0;
-    color: var(--carbon);
-  }
-
-  /* ── Caption: meta, dates, hints (Helvetica) ── */
-  .type-caption {
-    font-size: 0.75rem;     /* 12px */
-    font-weight: 400;
-    line-height: 1.5;
-    letter-spacing: 0;
-    color: rgba(40, 42, 41, 0.50);
-  }
-
-  /* ── Section header: UPPERCASE group labels (Helvetica) ── */
+  /* ── Section label: UPPERCASE small — Framer /Text 10 large ── */
   .type-section {
-    font-size: 0.6875rem;   /* 11px */
-    font-weight: 600;
-    line-height: 1;
+    font-size: 0.625rem;    /* 10px */
+    font-weight: 500;
+    line-height: 1em;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(40, 42, 41, 0.25);
+    color: rgba(0, 0, 0, 0.35);
   }
+
+  /* ── Small bold — Framer /Text 10 ── */
+  .type-small {
+    font-size: 0.625rem;    /* 10px */
+    font-weight: 600;
+    line-height: 1.2em;
+    letter-spacing: -0.04em;
+    color: rgb(0, 0, 0);
+  }
+
+  /* ── Legacy aliases for existing components ── */
+  .type-display { font-size: 2.875rem; font-weight: 500; line-height: 1.1em; letter-spacing: -0.03em; color: rgb(0, 0, 0); }
+  .type-display-sm { font-size: 2.5rem; font-weight: 500; line-height: 1.2em; letter-spacing: -0.02em; color: rgb(0, 0, 0); }
+  .type-heading { font-size: 1.5rem; font-weight: 500; line-height: 1em; letter-spacing: -0.04em; color: rgb(0, 0, 0); }
+  .type-nav { font-size: 0.875rem; font-weight: 500; line-height: 1.5em; letter-spacing: -0.04em; color: rgb(0, 0, 0); }
+  .type-body { font-size: 0.875rem; font-weight: 500; line-height: 1.5em; letter-spacing: -0.04em; color: rgb(0, 0, 0); }
+  .type-label { font-size: 0.8125rem; font-weight: 500; line-height: 1.5em; letter-spacing: -0.04em; color: rgb(0, 0, 0); }
+  .type-caption { font-size: 0.75rem; font-weight: 500; line-height: 1.5em; letter-spacing: -0.04em; color: rgb(117, 117, 117); }
 
   /* ── Pill component ── */
   .pill {
@@ -170,14 +204,20 @@
     color: rgba(40, 42, 41, 0.50);
   }
 
-  /* ── Floating card surface ── */
+  /* ── Floating card surface — Framer /Cream on /Shade bg ── */
   .surface-card {
-    background: white;
+    background: #EDEAE7;
     border-radius: 16px;
-    box-shadow: 0 2px 24px rgba(0, 0, 0, 0.04);
+    box-shadow: none;
   }
   .surface-card-hover:hover {
     box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07);
+  }
+
+  /* ── Content card — lighter, for workspace cards on shade bg ── */
+  .surface-content {
+    background: #F5F2F0;
+    border-radius: 12px;
   }
 }
 
