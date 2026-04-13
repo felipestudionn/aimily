@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, ArrowLeft, Check, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic, ThumbsUp, ThumbsDown, RefreshCw, Plus, Pencil } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -2734,9 +2734,27 @@ export default function CreativeBrandPage() {
   const { id } = useParams();
   const collectionId = id as string;
   const router = useRouter();
-  const [expandedBlock, setExpandedBlock] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const blockParam = searchParams?.get('block');
+  const [expandedBlock, setExpandedBlock] = useState<string | null>(blockParam || null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [collectionContext, setCollectionContext] = useState({ season: '', collectionName: '' });
+
+  // Auto-set the correct step when a block param is provided
+  useEffect(() => {
+    if (blockParam) {
+      setExpandedBlock(blockParam);
+      // Map block IDs to their step index
+      const blockToStep: Record<string, number> = {
+        'consumer': 0, 'vibe': 0, 'moodboard': 0, 'brand-dna': 0,
+        'global-trends': 1, 'deep-dive': 1, 'live-signals': 1, 'competitors': 1,
+      };
+      const stepIdx = blockToStep[blockParam];
+      if (stepIdx !== undefined) {
+        persistData((prev) => ({ ...prev, activeStep: stepIdx }));
+      }
+    }
+  }, [blockParam]);
 
   // Persist block data + active step to Supabase (auto-save with 1s debounce)
   const { data: persisted, save: persistData, loading: persistLoading } =
@@ -2876,46 +2894,59 @@ export default function CreativeBrandPage() {
 
   return (
     <div className="min-h-[80vh]">
-      <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">
-        {/* Header — left-padded on mobile to avoid hamburger overlap */}
-        <div className="mb-8 sm:mb-10 pl-12 md:pl-0">
-          <button
-            onClick={() => router.push(`/collection/${id}`)}
-            className="text-[10px] sm:text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
-          >
-            <ArrowLeft className="h-3 w-3" /> {t.creative.overview}
-          </button>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
-            {t.creative.title.split(' & ')[0]} & <span className="italic">{t.creative.title.split(' & ')[1] || 'Brand'}</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-carbon/60 mt-2 max-w-lg">
-            {t.creative.subtitle}
-          </p>
-        </div>
+      <div className={`${blockParam ? 'px-6 md:px-16 lg:px-24 pt-12 md:pt-16' : 'px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12'}`}>
+        {/* Header — clean when coming from sidebar, legacy when direct */}
+        {blockParam ? (
+          <div className="mb-10">
+            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
+              {collectionContext.collectionName || 'Collection'}
+            </p>
+            <h1 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+              {blockNameMap[blockParam] || 'Consumer Definition'}
+            </h1>
+          </div>
+        ) : (
+          <>
+            <div className="mb-8 sm:mb-10 pl-12 md:pl-0">
+              <button
+                onClick={() => router.push(`/collection/${id}`)}
+                className="text-[10px] sm:text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2"
+              >
+                <ArrowLeft className="h-3 w-3" /> {t.creative.overview}
+              </button>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
+                {t.creative.title.split(' & ')[0]} & <span className="italic">{t.creative.title.split(' & ')[1] || 'Brand'}</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-carbon/60 mt-2 max-w-lg">
+                {t.creative.subtitle}
+              </p>
+            </div>
 
-        {/* Step Navigation — scrollable on mobile with smaller padding */}
-        <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] w-fit overflow-x-auto max-w-full">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.id}
-              onClick={() => { if (!expandedBlock) setActiveStep(i); }}
-              className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
-                activeStep === i
-                  ? 'bg-carbon text-crema'
-                  : expandedBlock
-                    ? 'bg-white text-carbon/15 cursor-not-allowed'
-                    : 'bg-white text-carbon/40 hover:text-carbon/60'
-              }`}
-            >
-              <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 ${
-                activeStep === i ? 'bg-white/20' : 'bg-carbon/[0.06]'
-              }`}>
-                {i + 1}
-              </span>
-              <span className="whitespace-nowrap">{stepNameMap[s.id] || s.name}</span>
-            </button>
-          ))}
-        </div>
+            {/* Step Navigation — only when NOT coming from sidebar */}
+            <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] w-fit overflow-x-auto max-w-full">
+              {STEPS.map((s, i) => (
+                <button
+                  key={s.id}
+                  onClick={() => { if (!expandedBlock) setActiveStep(i); }}
+                  className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
+                    activeStep === i
+                      ? 'bg-carbon text-crema'
+                      : expandedBlock
+                        ? 'bg-white text-carbon/15 cursor-not-allowed'
+                        : 'bg-white text-carbon/40 hover:text-carbon/60'
+                  }`}
+                >
+                  <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 ${
+                    activeStep === i ? 'bg-white/20' : 'bg-carbon/[0.06]'
+                  }`}>
+                    {i + 1}
+                  </span>
+                  <span className="whitespace-nowrap">{stepNameMap[s.id] || s.name}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Step Content */}
         {step.blocks.length > 0 ? (
