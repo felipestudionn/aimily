@@ -275,7 +275,7 @@ export function WizardSidebar({
               const isExpanded = expandedBlocks.has(block.id);
 
               return (
-                <div key={block.id} className="mb-7">
+                <div key={block.id} className="mb-5">
                   {collapsed ? (
                     <Link
                       href={allLocked ? '#' : blockHref}
@@ -329,7 +329,7 @@ export function WizardSidebar({
                                 key={sub.id}
                                 href={isLocked ? '#' : subHref}
                                 onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                                className={`flex items-center justify-between py-2.5 transition-colors ${
+                                className={`flex items-center justify-between py-2 transition-colors ${
                                   state === 'active'
                                     ? 'text-carbon'
                                     : state === 'locked'
