@@ -13,6 +13,10 @@ import {
   X,
   ChevronLeft,
   ChevronDown,
+  Feather,
+  ClipboardList,
+  Ruler,
+  Megaphone,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -39,6 +43,7 @@ interface SidebarSubItem {
 interface SidebarBlock {
   id: TimelinePhase;
   label: string;
+  icon: React.ElementType;  // shown only in collapsed state
   route: string;
   phaseIds: WizardPhaseId[];
   subItems: SidebarSubItem[];
@@ -48,6 +53,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
     label: 'Creative & Brand',
+    icon: Feather,
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
@@ -60,6 +66,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'planning',
     label: 'Merchandising & Planning',
+    icon: ClipboardList,
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
@@ -72,6 +79,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'development',
     label: 'Design & Development',
+    icon: Ruler,
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
@@ -84,6 +92,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'go_to_market',
     label: 'Marketing & Sales',
+    icon: Megaphone,
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
@@ -272,17 +281,12 @@ export function WizardSidebar({
           {/* ═══════════════════════════════════════════
                Header: aimily logo + collection name
                ═══════════════════════════════════════════ */}
-          <div className={`shrink-0 ${collapsed ? 'px-0 pt-7 pb-5' : 'px-5 pt-7 pb-6'}`}>
+          <div className={`shrink-0 ${collapsed ? 'px-0 pt-6 pb-4' : 'px-5 pt-7 pb-6'}`}>
             {collapsed ? (
               <Link href="/my-collections" className="flex items-center justify-center">
-                <Image
-                  src="/images/aimily-logo-black.png"
-                  alt="aimily"
-                  width={774}
-                  height={96}
-                  className="h-5 w-auto opacity-60"
-                  unoptimized
-                />
+                <span className="text-[13px] font-bold text-carbon/60 tracking-[-0.02em]" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+                  aimily
+                </span>
               </Link>
             ) : (
               <>
@@ -330,16 +334,14 @@ export function WizardSidebar({
                       onClick={(e) => { if (allLocked) e.preventDefault(); }}
                       className={`w-10 h-10 mx-auto flex items-center justify-center rounded-[10px] transition-all ${
                         allLocked ? 'opacity-25 cursor-not-allowed'
-                        : blockActive ? 'bg-carbon/[0.06]'
+                        : blockActive ? 'bg-carbon/[0.08]'
                         : 'hover:bg-carbon/[0.04]'
                       }`}
                       title={block.label}
                     >
-                      <span className={`text-[14px] font-bold ${
-                        blockActive ? 'text-carbon' : 'text-carbon'
-                      }`}>
-                        {block.label.charAt(0)}
-                      </span>
+                      <block.icon className={`h-[18px] w-[18px] ${
+                        blockActive ? 'text-carbon' : 'text-carbon/50'
+                      }`} strokeWidth={1.5} />
                     </Link>
                   ) : (
                     <>
