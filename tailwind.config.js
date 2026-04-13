@@ -21,11 +21,11 @@ module.exports = {
         display: ["var(--font-display)", "'Georgia'", "serif"],
       },
       colors: {
-        /* ─── Aimily palette — based on Daniel Cross Framer template ─── */
+        /* ─── Aimily palette — Skylar Rowe tones ─── */
         crema: "#F5F1E8",           /* legacy — keep for existing pages */
-        shade: "#E9E6E2",           /* page background — Framer /Shade */
-        cream: "#EDEAE7",           /* sidebar surface — Framer /Cream */
-        light: "#F5F2F0",           /* card surfaces — Framer /light */
+        shade: "#C8C0B4",           /* page-level warm bg behind sidebar */
+        cream: "#F0EDE8",           /* workspace content area */
+        light: "#F5F2F0",           /* card surfaces within workspace */
         carbon: "#282A29",
         texto: "#191919",
         grey: "#757575",            /* secondary text — Framer /Grey */
