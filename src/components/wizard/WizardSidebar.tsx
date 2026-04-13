@@ -50,7 +50,7 @@ interface SidebarBlock {
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
-    label: 'Creative & Brand',
+    label: 'Creative',
     icon: Sparkles,
     route: 'creative',
     phaseIds: ['product', 'brand'],
@@ -71,7 +71,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   },
   {
     id: 'development',
-    label: 'Design & Dev',
+    label: 'Design',
     icon: PenTool,
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
@@ -327,9 +327,9 @@ export function WizardSidebar({
                         )}
                       </button>
 
-                      {/* ── Sub-items: indented lines ── */}
+                      {/* ── Sub-items: indented lines with contained connector ── */}
                       {isExpanded && (
-                        <div className="mt-1 mb-2 ml-4 pl-5 border-l border-carbon/[0.06]">
+                        <div className="mt-1 mb-1 ml-[30px] pl-4 border-l-2 border-carbon/[0.06] rounded-bl-sm">
                           {block.subItems.map((sub) => {
                             const state = getSubItemState(sub);
                             const subHref = `${basePath}/${sub.route}`;

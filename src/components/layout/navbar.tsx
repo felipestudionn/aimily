@@ -109,31 +109,8 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
         }`}
         style={{ left: sidebarWidth }}
       >
-        <div className="flex h-16 items-center justify-between px-6 md:px-8">
-          {/* Left: logo + breadcrumb */}
-          <div className="flex items-center gap-3">
-            <Link href="/my-collections" className="flex items-center">
-              <Image
-                src={isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png'}
-                alt="aimily"
-                width={774}
-                height={96}
-                className={`object-contain h-6 w-auto transition-opacity ${
-                  isDark ? 'opacity-60 hover:opacity-90' : 'opacity-40 hover:opacity-70'
-                }`}
-                priority
-                unoptimized
-              />
-            </Link>
-            {collectionName && (
-              <CollectionNameBreadcrumb
-                name={collectionName}
-                collectionId={collectionId || ''}
-                isDark={isDark}
-                onRename={onCollectionRename}
-              />
-            )}
-          </div>
+        <div className="flex h-16 items-center justify-end px-6 md:px-8">
+          {/* Left side intentionally empty — logo + collection name live in sidebar */}
 
           {/* Right: notifications + avatar */}
           <div className="flex items-center gap-3">
