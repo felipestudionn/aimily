@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   CalendarDays,
   LayoutDashboard,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
+import { useSkus } from '@/hooks/useSkus';
 import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
 import type { TimelinePhase } from '@/types/timeline';
 
@@ -127,6 +128,20 @@ export function WizardSidebar({
   );
 
   const basePath = `/collection/${collectionId}`;
+
+  /* ── SKU phase counts for Design badges ── */
+  const { skus } = useSkus(collectionId);
+  const skuPhaseCounts = useMemo(() => {
+    const counts: Record<string, number> = { sketch: 0, prototyping: 0, production: 0, selection: 0 };
+    for (const sku of skus) {
+      const phase = sku.design_phase || 'range_plan';
+      if (phase === 'range_plan' || phase === 'sketch') counts.sketch++;
+      if (phase === 'prototyping') counts.prototyping++;
+      if (phase === 'production') counts.production++;
+      if (phase === 'production' || phase === 'completed') counts.selection++;
+    }
+    return counts;
+  }, [skus]);
   const phaseMap = new Map(phases.map((ps) => [ps.phase.id, ps]));
 
   const displayName = collectionName
@@ -374,7 +389,14 @@ export function WizardSidebar({
                                   {sub.label}
                                 </span>
 
-                                {state === 'completed' && (
+                                {/* SKU count badge for Design phase sub-items */}
+                                {skuPhaseCounts[sub.id] > 0 && (
+                                  <span className="text-[12px] font-normal text-carbon/40 tabular-nums">
+                                    {skuPhaseCounts[sub.id]}
+                                  </span>
+                                )}
+
+                                {state === 'completed' && !skuPhaseCounts[sub.id] && (
                                   <Check className="h-3.5 w-3.5 shrink-0 text-carbon" strokeWidth={2} />
                                 )}
                               </Link>
