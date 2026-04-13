@@ -3,29 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import {
-  ArrowRight,
-  LayoutGrid,
-  CalendarDays,
-  User,
-  Sparkles,
-  Image,
-  Fingerprint,
-  ShoppingBag,
-  DollarSign,
-  Store,
-  Calculator,
-  Pencil,
-  Package,
-  CheckSquare,
-  Factory,
-  Palette,
-  Megaphone,
-  Target,
-  Rocket,
-  Check,
-  Presentation,
-} from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 import { computeWizardState } from '@/lib/wizard-phases';
@@ -37,75 +15,45 @@ import { SegmentedPill } from '@/components/ui/segmented-pill';
 type ViewMode = 'blocks' | 'calendar' | 'presentation';
 
 /* ═══════════════════════════════════════════════════════════
-   Block definitions — internal structure for each of the 4 blocks
+   Block definitions — simplified for clean dashboard cards
    ═══════════════════════════════════════════════════════════ */
-
-interface BlockStep {
-  nameKey: string;
-  icon: React.ElementType;
-}
 
 interface BlockDef {
   phase: TimelinePhase;
-  titleKey: string;
-  titleItalicKey: string;
-  subtitleKey: string;
+  title: string;
+  titleItalic: string;
+  description: string;
   route: string;
-  steps: BlockStep[];
 }
 
 const BLOCK_DEFS: BlockDef[] = [
   {
     phase: 'creative',
-    titleKey: 'creativeTitle',
-    titleItalicKey: 'creativeItalic',
-    subtitleKey: 'creativeSub',
+    title: 'Creative &',
+    titleItalic: 'Brand',
+    description: 'Vision, research, and brand identity for your collection.',
     route: 'creative',
-    steps: [
-      { nameKey: 'consumerDefinition', icon: User },
-      { nameKey: 'collectionVibe', icon: Sparkles },
-      { nameKey: 'moodboard', icon: Image },
-      { nameKey: 'brandDNA', icon: Fingerprint },
-    ],
   },
   {
     phase: 'planning',
-    titleKey: 'planningTitle',
-    titleItalicKey: 'planningItalic',
-    subtitleKey: 'planningSub',
+    title: 'Merchandising &',
+    titleItalic: 'Planning',
+    description: 'Product families, pricing, channels, and budget.',
     route: 'merchandising',
-    steps: [
-      { nameKey: 'productFamilies', icon: ShoppingBag },
-      { nameKey: 'pricing', icon: DollarSign },
-      { nameKey: 'channelsMarkets', icon: Store },
-      { nameKey: 'budgetFinancials', icon: Calculator },
-    ],
   },
   {
     phase: 'development',
-    titleKey: 'devTitle',
-    titleItalicKey: 'devItalic',
-    subtitleKey: 'devSub',
+    title: 'Design &',
+    titleItalic: 'Development',
+    description: 'Sketch, prototype, select, and produce your collection.',
     route: 'product',
-    steps: [
-      { nameKey: 'sketchColor', icon: Pencil },
-      { nameKey: 'prototyping', icon: Package },
-      { nameKey: 'selectionCatalog', icon: CheckSquare },
-      { nameKey: 'production', icon: Factory },
-    ],
   },
   {
     phase: 'go_to_market',
-    titleKey: 'gtmTitle',
-    titleItalicKey: 'gtmItalic',
-    subtitleKey: 'gtmSub',
+    title: 'Marketing &',
+    titleItalic: 'Sales',
+    description: 'Content, communications, and go-to-market strategy.',
     route: 'marketing/creation',
-    steps: [
-      { nameKey: 'collectionStories', icon: Palette },
-      { nameKey: 'contentStrategy', icon: Megaphone },
-      { nameKey: 'goToMarket', icon: Target },
-      { nameKey: 'launchGrowth', icon: Rocket },
-    ],
   },
 ];
 
@@ -133,32 +81,22 @@ function BlockCard({
   blockProgress: number;
   allBlockProgress: Record<TimelinePhase, number>;
 }) {
-  const t = useTranslation();
   const progress = blockProgress;
   const isStarted = progress > 0;
   const isComplete = progress === 100;
 
-  /* ── Smart CTA logic ── */
+  /* ── Smart CTA ── */
   const merchDone = allBlockProgress.planning === 100;
 
   const getCtaLabel = (): string => {
-    if (isComplete) return (t.overview as Record<string, string>).completed || 'Completed';
-
-    // Merch done → CTA becomes "Open Builder"
-    if (block.phase === 'planning' && merchDone) {
-      return (t.overview as Record<string, string>).openBuilder || 'Open Builder';
-    }
-    // Design block → always "Open Builder"
-    if (block.phase === 'development') {
-      return (t.overview as Record<string, string>).openBuilder || 'Open Builder';
-    }
-
-    if (isStarted) return t.common.continue;
-    return t.overview.start;
+    if (isComplete) return 'Completed';
+    if (block.phase === 'planning' && merchDone) return 'Open Builder';
+    if (block.phase === 'development') return 'Open Builder';
+    if (isStarted) return 'Continue';
+    return 'Start';
   };
 
   const getCtaRoute = (): string => {
-    // When merch is done, CTA links to builder
     if (block.phase === 'planning' && merchDone) {
       return `/collection/${collectionId}/product`;
     }
@@ -168,63 +106,33 @@ function BlockCard({
   return (
     <Link
       href={getCtaRoute()}
-      className="group relative bg-white p-5 sm:p-6 md:p-8 hover:shadow-md transition-all duration-300 overflow-hidden border border-carbon/[0.06] shadow-sm flex flex-col"
+      className="group relative bg-white rounded-[16px] p-8 md:p-10 hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col min-h-[220px]"
     >
-      {/* Progress bar top */}
-      <div className="absolute top-0 left-0 h-[2px] bg-carbon/[0.06] w-full">
-        <div
-          className="h-full bg-carbon transition-all duration-700"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {/* Title + progress indicator */}
-      <div className="flex items-start justify-between mb-1 mt-1">
-        <h3 className="text-lg sm:text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-          {t.overview[block.titleKey as keyof typeof t.overview]} <span className="italic">{t.overview[block.titleItalicKey as keyof typeof t.overview]}</span>
+      {/* Title + progress */}
+      <div className="flex items-start justify-between mb-3">
+        <h3 className="text-[22px] md:text-[26px] font-medium text-carbon tracking-[-0.03em] leading-[1.2]">
+          {block.title} <span className="italic">{block.titleItalic}</span>
         </h3>
-        <span className="text-xs font-medium text-carbon/30 flex-shrink-0 ml-3 mt-1">
+        <span className="text-[13px] font-medium text-carbon/40 flex-shrink-0 ml-4 mt-1 tabular-nums">
           {progress}%
         </span>
       </div>
 
-      {/* Subtitle */}
-      <p className="text-[11px] font-medium tracking-[0.12em] uppercase text-carbon/40 mb-6">
-        {t.overview[block.subtitleKey as keyof typeof t.overview]}
+      {/* Description — one line */}
+      <p className="text-[14px] text-carbon/50 leading-relaxed tracking-[-0.02em] mb-auto">
+        {block.description}
       </p>
 
-      {/* Internal steps */}
-      <div className="pt-5 border-t border-carbon/[0.06] space-y-3 flex-1">
-        {block.steps.map((step) => {
-          const Icon = step.icon;
-          return (
-            <div key={step.nameKey} className="flex items-center gap-3">
-              <div className="w-7 h-7 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
-                <Icon className="h-3.5 w-3.5 text-carbon/40" />
-              </div>
-              <p className="text-sm text-carbon/60 truncate">
-                {t.overview[step.nameKey as keyof typeof t.overview]}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* CTA — inline, centered */}
-      <div className="mt-6 flex justify-center">
-        <div className={`relative inline-flex items-center justify-center gap-2 py-2.5 px-8 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors overflow-hidden ${
+      {/* CTA */}
+      <div className="mt-8 flex justify-center">
+        <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-8 rounded-full text-[13px] font-semibold tracking-[-0.02em] transition-all ${
           isComplete
-            ? 'bg-carbon/[0.05] text-carbon/35'
-            : 'bg-carbon text-crema group-hover:bg-carbon/90'
+            ? 'bg-carbon/[0.06] text-carbon/50'
+            : 'bg-carbon text-white group-hover:bg-carbon/90'
         }`}>
           {getCtaLabel()}
           {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
           {isComplete && <Check className="h-3.5 w-3.5" />}
-
-          {/* Shimmer effect for unstarted blocks */}
-          {!isStarted && !isComplete && (
-            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-          )}
         </div>
       </div>
     </Link>
@@ -239,7 +147,6 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const [view, setView] = useState<ViewMode>('blocks');
   const t = useTranslation();
 
-  // Use computeWizardState (same as sidebar) to get accurate per-block progress
   const wizardPhases = computeWizardState(milestones);
   const BLOCK_TO_PHASE_IDS: Record<TimelinePhase, string[]> = {
     creative: ['product', 'brand'],
@@ -265,15 +172,25 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
   return (
     <div className="min-h-[80vh]">
-      <div className="px-4 sm:px-5 md:px-12 lg:px-16 pt-8 md:pt-6 pb-12">
+      <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-16">
 
-        {/* ── View Slider — SegmentedPill ── */}
-        <div className="flex justify-center mb-10 sm:mb-12">
+        {/* ── Collection title ── */}
+        <div className="text-center mb-12">
+          <p className="text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/40 mb-3">
+            {plan.season || 'Collection'}
+          </p>
+          <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.1]">
+            {plan.name}
+          </h1>
+        </div>
+
+        {/* ── View switch ── */}
+        <div className="flex justify-center mb-12">
           <SegmentedPill
             options={[
-              { id: 'blocks', label: t.overview.blocks },
-              { id: 'calendar', label: t.overview.calendar },
-              { id: 'presentation', label: (t.overview as Record<string, string>).presentation || 'Presentation' },
+              { id: 'blocks', label: t.overview?.blocks || 'Blocks' },
+              { id: 'calendar', label: t.overview?.calendar || 'Calendar' },
+              { id: 'presentation', label: (t.overview as Record<string, string>)?.presentation || 'Presentation' },
             ]}
             value={view}
             onChange={handleViewChange}
@@ -281,9 +198,9 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           />
         </div>
 
-        {/* View Content */}
+        {/* ── Blocks view ── */}
         {view === 'blocks' && (
-          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="max-w-[960px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-5">
             {BLOCK_DEFS.map((block) => (
               <BlockCard
                 key={block.phase}
@@ -297,6 +214,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
         )}
       </div>
 
+      {/* ── Calendar view ── */}
       {view === 'calendar' && (
         <InlineTimeline
           collectionId={collectionId}
@@ -305,7 +223,6 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           launchDate={timeline?.launch_date}
         />
       )}
-
     </div>
   );
 }
