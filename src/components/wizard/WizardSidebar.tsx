@@ -289,8 +289,8 @@ export function WizardSidebar({
                   alt="aimily"
                   width={774}
                   height={96}
-                  className="w-auto opacity-60"
-                  style={{ writingMode: 'vertical-rl', height: '60px', transform: 'rotate(180deg)' }}
+                  className="opacity-60"
+                  style={{ width: 'auto', height: '14px', transform: 'rotate(-90deg)' }}
                   unoptimized
                 />
               </Link>
