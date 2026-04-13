@@ -71,9 +71,9 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
-      { id: 'families-pricing', label: 'Families & Pricing', route: 'merchandising', phaseId: 'merchandising' },
-      { id: 'channels', label: 'Channels & Markets', route: 'merchandising', phaseId: 'merchandising' },
-      { id: 'budget', label: 'Budget & Financials', route: 'merchandising', phaseId: 'merchandising' },
+      { id: 'families-pricing', label: 'Families & Pricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
+      { id: 'channels', label: 'Channels & Markets', route: 'merchandising?block=channels', phaseId: 'merchandising' },
+      { id: 'budget', label: 'Budget & Financials', route: 'merchandising?block=budget', phaseId: 'merchandising' },
       { id: 'builder-merch', label: 'Collection Builder', route: 'product', isOutput: true },
     ],
   },

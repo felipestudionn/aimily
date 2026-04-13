@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, ArrowLeft, Check, Lock, ShoppingBag, DollarSign, Store, Calculator, LayoutGrid, X, Loader2, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -927,13 +927,15 @@ function ExpandedCardContent({ cardId, mode, data, onChange, collectionContext, 
    Main Page
    ═══════════════════════════════════════════════════════════ */
 
-export default function MerchandisingPage() {
+export default function MerchandisingPage({ blockParamOverride }: { blockParamOverride?: string | null }) {
   const { id } = useParams();
   const collectionId = id as string;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const blockParam = blockParamOverride ?? searchParams?.get('block');
   const t = useTranslation();
   const { language } = useLanguage();
-  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [expandedCard, setExpandedCard] = useState<string | null>(blockParam || null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '' });
@@ -1076,6 +1078,77 @@ export default function MerchandisingPage() {
     );
   }
 
+  /* ── Card name map for clean workspace header ── */
+  const m = t.merchandising as Record<string, string>;
+  const cardNameMap: Record<string, string> = {
+    'families': m[language === 'es' ? CARD_KEYS.families.nameEs : CARD_KEYS.families.name] || 'Families & Pricing',
+    'pricing': m[language === 'es' ? CARD_KEYS.pricing.nameEs : CARD_KEYS.pricing.name] || 'Pricing',
+    'channels': m[language === 'es' ? CARD_KEYS.channels.nameEs : CARD_KEYS.channels.name] || 'Channels & Markets',
+    'budget': m[language === 'es' ? CARD_KEYS.budget.nameEs : CARD_KEYS.budget.name] || 'Budget & Financials',
+  };
+
+  /* ═══ CLEAN WORKSPACE VIEW (from sidebar with ?block= param) ═══ */
+  if (blockParam && MERCH_CARDS.find(c => c.id === blockParam)) {
+    const card = MERCH_CARDS.find(c => c.id === blockParam)!;
+    const state = getCardState(card.id);
+
+    return (
+      <div className="min-h-[80vh]">
+        <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16">
+          {/* Header — centered, matches template */}
+          <div className="text-center mb-8">
+            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
+              {collectionContext.collectionName || 'Collection'}
+            </p>
+            <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+              {cardNameMap[blockParam] || blockParam}
+            </h1>
+          </div>
+
+          {/* Mode selector — centered below title */}
+          <div className="mb-10 flex flex-col items-center gap-3">
+            <SegmentedPill
+              options={INPUT_MODE_IDS.map((modeId) => ({
+                id: modeId,
+                label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
+              }))}
+              value={state.mode}
+              onChange={(modeId) => updateCardData(card.id, { mode: modeId })}
+              size="md"
+            />
+            <p className="text-[13px] text-carbon/35 tracking-[-0.01em]">
+              {t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}
+            </p>
+          </div>
+
+          {/* Content — full width for card grid */}
+          <ExpandedCardContent
+            cardId={card.id} mode={state.mode} data={state.data}
+            onChange={(newData) => updateCardData(card.id, { data: newData })}
+            collectionContext={collectionContext} familiesData={familiesData}
+            familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
+          />
+
+          {/* Confirm — centered */}
+          <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
+            <button
+              onClick={() => handleConfirm(card.id)}
+              className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                state.confirmed
+                  ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
+                  : 'bg-carbon text-white hover:bg-carbon/90'
+              }`}
+            >
+              <Check className="h-3.5 w-3.5" />
+              {state.confirmed ? 'Confirmed' : t.merchandising.validateContinue}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ═══ LEGACY VIEW (direct access, no blockParam) ═══ */
   return (
     <div className="min-h-[80vh]">
       <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">

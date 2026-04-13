@@ -57,9 +57,9 @@ const BLOCK_DEFS: BlockDef[] = [
     description: 'Product families, pricing, channels, and budget.',
     route: 'merchandising',
     subBlocks: [
-      { id: 'families', label: 'Families\n& Pricing', description: 'Define product categories, set price architecture, and structure your segments.', route: 'merchandising' },
-      { id: 'channels', label: 'Channels\n& Markets', description: 'Plan your DTC and wholesale distribution across target markets.', route: 'merchandising' },
-      { id: 'budget', label: 'Budget\n& Financials', description: 'Set your sales target, calculate margins, and plan sell-through rates.', route: 'merchandising' },
+      { id: 'families', label: 'Families\n& Pricing', description: 'Define product categories, set price architecture, and structure your segments.', route: 'merchandising?block=families' },
+      { id: 'channels', label: 'Channels\n& Markets', description: 'Plan your DTC and wholesale distribution across target markets.', route: 'merchandising?block=channels' },
+      { id: 'budget', label: 'Budget\n& Financials', description: 'Set your sales target, calculate margins, and plan sell-through rates.', route: 'merchandising?block=budget' },
       { id: 'builder', label: 'Collection\nBuilder', description: 'Build your SKU grid, validate the range plan, and organize by drops.', route: 'product', isOutput: true },
     ],
   },

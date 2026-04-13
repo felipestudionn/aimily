@@ -84,8 +84,8 @@ function CreativeWrapper({ blockParam }: WorkspaceComponentProps) {
 
 /* ── Wrapper: Merchandising (self-contained) ── */
 
-function MerchandisingWrapper(_props: WorkspaceComponentProps) {
-  return <LazyMerchandisingPage />;
+function MerchandisingWrapper({ blockParam }: WorkspaceComponentProps) {
+  return <LazyMerchandisingPage blockParamOverride={blockParam} />;
 }
 
 /* ══════════════════════════════════════════════════════════════
