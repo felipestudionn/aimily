@@ -684,52 +684,62 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
   const typeSeg = (data.typeSegmentation as Seg[]) || [{ name: 'Revenue', percentage: 60 }, { name: 'Image', percentage: 20 }, { name: 'Entry', percentage: 20 }];
   const newnessSeg = (data.newnessSegmentation as Seg[]) || [{ name: 'Newness', percentage: 70 }, { name: 'Carry-Over', percentage: 30 }];
 
-  const fields = [
-    { key: 'salesTarget', label: t.merchandising.salesTarget, type: 'number' as const, placeholder: t.merchandising.salesTargetPlaceholder },
-    { key: 'targetMargin', label: t.merchandising.targetMargin, type: 'number' as const, placeholder: t.merchandising.targetMarginPlaceholder },
-    { key: 'avgDiscount', label: t.merchandising.avgDiscount, type: 'number' as const, placeholder: t.merchandising.avgDiscountPlaceholder },
-    { key: 'sellThroughMonths', label: t.merchandising.sellThroughMonths, type: 'number' as const, placeholder: t.merchandising.sellThroughMonthsPlaceholder },
+  const kpiCards = [
+    { key: 'salesTarget', label: t.merchandising.salesTarget, prefix: '€', suffix: '', format: (v: number) => v ? v.toLocaleString() : '—' },
+    { key: 'targetMargin', label: t.merchandising.targetMargin, prefix: '', suffix: '%', format: (v: number) => v ? String(v) : '—' },
+    { key: 'avgDiscount', label: t.merchandising.avgDiscount, prefix: '', suffix: '%', format: (v: number) => v ? String(v) : '—' },
+    { key: 'sellThroughMonths', label: t.merchandising.sellThroughMonths, prefix: '', suffix: 'mo', format: (v: number) => v ? String(v) : '—' },
   ];
+
+  /* ── KPI Card — reusable mini card with big number ── */
+  const KpiCard = ({ kpi }: { kpi: typeof kpiCards[0] }) => {
+    const val = (data[kpi.key] as number) || 0;
+    return (
+      <div className="bg-white rounded-[20px] p-6 md:p-8 flex flex-col">
+        <p className="text-[13px] text-carbon/40 mb-4">{kpi.label}</p>
+        <div className="flex items-baseline gap-1 mb-4">
+          {kpi.prefix && <span className="text-[24px] font-medium text-carbon/30">{kpi.prefix}</span>}
+          <input
+            type="number"
+            value={val || ''}
+            onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+            placeholder="0"
+            className="text-[42px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/10"
+          />
+          {kpi.suffix && <span className="text-[24px] font-medium text-carbon/30 shrink-0">{kpi.suffix}</span>}
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Segmentation row ── */
+  const SegRow = ({ label, segs, dataKey }: { label: string; segs: Seg[]; dataKey: string }) => (
+    <div className="flex items-center gap-4">
+      <span className="text-[12px] text-carbon/30 shrink-0 w-20">{label}</span>
+      {segs.map((s, i) => (
+        <div key={s.name} className="flex items-center gap-1.5">
+          <span className="text-[13px] text-carbon/50">{s.name}</span>
+          <input type="number" value={s.percentage}
+            onChange={(e) => { const u = [...segs]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, [dataKey]: u }); }}
+            className="w-12 px-2 py-1 text-[13px] text-carbon text-center bg-carbon/[0.03] rounded-[8px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none" />
+          <span className="text-[12px] text-carbon/30">%</span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
+      {/* ═══ FREE — 4 KPI cards stacked vertically ═══ */}
       {mode === 'free' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            {fields.map(f => (
-              <div key={f.key}>
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{f.label}</label>
-                <input type={f.type} value={(data[f.key] as number) || ''} onChange={(e) => onChange({ ...data, [f.key]: Number(e.target.value) })}
-                  placeholder={f.placeholder} className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30" />
-              </div>
-            ))}
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-4">
+            {kpiCards.map(kpi => <KpiCard key={kpi.key} kpi={kpi} />)}
           </div>
-          {/* Segmentation */}
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.productTypeSegmentation}</label>
-            <div className="flex gap-4">
-              {typeSeg.map((s, i) => (
-                <div key={s.name} className="flex items-center gap-2">
-                  <span className="text-xs text-carbon/60">{s.name}</span>
-                  <input type="number" value={s.percentage} onChange={(e) => { const u = [...typeSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, typeSegmentation: u }); }}
-                    className="w-16 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors text-center" />
-                  <span className="text-xs text-carbon/30">%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.newnessSegmentation}</label>
-            <div className="flex gap-4">
-              {newnessSeg.map((s, i) => (
-                <div key={s.name} className="flex items-center gap-2">
-                  <span className="text-xs text-carbon/60">{s.name}</span>
-                  <input type="number" value={s.percentage} onChange={(e) => { const u = [...newnessSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, newnessSegmentation: u }); }}
-                    className="w-16 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors text-center" />
-                  <span className="text-xs text-carbon/30">%</span>
-                </div>
-              ))}
-            </div>
+          <div className="bg-white rounded-[20px] p-6 md:p-8 space-y-4">
+            <p className="text-[13px] text-carbon/40 mb-2">Segmentation</p>
+            <SegRow label="Product" segs={typeSeg} dataKey="typeSegmentation" />
+            <SegRow label="Newness" segs={newnessSeg} dataKey="newnessSegmentation" />
           </div>
         </div>
       )}
@@ -823,85 +833,38 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
             {mode === 'assisted' ? t.merchandising.suggestBudget : t.merchandising.generateFinancialPlan}
           </button>
           {error && <p className="text-xs text-red-600">{error}</p>}
+
+          {/* Results: 2×2 KPI cards */}
           {(data.salesTarget as number) > 0 && (
-            <div className="space-y-4 pt-2 border-t border-carbon/[0.06]">
-              {/* Growth model analysis (from AI Proposal) */}
+            <div className="pt-4 space-y-4">
+              {/* Model analysis badge */}
               {(data.selectedModel as string) && (
-                <div className="p-4 bg-carbon/[0.03] border border-carbon/[0.08] space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 text-[10px] font-bold tracking-[0.06em] uppercase bg-carbon text-crema">{data.selectedModel as string}</span>
-                    <span className="text-[11px] text-carbon/40 italic">{data.selectedModelRef as string}</span>
-                  </div>
-                  {(data.whyThisModel as string) && <p className="text-xs text-carbon/60 leading-relaxed">{data.whyThisModel as string}</p>}
-                  {(data.fineTuning as string) && <p className="text-[11px] text-carbon/50 italic">{data.fineTuning as string}</p>}
-                  <div className="grid grid-cols-2 gap-3">
-                    {(data.advantages as string[])?.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#4a7c59] mb-1.5">{t.merchandising.advantagesLabel}</div>
-                        {(data.advantages as string[]).map((a, i) => (
-                          <div key={i} className="flex items-start gap-1.5 mb-1">
-                            <span className="text-[10px] text-[#4a7c59] mt-0.5">+</span>
-                            <span className="text-[11px] text-carbon/60">{a}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {(data.risks as string[])?.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[#9c6644] mb-1.5">{t.merchandising.risksLabel}</div>
-                        {(data.risks as string[]).map((r, i) => (
-                          <div key={i} className="flex items-start gap-1.5 mb-1">
-                            <span className="text-[10px] text-[#9c6644] mt-0.5">!</span>
-                            <span className="text-[11px] text-carbon/60">{r}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-carbon text-white">{data.selectedModel as string}</span>
+                  <span className="text-[12px] text-carbon/40 italic">{data.selectedModelRef as string}</span>
                 </div>
               )}
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon">{t.merchandising.aiFinancialPlan} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
+
+              {/* 2×2 KPI grid with big numbers */}
+              <div className="grid grid-cols-2 gap-4">
+                {kpiCards.map(kpi => <KpiCard key={kpi.key} kpi={kpi} />)}
+              </div>
+
+              {/* Segmentation */}
+              <div className="bg-white rounded-[20px] p-6 space-y-3">
+                <SegRow label="Product" segs={(data.typeSegmentation as Seg[]) || typeSeg} dataKey="typeSegmentation" />
+                <SegRow label="Newness" segs={(data.newnessSegmentation as Seg[]) || newnessSeg} dataKey="newnessSegmentation" />
+              </div>
+
+              {/* Rationale */}
               {(data.rationale as string) && (
                 <textarea
                   value={data.rationale as string}
                   onChange={(e) => onChange({ ...data, rationale: e.target.value })}
-                  className="w-full text-xs text-carbon/60 italic bg-transparent border border-transparent hover:border-carbon/[0.08] focus:border-carbon/[0.12] focus:outline-none resize-none leading-relaxed px-2 py-1.5 -mx-2 transition-colors"
+                  className="w-full text-[13px] text-carbon/50 italic bg-white rounded-[16px] border border-carbon/[0.06] p-4 resize-none leading-relaxed focus:border-carbon/20 focus:outline-none"
                   rows={3}
                 />
               )}
-              <div className="grid grid-cols-2 gap-4">
-                {fields.map(f => (
-                  <div key={f.key}>
-                    <label className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">{f.label}</label>
-                    <input type={f.type} value={(data[f.key] as number) || ''} onChange={(e) => onChange({ ...data, [f.key]: Number(e.target.value) })}
-                      className="w-full px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-6">
-                <div>
-                  <label className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">{t.merchandising.productType}</label>
-                  <div className="flex gap-3">
-                    {((data.typeSegmentation as Seg[]) || typeSeg).map((s, i) => (
-                      <span key={s.name} className="text-xs text-carbon/60">{s.name}: <input type="number" value={s.percentage} onChange={(e) => {
-                        const u = [...((data.typeSegmentation as Seg[]) || typeSeg)]; u[i] = { ...u[i], percentage: Number(e.target.value) };
-                        onChange({ ...data, typeSegmentation: u });
-                      }} className="w-12 px-1 py-0.5 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] text-center" />%</span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 mb-1 block">{t.merchandising.newness}</label>
-                  <div className="flex gap-3">
-                    {((data.newnessSegmentation as Seg[]) || newnessSeg).map((s, i) => (
-                      <span key={s.name} className="text-xs text-carbon/60">{s.name}: <input type="number" value={s.percentage} onChange={(e) => {
-                        const u = [...((data.newnessSegmentation as Seg[]) || newnessSeg)]; u[i] = { ...u[i], percentage: Number(e.target.value) };
-                        onChange({ ...data, newnessSegmentation: u });
-                      }} className="w-12 px-1 py-0.5 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] text-center" />%</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -1185,42 +1148,13 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
           )}
 
           {blockParam === 'budget' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
-              <DecisionCard title="Budget & Financials" className="flex flex-col">
-                <BudgetContent
-                  mode={state.mode} data={state.data}
-                  onChange={(newData) => updateCardData('budget', { data: newData })}
-                  collectionContext={collectionContext}
-                  familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
-                />
-              </DecisionCard>
-
-              <DecisionCard title="Summary" className="flex flex-col">
-                <div className="space-y-4">
-                  {(state.data.salesTarget as number) > 0 ? (
-                    <>
-                      <div className="flex items-baseline justify-between py-2 border-b border-carbon/[0.04]">
-                        <span className="text-[14px] text-carbon/50">Sales Target</span>
-                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">€{((state.data.salesTarget as number) || 0).toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-baseline justify-between py-2 border-b border-carbon/[0.04]">
-                        <span className="text-[14px] text-carbon/50">Target Margin</span>
-                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">{(state.data.targetMargin as number) || 0}%</span>
-                      </div>
-                      <div className="flex items-baseline justify-between py-2 border-b border-carbon/[0.04]">
-                        <span className="text-[14px] text-carbon/50">Avg. Discount</span>
-                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">{(state.data.avgDiscount as number) || 0}%</span>
-                      </div>
-                      <div className="flex items-baseline justify-between py-2">
-                        <span className="text-[14px] text-carbon/50">Sell-Through</span>
-                        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">{(state.data.sellThroughMonths as number) || 0} mo</span>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-[14px] text-carbon/30 py-4">Financial summary will appear here</p>
-                  )}
-                </div>
-              </DecisionCard>
+            <div className="max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
+              <BudgetContent
+                mode={state.mode} data={state.data}
+                onChange={(newData) => updateCardData('budget', { data: newData })}
+                collectionContext={collectionContext}
+                familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
+              />
             </div>
           )}
 
