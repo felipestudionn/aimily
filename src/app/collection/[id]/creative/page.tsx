@@ -571,7 +571,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
     <>
       {/* ═══ FREE MODE — left stack (3 small cards) + right tall card ═══ */}
       {mode === 'free' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc(100vh-320px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[420px]">
           {/* Left column: 3 stacked cards sharing the height */}
           <div className="flex flex-col gap-5">
             <DecisionCard title={t.creative.collectionTarget}>
@@ -623,7 +623,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
 
       {/* ═══ ASSISTED MODE — left stack + right tall card ═══ */}
       {mode === 'assisted' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc(100vh-320px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[420px]">
           {/* Left column: Gender + Direction Keywords stacked */}
           <div className="flex flex-col gap-5">
             <DecisionCard title={t.creative.collectionTarget}>
@@ -694,7 +694,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
 
       {/* ═══ AI MODE — left (gender + reference) + right proposals ═══ */}
       {mode === 'ai' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc(100vh-320px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[420px]">
           <div className="flex flex-col gap-5">
             <DecisionCard title={t.creative.collectionTarget}>
               <GenderSelector />
