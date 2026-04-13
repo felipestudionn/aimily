@@ -52,7 +52,7 @@ interface SidebarBlock {
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
-    label: 'Creative Direction & Brand',
+    label: 'Creative Direction',
     icon: Feather,
     route: 'creative',
     phaseIds: ['product', 'brand'],
@@ -105,7 +105,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
 ];
 
 const COLLAPSED_W = 72;
-const EXPANDED_W = 320;
+const EXPANDED_W = 340;
 
 /* ══════════════════════════════════════════════════════════════ */
 
@@ -392,31 +392,33 @@ export function WizardSidebar({
                                 key={sub.id}
                                 href={isLocked ? '#' : subHref}
                                 onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                                className={`flex items-center justify-between py-2 transition-colors ${
-                                  state === 'locked'
+                                className={`flex items-center justify-between py-2 px-3 -mx-3 rounded-[10px] transition-all ${
+                                  state === 'active'
+                                    ? 'bg-carbon text-white'
+                                    : state === 'locked'
                                     ? 'text-carbon/25 cursor-not-allowed'
-                                    : 'text-carbon'
+                                    : 'text-carbon hover:bg-carbon/[0.04]'
                                 }`}
                               >
                                 <span className={`text-[14px] ${
-                                  state === 'active' ? 'font-semibold' : 'font-normal'
+                                  state === 'active' ? 'font-semibold text-white' : 'font-normal'
                                 }`}>
                                   {sub.label}
                                 </span>
 
-                                {/* Output items (Creative Synthesis, Collection Builder) → arrow */}
+                                {/* Output items → arrow */}
                                 {sub.isOutput && (
-                                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-carbon/40" strokeWidth={2} />
+                                  <ArrowRight className={`h-3.5 w-3.5 shrink-0 ${state === 'active' ? 'text-white/60' : 'text-carbon/40'}`} strokeWidth={2} />
                                 )}
 
-                                {/* SKU count badge for Design phase sub-items */}
+                                {/* SKU count badge */}
                                 {!sub.isOutput && skuPhaseCounts[sub.id] > 0 && (
-                                  <span className="text-[12px] font-normal text-carbon/40 tabular-nums">
+                                  <span className={`text-[12px] font-normal tabular-nums ${state === 'active' ? 'text-white/60' : 'text-carbon/40'}`}>
                                     {skuPhaseCounts[sub.id]}
                                   </span>
                                 )}
 
-                                {/* Check for completed non-output items */}
+                                {/* Check for completed */}
                                 {!sub.isOutput && state === 'completed' && !skuPhaseCounts[sub.id] && (
                                   <Check className="h-3.5 w-3.5 shrink-0 text-carbon" strokeWidth={2} />
                                 )}

@@ -20,7 +20,7 @@ interface WizardLayoutProps {
 
 /* ── Sidebar widths (must match WizardSidebar constants + padding) ── */
 const SIDEBAR_COLLAPSED = 72;
-const SIDEBAR_EXPANDED = 320;
+const SIDEBAR_EXPANDED = 340;
 
 export function WizardLayout({
   children,
