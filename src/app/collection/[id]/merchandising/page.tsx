@@ -501,172 +501,124 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
   ].filter(Boolean).join(', ');
 
   return (
-    <div className="space-y-6">
-      {/* Channel selection — compact row */}
-      <div>
-        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-3 block">{t.merchandising.distributionChannels}</label>
-        <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* ── Left card: Channel selection ── */}
+      <DecisionCard title={t.merchandising.distributionChannels}>
+        <div className="space-y-3">
           {/* DTC */}
-          <div className={`border transition-all ${dtc.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-3`}>
+          <div className={`rounded-[16px] border transition-all ${dtc.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
             <button onClick={toggleDtc} className="flex items-center gap-2.5 w-full">
-              <div className={`w-4 h-4 border flex items-center justify-center transition-all shrink-0 ${dtc.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                {dtc.enabled && <Check className="h-2.5 w-2.5 text-crema" />}
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${dtc.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                {dtc.enabled && <Check className="h-2.5 w-2.5 text-white" />}
               </div>
-              <span className={`text-xs font-medium ${dtc.enabled ? 'text-carbon' : 'text-carbon/40'}`}>DTC</span>
+              <span className={`text-[14px] font-medium ${dtc.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Direct to Consumer</span>
             </button>
             {dtc.enabled && (
-              <div className="flex gap-2 mt-2.5 ml-6">
-                <button onClick={() => toggleSub('dtc', 'digital')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${dtc.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+              <div className="flex gap-2 mt-3 ml-8">
+                <button onClick={() => toggleSub('dtc', 'digital')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${dtc.digital ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
                   {t.merchandising.digital}
                 </button>
-                <button onClick={() => toggleSub('dtc', 'physical')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${dtc.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                <button onClick={() => toggleSub('dtc', 'physical')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${dtc.physical ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
                   {t.merchandising.physical}
                 </button>
               </div>
             )}
           </div>
           {/* Wholesale */}
-          <div className={`border transition-all ${wholesale.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-3`}>
+          <div className={`rounded-[16px] border transition-all ${wholesale.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
             <button onClick={toggleWholesale} className="flex items-center gap-2.5 w-full">
-              <div className={`w-4 h-4 border flex items-center justify-center transition-all shrink-0 ${wholesale.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                {wholesale.enabled && <Check className="h-2.5 w-2.5 text-crema" />}
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${wholesale.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                {wholesale.enabled && <Check className="h-2.5 w-2.5 text-white" />}
               </div>
-              <span className={`text-xs font-medium ${wholesale.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Wholesale</span>
+              <span className={`text-[14px] font-medium ${wholesale.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Wholesale</span>
             </button>
             {wholesale.enabled && (
-              <div className="flex gap-2 mt-2.5 ml-6">
-                <button onClick={() => toggleSub('wholesale', 'digital')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${wholesale.digital ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+              <div className="flex gap-2 mt-3 ml-8">
+                <button onClick={() => toggleSub('wholesale', 'digital')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${wholesale.digital ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
                   {t.merchandising.digital}
                 </button>
-                <button onClick={() => toggleSub('wholesale', 'physical')} className={`px-3 py-1 text-[10px] font-medium tracking-[0.06em] uppercase border transition-all ${wholesale.physical ? 'border-carbon bg-carbon text-crema' : 'border-carbon/[0.1] text-carbon/40 hover:border-carbon/20'}`}>
+                <button onClick={() => toggleSub('wholesale', 'physical')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${wholesale.physical ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
                   {t.merchandising.physical}
                 </button>
               </div>
             )}
           </div>
         </div>
-      </div>
+      </DecisionCard>
 
-      {/* Markets — depends on mode */}
-      {mode === 'free' && (
-        <div>
-          <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.targetMarkets}</label>
-          {markets.map((m, i) => (
-            <div key={i} className="flex items-center gap-2 mb-2">
-              <input value={m.name} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], name: e.target.value }; onChange({ ...data, markets: u }); }}
-                placeholder={t.merchandising.marketNamePlaceholder} className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-              <input value={m.region} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], region: e.target.value }; onChange({ ...data, markets: u }); }}
-                placeholder={t.merchandising.regionPlaceholder} className="w-32 px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-              <button onClick={() => onChange({ ...data, markets: markets.filter((_, j) => j !== i) })} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
-            </div>
-          ))}
-          <button onClick={() => onChange({ ...data, markets: [...markets, { name: '', region: '', opportunity: 'medium', rationale: '' }] })}
-            className="text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 hover:text-carbon/60 flex items-center gap-1 mt-1"><Plus className="h-3 w-3" /> {t.merchandising.addMarket}</button>
-        </div>
-      )}
+      {/* ── Right card: Markets ── */}
+      <DecisionCard title={t.merchandising.targetMarkets}>
+        {mode === 'free' && (
+          <div className="space-y-3">
+            {markets.map((mk, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input value={mk.name} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], name: e.target.value }; onChange({ ...data, markets: u }); }}
+                  placeholder={t.merchandising.marketNamePlaceholder} className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
+                <input value={mk.region} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], region: e.target.value }; onChange({ ...data, markets: u }); }}
+                  placeholder={t.merchandising.regionPlaceholder} className="w-32 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
+                <button onClick={() => onChange({ ...data, markets: markets.filter((_, j) => j !== i) })} className="w-7 h-7 rounded-full text-carbon/20 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            <button onClick={() => onChange({ ...data, markets: [...markets, { name: '', region: '', opportunity: 'medium', rationale: '' }] })}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors">
+              <Plus className="h-3 w-3" /> {t.merchandising.addMarket}
+            </button>
+          </div>
+        )}
 
-      {(mode === 'assisted' || mode === 'ai') && (
-        <div className="space-y-4">
-          {mode === 'ai' && !markets.length && (
-            <p className="text-sm text-carbon/60 leading-relaxed">
-              {t.merchandising.aiProposalChannels} <strong>{t.merchandising.aiProposalChannelsBold}</strong>.
-            </p>
-          )}
-          {mode === 'assisted' && (
-            <div>
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.marketDirection}</label>
+        {(mode === 'assisted' || mode === 'ai') && (
+          <div className="space-y-4">
+            {mode === 'assisted' && (
               <textarea
                 value={(data.direction as string) || ''}
                 onChange={(e) => onChange({ ...data, direction: e.target.value })}
                 placeholder={t.merchandising.marketDirectionPlaceholder}
                 className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
               />
-            </div>
-          )}
-          <button
-            onClick={async () => {
-              setGenerating(true); setError(null);
-              const apiType = mode === 'assisted' ? 'channels-assisted' : 'channels-proposals';
-              const { result, error: err } = await generateMerch(apiType, { direction: (data.direction as string) || '', channelConfig: channelsSummary, ...collectionContext }, language);
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { markets: Market[] };
-              const marketsWithSelection = (parsed.markets || []).map(m => ({ ...m, selected: true }));
-              onChange({ ...data, markets: marketsWithSelection });
-              setGenerating(false);
-            }}
-            disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {mode === 'assisted' ? t.merchandising.suggestMarkets : t.merchandising.recommendMarkets}
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          {markets.length > 0 && (
-            <div className="space-y-4 pt-3">
-              {/* Selection counter */}
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-carbon/50">
-                  <span className="font-semibold text-carbon">{markets.filter(m => m.selected !== false).length}</span> {t.merchandising.marketsSelected} · {markets.length} {t.merchandising.marketsTotal}
-                </p>
-              </div>
-              {markets.map((m, i) => {
-                const isSelected = m.selected !== false;
-                const epStyle = (label: string) => {
-                  const l = label.toLowerCase();
-                  if (l.includes('social') || l.includes('instagram') || l.includes('tiktok')) return { card: 'bg-[#f2ede8] border-[#e0d8ce]', badge: 'bg-[#c4a882] text-white' };
-                  if (l.includes('dtc') || l.includes('e-commerce')) return { card: 'bg-[#f5f2ed] border-[#e5ddd2]', badge: 'bg-[#8b7355] text-white' };
-                  if (l.includes('wholesale') || l.includes('key account') || l.includes('boutique') || l.includes('department')) return { card: 'bg-[#eef0f3] border-[#d5dae2]', badge: 'bg-[#5a6b7d] text-white' };
-                  if (l.includes('showroom') || l.includes('flagship') || l.includes('pop-up')) return { card: 'bg-[#eeecf2] border-[#d8d3e2]', badge: 'bg-[#6b5e7d] text-white' };
-                  return { card: 'bg-carbon/[0.03] border-carbon/[0.08]', badge: 'bg-carbon/30 text-white' };
-                };
-                return (
+            )}
+            <button
+              onClick={async () => {
+                setGenerating(true); setError(null);
+                const apiType = mode === 'assisted' ? 'channels-assisted' : 'channels-proposals';
+                const { result, error: err } = await generateMerch(apiType, { direction: (data.direction as string) || '', channelConfig: channelsSummary, ...collectionContext }, language);
+                if (err) { setError(err); setGenerating(false); return; }
+                const parsed = result as { markets: Market[] };
+                const marketsWithSelection = (parsed.markets || []).map(mk => ({ ...mk, selected: true }));
+                onChange({ ...data, markets: marketsWithSelection });
+                setGenerating(false);
+              }}
+              disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {mode === 'assisted' ? t.merchandising.suggestMarkets : t.merchandising.recommendMarkets}
+            </button>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            {markets.length > 0 && (
+              <div className="space-y-3 pt-2">
+                {markets.map((mk, i) => (
                   <div
                     key={i}
-                    className={`border transition-all cursor-pointer ${isSelected ? 'border-carbon/[0.15] bg-white' : 'border-carbon/[0.06] bg-carbon/[0.01] opacity-50'}`}
                     onClick={() => toggleMarketSelection(i)}
+                    className={`rounded-[16px] border p-4 cursor-pointer transition-all ${mk.selected !== false ? 'border-carbon/[0.15] bg-white' : 'border-carbon/[0.06] opacity-40'}`}
                   >
-                    {/* Header */}
-                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-carbon/[0.05]">
-                      <div className={`w-4.5 h-4.5 border flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                        {isSelected && <Check className="h-2.5 w-2.5 text-crema" />}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${mk.selected !== false ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
+                        {mk.selected !== false && <Check className="h-2 w-2 text-white" />}
                       </div>
-                      <div className={`px-2 py-0.5 text-[10px] font-semibold uppercase shrink-0 ${m.opportunity === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'}`}>{m.opportunity}</div>
-                      <div className="text-sm font-medium text-carbon">{m.name}</div>
-                      <span className="text-xs text-carbon/30">{m.region}</span>
+                      <span className="text-[14px] font-medium text-carbon">{mk.name}</span>
+                      <span className="text-[12px] text-carbon/30 ml-auto">{mk.region}</span>
                     </div>
-                    {/* Body */}
-                    <div className="px-5 py-4 space-y-3.5">
-                      <p className="text-xs text-carbon/60 leading-relaxed">{m.rationale}</p>
-                      {/* Entry points */}
-                      {m.entryPoints && m.entryPoints.length > 0 ? (
-                        <div className="space-y-2">
-                          <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/30">{t.merchandising.entryStrategyLabel}</div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {m.entryPoints.map((ep, j) => {
-                              const st = epStyle(ep.label);
-                              return (
-                                <div key={j} className={`p-3 border ${st.card}`}>
-                                  <span className={`inline-block px-2 py-0.5 text-[9px] font-bold tracking-[0.06em] uppercase mb-1.5 ${st.badge}`}>{ep.label}</span>
-                                  <p className="text-[11px] text-carbon/60 leading-relaxed">{ep.detail}</p>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ) : m.entryStrategy ? (
-                        <div className="space-y-1.5">
-                          <div className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/30">{t.merchandising.entryStrategyLabel}</div>
-                          <p className="text-[11px] text-carbon/50 italic leading-relaxed">{m.entryStrategy}</p>
-                        </div>
-                      ) : null}
-                    </div>
+                    {mk.rationale && <p className="text-[12px] text-carbon/50 leading-relaxed ml-6">{mk.rationale}</p>}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </DecisionCard>
     </div>
   );
 }
@@ -1127,38 +1079,12 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
           )}
 
           {blockParam === 'channels' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
-              <DecisionCard title="Distribution Channels" className="flex flex-col">
-                {/* Extract just the channel toggles from ChannelsContent */}
-                <ChannelsContent
-                  mode={state.mode} data={state.data}
-                  onChange={(newData) => updateCardData('channels', { data: newData })}
-                  collectionContext={collectionContext}
-                />
-              </DecisionCard>
-
-              <DecisionCard title="Target Markets" className="flex flex-col">
-                <div className="text-[13px] text-carbon/30">
-                  {(() => {
-                    type Market = { name: string; region: string; selected?: boolean };
-                    const mkts = (getCardState('channels').data.markets as Market[]) || [];
-                    const selected = mkts.filter(m => m.selected !== false);
-                    if (selected.length > 0) {
-                      return (
-                        <div className="space-y-2">
-                          {selected.map((mk, i) => (
-                            <div key={i} className="flex items-center justify-between py-2 border-b border-carbon/[0.04] last:border-0">
-                              <span className="text-[14px] text-carbon">{mk.name}</span>
-                              <span className="text-[12px] text-carbon/40">{mk.region}</span>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    }
-                    return <p className="text-[14px] text-carbon/30 py-4">Markets will appear here after channel configuration</p>;
-                  })()}
-                </div>
-              </DecisionCard>
+            <div className="max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
+              <ChannelsContent
+                mode={state.mode} data={state.data}
+                onChange={(newData) => updateCardData('channels', { data: newData })}
+                collectionContext={collectionContext}
+              />
             </div>
           )}
 
