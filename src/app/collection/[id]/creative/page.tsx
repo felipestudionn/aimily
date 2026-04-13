@@ -1007,18 +1007,15 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
 
   return (
     <div className="space-y-6">
-      {/* Upload + Pinterest buttons */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Upload + Pinterest — compact inline buttons */}
+      <div className="flex items-center gap-3">
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[140px] rounded-[20px] disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08] transition-colors disabled:opacity-40"
         >
-          {uploading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <Upload className="h-6 w-6 text-carbon/30" />}
-          <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
-            {uploading ? uploadProgress : t.creative.uploadPhotos}
-          </span>
-          <span className="text-xs text-carbon/50">{t.creative.fileTypes}</span>
+          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          {uploading ? uploadProgress : t.creative.uploadPhotos}
         </button>
         <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
           if (e.target.files && e.target.files.length > 0) handleUpload(e.target.files);
@@ -1027,13 +1024,10 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         <button
           onClick={handlePinterestConnect}
           disabled={pinterestLoading}
-          className="flex flex-col items-center justify-center gap-3 p-8 border-2 border-dashed border-carbon/[0.1] hover:border-carbon/20 transition-colors min-h-[140px] rounded-[20px] disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08] transition-colors disabled:opacity-40"
         >
-          {pinterestLoading ? <Loader2 className="h-6 w-6 text-carbon/30 animate-spin" /> : <ExternalLink className="h-6 w-6 text-carbon/30" />}
-          <span className="text-[11px] font-medium tracking-[0.1em] uppercase text-carbon/70">
-            {pinterestLoading ? t.creative.connecting : t.creative.pinterest}
-          </span>
-          <span className="text-xs text-carbon/50">{t.creative.selectFromBoards}</span>
+          {pinterestLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
+          {pinterestLoading ? t.creative.connecting : t.creative.pinterest}
         </button>
       </div>
 
