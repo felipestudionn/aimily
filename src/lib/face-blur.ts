@@ -1,19 +1,23 @@
 /**
  * Face preprocessing for editorial style reference images.
  *
- * STRATEGY v4 (2026-04-12): Use Claude Vision to detect the exact face
- * position in the style reference, then composite the aimily model's
- * headshot precisely over it. No more heuristic guessing.
+ * The primary editorial engine is GPT Image 1.5 (when a model is selected).
+ * This module provides two preprocessing paths:
  *
- * Flow:
- * 1. Send style reference to Claude Sonnet Vision: "where is the face?"
- * 2. Get back {x, y, width, height} as percentage of image dimensions
- * 3. Resize model headshot to match that exact region
- * 4. Composite with soft circular mask
- * 5. Result: style reference body + model face/hair = one clean image
+ * 1. compositeModelOntoStyleRef() — Used when a model IS selected (GPT path).
+ *    Claude Vision detects the face position in the style reference, then
+ *    the selected model's headshot is composited over it with a soft circular
+ *    mask. The result is passed as Image 3 to GPT Image 1.5, giving it the
+ *    correct face/hair identity with zero conflicts.
  *
- * Nano Banana then receives only 2 references: product + composited style.
- * Zero identity conflict.
+ * 2. blurFaceInStyleReference() — Used when NO model is selected (Nano Banana
+ *    fallback path, Case C: product + style ref only). Blurs the original
+ *    face in the style reference so Nano Banana doesn't latch onto the
+ *    wrong identity.
+ *
+ * Both paths rely on detectFacePosition(), which uses Claude Vision (Haiku)
+ * to get a precise bounding box as fractions of image dimensions. This makes
+ * both compositing and blurring position-accurate regardless of pose or crop.
  */
 
 import sharp from 'sharp';

@@ -38,3 +38,14 @@ next-env.d.ts
 # IDE
 .vscode
 .idea
+
+# MCP config (contains API keys)
+.mcp.json
+
+# Planning docs (session artifacts)
+.planning/
+
+# Local experiment scripts
+scripts/composite-shirt.mjs
+scripts/retouch-shirt.mjs
+scripts/model-references/
