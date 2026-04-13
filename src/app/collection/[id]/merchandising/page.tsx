@@ -1229,7 +1229,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
               </div>
 
               {/* Expanded content */}
-              <div className="flex-1 bg-white border border-carbon/[0.06] overflow-visible flex flex-col" style={{ animation: 'expandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards', minHeight: 'calc(100vh - 260px)' }}>
+              <div className="flex-1 bg-white border border-carbon/[0.06] rounded-[20px] overflow-visible flex flex-col" style={{ animation: 'expandIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards', minHeight: 'calc(100vh - 260px)' }}>
                 {(() => {
                   const card = MERCH_CARDS.find((c) => c.id === expandedCard);
                   if (!card) return null;
@@ -1295,7 +1295,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                   <div
                     key={card.id}
                     onClick={() => { if (!locked) handleExpand(card.id); }}
-                    className={`group relative bg-white p-5 sm:p-6 md:p-8 transition-all duration-300 overflow-hidden border shadow-sm flex flex-col ${
+                    className={`group relative bg-white rounded-[20px] p-5 sm:p-6 md:p-8 transition-all duration-300 overflow-hidden border shadow-sm flex flex-col ${
                       locked ? 'border-carbon/[0.04] opacity-50 cursor-not-allowed' : state.confirmed ? 'border-carbon/[0.12] bg-carbon/[0.01] cursor-pointer hover:shadow-md' : 'border-carbon/[0.06] cursor-pointer hover:shadow-md'
                     }`}
                   >
@@ -1303,7 +1303,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                     {state.confirmed && <div className="absolute top-5 right-5 w-7 h-7 bg-carbon flex items-center justify-center"><Check className="h-3.5 w-3.5 text-crema" /></div>}
                     <div className="flex items-start justify-between mb-4 sm:mb-6">
                       <div>
-                        <div className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mb-3 sm:mb-4 ${locked ? 'bg-carbon/[0.02]' : 'bg-carbon/[0.04]'}`}>
+                        <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-[10px] flex items-center justify-center mb-3 sm:mb-4 ${locked ? 'bg-carbon/[0.02]' : 'bg-carbon/[0.04]'}`}>
                           {locked ? <Lock className="h-5 w-5 text-carbon/20" /> : <Icon className="h-5 w-5 text-carbon/50" />}
                         </div>
                         <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</h3>
@@ -1324,7 +1324,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                       </div>
                     )}
                     <div className="mt-5 flex justify-center">
-                    <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-8 text-[11px] font-medium uppercase tracking-[0.15em] transition-colors ${
+                    <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-8 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-colors ${
                       locked ? 'bg-carbon/[0.04] text-carbon/20' : state.confirmed ? 'bg-carbon/[0.05] text-carbon/35' : 'bg-carbon text-crema group-hover:bg-carbon/90'
                     }`}>
                       {locked ? (<><Lock className="h-3 w-3" /> {t.merchandising.requires} {card.lockedBy ? t.merchandising[(language === 'es' ? CARD_KEYS[card.lockedBy].nameEs : CARD_KEYS[card.lockedBy].name) as keyof typeof t.merchandising] as string : ''}</>) :
@@ -1340,7 +1340,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
 
         {/* Collection Builder CTA */}
         {!expandedCard && (
-          <div className={`mt-6 sm:mt-8 p-4 sm:p-8 border transition-all ${allValidated ? 'bg-white border-carbon/[0.06] hover:shadow-lg cursor-pointer' : 'bg-carbon/[0.02] border-carbon/[0.04] cursor-not-allowed'}`}>
+          <div className={`mt-6 sm:mt-8 p-4 sm:p-8 border rounded-[20px] transition-all ${allValidated ? 'bg-white border-carbon/[0.06] hover:shadow-lg cursor-pointer' : 'bg-carbon/[0.02] border-carbon/[0.04] cursor-not-allowed'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 sm:gap-5">
                 <div className={`w-12 h-12 flex items-center justify-center ${allValidated ? 'bg-carbon/[0.04]' : 'bg-carbon/[0.02]'}`}>
