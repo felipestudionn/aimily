@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   CalendarDays,
   LayoutDashboard,
@@ -125,11 +125,7 @@ export function WizardSidebar({
   const pathname = usePathname();
   const { milestones } = useTimeline();
   const { phases } = useWizardState(milestones);
-  const [pinned, setPinned] = useState(false);
-  const [hoverExpanded, setHoverExpanded] = useState(false);
-  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const collapsed = !pinned && !hoverExpanded;
+  const [collapsed, setCollapsed] = useState(false);
 
   const basePath = `/collection/${collectionId}`;
   const phaseMap = new Map(phases.map((ps) => [ps.phase.id, ps]));
@@ -175,22 +171,11 @@ export function WizardSidebar({
     return 'available';
   }
 
-  const handleMouseEnter = useCallback(() => {
-    if (pinned) return;
-    hoverTimer.current = setTimeout(() => setHoverExpanded(true), 300);
-  }, [pinned]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    setHoverExpanded(false);
-  }, []);
-
-  const handleTogglePin = useCallback(() => {
-    const next = !pinned;
-    setPinned(next);
-    setHoverExpanded(false);
-    onCollapsedChange?.(!next);
-  }, [pinned, onCollapsedChange]);
+  const handleToggleCollapse = useCallback(() => {
+    const next = !collapsed;
+    setCollapsed(next);
+    onCollapsedChange?.(next);
+  }, [collapsed, onCollapsedChange]);
 
   const utilityLinks = [
     { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
@@ -205,8 +190,6 @@ export function WizardSidebar({
       )}
 
       <aside
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
         className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
@@ -271,20 +254,20 @@ export function WizardSidebar({
                     <Link
                       href={allLocked ? '#' : blockHref}
                       onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                      className={`relative flex flex-col items-center justify-center h-14 mx-1 rounded-[12px] transition-all ${
+                      className={`relative flex items-center justify-center h-12 mx-1 rounded-[12px] transition-all ${
                         allLocked ? 'cursor-not-allowed opacity-30'
                         : blockActive ? 'bg-carbon/[0.05]'
                         : 'hover:bg-carbon/[0.03]'
                       }`}
                       title={block.label}
                     >
-                      <span className={`text-[13px] font-bold tabular-nums ${
+                      <span className={`text-[13px] font-semibold truncate transition-colors ${
                         blockActive ? 'text-carbon' : 'text-carbon/40'
                       }`}>
-                        {block.number}
+                        {block.label.split(' ')[0].charAt(0)}
                       </span>
                       {allCompleted && (
-                        <Check className="h-3 w-3 text-carbon/30 mt-0.5" strokeWidth={2.5} />
+                        <Check className="h-3 w-3 text-carbon/30 absolute bottom-1.5" strokeWidth={2.5} />
                       )}
                     </Link>
                   ) : (
@@ -293,16 +276,11 @@ export function WizardSidebar({
                       <Link
                         href={allLocked ? '#' : blockHref}
                         onClick={(e) => { if (allLocked) e.preventDefault(); }}
-                        className={`flex items-baseline gap-2 px-6 pt-5 pb-2 transition-colors ${
+                        className={`flex items-center px-6 pt-5 pb-2 transition-colors ${
                           allLocked ? 'opacity-30 cursor-not-allowed' : 'group'
                         }`}
                       >
-                        <span className={`text-[12px] font-medium tabular-nums shrink-0 ${
-                          blockActive ? 'text-carbon/40' : 'text-carbon/25'
-                        }`}>
-                          {block.number}
-                        </span>
-                        <span className={`text-[15px] font-semibold tracking-[-0.01em] truncate transition-colors ${
+                        <span className={`text-[15px] font-semibold tracking-[-0.01em] truncate flex-1 transition-colors ${
                           allCompleted ? 'text-carbon/40'
                           : blockActive ? 'text-carbon'
                           : 'text-carbon/70 group-hover:text-carbon'
@@ -310,9 +288,9 @@ export function WizardSidebar({
                           {block.label}
                         </span>
                         {allCompleted ? (
-                          <Check className="h-3.5 w-3.5 text-carbon/30 shrink-0 ml-auto" strokeWidth={2} />
+                          <Check className="h-3.5 w-3.5 text-carbon/30 shrink-0" strokeWidth={2} />
                         ) : blockProgress > 0 ? (
-                          <span className="text-[12px] font-normal tabular-nums text-carbon/25 shrink-0 ml-auto">
+                          <span className="text-[12px] font-normal tabular-nums text-carbon/25 shrink-0">
                             {blockProgress}
                           </span>
                         ) : null}
@@ -403,14 +381,12 @@ export function WizardSidebar({
               })}
             </div>
 
-            {!collapsed && (
-              <button
-                onClick={handleTogglePin}
-                className="w-full shrink-0 py-3 text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/20 hover:text-carbon/40 transition-colors border-t border-carbon/[0.06] text-center"
-              >
-                {pinned ? 'Unpin' : 'Pin'}
-              </button>
-            )}
+            <button
+              onClick={handleToggleCollapse}
+              className="w-full shrink-0 py-3 text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/20 hover:text-carbon/40 transition-colors border-t border-carbon/[0.06] text-center"
+            >
+              {collapsed ? 'Expand' : 'Collapse'}
+            </button>
           </div>
         </div>
       </aside>

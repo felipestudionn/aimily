@@ -19,8 +19,8 @@ interface WizardLayoutProps {
 }
 
 /* ── Sidebar widths (must match WizardSidebar constants + padding) ── */
-const SIDEBAR_COLLAPSED = 72;  // 48px card + 12px padding each side
-const SIDEBAR_EXPANDED = 256;  // 232px card + 12px padding each side
+const SIDEBAR_COLLAPSED = 72;
+const SIDEBAR_EXPANDED = 260;
 
 export function WizardLayout({
   children,
@@ -33,7 +33,7 @@ export function WizardLayout({
   setupData,
 }: WizardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // open by default
   const [displayName, setDisplayName] = useState(collectionName);
 
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
