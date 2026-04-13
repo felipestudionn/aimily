@@ -2358,27 +2358,17 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
   return (
     <div className="space-y-6">
-      {/* ── Validate Button — prominent at top ── */}
-      <div className={`p-6 sm:p-8 border rounded-[20px] flex items-center justify-between ${
-        validated ? 'bg-carbon/[0.02] border-carbon/[0.12]' : 'bg-white border-carbon/[0.06]'
-      }`}>
-        <div>
-          <h3 className="text-lg sm:text-xl font-light text-carbon tracking-tight">
-            {validated ? 'Creative Direction Validated' : 'Creative Direction'}
-          </h3>
-          <p className="text-xs text-carbon/50 mt-1">
-            {validated ? 'Your creative input is locked and ready for Merchandising.' : 'Review everything below, make final edits, then validate to proceed.'}
-          </p>
-        </div>
+      {/* ── Validate — centered button only ── */}
+      <div className="flex justify-center">
         <button
           onClick={handleValidate}
-          className={`flex items-center gap-2 px-6 sm:px-8 py-3 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-colors ${
+          className={`inline-flex items-center gap-2 px-7 py-2.5 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
             validated
-              ? 'bg-carbon/[0.08] text-carbon/60 hover:text-carbon hover:bg-carbon/[0.12]'
-              : 'bg-carbon text-crema hover:bg-carbon/90'
+              ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
+              : 'bg-carbon text-white hover:bg-carbon/90'
           }`}
         >
-          <Check className="h-4 w-4" />
+          <Check className="h-3.5 w-3.5" />
           {validated ? 'Validated — click to edit' : 'Validate Creative Direction'}
         </button>
       </div>
@@ -2845,7 +2835,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     'deep-dive': t.creative.deepDive,
     'live-signals': t.creative.liveSignals,
     'competitors': t.creative.competitors,
-    'synthesis': t.creative.creativeSynthesis || 'Creative Overview',
+    'synthesis': 'Creative Overview',
   };
   const blockDescMap: Record<string, string> = {
     'consumer': t.creative.consumerDesc,
