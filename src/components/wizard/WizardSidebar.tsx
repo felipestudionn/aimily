@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useCallback } from 'react';
 import {
@@ -10,8 +11,8 @@ import {
   Presentation,
   X,
   ChevronLeft,
+  ChevronUp,
   Sparkles,
-  Palette,
   ShoppingBag,
   Grid3X3,
   PenTool,
@@ -40,6 +41,7 @@ interface SidebarSubItem {
 interface SidebarBlock {
   id: TimelinePhase;
   label: string;
+  icon: React.ElementType;
   route: string;
   phaseIds: WizardPhaseId[];
   subItems: SidebarSubItem[];
@@ -49,6 +51,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
     label: 'Creative & Brand',
+    icon: Sparkles,
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
@@ -59,6 +62,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'planning',
     label: 'Merchandising',
+    icon: ShoppingBag,
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
@@ -68,6 +72,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'development',
     label: 'Design & Dev',
+    icon: PenTool,
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
@@ -81,6 +86,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'go_to_market',
     label: 'Marketing',
+    icon: Megaphone,
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
@@ -111,7 +117,6 @@ export function WizardSidebar({
   collectionId,
   collectionName,
   season,
-  launchDate,
   mobileOpen = false,
   onMobileClose,
   onCollapsedChange,
@@ -120,15 +125,12 @@ export function WizardSidebar({
   const { milestones } = useTimeline();
   const { phases } = useWizardState(milestones);
   const [collapsed, setCollapsed] = useState(false);
+  const [expandedBlocks, setExpandedBlocks] = useState<Set<TimelinePhase>>(
+    new Set(SIDEBAR_BLOCKS.map((b) => b.id))
+  );
 
   const basePath = `/collection/${collectionId}`;
   const phaseMap = new Map(phases.map((ps) => [ps.phase.id, ps]));
-
-  const daysUntilLaunch = launchDate
-    ? Math.ceil((new Date(launchDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null;
-  const weeksLeft = daysUntilLaunch !== null && daysUntilLaunch > 0 ? Math.floor(daysUntilLaunch / 7) : 0;
-  const daysLeft = daysUntilLaunch !== null && daysUntilLaunch > 0 ? daysUntilLaunch % 7 : 0;
 
   const displayName = collectionName
     ? collectionName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
@@ -165,6 +167,15 @@ export function WizardSidebar({
     return 'available';
   }
 
+  function toggleBlock(blockId: TimelinePhase) {
+    setExpandedBlocks(prev => {
+      const next = new Set(prev);
+      if (next.has(blockId)) next.delete(blockId);
+      else next.add(blockId);
+      return next;
+    });
+  }
+
   const handleToggleCollapse = useCallback(() => {
     const next = !collapsed;
     setCollapsed(next);
@@ -191,10 +202,10 @@ export function WizardSidebar({
       >
         <div className="surface-card h-full flex flex-col overflow-hidden relative">
 
-          {/* ── Collapse toggle — clean circle chevron ── */}
+          {/* ── Collapse chevron on edge ── */}
           <button
             onClick={handleToggleCollapse}
-            className="absolute -right-3 top-7 w-6 h-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.12)] flex items-center justify-center hover:shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-shadow z-10 hidden md:flex"
+            className="absolute -right-3 top-8 w-6 h-6 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.12)] flex items-center justify-center hover:shadow-[0_2px_8px_rgba(0,0,0,0.16)] transition-shadow z-10 hidden md:flex"
           >
             <ChevronLeft className={`h-3.5 w-3.5 text-carbon/50 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} />
           </button>
@@ -209,36 +220,48 @@ export function WizardSidebar({
           </button>
 
           {/* ═══════════════════════════════════════════
-               Collection header
+               Header: aimily logo + collection name
                ═══════════════════════════════════════════ */}
-          <div className={`shrink-0 ${collapsed ? 'px-0 pt-7 pb-6' : 'px-6 pt-7 pb-6'}`}>
+          <div className={`shrink-0 ${collapsed ? 'px-0 pt-7 pb-5' : 'px-5 pt-7 pb-6'}`}>
             {collapsed ? (
-              <Link href={basePath} className="flex items-center justify-center">
-                <span className="text-[15px] font-bold text-carbon">
-                  {collectionName?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-                </span>
+              <Link href="/my-collections" className="flex items-center justify-center">
+                <Image
+                  src="/images/aimily-logo-black.png"
+                  alt="aimily"
+                  width={774}
+                  height={96}
+                  className="h-5 w-auto opacity-60"
+                  unoptimized
+                />
               </Link>
             ) : (
               <>
-                <Link href={basePath} className="block group">
-                  <h2 className="text-[16px] font-semibold text-carbon leading-snug group-hover:text-carbon/70 transition-colors tracking-tight">
-                    {displayName}
-                  </h2>
+                <Link href="/my-collections" className="block mb-5">
+                  <Image
+                    src="/images/aimily-logo-black.png"
+                    alt="aimily"
+                    width={774}
+                    height={96}
+                    className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity"
+                    unoptimized
+                  />
                 </Link>
-                <p className="text-[13px] text-carbon/35 mt-1.5">
-                  {season}
-                  {daysUntilLaunch !== null && daysUntilLaunch > 0 && (
-                    <> · {weeksLeft > 0 && <>{weeksLeft}w </>}{daysLeft}d</>
-                  )}
-                </p>
+                <Link href={basePath} className="block group">
+                  <p className="text-[13px] font-medium text-carbon/80 group-hover:text-carbon transition-colors truncate">
+                    {displayName}
+                  </p>
+                </Link>
               </>
             )}
           </div>
 
+          {/* ── Separator ── */}
+          <div className={`${collapsed ? 'mx-3' : 'mx-5'} border-t border-carbon/[0.06] shrink-0`} />
+
           {/* ═══════════════════════════════════════════
-               Block navigation
+               Block navigation — expandable sections
                ═══════════════════════════════════════════ */}
-          <nav className="flex-1 overflow-y-auto scrollbar-subtle px-3">
+          <nav className="flex-1 overflow-y-auto scrollbar-subtle pt-4 px-3">
             {SIDEBAR_BLOCKS.map((block) => {
               const blockActive = isBlockActive(block);
               const blockProgress = getBlockProgress(block);
@@ -246,91 +269,101 @@ export function WizardSidebar({
               const allLocked = block.id === 'development' ? false : blockPhases.every((p) => p.state === 'locked');
               const allCompleted = blockPhases.length > 0 && blockPhases.every((p) => p.state === 'completed');
               const blockHref = `${basePath}/${block.route}`;
+              const isExpanded = expandedBlocks.has(block.id);
+              const BlockIcon = block.icon;
 
               return (
-                <div key={block.id} className="mb-6">
+                <div key={block.id} className="mb-2">
                   {collapsed ? (
-                    /* ── Collapsed: first sub-item icon ── */
-                    <div className="flex flex-col items-center gap-2">
-                      {block.subItems.slice(0, 2).map((sub) => {
-                        const state = getSubItemState(sub);
-                        const Icon = sub.icon;
-                        return (
-                          <Link
-                            key={sub.id}
-                            href={`${basePath}/${sub.route}`}
-                            className={`w-10 h-10 flex items-center justify-center rounded-[10px] transition-all ${
-                              state === 'active' ? 'bg-carbon/[0.06]'
-                              : 'hover:bg-carbon/[0.04]'
-                            }`}
-                            title={sub.label}
-                          >
-                            <Icon className={`h-[18px] w-[18px] ${
-                              state === 'active' ? 'text-carbon'
-                              : state === 'completed' ? 'text-carbon/30'
-                              : 'text-carbon/40'
-                            }`} strokeWidth={1.5} />
-                          </Link>
-                        );
-                      })}
-                    </div>
+                    /* ── Collapsed: block icon ── */
+                    <Link
+                      href={allLocked ? '#' : blockHref}
+                      onClick={(e) => { if (allLocked) e.preventDefault(); }}
+                      className={`w-10 h-10 mx-auto flex items-center justify-center rounded-[10px] transition-all ${
+                        allLocked ? 'opacity-25 cursor-not-allowed'
+                        : blockActive ? 'bg-carbon/[0.06]'
+                        : 'hover:bg-carbon/[0.04]'
+                      }`}
+                      title={block.label}
+                    >
+                      <BlockIcon className={`h-[18px] w-[18px] ${
+                        blockActive ? 'text-carbon' : 'text-carbon/40'
+                      }`} strokeWidth={1.5} />
+                    </Link>
                   ) : (
                     <>
-                      {/* ── Section header ── */}
-                      <p className={`text-[11px] font-semibold tracking-[0.06em] uppercase px-3 mb-3 flex items-center ${
-                        allLocked ? 'text-carbon/15' : 'text-carbon/30'
-                      }`}>
-                        <span className="truncate">{block.label}</span>
-                        {allCompleted && (
-                          <Check className="h-3 w-3 text-carbon/25 ml-auto shrink-0" strokeWidth={2.5} />
+                      {/* ── Block header: icon + label (BLACK) + chevron ── */}
+                      <button
+                        onClick={() => !allLocked && toggleBlock(block.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all text-left ${
+                          allLocked ? 'opacity-25 cursor-not-allowed'
+                          : 'hover:bg-carbon/[0.03]'
+                        }`}
+                      >
+                        <BlockIcon className={`h-[18px] w-[18px] shrink-0 ${
+                          blockActive ? 'text-carbon' : 'text-carbon/50'
+                        }`} strokeWidth={1.5} />
+
+                        <span className={`text-[15px] font-semibold flex-1 truncate ${
+                          allLocked ? 'text-carbon/30'
+                          : allCompleted ? 'text-carbon/50'
+                          : 'text-carbon'
+                        }`}>
+                          {block.label}
+                        </span>
+
+                        {allCompleted ? (
+                          <Check className="h-4 w-4 text-carbon/30 shrink-0" strokeWidth={2} />
+                        ) : blockProgress > 0 ? (
+                          <span className="text-[12px] font-normal tabular-nums text-carbon/25 shrink-0 px-1.5 py-0.5 rounded-full border border-carbon/[0.08]">
+                            {blockProgress}
+                          </span>
+                        ) : null}
+
+                        {!allLocked && (
+                          <ChevronUp className={`h-4 w-4 text-carbon/25 shrink-0 transition-transform duration-200 ${
+                            isExpanded ? '' : 'rotate-180'
+                          }`} />
                         )}
-                        {!allCompleted && blockProgress > 0 && (
-                          <span className="text-[10px] font-normal text-carbon/20 ml-auto">{blockProgress}%</span>
-                        )}
-                      </p>
+                      </button>
 
-                      {/* ── Nav items ── */}
-                      <div className="flex flex-col gap-0.5">
-                        {block.subItems.map((sub) => {
-                          const state = getSubItemState(sub);
-                          const subHref = `${basePath}/${sub.route}`;
-                          const isLocked = state === 'locked';
-                          const Icon = sub.icon;
+                      {/* ── Sub-items: indented lines ── */}
+                      {isExpanded && (
+                        <div className="mt-1 mb-2 ml-4 pl-5 border-l border-carbon/[0.06]">
+                          {block.subItems.map((sub) => {
+                            const state = getSubItemState(sub);
+                            const subHref = `${basePath}/${sub.route}`;
+                            const isLocked = state === 'locked';
 
-                          return (
-                            <Link
-                              key={sub.id}
-                              href={isLocked ? '#' : subHref}
-                              onClick={(e) => { if (isLocked) e.preventDefault(); }}
-                              className={`flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all ${
-                                state === 'active'
-                                  ? 'bg-carbon/[0.06]'
-                                  : state === 'locked'
-                                  ? 'opacity-25 cursor-not-allowed'
-                                  : 'hover:bg-carbon/[0.04]'
-                              }`}
-                            >
-                              <Icon className={`h-[18px] w-[18px] shrink-0 ${
-                                state === 'active' ? 'text-carbon'
-                                : state === 'completed' ? 'text-carbon/35'
-                                : 'text-carbon/40'
-                              }`} strokeWidth={1.5} />
+                            return (
+                              <Link
+                                key={sub.id}
+                                href={isLocked ? '#' : subHref}
+                                onClick={(e) => { if (isLocked) e.preventDefault(); }}
+                                className={`flex items-center gap-2 py-2 pr-3 transition-all ${
+                                  state === 'active'
+                                    ? 'text-carbon'
+                                    : state === 'locked'
+                                    ? 'text-carbon/20 cursor-not-allowed'
+                                    : state === 'completed'
+                                    ? 'text-carbon/40 hover:text-carbon/60'
+                                    : 'text-carbon/50 hover:text-carbon/80'
+                                }`}
+                              >
+                                <span className={`text-[14px] truncate flex-1 ${
+                                  state === 'active' ? 'font-semibold' : 'font-normal'
+                                }`}>
+                                  {sub.label}
+                                </span>
 
-                              <span className={`text-[14px] truncate transition-colors ${
-                                state === 'active' ? 'font-semibold text-carbon'
-                                : state === 'completed' ? 'font-normal text-carbon/40'
-                                : 'font-medium text-carbon/70'
-                              }`}>
-                                {sub.label}
-                              </span>
-
-                              {state === 'completed' && (
-                                <Check className="h-3.5 w-3.5 shrink-0 text-carbon/25 ml-auto" strokeWidth={2} />
-                              )}
-                            </Link>
-                          );
-                        })}
-                      </div>
+                                {state === 'completed' && (
+                                  <Check className="h-3.5 w-3.5 shrink-0 text-carbon/25" strokeWidth={2} />
+                                )}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -362,7 +395,7 @@ export function WizardSidebar({
                     }`}
                     title={collapsed ? item.label : undefined}
                   >
-                    <item.Icon className={`h-[18px] w-[18px] shrink-0`} strokeWidth={1.5} />
+                    <item.Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
                     {!collapsed && (
                       <span className={`text-[14px] ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
                     )}
