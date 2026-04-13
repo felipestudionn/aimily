@@ -290,7 +290,7 @@ export function WizardSidebar({
                   width={774}
                   height={96}
                   className="opacity-60"
-                  style={{ width: 'auto', height: '14px', transform: 'rotate(-90deg)' }}
+                  style={{ width: 'auto', height: '14px', transform: 'rotate(90deg)' }}
                   unoptimized
                 />
               </Link>
