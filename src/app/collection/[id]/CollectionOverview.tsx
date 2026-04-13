@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
-import { ArrowRight, Check, ArrowLeft } from 'lucide-react';
+import { ArrowRight, Check, ArrowLeft, Pencil } from 'lucide-react';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 import { computeWizardState } from '@/lib/wizard-phases';
@@ -277,37 +277,78 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
             ) : activeBlock ? (
               /* ═══ SUB-LEVEL — 4 mini-block cards inside a block ═══ */
               <div className="grid grid-cols-4 gap-5">
-                {activeBlock.subBlocks.map((sub, idx) => (
-                  <Link
-                    key={sub.id}
-                    href={`/collection/${collectionId}/${sub.route}`}
-                    className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] animate-fade-in-up"
-                    style={{ animationDelay: `${idx * 100}ms` }}
-                  >
-                    <div className="mb-10">
-                      <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
-                        {activeBlock.number}.{idx + 1}
-                      </span>
-                    </div>
+                {activeBlock.subBlocks.map((sub, idx) => {
+                  // Determine sub-block progress (simplified: check if phase milestones exist)
+                  const subProgress = (() => {
+                    // Map sub-block IDs to wizard phase IDs for progress tracking
+                    const SUB_TO_PHASE: Record<string, string[]> = {
+                      consumer: ['cr-1'], moodboard: ['cr-2'], brand: ['br-1', 'br-2', 'br-3', 'br-4'],
+                      synthesis: [], families: ['rp-1', 'rp-3', 'rp-4'], channels: ['rp-2'],
+                      budget: ['rp-3'], builder: ['rp-5', 'rp-6'],
+                      sketch: ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'],
+                      prototyping: ['dd-7', 'dd-8', 'dd-9', 'dd-10'],
+                      production: ['dd-15', 'dd-16', 'dd-17', 'dd-18'],
+                      selection: ['dd-11', 'dd-12', 'dd-13', 'dd-14'],
+                      sales: ['gm-3'], content: ['gm-4'], comms: ['gm-5'],
+                      pos: ['gm-1', 'gm-2'],
+                    };
+                    const mIds = SUB_TO_PHASE[sub.id] || [];
+                    if (mIds.length === 0) return 0;
+                    const total = mIds.length;
+                    const done = mIds.filter(mid =>
+                      milestones.find(m => m.id === mid && m.status === 'completed')
+                    ).length;
+                    return total > 0 ? Math.round((done / total) * 100) : 0;
+                  })();
+                  const isSubComplete = subProgress === 100;
+                  const isSubStarted = subProgress > 0;
 
-                    <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-6 whitespace-pre-line">
-                      {sub.label}
-                    </h3>
-
-                    <p className="text-[14px] text-carbon/45 leading-[1.7] tracking-[-0.02em]">
-                      {sub.description}
-                    </p>
-
-                    <div className="flex-1" />
-
-                    <div className="flex justify-center mt-10">
-                      <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white group-hover:bg-carbon/90 transition-all">
-                        Open
-                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  return (
+                    <Link
+                      key={sub.id}
+                      href={`/collection/${collectionId}/${sub.route}`}
+                      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] animate-fade-in-up"
+                      style={{ animationDelay: `${idx * 100}ms` }}
+                    >
+                      <div className="mb-10">
+                        <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                          {activeBlock.number}.{idx + 1}
+                        </span>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+
+                      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-6 whitespace-pre-line">
+                        {sub.label}
+                      </h3>
+
+                      <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                        {sub.description}
+                      </p>
+
+                      <div className="flex-1" />
+
+                      {/* CTA — same system as blocks */}
+                      <div className="flex justify-center mt-10">
+                        <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                          isSubComplete
+                            ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
+                            : 'bg-carbon text-white group-hover:bg-carbon/90'
+                        }`}>
+                          {isSubComplete ? 'Completed' : isSubStarted ? 'Continue' : 'Start'}
+                          {!isSubComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
+                          {isSubComplete && <Pencil className="h-3 w-3 ml-0.5" />}
+                        </div>
+                      </div>
+
+                      {/* Progress pill — same as blocks */}
+                      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
+                          style={{ width: `${subProgress}%` }}
+                        />
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             ) : null}
           </div>
