@@ -6,6 +6,7 @@ import { ContentStudioCard } from './ContentStudioCard';
 import { CommunicationsCard } from './CommunicationsCard';
 import { PointOfSaleCard } from './PointOfSaleCard';
 import { VisualIdentityCard } from './VisualIdentityCard';
+import { GtmLaunchHub } from './GtmLaunchHub';
 import { useTranslation } from '@/i18n';
 import { useSearchParams } from 'next/navigation';
 
@@ -16,6 +17,7 @@ interface Props {
 }
 
 const BLOCK_NAMES: Record<string, string> = {
+  gtm: 'GTM & Launch Plan',
   sales: 'Sales Dashboard',
   content: 'Content Studio',
   comms: 'Communications',
@@ -45,6 +47,7 @@ export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }
 
           {/* Content — single card, full width */}
           <div className="max-w-full">
+            {blockParam === 'gtm' && <GtmLaunchHub collectionPlanId={collectionPlanId} />}
             {blockParam === 'sales' && <SalesDashboardCard collectionPlanId={collectionPlanId} />}
             {blockParam === 'content' && <ContentStudioCard collectionPlanId={collectionPlanId} />}
             {blockParam === 'comms' && <CommunicationsCard collectionPlanId={collectionPlanId} />}
