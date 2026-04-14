@@ -29,6 +29,92 @@ All 16 AI endpoints load context SERVER-SIDE via `loadFullContext()` from `src/l
 
 ---
 
+## 🔒 GOLD STANDARD — las tarjetas del Overview de colección (LAW)
+
+When Felipe says "las tarjetas del overview" / "estilo gold standard de los bloques" / "las tarjetas que ve al entrar en la colección" → **this exact pattern from `CollectionOverview.tsx`**:
+
+The 4 big block cards (01 Creative & Brand · 02 Merchandising · 03 Design & Development · 04 Marketing & Digital) and their sub-block cards (01.1, 01.2…) are the canonical reference. Every hub/grid view in the app must replicate this pattern verbatim.
+
+**Canonical code**:
+
+```tsx
+<div className="grid grid-cols-4 gap-5">
+  {items.map((item, idx) => {
+    const progress = item.progress ?? 0;
+    const isComplete = progress === 100;
+    const isStarted = progress > 0;
+    const n = idx + 1;
+    return (
+      <button
+        key={item.id}
+        onClick={() => handleOpen(item)}
+        className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+      >
+        {/* Ghost number — 72px, carbon/[0.05] */}
+        <div className="mb-10">
+          <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+            0{n}.
+          </span>
+        </div>
+
+        {/* Title — 24-28px semibold */}
+        <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+          {item.title}
+        </h3>
+
+        {/* Description — 14px, carbon/50 */}
+        <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+          {item.description}
+        </p>
+
+        <div className="flex-1" />
+
+        {/* CTA pill — rounded-full bg-carbon text-white (Start/Continue/Completed) */}
+        <div className="flex justify-center mt-10">
+          <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+            isComplete
+              ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
+              : 'bg-carbon text-white group-hover:bg-carbon/90'
+          }`}>
+            {isComplete ? 'Completed' : isStarted ? 'Continue' : 'Start'}
+            {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
+            {isComplete && <Check className="h-3.5 w-3.5" />}
+          </div>
+        </div>
+
+        {/* Progress bar — 120px × 6px */}
+        <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+          <div className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out" style={{ width: `${progress}%` }} />
+        </div>
+      </button>
+    );
+  })}
+</div>
+```
+
+**Non-negotiable rules**:
+- Grid: `grid-cols-4 gap-5` (always 4 per row at desktop, even if only 2-3 items use `grid-cols-4` and let the rest stay empty — NEVER 2×2).
+- Card: `bg-white rounded-[20px] p-10 md:p-14 min-h-[500px]` — generous padding, 500px min height, rounded corners.
+- Hover: `hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]` — always this exact lift.
+- Ghost number top: `text-[72px] font-bold text-carbon/[0.05]` — the faded big "01." / "01.1" identifier.
+- Title: `text-[24px] md:text-[28px] font-semibold tracking-[-0.03em] leading-[1.15]` — semibold, never light.
+- Description: `text-[14px] text-carbon/50 leading-[1.7]` — breathing room.
+- CTA pill centered: `rounded-full bg-carbon text-white` (active) or `border text-carbon` (completed). With `ArrowRight` or `Check` icon.
+- Progress bar centered under CTA: `w-[120px] h-[6px] rounded-full bg-carbon/[0.06]` with inner `bg-carbon/30` fill.
+
+**Reference files**: `src/app/collection/[id]/CollectionOverview.tsx` lines 245-295 (block level) and 298-370 (sub-block level).
+
+**DO NOT re-introduce**:
+- ❌ 2×2 grids (`grid-cols-1 md:grid-cols-2`) — always 4-col grid.
+- ❌ Square-corner cards (`bg-white border p-5 sm:p-10`) without `rounded-[20px]`.
+- ❌ `font-light` titles.
+- ❌ Icon blocks `w-8 h-8 bg-carbon/[0.04]` — use plain Lucide icon or ghost number instead.
+- ❌ Full-width CTA bars at the bottom — use centered pill.
+
+**Applied in**: Collection Overview (reference) · Creative > Market Research (`creative?block=research`) · every new hub view going forward (Tech Pack SKU list, GTM sub-blocks, etc.).
+
+---
+
 ## 🥇 GOLD STANDARD: Family Card (Merchandising > Families) — REPLICATE EVERYWHERE
 
 The Family Card design in `src/app/collection/[id]/merchandising/page.tsx` (FamilyCardGrid) is the canonical reference. Every workspace card MUST follow this exact pattern:

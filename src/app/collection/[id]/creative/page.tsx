@@ -2087,7 +2087,7 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   );
 }
 
-/* ─── Market Research Unified (4 research sub-blocks as tabs) ─── */
+/* ─── Market Research Unified — 4 gold-standard cards + drill-down ─── */
 function MarketResearchUnified({
   blockData,
   updateBlockData,
@@ -2101,52 +2101,124 @@ function MarketResearchUnified({
 }) {
   const t = useTranslation();
   const RESEARCH_BLOCKS = [
-    { id: 'global-trends', label: t.creative.globalTrends, desc: t.creative.globalTrendsDesc },
-    { id: 'deep-dive', label: t.creative.deepDive, desc: t.creative.deepDiveDesc },
-    { id: 'live-signals', label: t.creative.liveSignals, desc: t.creative.liveSignalsDesc },
-    { id: 'competitors', label: t.creative.competitors, desc: t.creative.competitorsDesc },
+    { id: 'global-trends', label: t.creative.globalTrends, desc: t.creative.globalTrendsDesc, icon: Globe },
+    { id: 'deep-dive', label: t.creative.deepDive, desc: t.creative.deepDiveDesc, icon: Microscope },
+    { id: 'live-signals', label: t.creative.liveSignals, desc: t.creative.liveSignalsDesc, icon: Radio },
+    { id: 'competitors', label: t.creative.competitors, desc: t.creative.competitorsDesc, icon: Building2 },
   ];
-  const [activeTab, setActiveTab] = useState<string>('global-trends');
-  const activeBlock = RESEARCH_BLOCKS.find((b) => b.id === activeTab) || RESEARCH_BLOCKS[0];
-  const state = blockData[activeTab] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const activeBlock = activeTab ? RESEARCH_BLOCKS.find((b) => b.id === activeTab) : null;
+  const state = activeTab
+    ? blockData[activeTab] || { mode: 'ai' as InputMode, confirmed: false, data: {} }
+    : null;
 
+  /* ─── Overview: 4 cards — GOLD STANDARD (CollectionOverview pattern) ─── */
+  if (!activeTab) {
+    return (
+      <div className="grid grid-cols-4 gap-5">
+        {RESEARCH_BLOCKS.map((block, idx) => {
+          const blockState = blockData[block.id] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
+          const results = (blockState.data?.results as Array<{ selected?: boolean }>) || [];
+          const selectedCount = results.filter((r) => r.selected).length;
+          const hasData = selectedCount > 0 || Object.keys(blockState.data || {}).length > 0;
+          const progress = blockState.confirmed ? 100 : selectedCount > 0 ? Math.min(selectedCount * 20, 80) : 0;
+          const isComplete = progress === 100;
+          const isStarted = progress > 0;
+          return (
+            <button
+              key={block.id}
+              type="button"
+              onClick={() => setActiveTab(block.id)}
+              className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+            >
+              {/* Ghost number — 01, 02, 03, 04 */}
+              <div className="mb-10">
+                <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                  0{idx + 1}.
+                </span>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                {block.label}
+              </h3>
+
+              {/* Description */}
+              <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                {block.desc}
+              </p>
+
+              <div className="flex-1" />
+
+              {/* CTA pill — centered */}
+              <div className="flex justify-center mt-10">
+                <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                  isComplete
+                    ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
+                    : 'bg-carbon text-white group-hover:bg-carbon/90'
+                }`}>
+                  {isComplete ? 'Completed' : isStarted ? 'Continue' : 'Start'}
+                  {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
+                  {isComplete && <Check className="h-3.5 w-3.5" />}
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  /* ─── Drill-down: active sub-block full view ─── */
   return (
     <div>
-      {/* Tabs — segmented pill */}
-      <div className="mb-6 flex flex-col items-center gap-3">
-        <SegmentedPill
-          options={RESEARCH_BLOCKS.map((b) => ({ id: b.id, label: b.label }))}
-          value={activeTab}
-          onChange={(id) => setActiveTab(id)}
-          size="md"
-        />
-        <p className="text-[13px] text-carbon/35 tracking-[-0.01em]">{activeBlock.desc}</p>
+      <div className="mb-8 flex items-center justify-between">
+        <button
+          onClick={() => setActiveTab(null)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium text-carbon/50 hover:text-carbon hover:bg-carbon/[0.04] transition-all"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          All research
+        </button>
+        <div className="text-center">
+          <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-1">
+            Market Research
+          </div>
+          <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-tight">
+            {activeBlock?.label}
+          </h2>
+        </div>
+        <div className="w-[120px]" />
       </div>
 
-      {/* Active sub-block content */}
-      <div>
-        <ResearchBlockContent
-          blockId={activeTab}
-          mode={state.mode}
-          data={state.data}
-          onChange={(newData) => updateBlockData(activeTab, { data: newData })}
-          collectionContext={collectionContext}
-          consumerProfile={consumerProfile}
-        />
-      </div>
+      <ResearchBlockContent
+        blockId={activeTab}
+        mode={state!.mode}
+        data={state!.data}
+        onChange={(newData) => updateBlockData(activeTab, { data: newData })}
+        collectionContext={collectionContext}
+        consumerProfile={consumerProfile}
+      />
 
-      {/* Confirm — centered */}
       <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
         <button
-          onClick={() => updateBlockData(activeTab, { confirmed: !state.confirmed })}
+          onClick={() => updateBlockData(activeTab, { confirmed: !state!.confirmed })}
           className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-            state.confirmed
+            state!.confirmed
               ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
               : 'bg-carbon text-white hover:bg-carbon/90'
           }`}
         >
           <Check className="h-3.5 w-3.5" />
-          {state.confirmed ? 'Confirmed' : t.creative.confirmContinue}
+          {state!.confirmed ? 'Confirmed' : t.creative.confirmContinue}
         </button>
       </div>
     </div>
