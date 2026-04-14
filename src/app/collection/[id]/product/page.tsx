@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { PlannerDashboard } from '@/components/planner/PlannerDashboard';
+import { TechPackWorkspace } from '@/components/tech-pack/TechPackWorkspace';
 import type { CollectionPlan, SetupData, ProductFamily, PriceSegment, ProductTypeSegment } from '@/types/planner';
 
 interface PageProps {
@@ -143,6 +144,17 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
 
   // Bridge merchandising data → setup_data if needed
   const enrichedPlan = await bridgeMerchToSetup(id, plan as CollectionPlan);
+
+  // Tech Pack workspace — dedicated sub-block (Sprint 5)
+  if (phase === 'techpack') {
+    return (
+      <TechPackWorkspace
+        collectionPlanId={id}
+        collectionName={enrichedPlan.name || 'Collection'}
+        productCategory={enrichedPlan.setup_data?.productCategory}
+      />
+    );
+  }
 
   return <PlannerDashboard plan={enrichedPlan} initialPhaseFilter={phase} />;
 }
