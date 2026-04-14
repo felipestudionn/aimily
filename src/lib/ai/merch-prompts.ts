@@ -57,41 +57,39 @@ The user has given this direction about their product families:
 
 Based on this direction and the inherited context (consumer, vibe, season, trends), suggest a structured product family hierarchy.
 
-HARD LIMIT: Maximum 5 families. Choose the most impactful ones.
+HARD LIMIT: Maximum 5 families.
 
-ANALYSIS FRAMEWORK:
-1. FAMILY LOGIC — Why these families? Tie each one to the consumer profile and collection vibe
-2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real PRODUCT TYPES (not model names or SKU names). For footwear: "Low-top Sneaker", "Slide Sandal", "Chelsea Boot". For apparel: "Oxford Shirt", "Relaxed Trouser", "Bomber Jacket". NEVER suggest specific model names like "Mistral Core" or "Porto Velvet" — those are SKUs, not subcategories
-3. SEASONAL FIT — Subcategories must make sense for the specific season (no heavy boots in SS unless there's a strategic reason)
-4. COMMERCIAL BALANCE — Include both high-volume commercial categories and lower-volume differentiating categories
-5. PRODUCTION REALITY — Consider that each subcategory implies a different supply chain (don't suggest 15 subcategories for a startup)
+CRITICAL — TWO LEVELS OF SPECIFICITY:
+- FAMILY = broad product category. SHORT names: "Sneakers", "Sandals", "Knitwear", "Bags"
+- SUBCATEGORY = specific type within the family: "Low-top Runner", "Slip-on", "Oxford", "Tote"
+WRONG: Family "Split-Toe & Asymmetrical Sneakers" — too specific. RIGHT: Family "Sneakers".
 
-MANDATORY: For each subcategory, suggest a retail price range (minPrice, maxPrice in EUR) based on the brand positioning, consumer profile, and competitive context. The "pricing" array is REQUIRED — one entry per subcategory with matching names.
+Each family needs 3-5 subcategories. Respect the PRODUCT CATEGORY from context.
+
+MANDATORY PRICING: For each subcategory, suggest minPrice/maxPrice in EUR.
+Use EXISTING PRICE DATA from context as anchor. Do NOT invent premium prices.
 
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Return EXACTLY this JSON — the "pricing" array is REQUIRED:
+Return EXACTLY this JSON:
 {
   "families": [
     {
-      "name": "Family Name",
-      "subcategories": ["Subcategory 1", "Subcategory 2"],
+      "name": "Sneakers",
+      "subcategories": ["Low-top Runner", "Slip-on", "High-top"],
       "pricing": [
-        { "name": "Subcategory 1", "minPrice": 89, "maxPrice": 129 },
-        { "name": "Subcategory 2", "minPrice": 69, "maxPrice": 99 }
+        { "name": "Low-top Runner", "minPrice": 29, "maxPrice": 39 },
+        { "name": "Slip-on", "minPrice": 25, "maxPrice": 35 }
       ],
-      "priority": "core" or "strategic" or "complementary",
+      "priority": "core",
       "rationale": "15-25 words explaining why"
     }
   ]
 }
 
-Priority levels:
-- "core": Essential families — highest revenue potential
-- "strategic": Important differentiators — builds brand identity
-- "complementary": Nice-to-have — completes the offering`,
+Priority: "core" (revenue), "strategic" (identity), "complementary" (completes offering).`,
       };
 
     case 'families-proposals':
@@ -110,53 +108,54 @@ Read the consumer profiles, collection vibe, brand DNA, trends, and season. Ask 
 - What does the season demand? (SS = lighter categories, FW = layering/outerwear)
 
 STEP 2 — BUILD THE FAMILY HIERARCHY:
-Based on your synthesized direction, suggest a structured product family hierarchy — exactly as if a senior merchandiser had briefed you.
+Suggest a structured product family hierarchy — exactly as if a senior merchandiser had briefed you.
 
-HARD LIMIT: Maximum 5 families. Choose the most impactful ones.
+HARD LIMIT: Maximum 5 families.
 
-ANALYSIS FRAMEWORK:
-1. FAMILY LOGIC — Why these families? Tie each one to the consumer profile and collection vibe
-2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real PRODUCT TYPES (not model names or SKU names). For footwear: "Low-top Sneaker", "Slide Sandal", "Chelsea Boot". For apparel: "Oxford Shirt", "Relaxed Trouser", "Bomber Jacket". NEVER suggest specific model names like "Mistral Core" or "Porto Velvet" — those are SKUs, not subcategories
-3. SEASONAL FIT — Subcategories must make sense for the specific season (no heavy boots in SS unless there's a strategic reason)
-4. COMMERCIAL BALANCE — Include both high-volume commercial categories and lower-volume differentiating categories
-5. PRODUCTION REALITY — Consider that each subcategory implies a different supply chain (don't suggest 15 subcategories for a startup)
+CRITICAL — TWO LEVELS OF SPECIFICITY:
+- FAMILY = broad product category. SHORT, SIMPLE names. Examples:
+  Footwear: "Sneakers", "Sandals", "Loafers", "Ballet Flats", "Boots"
+  Apparel: "Shirts", "Trousers", "Knitwear", "Outerwear", "Dresses"
+  Accessories: "Bags", "Belts", "Scarves", "Jewelry", "Hats"
 
-Use INDUSTRY-STANDARD family and subcategory names. These are real product categories a buyer or production manager would recognize.
-CRITICAL: Respect the PRODUCT CATEGORY from context. If the category is FOOTWEAR, ALL families must be footwear types (Sneakers, Sandals, Loafers, Boots, etc.) — never suggest Shirts or Trousers for a footwear brand. If APPAREL, families are garment types. If ACCESSORIES, families are accessory types.
-Subcategories are PRODUCT TYPES within the family (e.g., for Sneakers: "Low-top Runner", "Slip-on", "Chunky Platform") — NOT model names or SKU names.
+- SUBCATEGORY = specific product type WITHIN the family. More descriptive. Examples:
+  Sneakers → "Low-top Runner", "Slip-on", "High-top", "Chunky Platform"
+  Shirts → "Oxford", "Camp Collar", "Overshirt", "Poplin"
+  Bags → "Structured Tote", "Crossbody", "Clutch", "Backpack"
+
+WRONG: Family "Split-Toe & Asymmetrical Sneakers" — that's a subcategory, not a family.
+WRONG: Family "Minimalist Second-Skin Sneakers" — way too specific for a family.
+RIGHT: Family "Sneakers" with subcategory "Split-Toe Low-Top".
+
+Each family needs 3-5 subcategories. Respect the PRODUCT CATEGORY from context.
 
 STEP 3 — PRICE EACH SUBCATEGORY (MANDATORY):
-For each subcategory, you MUST suggest a retail price range (minPrice, maxPrice in EUR).
-Base pricing on: consumer purchasing power, brand positioning, competitive benchmarks from the context, and category norms.
-If the context includes existing SKU prices or a price range, use those as anchors.
-The "pricing" array MUST have one entry per subcategory with matching names. This field is NOT optional.
+For each subcategory, suggest a retail price range (minPrice, maxPrice in EUR).
+CRITICAL: Use the EXISTING PRICE DATA from context as your anchor. If the context shows existing SKUs at €25-€39, your prices MUST be in that range. Do NOT invent premium prices — match the brand's actual positioning.
+The "pricing" array MUST have one entry per subcategory.
 
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Return EXACTLY this JSON structure — the "pricing" array is REQUIRED for every family:
+Return EXACTLY this JSON structure:
 {
   "families": [
     {
-      "name": "Family Name",
-      "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
+      "name": "Sneakers",
+      "subcategories": ["Low-top Runner", "Slip-on", "High-top"],
       "pricing": [
-        { "name": "Subcategory 1", "minPrice": 89, "maxPrice": 129 },
-        { "name": "Subcategory 2", "minPrice": 69, "maxPrice": 99 },
-        { "name": "Subcategory 3", "minPrice": 109, "maxPrice": 159 }
+        { "name": "Low-top Runner", "minPrice": 29, "maxPrice": 39 },
+        { "name": "Slip-on", "minPrice": 25, "maxPrice": 35 },
+        { "name": "High-top", "minPrice": 35, "maxPrice": 45 }
       ],
-      "priority": "core" or "strategic" or "complementary",
+      "priority": "core",
       "rationale": "15-25 words explaining why"
     }
   ]
 }
 
-Priority levels:
-- "core": Essential families — highest revenue potential
-- "strategic": Important differentiators — builds brand identity
-- "complementary": Nice-to-have — completes the offering
-
+Priority: "core" (highest revenue), "strategic" (brand identity), "complementary" (completes offering).
 Order families from highest to lowest priority.`,
       };
 
