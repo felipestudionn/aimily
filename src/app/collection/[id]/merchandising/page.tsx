@@ -9,6 +9,7 @@ import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard } from '@/components/workspace/DecisionCard';
+import { ScenariosContent } from '@/components/merchandising/ScenariosContent';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Toggle } from '@/components/ui/toggle';
@@ -1299,13 +1300,14 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   /* ── Card name map for clean workspace header ── */
   const m = t.merchandising as Record<string, string>;
   const cardNameMap: Record<string, string> = {
+    'scenarios': 'Range Plan & Scenarios',
     'families': m[language === 'es' ? 'productFamiliesEs' : 'productFamilies'] || 'Product Families & Pricing',
     'channels': m[language === 'es' ? 'channelsMarketsEs' : 'channelsMarkets'] || 'Channels & Markets',
     'budget': m[language === 'es' ? 'budgetFinancialsEs' : 'budgetFinancials'] || 'Budget & Financials',
   };
 
   /* ═══ CLEAN WORKSPACE VIEW (from sidebar with ?block= param) ═══ */
-  if (blockParam && (blockParam === 'families' || blockParam === 'channels' || blockParam === 'budget')) {
+  if (blockParam && (blockParam === 'scenarios' || blockParam === 'families' || blockParam === 'channels' || blockParam === 'budget')) {
     // For families, use families card state; for others, use their own
     const cardId = blockParam === 'families' ? 'families' : blockParam;
     const state = getCardState(cardId);
@@ -1343,6 +1345,19 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
               {t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}
             </p>
           </div>
+
+          {/* Content — Scenarios (Range Plan) */}
+          {blockParam === 'scenarios' && (
+            <div className="min-h-[calc((100vh-380px)*0.8)]">
+              <ScenariosContent
+                mode={state.mode}
+                data={state.data as Parameters<typeof ScenariosContent>[0]['data']}
+                onChange={(newData) => updateCardData('scenarios', { data: newData as Record<string, unknown> })}
+                collectionContext={{ collectionPlanId: collectionId, productCategory: collectionContext.productCategory, collectionName: collectionContext.collectionName }}
+                language={language}
+              />
+            </div>
+          )}
 
           {/* Content — unified Families & Pricing (all modes use same grid) */}
           {blockParam === 'families' && (
