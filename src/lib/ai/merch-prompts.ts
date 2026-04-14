@@ -70,12 +70,18 @@ ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
+Also suggest a retail price range (minPrice, maxPrice in EUR) for each subcategory based on the brand positioning, consumer profile, and competitive context.
+
 Return:
 {
   "families": [
     {
       "name": "Family Name (industry-standard naming)",
       "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
+      "pricing": [
+        { "name": "Subcategory 1", "minPrice": 89, "maxPrice": 129 },
+        { "name": "Subcategory 2", "minPrice": 69, "maxPrice": 99 }
+      ],
       "priority": "core" or "strategic" or "complementary",
       "rationale": "15-25 words: why this family and these subcategories for this specific collection"
     }
@@ -123,12 +129,22 @@ ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
+STEP 3 — PRICE EACH SUBCATEGORY:
+For each subcategory, suggest a retail price range (minPrice, maxPrice in EUR).
+Base pricing on: consumer purchasing power, brand positioning, competitive benchmarks from the context, and category norms.
+If the context includes existing SKU prices or a price range, use those as anchors.
+
 Return:
 {
   "families": [
     {
-      "name": "Family Name (industry-standard naming: Shirts, Trousers, Knitwear, Footwear, etc.)",
+      "name": "Family Name (industry-standard naming: Sneakers, Sandals, Loafers, etc.)",
       "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
+      "pricing": [
+        { "name": "Subcategory 1", "minPrice": 89, "maxPrice": 129 },
+        { "name": "Subcategory 2", "minPrice": 69, "maxPrice": 99 },
+        { "name": "Subcategory 3", "minPrice": 109, "maxPrice": 159 }
+      ],
       "priority": "core" or "strategic" or "complementary",
       "rationale": "15-25 words: why this family and these subcategories for this specific collection"
     }

@@ -133,6 +133,15 @@ function cyclePriority(current?: Priority): Priority {
 /* ─── Pricing row type (shared) ─── */
 type PricingRow = { family: string; subcategories: { name: string; minPrice: number; maxPrice: number; rationale?: string }[] };
 
+/* ─── Extract pricing from AI families response ─── */
+type AIFamilyResponse = Family & { pricing?: { name: string; minPrice: number; maxPrice: number }[] };
+function extractPricingFromFamilies(families: AIFamilyResponse[]): PricingRow[] {
+  return families.filter(f => f.pricing?.length).map(f => ({
+    family: f.name,
+    subcategories: (f.pricing || []).map(p => ({ name: p.name, minPrice: p.minPrice, maxPrice: p.maxPrice })),
+  }));
+}
+
 /* ─── Content Components ─── */
 
 function FamiliesContent({ mode, data, onChange, collectionContext, pricingData, onPricingChange }: {
@@ -223,50 +232,41 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
               ] as keyof typeof t.merchandising] as string}
             </button>
 
-            {/* Subcategories with pricing */}
-            <div className="space-y-3 flex-1">
+            {/* Subcategories with inline pricing */}
+            <div className="space-y-1 flex-1">
               {fam.subcategories.map((sub, si) => {
                 const price = getPrice(fam.name, sub);
                 return (
-                  <div key={si} className="group/row">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Input
-                        value={sub}
-                        onChange={(e) => updateSubcategory(fi, si, e.target.value)}
-                        placeholder={t.merchandising.subcategoryPlaceholder}
-                        className="flex-1 h-7 text-[14px] text-carbon/60 bg-transparent border-0 shadow-none focus-visible:ring-0 p-0 placeholder:text-carbon/15"
-                      />
-                      <Button variant="ghost" size="icon" onClick={() => removeSubcategory(fi, si)} className="rounded-full h-5 w-5 text-carbon/15 hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0">
-                        <X className="h-2.5 w-2.5" />
-                      </Button>
-                    </div>
+                  <div key={si} className="group/row flex items-center gap-2 py-1">
+                    <Input
+                      value={sub}
+                      onChange={(e) => updateSubcategory(fi, si, e.target.value)}
+                      placeholder={t.merchandising.subcategoryPlaceholder}
+                      className="flex-1 h-7 text-[14px] text-carbon/50 bg-transparent border-0 shadow-none focus-visible:ring-0 p-0 placeholder:text-carbon/15"
+                    />
                     {onPricingChange && (
-                      <div className="flex items-center gap-2 ml-0">
-                        <div className="flex items-center bg-carbon/[0.03] rounded-full px-3 py-1 gap-1.5">
-                          <span className="text-[10px] text-carbon/25 font-medium uppercase tracking-wider">min</span>
-                          <Input
-                            type="number"
-                            value={price.min || ''}
-                            onChange={(e) => setPrice(fam.name, sub, 'minPrice', Number(e.target.value))}
-                            className="w-[48px] h-5 text-[13px] text-carbon font-medium text-center bg-transparent border-0 shadow-none focus-visible:ring-0 p-0"
-                            placeholder="—"
-                          />
-                          <span className="text-[10px] text-carbon/20">€</span>
-                        </div>
-                        <div className="w-3 h-px bg-carbon/10" />
-                        <div className="flex items-center bg-carbon/[0.03] rounded-full px-3 py-1 gap-1.5">
-                          <span className="text-[10px] text-carbon/25 font-medium uppercase tracking-wider">max</span>
-                          <Input
-                            type="number"
-                            value={price.max || ''}
-                            onChange={(e) => setPrice(fam.name, sub, 'maxPrice', Number(e.target.value))}
-                            className="w-[48px] h-5 text-[13px] text-carbon font-medium text-center bg-transparent border-0 shadow-none focus-visible:ring-0 p-0"
-                            placeholder="—"
-                          />
-                          <span className="text-[10px] text-carbon/20">€</span>
-                        </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Input
+                          type="number"
+                          value={price.min || ''}
+                          onChange={(e) => setPrice(fam.name, sub, 'minPrice', Number(e.target.value))}
+                          className="w-[52px] h-6 rounded-full text-[12px] text-carbon/60 text-center bg-carbon/[0.03] border-0 shadow-none focus-visible:ring-1 focus-visible:ring-carbon/10"
+                          placeholder="min"
+                        />
+                        <span className="text-[10px] text-carbon/15">–</span>
+                        <Input
+                          type="number"
+                          value={price.max || ''}
+                          onChange={(e) => setPrice(fam.name, sub, 'maxPrice', Number(e.target.value))}
+                          className="w-[52px] h-6 rounded-full text-[12px] text-carbon/60 text-center bg-carbon/[0.03] border-0 shadow-none focus-visible:ring-1 focus-visible:ring-carbon/10"
+                          placeholder="max"
+                        />
+                        <span className="text-[10px] text-carbon/20">€</span>
                       </div>
                     )}
+                    <Button variant="ghost" size="icon" onClick={() => removeSubcategory(fi, si)} className="rounded-full h-5 w-5 text-carbon/15 hover:text-destructive opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0">
+                      <X className="h-2.5 w-2.5" />
+                    </Button>
                   </div>
                 );
               })}
@@ -310,8 +310,10 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
                 setGenerating(true); setError(null);
                 const { result, error: err } = await generateMerch('families-assisted', { direction: (data.direction as string) || '', ...collectionContext }, language, collectionContext.collectionPlanId);
                 if (err) { setError(err); setGenerating(false); return; }
-                const parsed = result as { families: Family[] };
+                const parsed = result as { families: AIFamilyResponse[] };
                 onChange({ ...data, families: parsed.families || [] });
+                const pricingRows = extractPricingFromFamilies(parsed.families || []);
+                if (pricingRows.length && onPricingChange) onPricingChange(pricingRows);
                 setGenerating(false);
               }}
               disabled={generating || !(data.direction as string)?.trim()}
@@ -337,8 +339,10 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
                 setGenerating(true); setError(null);
                 const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language, collectionContext.collectionPlanId);
                 if (err) { setError(err); setGenerating(false); return; }
-                const parsed = result as { families: Family[] };
+                const parsed = result as { families: AIFamilyResponse[] };
                 onChange({ ...data, families: parsed.families || [] });
+                const pricingRows = extractPricingFromFamilies(parsed.families || []);
+                if (pricingRows.length && onPricingChange) onPricingChange(pricingRows);
                 setGenerating(false);
               }}
               disabled={generating}
@@ -361,8 +365,10 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
               setGenerating(true); setError(null);
               const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language, collectionContext.collectionPlanId);
               if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { families: Family[] };
+              const parsed = result as { families: AIFamilyResponse[] };
               onChange({ ...data, families: parsed.families || [] });
+              const pricingRows = extractPricingFromFamilies(parsed.families || []);
+              if (pricingRows.length && onPricingChange) onPricingChange(pricingRows);
               setGenerating(false);
             }}
             disabled={generating}
