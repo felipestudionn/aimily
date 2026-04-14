@@ -107,20 +107,22 @@ All sub-blocks route through `creative/page.tsx` with `?block=` param:
 - **shadcn/ui**: Fully installed with Tailwind v4, Radix base. Components: Card, Button, Input, Label, Badge, Separator, Switch, Toggle, Slider, etc.
 - **Tailwind v4.2**: @import tailwindcss, @theme block, @utility directives, PostCSS v4
 
-### What Needs Work (NEXT SESSION)
+### What Needs Work NOW
 
-**The core problem**: Workspace content cards look inconsistent. Some use shadcn primitives, others still use raw HTML. The visual quality inside the cards doesn't match the dashboard card quality.
+**The core problem**: Workspace content inside cards looks inconsistent. Some use shadcn, others still use raw HTML. The visual quality inside the cards doesn't match the dashboard card quality.
 
-**The approach Felipe wants**:
-1. **ALL workspace content must use the 4-card horizontal layout** as the base — same as the sub-dashboard (01.1, 01.2, 01.3, 01.4 cards)
+**Felipe's rules**:
+1. **ALL workspace content must use the 4-card horizontal layout** — same style as the sub-dashboard cards (01.1, 01.2, 01.3, 01.4)
 2. **Use shadcn/ui exclusively** — Card, CardHeader, CardTitle, CardContent, Input, Button, Badge, Label, Separator, Switch, Toggle, Slider
 3. **NEVER use raw `<input>`, `<button>`, `<label>`, `<textarea>`** — always shadcn equivalents
-4. **Anti-Excel**: sliders instead of number inputs for percentages, visual bars, big numbers
+4. **Anti-Excel**: shadcn Slider instead of number inputs for percentages, visual bars, big numbers
+5. **NEVER touch the backend** — only frontend work
 
 **Files that need the full shadcn treatment**:
-- `src/app/collection/[id]/merchandising/page.tsx` — Families+Pricing (partially done), Channels, Budget
+- `src/app/collection/[id]/merchandising/page.tsx` — Families+Pricing unified (partially done, AI/Assisted modes still inconsistent), Channels, Budget segmentation
 - `src/app/collection/[id]/creative/page.tsx` — Consumer, Moodboard, BrandDNA, Vibe, Research blocks
 - All marketing cards in `src/components/marketing/`
+- Design & Development block (not started)
 
 ### shadcn Component Reference (installed & ready)
 ```tsx
