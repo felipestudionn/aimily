@@ -195,82 +195,79 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
     onPricingChange(updated);
   };
 
-  /* ── Shared family card grid — one card per family, horizontal layout ── */
+  /* ── Shared family card grid — ALWAYS 4 cols like dashboard ── */
   const FamilyCardGrid = () => (
     <>
-      <div className={`grid gap-5 ${families.length === 1 ? 'grid-cols-1' : families.length === 2 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'}`}>
+      <div className="grid grid-cols-4 gap-5">
         {families.map((fam, fi) => (
-          <Card key={fi} className="rounded-[20px] bg-white flex flex-col">
-            <CardContent className="p-8 flex flex-col flex-1">
-              {/* Header: priority + delete */}
-              <div className="flex items-center justify-between mb-2">
-                <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
-                <Button variant="ghost" size="icon" onClick={() => removeFamily(fi)} className="rounded-full h-8 w-8 text-muted-foreground hover:text-destructive">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+          <button
+            key={fi}
+            className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+          >
+            {/* Family name — THE title, big and bold */}
+            <Input
+              value={fam.name}
+              onChange={(e) => { e.stopPropagation(); updateFamilyName(fi, e.target.value); }}
+              onClick={(e) => e.stopPropagation()}
+              placeholder={t.merchandising.familyNamePlaceholder}
+              className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] bg-transparent border-0 shadow-none focus-visible:ring-0 p-0 h-auto mb-5 placeholder:text-carbon/15"
+            />
 
-              {/* Family name — big title like dashboard cards */}
-              <Input
-                value={fam.name}
-                onChange={(e) => updateFamilyName(fi, e.target.value)}
-                placeholder={t.merchandising.familyNamePlaceholder}
-                className="text-[22px] font-semibold text-carbon tracking-[-0.03em] leading-tight bg-transparent border-0 shadow-none focus-visible:ring-0 p-0 h-auto mb-5 placeholder:text-carbon/20"
-              />
+            {/* Priority badge */}
+            <div className="mb-4" onClick={(e) => e.stopPropagation()}>
+              <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
+            </div>
 
-              {/* Subcategories with inline pricing */}
-              <div className="space-y-0 flex-1">
-                {/* Column headers */}
-                {fam.subcategories.length > 0 && onPricingChange && (
-                  <div className="flex items-center gap-2 mb-2 text-[11px] text-carbon/30 font-medium">
-                    <span className="flex-1">{t.merchandising.subcategoryPlaceholder}</span>
-                    <span className="w-[68px] text-center">Min €</span>
-                    <span className="w-[68px] text-center">Max €</span>
-                    <span className="w-7" />
+            {/* Subcategories — the "description" area */}
+            <div className="space-y-1.5 mb-6" onClick={(e) => e.stopPropagation()}>
+              {fam.subcategories.map((sub, si) => {
+                const price = getPrice(fam.name, sub);
+                return (
+                  <div key={si} className="flex items-center gap-2">
+                    <Input
+                      value={sub}
+                      onChange={(e) => updateSubcategory(fi, si, e.target.value)}
+                      placeholder={t.merchandising.subcategoryPlaceholder}
+                      className="flex-1 h-7 text-[14px] text-carbon/50 bg-transparent border-0 shadow-none focus-visible:ring-0 p-0 placeholder:text-carbon/20"
+                    />
+                    {onPricingChange && (
+                      <>
+                        <Input
+                          type="number"
+                          value={price.min || ''}
+                          onChange={(e) => setPrice(fam.name, sub, 'minPrice', Number(e.target.value))}
+                          className="w-[60px] h-7 rounded-[8px] text-[12px] text-center bg-carbon/[0.03] border-carbon/[0.06]"
+                          placeholder="€"
+                        />
+                        <Input
+                          type="number"
+                          value={price.max || ''}
+                          onChange={(e) => setPrice(fam.name, sub, 'maxPrice', Number(e.target.value))}
+                          className="w-[60px] h-7 rounded-[8px] text-[12px] text-center bg-carbon/[0.03] border-carbon/[0.06]"
+                          placeholder="€"
+                        />
+                      </>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => removeSubcategory(fi, si)} className="rounded-full h-6 w-6 text-carbon/20 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="h-2.5 w-2.5" />
+                    </Button>
                   </div>
-                )}
-                <Separator className="mb-2" />
-                {fam.subcategories.map((sub, si) => {
-                  const price = getPrice(fam.name, sub);
-                  return (
-                    <div key={si} className="flex items-center gap-2 py-1.5">
-                      <div className="w-3 border-b border-l border-carbon/[0.08] h-3 rounded-bl-[4px] shrink-0" />
-                      <Input
-                        value={sub}
-                        onChange={(e) => updateSubcategory(fi, si, e.target.value)}
-                        placeholder={t.merchandising.subcategoryPlaceholder}
-                        className="flex-1 h-8 text-[14px] text-carbon border-0 shadow-none focus-visible:ring-0 bg-transparent px-0"
-                      />
-                      {onPricingChange && (
-                        <>
-                          <Input
-                            type="number"
-                            value={price.min || ''}
-                            onChange={(e) => setPrice(fam.name, sub, 'minPrice', Number(e.target.value))}
-                            className="w-[68px] h-8 rounded-[8px] text-[13px] text-center bg-carbon/[0.03] border-carbon/[0.06]"
-                            placeholder="€"
-                          />
-                          <Input
-                            type="number"
-                            value={price.max || ''}
-                            onChange={(e) => setPrice(fam.name, sub, 'maxPrice', Number(e.target.value))}
-                            className="w-[68px] h-8 rounded-[8px] text-[13px] text-center bg-carbon/[0.03] border-carbon/[0.06]"
-                            placeholder="€"
-                          />
-                        </>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => removeSubcategory(fi, si)} className="rounded-full h-7 w-7 text-muted-foreground hover:text-destructive">
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  );
-                })}
-                <Button variant="ghost" onClick={() => addSubcategory(fi)} className="mt-1 rounded-full h-8 text-xs text-muted-foreground">
-                  <Plus className="h-3 w-3 mr-1.5" /> {t.merchandising.addSubcategory}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                );
+              })}
+              <Button variant="ghost" onClick={() => addSubcategory(fi)} className="rounded-full h-7 text-[12px] text-carbon/25 hover:text-carbon/50 px-0">
+                <Plus className="h-3 w-3 mr-1" /> {t.merchandising.addSubcategory}
+              </Button>
+            </div>
+
+            <div className="flex-1" />
+
+            {/* Delete — bottom right, subtle */}
+            <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" onClick={() => removeFamily(fi)} className="rounded-full h-8 w-8 text-carbon/15 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </button>
         ))}
       </div>
       <Button variant="outline" onClick={addFamily} className="w-full rounded-full border-dashed text-muted-foreground">
