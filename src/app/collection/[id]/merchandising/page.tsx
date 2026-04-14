@@ -685,7 +685,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
       {/* ═══ FREE — 4 KPI cards in a row (like sub-block cards) ═══ */}
       {mode === 'free' && (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             {kpiCards.map(kpi => (
               <div key={kpi.key} className="bg-white rounded-[20px] p-8 flex flex-col min-h-[300px]">
                 <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
@@ -715,7 +715,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
           </div>
 
           {/* Segmentation — 2 cards side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white rounded-[20px] p-8">
               <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Product Type</h3>
               <p className="text-[13px] text-carbon/30 mb-6">Revenue vs Image vs Entry split</p>
@@ -1132,7 +1132,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
           )}
 
           {blockParam === 'budget' && (
-            <div className="max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
+            <div className="min-h-[calc((100vh-380px)*0.8)]">
               <BudgetContent
                 mode={state.mode} data={state.data}
                 onChange={(newData) => updateCardData('budget', { data: newData })}
