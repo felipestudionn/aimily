@@ -66,32 +66,32 @@ ANALYSIS FRAMEWORK:
 4. COMMERCIAL BALANCE — Include both high-volume commercial categories and lower-volume differentiating categories
 5. PRODUCTION REALITY — Consider that each subcategory implies a different supply chain (don't suggest 15 subcategories for a startup)
 
+MANDATORY: For each subcategory, suggest a retail price range (minPrice, maxPrice in EUR) based on the brand positioning, consumer profile, and competitive context. The "pricing" array is REQUIRED — one entry per subcategory with matching names.
+
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Also suggest a retail price range (minPrice, maxPrice in EUR) for each subcategory based on the brand positioning, consumer profile, and competitive context.
-
-Return:
+Return EXACTLY this JSON — the "pricing" array is REQUIRED:
 {
   "families": [
     {
-      "name": "Family Name (industry-standard naming)",
-      "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
+      "name": "Family Name",
+      "subcategories": ["Subcategory 1", "Subcategory 2"],
       "pricing": [
         { "name": "Subcategory 1", "minPrice": 89, "maxPrice": 129 },
         { "name": "Subcategory 2", "minPrice": 69, "maxPrice": 99 }
       ],
       "priority": "core" or "strategic" or "complementary",
-      "rationale": "15-25 words: why this family and these subcategories for this specific collection"
+      "rationale": "15-25 words explaining why"
     }
   ]
 }
 
 Priority levels:
-- "core": Essential families — highest revenue potential, must-have for the collection to work commercially
-- "strategic": Important differentiators — builds brand identity, attracts the target consumer, may not be the highest volume
-- "complementary": Nice-to-have — completes the offering, enables cross-selling, can be cut if budget is tight`,
+- "core": Essential families — highest revenue potential
+- "strategic": Important differentiators — builds brand identity
+- "complementary": Nice-to-have — completes the offering`,
       };
 
     case 'families-proposals':
@@ -125,20 +125,21 @@ Use INDUSTRY-STANDARD family and subcategory names. These are real product categ
 CRITICAL: Respect the PRODUCT CATEGORY from context. If the category is FOOTWEAR, ALL families must be footwear types (Sneakers, Sandals, Loafers, Boots, etc.) — never suggest Shirts or Trousers for a footwear brand. If APPAREL, families are garment types. If ACCESSORIES, families are accessory types.
 Subcategories are PRODUCT TYPES within the family (e.g., for Sneakers: "Low-top Runner", "Slip-on", "Chunky Platform") — NOT model names or SKU names.
 
+STEP 3 — PRICE EACH SUBCATEGORY (MANDATORY):
+For each subcategory, you MUST suggest a retail price range (minPrice, maxPrice in EUR).
+Base pricing on: consumer purchasing power, brand positioning, competitive benchmarks from the context, and category norms.
+If the context includes existing SKU prices or a price range, use those as anchors.
+The "pricing" array MUST have one entry per subcategory with matching names. This field is NOT optional.
+
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-STEP 3 — PRICE EACH SUBCATEGORY:
-For each subcategory, suggest a retail price range (minPrice, maxPrice in EUR).
-Base pricing on: consumer purchasing power, brand positioning, competitive benchmarks from the context, and category norms.
-If the context includes existing SKU prices or a price range, use those as anchors.
-
-Return:
+Return EXACTLY this JSON structure — the "pricing" array is REQUIRED for every family:
 {
   "families": [
     {
-      "name": "Family Name (industry-standard naming: Sneakers, Sandals, Loafers, etc.)",
+      "name": "Family Name",
       "subcategories": ["Subcategory 1", "Subcategory 2", "Subcategory 3"],
       "pricing": [
         { "name": "Subcategory 1", "minPrice": 89, "maxPrice": 129 },
@@ -146,15 +147,15 @@ Return:
         { "name": "Subcategory 3", "minPrice": 109, "maxPrice": 159 }
       ],
       "priority": "core" or "strategic" or "complementary",
-      "rationale": "15-25 words: why this family and these subcategories for this specific collection"
+      "rationale": "15-25 words explaining why"
     }
   ]
 }
 
 Priority levels:
-- "core": Essential families — highest revenue potential, must-have for the collection to work commercially
-- "strategic": Important differentiators — builds brand identity, attracts the target consumer, may not be the highest volume
-- "complementary": Nice-to-have — completes the offering, enables cross-selling, can be cut if budget is tight
+- "core": Essential families — highest revenue potential
+- "strategic": Important differentiators — builds brand identity
+- "complementary": Nice-to-have — completes the offering
 
 Order families from highest to lowest priority.`,
       };
