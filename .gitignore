@@ -50,3 +50,13 @@ scripts/composite-shirt.mjs
 scripts/retouch-shirt.mjs
 scripts/model-references/
 references/
+
+# Playwright MCP visual iteration artifacts
+.playwright-mcp/
+brand-en.png
+brand-identity.png
+brand-identity-2k.png
+landing.png
+local-brand-full.png
+local-sidebar.md
+*-screenshot.png
