@@ -722,95 +722,173 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
             })}
           </div>
 
-          {/* Segmentation — single proportional bars with draggable dividers */}
+          {/* Segmentation — gradient bars with visible dividers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Product Type — single bar, 3 segments */}
+            {/* Product Type — gradient bar with divider */}
             <div className="bg-white rounded-[20px] p-8">
               <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Product Type</h3>
-              <p className="text-[13px] text-carbon/30 mb-6">Drag to adjust the split</p>
+              <p className="text-[13px] text-carbon/30 mb-6">Edit values or drag the divider</p>
 
-              {/* Labels + percentages */}
+              {/* Editable percentages */}
               <div className="flex items-center justify-between mb-4">
-                {typeSeg.map((s) => (
-                  <div key={s.name} className="text-center">
-                    <span className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none">
-                      {s.percentage}<span className="text-[16px] font-semibold text-carbon/15 ml-0.5">%</span>
-                    </span>
-                    <p className="text-[12px] text-carbon/40 mt-1">{s.name}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Single stacked bar */}
-              <div className="relative h-[14px] rounded-full overflow-hidden flex">
                 {typeSeg.map((s, i) => {
-                  const opacities = [1, 0.4, 0.15];
+                  const updateSeg = (newVal: number) => {
+                    const clamped = Math.max(5, Math.min(90, newVal));
+                    const others = typeSeg.filter((_, j) => j !== i);
+                    const othersTotal = others.reduce((sum, o) => sum + o.percentage, 0);
+                    const remaining = 100 - clamped;
+                    const updated = typeSeg.map((seg, j) => {
+                      if (j === i) return { ...seg, percentage: clamped };
+                      const ratio = othersTotal > 0 ? seg.percentage / othersTotal : 1 / others.length;
+                      return { ...seg, percentage: Math.round(remaining * ratio) };
+                    });
+                    // Fix rounding
+                    const total = updated.reduce((sum, u) => sum + u.percentage, 0);
+                    if (total !== 100) updated[updated.length - 1].percentage += 100 - total;
+                    onChange({ ...data, typeSegmentation: updated });
+                  };
                   return (
-                    <div
-                      key={s.name}
-                      className="h-full transition-all duration-200"
-                      style={{ width: `${s.percentage}%`, backgroundColor: `rgba(0,0,0,${opacities[i]})` }}
-                    />
+                    <div key={s.name} className="text-center">
+                      <div className="flex items-baseline justify-center">
+                        <input
+                          type="number" min={5} max={90}
+                          value={s.percentage}
+                          onChange={(e) => updateSeg(Number(e.target.value))}
+                          className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none bg-transparent border-none focus:outline-none w-16 text-center"
+                        />
+                        <span className="text-[16px] font-semibold text-carbon/15">%</span>
+                      </div>
+                      <p className="text-[12px] text-carbon/40 mt-1">{s.name}</p>
+                    </div>
                   );
                 })}
               </div>
 
-              {/* Hidden range to control first divider (Revenue vs rest) */}
-              <input
-                type="range" min={10} max={90}
-                value={typeSeg[0].percentage}
-                onChange={(e) => {
-                  const rev = Number(e.target.value);
-                  const remaining = 100 - rev;
-                  const ratio = typeSeg[1].percentage / (typeSeg[1].percentage + typeSeg[2].percentage) || 0.5;
-                  const img = Math.round(remaining * ratio);
-                  const entry = remaining - img;
-                  onChange({ ...data, typeSegmentation: [
-                    { name: 'Revenue', percentage: rev },
-                    { name: 'Image', percentage: img },
-                    { name: 'Entry', percentage: entry },
-                  ]});
-                }}
-                className="w-full -mt-[14px] relative z-10 opacity-0 cursor-col-resize h-[14px]"
-              />
+              {/* Gradient bar with divider */}
+              <div className="relative">
+                {/* 0% and 100% labels */}
+                <div className="flex justify-between mb-1.5">
+                  <span className="text-[10px] text-carbon/25">0%</span>
+                  <span className="text-[10px] text-carbon/25">100%</span>
+                </div>
+
+                {/* The bar */}
+                <div className="relative h-[28px] rounded-full overflow-hidden flex">
+                  <div className="h-full rounded-l-full transition-all duration-200" style={{
+                    width: `${typeSeg[0].percentage}%`,
+                    background: 'rgba(0,0,0,0.7)',
+                  }} />
+                  <div className="h-full transition-all duration-200" style={{
+                    width: `${typeSeg[1].percentage}%`,
+                    background: 'rgba(0,0,0,0.35)',
+                  }} />
+                  <div className="h-full rounded-r-full transition-all duration-200" style={{
+                    width: `${typeSeg[2].percentage}%`,
+                    background: 'rgba(0,0,0,0.12)',
+                  }} />
+                </div>
+
+                {/* Divider handle */}
+                <div
+                  className="absolute top-0 flex flex-col items-center pointer-events-none"
+                  style={{ left: `${typeSeg[0].percentage}%`, transform: 'translateX(-50%)' }}
+                >
+                  <div className="text-carbon/40 -mt-[2px]">▼</div>
+                  <div className="w-[2px] h-[28px] bg-carbon/30 -mt-[2px]" />
+                </div>
+
+                {/* Invisible range slider for drag */}
+                <input
+                  type="range" min={10} max={85}
+                  value={typeSeg[0].percentage}
+                  onChange={(e) => {
+                    const rev = Number(e.target.value);
+                    const remaining = 100 - rev;
+                    const ratio = typeSeg[1].percentage / Math.max(1, typeSeg[1].percentage + typeSeg[2].percentage);
+                    const img = Math.max(5, Math.round(remaining * ratio));
+                    const entry = Math.max(5, remaining - img);
+                    onChange({ ...data, typeSegmentation: [
+                      { name: 'Revenue', percentage: rev },
+                      { name: 'Image', percentage: img },
+                      { name: 'Entry', percentage: entry },
+                    ]});
+                  }}
+                  className="absolute inset-0 w-full opacity-0 cursor-col-resize"
+                  style={{ top: '16px', height: '28px' }}
+                />
+              </div>
             </div>
 
-            {/* Newness Split — single bar, 2 segments */}
+            {/* Newness Split — gradient bar with divider */}
             <div className="bg-white rounded-[20px] p-8">
               <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Newness Split</h3>
-              <p className="text-[13px] text-carbon/30 mb-6">Drag to adjust the split</p>
+              <p className="text-[13px] text-carbon/30 mb-6">Edit values or drag the divider</p>
 
-              {/* Labels + percentages */}
+              {/* Editable percentages */}
               <div className="flex items-center justify-between mb-4">
-                {newnessSeg.map((s) => (
+                {newnessSeg.map((s, i) => (
                   <div key={s.name} className="text-center">
-                    <span className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none">
-                      {s.percentage}<span className="text-[16px] font-semibold text-carbon/15 ml-0.5">%</span>
-                    </span>
+                    <div className="flex items-baseline justify-center">
+                      <input
+                        type="number" min={5} max={95}
+                        value={s.percentage}
+                        onChange={(e) => {
+                          const val = Math.max(5, Math.min(95, Number(e.target.value)));
+                          onChange({ ...data, newnessSegmentation: [
+                            { name: 'Newness', percentage: i === 0 ? val : 100 - val },
+                            { name: 'Carry-Over', percentage: i === 0 ? 100 - val : val },
+                          ]});
+                        }}
+                        className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none bg-transparent border-none focus:outline-none w-16 text-center"
+                      />
+                      <span className="text-[16px] font-semibold text-carbon/15">%</span>
+                    </div>
                     <p className="text-[12px] text-carbon/40 mt-1">{s.name}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Single stacked bar */}
-              <div className="relative h-[14px] rounded-full overflow-hidden flex">
-                <div className="h-full bg-carbon transition-all duration-200" style={{ width: `${newnessSeg[0].percentage}%` }} />
-                <div className="h-full bg-carbon/20 transition-all duration-200" style={{ width: `${newnessSeg[1].percentage}%` }} />
-              </div>
+              {/* Gradient bar with divider */}
+              <div className="relative">
+                <div className="flex justify-between mb-1.5">
+                  <span className="text-[10px] text-carbon/25">0%</span>
+                  <span className="text-[10px] text-carbon/25">100%</span>
+                </div>
 
-              {/* Hidden range to control divider */}
-              <input
-                type="range" min={10} max={90}
-                value={newnessSeg[0].percentage}
-                onChange={(e) => {
-                  const newness = Number(e.target.value);
-                  onChange({ ...data, newnessSegmentation: [
-                    { name: 'Newness', percentage: newness },
-                    { name: 'Carry-Over', percentage: 100 - newness },
-                  ]});
-                }}
-                className="w-full -mt-[14px] relative z-10 opacity-0 cursor-col-resize h-[14px]"
-              />
+                <div className="relative h-[28px] rounded-full overflow-hidden flex">
+                  <div className="h-full rounded-l-full transition-all duration-200" style={{
+                    width: `${newnessSeg[0].percentage}%`,
+                    background: 'rgba(0,0,0,0.6)',
+                  }} />
+                  <div className="h-full rounded-r-full transition-all duration-200" style={{
+                    width: `${newnessSeg[1].percentage}%`,
+                    background: 'rgba(0,0,0,0.2)',
+                  }} />
+                </div>
+
+                {/* Divider handle */}
+                <div
+                  className="absolute top-0 flex flex-col items-center pointer-events-none"
+                  style={{ left: `${newnessSeg[0].percentage}%`, transform: 'translateX(-50%)' }}
+                >
+                  <div className="text-carbon/40 -mt-[2px]">▼</div>
+                  <div className="w-[2px] h-[28px] bg-carbon/30 -mt-[2px]" />
+                </div>
+
+                <input
+                  type="range" min={10} max={90}
+                  value={newnessSeg[0].percentage}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    onChange({ ...data, newnessSegmentation: [
+                      { name: 'Newness', percentage: val },
+                      { name: 'Carry-Over', percentage: 100 - val },
+                    ]});
+                  }}
+                  className="absolute inset-0 w-full opacity-0 cursor-col-resize"
+                  style={{ top: '16px', height: '28px' }}
+                />
+              </div>
             </div>
           </div>
         </div>
