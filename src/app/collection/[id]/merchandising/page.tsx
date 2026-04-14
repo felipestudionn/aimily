@@ -1299,11 +1299,12 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
 
   /* ── Card name map for clean workspace header ── */
   const m = t.merchandising as Record<string, string>;
+  const sidebarT = (t.sidebar as Record<string, string>) || {};
   const cardNameMap: Record<string, string> = {
-    'scenarios': 'Range Plan & Scenarios',
-    'families': m[language === 'es' ? 'productFamiliesEs' : 'productFamilies'] || 'Product Families & Pricing',
-    'channels': m[language === 'es' ? 'channelsMarketsEs' : 'channelsMarkets'] || 'Channels & Markets',
-    'budget': m[language === 'es' ? 'budgetFinancialsEs' : 'budgetFinancials'] || 'Budget & Financials',
+    'scenarios': sidebarT.buyingStrategy || 'Buying Strategy',
+    'families': sidebarT.assortmentPricing || 'Assortment & Pricing',
+    'channels': sidebarT.distribution || 'Distribution',
+    'budget': sidebarT.financialPlan || 'Financial Plan',
   };
 
   /* ═══ CLEAN WORKSPACE VIEW (from sidebar with ?block= param) ═══ */

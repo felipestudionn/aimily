@@ -36,7 +36,7 @@ import type { TimelinePhase } from '@/types/timeline';
 
 type SidebarLabelKey =
   | 'creativeDirection' | 'consumer' | 'moodboard' | 'moodboardResearch' | 'marketResearch' | 'brandIdentity' | 'creativeOverview'
-  | 'merchandisingPlanning' | 'rangePlanScenarios' | 'familiesPricing' | 'channelsMarkets' | 'budgetFinancials' | 'collectionBuilder'
+  | 'merchandisingPlanning' | 'buyingStrategy' | 'assortmentPricing' | 'familiesPricing' | 'distribution' | 'channelsMarkets' | 'financialPlan' | 'budgetFinancials' | 'collectionBuilder'
   | 'designDevelopment' | 'sketchColor' | 'techPack' | 'prototyping' | 'production' | 'finalSelection'
   | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'pointOfSale'
   | 'calendar' | 'presentation' | 'dashboard';
@@ -80,10 +80,10 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
-      { id: 'scenarios', labelKey: 'rangePlanScenarios', route: 'merchandising?block=scenarios', phaseId: 'merchandising' },
-      { id: 'families-pricing', labelKey: 'familiesPricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
-      { id: 'channels', labelKey: 'channelsMarkets', route: 'merchandising?block=channels', phaseId: 'merchandising' },
-      { id: 'budget', labelKey: 'budgetFinancials', route: 'merchandising?block=budget', phaseId: 'merchandising' },
+      { id: 'scenarios', labelKey: 'buyingStrategy', route: 'merchandising?block=scenarios', phaseId: 'merchandising' },
+      { id: 'families-pricing', labelKey: 'assortmentPricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
+      { id: 'channels', labelKey: 'distribution', route: 'merchandising?block=channels', phaseId: 'merchandising' },
+      { id: 'budget', labelKey: 'financialPlan', route: 'merchandising?block=budget', phaseId: 'merchandising' },
       { id: 'builder-merch', labelKey: 'collectionBuilder', route: 'product', isOutput: true },
     ],
   },
