@@ -28,6 +28,21 @@ All 13 AI endpoints load context SERVER-SIDE via `loadFullContext()` from `src/l
 
 ---
 
+## 🥇 GOLD STANDARD: Family Card (Merchandising > Families) — REPLICATE EVERYWHERE
+
+The Family Card design in `src/app/collection/[id]/merchandising/page.tsx` (FamilyCardGrid) is the canonical reference. Every workspace card MUST follow this exact pattern:
+
+- `grid grid-cols-4 gap-5` (always 4 cols, never 3)
+- Card: `bg-white rounded-[20px] p-10 md:p-14 min-h-[500px]` + `hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]`
+- Title = subject's name in 24-28px semibold (NEVER add "KEY xxx" labels above)
+- NO ghost numbers (01., 02.) — Felipe explicitly removed
+- Pricing inline with subcategory name (NOT below): `[name] [min]–[max] € [×]`
+- Pricing pills: `rounded-full bg-carbon/[0.03]`, placeholder text "min"/"max" inside the input
+- Subtle metadata: `text-[11px] text-carbon/30 uppercase`, NEVER loud Badge
+- Hover-only actions: `opacity-0 group-hover:opacity-100`
+
+---
+
 ## 🚨 DESIGN SYSTEM V2 — MANDATORY FOR ALL UI WORK
 
 **Read this section BEFORE writing ANY UI code. These are non-negotiable rules.**
@@ -108,29 +123,35 @@ All sub-blocks route through `creative/page.tsx` with `?block=` param:
 
 ## 🎯 CURRENT STATE & NEXT SESSION CONTEXT
 
-### What's Built & Working
-- **WorkspaceShell**: state-based navigation (no page flash), sidebar active state syncs
-- **Dashboard**: 4 block cards → sub-dashboards (4 cards each) → workspace views
-- **All routing**: Creative (4 blocks via ?block=), Merchandising (3 blocks via ?block=), Marketing (4 blocks via ?block=)
-- **shadcn/ui**: Fully installed with Tailwind v4, Radix base. Components: Card, Button, Input, Label, Badge, Separator, Switch, Toggle, Slider, etc.
-- **Tailwind v4.2**: @import tailwindcss, @theme block, @utility directives, PostCSS v4
+### What's Built & Working (as of 2026-04-14)
+- **Family Card design GOLD STANDARD** in Merchandising > Families & Pricing — replicate everywhere
+- **CIS server-side** for ALL 13 AI endpoints via `loadFullContext()`
+- **WizardSidebar i18n** complete (23 keys × 9 languages)
+- **Playwright MCP** active for visual iteration on `localhost:3000` at 2560×1440
+- **WorkspaceShell**: state-based navigation, sidebar active state syncs
+- **shadcn/ui**: Fully installed with Tailwind v4.2
 
-### What Needs Work NOW
+### What Still Needs the Template Treatment
+Apply the Family Card gold standard pattern to:
+- `src/app/collection/[id]/merchandising/page.tsx` — Channels & Markets, Budget & Financials
+- `src/app/collection/[id]/creative/page.tsx` — Consumer, Moodboard & Research, Brand Identity, Creative Overview
+- All marketing cards in `src/components/marketing/` (Sales Dashboard, Content Studio, Communications, Point of Sale)
+- Design & Development sub-blocks
 
-**The core problem**: Workspace content inside cards looks inconsistent. Some use shadcn, others still use raw HTML. The visual quality inside the cards doesn't match the dashboard card quality.
+### Visual Iteration Workflow (Playwright MCP)
+- Dev server: `npm run dev` on `localhost:3000`
+- Felipe's test collection: `60652ef7-1b06-4be4-9a61-31357be0be65` (SS27 SLAIZ, English locked)
+- Use `mcp__playwright__browser_navigate` + `browser_take_screenshot` for verification
+- See `feedback_visual-iteration-with-playwright.md`
 
-**Felipe's rules**:
-1. **ALL workspace content must use the 4-card horizontal layout** — same style as the sub-dashboard cards (01.1, 01.2, 01.3, 01.4)
+### Felipe's Rules (HARD)
+1. **ALL workspace content uses the 4-card grid** — gold standard = Merchandising > Families
 2. **Use shadcn/ui exclusively** — Card, CardHeader, CardTitle, CardContent, Input, Button, Badge, Label, Separator, Switch, Toggle, Slider
-3. **NEVER use raw `<input>`, `<button>`, `<label>`, `<textarea>`** — always shadcn equivalents
+3. **NEVER raw `<input>`, `<button>`, `<label>`, `<textarea>`** — always shadcn
 4. **Anti-Excel**: shadcn Slider instead of number inputs for percentages, visual bars, big numbers
-5. **NEVER touch the backend** — only frontend work
-
-**Files that need the full shadcn treatment**:
-- `src/app/collection/[id]/merchandising/page.tsx` — Families+Pricing unified (partially done, AI/Assisted modes still inconsistent), Channels, Budget segmentation
-- `src/app/collection/[id]/creative/page.tsx` — Consumer, Moodboard, BrandDNA, Vibe, Research blocks
-- All marketing cards in `src/components/marketing/`
-- Design & Development block (not started)
+5. **i18n MANDATORY** — zero hardcoded strings, all 9 languages
+6. **AI context architecture LOCKED** — never modify during frontend work
+7. **Effort=High + Thinking=ON** always
 
 ### shadcn Component Reference (installed & ready)
 ```tsx
