@@ -755,128 +755,122 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
       )}
 
       {(mode === 'assisted' || mode === 'ai') && (
-        <div className="space-y-4">
-          {mode === 'ai' && !(data.salesTarget as number) && (
-            <p className="text-sm text-carbon/60 leading-relaxed">
-              {t.merchandising.aiProposalBudget} <strong>{t.merchandising.aiProposalBudgetBold}</strong>.
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* ── Left: 2×2 KPI cards + generate button ── */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              {kpiCards.map(kpi => (
+                <div key={kpi.key} className="bg-white rounded-[20px] p-6 flex flex-col min-h-[160px]">
+                  <h3 className="text-[15px] font-semibold text-carbon tracking-[-0.02em] mb-auto">{kpi.label}</h3>
+                  <div className="flex items-baseline gap-1 mt-4">
+                    {kpi.prefix && <span className="text-[18px] font-semibold text-carbon/20">{kpi.prefix}</span>}
+                    <input
+                      type="number"
+                      value={(data[kpi.key] as number) || ''}
+                      onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+                      placeholder="0"
+                      className="text-[36px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/[0.05] leading-none"
+                    />
+                  </div>
+                  {kpi.suffix && <span className="text-[13px] font-medium text-carbon/20">{kpi.suffix}</span>}
+                </div>
+              ))}
+            </div>
+            {/* Segmentation compact */}
+            <div className="bg-white rounded-[20px] p-6 space-y-3">
+              <SegRow label="Product" segs={(data.typeSegmentation as Seg[]) || typeSeg} dataKey="typeSegmentation" />
+              <SegRow label="Newness" segs={(data.newnessSegmentation as Seg[]) || newnessSeg} dataKey="newnessSegmentation" />
+            </div>
+            <button
+              onClick={async () => {
+                setGenerating(true); setError(null);
+                const apiType = mode === 'assisted' ? 'budget-assisted' : 'budget-proposals';
+                const { result, error: err } = await generateMerch(apiType, {
+                  families: familiesStr, pricing: pricingStr, channels: channelsStr,
+                  direction: (data.direction as string) || '', ...collectionContext,
+                }, language);
+                if (err) { setError(err); setGenerating(false); return; }
+                const parsed = result as { salesTarget: number; targetMargin: number; avgDiscount: number; sellThroughMonths: number; segmentation: { type: Seg[]; newness: Seg[] }; rationale?: string; selectedModel?: string; selectedModelRef?: string; whyThisModel?: string; risks?: string[]; advantages?: string[]; fineTuning?: string };
+                onChange({
+                  ...data,
+                  salesTarget: parsed.salesTarget, targetMargin: parsed.targetMargin,
+                  avgDiscount: parsed.avgDiscount, sellThroughMonths: parsed.sellThroughMonths,
+                  typeSegmentation: parsed.segmentation?.type || typeSeg,
+                  newnessSegmentation: parsed.segmentation?.newness || newnessSeg,
+                  rationale: parsed.rationale,
+                  selectedModel: parsed.selectedModel, selectedModelRef: parsed.selectedModelRef,
+                  whyThisModel: parsed.whyThisModel, risks: parsed.risks, advantages: parsed.advantages, fineTuning: parsed.fineTuning,
+                });
+                setGenerating(false);
+              }}
+              disabled={generating || (mode === 'assisted' && !(data.growthModel as string))}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {mode === 'assisted' ? t.merchandising.suggestBudget : t.merchandising.generateFinancialPlan}
+            </button>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+          </div>
+
+          {/* ── Right: Reference context ── */}
+          <div className="bg-white rounded-[20px] p-8 flex flex-col">
+            <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-2">
+              {mode === 'assisted' ? 'Growth Models' : 'Context'}
+            </h3>
+            <p className="text-[13px] text-carbon/30 mb-5">
+              {mode === 'assisted' ? 'Select a reference model' : 'Data used for AI proposal'}
             </p>
-          )}
-          {mode === 'assisted' && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-3 block">{t.merchandising.growthModelLabel}</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {[
-                    { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K Y1', mix: '80% DTC', margin: '65%', desc: 'Drop model, community-driven, low fixed costs. Scale online before physical.' },
-                    { id: 'wholesale-led', name: 'Wholesale-Led Launch', ref: 'Jacquemus (early)', revenue: '€200K–500K Y1', mix: '60% Wholesale', margin: '50%', desc: 'Showroom-driven, multi-brand retailers, trade shows. Volume from day one.' },
-                    { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K Y1', mix: '50/50 DTC & WS', margin: '60%', desc: 'Event marketing, scandi hype, 60% CAGR. Balanced growth.' },
-                    { id: 'quiet-luxury', name: 'Quiet Luxury', ref: 'COS / The Row', revenue: '€300K–800K Y1', mix: 'Controlled', margin: '70%', desc: 'High ASP, limited distribution, editorial press. Quality over quantity.' },
-                    { id: 'collab-hype', name: 'Collab & Hype Engine', ref: 'Aim\u00E9 Leon Dore', revenue: '€200K–600K Y1', mix: 'DTC & Collabs', margin: '60%', desc: 'Limited drops, brand collabs drive traffic and press coverage.' },
-                    { id: 'digital-native', name: 'Digital Native Scale', ref: 'Pangaia / Reformation', revenue: '€150K–500K Y1', mix: '90% Digital', margin: '65%', desc: 'Content-led, social-first, sustainability narrative. Low overhead.' },
-                    { id: 'accessible-premium', name: 'Accessible Premium', ref: 'Sandro / Maje', revenue: '€400K–1M Y1', mix: 'Omnichannel', margin: '55%', desc: 'Department store anchored, city-center retail, data-driven.' },
-                    { id: 'artisan-craft', name: 'Artisan Craft Story', ref: 'HEREU / Loewe Craft', revenue: '€80K–250K Y1', mix: 'Selective', margin: '70%', desc: 'High margin, low volume, press & editorial driven. Heritage narrative.' },
-                    { id: 'marketplace-first', name: 'Marketplace Accelerator', ref: 'SSENSE / Farfetch', revenue: '€100K–400K Y1', mix: '70% Marketplace', margin: '45%', desc: 'Marketplace-first, low fixed costs, global reach from day one.' },
-                    { id: 'investor-blitz', name: 'Investor-Backed Blitz', ref: 'Holzweiler + Sequoia', revenue: '€500K–2M Y1', mix: 'Aggressive', margin: '55%', desc: 'VC-funded rapid expansion, store rollouts, international from launch.' },
-                  ].map((scenario, idx) => {
-                    const selected = (data.growthModel as string) === scenario.id;
-                    return (
-                      <button
-                        key={scenario.id}
-                        onClick={() => onChange({ ...data, growthModel: selected ? '' : scenario.id, direction: selected ? '' : `Growth model: ${scenario.name} (ref: ${scenario.ref}). ${scenario.desc} Target: ${scenario.revenue}, channel mix: ${scenario.mix}, margin: ${scenario.margin}.` })}
-                        className={`text-left border transition-all overflow-hidden ${selected ? 'border-carbon ring-1 ring-carbon/10' : 'border-carbon/[0.06] hover:border-carbon/15'}`}
-                      >
-                        <div className={`h-[3px] ${selected ? 'bg-carbon' : 'bg-[#e8dfd3]'}`} />
-                        <div className="p-4">
-                          <div className="flex items-start justify-between mb-2.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`w-4 h-4 border flex items-center justify-center shrink-0 ${selected ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                                {selected && <Check className="h-2.5 w-2.5 text-crema" />}
-                              </div>
-                              <div>
-                                <span className="text-[13px] font-medium text-carbon block leading-tight">{scenario.name}</span>
-                                <span className="text-[10px] text-carbon/35 italic">{scenario.ref}</span>
-                              </div>
-                            </div>
-                            <span className="px-2.5 py-1 text-[11px] font-semibold tracking-tight shrink-0 bg-[#f5f0e8] text-[#8b7355]">
-                              {scenario.revenue.replace(' Y1', '')}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 mb-2.5 ml-[26px]">
-                            <span className="px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase bg-[#f5f0e8]/70 text-[#8b7355]">{scenario.mix}</span>
-                            <span className="px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase bg-[#f5f0e8]/70 text-[#8b7355]">{scenario.margin} margin</span>
-                          </div>
-                          <p className="text-[11px] text-carbon/45 leading-relaxed ml-[26px]">{scenario.desc}</p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+
+            {mode === 'assisted' && (
+              <div className="space-y-2 flex-1 overflow-y-auto">
+                {[
+                  { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K', mix: '80% DTC', margin: '65%' },
+                  { id: 'wholesale-led', name: 'Wholesale-Led', ref: 'Jacquemus', revenue: '€200K–500K', mix: '60% WS', margin: '50%' },
+                  { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K', mix: '50/50', margin: '60%' },
+                  { id: 'quiet-luxury', name: 'Quiet Luxury', ref: 'COS / The Row', revenue: '€300K–800K', mix: 'Controlled', margin: '70%' },
+                  { id: 'collab-hype', name: 'Collab & Hype', ref: 'Aimé Leon Dore', revenue: '€200K–600K', mix: 'DTC+Collabs', margin: '60%' },
+                  { id: 'digital-native', name: 'Digital Native', ref: 'Pangaia', revenue: '€150K–500K', mix: '90% Digital', margin: '65%' },
+                  { id: 'accessible-premium', name: 'Accessible Premium', ref: 'Sandro / Maje', revenue: '€400K–1M', mix: 'Omni', margin: '55%' },
+                  { id: 'artisan-craft', name: 'Artisan Craft', ref: 'HEREU / Loewe', revenue: '€80K–250K', mix: 'Selective', margin: '70%' },
+                ].map((s) => {
+                  const sel = (data.growthModel as string) === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => onChange({ ...data, growthModel: sel ? '' : s.id, direction: sel ? '' : `Growth model: ${s.name} (ref: ${s.ref}). Target: ${s.revenue}, mix: ${s.mix}, margin: ${s.margin}.` })}
+                      className={`w-full text-left rounded-[16px] p-4 border transition-all ${sel ? 'border-carbon bg-carbon/[0.02]' : 'border-carbon/[0.06] hover:border-carbon/[0.12]'}`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-[14px] font-medium ${sel ? 'text-carbon' : 'text-carbon/70'}`}>{s.name}</span>
+                        <span className="text-[11px] text-carbon/30 italic">{s.ref}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-carbon/[0.04] text-carbon/50">{s.revenue}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-carbon/[0.04] text-carbon/50">{s.margin}</span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-          )}
-          <button
-            onClick={async () => {
-              setGenerating(true); setError(null);
-              const apiType = mode === 'assisted' ? 'budget-assisted' : 'budget-proposals';
-              const { result, error: err } = await generateMerch(apiType, {
-                families: familiesStr, pricing: pricingStr, channels: channelsStr,
-                direction: (data.direction as string) || '', ...collectionContext,
-              }, language);
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { salesTarget: number; targetMargin: number; avgDiscount: number; sellThroughMonths: number; segmentation: { type: Seg[]; newness: Seg[] }; rationale?: string; selectedModel?: string; selectedModelRef?: string; whyThisModel?: string; risks?: string[]; advantages?: string[]; fineTuning?: string };
-              onChange({
-                ...data,
-                salesTarget: parsed.salesTarget, targetMargin: parsed.targetMargin,
-                avgDiscount: parsed.avgDiscount, sellThroughMonths: parsed.sellThroughMonths,
-                typeSegmentation: parsed.segmentation?.type || typeSeg,
-                newnessSegmentation: parsed.segmentation?.newness || newnessSeg,
-                rationale: parsed.rationale,
-                selectedModel: parsed.selectedModel, selectedModelRef: parsed.selectedModelRef,
-                whyThisModel: parsed.whyThisModel, risks: parsed.risks, advantages: parsed.advantages, fineTuning: parsed.fineTuning,
-              });
-              setGenerating(false);
-            }}
-            disabled={generating || (mode === 'assisted' && !(data.growthModel as string))}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {mode === 'assisted' ? t.merchandising.suggestBudget : t.merchandising.generateFinancialPlan}
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
+            )}
 
-          {/* Results: 2×2 KPI cards */}
-          {(data.salesTarget as number) > 0 && (
-            <div className="pt-4 space-y-4">
-              {/* Model analysis badge */}
-              {(data.selectedModel as string) && (
-                <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-carbon text-white">{data.selectedModel as string}</span>
-                  <span className="text-[12px] text-carbon/40 italic">{data.selectedModelRef as string}</span>
-                </div>
-              )}
-
-              {/* 2×2 KPI grid with big numbers */}
-              <div className="grid grid-cols-2 gap-4">
-                {kpiCards.map(kpi => <KpiCard key={kpi.key} kpi={kpi} />)}
+            {mode === 'ai' && (
+              <div className="space-y-3 flex-1">
+                {[
+                  { label: 'Families', value: familiesStr || 'Not defined yet' },
+                  { label: 'Pricing', value: pricingStr ? `${JSON.parse(pricingStr).length || 0} families priced` : 'Not defined yet' },
+                  { label: 'Channels', value: channelsStr || 'Not defined yet' },
+                  { label: 'Consumer', value: collectionContext.consumer ? collectionContext.consumer.slice(0, 80) + '...' : 'Not defined yet' },
+                  { label: 'Collection', value: `${collectionContext.collectionName} · ${collectionContext.season}` },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-[12px] bg-carbon/[0.03] p-4">
+                    <span className="text-[12px] font-medium text-carbon/40 block mb-1">{item.label}</span>
+                    <span className="text-[13px] text-carbon/70 leading-relaxed">{item.value}</span>
+                  </div>
+                ))}
               </div>
-
-              {/* Segmentation */}
-              <div className="bg-white rounded-[20px] p-6 space-y-3">
-                <SegRow label="Product" segs={(data.typeSegmentation as Seg[]) || typeSeg} dataKey="typeSegmentation" />
-                <SegRow label="Newness" segs={(data.newnessSegmentation as Seg[]) || newnessSeg} dataKey="newnessSegmentation" />
-              </div>
-
-              {/* Rationale */}
-              {(data.rationale as string) && (
-                <textarea
-                  value={data.rationale as string}
-                  onChange={(e) => onChange({ ...data, rationale: e.target.value })}
-                  className="w-full text-[13px] text-carbon/50 italic bg-white rounded-[16px] border border-carbon/[0.06] p-4 resize-none leading-relaxed focus:border-carbon/20 focus:outline-none"
-                  rows={3}
-                />
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>
