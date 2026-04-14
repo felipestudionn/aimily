@@ -4,7 +4,8 @@ Fashion collection management platform for planning, designing, and launching cl
 
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router) + React 19 + TypeScript
-- **Styling**: Tailwind CSS 3.3 + Radix UI + Lucide icons
+- **Styling**: Tailwind CSS 4.2 + shadcn/ui (radix-nova) + Lucide icons
+- **UI Library**: shadcn/ui — Card, Button, Input, Label, Badge, Separator, Switch, Toggle, Slider, Accordion, Collapsible, Progress, Tooltip
 - **Backend**: Supabase (PostgreSQL + Auth), project ID `sbweszownvspzjfejmfx`
 - **AI**: Google Gemini 2.5 Flash Lite, Anthropic Claude Sonnet (SketchFlow)
 - **Deployment**: Vercel
@@ -94,3 +95,65 @@ All sub-blocks route through `creative/page.tsx` with `?block=` param:
 - `creative?block=moodboard` — Moodboard & Research
 - `creative?block=brand-dna` — Brand Identity
 - `creative` — Creative Overview (output)
+
+---
+
+## 🎯 CURRENT STATE & NEXT SESSION CONTEXT
+
+### What's Built & Working
+- **WorkspaceShell**: state-based navigation (no page flash), sidebar active state syncs
+- **Dashboard**: 4 block cards → sub-dashboards (4 cards each) → workspace views
+- **All routing**: Creative (4 blocks via ?block=), Merchandising (3 blocks via ?block=), Marketing (4 blocks via ?block=)
+- **shadcn/ui**: Fully installed with Tailwind v4, Radix base. Components: Card, Button, Input, Label, Badge, Separator, Switch, Toggle, Slider, etc.
+- **Tailwind v4.2**: @import tailwindcss, @theme block, @utility directives, PostCSS v4
+
+### What Needs Work (NEXT SESSION)
+
+**The core problem**: Workspace content cards look inconsistent. Some use shadcn primitives, others still use raw HTML. The visual quality inside the cards doesn't match the dashboard card quality.
+
+**The approach Felipe wants**:
+1. **ALL workspace content must use the 4-card horizontal layout** as the base — same as the sub-dashboard (01.1, 01.2, 01.3, 01.4 cards)
+2. **Use shadcn/ui exclusively** — Card, CardHeader, CardTitle, CardContent, Input, Button, Badge, Label, Separator, Switch, Toggle, Slider
+3. **NEVER use raw `<input>`, `<button>`, `<label>`, `<textarea>`** — always shadcn equivalents
+4. **Anti-Excel**: sliders instead of number inputs for percentages, visual bars, big numbers
+
+**Files that need the full shadcn treatment**:
+- `src/app/collection/[id]/merchandising/page.tsx` — Families+Pricing (partially done), Channels, Budget
+- `src/app/collection/[id]/creative/page.tsx` — Consumer, Moodboard, BrandDNA, Vibe, Research blocks
+- All marketing cards in `src/components/marketing/`
+
+### shadcn Component Reference (installed & ready)
+```tsx
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
+import { Toggle } from '@/components/ui/toggle'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { Slider } from '@/components/ui/slider'
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Progress } from '@/components/ui/progress'
+```
+
+### Design Reference: Sub-Dashboard Cards (THE GOLD STANDARD)
+The 4 sub-block cards in CollectionOverview (01.1, 01.2, etc.) define the visual standard:
+- White bg, rounded-[20px], p-10 md:p-14
+- Ghost number (72px, carbon/[0.05])
+- Title: 24-28px, font-semibold, tracking-[-0.03em]
+- Description: 14px, carbon/50
+- CTA pill: rounded-full, bg-carbon text-white
+- Progress bar: 120px × 6px, rounded-full
+- Min-height: 500px
+- Hover: scale-[1.02] + shadow
+
+**Every workspace card should feel like it belongs in the same family as these dashboard cards.**
+
+### Key Architecture
+- `WorkspaceShell` → `ViewPort` → lazy-loaded workspace components
+- Sidebar reads active workspace from context (not just pathname)
+- URL updated via `history.replaceState` for deep-linking
+- Optimal viewport: `calc((100vh-380px)*0.8)` — design to fit without scroll
