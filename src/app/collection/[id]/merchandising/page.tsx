@@ -686,68 +686,98 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
       {mode === 'free' && (
         <div className="space-y-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {kpiCards.map(kpi => (
-              <div key={kpi.key} className="bg-white rounded-[20px] p-8 flex flex-col min-h-[300px]">
-                <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
-                  {kpi.label}
-                </h3>
-                <p className="text-[13px] text-carbon/30">
-                  {kpi.key === 'salesTarget' && 'Total revenue target for this collection'}
-                  {kpi.key === 'targetMargin' && 'Gross margin percentage goal'}
-                  {kpi.key === 'avgDiscount' && 'Average markdown expected'}
-                  {kpi.key === 'sellThroughMonths' && 'Time to sell full inventory'}
-                </p>
-                <div className="mt-auto">
-                  <div className="flex items-baseline gap-1">
-                    {kpi.prefix && <span className="text-[24px] font-semibold text-carbon/20">{kpi.prefix}</span>}
-                    <input
-                      type="number"
-                      value={(data[kpi.key] as number) || ''}
-                      onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-                      placeholder="0"
-                      className="text-[52px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/[0.05] leading-none"
-                    />
+            {kpiCards.map(kpi => {
+              const val = (data[kpi.key] as number) || 0;
+              const isEmpty = !val;
+              return (
+                <div key={kpi.key} className="bg-white rounded-[20px] p-8 flex flex-col min-h-[300px]">
+                  <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
+                    {kpi.label}
+                  </h3>
+                  <p className="text-[13px] text-carbon/30">
+                    {kpi.key === 'salesTarget' && 'Total revenue target for this collection'}
+                    {kpi.key === 'targetMargin' && 'Gross margin percentage goal'}
+                    {kpi.key === 'avgDiscount' && 'Average markdown expected'}
+                    {kpi.key === 'sellThroughMonths' && 'Time to sell full inventory'}
+                  </p>
+                  <div className="mt-auto relative">
+                    <div className="flex items-end">
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          value={val || ''}
+                          onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+                          placeholder="0"
+                          className="text-[56px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/[0.06] leading-none caret-carbon/30"
+                        />
+                        {isEmpty && (
+                          <div className="absolute left-[2px] bottom-[6px] w-[3px] h-[40px] bg-carbon/20 animate-pulse rounded-full" />
+                        )}
+                      </div>
+                      <span className="text-[28px] font-semibold text-carbon/15 mb-[6px] ml-1 shrink-0">
+                        {kpi.prefix || kpi.suffix}
+                      </span>
+                    </div>
                   </div>
-                  {kpi.suffix && <span className="text-[14px] font-medium text-carbon/20 mt-1 block">{kpi.suffix}</span>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          {/* Segmentation — 2 cards side by side */}
+          {/* Segmentation — visual slider bars (User Research style) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white rounded-[20px] p-8">
               <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Product Type</h3>
-              <p className="text-[13px] text-carbon/30 mb-6">Revenue vs Image vs Entry split</p>
-              <div className="space-y-3">
-                {typeSeg.map((s, i) => (
-                  <div key={s.name} className="flex items-center justify-between">
-                    <span className="text-[14px] text-carbon/60">{s.name}</span>
-                    <div className="flex items-center gap-2">
-                      <input type="number" value={s.percentage}
+              <p className="text-[13px] text-carbon/30 mb-8">Revenue vs Image vs Entry split</p>
+              <div className="space-y-8">
+                {typeSeg.map((s, i) => {
+                  const colors = ['bg-carbon', 'bg-carbon/40', 'bg-carbon/20'];
+                  return (
+                    <div key={s.name}>
+                      <div className="flex items-baseline justify-between mb-3">
+                        <span className="text-[14px] text-carbon/50">{s.name}</span>
+                        <span className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none">
+                          {s.percentage}<span className="text-[18px] font-semibold text-carbon/15 ml-0.5">%</span>
+                        </span>
+                      </div>
+                      <div className="relative h-[10px] bg-carbon/[0.06] rounded-full overflow-hidden">
+                        <div className={`absolute inset-y-0 left-0 ${colors[i]} rounded-full transition-all duration-300`} style={{ width: `${s.percentage}%` }} />
+                      </div>
+                      <input
+                        type="range" min={0} max={100} value={s.percentage}
                         onChange={(e) => { const u = [...typeSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, typeSegmentation: u }); }}
-                        className="w-16 px-3 py-2 text-[18px] font-bold text-carbon text-center bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none" />
-                      <span className="text-[14px] text-carbon/25">%</span>
+                        className="w-full mt-1 accent-carbon opacity-0 hover:opacity-100 cursor-pointer h-4 transition-opacity"
+                      />
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             <div className="bg-white rounded-[20px] p-8">
               <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Newness Split</h3>
-              <p className="text-[13px] text-carbon/30 mb-6">New designs vs carry-over ratio</p>
-              <div className="space-y-3">
-                {newnessSeg.map((s, i) => (
-                  <div key={s.name} className="flex items-center justify-between">
-                    <span className="text-[14px] text-carbon/60">{s.name}</span>
-                    <div className="flex items-center gap-2">
-                      <input type="number" value={s.percentage}
+              <p className="text-[13px] text-carbon/30 mb-8">New designs vs carry-over ratio</p>
+              <div className="space-y-8">
+                {newnessSeg.map((s, i) => {
+                  const colors = ['bg-carbon', 'bg-carbon/30'];
+                  return (
+                    <div key={s.name}>
+                      <div className="flex items-baseline justify-between mb-3">
+                        <span className="text-[14px] text-carbon/50">{s.name}</span>
+                        <span className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none">
+                          {s.percentage}<span className="text-[18px] font-semibold text-carbon/15 ml-0.5">%</span>
+                        </span>
+                      </div>
+                      <div className="relative h-[10px] bg-carbon/[0.06] rounded-full overflow-hidden">
+                        <div className={`absolute inset-y-0 left-0 ${colors[i]} rounded-full transition-all duration-300`} style={{ width: `${s.percentage}%` }} />
+                      </div>
+                      <input
+                        type="range" min={0} max={100} value={s.percentage}
                         onChange={(e) => { const u = [...newnessSeg]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, newnessSegmentation: u }); }}
-                        className="w-16 px-3 py-2 text-[18px] font-bold text-carbon text-center bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none" />
-                      <span className="text-[14px] text-carbon/25">%</span>
+                        className="w-full mt-1 accent-carbon opacity-0 hover:opacity-100 cursor-pointer h-4 transition-opacity"
+                      />
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
