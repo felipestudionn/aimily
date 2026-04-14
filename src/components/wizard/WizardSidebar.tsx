@@ -22,6 +22,7 @@ import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
 import { useSkus } from '@/hooks/useSkus';
 import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
+import { useTranslation } from '@/i18n';
 import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
 import type { TimelinePhase } from '@/types/timeline';
 
@@ -33,9 +34,16 @@ import type { TimelinePhase } from '@/types/timeline';
    phaseId = milestone tracking from wizard-phases.ts.
    ══════════════════════════════════════════════════════════════ */
 
+type SidebarLabelKey =
+  | 'creativeDirection' | 'consumer' | 'moodboardResearch' | 'brandIdentity' | 'creativeOverview'
+  | 'merchandisingPlanning' | 'familiesPricing' | 'channelsMarkets' | 'budgetFinancials' | 'collectionBuilder'
+  | 'designDevelopment' | 'sketchColor' | 'prototyping' | 'production' | 'finalSelection'
+  | 'marketingSales' | 'salesDashboard' | 'contentStudio' | 'communications' | 'pointOfSale'
+  | 'calendar' | 'presentation' | 'dashboard';
+
 interface SidebarSubItem {
   id: string;
-  label: string;
+  labelKey: SidebarLabelKey;
   route: string;
   phaseId?: WizardPhaseId;
   isOutput?: boolean;      // true = consolidation step (shows → instead of ✓)
@@ -43,7 +51,7 @@ interface SidebarSubItem {
 
 interface SidebarBlock {
   id: TimelinePhase;
-  label: string;
+  labelKey: SidebarLabelKey;
   icon: React.ElementType;  // shown only in collapsed state
   route: string;
   phaseIds: WizardPhaseId[];
@@ -53,54 +61,54 @@ interface SidebarBlock {
 const SIDEBAR_BLOCKS: SidebarBlock[] = [
   {
     id: 'creative',
-    label: 'Creative Direction',
+    labelKey: 'creativeDirection',
     icon: Feather,
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
-      { id: 'consumer', label: 'Consumer', route: 'creative?block=consumer', phaseId: 'product' },
-      { id: 'moodboard-research', label: 'Moodboard & Research', route: 'creative?block=moodboard', phaseId: 'product' },
-      { id: 'brand-identity', label: 'Brand Identity', route: 'creative?block=brand-dna', phaseId: 'brand' },
-      { id: 'creative-overview', label: 'Creative Overview', route: 'creative?block=synthesis', isOutput: true },
+      { id: 'consumer', labelKey: 'consumer', route: 'creative?block=consumer', phaseId: 'product' },
+      { id: 'moodboard-research', labelKey: 'moodboardResearch', route: 'creative?block=moodboard', phaseId: 'product' },
+      { id: 'brand-identity', labelKey: 'brandIdentity', route: 'creative?block=brand-dna', phaseId: 'brand' },
+      { id: 'creative-overview', labelKey: 'creativeOverview', route: 'creative?block=synthesis', isOutput: true },
     ],
   },
   {
     id: 'planning',
-    label: 'Merchandising & Planning',
+    labelKey: 'merchandisingPlanning',
     icon: ClipboardList,
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
-      { id: 'families-pricing', label: 'Families & Pricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
-      { id: 'channels', label: 'Channels & Markets', route: 'merchandising?block=channels', phaseId: 'merchandising' },
-      { id: 'budget', label: 'Budget & Financials', route: 'merchandising?block=budget', phaseId: 'merchandising' },
-      { id: 'builder-merch', label: 'Collection Builder', route: 'product', isOutput: true },
+      { id: 'families-pricing', labelKey: 'familiesPricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
+      { id: 'channels', labelKey: 'channelsMarkets', route: 'merchandising?block=channels', phaseId: 'merchandising' },
+      { id: 'budget', labelKey: 'budgetFinancials', route: 'merchandising?block=budget', phaseId: 'merchandising' },
+      { id: 'builder-merch', labelKey: 'collectionBuilder', route: 'product', isOutput: true },
     ],
   },
   {
     id: 'development',
-    label: 'Design & Development',
+    labelKey: 'designDevelopment',
     icon: Ruler,
     route: 'product',
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
-      { id: 'sketch', label: 'Sketch & Color', route: 'product?phase=sketch', phaseId: 'design' },
-      { id: 'prototyping', label: 'Prototyping', route: 'product?phase=prototyping', phaseId: 'prototyping' },
-      { id: 'production', label: 'Production', route: 'product?phase=production', phaseId: 'production' },
-      { id: 'final-selection', label: 'Final Selection', route: 'product?phase=selection', phaseId: 'sampling' },
+      { id: 'sketch', labelKey: 'sketchColor', route: 'product?phase=sketch', phaseId: 'design' },
+      { id: 'prototyping', labelKey: 'prototyping', route: 'product?phase=prototyping', phaseId: 'prototyping' },
+      { id: 'production', labelKey: 'production', route: 'product?phase=production', phaseId: 'production' },
+      { id: 'final-selection', labelKey: 'finalSelection', route: 'product?phase=selection', phaseId: 'sampling' },
     ],
   },
   {
     id: 'go_to_market',
-    label: 'Marketing & Sales',
+    labelKey: 'marketingSales',
     icon: Megaphone,
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
-      { id: 'sales', label: 'Sales Dashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
-      { id: 'content-studio', label: 'Content Studio', route: 'marketing/creation?block=content', phaseId: 'marketing-creation' },
-      { id: 'communications', label: 'Communications', route: 'marketing/creation?block=comms', phaseId: 'marketing-creation' },
-      { id: 'pos', label: 'Point of Sale', route: 'marketing/creation?block=pos', phaseId: 'marketing-creation' },
+      { id: 'sales', labelKey: 'salesDashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
+      { id: 'content-studio', labelKey: 'contentStudio', route: 'marketing/creation?block=content', phaseId: 'marketing-creation' },
+      { id: 'communications', labelKey: 'communications', route: 'marketing/creation?block=comms', phaseId: 'marketing-creation' },
+      { id: 'pos', labelKey: 'pointOfSale', route: 'marketing/creation?block=pos', phaseId: 'marketing-creation' },
     ],
   },
 ];
@@ -135,6 +143,9 @@ export function WizardSidebar({
   const { milestones } = useTimeline();
   const { phases } = useWizardState(milestones);
   const workspaceNav = useWorkspaceNavigationOptional();
+  const t = useTranslation();
+  const sidebarT = t.sidebar as Record<string, string>;
+  const labelOf = (key: SidebarLabelKey) => sidebarT[key] || key;
   const [collapsed, setCollapsed] = useState(false);
   const [expandedBlocks, setExpandedBlocks] = useState<Set<TimelinePhase>>(
     new Set(SIDEBAR_BLOCKS.map((b) => b.id))
@@ -283,9 +294,9 @@ export function WizardSidebar({
   }, [collapsed, onCollapsedChange]);
 
   const utilityLinks = [
-    { id: 'calendar', path: '/calendar', label: 'Calendar', Icon: CalendarDays },
-    { id: 'presentation', path: '/presentation', label: 'Presentation', Icon: Presentation },
-    { id: 'overview', path: '', label: 'Dashboard', Icon: LayoutDashboard },
+    { id: 'calendar', path: '/calendar', label: labelOf('calendar'), Icon: CalendarDays },
+    { id: 'presentation', path: '/presentation', label: labelOf('presentation'), Icon: Presentation },
+    { id: 'overview', path: '', label: labelOf('dashboard'), Icon: LayoutDashboard },
   ];
 
   return (
@@ -392,7 +403,7 @@ export function WizardSidebar({
                         : blockActive ? 'bg-carbon/[0.08]'
                         : 'hover:bg-carbon/[0.04]'
                       }`}
-                      title={block.label}
+                      title={labelOf(block.labelKey)}
                     >
                       <block.icon className={`h-[18px] w-[18px] ${
                         blockActive ? 'text-carbon' : 'text-carbon/50'
@@ -413,7 +424,7 @@ export function WizardSidebar({
                             : 'text-carbon'
                           }`}
                         >
-                          {block.label}
+                          {labelOf(block.labelKey)}
                         </Link>
 
                         <button
@@ -461,7 +472,7 @@ export function WizardSidebar({
                                 <span className={`text-[14px] ${
                                   state === 'active' ? 'font-semibold text-white' : 'font-normal'
                                 }`}>
-                                  {sub.label}
+                                  {labelOf(sub.labelKey)}
                                 </span>
 
                                 {/* Output items → arrow */}
