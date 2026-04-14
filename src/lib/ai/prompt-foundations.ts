@@ -131,6 +131,14 @@ export function buildInheritedContext(input: Record<string, string>): string {
   if (input.collectionName) {
     parts.push(`Collection: "${input.collectionName}"`);
   }
+  if (input.productCategory) {
+    const categoryMap: Record<string, string> = {
+      CALZADO: 'FOOTWEAR (shoes, sneakers, sandals, boots, etc.)',
+      ROPA: 'APPAREL (clothing, garments)',
+      ACCESORIOS: 'ACCESSORIES (bags, belts, scarves, jewelry, etc.)',
+    };
+    parts.push(`PRODUCT CATEGORY: ${categoryMap[input.productCategory] || input.productCategory}\n⚠️ ALL families and subcategories MUST be within this category. Do NOT suggest families from other categories.`);
+  }
   if (input.season) {
     parts.push(seasonContext(input.season));
   }

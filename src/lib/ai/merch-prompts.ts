@@ -61,7 +61,7 @@ HARD LIMIT: Maximum 5 families. Choose the most impactful ones.
 
 ANALYSIS FRAMEWORK:
 1. FAMILY LOGIC — Why these families? Tie each one to the consumer profile and collection vibe
-2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real product types this brand would actually produce
+2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real PRODUCT TYPES (not model names or SKU names). For footwear: "Low-top Sneaker", "Slide Sandal", "Chelsea Boot". For apparel: "Oxford Shirt", "Relaxed Trouser", "Bomber Jacket". NEVER suggest specific model names like "Mistral Core" or "Porto Velvet" — those are SKUs, not subcategories
 3. SEASONAL FIT — Subcategories must make sense for the specific season (no heavy boots in SS unless there's a strategic reason)
 4. COMMERCIAL BALANCE — Include both high-volume commercial categories and lower-volume differentiating categories
 5. PRODUCTION REALITY — Consider that each subcategory implies a different supply chain (don't suggest 15 subcategories for a startup)
@@ -110,12 +110,14 @@ HARD LIMIT: Maximum 5 families. Choose the most impactful ones.
 
 ANALYSIS FRAMEWORK:
 1. FAMILY LOGIC — Why these families? Tie each one to the consumer profile and collection vibe
-2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real product types this brand would actually produce
+2. SUBCATEGORY DEPTH — Each family needs 3-6 subcategories that represent real PRODUCT TYPES (not model names or SKU names). For footwear: "Low-top Sneaker", "Slide Sandal", "Chelsea Boot". For apparel: "Oxford Shirt", "Relaxed Trouser", "Bomber Jacket". NEVER suggest specific model names like "Mistral Core" or "Porto Velvet" — those are SKUs, not subcategories
 3. SEASONAL FIT — Subcategories must make sense for the specific season (no heavy boots in SS unless there's a strategic reason)
 4. COMMERCIAL BALANCE — Include both high-volume commercial categories and lower-volume differentiating categories
 5. PRODUCTION REALITY — Consider that each subcategory implies a different supply chain (don't suggest 15 subcategories for a startup)
 
-Use INDUSTRY-STANDARD family and subcategory names. These are real product categories a buyer or production manager would recognize: "Shirts", "Trousers", "Knitwear", "Outerwear", "Footwear", "Bags", "Accessories" — NOT conceptual names like "Resort Lifestyle Pyramid" or "Intellectual Provocation Edit".
+Use INDUSTRY-STANDARD family and subcategory names. These are real product categories a buyer or production manager would recognize.
+CRITICAL: Respect the PRODUCT CATEGORY from context. If the category is FOOTWEAR, ALL families must be footwear types (Sneakers, Sandals, Loafers, Boots, etc.) — never suggest Shirts or Trousers for a footwear brand. If APPAREL, families are garment types. If ACCESSORIES, families are accessory types.
+Subcategories are PRODUCT TYPES within the family (e.g., for Sneakers: "Low-top Runner", "Slip-on", "Chunky Platform") — NOT model names or SKU names.
 
 ${QUALITY_GATES.merchSpecificity}
 ${QUALITY_GATES.antiGeneric}

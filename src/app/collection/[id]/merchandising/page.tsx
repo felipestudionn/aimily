@@ -1133,7 +1133,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   const [expandedCard, setExpandedCard] = useState<string | null>(blockParam || null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '' });
+  const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '', productCategory: '' });
 
   // Persist card data to Supabase (auto-save with 1s debounce)
   const { data: persisted, save: persistData, loading: persistLoading } =
@@ -1156,9 +1156,17 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   useEffect(() => {
     const supabase = createClient();
 
-    // Load collection name + season
-    supabase.from('collection_plans').select('name, season').eq('id', collectionId).single().then(({ data }) => {
-      if (data) setCollectionContext(prev => ({ ...prev, collectionName: data.name || '', season: data.season || '' }));
+    // Load collection name + season + product category
+    supabase.from('collection_plans').select('name, season, setup_data').eq('id', collectionId).single().then(({ data }) => {
+      if (data) {
+        const setupData = (data.setup_data || {}) as Record<string, unknown>;
+        setCollectionContext(prev => ({
+          ...prev,
+          collectionName: data.name || '',
+          season: data.season || '',
+          productCategory: (setupData.productCategory as string) || '',
+        }));
+      }
     });
 
     // Load Creative block data (consumer, vibe, brand DNA, trends)
