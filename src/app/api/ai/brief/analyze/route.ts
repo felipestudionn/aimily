@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildAnalyzePrompt } from '@/lib/ai/brief-prompts';
+import { loadFullContext } from '@/lib/ai/load-full-context';
+import { formatCisPrefix } from '@/lib/ai/cis-prefix';
 
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
@@ -13,17 +15,29 @@ export async function POST(req: NextRequest) {
   if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
-    const { brief, language = 'en' } = await req.json();
+    const { brief, language = 'en', collectionPlanId } = await req.json();
 
     if (!brief || typeof brief !== 'string' || brief.trim().length < 10) {
       return NextResponse.json({ error: 'Brief must be at least 10 characters' }, { status: 400 });
     }
 
+    // ── CIS context: opt-in for post-creation flows (Scenarios sub-block) ──
+    let cisPrefix = '';
+    if (collectionPlanId && typeof collectionPlanId === 'string') {
+      try {
+        const ctx = await loadFullContext(collectionPlanId);
+        cisPrefix = formatCisPrefix(ctx);
+      } catch (err) {
+        console.warn('[Brief/Analyze] loadFullContext failed, falling back to brief-only:', err);
+      }
+    }
+
     const { system, user: userPrompt } = buildAnalyzePrompt(brief.trim(), language);
+    const fullUserPrompt = cisPrefix + userPrompt;
 
     const { data } = await generateJSON({
       system,
-      user: userPrompt,
+      user: fullUserPrompt,
       temperature: 0.7,
       maxTokens: 4096,
       language,

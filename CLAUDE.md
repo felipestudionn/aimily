@@ -19,8 +19,9 @@ Fashion collection management platform for planning, designing, and launching cl
 - Every `git commit` MUST be followed by `git push`. No exceptions.
 
 ## 🚨 AI CONTEXT ARCHITECTURE — DO NOT TOUCH
-All 13 AI endpoints load context SERVER-SIDE via `loadFullContext()` from `src/lib/ai/load-full-context.ts`. This reads CIS + Creative workspace + Brief answers + Collection plan. Frontend-only changes MUST NOT modify:
+All 16 AI endpoints load context SERVER-SIDE via `loadFullContext()` from `src/lib/ai/load-full-context.ts`. This reads CIS + Creative workspace + Brief answers + Collection plan. The 3 brief endpoints (`analyze`, `scenarios`, `generate`) accept `collectionPlanId` OPTIONALLY — if present they prepend CIS context via `formatCisPrefix()` from `src/lib/ai/cis-prefix.ts`. Frontend-only changes MUST NOT modify:
 - `src/lib/ai/load-full-context.ts`
+- `src/lib/ai/cis-prefix.ts`
 - `src/lib/ai/prompt-foundations.ts`
 - `src/lib/prompts/prompt-context.ts`
 - `src/lib/collection-intelligence.ts`

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON, generateText, extractJSON } from '@/lib/ai/llm-client';
 import { buildScenariosPrompt, buildResearchQueries } from '@/lib/ai/brief-prompts';
+import { loadFullContext } from '@/lib/ai/load-full-context';
+import { formatCisPrefix } from '@/lib/ai/cis-prefix';
 
 export const maxDuration = 60;
 
@@ -41,10 +43,21 @@ export async function POST(req: NextRequest) {
   if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
-    const { understood, answers, researchTopics, language = 'en' } = await req.json();
+    const { understood, answers, researchTopics, language = 'en', collectionPlanId } = await req.json();
 
     if (!understood) {
       return NextResponse.json({ error: 'Missing understood data' }, { status: 400 });
+    }
+
+    // ── CIS context: opt-in for post-creation flows (Scenarios sub-block) ──
+    let cisPrefix = '';
+    if (collectionPlanId && typeof collectionPlanId === 'string') {
+      try {
+        const ctx = await loadFullContext(collectionPlanId);
+        cisPrefix = formatCisPrefix(ctx);
+      } catch (err) {
+        console.warn('[Brief/Scenarios] loadFullContext failed, falling back:', err);
+      }
     }
 
     // Step 1: Build research queries (max 2 for speed)
@@ -58,7 +71,8 @@ export async function POST(req: NextRequest) {
       .join('\n\n');
 
     // Step 3: Generate scenarios with AI
-    const { system, user: userPrompt } = buildScenariosPrompt(understood, answers || {}, combinedResearch, language);
+    const { system, user: userPromptRaw } = buildScenariosPrompt(understood, answers || {}, combinedResearch, language);
+    const userPrompt = cisPrefix + userPromptRaw;
 
     // Try generateJSON first, fall back to generateText + manual extraction
     let data;
