@@ -1247,24 +1247,157 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </p>
           </div>
 
-          {/* Content — balanced 2-column card grid, centered */}
+          {/* Content — unified Families & Pricing */}
           {blockParam === 'families' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
-              <DecisionCard title="Product Families" className="flex flex-col">
-                <FamiliesContent
-                  mode={state.mode} data={state.data}
-                  onChange={(newData) => updateCardData('families', { data: newData })}
-                  collectionContext={collectionContext}
-                />
-              </DecisionCard>
+            <div className="max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
+              {/* Unified view: families with inline pricing */}
+              {state.mode === 'free' && (() => {
+                const fams = (state.data.families as Family[]) || [];
+                type PricingRow = { family: string; subcategories: { name: string; minPrice: number; maxPrice: number }[] };
+                const pricingRows = (pricingState.data.pricing as PricingRow[]) || [];
 
-              <DecisionCard title="Pricing" className="flex flex-col">
-                <PricingContent
-                  mode={state.mode} data={pricingState.data}
-                  onChange={(newData) => updateCardData('pricing', { data: newData })}
-                  collectionContext={collectionContext} familiesData={familiesData}
-                />
-              </DecisionCard>
+                const getPrice = (famName: string, subName: string) => {
+                  const fam = pricingRows.find(p => p.family === famName);
+                  const sub = fam?.subcategories.find(s => s.name === subName);
+                  return { min: sub?.minPrice || 0, max: sub?.maxPrice || 0 };
+                };
+
+                const setPrice = (famName: string, subName: string, field: 'minPrice' | 'maxPrice', val: number) => {
+                  let updated = [...pricingRows];
+                  let famIdx = updated.findIndex(p => p.family === famName);
+                  if (famIdx < 0) {
+                    updated.push({ family: famName, subcategories: [{ name: subName, minPrice: 0, maxPrice: 0 }] });
+                    famIdx = updated.length - 1;
+                  }
+                  let subIdx = updated[famIdx].subcategories.findIndex(s => s.name === subName);
+                  if (subIdx < 0) {
+                    updated[famIdx].subcategories.push({ name: subName, minPrice: 0, maxPrice: 0 });
+                    subIdx = updated[famIdx].subcategories.length - 1;
+                  }
+                  const subs = [...updated[famIdx].subcategories];
+                  subs[subIdx] = { ...subs[subIdx], [field]: val };
+                  updated[famIdx] = { ...updated[famIdx], subcategories: subs };
+                  updateCardData('pricing', { data: { ...pricingState.data, pricing: updated } });
+                };
+
+                return (
+                  <div className="space-y-4">
+                    {fams.map((fam, fi) => (
+                      <Card key={fi} className="rounded-[20px] overflow-hidden">
+                        <CardHeader className="pb-0">
+                          <div className="flex items-center gap-3">
+                            <PriorityBadge priority={fam.priority} onCycle={() => {
+                              const updated = [...fams];
+                              updated[fi] = { ...updated[fi], priority: cyclePriority(updated[fi].priority) };
+                              updateCardData('families', { data: { ...state.data, families: updated } });
+                            }} />
+                            <CardTitle className="flex-1">
+                              <Input
+                                value={fam.name}
+                                onChange={(e) => {
+                                  const updated = [...fams];
+                                  updated[fi] = { ...updated[fi], name: e.target.value };
+                                  updateCardData('families', { data: { ...state.data, families: updated } });
+                                }}
+                                placeholder={t.merchandising.familyNamePlaceholder}
+                                className="rounded-[12px] h-10 font-medium text-[16px] border-0 shadow-none focus-visible:ring-0 bg-transparent px-0"
+                              />
+                            </CardTitle>
+                            <Button variant="ghost" size="icon" onClick={() => {
+                              updateCardData('families', { data: { ...state.data, families: fams.filter((_, j) => j !== fi) } });
+                            }} className="rounded-full h-8 w-8 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-3">
+                          {/* Column headers */}
+                          <div className="flex items-center gap-2 mb-2 ml-7 text-[11px] text-muted-foreground">
+                            <span className="flex-1">Subcategory</span>
+                            <span className="w-20 text-center">Min €</span>
+                            <span className="w-20 text-center">Max €</span>
+                            <span className="w-7" />
+                          </div>
+                          <Separator className="mb-2" />
+                          {fam.subcategories.map((sub, si) => {
+                            const price = getPrice(fam.name, sub);
+                            return (
+                              <div key={si} className="flex items-center gap-2 py-1.5 ml-3">
+                                <div className="w-4 border-b border-l border-border h-4 rounded-bl-[6px] shrink-0" />
+                                <Input
+                                  value={sub}
+                                  onChange={(e) => {
+                                    const updated = [...fams];
+                                    const subs = [...updated[fi].subcategories];
+                                    subs[si] = e.target.value;
+                                    updated[fi] = { ...updated[fi], subcategories: subs };
+                                    updateCardData('families', { data: { ...state.data, families: updated } });
+                                  }}
+                                  placeholder={t.merchandising.subcategoryPlaceholder}
+                                  className="flex-1 rounded-lg h-8 text-sm border-0 shadow-none focus-visible:ring-0 bg-transparent px-0"
+                                />
+                                <Input
+                                  type="number"
+                                  value={price.min || ''}
+                                  onChange={(e) => setPrice(fam.name, sub, 'minPrice', Number(e.target.value))}
+                                  className="w-20 h-8 rounded-lg text-sm text-center"
+                                  placeholder="€"
+                                />
+                                <Input
+                                  type="number"
+                                  value={price.max || ''}
+                                  onChange={(e) => setPrice(fam.name, sub, 'maxPrice', Number(e.target.value))}
+                                  className="w-20 h-8 rounded-lg text-sm text-center"
+                                  placeholder="€"
+                                />
+                                <Button variant="ghost" size="icon" onClick={() => {
+                                  const updated = [...fams];
+                                  updated[fi] = { ...updated[fi], subcategories: updated[fi].subcategories.filter((_, j) => j !== si) };
+                                  updateCardData('families', { data: { ...state.data, families: updated } });
+                                }} className="rounded-full h-7 w-7 text-muted-foreground hover:text-destructive">
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            );
+                          })}
+                          <Button variant="ghost" onClick={() => {
+                            const updated = [...fams];
+                            updated[fi] = { ...updated[fi], subcategories: [...updated[fi].subcategories, ''] };
+                            updateCardData('families', { data: { ...state.data, families: updated } });
+                          }} className="ml-7 mt-1 rounded-full h-8 text-xs text-muted-foreground">
+                            <Plus className="h-3 w-3 mr-1.5" /> {t.merchandising.addSubcategory}
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <Button variant="outline" onClick={() => {
+                      updateCardData('families', { data: { ...state.data, families: [...fams, { name: '', subcategories: [''], priority: 'core' as Priority }] } });
+                    }} className="w-full rounded-full border-dashed text-muted-foreground">
+                      <Plus className="h-3.5 w-3.5 mr-2" /> {t.merchandising.addFamily}
+                    </Button>
+                  </div>
+                );
+              })()}
+
+              {/* Assisted/AI modes still use the split view */}
+              {state.mode !== 'free' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <DecisionCard title="Product Families" className="flex flex-col">
+                    <FamiliesContent
+                      mode={state.mode} data={state.data}
+                      onChange={(newData) => updateCardData('families', { data: newData })}
+                      collectionContext={collectionContext}
+                    />
+                  </DecisionCard>
+                  <DecisionCard title="Pricing" className="flex flex-col">
+                    <PricingContent
+                      mode={state.mode} data={pricingState.data}
+                      onChange={(newData) => updateCardData('pricing', { data: newData })}
+                      collectionContext={collectionContext} familiesData={familiesData}
+                    />
+                  </DecisionCard>
+                </div>
+              )}
             </div>
           )}
 
