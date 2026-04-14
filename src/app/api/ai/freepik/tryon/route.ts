@@ -6,6 +6,7 @@ import {
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════════
    Virtual Try-On — Freepik Nano Banana (multi-reference)
@@ -132,8 +133,25 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
+    // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
+    let enrichedProductName: string = product_name || 'fashion product';
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        productName: product_name || '',
+        category: category || '',
+        brandDNA: '',
+        vibe: '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+      // Use enriched product name if the frontend sent nothing
+      if (!product_name && flat.collectionName) {
+        enrichedProductName = `${flat.collectionName} ${flat.productCategory || 'fashion'} product`;
+      }
+    }
+
     const prompt = buildPrompt({
-      productName: product_name || 'fashion product',
+      productName: enrichedProductName,
       category,
     });
 

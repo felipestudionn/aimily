@@ -9,6 +9,7 @@ import { persistAsset, uploadToStorage } from '@/lib/storage';
 import { compositeModelOntoStyleRef, blurFaceInStyleReference } from '@/lib/face-blur';
 import sharp from 'sharp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════════
    Editorial — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
@@ -418,6 +419,42 @@ export async function POST(req: NextRequest) {
     // When the user selects an aimily model, we use the model's metadata
     // to override the model_directives (complexion/hair/etc) so the prompt
     // is consistent with the headshot being passed as a reference image.
+    // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
+    let enrichedStory: StoryContext | undefined = story_context;
+    let enrichedUserPrompt: string | undefined = user_prompt;
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        productName: product_name || '',
+        category: category || '',
+        scene: scene || '',
+        brandDNA: '',
+        vibe: '',
+        consumer: '',
+        trends: '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+
+      // Enrich story_context with CIS brand data if not already provided
+      if (!enrichedStory?.brand_personality && flat.brandDNA) {
+        enrichedStory = { ...enrichedStory, brand_personality: flat.brandDNA };
+      }
+      if (!enrichedStory?.narrative && flat.vibe) {
+        enrichedStory = { ...enrichedStory, narrative: flat.vibe };
+      }
+
+      // Append CIS context to user_prompt so it reaches the prompt builder
+      const cisParts: string[] = [];
+      if (flat.consumer) cisParts.push(`Target consumer: ${flat.consumer}`);
+      if (flat.trends) cisParts.push(`Current trends: ${flat.trends}`);
+      if (cisParts.length) {
+        const cisBlock = cisParts.join('. ');
+        enrichedUserPrompt = enrichedUserPrompt
+          ? `${enrichedUserPrompt}. BRAND CONTEXT: ${cisBlock}`
+          : `BRAND CONTEXT: ${cisBlock}`;
+      }
+    }
+
     const effectiveModelDirectives = aiModel
       ? { complexion: aiModel.complexion, hair: aiModel.hair_style, age: '20s' }
       : (model_directives || undefined);
@@ -426,8 +463,8 @@ export async function POST(req: NextRequest) {
       productName: product_name || 'fashion product',
       category,
       scene,
-      story: story_context,
-      userPrompt: user_prompt,
+      story: enrichedStory,
+      userPrompt: enrichedUserPrompt,
       hasStyleReference: !!style_reference_url,
       hasModelHeadshot: !!aiModel,
       modelDirectives: effectiveModelDirectives,

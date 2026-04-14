@@ -6,6 +6,7 @@ import {
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════════
    Still Life — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
@@ -380,12 +381,48 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
+    // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
+    let enrichedStory: StoryContext | undefined = story_context;
+    let enrichedUserPrompt: string | undefined = user_prompt;
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        productName: product_name || '',
+        category: category || '',
+        scene: scene || '',
+        brandDNA: '',
+        vibe: '',
+        consumer: '',
+        trends: '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+
+      // Enrich story_context with CIS brand data if not already provided
+      if (!enrichedStory?.brand_personality && flat.brandDNA) {
+        enrichedStory = { ...enrichedStory, brand_personality: flat.brandDNA };
+      }
+      if (!enrichedStory?.narrative && flat.vibe) {
+        enrichedStory = { ...enrichedStory, narrative: flat.vibe };
+      }
+
+      // Append CIS context to user_prompt so it reaches the prompt builder
+      const cisParts: string[] = [];
+      if (flat.consumer) cisParts.push(`Target consumer: ${flat.consumer}`);
+      if (flat.trends) cisParts.push(`Current trends: ${flat.trends}`);
+      if (cisParts.length) {
+        const cisBlock = cisParts.join('. ');
+        enrichedUserPrompt = enrichedUserPrompt
+          ? `${enrichedUserPrompt}. BRAND CONTEXT: ${cisBlock}`
+          : `BRAND CONTEXT: ${cisBlock}`;
+      }
+    }
+
     const prompt = buildPrompt({
       productName: product_name || 'fashion product',
       category,
       scene,
-      story: story_context,
-      userPrompt: user_prompt,
+      story: enrichedStory,
+      userPrompt: enrichedUserPrompt,
     });
 
     const generatedUrl = await createAndPoll(prompt, [product_image_url]);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /**
  * Generate AI market demand prediction based on commercial plan
@@ -27,6 +28,38 @@ export async function POST(req: NextRequest) {
       location,
       language,
     } = body;
+
+    // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        season: season || '',
+        productCategory: productCategory || '',
+        consumer: '',
+        brandDNA: '',
+        vibe: '',
+        trends: '',
+        salesTarget: totalSalesTarget?.toString() || '',
+        priceRange: '',
+        targetMargin: '',
+        existingSkus: '',
+        drops: '',
+        contentPillars: '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+      // Write enriched values back into body variables
+      if (!body.season && flat.season) body.season = flat.season;
+      if (!body.productCategory && flat.productCategory) body.productCategory = flat.productCategory;
+      // Attach extra CIS context for the prompt
+      (body as Record<string, unknown>)._cisContext = {
+        consumer: flat.consumer,
+        brandDNA: flat.brandDNA,
+        vibe: flat.vibe,
+        trends: flat.trends,
+        priceRange: flat.priceRange,
+        targetMargin: flat.targetMargin,
+      };
+    }
 
     // Calculate date range from drops
     const allDates = drops.map((d: { launch_date: string }) => new Date(d.launch_date));
@@ -96,6 +129,18 @@ SKUs BY DROP:
 ${skusByDrop}
 
 WEEKS TO ANALYZE: ${weeks.join(', ')}
+${(() => {
+      const cis = (body as Record<string, unknown>)._cisContext as Record<string, string> | undefined;
+      if (!cis) return '';
+      const parts: string[] = [];
+      if (cis.consumer) parts.push(`TARGET CONSUMER:\n${cis.consumer}`);
+      if (cis.brandDNA) parts.push(`BRAND DNA:\n${cis.brandDNA}`);
+      if (cis.vibe) parts.push(`COLLECTION VIBE:\n${cis.vibe}`);
+      if (cis.trends) parts.push(`CURRENT TRENDS:\n${cis.trends}`);
+      if (cis.priceRange) parts.push(`PRICE RANGE: ${cis.priceRange}`);
+      if (cis.targetMargin) parts.push(`TARGET MARGIN: ${cis.targetMargin}`);
+      return parts.length ? `\nCOLLECTION INTELLIGENCE (use for demand calibration):\n${parts.join('\n\n')}` : '';
+    })()}
 
 Return JSON:
 {
