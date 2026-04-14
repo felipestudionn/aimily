@@ -140,9 +140,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Log what context reaches the prompt
-  console.log(`[merch-generate] type=${type} productCategory="${input.productCategory || 'MISSING'}" season="${input.season || ''}" consumer=${input.consumer ? `YES(${input.consumer.length}ch)` : 'NO'} vibe=${input.vibe ? `YES(${input.vibe.length}ch)` : 'NO'} brandDNA=${input.brandDNA ? `YES(${input.brandDNA.length}ch)` : 'NO'} trends=${input.trends ? `YES(${input.trends.length}ch)` : 'NO'}`);
-
   const prompt = buildMerchPrompt(type, input);
   if (!prompt) {
     return NextResponse.json({ error: `Unknown generation type: ${type}` }, { status: 400 });

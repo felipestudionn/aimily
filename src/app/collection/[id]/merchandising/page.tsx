@@ -27,7 +27,6 @@ async function generateMerch(
   language?: string,
   collectionPlanId?: string,
 ): Promise<{ result: unknown; error?: string }> {
-  console.log('[generateMerch] SENDING:', { type, collectionPlanId, productCategory: input.productCategory, hasConsumer: !!input.consumer, hasVibe: !!input.vibe, hasBrandDNA: !!input.brandDNA });
   const res = await fetch('/api/ai/merch-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
