@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Debug: log what context the frontend sends
-  console.log(`[merch-generate] type=${type} productCategory="${input.productCategory || 'MISSING'}" season="${input.season || ''}" consumer=${input.consumer ? 'YES' : 'NO'} vibe=${input.vibe ? 'YES' : 'NO'} brandDNA=${input.brandDNA ? 'YES' : 'NO'}`);
+  console.log(`[merch-generate] type=${type} productCategory="${input.productCategory || 'MISSING'}" season="${input.season || ''}" consumer=${input.consumer ? `YES(${input.consumer.length}ch)` : 'NO'} vibe=${input.vibe ? `YES(${input.vibe.length}ch)` : 'NO'} brandDNA=${input.brandDNA ? `YES(${input.brandDNA.length}ch)` : 'NO'} trends=${input.trends ? `YES(${input.trends.length}ch)` : 'NO'}`);
 
   const prompt = buildMerchPrompt(type, input);
   if (!prompt) {
