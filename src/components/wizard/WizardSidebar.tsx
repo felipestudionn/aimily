@@ -35,10 +35,10 @@ import type { TimelinePhase } from '@/types/timeline';
    ══════════════════════════════════════════════════════════════ */
 
 type SidebarLabelKey =
-  | 'creativeDirection' | 'consumer' | 'moodboardResearch' | 'brandIdentity' | 'creativeOverview'
-  | 'merchandisingPlanning' | 'familiesPricing' | 'channelsMarkets' | 'budgetFinancials' | 'collectionBuilder'
-  | 'designDevelopment' | 'sketchColor' | 'prototyping' | 'production' | 'finalSelection'
-  | 'marketingSales' | 'salesDashboard' | 'contentStudio' | 'communications' | 'pointOfSale'
+  | 'creativeDirection' | 'consumer' | 'moodboard' | 'moodboardResearch' | 'marketResearch' | 'brandIdentity' | 'creativeOverview'
+  | 'merchandisingPlanning' | 'rangePlanScenarios' | 'familiesPricing' | 'channelsMarkets' | 'budgetFinancials' | 'collectionBuilder'
+  | 'designDevelopment' | 'sketchColor' | 'techPack' | 'prototyping' | 'production' | 'finalSelection'
+  | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'pointOfSale'
   | 'calendar' | 'presentation' | 'dashboard';
 
 interface SidebarSubItem {
@@ -67,7 +67,8 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     phaseIds: ['product', 'brand'],
     subItems: [
       { id: 'consumer', labelKey: 'consumer', route: 'creative?block=consumer', phaseId: 'product' },
-      { id: 'moodboard-research', labelKey: 'moodboardResearch', route: 'creative?block=moodboard', phaseId: 'product' },
+      { id: 'moodboard', labelKey: 'moodboard', route: 'creative?block=moodboard', phaseId: 'product' },
+      { id: 'market-research', labelKey: 'marketResearch', route: 'creative?block=research', phaseId: 'product' },
       { id: 'brand-identity', labelKey: 'brandIdentity', route: 'creative?block=brand-dna', phaseId: 'brand' },
       { id: 'creative-overview', labelKey: 'creativeOverview', route: 'creative?block=synthesis', isOutput: true },
     ],
@@ -79,6 +80,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'merchandising',
     phaseIds: ['merchandising'],
     subItems: [
+      { id: 'scenarios', labelKey: 'rangePlanScenarios', route: 'merchandising?block=scenarios', phaseId: 'merchandising' },
       { id: 'families-pricing', labelKey: 'familiesPricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
       { id: 'channels', labelKey: 'channelsMarkets', route: 'merchandising?block=channels', phaseId: 'merchandising' },
       { id: 'budget', labelKey: 'budgetFinancials', route: 'merchandising?block=budget', phaseId: 'merchandising' },
@@ -93,9 +95,10 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     phaseIds: ['design', 'prototyping', 'sampling', 'production'],
     subItems: [
       { id: 'sketch', labelKey: 'sketchColor', route: 'product?phase=sketch', phaseId: 'design' },
+      { id: 'tech-pack', labelKey: 'techPack', route: 'product?phase=techpack', phaseId: 'design' },
       { id: 'prototyping', labelKey: 'prototyping', route: 'product?phase=prototyping', phaseId: 'prototyping' },
       { id: 'production', labelKey: 'production', route: 'product?phase=production', phaseId: 'production' },
-      { id: 'final-selection', labelKey: 'finalSelection', route: 'product?phase=selection', phaseId: 'sampling' },
+      { id: 'final-selection', labelKey: 'finalSelection', route: 'product?phase=selection', phaseId: 'sampling', isOutput: true },
     ],
   },
   {
@@ -105,10 +108,11 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
-      { id: 'sales', labelKey: 'salesDashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
+      { id: 'gtm-launch', labelKey: 'gtmLaunchPlan', route: 'marketing/creation?block=gtm', phaseId: 'marketing-creation' },
       { id: 'content-studio', labelKey: 'contentStudio', route: 'marketing/creation?block=content', phaseId: 'marketing-creation' },
       { id: 'communications', labelKey: 'communications', route: 'marketing/creation?block=comms', phaseId: 'marketing-creation' },
-      { id: 'pos', labelKey: 'pointOfSale', route: 'marketing/creation?block=pos', phaseId: 'marketing-creation' },
+      { id: 'sales', labelKey: 'salesDashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
+      { id: 'pos', labelKey: 'pointOfSale', route: 'marketing/creation?block=pos', phaseId: 'marketing-creation', isOutput: true },
     ],
   },
 ];

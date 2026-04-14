@@ -9,6 +9,11 @@ import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard, DecisionCardGrid } from '@/components/workspace/DecisionCard';
+import { TypographySpecimen } from '@/components/workspace/TypographySpecimen';
+import { VoiceToneField } from '@/components/workspace/VoiceToneField';
+import { VisualIdentityField } from '@/components/workspace/VisualIdentityField';
+import { BrandBoardCanvas } from '@/components/workspace/BrandBoardCanvas';
+import { usePaletteSync } from '@/components/workspace/ColorPaletteField';
 
 /* ─── AI generation helper ─── */
 async function generateCreative(
@@ -1161,102 +1166,88 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
 /* ─── Shared editable brand result ─── */
 function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
   const t = useTranslation();
+  const { id: collectionId } = useParams();
   const colors = (data.colors as string[]) || [];
+  const visualIdentityImages = (data.visualIdentityImages as string[]) || [];
+  const aiGenerated = Boolean(data.extracted || data.generated);
+  const autoGenRef = useRef(false);
+  const [autoGenerating, setAutoGenerating] = useState(false);
 
-  const parseHex = (c: string) => c.replace(/\s*\(.*\)/, '').trim();
-  const updateColor = (idx: number, hex: string) => {
-    const updated = [...colors];
-    updated[idx] = hex;
-    onChange({ ...data, colors: updated });
-  };
-  const addColor = () => onChange({ ...data, colors: [...colors, '#cccccc'] });
-  const removeColor = (idx: number) => onChange({ ...data, colors: colors.filter((_, i) => i !== idx) });
+  const generateVisualReferences = useCallback(async (): Promise<string[] | null> => {
+    try {
+      const res = await fetch('/api/ai/brand/visual-references', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandName: (data.brandName as string) || '',
+          tone: (data.tone as string) || '',
+          style: (data.style as string) || '',
+          colors: colors,
+          collectionPlanId: collectionId,
+        }),
+      });
+      if (!res.ok) {
+        console.error('[VisualRefs] request failed', res.status);
+        return null;
+      }
+      const json = await res.json();
+      return Array.isArray(json.images) ? json.images : null;
+    } catch (err) {
+      console.error('[VisualRefs] fetch error', err);
+      return null;
+    }
+  }, [data.brandName, data.tone, data.style, colors]);
+
+  useEffect(() => {
+    if (!aiGenerated) return;
+    if (visualIdentityImages.length > 0) return;
+    if (autoGenRef.current) return;
+    autoGenRef.current = true;
+    (async () => {
+      setAutoGenerating(true);
+      try {
+        const urls = await generateVisualReferences();
+        if (urls && urls.length > 0) {
+          onChange({ ...data, visualIdentityImages: urls });
+        }
+      } finally {
+        setAutoGenerating(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiGenerated]);
+
+  const { palette, setPalette } = usePaletteSync(data, onChange);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
-      {/* Left column: Brand Name + Colors stacked */}
-      <div className="flex flex-col gap-5">
-        <DecisionCard title={t.creative.brandName}>
-          <input
-            type="text"
-            value={(data.brandName as string) || ''}
-            onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-            className="w-full px-4 py-3 text-[15px] font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
-          />
-        </DecisionCard>
+    <div>
+      <BrandBoardCanvas
+        brandName={(data.brandName as string) || ''}
+        onBrandNameChange={(v) => onChange({ ...data, brandName: v })}
+        palette={palette}
+        onPaletteChange={setPalette}
+        typographyFont={(data.typographyFont as string) || ''}
+        onTypographyFontChange={(v) => onChange({ ...data, typographyFont: v })}
+        tone={(data.tone as string) || ''}
+        onToneChange={(v) => onChange({ ...data, tone: v })}
+        style={(data.style as string) || ''}
+        onStyleChange={(v) => onChange({ ...data, style: v })}
+        moodboardImages={visualIdentityImages}
+      />
 
-        <DecisionCard title={t.creative.colorsLabel} className="flex-1">
-          <div className="flex flex-col gap-3">
-            {colors.map((c, i) => {
-              const hex = parseHex(c);
-              return (
-                <div key={i} className="group flex items-center gap-3">
-                  <label className="relative cursor-pointer shrink-0">
-                    <div
-                      className="w-8 h-8 rounded-full border-2 border-white shadow-[0_1px_4px_rgba(0,0,0,0.1)] transition-transform hover:scale-110"
-                      style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }}
-                    />
-                    <input
-                      type="color"
-                      value={hex.startsWith('#') ? hex : '#cccccc'}
-                      onChange={(e) => updateColor(i, e.target.value)}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    />
-                  </label>
-                  <input
-                    type="text"
-                    value={c}
-                    onChange={(e) => updateColor(i, e.target.value)}
-                    className="flex-1 min-w-0 px-0 py-0 text-[12px] text-carbon/60 bg-transparent border-none focus:outline-none focus:text-carbon"
-                  />
-                  <button
-                    onClick={() => removeColor(i)}
-                    className="w-5 h-5 rounded-full shrink-0 text-carbon/15 hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              );
-            })}
-            <button onClick={addColor} className="flex items-center gap-3 text-carbon/25 hover:text-carbon/50 transition-colors">
-              <div className="w-8 h-8 rounded-full border-2 border-dashed border-carbon/[0.12] flex items-center justify-center shrink-0">
-                <Plus className="h-3.5 w-3.5" />
-              </div>
-              <span className="text-[12px]">Add color</span>
-            </button>
-          </div>
-        </DecisionCard>
-
-        <DecisionCard title={t.creative.typographyLabel}>
-          <input
-            type="text"
-            value={(data.typography as string) || ''}
-            onChange={(e) => onChange({ ...data, typography: e.target.value })}
-            placeholder={t.creative.typographyPlaceholder}
-            className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-          />
-        </DecisionCard>
-      </div>
-
-      {/* Right 2 columns: Voice & Tone + Visual Identity */}
-      <div className="lg:col-span-2 flex flex-col gap-5">
-        <DecisionCard title={t.creative.voiceTone} className="flex-1 flex flex-col">
-          <textarea
-            value={(data.tone as string) || ''}
-            onChange={(e) => onChange({ ...data, tone: e.target.value })}
-            placeholder={t.creative.voiceTonePlaceholder}
-            className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
-          />
-        </DecisionCard>
-
-        <DecisionCard title={t.creative.visualIdentity} className="flex-1 flex flex-col">
-          <textarea
-            value={(data.style as string) || ''}
-            onChange={(e) => onChange({ ...data, style: e.target.value })}
-            placeholder={t.creative.visualIdentityPlaceholder}
-            className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
-          />
-        </DecisionCard>
+      {/* Legacy VisualIdentityField kept wired for auto-gen side effects */}
+      <div className="hidden">
+        <VisualIdentityField
+          images={visualIdentityImages}
+          onImagesChange={(v) => onChange({ ...data, visualIdentityImages: v })}
+          notes={(data.style as string) || ''}
+          onNotesChange={(v) => onChange({ ...data, style: v })}
+          notesPlaceholder={t.creative.visualIdentityPlaceholder}
+          generateLabel={t.creative.visualIdentityGenerate}
+          uploadLabel={t.creative.visualIdentityUpload}
+          onGenerate={aiGenerated ? generateVisualReferences : undefined}
+          externalGenerating={autoGenerating}
+        />
       </div>
     </div>
   );
