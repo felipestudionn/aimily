@@ -154,6 +154,18 @@ export function buildInheritedContext(input: Record<string, string>): string {
   if (input.trends) {
     parts.push(`SELECTED TRENDS:\n${input.trends}`);
   }
+  if (input.moodboard) {
+    parts.push(`MOODBOARD & VISUAL RESEARCH:\n${input.moodboard}`);
+  }
+  if (input.creativeSynthesis) {
+    parts.push(`CREATIVE SYNTHESIS (Block 1 validated output):\n${input.creativeSynthesis}`);
+  }
+  if (input.briefContext) {
+    parts.push(`ORIGINAL BRIEF (user's own words):\n${input.briefContext}`);
+  }
+  if (input.existingSkus) {
+    parts.push(`EXISTING SKUs IN COLLECTION:\n${input.existingSkus}`);
+  }
   if (input.families) {
     parts.push(`PRODUCT FAMILIES (validated in Merchandising):\n${input.families}`);
   }
