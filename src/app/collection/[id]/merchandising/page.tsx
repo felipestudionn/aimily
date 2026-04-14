@@ -25,11 +25,12 @@ async function generateMerch(
   type: string,
   input: Record<string, string>,
   language?: string,
+  collectionPlanId?: string,
 ): Promise<{ result: unknown; error?: string }> {
   const res = await fetch('/api/ai/merch-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, input, language }),
+    body: JSON.stringify({ type, input, language, collectionPlanId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Network error' }));
@@ -307,7 +308,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
             <Button
               onClick={async () => {
                 setGenerating(true); setError(null);
-                const { result, error: err } = await generateMerch('families-assisted', { direction: (data.direction as string) || '', ...collectionContext }, language);
+                const { result, error: err } = await generateMerch('families-assisted', { direction: (data.direction as string) || '', ...collectionContext }, language, collectionContext.collectionPlanId);
                 if (err) { setError(err); setGenerating(false); return; }
                 const parsed = result as { families: Family[] };
                 onChange({ ...data, families: parsed.families || [] });
@@ -334,7 +335,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
             <Button
               onClick={async () => {
                 setGenerating(true); setError(null);
-                const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language);
+                const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language, collectionContext.collectionPlanId);
                 if (err) { setError(err); setGenerating(false); return; }
                 const parsed = result as { families: Family[] };
                 onChange({ ...data, families: parsed.families || [] });
@@ -358,7 +359,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
             variant="outline"
             onClick={async () => {
               setGenerating(true); setError(null);
-              const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language);
+              const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language, collectionContext.collectionPlanId);
               if (err) { setError(err); setGenerating(false); return; }
               const parsed = result as { families: Family[] };
               onChange({ ...data, families: parsed.families || [] });
@@ -506,7 +507,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                 direction: (data.direction as string) || '',
                 referenceBrands: (data.referenceBrands as string) || '',
                 ...collectionContext,
-              }, language);
+              }, language, collectionContext.collectionPlanId);
               if (err) { setError(err); setGenerating(false); return; }
               const parsed = result as { pricing: PricingRow[]; pricingThesis?: string };
               onChange({ ...data, pricing: parsed.pricing || [], pricingThesis: parsed.pricingThesis || '' });
@@ -737,7 +738,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
               onClick={async () => {
                 setGenerating(true); setError(null);
                 const apiType = mode === 'assisted' ? 'channels-assisted' : 'channels-proposals';
-                const { result, error: err } = await generateMerch(apiType, { direction: (data.direction as string) || '', channelConfig: channelsSummary, ...collectionContext }, language);
+                const { result, error: err } = await generateMerch(apiType, { direction: (data.direction as string) || '', channelConfig: channelsSummary, ...collectionContext }, language, collectionContext.collectionPlanId);
                 if (err) { setError(err); setGenerating(false); return; }
                 const parsed = result as { markets: Market[] };
                 const marketsWithSelection = (parsed.markets || []).map(mk => ({ ...mk, selected: true }));
@@ -1009,7 +1010,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                 const { result, error: err } = await generateMerch(apiType, {
                   families: familiesStr, pricing: pricingStr, channels: channelsStr,
                   direction: (data.direction as string) || '', ...collectionContext,
-                }, language);
+                }, language, collectionContext.collectionPlanId);
                 if (err) { setError(err); setGenerating(false); return; }
                 const parsed = result as { salesTarget: number; targetMargin: number; avgDiscount: number; sellThroughMonths: number; segmentation: { type: Seg[]; newness: Seg[] }; rationale?: string; selectedModel?: string; selectedModelRef?: string; whyThisModel?: string; risks?: string[]; advantages?: string[]; fineTuning?: string };
                 onChange({
@@ -1133,7 +1134,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   const [expandedCard, setExpandedCard] = useState<string | null>(blockParam || null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '', productCategory: '' });
+  const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '', productCategory: '', collectionPlanId: collectionId });
 
   // Persist card data to Supabase (auto-save with 1s debounce)
   const { data: persisted, save: persistData, loading: persistLoading } =
