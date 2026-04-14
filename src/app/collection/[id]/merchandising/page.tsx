@@ -174,37 +174,44 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
       {mode === 'free' && (
         <div className="space-y-4">
           {families.map((fam, fi) => (
-            <div key={fi} className="border border-carbon/[0.06] rounded-[16px] p-5 space-y-3">
-              <div className="flex items-center gap-3">
-                <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
-                <input
-                  value={fam.name}
-                  onChange={(e) => updateFamilyName(fi, e.target.value)}
-                  placeholder={t.merchandising.familyNamePlaceholder}
-                  className="flex-1 px-3 py-2.5 text-sm font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
-                />
-                <button onClick={() => removeFamily(fi)} className="text-carbon/30 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
-              </div>
-              {fam.subcategories.map((sub, si) => (
-                <div key={si} className="flex items-center gap-2 ml-6">
-                  <span className="text-carbon/20 text-xs">{'\u2514'}</span>
-                  <input
-                    value={sub}
-                    onChange={(e) => updateSubcategory(fi, si, e.target.value)}
-                    placeholder={t.merchandising.subcategoryPlaceholder}
-                    className="flex-1 px-3 py-2 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors"
+            <Card key={fi} className="rounded-[16px]">
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-center gap-3">
+                  <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
+                  <Input
+                    value={fam.name}
+                    onChange={(e) => updateFamilyName(fi, e.target.value)}
+                    placeholder={t.merchandising.familyNamePlaceholder}
+                    className="flex-1 rounded-[12px] h-10 font-medium"
                   />
-                  <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500 transition-colors"><X className="h-3 w-3" /></button>
+                  <Button variant="ghost" size="icon" onClick={() => removeFamily(fi)} className="rounded-full h-8 w-8 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
-              ))}
-              <button onClick={() => addSubcategory(fi)} className="ml-6 text-xs font-medium tracking-[0.1em] uppercase text-carbon/40 hover:text-carbon/60 flex items-center gap-1">
-                <Plus className="h-3 w-3" /> {t.merchandising.addSubcategory}
-              </button>
-            </div>
+                <Separator className="my-2" />
+                {fam.subcategories.map((sub, si) => (
+                  <div key={si} className="flex items-center gap-2 ml-4">
+                    <div className="w-4 border-b border-l border-border h-4 rounded-bl-[6px] shrink-0" />
+                    <Input
+                      value={sub}
+                      onChange={(e) => updateSubcategory(fi, si, e.target.value)}
+                      placeholder={t.merchandising.subcategoryPlaceholder}
+                      className="flex-1 rounded-[12px] h-9 text-sm"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeSubcategory(fi, si)} className="rounded-full h-7 w-7 text-muted-foreground hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="ghost" onClick={() => addSubcategory(fi)} className="ml-4 rounded-full h-8 text-xs text-muted-foreground">
+                  <Plus className="h-3 w-3 mr-1.5" /> {t.merchandising.addSubcategory}
+                </Button>
+              </CardContent>
+            </Card>
           ))}
-          <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase rounded-full border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
-            <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
-          </button>
+          <Button variant="outline" onClick={addFamily} className="w-full rounded-full border-dashed text-muted-foreground">
+            <Plus className="h-3.5 w-3.5 mr-2" /> {t.merchandising.addFamily}
+          </Button>
         </div>
       )}
 
