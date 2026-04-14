@@ -1932,155 +1932,153 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   };
 
   return (
-    <div className="space-y-6">
-      {/* Context info for auto-research blocks */}
-      {!c.requiresInput && results.length === 0 && (
-        <div className="p-4 bg-carbon/[0.02] border border-carbon/[0.06]">
-          <p className="text-xs text-carbon/60 leading-relaxed">{c.description}</p>
-        </div>
-      )}
-
-      {/* Input area */}
-      <div>
-        <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">
+    <div className="space-y-8">
+      {/* ── Input + Generate — single premium card ── */}
+      <div className="bg-white rounded-[20px] p-8 md:p-12 border border-carbon/[0.06]">
+        <div className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
           {c.inputLabel}
-        </label>
+        </div>
+        <p className="text-[14px] text-carbon/55 leading-relaxed mb-6 max-w-[640px]">{c.description}</p>
         {c.requiresInput ? (
-          <>
-            <p className="text-xs text-carbon/50 mb-3">{c.description}</p>
-            <textarea
-              value={(data.input as string) || ''}
-              onChange={(e) => onChange({ ...data, input: e.target.value })}
-              placeholder={c.placeholder}
-              className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
-            />
-          </>
+          <textarea
+            value={(data.input as string) || ''}
+            onChange={(e) => onChange({ ...data, input: e.target.value })}
+            placeholder={c.placeholder}
+            rows={3}
+            className="w-full px-5 py-4 text-[15px] text-carbon bg-carbon/[0.03] rounded-[14px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30 mb-5"
+          />
         ) : (
           <input
             type="text"
             value={(data.input as string) || ''}
             onChange={(e) => onChange({ ...data, input: e.target.value })}
             placeholder={c.placeholder}
-            className="w-full px-4 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
+            className="w-full px-5 py-4 text-[15px] text-carbon bg-carbon/[0.03] rounded-[14px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 mb-5"
           />
         )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleGenerate}
+            disabled={generating || !canGenerate}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white hover:bg-carbon/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {c.generateLabel}
+          </button>
+          {error && <p className="text-[12px] text-red-600">{error}</p>}
+        </div>
       </div>
 
-      <button
-        onClick={handleGenerate}
-        disabled={generating || !canGenerate}
-        className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-        {c.generateLabel}
-      </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
-
-      {/* Status counter */}
+      {/* ── Status + controls row ── */}
       {results.length > 0 && (
-        <div className="text-xs tracking-[0.1em] uppercase text-carbon/50">
-          {selectedCount} {t.creative.selectedCount} · {results.length - selectedCount} {t.creative.unselectedCount} · {results.length} {t.creative.totalCount}
+        <div className="flex items-center justify-between">
+          <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
+            {selectedCount} {t.creative.selectedCount} · {unselectedCount} {t.creative.unselectedCount} · {results.length} {t.creative.totalCount}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleLoadMore}
+              disabled={generating}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30"
+            >
+              {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+              Load 4 more
+            </button>
+            {selectedCount > 0 && unselectedCount > 0 && (
+              <button
+                onClick={handleReplaceUnselected}
+                disabled={generating}
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30"
+              >
+                {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Replace {unselectedCount} unselected
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Results with selection + inline editing */}
-      {results.map((r, i) => (
-        <div
-          key={i}
-          className={`w-full text-left p-5 border transition-all ${
-            r.selected
-              ? 'border-carbon bg-carbon/[0.03]'
-              : 'border-carbon/[0.08]'
-          }`}
-        >
-          {r.editing ? (
-            /* ── Editing mode ── */
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={r.title}
-                onChange={(e) => updateResult(i, { title: e.target.value })}
-                className="w-full px-3 py-2 text-sm font-medium text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors"
-              />
-              <textarea
-                value={r.desc}
-                onChange={(e) => updateResult(i, { desc: e.target.value })}
-                className="w-full h-24 px-3 py-2 text-xs text-carbon bg-white border border-carbon/[0.12] focus:border-carbon/30 focus:outline-none transition-colors resize-none leading-relaxed"
-              />
-              <button
-                onClick={() => updateResult(i, { editing: false })}
-                className="text-xs tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors"
-              >
-                {t.creative.doneEditing}
-              </button>
-            </div>
-          ) : (
-            /* ── Display mode ── */
-            <>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-carbon">{r.title}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => updateResult(i, { editing: true })}
-                    className="p-1 text-carbon/30 hover:text-carbon/70 transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => removeResult(i)}
-                    className="p-1 text-carbon/30 hover:text-red-500 transition-colors"
-                    title="Remove"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => updateResult(i, { selected: !r.selected })}
-                    className={`w-5 h-5 border flex items-center justify-center transition-colors ${
-                      r.selected ? 'bg-carbon border-carbon' : 'border-carbon/20 hover:border-carbon/40'
-                    }`}
-                  >
-                    {r.selected && <Check className="h-3 w-3 text-crema" />}
-                  </button>
-                </div>
-              </div>
-              {r.brands && (
-                <div className="text-[11px] text-carbon/50 italic mb-2">{r.brands}</div>
-              )}
-              <div className="text-xs text-carbon/80 leading-relaxed">{r.desc}</div>
-              {r.relevance && (
-                <div className={`inline-block mt-2 px-2 py-0.5 text-xs uppercase tracking-wide ${
-                  r.relevance === 'high' ? 'bg-carbon text-crema' : 'bg-carbon/[0.06] text-carbon/50'
-                }`}>
-                  {r.relevance}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ))}
-
-      {/* ── Load More / Replace Unselected ── */}
+      {/* ── Results grid — premium cards ── */}
       {results.length > 0 && (
-        <div className="flex items-center gap-3 pt-2">
-          <button
-            onClick={handleLoadMore}
-            disabled={generating}
-            className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/70 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-            Load 4 more
-          </button>
-          {selectedCount > 0 && unselectedCount > 0 && (
-            <button
-              onClick={handleReplaceUnselected}
-              disabled={generating}
-              className="flex items-center gap-2 px-4 py-2 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/70 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {results.map((r, i) => (
+            <div
+              key={i}
+              className={`group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[260px] transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)] ${
+                r.selected ? 'border-2 border-carbon' : 'border border-carbon/[0.06]'
+              }`}
             >
-              {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-              Replace {unselectedCount} unselected
-            </button>
-          )}
+              {/* Selector — top right */}
+              <button
+                onClick={() => updateResult(i, { selected: !r.selected })}
+                className={`absolute top-5 right-5 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                  r.selected
+                    ? 'bg-carbon text-white'
+                    : 'bg-carbon/[0.04] text-transparent hover:bg-carbon/[0.08] group-hover:text-carbon/30'
+                }`}
+              >
+                <Check className="h-3.5 w-3.5" />
+              </button>
+
+              {r.editing ? (
+                <div className="flex flex-col gap-3 pr-10">
+                  <input
+                    type="text"
+                    value={r.title}
+                    onChange={(e) => updateResult(i, { title: e.target.value })}
+                    className="px-3 py-2 text-[16px] font-semibold text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none"
+                  />
+                  <textarea
+                    value={r.desc}
+                    onChange={(e) => updateResult(i, { desc: e.target.value })}
+                    rows={4}
+                    className="px-3 py-2 text-[13px] text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed"
+                  />
+                  <button
+                    onClick={() => updateResult(i, { editing: false })}
+                    className="self-start inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-medium bg-carbon text-white hover:bg-carbon/90 transition-colors"
+                  >
+                    <Check className="h-3 w-3" /> {t.creative.doneEditing}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {r.relevance && (
+                    <div
+                      className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] tracking-[0.15em] uppercase font-semibold mb-4 ${
+                        r.relevance === 'high' ? 'bg-carbon text-white' : 'bg-carbon/[0.06] text-carbon/50'
+                      }`}
+                    >
+                      {r.relevance}
+                    </div>
+                  )}
+                  <h3 className="text-[18px] md:text-[20px] font-semibold text-carbon tracking-[-0.02em] leading-tight mb-2 pr-10">
+                    {r.title}
+                  </h3>
+                  {r.brands && (
+                    <div className="text-[12px] text-carbon/45 italic mb-3 leading-relaxed">{r.brands}</div>
+                  )}
+                  <p className="text-[13px] text-carbon/65 leading-relaxed flex-1">{r.desc}</p>
+
+                  {/* Hover actions — bottom row */}
+                  <div className="mt-6 pt-4 border-t border-carbon/[0.06] flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => updateResult(i, { editing: true })}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium text-carbon/50 hover:text-carbon hover:bg-carbon/[0.04] transition-colors"
+                    >
+                      <Pencil className="h-2.5 w-2.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => removeResult(i)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium text-carbon/50 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <X className="h-2.5 w-2.5" /> Remove
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -3127,8 +3125,14 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
           <div className="relative">
             {/* ─── CLEAN WORKSPACE VIEW (from sidebar) ─── */}
             {blockParam && expandedBlock && (() => {
-              const block = step.blocks.find((b) => b.id === expandedBlock);
-              if (!block) return null;
+              // Find block across ALL steps, not just the active one —
+              // protects against race conditions where activeStep persists
+              // from a previous navigation and hasn't caught up to blockParam yet.
+              const allBlocks = STEPS.flatMap((s) => s.blocks.map((b) => ({ block: b, stepId: s.id })));
+              const found = allBlocks.find(({ block }) => block.id === expandedBlock);
+              if (!found) return null;
+              const block = found.block;
+              const resolvedStepId = found.stepId;
               const state = getBlockState(block.id);
               const hideModePillsClean = block.id === 'moodboard';
               return (
@@ -3154,7 +3158,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                   {/* Content — full width for card grid */}
                   <ExpandedBlockContent
                     blockId={block.id}
-                    stepId={step.id}
+                    stepId={resolvedStepId}
                     mode={state.mode}
                     data={state.data}
                     onChange={(newData) => updateBlockData(block.id, { data: newData })}
