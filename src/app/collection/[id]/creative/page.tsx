@@ -2087,6 +2087,72 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   );
 }
 
+/* ─── Market Research Unified (4 research sub-blocks as tabs) ─── */
+function MarketResearchUnified({
+  blockData,
+  updateBlockData,
+  collectionContext,
+  consumerProfile,
+}: {
+  blockData: BlockData;
+  updateBlockData: (blockId: string, updates: Partial<BlockData[string]>) => void;
+  collectionContext: { season: string; collectionName: string };
+  consumerProfile?: string;
+}) {
+  const t = useTranslation();
+  const RESEARCH_BLOCKS = [
+    { id: 'global-trends', label: t.creative.globalTrends, desc: t.creative.globalTrendsDesc },
+    { id: 'deep-dive', label: t.creative.deepDive, desc: t.creative.deepDiveDesc },
+    { id: 'live-signals', label: t.creative.liveSignals, desc: t.creative.liveSignalsDesc },
+    { id: 'competitors', label: t.creative.competitors, desc: t.creative.competitorsDesc },
+  ];
+  const [activeTab, setActiveTab] = useState<string>('global-trends');
+  const activeBlock = RESEARCH_BLOCKS.find((b) => b.id === activeTab) || RESEARCH_BLOCKS[0];
+  const state = blockData[activeTab] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
+
+  return (
+    <div>
+      {/* Tabs — segmented pill */}
+      <div className="mb-6 flex flex-col items-center gap-3">
+        <SegmentedPill
+          options={RESEARCH_BLOCKS.map((b) => ({ id: b.id, label: b.label }))}
+          value={activeTab}
+          onChange={(id) => setActiveTab(id)}
+          size="md"
+        />
+        <p className="text-[13px] text-carbon/35 tracking-[-0.01em]">{activeBlock.desc}</p>
+      </div>
+
+      {/* Active sub-block content */}
+      <div>
+        <ResearchBlockContent
+          blockId={activeTab}
+          mode={state.mode}
+          data={state.data}
+          onChange={(newData) => updateBlockData(activeTab, { data: newData })}
+          collectionContext={collectionContext}
+          consumerProfile={consumerProfile}
+        />
+      </div>
+
+      {/* Confirm — centered */}
+      <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
+        <button
+          onClick={() => updateBlockData(activeTab, { confirmed: !state.confirmed })}
+          className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+            state.confirmed
+              ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
+              : 'bg-carbon text-white hover:bg-carbon/90'
+          }`}
+        >
+          <Check className="h-3.5 w-3.5" />
+          {state.confirmed ? 'Confirmed' : t.creative.confirmContinue}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Expanded Block Content Router ─── */
 function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectionContext, consumerProfile, vibeText }: {
   blockId: string;
@@ -2791,7 +2857,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
       setExpandedBlock(blockParam);
       const blockToStep: Record<string, number> = {
         'consumer': 0, 'vibe': 0, 'moodboard': 0, 'brand-dna': 0,
-        'global-trends': 1, 'deep-dive': 1, 'live-signals': 1, 'competitors': 1,
+        'global-trends': 1, 'deep-dive': 1, 'live-signals': 1, 'competitors': 1, 'research': 1,
         'synthesis': 2,
       };
       const stepIdx = blockToStep[blockParam];
@@ -2826,6 +2892,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     'deep-dive': t.creative.deepDive,
     'live-signals': t.creative.liveSignals,
     'competitors': t.creative.competitors,
+    'research': ((t.sidebar as Record<string, string>)?.marketResearch) || 'Market Research',
     'synthesis': 'Creative Overview',
   };
   const blockDescMap: Record<string, string> = {
@@ -2976,6 +3043,14 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
         {/* ─── SYNTHESIS VIEW (Creative Overview from sidebar) ─── */}
         {blockParam === 'synthesis' ? (
           <CreativeSynthesisView blockData={blockData} collectionContext={collectionContext} updateBlockData={updateBlockData} />
+        ) : blockParam === 'research' ? (
+          /* ─── MARKET RESEARCH UNIFIED (4 research sub-blocks as tabs) ─── */
+          <MarketResearchUnified
+            blockData={blockData}
+            updateBlockData={updateBlockData}
+            collectionContext={collectionContext}
+            consumerProfile={consumerProfile}
+          />
         ) : step.blocks.length > 0 ? (
           <div className="relative">
             {/* ─── CLEAN WORKSPACE VIEW (from sidebar) ─── */}
