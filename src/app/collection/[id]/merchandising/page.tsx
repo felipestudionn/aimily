@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 /* ─── AI generation helper ─── */
 async function generateMerch(
@@ -225,11 +226,11 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                   <Label className="text-[14px]">{t.merchandising.direction}</Label>
-                  <textarea
+                  <Textarea
                     value={(data.direction as string) || ''}
                     onChange={(e) => onChange({ ...data, direction: e.target.value })}
                     placeholder={t.merchandising.directionFamiliesPlaceholder}
-                    className="flex min-h-24 w-full rounded-lg border border-input bg-transparent px-4 py-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none leading-relaxed"
+                    className="min-h-24 rounded-[12px] bg-carbon/[0.03] border-carbon/[0.06] focus:border-carbon/20 resize-none leading-relaxed"
                   />
                 </div>
                 <Button
@@ -439,11 +440,11 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-[14px]">{t.merchandising.pricingDirection}</Label>
-                <textarea
+                <Textarea
                   value={(data.direction as string) || ''}
                   onChange={(e) => onChange({ ...data, direction: e.target.value })}
                   placeholder={t.merchandising.pricingDirectionPlaceholder}
-                  className="flex min-h-24 w-full rounded-lg border border-input bg-transparent px-4 py-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none leading-relaxed"
+                  className="min-h-24 rounded-[12px] bg-carbon/[0.03] border-carbon/[0.06] focus:border-carbon/20 resize-none leading-relaxed"
                 />
               </div>
               <div className="space-y-2">
@@ -690,14 +691,14 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
         {(mode === 'assisted' || mode === 'ai') && (
           <div className="space-y-4">
             {mode === 'assisted' && (
-              <textarea
+              <Textarea
                 value={(data.direction as string) || ''}
                 onChange={(e) => onChange({ ...data, direction: e.target.value })}
                 placeholder={t.merchandising.marketDirectionPlaceholder}
-                className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+                className="min-h-24 rounded-[12px] bg-carbon/[0.03] border-carbon/[0.06] focus:border-carbon/20 resize-none leading-relaxed"
               />
             )}
-            <button
+            <Button
               onClick={async () => {
                 setGenerating(true); setError(null);
                 const apiType = mode === 'assisted' ? 'channels-assisted' : 'channels-proposals';
@@ -709,12 +710,12 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
                 setGenerating(false);
               }}
               disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="rounded-full"
             >
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
               {mode === 'assisted' ? t.merchandising.suggestMarkets : t.merchandising.recommendMarkets}
-            </button>
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            </Button>
+            {error && <p className="text-[13px] text-destructive">{error}</p>}
             {markets.length > 0 && (
               <div className="space-y-3 pt-2">
                 {markets.map((mk, i) => (
@@ -766,20 +767,22 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
   const KpiCard = ({ kpi }: { kpi: typeof kpiCards[0] }) => {
     const val = (data[kpi.key] as number) || 0;
     return (
-      <div className="bg-white rounded-[20px] p-6 md:p-8 flex flex-col">
-        <p className="text-[13px] text-carbon/40 mb-4">{kpi.label}</p>
-        <div className="flex items-baseline gap-1 mb-4">
-          {kpi.prefix && <span className="text-[24px] font-medium text-carbon/30">{kpi.prefix}</span>}
-          <input
-            type="number"
-            value={val || ''}
-            onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-            placeholder="0"
-            className="text-[42px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/10"
-          />
-          {kpi.suffix && <span className="text-[24px] font-medium text-carbon/30 shrink-0">{kpi.suffix}</span>}
-        </div>
-      </div>
+      <Card className="rounded-[20px] border-0 shadow-none">
+        <CardContent className="p-6 md:p-8 flex flex-col">
+          <Label className="text-[13px] text-carbon/40 mb-4">{kpi.label}</Label>
+          <div className="flex items-baseline gap-1 mb-4">
+            {kpi.prefix && <span className="text-[24px] font-medium text-carbon/30">{kpi.prefix}</span>}
+            <Input
+              type="number"
+              value={val || ''}
+              onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+              placeholder="0"
+              className="text-[42px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto w-full placeholder:text-carbon/10"
+            />
+            {kpi.suffix && <span className="text-[24px] font-medium text-carbon/30 shrink-0">{kpi.suffix}</span>}
+          </div>
+        </CardContent>
+      </Card>
     );
   };
 
@@ -790,9 +793,9 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
       {segs.map((s, i) => (
         <div key={s.name} className="flex items-center gap-1.5">
           <span className="text-[13px] text-carbon/50">{s.name}</span>
-          <input type="number" value={s.percentage}
+          <Input type="number" value={s.percentage}
             onChange={(e) => { const u = [...segs]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, [dataKey]: u }); }}
-            className="w-12 px-2 py-1 text-[13px] text-carbon text-center bg-carbon/[0.03] rounded-[8px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none" />
+            className="w-12 px-2 py-1 text-[13px] text-carbon text-center bg-carbon/[0.03] rounded-[8px] border-carbon/[0.06] h-auto" />
           <span className="text-[12px] text-carbon/30">%</span>
         </div>
       ))}
@@ -809,34 +812,36 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
               const val = (data[kpi.key] as number) || 0;
               const isEmpty = !val;
               return (
-                <div key={kpi.key} className="bg-white rounded-[20px] p-8 flex flex-col min-h-[300px]">
-                  <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
-                    {kpi.label}
-                  </h3>
-                  <p className="text-[13px] text-carbon/30">
-                    {kpi.key === 'salesTarget' && 'Total revenue target for this collection'}
-                    {kpi.key === 'targetMargin' && 'Gross margin percentage goal'}
-                    {kpi.key === 'avgDiscount' && 'Average markdown expected'}
-                    {kpi.key === 'sellThroughMonths' && 'Time to sell full inventory'}
-                  </p>
-                  <div className="mt-auto">
-                    <div className="flex items-end">
-                      <input
-                        type="number"
-                        value={val || ''}
-                        onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-                        placeholder="—"
-                        className="text-[56px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none flex-1 min-w-0 placeholder:text-carbon/[0.08] leading-none"
-                      />
-                      <span className="text-[28px] font-semibold text-carbon/15 mb-[6px] ml-1 shrink-0">
-                        {kpi.prefix || kpi.suffix}
-                      </span>
+                <Card key={kpi.key} className="rounded-[20px] border-0 shadow-none min-h-[300px]">
+                  <CardContent className="p-8 flex flex-col h-full">
+                    <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
+                      {kpi.label}
+                    </h3>
+                    <p className="text-[13px] text-carbon/30">
+                      {kpi.key === 'salesTarget' && 'Total revenue target for this collection'}
+                      {kpi.key === 'targetMargin' && 'Gross margin percentage goal'}
+                      {kpi.key === 'avgDiscount' && 'Average markdown expected'}
+                      {kpi.key === 'sellThroughMonths' && 'Time to sell full inventory'}
+                    </p>
+                    <div className="mt-auto">
+                      <div className="flex items-end">
+                        <Input
+                          type="number"
+                          value={val || ''}
+                          onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+                          placeholder="—"
+                          className="text-[56px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto flex-1 min-w-0 placeholder:text-carbon/[0.08] leading-none"
+                        />
+                        <span className="text-[28px] font-semibold text-carbon/15 mb-[6px] ml-1 shrink-0">
+                          {kpi.prefix || kpi.suffix}
+                        </span>
+                      </div>
+                      {isEmpty && (
+                        <div className="h-[2px] w-20 bg-carbon/10 rounded-full mt-2" />
+                      )}
                     </div>
-                    {isEmpty && (
-                      <div className="h-[2px] w-20 bg-carbon/10 rounded-full mt-2" />
-                    )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
@@ -990,68 +995,73 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
               {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
               {mode === 'assisted' ? t.merchandising.suggestBudget : t.merchandising.generateFinancialPlan}
             </Button>
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && <p className="text-[13px] text-destructive">{error}</p>}
           </div>
 
           {/* ── Right: Reference context ── */}
-          <div className="bg-white rounded-[20px] p-8 flex flex-col">
-            <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-2">
-              {mode === 'assisted' ? 'Growth Models' : 'Context'}
-            </h3>
-            <p className="text-[13px] text-carbon/30 mb-5">
-              {mode === 'assisted' ? 'Select a reference model' : 'Data used for AI proposal'}
-            </p>
+          <Card className="rounded-[20px] border-0 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-[20px] font-semibold tracking-[-0.03em]">
+                {mode === 'assisted' ? 'Growth Models' : 'Context'}
+              </CardTitle>
+              <p className="text-[13px] text-muted-foreground">
+                {mode === 'assisted' ? 'Select a reference model' : 'Data used for AI proposal'}
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2 flex-1 overflow-y-auto">
+              {mode === 'assisted' && (
+                <>
+                  {[
+                    { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K', mix: '80% DTC', margin: '65%' },
+                    { id: 'wholesale-led', name: 'Wholesale-Led', ref: 'Jacquemus', revenue: '€200K–500K', mix: '60% WS', margin: '50%' },
+                    { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K', mix: '50/50', margin: '60%' },
+                    { id: 'quiet-luxury', name: 'Quiet Luxury', ref: 'COS / The Row', revenue: '€300K–800K', mix: 'Controlled', margin: '70%' },
+                    { id: 'collab-hype', name: 'Collab & Hype', ref: 'Aimé Leon Dore', revenue: '€200K–600K', mix: 'DTC+Collabs', margin: '60%' },
+                    { id: 'digital-native', name: 'Digital Native', ref: 'Pangaia', revenue: '€150K–500K', mix: '90% Digital', margin: '65%' },
+                    { id: 'accessible-premium', name: 'Accessible Premium', ref: 'Sandro / Maje', revenue: '€400K–1M', mix: 'Omni', margin: '55%' },
+                    { id: 'artisan-craft', name: 'Artisan Craft', ref: 'HEREU / Loewe', revenue: '€80K–250K', mix: 'Selective', margin: '70%' },
+                  ].map((s) => {
+                    const sel = (data.growthModel as string) === s.id;
+                    return (
+                      <Card
+                        key={s.id}
+                        className={`rounded-[16px] cursor-pointer transition-all ${sel ? 'border-primary/30 bg-primary/[0.02]' : 'hover:border-primary/15'}`}
+                        onClick={() => onChange({ ...data, growthModel: sel ? '' : s.id, direction: sel ? '' : `Growth model: ${s.name} (ref: ${s.ref}). Target: ${s.revenue}, mix: ${s.mix}, margin: ${s.margin}.` })}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`text-[14px] font-medium ${sel ? 'text-foreground' : 'text-foreground/70'}`}>{s.name}</span>
+                            <span className="text-[11px] text-muted-foreground italic">{s.ref}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Badge variant="outline" className="rounded-full text-[10px] font-medium">{s.revenue}</Badge>
+                            <Badge variant="outline" className="rounded-full text-[10px] font-medium">{s.margin}</Badge>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </>
+              )}
 
-            {mode === 'assisted' && (
-              <div className="space-y-2 flex-1 overflow-y-auto">
-                {[
-                  { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K', mix: '80% DTC', margin: '65%' },
-                  { id: 'wholesale-led', name: 'Wholesale-Led', ref: 'Jacquemus', revenue: '€200K–500K', mix: '60% WS', margin: '50%' },
-                  { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K', mix: '50/50', margin: '60%' },
-                  { id: 'quiet-luxury', name: 'Quiet Luxury', ref: 'COS / The Row', revenue: '€300K–800K', mix: 'Controlled', margin: '70%' },
-                  { id: 'collab-hype', name: 'Collab & Hype', ref: 'Aimé Leon Dore', revenue: '€200K–600K', mix: 'DTC+Collabs', margin: '60%' },
-                  { id: 'digital-native', name: 'Digital Native', ref: 'Pangaia', revenue: '€150K–500K', mix: '90% Digital', margin: '65%' },
-                  { id: 'accessible-premium', name: 'Accessible Premium', ref: 'Sandro / Maje', revenue: '€400K–1M', mix: 'Omni', margin: '55%' },
-                  { id: 'artisan-craft', name: 'Artisan Craft', ref: 'HEREU / Loewe', revenue: '€80K–250K', mix: 'Selective', margin: '70%' },
-                ].map((s) => {
-                  const sel = (data.growthModel as string) === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      onClick={() => onChange({ ...data, growthModel: sel ? '' : s.id, direction: sel ? '' : `Growth model: ${s.name} (ref: ${s.ref}). Target: ${s.revenue}, mix: ${s.mix}, margin: ${s.margin}.` })}
-                      className={`w-full text-left rounded-[16px] p-4 border transition-all ${sel ? 'border-carbon bg-carbon/[0.02]' : 'border-carbon/[0.06] hover:border-carbon/[0.12]'}`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-[14px] font-medium ${sel ? 'text-carbon' : 'text-carbon/70'}`}>{s.name}</span>
-                        <span className="text-[11px] text-carbon/30 italic">{s.ref}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-carbon/[0.04] text-carbon/50">{s.revenue}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-carbon/[0.04] text-carbon/50">{s.margin}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {mode === 'ai' && (
-              <div className="space-y-3 flex-1">
-                {[
-                  { label: 'Families', value: familiesStr || 'Not defined yet' },
-                  { label: 'Pricing', value: pricingStr ? `${JSON.parse(pricingStr).length || 0} families priced` : 'Not defined yet' },
-                  { label: 'Channels', value: channelsStr || 'Not defined yet' },
-                  { label: 'Consumer', value: collectionContext.consumer ? collectionContext.consumer.slice(0, 80) + '...' : 'Not defined yet' },
-                  { label: 'Collection', value: `${collectionContext.collectionName} · ${collectionContext.season}` },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-[12px] bg-carbon/[0.03] p-4">
-                    <span className="text-[12px] font-medium text-carbon/40 block mb-1">{item.label}</span>
-                    <span className="text-[13px] text-carbon/70 leading-relaxed">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+              {mode === 'ai' && (
+                <div className="space-y-3">
+                  {[
+                    { label: 'Families', value: familiesStr || 'Not defined yet' },
+                    { label: 'Pricing', value: pricingStr ? `${JSON.parse(pricingStr).length || 0} families priced` : 'Not defined yet' },
+                    { label: 'Channels', value: channelsStr || 'Not defined yet' },
+                    { label: 'Consumer', value: collectionContext.consumer ? collectionContext.consumer.slice(0, 80) + '...' : 'Not defined yet' },
+                    { label: 'Collection', value: `${collectionContext.collectionName} · ${collectionContext.season}` },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-[12px] bg-muted/50 p-4">
+                      <Label className="text-[12px] text-muted-foreground block mb-1">{item.label}</Label>
+                      <span className="text-[13px] text-foreground/70 leading-relaxed">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
@@ -1443,20 +1453,17 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
 
           {/* Confirm — centered */}
           <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
-            <button
+            <Button
+              variant={state.confirmed ? 'outline' : 'default'}
               onClick={() => {
                 handleConfirm(cardId);
                 if (blockParam === 'families') handleConfirm('pricing');
               }}
-              className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-                state.confirmed
-                  ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
-                  : 'bg-carbon text-white hover:bg-carbon/90'
-              }`}
+              className="rounded-full px-7"
             >
-              <Check className="h-3.5 w-3.5" />
+              <Check className="h-3.5 w-3.5 mr-2" />
               {state.confirmed ? 'Confirmed' : t.merchandising.validateContinue}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -1469,9 +1476,9 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
       <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12">
         {/* Header */}
         <div className="mb-8 sm:mb-10 pl-12 md:pl-0">
-          <button onClick={() => router.push(`/collection/${id}`)} className="text-xs font-medium tracking-[0.25em] uppercase text-carbon/30 mb-3 hover:text-carbon/50 transition-colors flex items-center gap-2">
-            <ArrowLeft className="h-3 w-3" /> {t.merchandising.overview}
-          </button>
+          <Button variant="ghost" onClick={() => router.push(`/collection/${id}`)} className="rounded-full text-[13px] font-medium text-muted-foreground mb-3 px-0 hover:bg-transparent hover:text-foreground">
+            <ArrowLeft className="h-3 w-3 mr-2" /> {t.merchandising.overview}
+          </Button>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-light text-carbon tracking-tight leading-[1.15]">
             {t.merchandising.title} <span className="italic">{t.merchandising.titleItalic}</span>
           </h2>
@@ -1481,34 +1488,32 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
         </div>
 
         {/* Validation Progress — pill stepper (matches Creative) */}
-        <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] w-fit overflow-x-auto max-w-full">
+        <div className="flex items-center gap-0 mb-8 sm:mb-10 border border-carbon/[0.06] rounded-full w-fit overflow-x-auto max-w-full">
           {MERCH_CARDS.map((card, idx) => {
             const state = getCardState(card.id);
             const locked = isLocked(card);
             const isActive = expandedCard === card.id;
             return (
-              <button
+              <Button
                 key={card.id}
+                variant="ghost"
                 onClick={() => { if (!locked && !expandedCard) setExpandedCard(card.id); }}
-                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase transition-all ${
+                disabled={locked || !!expandedCard}
+                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.08em] uppercase rounded-full transition-all ${
                   isActive
-                    ? 'bg-carbon text-crema'
+                    ? 'bg-carbon text-white hover:bg-carbon/90'
                     : state.confirmed
-                      ? 'bg-white text-carbon/70'
-                      : locked
-                        ? 'bg-white text-carbon/15 cursor-not-allowed'
-                        : expandedCard
-                          ? 'bg-white text-carbon/15 cursor-not-allowed'
-                          : 'bg-white text-carbon/40 hover:text-carbon/60'
+                      ? 'text-foreground/70'
+                      : 'text-muted-foreground'
                 }`}
               >
-                <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 ${
-                  isActive ? 'bg-white/20' : state.confirmed ? 'bg-carbon text-crema' : 'bg-carbon/[0.06]'
+                <span className={`w-5 h-5 flex items-center justify-center text-xs shrink-0 rounded-full ${
+                  isActive ? 'bg-white/20' : state.confirmed ? 'bg-carbon text-white' : 'bg-carbon/[0.06]'
                 }`}>
                   {state.confirmed ? <Check className="h-3 w-3" /> : locked ? <Lock className="h-2.5 w-2.5" /> : idx + 1}
                 </span>
                 <span className="whitespace-nowrap">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -1525,20 +1530,22 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                   const state = getCardState(card.id);
                   const locked = isLocked(card);
                   return (
-                    <button
+                    <Button
                       key={card.id}
+                      variant="outline"
+                      size="icon"
                       onClick={() => { if (!locked) { handleCollapse(); setTimeout(() => handleExpand(card.id), 350); } }}
                       disabled={locked}
-                      className={`group/icon relative w-12 h-12 flex items-center justify-center border transition-all duration-300 ${
-                        locked ? 'bg-carbon/[0.02] border-carbon/[0.04] cursor-not-allowed'
+                      className={`group/icon relative w-12 h-12 rounded-[12px] transition-all duration-300 ${
+                        locked ? 'bg-carbon/[0.02] border-carbon/[0.04]'
                         : state.confirmed ? 'bg-carbon/[0.04] border-carbon/[0.12]'
                         : 'bg-white border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm'
                       }`}
                       title={t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}
                     >
                       {locked ? <Lock className="h-3.5 w-3.5 text-carbon/15" /> : state.confirmed ? <Check className="h-4 w-4 text-carbon/60" /> : <Icon className="h-4 w-4 text-carbon/35 group-hover/icon:text-carbon/60 transition-colors" />}
-                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-crema text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</div>
-                    </button>
+                      <div className="absolute left-full ml-3 px-3 py-1.5 bg-carbon text-white rounded-full text-xs tracking-wide whitespace-nowrap opacity-0 group-hover/icon:opacity-100 transition-opacity pointer-events-none z-10">{t.merchandising[(language === 'es' ? CARD_KEYS[card.id].nameEs : CARD_KEYS[card.id].name) as keyof typeof t.merchandising] as string}</div>
+                    </Button>
                   );
                 })}
               </div>
@@ -1560,7 +1567,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                             <p className="text-[11px] sm:text-xs text-carbon/70 mt-0.5">{t.merchandising[CARD_KEYS[card.id].desc as keyof typeof t.merchandising] as string}</p>
                           </div>
                         </div>
-                        <button onClick={handleCollapse} className="w-9 h-9 flex items-center justify-center text-carbon/30 hover:text-carbon/60 hover:bg-carbon/[0.04] transition-all"><X className="h-4 w-4" /></button>
+                        <Button variant="ghost" size="icon" onClick={handleCollapse} className="rounded-full w-9 h-9 text-muted-foreground"><X className="h-4 w-4" /></Button>
                       </div>
 
                       {/* Mode Pills — unified segmented control */}
@@ -1587,10 +1594,10 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                       </div>
 
                       <div className="mt-auto flex items-center justify-between gap-3 pt-6 border-t border-carbon/[0.06]">
-                        <button onClick={handleCollapse} className="text-[11px] font-medium tracking-[0.08em] uppercase text-carbon/50 hover:text-carbon transition-colors">{t.merchandising.backToGrid}</button>
-                        <button onClick={() => handleConfirm(card.id)} className="flex items-center gap-2 px-4 sm:px-8 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-medium tracking-[0.1em] sm:tracking-[0.15em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors">
-                          <Check className="h-3.5 w-3.5" /> {t.merchandising.validateContinue}
-                        </button>
+                        <Button variant="ghost" onClick={handleCollapse} className="rounded-full text-[13px] text-muted-foreground">{t.merchandising.backToGrid}</Button>
+                        <Button onClick={() => handleConfirm(card.id)} className="rounded-full px-8">
+                          <Check className="h-3.5 w-3.5 mr-2" /> {t.merchandising.validateContinue}
+                        </Button>
                       </div>
                     </div>
                   );
@@ -1669,9 +1676,9 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                 </div>
               </div>
               {allValidated && (
-                <button onClick={() => router.push(`/collection/${id}/product`)} className="flex items-center gap-2 bg-carbon text-crema py-2.5 sm:py-3 px-4 sm:px-6 text-[11px] font-medium uppercase tracking-[0.15em] hover:bg-carbon/90 transition-colors">
-                  {t.merchandising.openBuilder} <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+                <Button onClick={() => router.push(`/collection/${id}/product`)} className="rounded-full">
+                  {t.merchandising.openBuilder} <ArrowRight className="h-3.5 w-3.5 ml-2" />
+                </Button>
               )}
             </div>
           </div>
@@ -1711,27 +1718,29 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease-out 1.8s both' }}>
-              <button
+              <Button
                 onClick={() => router.push(`/collection/${collectionId}/product`)}
-                className="flex items-center gap-3 px-8 py-3.5 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-white transition-colors"
+                className="rounded-full px-8 py-3.5 bg-crema text-carbon hover:bg-white"
               >
-                {t.merchandising.celebrationCta} <ArrowRight className="h-4 w-4" />
-              </button>
-              <button
+                {t.merchandising.celebrationCta} <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => router.push(`/collection/${collectionId}`)}
-                className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/50 border border-crema/15 hover:text-crema/80 hover:border-crema/30 transition-colors"
+                className="rounded-full px-6 py-3 text-crema/50 border-crema/15 hover:text-crema/80 hover:border-crema/30 bg-transparent"
               >
                 {t.merchandising.celebrationBack}
-              </button>
+              </Button>
             </div>
 
             {/* Dismiss */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setShowCelebration(false)}
-              className="mt-8 text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 transition-colors"
+              className="mt-8 rounded-full text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 hover:bg-transparent"
             >
               {t.merchandising.celebrationDismiss}
-            </button>
+            </Button>
           </div>
         </div>
       )}
