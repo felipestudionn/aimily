@@ -216,105 +216,133 @@ function FamiliesContent({ mode, data, onChange, collectionContext }: {
         </div>
       )}
 
-      {mode === 'assisted' && (
-        <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.direction}</label>
-            <textarea
-              value={(data.direction as string) || ''}
-              onChange={(e) => onChange({ ...data, direction: e.target.value })}
-              placeholder={t.merchandising.directionFamiliesPlaceholder}
-              className="w-full h-28 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
-            />
-          </div>
-          <button
-            onClick={async () => {
-              setGenerating(true); setError(null);
-              const { result, error: err } = await generateMerch('families-assisted', { direction: (data.direction as string) || '', ...collectionContext }, language);
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { families: Family[] };
-              onChange({ ...data, families: parsed.families || [] });
-              setGenerating(false);
-            }}
-            disabled={generating || !(data.direction as string)?.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {t.merchandising.suggestFamilies}
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          {/* Show editable result */}
-          {families.length > 0 && (
-            <div className="space-y-3 pt-2">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.aiSuggestion} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
-              {families.map((fam, fi) => (
-                <div key={fi} className="border border-carbon/[0.06] rounded-[16px] p-4 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
-                    <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                  </div>
-                  {fam.subcategories.map((sub, si) => (
-                    <div key={si} className="flex items-center gap-2 ml-4">
-                      <span className="text-carbon/20 text-xs">{'\u2514'}</span>
-                      <input value={sub} onChange={(e) => updateSubcategory(fi, si, e.target.value)} className="flex-1 px-3 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                      <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
-                    </div>
-                  ))}
-                  <button onClick={() => addSubcategory(fi)} className="ml-4 text-xs text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> {t.merchandising.add}</button>
+      {/* ═══ ASSISTED + AI — generate controls then same shadcn cards ═══ */}
+      {(mode === 'assisted' || mode === 'ai') && (
+        <div className="space-y-5">
+          {/* Generate controls */}
+          {mode === 'assisted' && (
+            <Card className="rounded-[20px]">
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[14px]">{t.merchandising.direction}</Label>
+                  <textarea
+                    value={(data.direction as string) || ''}
+                    onChange={(e) => onChange({ ...data, direction: e.target.value })}
+                    placeholder={t.merchandising.directionFamiliesPlaceholder}
+                    className="flex min-h-24 w-full rounded-lg border border-input bg-transparent px-4 py-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none leading-relaxed"
+                  />
                 </div>
-              ))}
-            </div>
+                <Button
+                  onClick={async () => {
+                    setGenerating(true); setError(null);
+                    const { result, error: err } = await generateMerch('families-assisted', { direction: (data.direction as string) || '', ...collectionContext }, language);
+                    if (err) { setError(err); setGenerating(false); return; }
+                    const parsed = result as { families: Family[] };
+                    onChange({ ...data, families: parsed.families || [] });
+                    setGenerating(false);
+                  }}
+                  disabled={generating || !(data.direction as string)?.trim()}
+                  className="rounded-full"
+                >
+                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  {t.merchandising.suggestFamilies}
+                </Button>
+                {error && <p className="text-[13px] text-destructive">{error}</p>}
+              </CardContent>
+            </Card>
           )}
-        </div>
-      )}
 
-      {mode === 'ai' && (
-        <div className="space-y-4">
-          <p className="text-sm text-carbon/60 leading-relaxed">
-            {t.merchandising.aiProposalFamilies} <strong>{t.merchandising.aiProposalFamiliesBold}</strong>.
-          </p>
-          <button
-            onClick={async () => {
-              setGenerating(true); setError(null);
-              const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language);
-              if (err) { setError(err); setGenerating(false); return; }
-              const parsed = result as { families: Family[] };
-              onChange({ ...data, families: parsed.families || [] });
-              setGenerating(false);
-            }}
-            disabled={generating}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {families.length > 0 ? t.merchandising.regenerate : t.merchandising.proposeFamilies}
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          {/* Editable result — same as Assisted */}
-          {families.length > 0 && (
-            <div className="space-y-3 pt-2">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.aiSuggestion} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
-              {families.map((fam, fi) => (
-                <div key={fi} className="border border-carbon/[0.06] rounded-[16px] p-4 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
-                    <input value={fam.name} onChange={(e) => updateFamilyName(fi, e.target.value)} className="flex-1 px-3 py-2 text-sm font-medium text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                    <button onClick={() => removeFamily(fi)} className="text-carbon/30 hover:text-red-500 transition-colors"><Trash2 className="h-4 w-4" /></button>
-                  </div>
-                  {fam.subcategories.map((sub, si) => (
-                    <div key={si} className="flex items-center gap-2 ml-4">
-                      <span className="text-carbon/20 text-xs">{'\u2514'}</span>
-                      <input value={sub} onChange={(e) => updateSubcategory(fi, si, e.target.value)} className="flex-1 px-3 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                      <button onClick={() => removeSubcategory(fi, si)} className="text-carbon/20 hover:text-red-500"><X className="h-3 w-3" /></button>
-                    </div>
-                  ))}
-                  <button onClick={() => addSubcategory(fi)} className="ml-4 text-xs text-carbon/40 hover:text-carbon/60 flex items-center gap-1"><Plus className="h-3 w-3" /> {t.merchandising.add}</button>
-                </div>
-              ))}
-              <button onClick={addFamily} className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase rounded-full border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors w-full justify-center">
-                <Plus className="h-3.5 w-3.5" /> {t.merchandising.addFamily}
-              </button>
-            </div>
+          {mode === 'ai' && !families.length && (
+            <Card className="rounded-[20px]">
+              <CardContent className="p-6 space-y-4">
+                <p className="text-[14px] text-muted-foreground leading-relaxed">
+                  {t.merchandising.aiProposalFamilies} <strong className="text-foreground">{t.merchandising.aiProposalFamiliesBold}</strong>.
+                </p>
+                <Button
+                  onClick={async () => {
+                    setGenerating(true); setError(null);
+                    const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language);
+                    if (err) { setError(err); setGenerating(false); return; }
+                    const parsed = result as { families: Family[] };
+                    onChange({ ...data, families: parsed.families || [] });
+                    setGenerating(false);
+                  }}
+                  disabled={generating}
+                  className="rounded-full"
+                >
+                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  {t.merchandising.proposeFamilies}
+                </Button>
+                {error && <p className="text-[13px] text-destructive">{error}</p>}
+              </CardContent>
+            </Card>
           )}
+
+          {/* Regenerate button when results exist in AI mode */}
+          {mode === 'ai' && families.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setGenerating(true); setError(null);
+                const { result, error: err } = await generateMerch('families-proposals', { ...collectionContext }, language);
+                if (err) { setError(err); setGenerating(false); return; }
+                const parsed = result as { families: Family[] };
+                onChange({ ...data, families: parsed.families || [] });
+                setGenerating(false);
+              }}
+              disabled={generating}
+              className="rounded-full"
+            >
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+              {t.merchandising.regenerate}
+            </Button>
+          )}
+
+          {/* Result: SAME shadcn Cards as Free mode */}
+          {families.length > 0 && families.map((fam, fi) => (
+            <Card key={fi} className="rounded-[20px] overflow-hidden">
+              <CardHeader className="pb-0">
+                <div className="flex items-center gap-3">
+                  <PriorityBadge priority={fam.priority} onCycle={() => cycleFamilyPriority(fi)} />
+                  <CardTitle className="flex-1">
+                    <Input
+                      value={fam.name}
+                      onChange={(e) => updateFamilyName(fi, e.target.value)}
+                      placeholder={t.merchandising.familyNamePlaceholder}
+                      className="rounded-[12px] h-10 font-medium text-[16px] border-0 shadow-none focus-visible:ring-0 bg-transparent px-0"
+                    />
+                  </CardTitle>
+                  <Button variant="ghost" size="icon" onClick={() => removeFamily(fi)} className="rounded-full h-8 w-8 text-muted-foreground hover:text-destructive">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-3">
+                <Separator className="mb-2" />
+                {fam.subcategories.map((sub, si) => (
+                  <div key={si} className="flex items-center gap-2 py-1.5 ml-3">
+                    <div className="w-4 border-b border-l border-border h-4 rounded-bl-[6px] shrink-0" />
+                    <Input
+                      value={sub}
+                      onChange={(e) => updateSubcategory(fi, si, e.target.value)}
+                      placeholder={t.merchandising.subcategoryPlaceholder}
+                      className="flex-1 rounded-lg h-8 text-sm border-0 shadow-none focus-visible:ring-0 bg-transparent px-0"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeSubcategory(fi, si)} className="rounded-full h-7 w-7 text-muted-foreground hover:text-destructive">
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="ghost" onClick={() => addSubcategory(fi)} className="ml-7 mt-1 rounded-full h-8 text-xs text-muted-foreground">
+                  <Plus className="h-3 w-3 mr-1.5" /> {t.merchandising.addSubcategory}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+
+          <Button variant="outline" onClick={addFamily} className="w-full rounded-full border-dashed text-muted-foreground">
+            <Plus className="h-3.5 w-3.5 mr-2" /> {t.merchandising.addFamily}
+          </Button>
         </div>
       )}
     </div>
