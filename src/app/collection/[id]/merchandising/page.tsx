@@ -1156,15 +1156,23 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   useEffect(() => {
     const supabase = createClient();
 
-    // Load collection name + season + product category
-    supabase.from('collection_plans').select('name, season, setup_data').eq('id', collectionId).single().then(({ data }) => {
+    // Load collection name + season + product category (with SKU fallback)
+    supabase.from('collection_plans').select('name, season, setup_data').eq('id', collectionId).single().then(async ({ data }) => {
       if (data) {
         const setupData = (data.setup_data || {}) as Record<string, unknown>;
+        let category = (setupData.productCategory as string) || '';
+
+        // Fallback: if no productCategory in setup_data, infer from existing SKUs
+        if (!category) {
+          const { data: skus } = await supabase.from('collection_skus').select('category').eq('collection_plan_id', collectionId).limit(1);
+          if (skus?.[0]?.category) category = skus[0].category;
+        }
+
         setCollectionContext(prev => ({
           ...prev,
           collectionName: data.name || '',
           season: data.season || '',
-          productCategory: (setupData.productCategory as string) || '',
+          productCategory: category,
         }));
       }
     });
