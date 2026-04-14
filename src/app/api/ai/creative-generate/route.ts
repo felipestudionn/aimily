@@ -4,6 +4,7 @@ import { generateJSON, generateText } from '@/lib/ai/llm-client';
 import { buildCreativePrompt } from '@/lib/ai/creative-prompts';
 import { scrapeBrandContent } from '@/lib/brand-scraper';
 import { researchBrand, researchTrends } from '@/lib/ai/perplexity-client';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════
    Creative Block — AI Generation Endpoint
@@ -43,6 +44,12 @@ export async function POST(req: NextRequest) {
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
   const collectionPlanId = body.collectionPlanId as string | undefined;
+
+  // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+  if (collectionPlanId) {
+    const serverCtx = await loadFullContext(collectionPlanId);
+    mergeContextWithInput(serverCtx, input);
+  }
 
   // ══════════════════════════════════════════════════════════
   // TRENDS: Perplexity Sonar DIRECT — 1 call, returns JSON

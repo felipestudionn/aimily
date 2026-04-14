@@ -9,6 +9,7 @@ import {
   buildPerformanceContext,
   formatPerformanceContextForPrompt,
 } from '@/lib/performance-context';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /**
  * AI Paid Media Plan Generation
@@ -52,6 +53,22 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+
+    // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        collectionName: brandName || '',
+        consumer: consumerDemographics || '',
+        brandDNA: '',
+        vibe: '',
+        salesTarget: String(totalSalesTarget || ''),
+      };
+      mergeContextWithInput(serverCtx, flat);
+      // Enrich body fields used in templateContext below
+      if (!brandName && flat.collectionName) body.brandName = flat.collectionName;
+      if (!consumerDemographics && flat.consumer) body.consumerDemographics = flat.consumer;
+    }
 
     const dropsBlock = (drops || []).map((d: { name: string; launch_date: string; story_alignment?: string; expected_sales_weight?: number }) =>
       `- ${d.name}: ${d.launch_date}, story "${d.story_alignment || 'N/A'}", expected ${d.expected_sales_weight || 0}% of sales`

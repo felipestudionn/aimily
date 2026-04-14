@@ -10,6 +10,7 @@ import {
   buildPerformanceContext,
   formatPerformanceContextForPrompt,
 } from '@/lib/performance-context';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 type GenerateMode =
   | 'pillars_voice'
@@ -316,6 +317,31 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+
+    // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        collectionName: brandContext.brand_name || '',
+        season: body.season || '',
+        consumer: brandContext.target_audience?.demographics || '',
+        brandDNA: brandContext.brand_voice?.personality || '',
+        vibe: '',
+        trends: '',
+        brandVoice: brandContext.brand_voice?.tone || '',
+        contentPillars: body.contentPillars || '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+      // Write enriched values back into the structured body
+      if (!brandContext.brand_name && flat.collectionName) brandContext.brand_name = flat.collectionName;
+      if (!body.season && flat.season) body.season = flat.season;
+      if (!brandContext.target_audience) brandContext.target_audience = {};
+      if (!brandContext.target_audience.demographics && flat.consumer) brandContext.target_audience.demographics = flat.consumer;
+      if (!brandContext.brand_voice) brandContext.brand_voice = {};
+      if (!brandContext.brand_voice.personality && flat.brandDNA) brandContext.brand_voice.personality = flat.brandDNA;
+      if (!brandContext.brand_voice.tone && flat.brandVoice) brandContext.brand_voice.tone = flat.brandVoice;
+      if (!body.contentPillars && flat.contentPillars) body.contentPillars = flat.contentPillars;
+    }
 
     const prompt = buildPromptForMode(body);
 

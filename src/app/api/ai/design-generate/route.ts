@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildDesignPrompt } from '@/lib/ai/design-prompts';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════
    Design & Dev Block — AI Generation Endpoint
@@ -30,6 +31,13 @@ export async function POST(req: NextRequest) {
   const type = body.type as GenerationType;
   const input = (body.input || {}) as Record<string, string>;
   const language = body.language as 'en' | 'es' | undefined;
+  const collectionPlanId = body.collectionPlanId as string | undefined;
+
+  // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+  if (collectionPlanId) {
+    const serverCtx = await loadFullContext(collectionPlanId);
+    mergeContextWithInput(serverCtx, input);
+  }
 
   const prompt = buildDesignPrompt(type, input);
   if (!prompt) {

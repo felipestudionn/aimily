@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /**
  * Generate SKUs based on the collection framework from AI Advisor
@@ -16,7 +17,29 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { setupData, count, language, creativeContext } = body;
+    const { setupData, count, language, collectionPlanId } = body;
+
+    // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        vibe: body.creativeContext?.vibe || '',
+        brandDNA: body.creativeContext?.brandDNA || '',
+        consumer: body.creativeContext?.consumer || '',
+        trends: body.creativeContext?.trends || '',
+        collectionName: '',
+        season: '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+      // Write enriched values back into creativeContext (create if missing)
+      if (!body.creativeContext) body.creativeContext = {};
+      if (!body.creativeContext.vibe && flat.vibe) body.creativeContext.vibe = flat.vibe;
+      if (!body.creativeContext.brandDNA && flat.brandDNA) body.creativeContext.brandDNA = flat.brandDNA;
+      if (!body.creativeContext.consumer && flat.consumer) body.creativeContext.consumer = flat.consumer;
+      if (!body.creativeContext.trends && flat.trends) body.creativeContext.trends = flat.trends;
+    }
+
+    const creativeContext = body.creativeContext;
 
     if (!setupData) {
       return NextResponse.json({ error: 'setupData is required' }, { status: 400 });

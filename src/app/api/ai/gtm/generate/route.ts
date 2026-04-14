@@ -4,6 +4,7 @@ import { checkTeamPermission } from '@/lib/team-permissions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { generateJSON } from '@/lib/ai/llm-client';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /**
  * AI GTM Plan Generation
@@ -43,6 +44,27 @@ export async function POST(req: NextRequest) {
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
+    // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        collectionName: '',
+        season: '',
+        consumer: '',
+        vibe: '',
+        brandDNA: '',
+        stories: '',
+        salesTarget: String(totalSalesTarget || ''),
+      };
+      mergeContextWithInput(serverCtx, flat);
+      // Enriched context is available in flat — inject into the prompt below
+      if (flat.collectionName) body._collectionName = flat.collectionName;
+      if (flat.season) body._season = flat.season;
+      if (flat.consumer) body._consumer = flat.consumer;
+      if (flat.vibe) body._vibe = flat.vibe;
+      if (flat.brandDNA) body._brandDNA = flat.brandDNA;
+    }
+
     const priceValues = skus.map((s: { pvp?: number }) => s.pvp || 0);
     const priceMin = Math.min(...priceValues);
     const priceMax = Math.max(...priceValues);
@@ -69,9 +91,19 @@ Channels: ${channels || 'DTC, WHOLESALE'}
 Create drops, assign ALL ${skus.length} SKUs, and suggest commercial actions.`;
     }
 
+    // Inject server-side enriched context
+    const enrichedBlock = [
+      body._collectionName ? `- Collection: ${body._collectionName}` : '',
+      body._season ? `- Season: ${body._season}` : '',
+      body._consumer ? `- Target Consumer: ${body._consumer}` : '',
+      body._vibe ? `- Collection Vibe: ${body._vibe}` : '',
+      body._brandDNA ? `- Brand DNA: ${body._brandDNA}` : '',
+    ].filter(Boolean).join('\n');
+
     const userPrompt = `COLLECTION CONTEXT:
 - Total sales target: €${totalSalesTarget}
 - SKU count: ${skus.length}
+${enrichedBlock ? `\n${enrichedBlock}` : ''}
 
 PRICING OVERVIEW:
 - Price range: €${priceMin} - €${priceMax}

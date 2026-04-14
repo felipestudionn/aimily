@@ -3,6 +3,7 @@ import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/a
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { generateJSON } from '@/lib/ai/llm-client';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 type CopyMode = 'product_description' | 'brand_story' | 'seo_meta' | 'email_template' | 'social_caption';
 
@@ -203,6 +204,24 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+
+    // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        collectionName: brandContext.brand_name || '',
+        consumer: brandContext.target_audience?.demographics || '',
+        brandDNA: brandContext.brand_voice?.personality || '',
+        brandVoice: brandContext.brand_voice?.tone || '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+      if (!brandContext.brand_name && flat.collectionName) brandContext.brand_name = flat.collectionName;
+      if (!brandContext.target_audience) brandContext.target_audience = {};
+      if (!brandContext.target_audience.demographics && flat.consumer) brandContext.target_audience.demographics = flat.consumer;
+      if (!brandContext.brand_voice) brandContext.brand_voice = {};
+      if (!brandContext.brand_voice.personality && flat.brandDNA) brandContext.brand_voice.personality = flat.brandDNA;
+      if (!brandContext.brand_voice.tone && flat.brandVoice) brandContext.brand_voice.tone = flat.brandVoice;
+    }
 
     const system = buildSystemPrompt(mode, brandContext);
     const userPrompt = buildUserPrompt(body);

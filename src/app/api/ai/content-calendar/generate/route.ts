@@ -9,6 +9,7 @@ import {
   buildPerformanceContext,
   formatPerformanceContextForPrompt,
 } from '@/lib/performance-context';
+import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /**
  * AI Content Calendar Generation
@@ -57,6 +58,24 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkAIUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+
+    // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
+    if (collectionPlanId) {
+      const serverCtx = await loadFullContext(collectionPlanId);
+      const flat: Record<string, string> = {
+        collectionName: brandName || '',
+        brandVoice: brandVoiceSummary || '',
+        consumer: '',
+        vibe: '',
+        brandDNA: '',
+        contentPillars: '',
+        stories: '',
+      };
+      mergeContextWithInput(serverCtx, flat);
+      // Enrich body fields used in prompt building below
+      if (!brandName && flat.collectionName) body.brandName = flat.collectionName;
+      if (!brandVoiceSummary && flat.brandVoice) body.brandVoiceSummary = flat.brandVoice;
+    }
 
     // C2 — atom repurpose mode. Uses the calendar_atom_repurpose prompt
     // from the registry with its own shape (atoms[], not calendar_entries[]).
