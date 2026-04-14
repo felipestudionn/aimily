@@ -49,3 +49,4 @@ next-env.d.ts
 scripts/composite-shirt.mjs
 scripts/retouch-shirt.mjs
 scripts/model-references/
+references/
