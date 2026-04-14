@@ -1379,23 +1379,14 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                 );
               })()}
 
-              {/* Assisted/AI modes still use the split view */}
+              {/* Assisted/AI — same unified cards, with generate controls above */}
               {state.mode !== 'free' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                  <DecisionCard title="Product Families" className="flex flex-col">
-                    <FamiliesContent
-                      mode={state.mode} data={state.data}
-                      onChange={(newData) => updateCardData('families', { data: newData })}
-                      collectionContext={collectionContext}
-                    />
-                  </DecisionCard>
-                  <DecisionCard title="Pricing" className="flex flex-col">
-                    <PricingContent
-                      mode={state.mode} data={pricingState.data}
-                      onChange={(newData) => updateCardData('pricing', { data: newData })}
-                      collectionContext={collectionContext} familiesData={familiesData}
-                    />
-                  </DecisionCard>
+                <div className="space-y-5">
+                  <FamiliesContent
+                    mode={state.mode} data={state.data}
+                    onChange={(newData) => updateCardData('families', { data: newData })}
+                    collectionContext={collectionContext}
+                  />
                 </div>
               )}
             </div>
