@@ -107,17 +107,18 @@ function PriorityBadge({ priority, onCycle }: { priority?: Priority | string; on
   const t = useTranslation();
   const validPriorities: Priority[] = ['core', 'strategic', 'complementary'];
   const p: Priority = validPriorities.includes(priority as Priority) ? (priority as Priority) : 'core';
-  const style = PRIORITY_STYLES[p];
   const label = t.merchandising[PRIORITY_KEYS[p] as keyof typeof t.merchandising] as string;
+  const variant = p === 'core' ? 'default' : 'outline';
   return (
-    <button
-      type="button"
+    <Badge
+      variant={variant as 'default' | 'outline'}
+      className={`cursor-pointer shrink-0 rounded-full text-[10px] uppercase tracking-wide hover:opacity-80 transition-opacity ${
+        p === 'complementary' ? 'bg-muted text-muted-foreground border-0' : ''
+      }`}
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCycle(); }}
-      className={`px-3 py-1 rounded-full text-[10px] font-semibold tracking-[0.05em] uppercase shrink-0 transition-colors hover:opacity-80 ${style}`}
-      title="Click to change priority"
     >
       {label}
-    </button>
+    </Badge>
   );
 }
 
@@ -353,57 +354,86 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
   return (
     <div className="space-y-6">
       {mode === 'free' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {pricing.map((fam, fi) => (
-            <div key={fi} className="space-y-2">
-              <div className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon">{fam.family}</div>
-              {fam.subcategories.map((sub, si) => (
-                <div key={si} className="flex items-center gap-3 ml-4">
-                  <span className="text-sm text-carbon/60 w-40 truncate">{sub.name}</span>
-                  <span className="text-xs text-carbon/30">{t.merchandising.minPrice}</span>
-                  <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                  <span className="text-xs text-carbon/30">{t.merchandising.maxPrice}</span>
-                  <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
+            <Card key={fi} className="rounded-[16px] overflow-hidden">
+              <CardHeader className="pb-0">
+                <CardTitle className="text-[15px] tracking-[-0.02em]">{fam.family}</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3">
+                <div className="space-y-2">
+                  {fam.subcategories.map((sub, si) => (
+                    <div key={si} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
+                      <span className="text-[14px] text-foreground/60 flex-1 min-w-0 truncate">{sub.name}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Label className="text-[11px] text-muted-foreground">Min</Label>
+                        <Input
+                          type="number"
+                          value={sub.minPrice || ''}
+                          onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))}
+                          className="w-20 h-8 rounded-lg text-sm text-center"
+                          placeholder="€"
+                        />
+                      </div>
+                      <Separator orientation="vertical" className="h-4" />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Label className="text-[11px] text-muted-foreground">Max</Label>
+                        <Input
+                          type="number"
+                          value={sub.maxPrice || ''}
+                          onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))}
+                          className="w-20 h-8 rounded-lg text-sm text-center"
+                          placeholder="€"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </CardContent>
+            </Card>
           ))}
-          {pricing.length === 0 && <p className="text-xs text-carbon/40">{t.merchandising.validateFamiliesFirst}</p>}
+          {pricing.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground text-[14px]">
+              {t.merchandising.validateFamiliesFirst}
+            </div>
+          )}
         </div>
       )}
 
       {(mode === 'assisted' || mode === 'ai') && (
         <div className="space-y-4">
           {mode === 'ai' && !pricing.length && (
-            <p className="text-sm text-carbon/60 leading-relaxed">
-              {t.merchandising.aiProposalPricing} <strong>{t.merchandising.aiProposalPricingBold}</strong>.
+            <p className="text-[14px] text-muted-foreground leading-relaxed">
+              {t.merchandising.aiProposalPricing} <strong className="text-foreground">{t.merchandising.aiProposalPricingBold}</strong>.
             </p>
           )}
           {mode === 'assisted' && (
             <div className="space-y-4">
-              <div>
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.pricingDirection}</label>
+              <div className="space-y-2">
+                <Label className="text-[14px]">{t.merchandising.pricingDirection}</Label>
                 <textarea
                   value={(data.direction as string) || ''}
                   onChange={(e) => onChange({ ...data, direction: e.target.value })}
                   placeholder={t.merchandising.pricingDirectionPlaceholder}
-                  className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
+                  className="flex min-h-24 w-full rounded-lg border border-input bg-transparent px-4 py-3 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none leading-relaxed"
                 />
               </div>
-              <div>
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.referenceBrands} <span className="text-carbon/40 normal-case tracking-normal font-normal">({t.merchandising.optional})</span></label>
-                <input
-                  type="text"
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <Label className="text-[14px]">{t.merchandising.referenceBrands}</Label>
+                  <Badge variant="outline" className="text-[10px] font-normal">{t.merchandising.optional}</Badge>
+                </div>
+                <Input
                   value={(data.referenceBrands as string) || ''}
                   onChange={(e) => onChange({ ...data, referenceBrands: e.target.value })}
                   placeholder={t.merchandising.referenceBrandsPlaceholder}
-                  className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
+                  className="rounded-lg"
                 />
-                <p className="text-[10px] text-carbon/40 mt-1.5">{t.merchandising.referenceBrandsHint}</p>
+                <p className="text-[12px] text-muted-foreground">{t.merchandising.referenceBrandsHint}</p>
               </div>
             </div>
           )}
-          <button
+          <Button
             onClick={async () => {
               setGenerating(true); setError(null);
               const apiType = mode === 'assisted' ? 'pricing-assisted' : 'pricing-proposals';
@@ -419,39 +449,52 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
               setGenerating(false);
             }}
             disabled={generating || (mode === 'assisted' && !(data.direction as string)?.trim())}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="rounded-full"
           >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
             {mode === 'assisted' ? t.merchandising.suggestPricing : t.merchandising.generatePricingMatrix}
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          </Button>
+          {error && <p className="text-[13px] text-destructive">{error}</p>}
+
           {/* Show editable result */}
           {pricing.length > 0 && (
             <div className="space-y-4 pt-2">
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.merchandising.aiPricing} <span className="text-carbon/40">({t.merchandising.editable})</span></label>
               {/* Pricing Thesis */}
               {(data.pricingThesis as string) && (
-                <div className="p-4 bg-carbon/[0.03] border border-carbon/[0.08]">
-                  <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.merchandising.pricingThesisLabel}</div>
-                  <p className="text-sm text-carbon/70 leading-relaxed italic">{data.pricingThesis as string}</p>
-                </div>
+                <Card className="rounded-[16px] bg-muted/30">
+                  <CardContent className="p-4">
+                    <Badge variant="outline" className="mb-2 text-[10px]">{t.merchandising.pricingThesisLabel}</Badge>
+                    <p className="text-[14px] text-muted-foreground leading-relaxed italic">{data.pricingThesis as string}</p>
+                  </CardContent>
+                </Card>
               )}
               {pricing.map((fam, fi) => (
-                <div key={fi} className="space-y-2">
-                  <div className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon">{fam.family}</div>
-                  {fam.subcategories.map((sub, si) => (
-                    <div key={si} className="ml-4 space-y-0.5">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-carbon/60 w-40 truncate" title={sub.name}>{sub.name}</span>
-                        <span className="text-xs text-carbon/30">{t.merchandising.minPrice}</span>
-                        <input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                        <span className="text-xs text-carbon/30">{t.merchandising.maxPrice}</span>
-                        <input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 px-2 py-1.5 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                      </div>
-                      {sub.rationale && <div className="text-[10px] text-carbon/40 italic ml-0.5">{sub.rationale}</div>}
+                <Card key={fi} className="rounded-[16px] overflow-hidden">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-[15px] tracking-[-0.02em]">{fam.family}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-3">
+                    <div className="space-y-2">
+                      {fam.subcategories.map((sub, si) => (
+                        <div key={si} className="py-2 border-b border-border/50 last:border-0">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[14px] text-foreground/60 flex-1 min-w-0 truncate" title={sub.name}>{sub.name}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Label className="text-[11px] text-muted-foreground">Min</Label>
+                              <Input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 h-8 rounded-lg text-sm text-center" placeholder="€" />
+                            </div>
+                            <Separator orientation="vertical" className="h-4" />
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Label className="text-[11px] text-muted-foreground">Max</Label>
+                              <Input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 h-8 rounded-lg text-sm text-center" placeholder="€" />
+                            </div>
+                          </div>
+                          {sub.rationale && <p className="text-[12px] text-muted-foreground italic mt-1">{sub.rationale}</p>}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
