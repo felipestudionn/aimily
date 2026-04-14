@@ -9,6 +9,15 @@ import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard } from '@/components/workspace/DecisionCard';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Toggle } from '@/components/ui/toggle';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 /* ─── AI generation helper ─── */
 async function generateMerch(
@@ -504,45 +513,62 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* ── Left card: Channel selection ── */}
       <DecisionCard title={t.merchandising.distributionChannels}>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* DTC */}
-          <div className={`rounded-[16px] border transition-all ${dtc.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
-            <button onClick={toggleDtc} className="flex items-center gap-2.5 w-full">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${dtc.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                {dtc.enabled && <Check className="h-2.5 w-2.5 text-white" />}
+          <Card className={`rounded-[16px] transition-all ${dtc.enabled ? 'border-primary/20 bg-primary/[0.02]' : ''}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="dtc-switch" className="text-[15px] font-medium cursor-pointer">Direct to Consumer</Label>
+                <Switch id="dtc-switch" checked={dtc.enabled} onCheckedChange={toggleDtc} />
               </div>
-              <span className={`text-[14px] font-medium ${dtc.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Direct to Consumer</span>
-            </button>
-            {dtc.enabled && (
-              <div className="flex gap-2 mt-3 ml-8">
-                <button onClick={() => toggleSub('dtc', 'digital')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${dtc.digital ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
-                  {t.merchandising.digital}
-                </button>
-                <button onClick={() => toggleSub('dtc', 'physical')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${dtc.physical ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
-                  {t.merchandising.physical}
-                </button>
-              </div>
-            )}
-          </div>
+              {dtc.enabled && (
+                <div className="flex gap-2 mt-4">
+                  <Toggle
+                    pressed={dtc.digital}
+                    onPressedChange={() => toggleSub('dtc', 'digital')}
+                    className="rounded-full px-4 h-8 text-[12px] font-medium data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    {t.merchandising.digital}
+                  </Toggle>
+                  <Toggle
+                    pressed={dtc.physical}
+                    onPressedChange={() => toggleSub('dtc', 'physical')}
+                    className="rounded-full px-4 h-8 text-[12px] font-medium data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    {t.merchandising.physical}
+                  </Toggle>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Wholesale */}
-          <div className={`rounded-[16px] border transition-all ${wholesale.enabled ? 'border-carbon/20 bg-carbon/[0.02]' : 'border-carbon/[0.06]'} p-4`}>
-            <button onClick={toggleWholesale} className="flex items-center gap-2.5 w-full">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${wholesale.enabled ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                {wholesale.enabled && <Check className="h-2.5 w-2.5 text-white" />}
+          <Card className={`rounded-[16px] transition-all ${wholesale.enabled ? 'border-primary/20 bg-primary/[0.02]' : ''}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ws-switch" className="text-[15px] font-medium cursor-pointer">Wholesale</Label>
+                <Switch id="ws-switch" checked={wholesale.enabled} onCheckedChange={toggleWholesale} />
               </div>
-              <span className={`text-[14px] font-medium ${wholesale.enabled ? 'text-carbon' : 'text-carbon/40'}`}>Wholesale</span>
-            </button>
-            {wholesale.enabled && (
-              <div className="flex gap-2 mt-3 ml-8">
-                <button onClick={() => toggleSub('wholesale', 'digital')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${wholesale.digital ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
-                  {t.merchandising.digital}
-                </button>
-                <button onClick={() => toggleSub('wholesale', 'physical')} className={`px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${wholesale.physical ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08]'}`}>
-                  {t.merchandising.physical}
-                </button>
-              </div>
-            )}
-          </div>
+              {wholesale.enabled && (
+                <div className="flex gap-2 mt-4">
+                  <Toggle
+                    pressed={wholesale.digital}
+                    onPressedChange={() => toggleSub('wholesale', 'digital')}
+                    className="rounded-full px-4 h-8 text-[12px] font-medium data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    {t.merchandising.digital}
+                  </Toggle>
+                  <Toggle
+                    pressed={wholesale.physical}
+                    onPressedChange={() => toggleSub('wholesale', 'physical')}
+                    className="rounded-full px-4 h-8 text-[12px] font-medium data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    {t.merchandising.physical}
+                  </Toggle>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </DecisionCard>
 
@@ -552,19 +578,34 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
           <div className="space-y-3">
             {markets.map((mk, i) => (
               <div key={i} className="flex items-center gap-2">
-                <input value={mk.name} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], name: e.target.value }; onChange({ ...data, markets: u }); }}
-                  placeholder={t.merchandising.marketNamePlaceholder} className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                <input value={mk.region} onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], region: e.target.value }; onChange({ ...data, markets: u }); }}
-                  placeholder={t.merchandising.regionPlaceholder} className="w-32 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" />
-                <button onClick={() => onChange({ ...data, markets: markets.filter((_, j) => j !== i) })} className="w-7 h-7 rounded-full text-carbon/20 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all">
+                <Input
+                  value={mk.name}
+                  onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], name: e.target.value }; onChange({ ...data, markets: u }); }}
+                  placeholder={t.merchandising.marketNamePlaceholder}
+                  className="flex-1 rounded-[12px] h-11"
+                />
+                <Input
+                  value={mk.region}
+                  onChange={(e) => { const u = [...markets]; u[i] = { ...u[i], region: e.target.value }; onChange({ ...data, markets: u }); }}
+                  placeholder={t.merchandising.regionPlaceholder}
+                  className="w-32 rounded-[12px] h-11"
+                />
+                <Button
+                  variant="ghost" size="icon"
+                  onClick={() => onChange({ ...data, markets: markets.filter((_, j) => j !== i) })}
+                  className="rounded-full h-8 w-8 text-muted-foreground hover:text-destructive"
+                >
                   <X className="h-3 w-3" />
-                </button>
+                </Button>
               </div>
             ))}
-            <button onClick={() => onChange({ ...data, markets: [...markets, { name: '', region: '', opportunity: 'medium', rationale: '' }] })}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-dashed border-carbon/[0.12] text-carbon/40 hover:text-carbon/60 hover:border-carbon/20 transition-colors">
-              <Plus className="h-3 w-3" /> {t.merchandising.addMarket}
-            </button>
+            <Button
+              variant="outline"
+              onClick={() => onChange({ ...data, markets: [...markets, { name: '', region: '', opportunity: 'medium', rationale: '' }] })}
+              className="rounded-full border-dashed text-muted-foreground"
+            >
+              <Plus className="h-3 w-3 mr-2" /> {t.merchandising.addMarket}
+            </Button>
           </div>
         )}
 
@@ -599,20 +640,20 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
             {markets.length > 0 && (
               <div className="space-y-3 pt-2">
                 {markets.map((mk, i) => (
-                  <div
+                  <Card
                     key={i}
                     onClick={() => toggleMarketSelection(i)}
-                    className={`rounded-[16px] border p-4 cursor-pointer transition-all ${mk.selected !== false ? 'border-carbon/[0.15] bg-white' : 'border-carbon/[0.06] opacity-40'}`}
+                    className={`rounded-[16px] cursor-pointer transition-all ${mk.selected !== false ? 'border-primary/20 bg-card' : 'opacity-40'}`}
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${mk.selected !== false ? 'border-carbon bg-carbon' : 'border-carbon/20'}`}>
-                        {mk.selected !== false && <Check className="h-2 w-2 text-white" />}
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Switch checked={mk.selected !== false} onCheckedChange={() => toggleMarketSelection(i)} className="scale-75" />
+                        <span className="text-[14px] font-medium">{mk.name}</span>
+                        <Badge variant="outline" className="ml-auto rounded-full text-[10px]">{mk.region}</Badge>
                       </div>
-                      <span className="text-[14px] font-medium text-carbon">{mk.name}</span>
-                      <span className="text-[12px] text-carbon/30 ml-auto">{mk.region}</span>
-                    </div>
-                    {mk.rationale && <p className="text-[12px] text-carbon/50 leading-relaxed ml-6">{mk.rationale}</p>}
-                  </div>
+                      {mk.rationale && <p className="text-[12px] text-muted-foreground leading-relaxed ml-10">{mk.rationale}</p>}
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
@@ -722,87 +763,32 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
             })}
           </div>
 
-          {/* Segmentation — gradient bars with visible dividers */}
+          {/* Segmentation — shadcn Slider + Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Product Type — gradient bar with divider */}
-            <div className="bg-white rounded-[20px] p-8">
-              <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Product Type</h3>
-              <p className="text-[13px] text-carbon/30 mb-6">Edit values or drag the divider</p>
-
-              {/* Editable percentages */}
-              <div className="flex items-center justify-between mb-4">
-                {typeSeg.map((s, i) => {
-                  const updateSeg = (newVal: number) => {
-                    const clamped = Math.max(5, Math.min(90, newVal));
-                    const others = typeSeg.filter((_, j) => j !== i);
-                    const othersTotal = others.reduce((sum, o) => sum + o.percentage, 0);
-                    const remaining = 100 - clamped;
-                    const updated = typeSeg.map((seg, j) => {
-                      if (j === i) return { ...seg, percentage: clamped };
-                      const ratio = othersTotal > 0 ? seg.percentage / othersTotal : 1 / others.length;
-                      return { ...seg, percentage: Math.round(remaining * ratio) };
-                    });
-                    // Fix rounding
-                    const total = updated.reduce((sum, u) => sum + u.percentage, 0);
-                    if (total !== 100) updated[updated.length - 1].percentage += 100 - total;
-                    onChange({ ...data, typeSegmentation: updated });
-                  };
-                  return (
+            {/* Product Type */}
+            <Card className="rounded-[20px] border-0 shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[20px] font-semibold tracking-[-0.03em]">Product Type</CardTitle>
+                <p className="text-[13px] text-muted-foreground">Drag to adjust the split</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Labels with big numbers */}
+                <div className="flex items-center justify-between">
+                  {typeSeg.map((s) => (
                     <div key={s.name} className="text-center">
-                      <div className="flex items-baseline justify-center">
-                        <input
-                          type="number" min={5} max={90}
-                          value={s.percentage}
-                          onChange={(e) => updateSeg(Number(e.target.value))}
-                          className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none bg-transparent border-none focus:outline-none w-16 text-center"
-                        />
-                        <span className="text-[16px] font-semibold text-carbon/15">%</span>
-                      </div>
-                      <p className="text-[12px] text-carbon/40 mt-1">{s.name}</p>
+                      <span className="text-[36px] font-bold text-foreground tracking-[-0.04em] leading-none">
+                        {s.percentage}<span className="text-[16px] font-semibold text-muted-foreground/40 ml-0.5">%</span>
+                      </span>
+                      <p className="text-[12px] text-muted-foreground mt-1">{s.name}</p>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Gradient bar with divider */}
-              <div className="relative">
-                {/* 0% and 100% labels */}
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-[10px] text-carbon/25">0%</span>
-                  <span className="text-[10px] text-carbon/25">100%</span>
+                  ))}
                 </div>
 
-                {/* The bar */}
-                <div className="relative h-[28px] rounded-full overflow-hidden flex">
-                  <div className="h-full rounded-l-full transition-all duration-200" style={{
-                    width: `${typeSeg[0].percentage}%`,
-                    background: 'rgba(0,0,0,0.7)',
-                  }} />
-                  <div className="h-full transition-all duration-200" style={{
-                    width: `${typeSeg[1].percentage}%`,
-                    background: 'rgba(0,0,0,0.35)',
-                  }} />
-                  <div className="h-full rounded-r-full transition-all duration-200" style={{
-                    width: `${typeSeg[2].percentage}%`,
-                    background: 'rgba(0,0,0,0.12)',
-                  }} />
-                </div>
-
-                {/* Divider handle */}
-                <div
-                  className="absolute top-0 flex flex-col items-center pointer-events-none"
-                  style={{ left: `${typeSeg[0].percentage}%`, transform: 'translateX(-50%)' }}
-                >
-                  <div className="text-carbon/40 -mt-[2px]">▼</div>
-                  <div className="w-[2px] h-[28px] bg-carbon/30 -mt-[2px]" />
-                </div>
-
-                {/* Invisible range slider for drag */}
-                <input
-                  type="range" min={10} max={85}
-                  value={typeSeg[0].percentage}
-                  onChange={(e) => {
-                    const rev = Number(e.target.value);
+                {/* shadcn Slider */}
+                <Slider
+                  value={[typeSeg[0].percentage]}
+                  min={10} max={85} step={1}
+                  onValueChange={([rev]) => {
                     const remaining = 100 - rev;
                     const ratio = typeSeg[1].percentage / Math.max(1, typeSeg[1].percentage + typeSeg[2].percentage);
                     const img = Math.max(5, Math.round(remaining * ratio));
@@ -813,83 +799,57 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                       { name: 'Entry', percentage: entry },
                     ]});
                   }}
-                  className="absolute inset-0 w-full opacity-0 cursor-col-resize"
-                  style={{ top: '16px', height: '28px' }}
+                  className="[&_[data-slot=slider-track]]:h-3 [&_[data-slot=slider-range]]:bg-primary [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2"
                 />
-              </div>
-            </div>
 
-            {/* Newness Split — gradient bar with divider */}
-            <div className="bg-white rounded-[20px] p-8">
-              <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-1">Newness Split</h3>
-              <p className="text-[13px] text-carbon/30 mb-6">Edit values or drag the divider</p>
+                {/* Stacked bar visualization */}
+                <div className="h-[8px] rounded-full overflow-hidden flex">
+                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${typeSeg[0].percentage}%` }} />
+                  <div className="h-full bg-primary/40 transition-all duration-300" style={{ width: `${typeSeg[1].percentage}%` }} />
+                  <div className="h-full bg-primary/15 transition-all duration-300" style={{ width: `${typeSeg[2].percentage}%` }} />
+                </div>
+              </CardContent>
+            </Card>
 
-              {/* Editable percentages */}
-              <div className="flex items-center justify-between mb-4">
-                {newnessSeg.map((s, i) => (
-                  <div key={s.name} className="text-center">
-                    <div className="flex items-baseline justify-center">
-                      <input
-                        type="number" min={5} max={95}
-                        value={s.percentage}
-                        onChange={(e) => {
-                          const val = Math.max(5, Math.min(95, Number(e.target.value)));
-                          onChange({ ...data, newnessSegmentation: [
-                            { name: 'Newness', percentage: i === 0 ? val : 100 - val },
-                            { name: 'Carry-Over', percentage: i === 0 ? 100 - val : val },
-                          ]});
-                        }}
-                        className="text-[36px] font-bold text-carbon tracking-[-0.04em] leading-none bg-transparent border-none focus:outline-none w-16 text-center"
-                      />
-                      <span className="text-[16px] font-semibold text-carbon/15">%</span>
+            {/* Newness Split */}
+            <Card className="rounded-[20px] border-0 shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[20px] font-semibold tracking-[-0.03em]">Newness Split</CardTitle>
+                <p className="text-[13px] text-muted-foreground">Drag to adjust the split</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Labels with big numbers */}
+                <div className="flex items-center justify-between">
+                  {newnessSeg.map((s) => (
+                    <div key={s.name} className="text-center">
+                      <span className="text-[36px] font-bold text-foreground tracking-[-0.04em] leading-none">
+                        {s.percentage}<span className="text-[16px] font-semibold text-muted-foreground/40 ml-0.5">%</span>
+                      </span>
+                      <p className="text-[12px] text-muted-foreground mt-1">{s.name}</p>
                     </div>
-                    <p className="text-[12px] text-carbon/40 mt-1">{s.name}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Gradient bar with divider */}
-              <div className="relative">
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-[10px] text-carbon/25">0%</span>
-                  <span className="text-[10px] text-carbon/25">100%</span>
+                  ))}
                 </div>
 
-                <div className="relative h-[28px] rounded-full overflow-hidden flex">
-                  <div className="h-full rounded-l-full transition-all duration-200" style={{
-                    width: `${newnessSeg[0].percentage}%`,
-                    background: 'rgba(0,0,0,0.6)',
-                  }} />
-                  <div className="h-full rounded-r-full transition-all duration-200" style={{
-                    width: `${newnessSeg[1].percentage}%`,
-                    background: 'rgba(0,0,0,0.2)',
-                  }} />
-                </div>
-
-                {/* Divider handle */}
-                <div
-                  className="absolute top-0 flex flex-col items-center pointer-events-none"
-                  style={{ left: `${newnessSeg[0].percentage}%`, transform: 'translateX(-50%)' }}
-                >
-                  <div className="text-carbon/40 -mt-[2px]">▼</div>
-                  <div className="w-[2px] h-[28px] bg-carbon/30 -mt-[2px]" />
-                </div>
-
-                <input
-                  type="range" min={10} max={90}
-                  value={newnessSeg[0].percentage}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
+                {/* shadcn Slider */}
+                <Slider
+                  value={[newnessSeg[0].percentage]}
+                  min={10} max={90} step={1}
+                  onValueChange={([val]) => {
                     onChange({ ...data, newnessSegmentation: [
                       { name: 'Newness', percentage: val },
                       { name: 'Carry-Over', percentage: 100 - val },
                     ]});
                   }}
-                  className="absolute inset-0 w-full opacity-0 cursor-col-resize"
-                  style={{ top: '16px', height: '28px' }}
+                  className="[&_[data-slot=slider-track]]:h-3 [&_[data-slot=slider-range]]:bg-primary [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2"
                 />
-              </div>
-            </div>
+
+                {/* Stacked bar visualization */}
+                <div className="h-[8px] rounded-full overflow-hidden flex">
+                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${newnessSeg[0].percentage}%` }} />
+                  <div className="h-full bg-primary/20 transition-all duration-300" style={{ width: `${newnessSeg[1].percentage}%` }} />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}
@@ -900,20 +860,23 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {kpiCards.map(kpi => (
-                <div key={kpi.key} className="bg-white rounded-[20px] p-6 flex flex-col min-h-[160px]">
-                  <h3 className="text-[15px] font-semibold text-carbon tracking-[-0.02em] mb-auto">{kpi.label}</h3>
-                  <div className="flex items-baseline gap-1 mt-4">
-                    {kpi.prefix && <span className="text-[18px] font-semibold text-carbon/20">{kpi.prefix}</span>}
-                    <input
-                      type="number"
-                      value={(data[kpi.key] as number) || ''}
-                      onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-                      placeholder="0"
-                      className="text-[36px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none focus:outline-none w-full placeholder:text-carbon/[0.05] leading-none"
-                    />
-                  </div>
-                  {kpi.suffix && <span className="text-[13px] font-medium text-carbon/20">{kpi.suffix}</span>}
-                </div>
+                <Card key={kpi.key} className="rounded-[20px] border-0 shadow-none min-h-[160px]">
+                  <CardContent className="p-6 flex flex-col h-full">
+                    <Label className="text-[15px] font-semibold tracking-[-0.02em] mb-auto">{kpi.label}</Label>
+                    <div className="flex items-end mt-4">
+                      <Input
+                        type="number"
+                        value={(data[kpi.key] as number) || ''}
+                        onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
+                        placeholder="—"
+                        className="text-[36px] font-bold tracking-[-0.04em] bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto leading-none placeholder:text-muted-foreground/10"
+                      />
+                      <span className="text-[20px] font-semibold text-muted-foreground/30 mb-[2px] ml-1 shrink-0">
+                        {kpi.prefix || kpi.suffix}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
             {/* Segmentation compact */}
@@ -921,7 +884,7 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
               <SegRow label="Product" segs={(data.typeSegmentation as Seg[]) || typeSeg} dataKey="typeSegmentation" />
               <SegRow label="Newness" segs={(data.newnessSegmentation as Seg[]) || newnessSeg} dataKey="newnessSegmentation" />
             </div>
-            <button
+            <Button
               onClick={async () => {
                 setGenerating(true); setError(null);
                 const apiType = mode === 'assisted' ? 'budget-assisted' : 'budget-proposals';
@@ -944,11 +907,11 @@ function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, p
                 setGenerating(false);
               }}
               disabled={generating || (mode === 'assisted' && !(data.growthModel as string))}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="rounded-full"
             >
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
               {mode === 'assisted' ? t.merchandising.suggestBudget : t.merchandising.generateFinancialPlan}
-            </button>
+            </Button>
             {error && <p className="text-xs text-red-600">{error}</p>}
           </div>
 
