@@ -448,7 +448,7 @@ export function WizardSidebar({
      in the calendar branch below.
      ══════════════════════════════════════════════════════════════ */
   const [editingMilestone, setEditingMilestone] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ nameEs: string; durationWeeks: number; startWeeksBefore: number; notes: string }>({ nameEs: '', durationWeeks: 0, startWeeksBefore: 0, notes: '' });
+  const [editValues, setEditValues] = useState<{ name: string; durationWeeks: number; startWeeksBefore: number; notes: string }>({ name: '', durationWeeks: 0, startWeeksBefore: 0, notes: '' });
   const [dragState, setDragState] = useState<DragState | null>(null);
   const calScrollRef = useRef<HTMLDivElement>(null);
 
@@ -545,12 +545,12 @@ export function WizardSidebar({
 
   const openEditor = (m: TimelineMilestone) => {
     setEditingMilestone(m.id);
-    setEditValues({ nameEs: m.nameEs, durationWeeks: m.durationWeeks, startWeeksBefore: m.startWeeksBefore, notes: m.notes || '' });
+    setEditValues({ name: m.name, durationWeeks: m.durationWeeks, startWeeksBefore: m.startWeeksBefore, notes: m.notes || '' });
   };
   const saveEditor = () => {
     if (!editingMilestone) return;
     updateMilestone(editingMilestone, {
-      nameEs: editValues.nameEs,
+      name: editValues.name,
       durationWeeks: editValues.durationWeeks,
       startWeeksBefore: editValues.startWeeksBefore,
       notes: editValues.notes || undefined,
@@ -841,7 +841,7 @@ export function WizardSidebar({
                                           onMouseDown={(e) => e.stopPropagation()}
                                         >
                                           <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] whitespace-nowrap">
-                                            <div className="font-semibold text-[12px] tracking-[-0.01em]">{m.nameEs}</div>
+                                            <div className="font-semibold text-[12px] tracking-[-0.01em]">{m.name}</div>
                                             <div className="text-white/60 mt-1">{formatDate(pos.startDate)} → {formatDate(pos.endDate)}</div>
                                             <div className="text-white/50 mt-0.5">{pos.durationWeeks.toFixed(1)} {calT.weeks} · {m.responsible}</div>
                                             {m.notes && <div className="text-citronella mt-1 text-[10px] max-w-[240px] break-words whitespace-normal">{m.notes}</div>}
@@ -914,13 +914,13 @@ export function WizardSidebar({
               <div className="bg-white rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: m.color + '1F' }}>
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} />
-                  <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/50">{PHASES[m.phase as TimelinePhase].nameEs}</span>
+                  <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/50">{PHASES[m.phase as TimelinePhase].name}</span>
                   <span className="ml-auto text-[9px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.05em] bg-carbon/[0.04] text-carbon/60">{m.responsible}</span>
                 </div>
                 <div className="px-6 py-5 space-y-5">
                   <div>
                     <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{calT.nameField}</label>
-                    <input type="text" value={editValues.nameEs} onChange={(e) => setEditValues(v => ({ ...v, nameEs: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" autoFocus />
+                    <input type="text" value={editValues.name} onChange={(e) => setEditValues(v => ({ ...v, name: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" autoFocus />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
