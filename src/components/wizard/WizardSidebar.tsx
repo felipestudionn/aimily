@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -201,6 +201,7 @@ export function WizardSidebar({
 }: WizardSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { milestones } = useTimeline();
   const { phases } = useWizardState(milestones);
   const workspaceNav = useWorkspaceNavigationOptional();
@@ -547,9 +548,12 @@ export function WizardSidebar({
   const handleModeClick = (e: React.MouseEvent<HTMLAnchorElement>, opt: typeof modeOptions[number]) => {
     e.preventDefault();
     if (mode === opt.mode) return;
-    setMode(opt.mode); // instant — width transition fires now, not after Next navigation
+    setMode(opt.mode); // instant — CSS width transition fires now, not after Next navigation
     const href = opt.path === '' ? basePath : `${basePath}${opt.path}`;
-    window.history.pushState({}, '', href);
+    // Trigger Next navigation in parallel so the destination page actually
+    // mounts behind the aside (otherwise contracting back to nav reveals
+    // an empty main area because Next still thinks we're on /calendar).
+    router.push(href);
   };
   /* Fixed width = INNER_W (356) − px-5 padding (40) = 316. Pinning the
      switcher width keeps icons/labels at their resting size during the
