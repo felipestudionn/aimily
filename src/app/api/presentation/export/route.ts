@@ -22,16 +22,23 @@ interface ExportBody {
 }
 
 /* URL of the running app — used by headless Chrome to render the
-   internal export route. On Vercel we use VERCEL_URL; locally
-   NEXT_PUBLIC_SITE_URL or fallback to localhost. */
+   internal export route. Must be the PUBLIC-facing domain (e.g.
+   www.aimily.app) rather than the internal *.vercel.app, because
+   Vercel Deployment Protection gates internal URLs behind a Vercel
+   login which the headless browser can't pass. */
 function getBaseUrl(req: NextRequest): string {
-  const vercelUrl = process.env.VERCEL_URL;
-  if (vercelUrl) return `https://${vercelUrl}`;
+  // Priority: incoming request origin (the exact host the client
+  // used — guaranteed unprotected since the user just hit it) →
+  // NEXT_PUBLIC_SITE_URL (if explicitly set) → VERCEL_URL (last
+  // resort, may be protected).
+  const origin = req.nextUrl.origin;
+  if (origin && !origin.includes('localhost')) return origin.replace(/\/$/, '');
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (siteUrl) return siteUrl.replace(/\/$/, '');
-  // Derive from the incoming request as last resort (dev)
-  const origin = req.nextUrl.origin;
-  return origin.replace(/\/$/, '');
+  if (origin) return origin.replace(/\/$/, '');
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) return `https://${vercelUrl}`;
+  return 'http://localhost:3000';
 }
 
 /* Chromium binary URL for @sparticuz/chromium-min. Set this in env

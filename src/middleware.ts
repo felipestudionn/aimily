@@ -20,11 +20,16 @@ const publicPageRoutes = [
   '/trust',
 ];
 
-// Page routes that don't require auth (prefix match). Used by
-// /p/[token] — public shared-presentation links that anyone with the
-// token can view without signing in.
+// Page routes that don't require auth (prefix match). Used by:
+// - /p/[token]                — public shared-presentation links
+// - /presentation/export/[id] — internal PDF-export route hit by
+//                               the /api/presentation/export Function's
+//                               headless Chrome. Auth is enforced by
+//                               the signed JWT in ?token, validated
+//                               inside the page component.
 const publicPagePrefixes = [
   '/p/',
+  '/presentation/export/',
 ];
 
 // API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
