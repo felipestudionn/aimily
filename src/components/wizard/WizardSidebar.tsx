@@ -215,16 +215,17 @@ export function WizardSidebar({
   const basePath = `/collection/${collectionId}`;
 
   /* ══════════════════════════════════════════════════════════════
-     Mode detection — URL drives the spine form.
-     - 'nav' (default): sidebar as we always knew it (340px, labels only).
-     - 'calendar': sidebar EXPANDS to full viewport, each row grows a
-       timeline track on the right. Same labels, same IDs.
-     - 'presentation': future — sidebar becomes chapter index.
+     Mode detection — URL drives the spine form, but we keep an
+     INTERNAL state so mode changes are instant on click (no waiting
+     for Next.js navigation to complete). URL still updates via
+     history.pushState so refresh + deep-link work.
      ══════════════════════════════════════════════════════════════ */
-  const mode: 'nav' | 'calendar' | 'presentation' =
-    pathname?.endsWith('/calendar') ? 'calendar'
-    : pathname?.endsWith('/presentation') ? 'presentation'
+  const modeFromUrl = (p: string | null | undefined): 'nav' | 'calendar' | 'presentation' =>
+    p?.endsWith('/calendar') ? 'calendar'
+    : p?.endsWith('/presentation') ? 'presentation'
     : 'nav';
+  const [mode, setMode] = useState<'nav' | 'calendar' | 'presentation'>(modeFromUrl(pathname));
+  useEffect(() => { setMode(modeFromUrl(pathname)); }, [pathname]);
 
   /* Client-only mount flag (for createPortal on the edit modal). */
   const [clientMounted, setClientMounted] = useState(false);
@@ -542,6 +543,13 @@ export function WizardSidebar({
     { mode: 'calendar' as const, label: labelOf('calendar'), path: '/calendar', Icon: CalendarDays },
     { mode: 'presentation' as const, label: labelOf('presentation'), path: '/presentation', Icon: Presentation },
   ];
+  const handleModeClick = (e: React.MouseEvent<HTMLAnchorElement>, opt: typeof modeOptions[number]) => {
+    e.preventDefault();
+    if (mode === opt.mode) return;
+    setMode(opt.mode); // instant — width transition fires now, not after Next navigation
+    const href = opt.path === '' ? basePath : `${basePath}${opt.path}`;
+    window.history.pushState({}, '', href);
+  };
   const modeSwitcher = (
     <div className="flex items-center gap-0.5 rounded-full bg-carbon/[0.04] p-1 w-full">
       {modeOptions.map((opt) => {
@@ -551,6 +559,7 @@ export function WizardSidebar({
           <Link
             key={opt.mode}
             href={href}
+            onClick={(e) => handleModeClick(e, opt)}
             className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] transition-all ${
               active
                 ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] text-carbon'
@@ -576,12 +585,11 @@ export function WizardSidebar({
      SIDEBAR_BLOCKS + labelOf() + getSubItemState() reused so labels
      stay identical to nav mode.
      ══════════════════════════════════════════════════════════════ */
-  if (mode === 'calendar') {
-    return (
-      <aside
-        className="fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)]"
-        style={{ width: '100vw' }}
-      >
+  /* Calendar inner content — rendered conditionally inside the SAME <aside>
+     as the nav inner content (below), so React reconciles the element and
+     the CSS width transition animates smoothly. */
+  const calendarInner = mode === 'calendar' ? (
+    <>
         <div
           className="flex flex-col overflow-hidden rounded-[16px] h-full"
           style={{ background: CAL_SIDEBAR_BG }}
@@ -823,22 +831,25 @@ export function WizardSidebar({
             document.body
           );
         })()}
-      </aside>
-    );
-  }
+    </>
+  ) : null;
+
+  const asideWidth = mode === 'calendar' ? '100vw' : (collapsed ? COLLAPSED_W : EXPANDED_W);
 
   return (
     <>
-      {mobileOpen && (
+      {mobileOpen && mode !== 'calendar' && (
         <div className="md:hidden fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onMobileClose} />
       )}
 
       <aside
-        style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-        className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        style={{ width: asideWidth, background: mode === 'calendar' ? '#F3F2F0' : undefined }}
+        className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
+        {mode === 'calendar' && calendarInner}
+        {mode !== 'calendar' && (<>
         {/* ── Collapse button — bottom edge, not confused with "back" ── */}
         <button
           onClick={handleToggleCollapse}
@@ -1035,6 +1046,7 @@ export function WizardSidebar({
           {/* Mode switching now lives in the modeSwitcher at the top of
              the sidebar — no duplicate utility bar at the bottom. */}
         </div>
+        </>)}
       </aside>
     </>
   );
