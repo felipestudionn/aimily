@@ -502,27 +502,9 @@ export function WizardSidebar({
     };
     const onUp = () => {
       if (!dragState) return;
-      const movedPx = Math.abs(dragState.currentDeltaDays * CAL_DAY_WIDTH);
-      /* Click vs drag: humans ALWAYS twitch the mouse a few px when
-         clicking (especially on trackpads). 12px is the sweet spot —
-         strict enough to distinguish intentional drags, loose enough
-         to catch real clicks. Only applies to `move`-type events, not
-         the resize handles. */
-      if (movedPx < 12 && dragState.type === 'move') {
-        const subId = MILESTONE_TO_MINI_BLOCK[dragState.milestoneId];
-        if (subId) {
-          let foundSubRoute: string | null = null;
-          for (const block of SIDEBAR_BLOCKS) {
-            const sub = block.subItems.find(s => s.id === subId);
-            if (sub) { foundSubRoute = sub.route; break; }
-          }
-          if (foundSubRoute) {
-            exitCalendarToSubItem(foundSubRoute);
-            setDragState(null);
-            return;
-          }
-        }
-      }
+      /* No click-to-navigate on bars — Felipe wants an explicit button.
+         Clicking a bar is only for starting a drag. The hover tooltip
+         has a dedicated "Ir al workspace" CTA that navigates. */
       const snapped = calSnapToWeek(dragState.currentDeltaDays);
       const dw = snapped / CAL_DAYS_PER_WEEK;
       if (dragState.type === 'move') {
@@ -832,20 +814,42 @@ export function WizardSidebar({
                                       )}
                                     </div>
                                     <div className="absolute right-0 top-0 w-2 h-full cursor-col-resize z-10" onMouseDown={(e) => handleBarDragStart(e, m.id, 'resize-right')} />
-                                    {!isDragging && (
-                                      <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/bar:block z-30 pointer-events-none">
-                                        <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] whitespace-nowrap">
-                                          <div className="font-semibold text-[12px] tracking-[-0.01em]">{m.nameEs}</div>
-                                          <div className="text-white/60 mt-1">{formatDate(pos.startDate)} → {formatDate(pos.endDate)}</div>
-                                          <div className="text-white/50 mt-0.5">{pos.durationWeeks.toFixed(1)} semanas · {m.responsible}</div>
-                                          {m.notes && <div className="text-citronella mt-1 text-[10px] max-w-[240px] break-words whitespace-normal">{m.notes}</div>}
-                                          <div className="mt-1.5 pt-1.5 border-t border-white/15 text-white/60 text-[10px] tracking-[0.02em] flex items-center gap-1">
-                                            Click → open workspace
-                                            <ArrowRight className="h-3 w-3" strokeWidth={2} />
+                                    {!isDragging && (() => {
+                                      // Look up the mini-block's sub.route so the CTA button can
+                                      // route cleanly through exitCalendarToSubItem.
+                                      const subId = MILESTONE_TO_MINI_BLOCK[m.id];
+                                      let routeForBar: string | null = null;
+                                      if (subId) {
+                                        for (const b of SIDEBAR_BLOCKS) {
+                                          const s = b.subItems.find(si => si.id === subId);
+                                          if (s) { routeForBar = s.route; break; }
+                                        }
+                                      }
+                                      return (
+                                        <div
+                                          className="absolute bottom-full left-0 pb-1.5 hidden group-hover/bar:block z-30"
+                                          onMouseDown={(e) => e.stopPropagation()}
+                                        >
+                                          <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] whitespace-nowrap">
+                                            <div className="font-semibold text-[12px] tracking-[-0.01em]">{m.nameEs}</div>
+                                            <div className="text-white/60 mt-1">{formatDate(pos.startDate)} → {formatDate(pos.endDate)}</div>
+                                            <div className="text-white/50 mt-0.5">{pos.durationWeeks.toFixed(1)} semanas · {m.responsible}</div>
+                                            {m.notes && <div className="text-citronella mt-1 text-[10px] max-w-[240px] break-words whitespace-normal">{m.notes}</div>}
+                                            {routeForBar && (
+                                              <button
+                                                type="button"
+                                                onMouseDown={(e) => e.stopPropagation()}
+                                                onClick={(e) => { e.stopPropagation(); exitCalendarToSubItem(routeForBar!); }}
+                                                className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-carbon text-[11px] font-semibold hover:bg-white/90 transition-colors"
+                                              >
+                                                Ir al workspace
+                                                <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+                                              </button>
+                                            )}
                                           </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      );
+                                    })()}
                                   </div>
                                 );
                               })}
