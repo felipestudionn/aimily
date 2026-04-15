@@ -11,6 +11,8 @@
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { TimelineSlideData } from '@/lib/presentation/load-presentation-data';
+import { EditableText } from '../EditableText';
+import type { EditingContext } from '../SlideRenderer';
 
 interface Props {
   slide: MicroBlockSlide;
@@ -19,6 +21,8 @@ interface Props {
   /* Real CIS timeline for this slide. When milestones are present,
      overrides the editorial placeholder. */
   data?: TimelineSlideData;
+  /* F5.3: per-milestone label + lead editing when defined. */
+  editing?: EditingContext;
 }
 
 interface Milestone {
@@ -69,14 +73,23 @@ const FALLBACK = {
   })),
 };
 
-export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Props) {
+export function TimelineStripTemplate({ slide, meta, title, data: cisData, editing }: Props) {
   const placeholder = TIMELINE_PLACEHOLDERS[slide.id] ?? FALLBACK;
+  const baseLead = cisData?.lead ?? placeholder.lead;
+  const baseMilestones = (cisData?.milestones && cisData.milestones.length > 0)
+    ? cisData.milestones
+    : placeholder.milestones;
+  /* Apply live drafts over CIS/placeholder for real-time typing. */
+  const drafts = editing?.drafts ?? {};
+  const milestonesWithDrafts = baseMilestones.map((m, i) => {
+    const labelDraft = drafts[`milestones.${i}.label`];
+    return labelDraft != null ? { ...m, label: labelDraft } : m;
+  });
   const data = {
-    lead: cisData?.lead ?? placeholder.lead,
-    milestones: (cisData?.milestones && cisData.milestones.length > 0)
-      ? cisData.milestones
-      : placeholder.milestones,
+    lead: drafts.lead ?? baseLead,
+    milestones: milestonesWithDrafts,
   };
+  const isLeadOverride = !!editing?.slideOverrides.lead;
 
   return (
     <div
@@ -117,21 +130,28 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Pro
       </div>
 
       {/* Lead sentence */}
-      <p
-        style={{
-          fontFamily: 'var(--p-display-font)',
+      <div style={{ margin: '0 0 56px 0', maxWidth: '70%' }}>
+        <EditableText
+          as="p"
+          value={data.lead}
+          editMode={!!editing?.editMode}
+          isOverride={isLeadOverride}
+          onDraftChange={(v) => editing?.onDraftChange('lead', v)}
+          onRevert={() => editing?.onRevert('lead')}
+          style={{
+            fontFamily: 'var(--p-display-font)',
             textTransform: 'var(--p-display-case)' as const,
-          fontWeight: 'var(--p-display-weight)',
-          letterSpacing: 'var(--p-display-tracking)',
-          fontSize: 'clamp(20px, 1.8vw, 28px)',
-          lineHeight: 1.3,
-          color: 'var(--p-fg)',
-          maxWidth: '70%',
-          margin: '0 0 56px 0',
-        }}
-      >
-        {data.lead}
-      </p>
+            fontWeight: 'var(--p-display-weight)',
+            letterSpacing: 'var(--p-display-tracking)',
+            fontSize: 'clamp(20px, 1.8vw, 28px)',
+            lineHeight: 1.3,
+            color: 'var(--p-fg)',
+            margin: 0,
+          }}
+        >
+          {data.lead}
+        </EditableText>
+      </div>
 
       {/* Timeline — flex distributes evenly */}
       <div className="flex-1 flex items-center">
@@ -179,11 +199,17 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Pro
                   />
                 </div>
                 {/* Label below */}
-                <div
+                <EditableText
+                  as="div"
+                  value={m.label}
+                  editMode={!!editing?.editMode}
+                  isOverride={!!editing?.slideOverrides[`milestones.${i}.label`]}
+                  onDraftChange={(v) => editing?.onDraftChange(`milestones.${i}.label`, v)}
+                  onRevert={() => editing?.onRevert(`milestones.${i}.label`)}
                   style={{
                     fontFamily: 'var(--p-display-font)',
-            textTransform: 'var(--p-display-case)' as const,
-                    fontWeight: m.status === 'current' ? 700 : Number('var(--p-display-weight)') || 500,
+                    textTransform: 'var(--p-display-case)' as const,
+                    fontWeight: m.status === 'current' ? 700 : (Number('var(--p-display-weight)') || 500),
                     fontSize: 'clamp(13px, 1.1vw, 16px)',
                     letterSpacing: 'var(--p-display-tracking)',
                     color: m.status === 'next' ? 'var(--p-mute)' : 'var(--p-fg)',
@@ -194,7 +220,7 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Pro
                   }}
                 >
                   {m.label}
-                </div>
+                </EditableText>
               </div>
             ))}
           </div>

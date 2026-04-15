@@ -61,9 +61,9 @@ export function SlideRenderer({ slide, meta, title, coverSubtitle, data, editing
     case 'narrative-portrait':
       return <NarrativePortraitTemplate slide={slide} meta={meta} title={title} data={data?.narratives[slide.id]} editing={editing} />;
     case 'grid-tile':
-      return <GridTileTemplate slide={slide} meta={meta} title={title} data={data?.grids[slide.id]} />;
+      return <GridTileTemplate slide={slide} meta={meta} title={title} data={data?.grids[slide.id]} editing={editing} />;
     case 'timeline-strip':
-      return <TimelineStripTemplate slide={slide} meta={meta} title={title} data={data?.timelines[slide.id]} />;
+      return <TimelineStripTemplate slide={slide} meta={meta} title={title} data={data?.timelines[slide.id]} editing={editing} />;
     case 'placeholder':
     default:
       return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;

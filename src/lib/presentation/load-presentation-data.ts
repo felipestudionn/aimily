@@ -398,21 +398,57 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
 
     data.overrides[slideId] = fields;
 
-    // Apply to narratives (F5.1 scope). Grid/timeline overrides land
-    // in F5.3; their rows will still appear in data.overrides so the
-    // sidebar indicator fires, but the templates won't merge yet.
+    // Narrative overrides (F5.1 scope): lead / body / attribution.
     if (data.narratives[slideId]) {
       if (fields.lead) data.narratives[slideId].lead = fields.lead;
       if (fields.body) data.narratives[slideId].body = fields.body;
       if (fields.attribution) data.narratives[slideId].attribution = fields.attribution;
     } else if (fields.lead || fields.body) {
-      // No CIS narrative yet — seed one from the override so the
-      // template renders the user's copy instead of the placeholder.
       data.narratives[slideId] = {
         lead: fields.lead,
         body: fields.body,
         attribution: fields.attribution,
       };
+    }
+
+    // Grid overrides (F5.3): dot-notation keys like `tiles.0.label`,
+    // `tiles.3.eyebrow`. We apply them onto a copy of the existing
+    // tiles array so non-edited tiles keep their CIS-derived content.
+    if (data.grids[slideId]?.tiles) {
+      const tiles = [...(data.grids[slideId].tiles ?? [])];
+      let touched = false;
+      for (const [k, v] of Object.entries(fields)) {
+        const m = k.match(/^tiles\.(\d+)\.(label|eyebrow|value)$/);
+        if (!m) continue;
+        const idx = Number(m[1]);
+        const prop = m[2] as 'label' | 'eyebrow' | 'value';
+        if (tiles[idx]) {
+          tiles[idx] = { ...tiles[idx], [prop]: v };
+          touched = true;
+        }
+      }
+      if (touched) data.grids[slideId].tiles = tiles;
+    }
+
+    // Timeline overrides (F5.3): dot-notation keys like
+    // `milestones.0.label`. Status stays unmanaged — it's derived
+    // from the actual milestone state, not an editable free-form.
+    if (data.timelines[slideId]?.milestones) {
+      const ms = [...(data.timelines[slideId].milestones ?? [])];
+      let touched = false;
+      for (const [k, v] of Object.entries(fields)) {
+        const m = k.match(/^milestones\.(\d+)\.(label|date)$/);
+        if (!m) continue;
+        const idx = Number(m[1]);
+        const prop = m[2] as 'label' | 'date';
+        if (ms[idx]) {
+          ms[idx] = { ...ms[idx], [prop]: v };
+          touched = true;
+        }
+      }
+      if (touched) data.timelines[slideId].milestones = ms;
+      // Also allow overriding the timeline lead
+      if (fields.lead) data.timelines[slideId].lead = fields.lead;
     }
   }
 

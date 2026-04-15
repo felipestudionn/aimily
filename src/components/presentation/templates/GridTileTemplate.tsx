@@ -11,6 +11,8 @@
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { GridSlideData } from '@/lib/presentation/load-presentation-data';
+import { EditableText } from '../EditableText';
+import type { EditingContext } from '../SlideRenderer';
 
 interface Props {
   slide: MicroBlockSlide;
@@ -19,6 +21,8 @@ interface Props {
   /* Real CIS grid for this slide. When provided with tiles, overrides
      the editorial placeholder. */
   data?: GridSlideData;
+  /* F5.3: per-tile label editing via EditableText when defined. */
+  editing?: EditingContext;
 }
 
 interface Tile {
@@ -83,11 +87,20 @@ const FALLBACK = {
   })),
 };
 
-export function GridTileTemplate({ slide, meta, title, data: cisData }: Props) {
+export function GridTileTemplate({ slide, meta, title, data: cisData, editing }: Props) {
   const placeholder = GRID_PLACEHOLDERS[slide.id] ?? FALLBACK;
+  /* Apply any live drafts on top of cisData (which already carries
+     committed overrides from the loader). Drafts keep the canvas in
+     sync while the user is typing, before Save. */
+  const baseTiles = (cisData?.tiles && cisData.tiles.length > 0) ? cisData.tiles : placeholder.tiles;
+  const tilesWithDrafts = baseTiles.map((t, i) => {
+    if (!editing?.drafts) return t;
+    const labelDraft = editing.drafts[`tiles.${i}.label`];
+    return labelDraft != null ? { ...t, label: labelDraft } : t;
+  });
   const data = {
     caption: cisData?.caption ?? placeholder.caption,
-    tiles: (cisData?.tiles && cisData.tiles.length > 0) ? cisData.tiles : placeholder.tiles,
+    tiles: tilesWithDrafts,
   };
 
   return (
@@ -193,10 +206,16 @@ export function GridTileTemplate({ slide, meta, title, data: cisData }: Props) {
             </div>
 
             <div className="relative">
-              <div
+              <EditableText
+                as="div"
+                value={tile.label}
+                editMode={!!editing?.editMode}
+                isOverride={!!editing?.slideOverrides[`tiles.${i}.label`]}
+                onDraftChange={(v) => editing?.onDraftChange(`tiles.${i}.label`, v)}
+                onRevert={() => editing?.onRevert(`tiles.${i}.label`)}
                 style={{
                   fontFamily: 'var(--p-display-font)',
-            textTransform: 'var(--p-display-case)' as const,
+                  textTransform: 'var(--p-display-case)' as const,
                   fontWeight: 'var(--p-display-weight)',
                   fontSize: 'clamp(16px, 1.4vw, 22px)',
                   letterSpacing: 'var(--p-display-tracking)',
@@ -205,7 +224,7 @@ export function GridTileTemplate({ slide, meta, title, data: cisData }: Props) {
                 }}
               >
                 {tile.label}
-              </div>
+              </EditableText>
             </div>
           </div>
         ))}
