@@ -1058,12 +1058,15 @@ export function WizardSidebar({
           {SIDEBAR_BLOCKS.map((block, bIdx) => (
             <div key={block.id} className="mb-5">
               {/* Block pill — block number on the RIGHT to mirror the
-                  CollectionOverview ghost-number convention */}
+                  CollectionOverview ghost-number convention. The number
+                  span is sized to match nav mode's chevron-button box
+                  (h-6 w-6) so the pill has an identical total height
+                  and everything below stays pixel-aligned. */}
               <div className="px-4 py-2.5 rounded-full bg-carbon/[0.04] mb-3 flex items-center justify-between gap-3">
                 <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">
                   {labelOf(block.labelKey)}
                 </span>
-                <span className="text-[13px] font-bold tracking-[-0.01em] text-carbon/35 tabular-nums shrink-0">
+                <span className="inline-flex items-center justify-center h-6 min-w-6 text-[13px] font-bold tracking-[-0.01em] text-carbon/35 tabular-nums shrink-0">
                   {bIdx + 1}
                 </span>
               </div>
