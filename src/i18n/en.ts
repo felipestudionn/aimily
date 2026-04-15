@@ -1491,6 +1491,21 @@ export const en = {
     drops: 'drops',
     commercialActions: 'Commercial Actions',
     actions: 'actions',
+    // Bar interactions
+    openWorkspace: 'Open workspace',
+    openBlockDashboard: 'Open block sub-dashboard',
+    cancel: 'Cancel',
+    deleteLabel: 'Delete',
+    deleteConfirm: 'Delete this milestone?',
+    nameField: 'Name',
+    startLabel: 'Start (wk. before launch)',
+    durationLabel: 'Duration (weeks)',
+    notesPlaceholder: 'Add notes...',
+    todayMarker: 'TODAY',
+    launchMarker: 'LAUNCH',
+    exportLabel: 'Export',
+    resetLabel: 'Reset',
+    savingLabel: 'Saving',
   },
 
   // ─── Marketing & Digital Pages ───

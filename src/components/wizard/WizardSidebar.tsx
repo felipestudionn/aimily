@@ -203,6 +203,7 @@ export function WizardSidebar({
   const workspaceNav = useWorkspaceNavigationOptional();
   const t = useTranslation();
   const sidebarT = t.sidebar as Record<string, string>;
+  const calT = (t.calendarPage || {}) as Record<string, string>;
   const labelOf = (key: SidebarLabelKey) => sidebarT[key] || key;
   const [collapsed, setCollapsed] = useState(false);
   const [expandedBlocks, setExpandedBlocks] = useState<Set<TimelinePhase>>(
@@ -411,7 +412,10 @@ export function WizardSidebar({
     const ps = phaseMap.get(sub.phaseId);
     if (!ps) return 'available';
     if (ps.state === 'completed') return 'completed';
-    if (ps.state === 'locked') return 'locked';
+    // In the Rubik's-cube navigation model, all mini-blocks are always
+    // reachable — the user can jump between planning / design / marketing
+    // at any time. Wizard-phase lock state only surfaces as 'completed'
+    // now (for the checkmark); 'locked' is no longer returned.
     return 'available';
   }
 
@@ -694,11 +698,11 @@ export function WizardSidebar({
                     ))}
                     {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
                       <div className="absolute top-0 h-full w-px bg-moss z-10" style={{ left: calTodayOffset }}>
-                        <div className="absolute top-0 -left-3 px-1.5 py-0.5 bg-moss text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">HOY</div>
+                        <div className="absolute top-0 -left-3 px-1.5 py-0.5 bg-moss text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">{calT.todayMarker}</div>
                       </div>
                     )}
                     <div className="absolute top-0 h-full w-px bg-carbon z-10" style={{ left: calLaunchOffset }}>
-                      <div className="absolute top-0 -left-6 px-1.5 py-0.5 bg-carbon text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">LAUNCH</div>
+                      <div className="absolute top-0 -left-6 px-1.5 py-0.5 bg-carbon text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">{calT.launchMarker}</div>
                     </div>
                   </div>
                 </div>
@@ -729,7 +733,7 @@ export function WizardSidebar({
                           onClick={() => exitCalendarToHref(`${basePath}?block=${block.id}`)}
                           className="relative cursor-pointer hover:brightness-95 transition"
                           style={{ width: calChartWidth, background: phase.bgColor + '77' }}
-                          title="Open block sub-dashboard"
+                          title={calT.openBlockDashboard}
                         >
                           {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
                             <div className="absolute top-0 bottom-0 w-px bg-moss/50" style={{ left: calTodayOffset }} />
@@ -829,7 +833,7 @@ export function WizardSidebar({
                                           <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] whitespace-nowrap">
                                             <div className="font-semibold text-[12px] tracking-[-0.01em]">{m.nameEs}</div>
                                             <div className="text-white/60 mt-1">{formatDate(pos.startDate)} → {formatDate(pos.endDate)}</div>
-                                            <div className="text-white/50 mt-0.5">{pos.durationWeeks.toFixed(1)} semanas · {m.responsible}</div>
+                                            <div className="text-white/50 mt-0.5">{pos.durationWeeks.toFixed(1)} {calT.weeks} · {m.responsible}</div>
                                             {m.notes && <div className="text-citronella mt-1 text-[10px] max-w-[240px] break-words whitespace-normal">{m.notes}</div>}
                                             {routeForBar && (
                                               <button
@@ -838,7 +842,7 @@ export function WizardSidebar({
                                                 onClick={(e) => { e.stopPropagation(); exitCalendarToSubItem(routeForBar!); }}
                                                 className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-carbon text-[11px] font-semibold hover:bg-white/90 transition-colors"
                                               >
-                                                Ir al workspace
+                                                {calT.openWorkspace}
                                                 <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
                                               </button>
                                             )}
@@ -870,20 +874,20 @@ export function WizardSidebar({
                 await exportTimelineToExcel(timeline, 'es');
               }}
               className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
-              title="Export"
+              title={calT.exportLabel}
             >
               <Download className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={resetToDefaults}
               className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
-              title="Reset"
+              title={calT.resetLabel}
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
             {saving && (
               <span className="inline-flex items-center gap-1 text-[11px] text-carbon/50 ml-1">
-                <Cloud className="w-3 h-3" /> Saving
+                <Cloud className="w-3 h-3" /> {calT.savingLabel}
               </span>
             )}
           </div>
@@ -905,32 +909,32 @@ export function WizardSidebar({
                 </div>
                 <div className="px-6 py-5 space-y-5">
                   <div>
-                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Nombre</label>
+                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{calT.nameField}</label>
                     <input type="text" value={editValues.nameEs} onChange={(e) => setEditValues(v => ({ ...v, nameEs: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" autoFocus />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Inicio (sem. antes)</label>
+                      <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{calT.startLabel}</label>
                       <input type="number" step={0.5} value={editValues.startWeeksBefore} onChange={(e) => setEditValues(v => ({ ...v, startWeeksBefore: parseFloat(e.target.value) || 0 }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors font-mono" />
                     </div>
                     <div>
-                      <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Duración (sem.)</label>
+                      <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{calT.durationLabel}</label>
                       <input type="number" step={0.5} min={0.15} value={editValues.durationWeeks} onChange={(e) => setEditValues(v => ({ ...v, durationWeeks: parseFloat(e.target.value) || 0.5 }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors font-mono" />
                     </div>
                   </div>
                   <div className="text-[12px] text-carbon/50 bg-carbon/[0.03] px-4 py-2.5 rounded-[12px] tracking-[-0.01em]">{formatDate(sd)} → {formatDate(ed)}</div>
                   <div>
                     <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Notas</label>
-                    <textarea rows={2} value={editValues.notes} onChange={(e) => setEditValues(v => ({ ...v, notes: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed" placeholder="Añadir notas..." />
+                    <textarea rows={2} value={editValues.notes} onChange={(e) => setEditValues(v => ({ ...v, notes: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed" placeholder={calT.notesPlaceholder} />
                   </div>
                 </div>
                 <div className="px-6 py-4 flex items-center gap-2 border-t border-carbon/[0.06]">
-                  <button onClick={() => { if (confirm('¿Eliminar este hito?')) deleteMilestoneInline(editingMilestone!); }} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium text-error hover:bg-error/[0.06] transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                  <button onClick={() => { if (confirm(calT.deleteConfirm)) deleteMilestoneInline(editingMilestone!); }} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium text-error hover:bg-error/[0.06] transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" /> {calT.deleteLabel}
                   </button>
                   <div className="flex-1" />
-                  <button onClick={() => setEditingMilestone(null)} className="inline-flex items-center px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors">Cancelar</button>
-                  <button onClick={saveEditor} className="inline-flex items-center px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors">Guardar</button>
+                  <button onClick={() => setEditingMilestone(null)} className="inline-flex items-center px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors">{calT.cancel}</button>
+                  <button onClick={saveEditor} className="inline-flex items-center px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors">{calT.save}</button>
                 </div>
               </div>
             </div>,
