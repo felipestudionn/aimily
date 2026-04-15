@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   CalendarDays,
   LayoutDashboard,
@@ -17,14 +18,31 @@ import {
   ClipboardList,
   Ruler,
   Megaphone,
+  Clock,
+  Circle,
+  Trash2,
+  Download,
+  RotateCcw,
+  Cloud,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
 import { useSkus } from '@/hooks/useSkus';
+import { useCollectionTimeline } from '@/hooks/useCollectionTimeline';
 import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
 import { useTranslation } from '@/i18n';
 import type { WizardPhaseId, WizardPhaseStatus } from '@/lib/wizard-phases';
-import type { TimelinePhase } from '@/types/timeline';
+import type { TimelineMilestone, TimelinePhase, MilestoneStatus } from '@/types/timeline';
+import {
+  PHASES,
+  MILESTONE_TO_MINI_BLOCK,
+  getTimelineBounds,
+  getMonthColumns,
+  getMilestoneDate,
+  getMilestoneEndDate,
+  formatDate,
+  daysBetween,
+} from '@/lib/timeline-template';
 
 /* ══════════════════════════════════════════════════════════════
    Sidebar data model
@@ -120,6 +138,40 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
 const COLLAPSED_W = 72;
 const EXPANDED_W = 340;
 
+/* ── Calendar-mode layout constants (used when pathname ends with /calendar) ── */
+const CAL_SUB_ITEM_HEIGHT = 37;
+const CAL_BLOCK_HEADER_HEIGHT = 46;
+const CAL_HEADER_AREA_HEIGHT = 152;
+const CAL_DAY_WIDTH = 4;
+const CAL_DAYS_PER_WEEK = 7;
+const CAL_SIDEBAR_BG = '#EBEAE6';
+
+function calSnapToWeek(days: number): number {
+  return Math.round(days / CAL_DAYS_PER_WEEK) * CAL_DAYS_PER_WEEK;
+}
+
+function calBarTextColor(color: string): string {
+  const pale = ['#B6C8C7', '#FFF4CE', '#F1EFED', '#EDF1F0', '#FBF8EC'];
+  return pale.some(c => color.toUpperCase() === c.toUpperCase()) ? 'text-carbon' : 'text-white';
+}
+
+function CalStatusIcon({ status }: { status: MilestoneStatus }) {
+  switch (status) {
+    case 'completed': return <Check className="w-3 h-3 text-moss" strokeWidth={3} />;
+    case 'in-progress': return <Clock className="w-3 h-3 text-carbon/70" strokeWidth={2.5} />;
+    default: return <Circle className="w-3 h-3 text-carbon/25" strokeWidth={2} />;
+  }
+}
+
+interface DragState {
+  milestoneId: string;
+  type: 'move' | 'resize-right' | 'resize-left';
+  startX: number;
+  originalStartWeeksBefore: number;
+  originalDurationWeeks: number;
+  currentDeltaDays: number;
+}
+
 /* ══════════════════════════════════════════════════════════════ */
 
 interface WizardSidebarProps {
@@ -138,6 +190,7 @@ export function WizardSidebar({
   collectionId,
   collectionName,
   season,
+  launchDate,
   mobileOpen = false,
   onMobileClose,
   onCollapsedChange,
@@ -156,6 +209,39 @@ export function WizardSidebar({
   );
 
   const basePath = `/collection/${collectionId}`;
+
+  /* ══════════════════════════════════════════════════════════════
+     Mode detection — URL drives the spine form.
+     - 'nav' (default): sidebar as we always knew it (340px, labels only).
+     - 'calendar': sidebar EXPANDS to full viewport, each row grows a
+       timeline track on the right. Same labels, same IDs.
+     - 'presentation': future — sidebar becomes chapter index.
+     ══════════════════════════════════════════════════════════════ */
+  const mode: 'nav' | 'calendar' | 'presentation' =
+    pathname?.endsWith('/calendar') ? 'calendar'
+    : pathname?.endsWith('/presentation') ? 'presentation'
+    : 'nav';
+
+  /* Portal mount — calendar mode renders via portal to escape the
+     ViewPort's stacking context. Only load after client mount. */
+  const [portalMounted, setPortalMounted] = useState(false);
+  useEffect(() => setPortalMounted(true), []);
+
+  /* Timeline data (only materially used in calendar mode, but calling
+     the hook unconditionally keeps hook rules happy). Falls through
+     gracefully when the collection has no stored timeline. */
+  const {
+    timeline,
+    saving,
+    updateMilestone,
+    updateTimeline,
+    resetToDefaults,
+  } = useCollectionTimeline(
+    collectionId,
+    collectionName,
+    season || 'SS27',
+    launchDate || '2027-02-01'
+  );
 
   /* ── SKU phase counts for Design badges ── */
   const { skus } = useSkus(collectionId);
@@ -298,10 +384,415 @@ export function WizardSidebar({
   }, [collapsed, onCollapsedChange]);
 
   const utilityLinks = [
-    { id: 'calendar', path: '/calendar', label: labelOf('calendar'), Icon: CalendarDays },
-    { id: 'presentation', path: '/presentation', label: labelOf('presentation'), Icon: Presentation },
-    { id: 'overview', path: '', label: labelOf('dashboard'), Icon: LayoutDashboard },
+    { id: 'calendar', path: '/calendar', label: labelOf('calendar'), Icon: CalendarDays, mode: 'calendar' as const },
+    { id: 'presentation', path: '/presentation', label: labelOf('presentation'), Icon: Presentation, mode: 'presentation' as const },
+    { id: 'overview', path: '', label: labelOf('dashboard'), Icon: LayoutDashboard, mode: 'nav' as const },
   ];
+
+  /* ══════════════════════════════════════════════════════════════
+     CALENDAR MODE — timeline data + drag state + bar rendering.
+     Only meaningful when mode === 'calendar'; data is always fetched
+     (hooks can't be conditional) but the tracks are only rendered
+     in the calendar branch below.
+     ══════════════════════════════════════════════════════════════ */
+  const [editingMilestone, setEditingMilestone] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{ nameEs: string; durationWeeks: number; startWeeksBefore: number; notes: string }>({ nameEs: '', durationWeeks: 0, startWeeksBefore: 0, notes: '' });
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const calScrollRef = useRef<HTMLDivElement>(null);
+
+  const calBounds = useMemo(() => timeline ? getTimelineBounds(timeline) : null, [timeline]);
+  const calMonths = useMemo(() => calBounds ? getMonthColumns(calBounds.earliestDate, calBounds.latestDate) : [], [calBounds]);
+  const calChartWidth = calBounds ? calBounds.totalDays * CAL_DAY_WIDTH : 0;
+
+  const calTodayOffset = useMemo(() => {
+    if (!calBounds) return 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return daysBetween(calBounds.earliestDate, today) * CAL_DAY_WIDTH;
+  }, [calBounds]);
+
+  const calLaunchOffset = useMemo(() => {
+    if (!calBounds || !timeline) return 0;
+    return daysBetween(calBounds.earliestDate, calBounds.launchDate) * CAL_DAY_WIDTH;
+  }, [calBounds, timeline]);
+
+  const calMilestonesByRow = useMemo(() => {
+    const map: Record<string, TimelineMilestone[]> = {};
+    if (!timeline) return map;
+    for (const m of timeline.milestones) {
+      const rowId = MILESTONE_TO_MINI_BLOCK[m.id];
+      if (!rowId) continue;
+      if (!map[rowId]) map[rowId] = [];
+      map[rowId].push(m);
+    }
+    return map;
+  }, [timeline]);
+
+  /* Scroll to today on entering calendar mode. */
+  useEffect(() => {
+    if (mode === 'calendar' && calScrollRef.current && calTodayOffset > 0) {
+      calScrollRef.current.scrollLeft = Math.max(0, calTodayOffset - 200);
+    }
+  }, [mode, calTodayOffset]);
+
+  const handleBarDragStart = useCallback((e: React.MouseEvent, mid: string, type: DragState['type']) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!timeline) return;
+    const m = timeline.milestones.find(mm => mm.id === mid);
+    if (!m) return;
+    setDragState({
+      milestoneId: mid,
+      type,
+      startX: e.clientX,
+      originalStartWeeksBefore: m.startWeeksBefore,
+      originalDurationWeeks: m.durationWeeks,
+      currentDeltaDays: 0,
+    });
+  }, [timeline]);
+
+  useEffect(() => {
+    if (!dragState) return;
+    const onMove = (e: MouseEvent) => {
+      const dd = (e.clientX - dragState.startX) / CAL_DAY_WIDTH;
+      setDragState(prev => prev ? { ...prev, currentDeltaDays: dd } : null);
+    };
+    const onUp = () => {
+      if (!dragState) return;
+      const snapped = calSnapToWeek(dragState.currentDeltaDays);
+      const dw = snapped / CAL_DAYS_PER_WEEK;
+      if (dragState.type === 'move') {
+        const ns = dragState.originalStartWeeksBefore - dw;
+        if (ns !== dragState.originalStartWeeksBefore) updateMilestone(dragState.milestoneId, { startWeeksBefore: Math.round(ns * 2) / 2 });
+      } else if (dragState.type === 'resize-right') {
+        const nd = Math.max(0.5, Math.round((dragState.originalDurationWeeks + dw) * 2) / 2);
+        if (nd !== dragState.originalDurationWeeks) updateMilestone(dragState.milestoneId, { durationWeeks: nd });
+      } else if (dragState.type === 'resize-left') {
+        const nd = Math.max(0.5, dragState.originalDurationWeeks - dw);
+        const clamped = Math.round(nd * 2) / 2;
+        const adj = Math.round((dragState.originalStartWeeksBefore + (clamped - dragState.originalDurationWeeks)) * 2) / 2;
+        if (clamped !== dragState.originalDurationWeeks) updateMilestone(dragState.milestoneId, { startWeeksBefore: adj, durationWeeks: clamped });
+      }
+      setDragState(null);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [dragState, updateMilestone]);
+
+  const cycleStatus = (id: string, current: MilestoneStatus) => {
+    const next: MilestoneStatus = current === 'pending' ? 'in-progress' : current === 'in-progress' ? 'completed' : 'pending';
+    updateMilestone(id, { status: next });
+  };
+
+  const openEditor = (m: TimelineMilestone) => {
+    setEditingMilestone(m.id);
+    setEditValues({ nameEs: m.nameEs, durationWeeks: m.durationWeeks, startWeeksBefore: m.startWeeksBefore, notes: m.notes || '' });
+  };
+  const saveEditor = () => {
+    if (!editingMilestone) return;
+    updateMilestone(editingMilestone, {
+      nameEs: editValues.nameEs,
+      durationWeeks: editValues.durationWeeks,
+      startWeeksBefore: editValues.startWeeksBefore,
+      notes: editValues.notes || undefined,
+    });
+    setEditingMilestone(null);
+  };
+  const deleteMilestoneInline = (id: string) => {
+    if (!timeline) return;
+    updateTimeline({ milestones: timeline.milestones.filter(m => m.id !== id) });
+    setEditingMilestone(null);
+  };
+
+  const getBarPosition = (m: TimelineMilestone) => {
+    if (!calBounds || !timeline) return { left: 0, width: 0, startDate: new Date(), endDate: new Date(), durationWeeks: 0 };
+    let sw = m.startWeeksBefore;
+    let dw = m.durationWeeks;
+    if (dragState && dragState.milestoneId === m.id) {
+      const dd = dragState.currentDeltaDays;
+      if (dragState.type === 'move') sw = dragState.originalStartWeeksBefore - dd / CAL_DAYS_PER_WEEK;
+      else if (dragState.type === 'resize-right') dw = Math.max(0.5, dragState.originalDurationWeeks + dd / CAL_DAYS_PER_WEEK);
+      else if (dragState.type === 'resize-left') {
+        const nd = Math.max(0.5, dragState.originalDurationWeeks - dd / CAL_DAYS_PER_WEEK);
+        sw = dragState.originalStartWeeksBefore + (nd - dragState.originalDurationWeeks);
+        dw = nd;
+      }
+    }
+    const sd = getMilestoneDate(timeline.launchDate, sw);
+    const ed = getMilestoneEndDate(timeline.launchDate, sw, dw);
+    const startDay = daysBetween(calBounds.earliestDate, sd);
+    const duration = daysBetween(sd, ed);
+    return { left: startDay * CAL_DAY_WIDTH, width: Math.max(duration * CAL_DAY_WIDTH, 8), startDate: sd, endDate: ed, durationWeeks: dw };
+  };
+
+  /* ══════════════════════════════════════════════════════════════
+     CALENDAR MODE RENDER — portal to escape ViewPort stacking context.
+     Same SIDEBAR_BLOCKS, same labels, same IDs, same labelOf(). Each
+     row = single flex container with label (sticky left 340) + track.
+     Alignment pixel-perfect by construction (siblings in same row).
+     ══════════════════════════════════════════════════════════════ */
+  if (mode === 'calendar' && portalMounted && timeline) {
+    return createPortal(
+      <div
+        className="fixed top-0 left-0 right-0 bottom-0 z-[9999] p-3"
+        style={{ background: '#F3F2F0', width: '100vw', height: '100vh' }}
+      >
+        <div
+          className="flex flex-col overflow-hidden rounded-[16px]"
+          style={{ background: CAL_SIDEBAR_BG, height: 'calc(100vh - 24px)' }}
+        >
+          {/* Single scroll zone — horizontal + vertical */}
+          <div
+            ref={calScrollRef}
+            className="flex-1 overflow-auto scrollbar-subtle"
+            style={{ cursor: dragState ? (dragState.type === 'move' ? 'grabbing' : 'col-resize') : undefined }}
+          >
+            <div style={{ minWidth: EXPANDED_W + calChartWidth }}>
+              {/* Header row: logo+name (sticky) | month header */}
+              <div className="flex items-end" style={{ height: CAL_HEADER_AREA_HEIGHT }}>
+                <div
+                  className="sticky left-0 z-30 h-full flex flex-col justify-end px-5 pb-6"
+                  style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}
+                >
+                  <Link href="/my-collections" className="block mb-5">
+                    <Image src="/images/aimily-logo-black.png" alt="aimily" width={774} height={96} className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity" unoptimized />
+                  </Link>
+                  <Link href={basePath} className="block group">
+                    <p className="text-[13px] font-medium text-carbon truncate">{displayName}</p>
+                  </Link>
+                </div>
+                <div className="relative flex items-end h-full" style={{ width: calChartWidth }}>
+                  <div className="relative w-full" style={{ height: 46 }}>
+                    {calMonths.map((month, i) => (
+                      <div key={i} className="absolute top-0 h-full flex items-end border-l border-carbon/[0.06]" style={{ left: month.startDay * CAL_DAY_WIDTH, width: month.days * CAL_DAY_WIDTH }}>
+                        <span className="px-2 pb-2 text-[11px] font-medium text-carbon/50 tracking-[-0.01em] whitespace-nowrap">{month.name} {month.year}</span>
+                      </div>
+                    ))}
+                    {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
+                      <div className="absolute top-0 h-full w-px bg-moss z-10" style={{ left: calTodayOffset }}>
+                        <div className="absolute top-0 -left-3 px-1.5 py-0.5 bg-moss text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">HOY</div>
+                      </div>
+                    )}
+                    <div className="absolute top-0 h-full w-px bg-carbon z-10" style={{ left: calLaunchOffset }}>
+                      <div className="absolute top-0 -left-6 px-1.5 py-0.5 bg-carbon text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">LAUNCH</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Separator */}
+              <div className="sticky left-0 h-px bg-carbon/[0.12]" style={{ minWidth: EXPANDED_W + calChartWidth }} />
+
+              {/* Nav rows — same SIDEBAR_BLOCKS + labelOf() as nav mode */}
+              <div className="pt-6 pb-4 flex flex-col">
+                {SIDEBAR_BLOCKS.map((block) => {
+                  const phase = PHASES[block.id];
+                  return (
+                    <div key={block.id} className="mb-5">
+                      {/* Block header row */}
+                      <div className="flex" style={{ height: CAL_BLOCK_HEADER_HEIGHT }}>
+                        <div className="sticky left-0 z-20 flex items-center px-6" style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}>
+                          <Link href={`${basePath}?block=${block.id}`} className="w-full px-4 py-2.5 rounded-full flex items-center gap-2 bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors">
+                            <block.icon className="h-[14px] w-[14px] text-carbon/50" strokeWidth={1.5} />
+                            <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">{labelOf(block.labelKey)}</span>
+                          </Link>
+                        </div>
+                        <div className="relative" style={{ width: calChartWidth, background: phase.bgColor + '55' }}>
+                          {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
+                            <div className="absolute top-0 bottom-0 w-px bg-moss/30" style={{ left: calTodayOffset }} />
+                          )}
+                          <div className="absolute top-0 bottom-0 w-px bg-carbon/30" style={{ left: calLaunchOffset }} />
+                        </div>
+                      </div>
+
+                      {/* Sub-item rows with tracks */}
+                      {block.subItems.map((sub) => {
+                        const state = getSubItemState(sub, block);
+                        const isLocked = state === 'locked';
+                        const isActive = state === 'active';
+                        const rowMilestones = calMilestonesByRow[sub.id] || [];
+                        return (
+                          <div key={sub.id} className="flex" style={{ height: CAL_SUB_ITEM_HEIGHT }}>
+                            <div className="sticky left-0 z-10 flex items-center px-6" style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}>
+                              <div className="ml-1 pl-5 border-l border-carbon/[0.15] flex-1">
+                                <Link
+                                  href={isLocked ? '#' : `${basePath}/${sub.route}`}
+                                  className={`flex items-center justify-between py-1 px-3 -mx-3 rounded-[10px] transition-all ${
+                                    isActive ? 'bg-carbon text-white'
+                                    : isLocked ? 'text-carbon/25 cursor-not-allowed'
+                                    : 'text-carbon hover:bg-carbon/[0.04]'
+                                  }`}
+                                >
+                                  <span className={`text-[14px] ${isActive ? 'font-semibold text-white' : 'font-normal'}`}>
+                                    {labelOf(sub.labelKey)}
+                                  </span>
+                                  {sub.isOutput && <ArrowRight className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-white/60' : 'text-carbon/40'}`} strokeWidth={2} />}
+                                  {!sub.isOutput && skuPhaseCounts[sub.id] > 0 && (
+                                    <span className={`text-[12px] font-normal tabular-nums ${isActive ? 'text-white/60' : 'text-carbon/40'}`}>{skuPhaseCounts[sub.id]}</span>
+                                  )}
+                                  {!sub.isOutput && state === 'completed' && !skuPhaseCounts[sub.id] && (
+                                    <Check className="h-3.5 w-3.5 shrink-0 text-carbon" strokeWidth={2} />
+                                  )}
+                                </Link>
+                              </div>
+                            </div>
+                            <div className="relative border-b border-carbon/[0.04]" style={{ width: calChartWidth, background: phase.bgColor + '15' }}>
+                              {calMonths.map((m, i) => (
+                                <div key={i} className="absolute top-0 h-full border-l border-carbon/[0.04]" style={{ left: m.startDay * CAL_DAY_WIDTH }} />
+                              ))}
+                              {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
+                                <div className="absolute top-0 h-full w-px bg-moss/40" style={{ left: calTodayOffset }} />
+                              )}
+                              <div className="absolute top-0 h-full w-px bg-carbon/40" style={{ left: calLaunchOffset }} />
+
+                              {rowMilestones.map((m) => {
+                                const pos = getBarPosition(m);
+                                const isCompleted = m.status === 'completed';
+                                const isInProgress = m.status === 'in-progress';
+                                const isDragging = dragState?.milestoneId === m.id;
+                                const barHeight = CAL_SUB_ITEM_HEIGHT - 12;
+                                return (
+                                  <div key={m.id} className={`absolute group/bar ${isDragging ? 'z-20' : 'z-[5]'}`} style={{ left: pos.left, width: pos.width, top: 6, height: barHeight, transition: isDragging ? 'none' : 'left 0.2s ease, width 0.2s ease' }}>
+                                    {pos.width > 80 && (
+                                      <button onClick={(e) => { e.stopPropagation(); cycleStatus(m.id, m.status); }} className="absolute -left-5 top-1/2 -translate-y-1/2 z-10 hover:scale-125 transition-transform">
+                                        <CalStatusIcon status={m.status} />
+                                      </button>
+                                    )}
+                                    <div className="absolute left-0 top-0 w-2 h-full cursor-col-resize z-10" onMouseDown={(e) => handleBarDragStart(e, m.id, 'resize-left')} />
+                                    <div
+                                      className={`w-full h-full rounded-full transition-shadow cursor-grab active:cursor-grabbing hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] ${isCompleted ? 'opacity-50' : ''} ${isDragging ? 'shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-2 ring-carbon/30' : ''}`}
+                                      style={{
+                                        backgroundColor: m.color,
+                                        backgroundImage: isInProgress ? 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(255,255,255,0.25) 4px, rgba(255,255,255,0.25) 8px)' : undefined,
+                                      }}
+                                      onMouseDown={(e) => handleBarDragStart(e, m.id, 'move')}
+                                      onDoubleClick={() => openEditor(m)}
+                                    >
+                                      {pos.width > 60 && (
+                                        <div className="absolute inset-0 flex items-center px-3 overflow-hidden pointer-events-none">
+                                          <span className={`text-[10px] font-semibold truncate tracking-[-0.01em] ${calBarTextColor(m.color)}`}>{m.nameEs}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="absolute right-0 top-0 w-2 h-full cursor-col-resize z-10" onMouseDown={(e) => handleBarDragStart(e, m.id, 'resize-right')} />
+                                    {!isDragging && (
+                                      <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/bar:block z-30 pointer-events-none">
+                                        <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] whitespace-nowrap">
+                                          <div className="font-semibold text-[12px] tracking-[-0.01em]">{m.nameEs}</div>
+                                          <div className="text-white/60 mt-1">{formatDate(pos.startDate)} → {formatDate(pos.endDate)}</div>
+                                          <div className="text-white/50 mt-0.5">{pos.durationWeeks.toFixed(1)} semanas · {m.responsible}</div>
+                                          {m.notes && <div className="text-citronella mt-1 text-[10px] max-w-[240px] break-words whitespace-normal">{m.notes}</div>}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Utility bar — same links as nav mode, with active state per mode */}
+          <div className="flex-shrink-0 border-t border-carbon/[0.12] px-5 py-3 flex items-center gap-1" style={{ background: CAL_SIDEBAR_BG }}>
+            {utilityLinks.map((u) => {
+              const active = mode === u.mode;
+              const href = u.path === '' ? basePath : `${basePath}${u.path}`;
+              return (
+                <Link key={u.id} href={href} className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors ${active ? 'bg-carbon/[0.08] text-carbon' : 'text-carbon/60 hover:text-carbon hover:bg-carbon/[0.04]'}`}>
+                  <u.Icon className="h-[16px] w-[16px]" strokeWidth={1.5} />
+                  {u.label}
+                </Link>
+              );
+            })}
+            <div className="flex-1" />
+            <button
+              onClick={async () => {
+                if (!timeline) return;
+                const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
+                await exportTimelineToExcel(timeline, 'es');
+              }}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+              title="Export"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={resetToDefaults}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+              title="Reset"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            {saving && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-carbon/50">
+                <Cloud className="w-3 h-3" /> Saving
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Editor modal */}
+        {editingMilestone && (() => {
+          const m = timeline.milestones.find(mm => mm.id === editingMilestone);
+          if (!m) return null;
+          const sd = getMilestoneDate(timeline.launchDate, editValues.startWeeksBefore);
+          const ed = getMilestoneEndDate(timeline.launchDate, editValues.startWeeksBefore, editValues.durationWeeks);
+          return (
+            <div className="fixed inset-0 bg-carbon/40 z-[10000] flex items-center justify-center backdrop-blur-sm" onClick={() => setEditingMilestone(null)}>
+              <div className="bg-white rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <div className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: m.color + '1F' }}>
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} />
+                  <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/50">{PHASES[m.phase as TimelinePhase].nameEs}</span>
+                  <span className="ml-auto text-[9px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.05em] bg-carbon/[0.04] text-carbon/60">{m.responsible}</span>
+                </div>
+                <div className="px-6 py-5 space-y-5">
+                  <div>
+                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Nombre</label>
+                    <input type="text" value={editValues.nameEs} onChange={(e) => setEditValues(v => ({ ...v, nameEs: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors" autoFocus />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Inicio (sem. antes)</label>
+                      <input type="number" step={0.5} value={editValues.startWeeksBefore} onChange={(e) => setEditValues(v => ({ ...v, startWeeksBefore: parseFloat(e.target.value) || 0 }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors font-mono" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Duración (sem.)</label>
+                      <input type="number" step={0.5} min={0.15} value={editValues.durationWeeks} onChange={(e) => setEditValues(v => ({ ...v, durationWeeks: parseFloat(e.target.value) || 0.5 }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors font-mono" />
+                    </div>
+                  </div>
+                  <div className="text-[12px] text-carbon/50 bg-carbon/[0.03] px-4 py-2.5 rounded-[12px] tracking-[-0.01em]">{formatDate(sd)} → {formatDate(ed)}</div>
+                  <div>
+                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Notas</label>
+                    <textarea rows={2} value={editValues.notes} onChange={(e) => setEditValues(v => ({ ...v, notes: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed" placeholder="Añadir notas..." />
+                  </div>
+                </div>
+                <div className="px-6 py-4 flex items-center gap-2 border-t border-carbon/[0.06]">
+                  <button onClick={() => { if (confirm('¿Eliminar este hito?')) deleteMilestoneInline(editingMilestone!); }} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium text-error hover:bg-error/[0.06] transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                  </button>
+                  <div className="flex-1" />
+                  <button onClick={() => setEditingMilestone(null)} className="inline-flex items-center px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors">Cancelar</button>
+                  <button onClick={saveEditor} className="inline-flex items-center px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors">Guardar</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>,
+      document.body
+    );
+  }
 
   return (
     <>
