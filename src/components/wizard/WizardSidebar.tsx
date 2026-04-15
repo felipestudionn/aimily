@@ -590,10 +590,11 @@ export function WizardSidebar({
           >
             <div style={{ minWidth: EXPANDED_W + calChartWidth }}>
               {/* Header row: logo+name+switcher (sticky, same padding as nav mode
-                  to avoid visual shift when switching modes) | month header. */}
-              <div className="flex items-start" style={{ height: CAL_HEADER_AREA_HEIGHT }}>
+                  to avoid visual shift when switching modes) | month header.
+                  No fixed height — content drives it, matching nav mode naturally. */}
+              <div className="flex items-stretch">
                 <div
-                  className="sticky left-0 z-30 h-full flex flex-col px-5 pt-7 pb-6"
+                  className="sticky left-0 z-30 flex flex-col px-5 pt-7 pb-6"
                   style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}
                 >
                   <Link href="/my-collections" className="block mb-4">
@@ -604,11 +605,11 @@ export function WizardSidebar({
                   </Link>
                   {modeSwitcher}
                 </div>
-                <div className="relative flex items-end h-full" style={{ width: calChartWidth }}>
+                <div className="relative flex items-end" style={{ width: calChartWidth }}>
                   <div className="relative w-full" style={{ height: 46 }}>
                     {calMonths.map((month, i) => (
-                      <div key={i} className="absolute top-0 h-full flex items-end border-l border-carbon/[0.06]" style={{ left: month.startDay * CAL_DAY_WIDTH, width: month.days * CAL_DAY_WIDTH }}>
-                        <span className="px-2 pb-2 text-[11px] font-medium text-carbon/50 tracking-[-0.01em] whitespace-nowrap">{month.name} {month.year}</span>
+                      <div key={i} className="absolute top-0 h-full flex items-end border-l border-carbon/[0.15]" style={{ left: month.startDay * CAL_DAY_WIDTH, width: month.days * CAL_DAY_WIDTH }}>
+                        <span className="px-2 pb-2 text-[11px] font-semibold text-carbon/80 tracking-[0.02em] uppercase whitespace-nowrap">{month.name} {month.year}</span>
                       </div>
                     ))}
                     {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
@@ -632,18 +633,18 @@ export function WizardSidebar({
                   const phase = PHASES[block.id];
                   return (
                     <div key={block.id} className="mb-5">
-                      {/* Block header row — identical styling to nav mode (no icon, no chevron) */}
-                      <div className="flex" style={{ height: CAL_BLOCK_HEADER_HEIGHT }}>
-                        <div className="sticky left-0 z-20 flex items-center px-6" style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}>
+                      {/* Block header row — same py-2.5 + mb-3 as nav, track on right */}
+                      <div className="flex mb-3">
+                        <div className="sticky left-0 z-20 px-6" style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}>
                           <Link href={`${basePath}?block=${block.id}`} className="w-full px-4 py-2.5 rounded-full flex items-center bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors">
                             <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">{labelOf(block.labelKey)}</span>
                           </Link>
                         </div>
-                        <div className="relative" style={{ width: calChartWidth, background: phase.bgColor + '55' }}>
+                        <div className="relative" style={{ width: calChartWidth, background: phase.bgColor + '77' }}>
                           {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
-                            <div className="absolute top-0 bottom-0 w-px bg-moss/30" style={{ left: calTodayOffset }} />
+                            <div className="absolute top-0 bottom-0 w-px bg-moss/50" style={{ left: calTodayOffset }} />
                           )}
-                          <div className="absolute top-0 bottom-0 w-px bg-carbon/30" style={{ left: calLaunchOffset }} />
+                          <div className="absolute top-0 bottom-0 w-px bg-carbon/50" style={{ left: calLaunchOffset }} />
                         </div>
                       </div>
 
@@ -678,9 +679,9 @@ export function WizardSidebar({
                                 </Link>
                               </div>
                             </div>
-                            <div className="relative border-b border-carbon/[0.04]" style={{ width: calChartWidth, background: phase.bgColor + '15' }}>
+                            <div className="relative border-b border-carbon/[0.08]" style={{ width: calChartWidth, background: phase.bgColor + '22' }}>
                               {calMonths.map((m, i) => (
-                                <div key={i} className="absolute top-0 h-full border-l border-carbon/[0.04]" style={{ left: m.startDay * CAL_DAY_WIDTH }} />
+                                <div key={i} className="absolute top-0 h-full border-l border-carbon/[0.10]" style={{ left: m.startDay * CAL_DAY_WIDTH }} />
                               ))}
                               {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
                                 <div className="absolute top-0 h-full w-px bg-moss/40" style={{ left: calTodayOffset }} />
