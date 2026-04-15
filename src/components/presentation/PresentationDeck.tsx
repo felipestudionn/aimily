@@ -20,8 +20,8 @@
 
 'use client';
 
-import { useEffect, useCallback, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, X, Download, Loader2 } from 'lucide-react';
 import { SPINE, SLIDE_COUNT } from '@/lib/presentation/spine';
 import { getTheme, themeStyle } from '@/lib/presentation/themes';
 import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
@@ -31,6 +31,9 @@ import { ThemePicker } from './ThemePicker';
 
 interface Props {
   meta: DeckMeta;
+  /* Collection id — needed so the Download PDF button can call the
+     server-side export endpoint. */
+  collectionId: string;
   /* Map of titleKey → translated title (passed in from WizardSidebar
      so we don't double-load i18n inside this component). */
   titles: Record<string, string>;
@@ -57,8 +60,39 @@ interface Props {
 /* Total slide count = 1 cover + SPINE mini-blocks. */
 const TOTAL_SLIDES = SLIDE_COUNT + 1;
 
-export function PresentationDeck({ meta, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
+export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
   const theme = useMemo(() => getTheme(themeId), [themeId]);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const downloadPdf = useCallback(async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      const res = await fetch('/api/presentation/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionId, themeId, coverSubtitle }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Export failed (HTTP ${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${meta.collectionName.replace(/\s+/g, '-')}-presentation.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  }, [collectionId, themeId, coverSubtitle, meta.collectionName]);
   /* Cover at index 0 has no mini-block slide context; SPINE starts at 1. */
   const slide = index === 0 ? null : SPINE[index - 1];
   const titleFor = useCallback((key: string) => titles[key] ?? key, [titles]);
@@ -127,6 +161,20 @@ export function PresentationDeck({ meta, titles, coverSubtitle, data, index, the
         </button>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={downloadPdf}
+            disabled={exporting}
+            className="inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border border-white/15 bg-white/10 hover:bg-white/15 text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            title={exportError ?? 'Download PDF'}
+          >
+            {exporting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} />
+            ) : (
+              <Download className="w-3.5 h-3.5" strokeWidth={2} />
+            )}
+            <span>{exporting ? 'Generating…' : 'PDF'}</span>
+          </button>
           <ThemePicker current={theme} onChange={onThemeChange} />
           {isSlidePlaceholder && (
             <div

@@ -1150,6 +1150,7 @@ export function WizardSidebar({
             season: presentationData?.cover.season ?? season,
             launchDate: presentationData?.cover.launchDate ?? launchDate,
           }}
+          collectionId={collectionId}
           titles={presentationTitles}
           coverSubtitle={calT.coverSubtitle ?? 'A collection presentation'}
           data={presentationData}
