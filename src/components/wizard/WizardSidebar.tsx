@@ -31,6 +31,8 @@ import { useTimeline } from '@/contexts/TimelineContext';
 import { useSkus } from '@/hooks/useSkus';
 import { PresentationDeck } from '@/components/presentation/PresentationDeck';
 import { SPINE } from '@/lib/presentation/spine';
+import { DEFAULT_THEME_ID } from '@/lib/presentation/themes';
+import type { ThemeId } from '@/lib/presentation/types';
 import { useCollectionTimeline } from '@/hooks/useCollectionTimeline';
 import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
 import { useTranslation } from '@/i18n';
@@ -967,21 +969,98 @@ export function WizardSidebar({
     setTimeout(() => router.push(basePath), 60);
   }, [router, basePath]);
 
-  /* ── Presentation inner — mounted INSIDE the same <aside> as nav and
-     calendar so the cube's three faces all reuse one DOM element and
-     the width transition is uninterrupted. */
+  /* Presentation owns its slide index + theme at the sidebar level so
+     the LEFT spine column and the RIGHT deck canvas stay in sync. */
+  const [presentationIndex, setPresentationIndex] = useState(0);
+  const [presentationThemeId, setPresentationThemeId] = useState<ThemeId>(DEFAULT_THEME_ID);
+
+  const presentationTitles = useMemo(
+    () => Object.fromEntries(SPINE.map(s => [s.titleKey, labelOf(s.titleKey as SidebarLabelKey)])),
+    [labelOf],
+  );
+
+  /* ── Presentation inner — mirrors calendarInner's split: persistent
+     spine column on the LEFT (logo + name + mode switcher + 20-slide
+     index), deck canvas on the RIGHT. Same DOM <aside> as nav and
+     calendar so the cube width-morph stays uninterrupted. */
   const presentationInner = mode === 'presentation' ? (
-    <PresentationDeck
-      meta={{
-        collectionName: displayName,
-        season,
-        launchDate,
-      }}
-      titles={Object.fromEntries(
-        SPINE.map(s => [s.titleKey, labelOf(s.titleKey as SidebarLabelKey)])
-      )}
-      onExit={exitPresentation}
-    />
+    <div className="flex h-full gap-3">
+      {/* LEFT — persistent spine column (same INNER_W as calendar) */}
+      <div
+        className="surface-card flex-shrink-0 flex flex-col overflow-hidden"
+        style={{ width: INNER_W }}
+      >
+        {/* Header: logo + collection name + mode switcher (same as nav) */}
+        <div className="shrink-0 px-5 pt-7 pb-6">
+          <Link href="/my-collections" className="block mb-4">
+            <Image
+              src="/images/aimily-logo-black.png"
+              alt="aimily"
+              width={774}
+              height={96}
+              className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity"
+              unoptimized
+            />
+          </Link>
+          <Link href={basePath} className="block group mb-4">
+            <p className="text-[13px] font-medium text-carbon truncate">{displayName}</p>
+          </Link>
+          {modeSwitcher}
+        </div>
+
+        {/* Spine of 20 slides — clicking jumps the deck */}
+        <div className="flex-1 overflow-y-auto scrollbar-subtle px-5 pb-4">
+          {SIDEBAR_BLOCKS.map((block, bIdx) => (
+            <div key={block.id} className="mb-5">
+              <div className="px-4 py-2.5 rounded-full bg-carbon/[0.04] mb-3">
+                <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">
+                  {labelOf(block.labelKey)}
+                </span>
+              </div>
+              <div className="ml-1 pl-5 border-l border-carbon/[0.15]">
+                {block.subItems.map((sub, sIdx) => {
+                  const slideIdx = bIdx * 5 + sIdx;
+                  const isActive = presentationIndex === slideIdx;
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => setPresentationIndex(slideIdx)}
+                      className={`w-full flex items-center gap-3 py-1.5 px-3 -mx-3 rounded-[10px] transition-all ${
+                        isActive ? 'bg-carbon text-white' : 'text-carbon hover:bg-carbon/[0.04]'
+                      }`}
+                    >
+                      <span className={`text-[10px] font-mono tabular-nums ${isActive ? 'text-white/55' : 'text-carbon/35'}`}>
+                        {String(slideIdx + 1).padStart(2, '0')}
+                      </span>
+                      <span className={`text-[14px] truncate flex-1 text-left ${isActive ? 'font-semibold' : 'font-normal'}`}>
+                        {labelOf(sub.labelKey)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT — deck canvas */}
+      <div
+        className="flex-1 min-w-0 rounded-[16px] overflow-hidden"
+        style={{ background: '#0A0A0A' }}
+      >
+        <PresentationDeck
+          meta={{ collectionName: displayName, season, launchDate }}
+          titles={presentationTitles}
+          index={presentationIndex}
+          themeId={presentationThemeId}
+          onIndexChange={setPresentationIndex}
+          onThemeChange={setPresentationThemeId}
+          onExit={exitPresentation}
+        />
+      </div>
+    </div>
   ) : null;
 
   return (
@@ -993,9 +1072,7 @@ export function WizardSidebar({
       <aside
         style={{
           width: asideWidth,
-          background: mode === 'calendar' ? '#F3F2F0'
-            : mode === 'presentation' ? '#0A0A0A'
-            : undefined,
+          background: (mode === 'calendar' || mode === 'presentation') ? '#F3F2F0' : undefined,
         }}
         className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'

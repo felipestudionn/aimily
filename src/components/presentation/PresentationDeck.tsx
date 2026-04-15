@@ -1,14 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════════
-   PRESENTATION DECK — the Rubik's cube's third face
+   PRESENTATION DECK — the Rubik's cube's third face (RIGHT column)
 
-   Lives INSIDE the WizardSidebar's <aside> when mode === 'presentation'
-   and the aside is expanded to 100vw. Mirrors the calendar's pattern:
-   same DOM element morphs across the three modes.
+   Lives INSIDE the WizardSidebar's expanded <aside> alongside a
+   persistent spine sidebar on the LEFT. Symmetric to calendar:
+   - Calendar = sticky sidebar | timeline canvas
+   - Presentation = sticky sidebar | slide canvas
+   The sidebar drives slide navigation + mode switching; the deck
+   only owns the canvas, top bar (theme picker, exit), and prev/next.
 
-   Layout (full viewport):
-   - Top bar  : eyebrow (collection · season) | theme picker | slide N/M + close
-   - Canvas   : centered 16:9 slide letterboxed against the deck bg
-   - Bottom   : prev / next + thumbnail strip (TOC)
+   Controlled props: index + themeId are owned by WizardSidebar so
+   the LEFT spine list and the RIGHT canvas stay in sync.
 
    Keyboard:
    - ArrowRight / Space → next slide
@@ -19,10 +20,10 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { SPINE, SLIDE_COUNT } from '@/lib/presentation/spine';
-import { THEMES, getTheme, themeStyle, DEFAULT_THEME_ID } from '@/lib/presentation/themes';
+import { getTheme, themeStyle } from '@/lib/presentation/themes';
 import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
 import { SlideRenderer } from './SlideRenderer';
 import { ThemePicker } from './ThemePicker';
@@ -32,15 +33,18 @@ interface Props {
   /* Map of titleKey → translated title (passed in from WizardSidebar
      so we don't double-load i18n inside this component). */
   titles: Record<string, string>;
+  /* Controlled index + theme — owned by WizardSidebar so the LEFT
+     spine list and the RIGHT deck canvas stay in sync. */
+  index: number;
+  themeId: ThemeId;
+  onIndexChange: (i: number) => void;
+  onThemeChange: (id: ThemeId) => void;
   /* Called when the user hits Esc or clicks the X — parent flips out
      of presentation mode (mirrors the calendar exit pattern). */
   onExit: () => void;
 }
 
-export function PresentationDeck({ meta, titles, onExit }: Props) {
-  const [themeId, setThemeId] = useState<ThemeId>(DEFAULT_THEME_ID);
-  const [index, setIndex] = useState(0);
-
+export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
   const theme = useMemo(() => getTheme(themeId), [themeId]);
   const slide = SPINE[index];
   const titleFor = useCallback((key: string) => titles[key] ?? key, [titles]);
@@ -56,16 +60,16 @@ export function PresentationDeck({ meta, titles, onExit }: Props) {
       }
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
-        setIndex(i => Math.min(SLIDE_COUNT - 1, i + 1));
+        onIndexChange(Math.min(SLIDE_COUNT - 1, index + 1));
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        setIndex(i => Math.max(0, i - 1));
+        onIndexChange(Math.max(0, index - 1));
       } else if (e.key === 'Home') {
         e.preventDefault();
-        setIndex(0);
+        onIndexChange(0);
       } else if (e.key === 'End') {
         e.preventDefault();
-        setIndex(SLIDE_COUNT - 1);
+        onIndexChange(SLIDE_COUNT - 1);
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onExit();
@@ -73,7 +77,7 @@ export function PresentationDeck({ meta, titles, onExit }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onExit]);
+  }, [onExit, onIndexChange, index]);
 
   return (
     <div
@@ -102,7 +106,7 @@ export function PresentationDeck({ meta, titles, onExit }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
-          <ThemePicker current={theme} onChange={setThemeId} />
+          <ThemePicker current={theme} onChange={onThemeChange} />
           <div className="text-[11px] tabular-nums text-white/55 font-semibold tracking-[0.08em] px-3 py-1.5 rounded-full bg-white/8 border border-white/10">
             {String(index + 1).padStart(2, '0')} / {String(SLIDE_COUNT).padStart(2, '0')}
           </div>
@@ -127,11 +131,12 @@ export function PresentationDeck({ meta, titles, onExit }: Props) {
         </div>
       </div>
 
-      {/* ── Bottom nav + TOC strip ── */}
+      {/* ── Bottom: simple prev/next + thin progress (slide nav is on
+            the LEFT spine column, so no thumbnail strip here). ── */}
       <div className="flex-shrink-0 px-6 py-4 border-t border-white/10 flex items-center gap-4">
         <button
           type="button"
-          onClick={() => setIndex(i => Math.max(0, i - 1))}
+          onClick={() => onIndexChange(Math.max(0, index - 1))}
           disabled={index === 0}
           className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           title="Previous slide (←)"
@@ -139,36 +144,35 @@ export function PresentationDeck({ meta, titles, onExit }: Props) {
           <ChevronLeft className="w-4 h-4 text-white" strokeWidth={2} />
         </button>
 
-        {/* Thumbnail strip — one tick per slide, grouped by block */}
-        <div className="flex-1 overflow-x-auto scrollbar-subtle">
-          <div className="flex items-center gap-1 min-w-max">
-            {SPINE.map((s, i) => {
-              const active = i === index;
-              const isFirstOfBlock = i === 0 || SPINE[i - 1].block !== s.block;
-              return (
-                <div key={s.id} className="flex items-center">
-                  {isFirstOfBlock && i > 0 && <div className="w-3 h-px bg-white/15 mx-1" />}
-                  <button
-                    type="button"
-                    onClick={() => setIndex(i)}
-                    className={`group/tick relative px-1 py-2 ${active ? '' : 'hover:opacity-100'}`}
-                    title={`${String(i + 1).padStart(2, '0')} · ${titleFor(s.titleKey)}`}
-                  >
-                    <div
-                      className={`h-1 rounded-full transition-all ${
-                        active ? 'w-8 bg-white' : 'w-4 bg-white/25 group-hover/tick:bg-white/55'
-                      }`}
-                    />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+        {/* Progress bar — 20 segments grouped by block */}
+        <div className="flex-1 flex items-center gap-1">
+          {SPINE.map((s, i) => {
+            const active = i === index;
+            const past = i < index;
+            const isFirstOfBlock = i === 0 || SPINE[i - 1].block !== s.block;
+            return (
+              <div key={s.id} className="flex items-center flex-1">
+                {isFirstOfBlock && i > 0 && <div className="w-2 h-px bg-white/15 mx-0.5 shrink-0" />}
+                <button
+                  type="button"
+                  onClick={() => onIndexChange(i)}
+                  className="group/tick flex-1 py-2"
+                  title={`${String(i + 1).padStart(2, '0')} · ${titleFor(s.titleKey)}`}
+                >
+                  <div
+                    className={`h-1 rounded-full transition-all ${
+                      active ? 'bg-white' : past ? 'bg-white/55' : 'bg-white/15 group-hover/tick:bg-white/40'
+                    }`}
+                  />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         <button
           type="button"
-          onClick={() => setIndex(i => Math.min(SLIDE_COUNT - 1, i + 1))}
+          onClick={() => onIndexChange(Math.min(SLIDE_COUNT - 1, index + 1))}
           disabled={index === SLIDE_COUNT - 1}
           className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           title="Next slide (→ or Space)"
