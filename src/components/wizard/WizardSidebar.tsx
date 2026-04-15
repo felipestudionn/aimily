@@ -25,7 +25,6 @@ import {
   RotateCcw,
   Cloud,
   Plus,
-  LayoutGrid,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -710,11 +709,8 @@ export function WizardSidebar({
                   className="sticky left-0 z-30 flex flex-col px-5 pt-7 pb-6"
                   style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}
                 >
-                  <Link href="/my-collections" className="block mb-4">
+                  <Link href="/my-collections" className="block mb-5">
                     <Image src="/images/aimily-logo-black.png" alt="aimily" width={774} height={96} className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity" unoptimized />
-                  </Link>
-                  <Link href={basePath} className="block group mb-4">
-                    <p className="text-[13px] font-medium text-carbon truncate">{displayName}</p>
                   </Link>
                   {modeSwitcher}
                 </div>
@@ -753,11 +749,10 @@ export function WizardSidebar({
                     <button
                       type="button"
                       onClick={() => exitCalendarToHref(basePath)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 -mx-1 rounded-[12px] text-carbon hover:bg-carbon/[0.04] transition-all"
+                      className="w-full flex items-center px-3 py-2 -mx-1 rounded-[12px] text-carbon hover:bg-carbon/[0.04] transition-all"
                     >
-                      <LayoutGrid className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-                      <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left">
-                        {sidebarT.overview ?? 'Overview'}
+                      <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left truncate">
+                        {displayName}
                       </span>
                     </button>
                   </div>
@@ -1053,10 +1048,12 @@ export function WizardSidebar({
         className="flex-shrink-0 flex flex-col"
         style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}
       >
-        {/* Header: logo + collection name + mode switcher — same spacing
-            as nav + calendar so the wizard block sits pixel-identical. */}
+        {/* Header: logo + mode switcher. The collection name now lives
+            in the Overview pill below (it's the collection-level entry
+            point), so we removed it from here to reduce duplication
+            and give the switcher more breathing room. */}
         <div className="shrink-0 px-5 pt-7 pb-6">
-          <Link href="/my-collections" className="block mb-4">
+          <Link href="/my-collections" className="block mb-5">
             <Image
               src="/images/aimily-logo-black.png"
               alt="aimily"
@@ -1065,9 +1062,6 @@ export function WizardSidebar({
               className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity"
               unoptimized
             />
-          </Link>
-          <Link href={basePath} className="block group mb-4">
-            <p className="text-[13px] font-medium text-carbon truncate">{displayName}</p>
           </Link>
           {modeSwitcher}
         </div>
@@ -1081,19 +1075,20 @@ export function WizardSidebar({
            matches nav's <nav> padding so the Overview button and block
            pills land at the same X as in nav mode. */}
         <div className="flex-1 overflow-y-auto scrollbar-subtle px-6 pt-6 pb-4">
-          {/* Overview — maps to cover slide (presentationIndex 0) */}
+          {/* Overview — labelled with the collection name so the sidebar
+              anchor doubles as "this is the collection I'm in" and
+              "click here for the cover slide". */}
           <button
             type="button"
             onClick={() => setPresentationIndex(0)}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 -mx-1 rounded-[12px] mb-4 transition-all ${
+            className={`w-full flex items-center px-3 py-2 -mx-1 rounded-[12px] mb-4 transition-all ${
               presentationIndex === 0
                 ? 'bg-carbon text-white'
                 : 'text-carbon hover:bg-carbon/[0.04]'
             }`}
           >
-            <LayoutGrid className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-            <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left">
-              {sidebarT.overview ?? 'Overview'}
+            <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left truncate">
+              {displayName}
             </span>
           </button>
           <div className="border-t border-carbon/[0.08] mb-5" />
@@ -1194,7 +1189,10 @@ export function WizardSidebar({
           </button>
 
           {/* ═══════════════════════════════════════════
-               Header: aimily logo + collection name
+               Header: aimily logo + mode switcher.
+               Collection name moved down into the Overview pill —
+               it's the collection-level entry so it doubles as
+               "this is the collection I'm in".
                ═══════════════════════════════════════════ */}
           <div className={`shrink-0 ${collapsed ? 'px-0 pt-7 pb-5' : 'px-5 pt-7 pb-6'}`}>
             {collapsed ? (
@@ -1211,7 +1209,7 @@ export function WizardSidebar({
               </Link>
             ) : (
               <>
-                <Link href="/my-collections" className="block mb-4">
+                <Link href="/my-collections" className="block mb-5">
                   <Image
                     src="/images/aimily-logo-black.png"
                     alt="aimily"
@@ -1220,11 +1218,6 @@ export function WizardSidebar({
                     className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity"
                     unoptimized
                   />
-                </Link>
-                <Link href={basePath} className="block group mb-4">
-                  <p className="text-[13px] font-medium text-carbon transition-colors truncate">
-                    {displayName}
-                  </p>
                 </Link>
                 {modeSwitcher}
               </>
@@ -1251,15 +1244,14 @@ export function WizardSidebar({
                     if (workspaceNav) workspaceNav.navigateToDashboard();
                     else router.push(basePath);
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 -mx-1 rounded-[12px] mb-4 transition-all ${
+                  className={`w-full flex items-center px-3 py-2 -mx-1 rounded-[12px] mb-4 transition-all ${
                     pathname === basePath && !searchParams?.get('block')
                       ? 'bg-carbon text-white'
                       : 'text-carbon hover:bg-carbon/[0.04]'
                   }`}
                 >
-                  <LayoutGrid className="h-4 w-4 shrink-0" strokeWidth={1.8} />
-                  <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left">
-                    {sidebarT.overview ?? 'Overview'}
+                  <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left truncate">
+                    {displayName}
                   </span>
                 </button>
                 <div className="border-t border-carbon/[0.08] -mx-0 mb-5" />
@@ -1277,9 +1269,13 @@ export function WizardSidebar({
                     ? 'bg-carbon text-white'
                     : 'text-carbon/60 hover:bg-carbon/[0.04]'
                 }`}
-                title={sidebarT.overview ?? 'Overview'}
+                title={displayName}
               >
-                <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                {/* First two letters of the collection name — tiny mark
+                    for the collapsed sidebar (no icon needed). */}
+                <span className="text-[11px] font-bold tabular-nums tracking-[-0.02em]">
+                  {displayName.slice(0, 2).toUpperCase()}
+                </span>
               </button>
             )}
             {SIDEBAR_BLOCKS.map((block) => {
