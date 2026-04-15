@@ -1046,8 +1046,15 @@ export function WizardSidebar({
           {modeSwitcher}
         </div>
 
-        {/* Spine of 20 slides — clicking jumps the deck */}
-        <div className="flex-1 overflow-y-auto scrollbar-subtle px-5 pb-4">
+        {/* Hairline separator between header and scroll list — matches
+           nav mode exactly (mx-5, border-carbon/[0.12]) so the Y
+           position of the first block pill is pixel-identical. */}
+        <div className="mx-5 border-t border-carbon/[0.12] shrink-0" />
+
+        {/* Spine of 20 slides — px-6 pt-6 matches nav's <nav> padding
+           so the block pills land at the same X and the pill Y below
+           the separator equals nav's. */}
+        <div className="flex-1 overflow-y-auto scrollbar-subtle px-6 pt-6 pb-4">
           {SIDEBAR_BLOCKS.map((block, bIdx) => (
             <div key={block.id} className="mb-5">
               {/* Block pill — block number on the RIGHT to mirror the
