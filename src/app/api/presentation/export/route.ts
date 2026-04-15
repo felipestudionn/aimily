@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     default?: { launch: (opts: unknown) => Promise<unknown> };
     launch?: (opts: unknown) => Promise<unknown>;
   };
-  const puppeteer = (puppeteerMod.default ?? puppeteerMod) as { launch: (opts: Record<string, unknown>) => Promise<{ newPage: () => Promise<{ goto: (url: string, opts: unknown) => Promise<void>; pdf: (opts: unknown) => Promise<Buffer>; setViewport: (opts: unknown) => Promise<void> }>; close: () => Promise<void> }> };
+  const puppeteer = (puppeteerMod.default ?? puppeteerMod) as { launch: (opts: Record<string, unknown>) => Promise<{ newPage: () => Promise<{ goto: (url: string, opts: unknown) => Promise<void>; pdf: (opts: unknown) => Promise<Buffer>; setViewport: (opts: unknown) => Promise<void>; evaluate: <T>(fn: () => T | Promise<T>) => Promise<T> }>; close: () => Promise<void> }> };
 
   let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
   try {
@@ -107,6 +107,16 @@ export async function POST(req: NextRequest) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1600, height: 1131 }); // A4 landscape @ ~137 dpi
     await page.goto(exportUrl, { waitUntil: 'networkidle0', timeout: 45_000 });
+
+    // Wait for Google Fonts to finish downloading + parsing before
+    // snapshotting — without this, Chromium may emit the PDF with
+    // generic serif/sans fallbacks instead of Playfair, Archivo Black,
+    // etc.
+    await page.evaluate(() =>
+      typeof document !== 'undefined' && 'fonts' in document
+        ? (document as Document & { fonts: { ready: Promise<unknown> } }).fonts.ready.then(() => undefined)
+        : undefined,
+    );
 
     const pdfBuffer = await page.pdf({
       format: 'A4',

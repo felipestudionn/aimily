@@ -28,6 +28,7 @@ import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
 import type { PresentationData } from '@/lib/presentation/load-presentation-data';
 import { SlideRenderer } from './SlideRenderer';
 import { ThemePicker } from './ThemePicker';
+import { PresentationFonts } from './PresentationFonts';
 
 interface Props {
   meta: DeckMeta;
@@ -211,6 +212,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
       className="w-full h-full flex flex-col overflow-hidden"
       style={{ background: '#0A0A0A', color: '#FFFFFF' }}
     >
+      <PresentationFonts />
       {/* ── Top bar ── */}
       <div className="flex-shrink-0 h-[64px] flex items-center justify-between px-6 border-b border-white/10">
         {readOnly ? (
