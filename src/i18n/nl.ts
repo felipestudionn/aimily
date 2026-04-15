@@ -1465,6 +1465,7 @@ export const nl: Dictionary = {
     exportLabel: 'Exporteren',
     resetLabel: 'Resetten',
     savingLabel: 'Opslaan',
+    coverSubtitle: 'Een collectiepresentatie',
   },
 
   // ─── Marketing & Digital Pages ───

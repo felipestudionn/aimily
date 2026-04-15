@@ -1459,6 +1459,7 @@ export const pt: Dictionary = {
     exportLabel: 'Exportar',
     resetLabel: 'Redefinir',
     savingLabel: 'Salvando',
+    coverSubtitle: 'Uma apresentação de coleção',
   },
 
   // ─── Marketing e Digital ───

@@ -15,6 +15,7 @@ interface Props {
 }
 
 const TEMPLATE_DESCRIPTIONS: Record<TemplateId, string> = {
+  'cover':                'Collection cover (slide 0)',
   'hero':                 'Block-opening monolith',
   'editorial-stat':       'Big KPI + narrative bridge',
   'narrative-portrait':   'Story-driven — image + paragraph',

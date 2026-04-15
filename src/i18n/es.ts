@@ -1503,6 +1503,7 @@ export const es: Dictionary = {
     exportLabel: 'Exportar',
     resetLabel: 'Restablecer',
     savingLabel: 'Guardando',
+    coverSubtitle: 'Una presentación de colección',
   },
 
   // ─── Marketing y Digital ───

@@ -1465,6 +1465,7 @@ export const fr: Dictionary = {
     exportLabel: 'Exporter',
     resetLabel: 'Réinitialiser',
     savingLabel: 'Enregistrement',
+    coverSubtitle: 'Une présentation de collection',
   },
 
   // ─── Pages Marketing & Digital ───

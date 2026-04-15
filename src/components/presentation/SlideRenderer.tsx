@@ -11,6 +11,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
+import { CoverTemplate } from './templates/CoverTemplate';
 import { HeroTemplate } from './templates/HeroTemplate';
 import { PlaceholderTemplate } from './templates/PlaceholderTemplate';
 import { EditorialStatTemplate } from './templates/EditorialStatTemplate';
@@ -19,13 +20,20 @@ import { GridTileTemplate } from './templates/GridTileTemplate';
 import { TimelineStripTemplate } from './templates/TimelineStripTemplate';
 
 interface Props {
-  slide: MicroBlockSlide;
+  /* slide is null when rendering the cover (slide 0 — no mini-block). */
+  slide: MicroBlockSlide | null;
   meta: DeckMeta;
   title: string;
+  coverSubtitle?: string;
 }
 
-export function SlideRenderer({ slide, meta, title }: Props) {
+export function SlideRenderer({ slide, meta, title, coverSubtitle }: Props) {
+  if (!slide) {
+    return <CoverTemplate meta={meta} subtitle={coverSubtitle ?? ''} />;
+  }
   switch (slide.template) {
+    case 'cover':
+      return <CoverTemplate meta={meta} subtitle={coverSubtitle ?? ''} />;
     case 'hero':
       return <HeroTemplate slide={slide} meta={meta} title={title} />;
     case 'editorial-stat':

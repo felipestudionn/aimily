@@ -10,7 +10,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Palette, Check } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import { THEMES } from '@/lib/presentation/themes';
 import type { Theme, ThemeId } from '@/lib/presentation/types';
 
@@ -43,10 +43,16 @@ export function ThemePicker({ current, onChange }: Props) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 backdrop-blur-md text-white text-[12px] font-semibold tracking-[-0.01em] border border-white/15 transition-colors"
+        className={`inline-flex items-center gap-2 pl-4 pr-3 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border transition-colors ${
+          open
+            ? 'bg-white/20 border-white/30 text-white'
+            : 'bg-white/10 hover:bg-white/15 border-white/15 text-white'
+        }`}
       >
-        <Palette className="w-3.5 h-3.5" strokeWidth={1.8} />
+        <span className="text-white/55 uppercase tracking-[0.18em] text-[10px] font-semibold">Style</span>
+        <span className="h-3 w-px bg-white/20" />
         <span className="truncate max-w-[160px]">{current.name}</span>
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2} />
       </button>
 
       {open && (

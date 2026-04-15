@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Cloud,
   Plus,
+  LayoutGrid,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -739,8 +740,33 @@ export function WizardSidebar({
               {/* Separator */}
               <div className="sticky left-0 h-px bg-carbon/[0.12]" style={{ minWidth: INNER_W + calChartWidth }} />
 
-              {/* Nav rows — same SIDEBAR_BLOCKS + labelOf() as nav mode */}
+              {/* Nav rows — same SIDEBAR_BLOCKS + labelOf() as nav mode,
+                  preceded by the Overview top-level item (shared across
+                  the three cube faces; in calendar it takes you back to
+                  the collection dashboard). */}
               <div className="pt-6 pb-4 flex flex-col">
+                {/* Overview row — row-level so the stick-left column carries
+                    it and the right track stays empty (Overview has no
+                    timeline bars). */}
+                <div className="flex mb-4">
+                  <div className="sticky left-0 z-20 px-6" style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}>
+                    <button
+                      type="button"
+                      onClick={() => exitCalendarToHref(basePath)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 -mx-1 rounded-[12px] text-carbon hover:bg-carbon/[0.04] transition-all"
+                    >
+                      <LayoutGrid className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                      <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left">
+                        {sidebarT.overview ?? 'Overview'}
+                      </span>
+                    </button>
+                  </div>
+                  <div className="flex-1" style={{ width: calChartWidth }} />
+                </div>
+                {/* Divider below Overview so it reads as a top-level item
+                    above the 4 blocks — same visual weight as in nav mode. */}
+                <div className="sticky left-0 mb-5 border-t border-carbon/[0.08]" style={{ minWidth: INNER_W + calChartWidth, marginLeft: 24, marginRight: 24 }} />
+
                 {SIDEBAR_BLOCKS.map((block) => {
                   const phase = PHASES[block.id];
                   return (
@@ -1051,17 +1077,29 @@ export function WizardSidebar({
            position of the first block pill is pixel-identical. */}
         <div className="mx-5 border-t border-carbon/[0.12] shrink-0" />
 
-        {/* Spine of 20 slides — px-6 pt-6 matches nav's <nav> padding
-           so the block pills land at the same X and the pill Y below
-           the separator equals nav's. */}
+        {/* Spine — Overview (slide 0) + 20 mini-block slides. px-6 pt-6
+           matches nav's <nav> padding so the Overview button and block
+           pills land at the same X as in nav mode. */}
         <div className="flex-1 overflow-y-auto scrollbar-subtle px-6 pt-6 pb-4">
+          {/* Overview — maps to cover slide (presentationIndex 0) */}
+          <button
+            type="button"
+            onClick={() => setPresentationIndex(0)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 -mx-1 rounded-[12px] mb-4 transition-all ${
+              presentationIndex === 0
+                ? 'bg-carbon text-white'
+                : 'text-carbon hover:bg-carbon/[0.04]'
+            }`}
+          >
+            <LayoutGrid className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+            <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left">
+              {sidebarT.overview ?? 'Overview'}
+            </span>
+          </button>
+          <div className="border-t border-carbon/[0.08] mb-5" />
+
           {SIDEBAR_BLOCKS.map((block, bIdx) => (
             <div key={block.id} className="mb-5">
-              {/* Block pill — block number on the RIGHT to mirror the
-                  CollectionOverview ghost-number convention. The number
-                  span is sized to match nav mode's chevron-button box
-                  (h-6 w-6) so the pill has an identical total height
-                  and everything below stays pixel-aligned. */}
               <div className="px-4 py-2.5 rounded-full bg-carbon/[0.04] mb-3 flex items-center justify-between gap-3">
                 <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">
                   {labelOf(block.labelKey)}
@@ -1072,7 +1110,8 @@ export function WizardSidebar({
               </div>
               <div className="ml-1 pl-5 border-l border-carbon/[0.15]">
                 {block.subItems.map((sub, sIdx) => {
-                  const slideIdx = bIdx * 5 + sIdx;
+                  /* Cover occupies slot 0, so mini-block indices shift by +1. */
+                  const slideIdx = bIdx * 5 + sIdx + 1;
                   const isActive = presentationIndex === slideIdx;
                   return (
                     <button
@@ -1086,7 +1125,6 @@ export function WizardSidebar({
                       <span className={`text-[14px] truncate flex-1 text-left ${isActive ? 'font-semibold' : 'font-normal'}`}>
                         {labelOf(sub.labelKey)}
                       </span>
-                      {/* Slide coordinate (1.1 / 1.2 / …) on the RIGHT */}
                       <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${isActive ? 'text-white/55' : 'text-carbon/35'}`}>
                         {bIdx + 1}.{sIdx + 1}
                       </span>
@@ -1107,6 +1145,7 @@ export function WizardSidebar({
         <PresentationDeck
           meta={{ collectionName: displayName, season, launchDate }}
           titles={presentationTitles}
+          coverSubtitle={calT.coverSubtitle ?? 'A collection presentation'}
           index={presentationIndex}
           themeId={presentationThemeId}
           onIndexChange={setPresentationIndex}
@@ -1200,6 +1239,49 @@ export function WizardSidebar({
                Bold headers, no icons, generous space
                ═══════════════════════════════════════════ */}
           <nav className={`flex-1 overflow-y-auto scrollbar-subtle pt-6 ${collapsed ? 'px-2 flex flex-col items-center' : 'px-6'}`}>
+            {/* Overview — top-level item above the 4 blocks. Lives outside
+                the SIDEBAR_BLOCKS loop because it's the collection-level
+                entry, not a block. Shared across nav / calendar / presentation
+                at the same Y offset so the cube morph stays pixel-aligned. */}
+            {!collapsed && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (workspaceNav) workspaceNav.navigateToDashboard();
+                    else router.push(basePath);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 -mx-1 rounded-[12px] mb-4 transition-all ${
+                    pathname === basePath && !searchParams?.get('block')
+                      ? 'bg-carbon text-white'
+                      : 'text-carbon hover:bg-carbon/[0.04]'
+                  }`}
+                >
+                  <LayoutGrid className="h-4 w-4 shrink-0" strokeWidth={1.8} />
+                  <span className="text-[14px] font-semibold tracking-[-0.01em] flex-1 text-left">
+                    {sidebarT.overview ?? 'Overview'}
+                  </span>
+                </button>
+                <div className="border-t border-carbon/[0.08] -mx-0 mb-5" />
+              </>
+            )}
+            {collapsed && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (workspaceNav) workspaceNav.navigateToDashboard();
+                  else router.push(basePath);
+                }}
+                className={`w-10 h-10 flex items-center justify-center rounded-[10px] mb-4 transition-all ${
+                  pathname === basePath && !searchParams?.get('block')
+                    ? 'bg-carbon text-white'
+                    : 'text-carbon/60 hover:bg-carbon/[0.04]'
+                }`}
+                title={sidebarT.overview ?? 'Overview'}
+              >
+                <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={1.5} />
+              </button>
+            )}
             {SIDEBAR_BLOCKS.map((block) => {
               const blockActive = isBlockActive(block);
               const blockProgress = getBlockProgress(block);

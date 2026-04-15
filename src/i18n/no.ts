@@ -1386,6 +1386,7 @@ export const no: Dictionary = {
     exportLabel: 'Eksporter',
     resetLabel: 'Tilbakestill',
     savingLabel: 'Lagrer',
+    coverSubtitle: 'En kolleksjonspresentasjon',
   },
 
   // ─── Marketing & Digital Pages ───

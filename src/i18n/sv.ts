@@ -1385,6 +1385,7 @@ export const sv: Dictionary = {
     exportLabel: 'Exportera',
     resetLabel: 'Återställ',
     savingLabel: 'Sparar',
+    coverSubtitle: 'En kollektionspresentation',
   },
 
   // ─── Marketing & Digital Pages ───

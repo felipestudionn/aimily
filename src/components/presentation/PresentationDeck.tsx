@@ -33,8 +33,13 @@ interface Props {
   /* Map of titleKey → translated title (passed in from WizardSidebar
      so we don't double-load i18n inside this component). */
   titles: Record<string, string>;
+  /* Cover slide subtitle — translated once by the parent so i18n
+     stays out of this component. Presentation has one cover slide
+     at index 0; SPINE mini-blocks start at index 1. */
+  coverSubtitle: string;
   /* Controlled index + theme — owned by WizardSidebar so the LEFT
-     spine list and the RIGHT deck canvas stay in sync. */
+     spine list and the RIGHT deck canvas stay in sync. index 0 is
+     the cover; indices 1..SPINE.length map to SPINE[i-1]. */
   index: number;
   themeId: ThemeId;
   onIndexChange: (i: number) => void;
@@ -44,9 +49,13 @@ interface Props {
   onExit: () => void;
 }
 
-export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
+/* Total slide count = 1 cover + SPINE mini-blocks. */
+const TOTAL_SLIDES = SLIDE_COUNT + 1;
+
+export function PresentationDeck({ meta, titles, coverSubtitle, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
   const theme = useMemo(() => getTheme(themeId), [themeId]);
-  const slide = SPINE[index];
+  /* Cover at index 0 has no mini-block slide context; SPINE starts at 1. */
+  const slide = index === 0 ? null : SPINE[index - 1];
   const titleFor = useCallback((key: string) => titles[key] ?? key, [titles]);
 
   /* Keyboard nav */
@@ -60,7 +69,7 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
       }
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
-        onIndexChange(Math.min(SLIDE_COUNT - 1, index + 1));
+        onIndexChange(Math.min(TOTAL_SLIDES - 1, index + 1));
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         onIndexChange(Math.max(0, index - 1));
@@ -69,7 +78,7 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
         onIndexChange(0);
       } else if (e.key === 'End') {
         e.preventDefault();
-        onIndexChange(SLIDE_COUNT - 1);
+        onIndexChange(TOTAL_SLIDES - 1);
       } else if (e.key === 'Escape') {
         e.preventDefault();
         onExit();
@@ -108,7 +117,7 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
         <div className="flex items-center gap-3">
           <ThemePicker current={theme} onChange={onThemeChange} />
           <div className="text-[11px] tabular-nums text-white/55 font-semibold tracking-[0.08em] px-3 py-1.5 rounded-full bg-white/8 border border-white/10">
-            {String(index + 1).padStart(2, '0')} / {String(SLIDE_COUNT).padStart(2, '0')}
+            {String(index + 1).padStart(2, '0')} / {String(TOTAL_SLIDES).padStart(2, '0')}
           </div>
         </div>
       </div>
@@ -116,7 +125,7 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
       {/* ── Slide canvas (16:9, letterboxed) ── */}
       <div className="flex-1 min-h-0 flex items-center justify-center px-8 py-6">
         <div
-          key={`${themeId}-${slide.id}`}
+          key={`${themeId}-${slide?.id ?? 'cover'}`}
           className="relative w-full max-w-[1600px] aspect-[16/9] shadow-[0_24px_80px_rgba(0,0,0,0.4)] overflow-hidden"
           style={{
             ...themeStyle(theme),
@@ -126,7 +135,8 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
           <SlideRenderer
             slide={slide}
             meta={meta}
-            title={titleFor(slide.titleKey)}
+            title={slide ? titleFor(slide.titleKey) : (meta.brandName ?? meta.collectionName)}
+            coverSubtitle={coverSubtitle}
           />
         </div>
       </div>
@@ -144,20 +154,40 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
           <ChevronLeft className="w-4 h-4 text-white" strokeWidth={2} />
         </button>
 
-        {/* Progress bar — 20 segments grouped by block */}
+        {/* Progress bar — cover tick (slot 0) + 20 mini-block ticks grouped
+            by block, separated by hairline dividers. */}
         <div className="flex-1 flex items-center gap-1">
+          {/* Cover tick */}
+          <div className="flex items-center flex-1">
+            <button
+              type="button"
+              onClick={() => onIndexChange(0)}
+              className="group/tick flex-1 py-2"
+              title="Cover"
+            >
+              <div
+                className={`h-1 rounded-full transition-all ${
+                  index === 0 ? 'bg-white' : 'bg-white/25 group-hover/tick:bg-white/55'
+                }`}
+              />
+            </button>
+          </div>
+          {/* Divider between cover and block 1 */}
+          <div className="w-2 h-px bg-white/15 mx-0.5 shrink-0" />
+
           {SPINE.map((s, i) => {
-            const active = i === index;
-            const past = i < index;
+            const slotIdx = i + 1; // cover occupies slot 0
+            const active = slotIdx === index;
+            const past = slotIdx < index;
             const isFirstOfBlock = i === 0 || SPINE[i - 1].block !== s.block;
             return (
               <div key={s.id} className="flex items-center flex-1">
                 {isFirstOfBlock && i > 0 && <div className="w-2 h-px bg-white/15 mx-0.5 shrink-0" />}
                 <button
                   type="button"
-                  onClick={() => onIndexChange(i)}
+                  onClick={() => onIndexChange(slotIdx)}
                   className="group/tick flex-1 py-2"
-                  title={`${String(i + 1).padStart(2, '0')} · ${titleFor(s.titleKey)}`}
+                  title={`${String(slotIdx + 1).padStart(2, '0')} · ${titleFor(s.titleKey)}`}
                 >
                   <div
                     className={`h-1 rounded-full transition-all ${
@@ -172,8 +202,8 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
 
         <button
           type="button"
-          onClick={() => onIndexChange(Math.min(SLIDE_COUNT - 1, index + 1))}
-          disabled={index === SLIDE_COUNT - 1}
+          onClick={() => onIndexChange(Math.min(TOTAL_SLIDES - 1, index + 1))}
+          disabled={index === TOTAL_SLIDES - 1}
           className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           title="Next slide (→ or Space)"
         >

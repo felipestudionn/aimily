@@ -1506,6 +1506,7 @@ export const en = {
     exportLabel: 'Export',
     resetLabel: 'Reset',
     savingLabel: 'Saving',
+    coverSubtitle: 'A collection presentation',
   },
 
   // ─── Marketing & Digital Pages ───

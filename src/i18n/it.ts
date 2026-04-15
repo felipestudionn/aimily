@@ -1465,6 +1465,7 @@ export const it: Dictionary = {
     exportLabel: 'Esporta',
     resetLabel: 'Ripristina',
     savingLabel: 'Salvataggio',
+    coverSubtitle: 'Una presentazione di collezione',
   },
 
   // ─── Marketing & Digital Pages ───

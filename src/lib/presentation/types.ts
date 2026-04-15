@@ -73,6 +73,7 @@ export type MicroBlockId =
   | 'gtm-launch' | 'content-studio' | 'communications' | 'sales-dashboard' | 'point-of-sale';
 
 export type TemplateId =
+  | 'cover'             // Brand-hero opening slide (Presentation's slide 0)
   | 'hero'              // Block-opening monolith (used for the 4 block intro slides)
   | 'editorial-stat'    // Big KPI + narrative bridge
   | 'narrative-portrait'// Story-driven, image + paragraph
