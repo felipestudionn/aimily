@@ -55,6 +55,7 @@ export function HeroTemplate({ slide, meta, title }: Props) {
         <h1
           style={{
             fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
             fontWeight: 'var(--p-display-weight)',
             letterSpacing: 'var(--p-display-tracking)',
             fontSize: 'clamp(72px, 9vw, 168px)',

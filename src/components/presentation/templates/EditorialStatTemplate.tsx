@@ -103,6 +103,7 @@ export function EditorialStatTemplate({ slide, meta, title }: Props) {
           <h2
             style={{
               fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
               fontWeight: 'var(--p-display-weight)',
               letterSpacing: 'var(--p-display-tracking)',
               fontSize: 'clamp(28px, 2.8vw, 42px)',
@@ -119,6 +120,7 @@ export function EditorialStatTemplate({ slide, meta, title }: Props) {
           <div
             style={{
               fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
               fontWeight: 'var(--p-display-weight)',
               letterSpacing: 'var(--p-display-tracking)',
               fontSize: 'clamp(96px, 11vw, 200px)',
@@ -204,6 +206,7 @@ export function EditorialStatTemplate({ slide, meta, title }: Props) {
               <div
                 style={{
                   fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
                   fontWeight: 'var(--p-display-weight)',
                   fontSize: '28px',
                   letterSpacing: 'var(--p-display-tracking)',

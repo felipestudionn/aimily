@@ -103,6 +103,7 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Pro
         <h2
           style={{
             fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
             fontWeight: 'var(--p-display-weight)',
             letterSpacing: 'var(--p-display-tracking)',
             fontSize: 'clamp(28px, 2.8vw, 44px)',
@@ -119,6 +120,7 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Pro
       <p
         style={{
           fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
           fontWeight: 'var(--p-display-weight)',
           letterSpacing: 'var(--p-display-tracking)',
           fontSize: 'clamp(20px, 1.8vw, 28px)',
@@ -180,6 +182,7 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Pro
                 <div
                   style={{
                     fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
                     fontWeight: m.status === 'current' ? 700 : Number('var(--p-display-weight)') || 500,
                     fontSize: 'clamp(13px, 1.1vw, 16px)',
                     letterSpacing: 'var(--p-display-tracking)',

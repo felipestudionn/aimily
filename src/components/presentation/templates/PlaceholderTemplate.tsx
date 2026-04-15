@@ -65,6 +65,7 @@ export function PlaceholderTemplate({ slide, meta, title }: Props) {
         <h1
           style={{
             fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
             fontWeight: 'var(--p-display-weight)',
             letterSpacing: 'var(--p-display-tracking)',
             fontSize: 'clamp(56px, 6.5vw, 112px)',
@@ -147,6 +148,7 @@ export function PlaceholderTemplate({ slide, meta, title }: Props) {
               <div
                 style={{
                   fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
                   fontWeight: 'var(--p-display-weight)',
                   fontSize: '32px',
                   letterSpacing: 'var(--p-display-tracking)',

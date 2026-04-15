@@ -130,6 +130,7 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }:
           <h2
             style={{
               fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
               fontWeight: 'var(--p-display-weight)',
               letterSpacing: 'var(--p-display-tracking)',
               fontSize: 'clamp(28px, 2.8vw, 42px)',
@@ -146,6 +147,7 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }:
           <p
             style={{
               fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
               fontWeight: 'var(--p-display-weight)',
               letterSpacing: 'var(--p-display-tracking)',
               fontSize: 'clamp(28px, 2.6vw, 44px)',

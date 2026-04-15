@@ -211,7 +211,7 @@ const sustainableCraft: Theme = {
   id: 'sustainable-craft',
   name: 'Sustainable Craft',
   archetype: 'Earth transparency · Slab serif · Craft warmth',
-  status: 'preview',
+  status: 'wired',
   tokens: {
     bg: '#EEE6D7',
     surface: '#F8F2E4',
@@ -240,7 +240,7 @@ const y2kDigital: Theme = {
   id: 'y2k-digital',
   name: 'Y2K Digital Native',
   archetype: 'Chrome glitch · Neon-on-black · Mono display',
-  status: 'preview',
+  status: 'wired',
   tokens: {
     bg: '#0F0F1A',
     surface: '#1A1A2E',
@@ -269,7 +269,7 @@ const workwearHeritage: Theme = {
   id: 'workwear-heritage',
   name: 'Workwear Heritage',
   archetype: 'Utility blueprint · Condensed uppercase · Sand + indigo',
-  status: 'preview',
+  status: 'wired',
   tokens: {
     bg: '#E8E2D2',
     surface: '#F2EDDD',
@@ -298,7 +298,7 @@ const resortLuxe: Theme = {
   id: 'resort-luxe',
   name: 'Resort Luxe',
   archetype: 'Mediterranean sun · Cobalt + terracotta · Rounded luxury',
-  status: 'preview',
+  status: 'wired',
   tokens: {
     bg: '#F4EAD8',
     surface: '#FFF7E6',
@@ -340,6 +340,18 @@ export function getTheme(id: string | undefined | null): Theme {
   return THEMES.find(t => t.id === id) ?? THEMES[0];
 }
 
+/* Map displayCase token to a CSS text-transform value. Used by the
+   --p-display-case variable so templates can CAPS-lock display text
+   only when the theme asks for it (Streetwear, Performance, Y2K,
+   Workwear currently). */
+function caseToTextTransform(c: Theme['tokens']['displayCase']): string {
+  switch (c) {
+    case 'upper': return 'uppercase';
+    case 'small-caps': return 'uppercase'; // approximation; no theme uses this yet
+    default: return 'none';
+  }
+}
+
 /* Inline-style object that injects all theme tokens as CSS variables.
    Apply at the deck root → templates consume via `var(--p-bg)` etc. */
 export function themeStyle(theme: Theme): React.CSSProperties {
@@ -357,6 +369,7 @@ export function themeStyle(theme: Theme): React.CSSProperties {
     '--p-mono-font': t.monoFont,
     '--p-display-weight': String(t.displayWeight),
     '--p-display-tracking': t.displayTracking,
+    '--p-display-case': caseToTextTransform(t.displayCase),
     '--p-body-tracking': t.bodyTracking,
     '--p-radius': t.radius,
   } as React.CSSProperties;

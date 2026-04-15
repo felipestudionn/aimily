@@ -77,6 +77,7 @@ export function CoverTemplate({ meta, subtitle }: Props) {
         <h1
           style={{
             fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
             fontWeight: 'var(--p-display-weight)',
             letterSpacing: 'var(--p-display-tracking)',
             fontSize: 'clamp(96px, 12vw, 224px)',
@@ -129,6 +130,7 @@ export function CoverTemplate({ meta, subtitle }: Props) {
             <div
               style={{
                 fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
                 fontWeight: 'var(--p-display-weight)',
                 fontSize: '22px',
                 letterSpacing: 'var(--p-display-tracking)',
@@ -157,6 +159,7 @@ export function CoverTemplate({ meta, subtitle }: Props) {
           <div
             style={{
               fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
               fontWeight: 'var(--p-display-weight)',
               fontSize: '22px',
               letterSpacing: 'var(--p-display-tracking)',

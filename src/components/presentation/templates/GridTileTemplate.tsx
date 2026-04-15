@@ -116,6 +116,7 @@ export function GridTileTemplate({ slide, meta, title, data: cisData }: Props) {
           <h2
             style={{
               fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
               fontWeight: 'var(--p-display-weight)',
               letterSpacing: 'var(--p-display-tracking)',
               fontSize: 'clamp(28px, 2.8vw, 44px)',
@@ -195,6 +196,7 @@ export function GridTileTemplate({ slide, meta, title, data: cisData }: Props) {
               <div
                 style={{
                   fontFamily: 'var(--p-display-font)',
+            textTransform: 'var(--p-display-case)' as const,
                   fontWeight: 'var(--p-display-weight)',
                   fontSize: 'clamp(16px, 1.4vw, 22px)',
                   letterSpacing: 'var(--p-display-tracking)',
