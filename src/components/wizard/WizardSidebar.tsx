@@ -551,8 +551,15 @@ export function WizardSidebar({
     const href = opt.path === '' ? basePath : `${basePath}${opt.path}`;
     window.history.pushState({}, '', href);
   };
+  /* Fixed width = INNER_W (356) − px-5 padding (40) = 316. Pinning the
+     switcher width keeps icons/labels at their resting size during the
+     calendar→nav width animation (the container would otherwise be wider
+     mid-transition, stretching the pills). */
   const modeSwitcher = (
-    <div className="flex items-center gap-0.5 rounded-full bg-carbon/[0.04] p-1 w-full">
+    <div
+      className="flex items-center gap-0.5 rounded-full bg-carbon/[0.04] p-1"
+      style={{ width: INNER_W - 40 }}
+    >
       {modeOptions.map((opt) => {
         const active = mode === opt.mode;
         const href = opt.path === '' ? basePath : `${basePath}${opt.path}`;
