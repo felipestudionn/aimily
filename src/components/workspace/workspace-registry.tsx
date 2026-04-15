@@ -19,22 +19,12 @@ import type { CollectionPlan } from '@/types/planner';
 
 const LazyCreativePage = lazy(() => import('@/app/collection/[id]/creative/page'));
 const LazyMerchandisingPage = lazy(() => import('@/app/collection/[id]/merchandising/page'));
-const LazyBrandWorkspace = lazy(() =>
-  import('@/components/brand/BrandWorkspace').then(m => ({ default: m.BrandWorkspace }))
-);
 const LazyPlannerDashboard = lazy(() =>
   import('@/components/planner/PlannerDashboard').then(m => ({ default: m.PlannerDashboard }))
 );
 const LazyMarketingCreation = lazy(() =>
   import('@/components/marketing/MarketingCreationScreen').then(m => ({ default: m.MarketingCreationScreen }))
 );
-
-/* ── Wrapper: Brand (needs milestones from context) ── */
-
-function BrandWrapper({ collectionId }: WorkspaceComponentProps) {
-  const { milestones } = useTimeline();
-  return <LazyBrandWorkspace milestones={milestones} />;
-}
 
 /* ── Wrapper: Product / Collection Builder (needs plan data) ── */
 
@@ -99,7 +89,6 @@ interface RegistryEntry {
 
 const WORKSPACE_REGISTRY: Record<string, RegistryEntry> = {
   'creative': { component: CreativeWrapper },
-  'brand': { component: BrandWrapper },
   'merchandising': { component: MerchandisingWrapper },
   'product': { component: ProductWrapper, fullWidth: true },
   'marketing/creation': { component: MarketingCreationWrapper },
