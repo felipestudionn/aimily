@@ -33,6 +33,12 @@ module.exports = {
         error: "#A0463C",
         success: "#2d6a4f",
         warning: "#c77000",
+        /* ─── Aimily accent palette (2026-04-15) ─── */
+        "sea-foam": "#B6C8C7",      /* cool, airy — accent 1 */
+        linen: "#F1EFED",           /* warm off-white — accent 2 / surface */
+        moss: "#808368",            /* earthy green — accent 3 */
+        citronella: "#FFF4CE",      /* soft yellow — accent 4 / highlight */
+        midnight: "#001519",        /* deep blue-black — accent 5 / dominant */
         /* ─── shadcn/ui semantic tokens ─── */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

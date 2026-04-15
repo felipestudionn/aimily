@@ -282,28 +282,37 @@ export function GanttChart({
   const StatusIcon = ({ status }: { status: MilestoneStatus }) => {
     switch (status) {
       case 'completed':
-        return <Check className="w-3.5 h-3.5 text-green-600" />;
+        return <Check className="w-3.5 h-3.5 text-moss" strokeWidth={2.5} />;
       case 'in-progress':
-        return <Clock className="w-3.5 h-3.5 text-amber-500" />;
+        return <Clock className="w-3.5 h-3.5 text-carbon/70" strokeWidth={2} />;
       default:
-        return <Circle className="w-3.5 h-3.5 text-gray-300" />;
+        return <Circle className="w-3.5 h-3.5 text-carbon/20" strokeWidth={1.5} />;
     }
   };
 
   const ResponsibleBadge = ({ resp }: { resp: string }) => {
-    const colors: Record<string, string> = {
-      US: 'bg-blue-100 text-blue-700',
-      FACTORY: 'bg-yellow-100 text-yellow-700',
-      ALL: 'bg-green-100 text-green-700',
-      'AGENCY/US': 'bg-purple-100 text-purple-700',
+    // Monochrome carbon palette — differentiation via opacity
+    const opacity: Record<string, string> = {
+      US: 'bg-carbon text-white',
+      FACTORY: 'bg-carbon/[0.08] text-carbon/70',
+      ALL: 'bg-carbon/[0.04] text-carbon/60',
+      'AGENCY/US': 'bg-carbon/[0.12] text-carbon/80',
     };
     return (
       <span
-        className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${colors[resp] || 'bg-gray-100 text-gray-600'}`}
+        className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full tracking-[0.05em] ${opacity[resp] || 'bg-carbon/[0.04] text-carbon/50'}`}
       >
         {resp}
       </span>
     );
+  };
+
+  // Decide bar text color based on how dark the bar is.
+  // Pale accents (sea-foam, citronella, linen) → carbon text.
+  // Dark accents (moss, midnight, carbon) → white text.
+  const getBarTextColor = (barColor: string): string => {
+    const paleColors = ['#B6C8C7', '#FFF4CE', '#F1EFED', '#EDF1F0', '#FBF8EC'];
+    return paleColors.some(c => barColor.toUpperCase() === c.toUpperCase()) ? 'text-carbon' : 'text-white';
   };
 
   // Group milestones by phase
@@ -364,47 +373,18 @@ export function GanttChart({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white shadow-sm border border-gris overflow-hidden">
-      {/* Stats bar */}
-      <div className="flex items-center gap-6 px-6 py-3 bg-crema/40 border-b border-gris text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-28 h-2.5 bg-gris rounded-full overflow-hidden">
-            <div
-              className="h-full bg-carbon rounded-full transition-all duration-500"
-              style={{ width: `${stats.percent}%` }}
-            />
-          </div>
-          <span className="text-gray-600 font-bold">{stats.percent}%</span>
-        </div>
-        <span className="text-gray-300">|</span>
-        <span className="text-green-600 font-medium">
-          {stats.completed} {t('completed', 'completados')}
-        </span>
-        <span className="text-amber-500 font-medium">
-          {stats.inProgress} {t('in progress', 'en progreso')}
-        </span>
-        <span className="text-gray-400 font-medium">
-          {stats.total - stats.completed - stats.inProgress} {t('pending', 'pendientes')}
-        </span>
-        <div className="ml-auto text-gray-500">
-          {timeline.milestones.length} {t('milestones', 'hitos')} &middot; ~{Math.round(
-            (Math.max(...timeline.milestones.map(m => m.startWeeksBefore)) +
-             Math.max(...timeline.milestones.map(m => m.startWeeksBefore === Math.max(...timeline.milestones.map(mm => mm.startWeeksBefore)) ? m.durationWeeks : 0)))
-          )} {t('weeks', 'semanas')}
-        </div>
-      </div>
-
-      {/* Header row */}
-      <div className="flex border-b border-gris bg-white sticky top-0 z-20">
+    <div className="flex flex-col h-full bg-white rounded-[20px] border border-carbon/[0.06] overflow-hidden">
+      {/* Header row — simplified: just months on the right */}
+      <div className="flex border-b border-carbon/[0.06] bg-white sticky top-0 z-20">
         {/* Left header */}
         <div
-          className="flex-shrink-0 flex items-end px-4 py-2 border-r border-gris bg-white"
+          className="flex-shrink-0 flex items-end px-4 py-2 border-r border-carbon/[0.06] bg-white"
           style={{ width: LEFT_PANEL_WIDTH }}
         >
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
             {t('Phase / Milestone', 'Fase / Hito')}
           </span>
-          <span className="ml-auto text-xs font-semibold text-gray-400 uppercase tracking-wider mr-1">
+          <span className="ml-auto text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/25 mr-1">
             {t('Wk.', 'Sem.')}
           </span>
         </div>
@@ -418,13 +398,13 @@ export function GanttChart({
             {months.map((month, i) => (
               <div
                 key={i}
-                className="absolute top-0 h-full flex items-end border-l border-gris"
+                className="absolute top-0 h-full flex items-end border-l border-carbon/[0.06]"
                 style={{
                   left: month.startDay * DAY_WIDTH,
                   width: month.days * DAY_WIDTH,
                 }}
               >
-                <span className="px-2 pb-2 text-xs font-bold text-gray-600 whitespace-nowrap">
+                <span className="px-2 pb-2 text-[11px] font-medium text-carbon/50 tracking-[-0.01em] whitespace-nowrap">
                   {month.name} {month.year}
                 </span>
               </div>
@@ -432,20 +412,20 @@ export function GanttChart({
             {/* Today marker in header */}
             {todayOffset > 0 && todayOffset < chartWidth && (
               <div
-                className="absolute top-0 h-full w-0.5 bg-error z-10"
+                className="absolute top-0 h-full w-px bg-moss z-10"
                 style={{ left: todayOffset }}
               >
-                <div className="absolute -top-0 -left-3 px-1.5 py-0.5 bg-error text-white text-[9px] font-bold rounded-b">
+                <div className="absolute -top-0 -left-3 px-1.5 py-0.5 bg-moss text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">
                   HOY
                 </div>
               </div>
             )}
             {/* Launch marker in header */}
             <div
-              className="absolute top-0 h-full w-0.5 bg-carbon z-10"
+              className="absolute top-0 h-full w-px bg-carbon z-10"
               style={{ left: launchOffset }}
             >
-              <div className="absolute -top-0 -left-6 px-1.5 py-0.5 bg-carbon text-white text-[9px] font-bold rounded-b">
+              <div className="absolute -top-0 -left-6 px-1.5 py-0.5 bg-carbon text-white text-[9px] font-semibold rounded-b tracking-[0.1em]">
                 LAUNCH
               </div>
             </div>
@@ -458,7 +438,7 @@ export function GanttChart({
         {/* Left panel - milestone names */}
         <div
           ref={leftPanelRef}
-          className="flex-shrink-0 overflow-hidden border-r border-gris bg-white"
+          className="flex-shrink-0 overflow-hidden border-r border-carbon/[0.06] bg-white"
           style={{ width: LEFT_PANEL_WIDTH }}
         >
           {PHASE_ORDER.map((phaseKey) => {
@@ -472,28 +452,28 @@ export function GanttChart({
 
             return (
               <div key={phaseKey}>
-                {/* Phase header */}
+                {/* Phase header — tinted with accent bgColor */}
                 <div
-                  className="flex items-center gap-2 px-3 cursor-pointer select-none border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-4 cursor-pointer select-none border-b border-carbon/[0.06] transition-colors"
                   style={{
                     height: PHASE_ROW_HEIGHT,
-                    backgroundColor: phase.bgColor + '80',
+                    backgroundColor: phase.bgColor,
                   }}
                   onClick={() => togglePhase(phaseKey)}
                 >
                   {isCollapsed ? (
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                    <ChevronRight className="w-3.5 h-3.5 text-carbon/40" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                    <ChevronDown className="w-3.5 h-3.5 text-carbon/40" />
                   )}
                   <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: phase.color }}
                   />
-                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wide flex-1">
+                  <span className="text-[11px] font-semibold tracking-[-0.01em] text-carbon flex-1 truncate">
                     {pName(phaseKey)}
                   </span>
-                  <span className="text-[10px] text-gray-400 font-medium mr-1">
+                  <span className="text-[10px] text-carbon/40 font-medium mr-1 tabular-nums">
                     {phaseCompleted}/{milestones.length}
                   </span>
                   <button
@@ -501,10 +481,10 @@ export function GanttChart({
                       e.stopPropagation();
                       addMilestone(phaseKey);
                     }}
-                    className="w-5 h-5 flex items-center justify-center rounded-md hover:bg-white/60 text-gray-400 hover:text-gray-700 transition-colors"
+                    className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/60 text-carbon/40 hover:text-carbon transition-colors"
                     title={t('Add milestone', 'Añadir hito')}
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
                 {/* Milestones */}
@@ -512,7 +492,7 @@ export function GanttChart({
                   milestones.map((m) => (
                     <div
                       key={m.id}
-                      className="flex items-center gap-2 px-3 border-b border-gray-50 hover:bg-amber-50/30 transition-colors group"
+                      className="flex items-center gap-2 px-4 border-b border-carbon/[0.04] hover:bg-carbon/[0.02] transition-colors group"
                       style={{ height: ROW_HEIGHT }}
                     >
                       <button
@@ -524,17 +504,17 @@ export function GanttChart({
                       </button>
                       <button
                         onClick={() => openEditor(m)}
-                        className={`text-xs text-left flex-1 leading-tight hover:text-blue-600 transition-colors ${
+                        className={`text-[12px] text-left flex-1 leading-tight tracking-[-0.01em] transition-colors ${
                           m.status === 'completed'
-                            ? 'line-through text-gray-400'
-                            : 'text-gray-700'
+                            ? 'line-through text-carbon/30'
+                            : 'text-carbon/80 hover:text-carbon'
                         }`}
                         title={t('Click to edit', 'Click para editar')}
                       >
                         {mName(m)}
                       </button>
                       <ResponsibleBadge resp={m.responsible} />
-                      <span className="text-[10px] text-gray-400 font-mono w-8 text-right tabular-nums">
+                      <span className="text-[10px] text-carbon/35 font-mono w-8 text-right tabular-nums">
                         {m.durationWeeks}w
                       </span>
                     </div>
@@ -562,7 +542,7 @@ export function GanttChart({
             {months.map((month, i) => (
               <div
                 key={i}
-                className="absolute top-0 h-full border-l border-gray-100"
+                className="absolute top-0 h-full border-l border-carbon/[0.06]"
                 style={{ left: month.startDay * DAY_WIDTH }}
               />
             ))}
@@ -572,7 +552,7 @@ export function GanttChart({
               (_, i) => (
                 <div
                   key={i}
-                  className="absolute top-0 h-full border-l border-gray-50"
+                  className="absolute top-0 h-full border-l border-carbon/[0.02]"
                   style={{ left: i * 7 * DAY_WIDTH }}
                 />
               )
@@ -581,14 +561,14 @@ export function GanttChart({
             {/* Today line */}
             {todayOffset > 0 && todayOffset < chartWidth && (
               <div
-                className="absolute top-0 h-full w-0.5 bg-error/60 z-10"
+                className="absolute top-0 h-full w-px bg-moss/70 z-10"
                 style={{ left: todayOffset }}
               />
             )}
 
             {/* Launch line */}
             <div
-              className="absolute top-0 h-full w-0.5 bg-carbon/80 z-10"
+              className="absolute top-0 h-full w-px bg-carbon/80 z-10"
               style={{ left: launchOffset }}
             />
 
@@ -672,9 +652,9 @@ export function GanttChart({
 
                       {/* Main bar - draggable */}
                       <div
-                        className={`w-full h-full rounded-lg shadow-sm transition-shadow cursor-grab active:cursor-grabbing hover:shadow-lg ${
+                        className={`w-full h-full rounded-full transition-shadow cursor-grab active:cursor-grabbing hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] ${
                           isCompleted ? 'opacity-50' : ''
-                        } ${isDragging ? 'shadow-xl ring-2 ring-blue-400/50' : ''}`}
+                        } ${isDragging ? 'shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-2 ring-carbon/30' : ''}`}
                         style={{
                           backgroundColor: m.color,
                           backgroundImage: isInProgress
@@ -682,8 +662,8 @@ export function GanttChart({
                                 -45deg,
                                 transparent,
                                 transparent 4px,
-                                rgba(255,255,255,0.2) 4px,
-                                rgba(255,255,255,0.2) 8px
+                                rgba(255,255,255,0.25) 4px,
+                                rgba(255,255,255,0.25) 8px
                               )`
                             : undefined,
                         }}
@@ -692,8 +672,8 @@ export function GanttChart({
                       >
                         {/* Text on bar when wide enough */}
                         {pos.width > 60 && (
-                          <div className="absolute inset-0 flex items-center px-2 overflow-hidden pointer-events-none">
-                            <span className="text-[10px] font-semibold text-white truncate drop-shadow-sm">
+                          <div className="absolute inset-0 flex items-center px-3 overflow-hidden pointer-events-none">
+                            <span className={`text-[10px] font-semibold truncate tracking-[-0.01em] ${getBarTextColor(m.color)}`}>
                               {mName(m)}
                             </span>
                           </div>
@@ -711,22 +691,19 @@ export function GanttChart({
                       {/* Tooltip on hover (not during drag) */}
                       {!isDragging && (
                         <div className="absolute bottom-full left-0 mb-1.5 hidden group-hover/bar:block z-30 pointer-events-none">
-                          <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
-                            <div className="font-bold text-[12px]">{mName(m)}</div>
-                            <div className="text-gray-300 mt-1">
+                          <div className="bg-carbon text-white text-[11px] px-3 py-2 rounded-[10px] shadow-[0_8px_32px_rgba(0,0,0,0.12)] whitespace-nowrap">
+                            <div className="font-semibold text-[12px] tracking-[-0.01em]">{mName(m)}</div>
+                            <div className="text-white/60 mt-1">
                               {formatDate(pos.startDate)} → {formatDate(pos.endDate)}
                             </div>
-                            <div className="text-gray-400 mt-0.5">
+                            <div className="text-white/50 mt-0.5">
                               {pos.durationWeeks.toFixed(1)} {t('weeks', 'semanas')} &middot; {m.responsible}
                             </div>
                             {m.notes && (
-                              <div className="text-yellow-300 mt-1 text-[10px] max-w-[200px] break-words">
+                              <div className="text-citronella mt-1 text-[10px] max-w-[200px] break-words">
                                 {m.notes}
                               </div>
                             )}
-                            <div className="text-gray-500 mt-1 text-[9px]">
-                              {t('Drag to move · Edges to resize · Double click to edit', 'Arrastra para mover · Bordes para redimensionar · Doble click para editar')}
-                            </div>
                           </div>
                         </div>
                       )}
@@ -734,7 +711,7 @@ export function GanttChart({
                       {/* Drag preview tooltip */}
                       {isDragging && (
                         <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-                          <div className="bg-blue-600 text-white text-[10px] px-2 py-1 rounded-md shadow-lg whitespace-nowrap font-mono">
+                          <div className="bg-carbon text-white text-[10px] px-2.5 py-1 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] whitespace-nowrap font-mono">
                             {dragState.type === 'move'
                               ? `${formatDate(pos.startDate)} → ${formatDate(pos.endDate)}`
                               : `${pos.durationWeeks.toFixed(1)}w`}
@@ -758,29 +735,29 @@ export function GanttChart({
         const endDate = getMilestoneEndDate(timeline.launchDate, editValues.startWeeksBefore, editValues.durationWeeks);
 
         return (
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setEditingMilestone(null)}>
+          <div className="fixed inset-0 bg-carbon/40 z-50 flex items-center justify-center backdrop-blur-sm" onClick={() => setEditingMilestone(null)}>
             <div
-              className="bg-white shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+              className="bg-white rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md mx-4 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Header with phase color */}
-              <div className="px-5 py-3 flex items-center gap-3" style={{ backgroundColor: m.color + '20' }}>
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }} />
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+              {/* Header with phase color tint */}
+              <div className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: m.color + '1F' }}>
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: m.color }} />
+                <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/50">
                   {pName(m.phase)}
                 </span>
                 <ResponsibleBadge resp={m.responsible} />
               </div>
 
-              <div className="px-5 py-4 space-y-4">
+              <div className="px-6 py-5 space-y-5">
                 {/* Name */}
                 <div>
-                  <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{t('Name', 'Nombre')}</label>
+                  <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{t('Name', 'Nombre')}</label>
                   <input
                     type="text"
                     value={editValues.nameEs}
                     onChange={(e) => setEditValues((v) => ({ ...v, nameEs: e.target.value }))}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400"
+                    className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
                     autoFocus
                   />
                 </div>
@@ -788,8 +765,8 @@ export function GanttChart({
                 {/* Start & Duration */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                      {t('Start (wk. before launch)', 'Inicio (sem. antes del launch)')}
+                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+                      {t('Start (wk. before launch)', 'Inicio (sem. antes)')}
                     </label>
                     <input
                       type="number"
@@ -798,12 +775,12 @@ export function GanttChart({
                         setEditValues((v) => ({ ...v, startWeeksBefore: parseFloat(e.target.value) || 0 }))
                       }
                       step={0.5}
-                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 font-mono"
+                      className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors font-mono"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                      {t('Duration (weeks)', 'Duración (semanas)')}
+                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+                      {t('Duration (weeks)', 'Duración (sem.)')}
                     </label>
                     <input
                       type="number"
@@ -813,38 +790,38 @@ export function GanttChart({
                       }
                       step={0.5}
                       min={0.15}
-                      className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 font-mono"
+                      className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors font-mono"
                     />
                   </div>
                 </div>
 
                 {/* Date preview */}
-                <div className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+                <div className="text-[12px] text-carbon/50 bg-carbon/[0.03] px-4 py-2.5 rounded-[12px] tracking-[-0.01em]">
                   {formatDate(startDate)} → {formatDate(endDate)}
                 </div>
 
                 {/* Notes */}
                 <div>
-                  <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{t('Notes', 'Notas')}</label>
+                  <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{t('Notes', 'Notas')}</label>
                   <textarea
                     value={editValues.notes}
                     onChange={(e) => setEditValues((v) => ({ ...v, notes: e.target.value }))}
                     rows={2}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/20 focus:border-gray-400 resize-none"
+                    className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 resize-none leading-relaxed"
                     placeholder={t('Add notes...', 'Añadir notas...')}
                   />
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="px-5 py-3 flex items-center gap-2 border-t border-gray-100">
+              <div className="px-6 py-4 flex items-center gap-2 border-t border-carbon/[0.06]">
                 <button
                   onClick={() => {
                     if (confirm(t('Delete this milestone?', '¿Eliminar este hito?'))) {
                       deleteMilestone(editingMilestone!);
                     }
                   }}
-                  className="flex items-center gap-1 px-3 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium text-error hover:bg-error/[0.06] transition-colors"
                   title={t('Delete milestone', 'Eliminar hito')}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -853,13 +830,13 @@ export function GanttChart({
                 <div className="flex-1" />
                 <button
                   onClick={() => setEditingMilestone(null)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="inline-flex items-center px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
                 >
                   {t('Cancel', 'Cancelar')}
                 </button>
                 <button
                   onClick={saveEditor}
-                  className="px-4 py-2 text-sm font-semibold bg-carbon text-white rounded-lg hover:bg-carbon/80 transition-colors"
+                  className="inline-flex items-center px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors"
                 >
                   {t('Save', 'Guardar')}
                 </button>

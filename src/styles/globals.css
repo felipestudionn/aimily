@@ -29,6 +29,14 @@
   --color-error: #a0463c;
   --color-success: #2d6a4f;
   --color-warning: #c77000;
+  /* ─── Aimily accent palette (2026-04-15) ─── */
+  /* Use these for color-coding in calendar rows, block identifiers,
+     presentation headers, chart accents. Carbon/Midnight remain dominant. */
+  --color-sea-foam: #b6c8c7;   /* Sea Foam — cool, airy */
+  --color-linen: #f1efed;      /* Linen — warm off-white */
+  --color-moss: #808368;       /* Moss — earthy green */
+  --color-citronella: #fff4ce; /* Citronella — soft yellow */
+  --color-midnight: #001519;   /* Midnight — deep blue-black */
   /* ─── shadcn semantic colors (direct values for v4) ─── */
   --color-background: #F3F2F0;
   --color-foreground: #191919;

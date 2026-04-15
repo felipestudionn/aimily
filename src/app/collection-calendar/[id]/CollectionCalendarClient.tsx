@@ -5,14 +5,8 @@ import { Navbar } from '@/components/layout/navbar';
 import { GanttChart, CalendarLang } from '@/components/timeline/GanttChart';
 import { useCollectionTimeline } from '@/hooks/useCollectionTimeline';
 import {
-  Calendar,
-  Edit3,
-  Save,
   RotateCcw,
   Download,
-  Package,
-  Layers,
-  Megaphone,
   ArrowLeft,
   Loader2,
   Cloud,
@@ -101,21 +95,6 @@ export function CollectionCalendarClient({
 
   const [lang, setLang] = useState<CalendarLang>('en');
 
-  // Collection summary stats
-  const stats = useMemo(() => {
-    const families = Array.from(new Set(skus.map((s) => s.family)));
-    const categories = Array.from(new Set(skus.map((s) => s.category)));
-    const totalPvp = skus.reduce((sum, s) => sum + (s.pvp || 0), 0);
-    return {
-      skuCount: skus.length,
-      dropCount: drops.length,
-      actionCount: commercialActions.length,
-      families,
-      categories,
-      avgPvp: skus.length > 0 ? totalPvp / skus.length : 0,
-    };
-  }, [skus, drops, commercialActions]);
-
   if (loading) {
     if (embedded) {
       return (
@@ -136,223 +115,94 @@ export function CollectionCalendarClient({
     );
   }
 
+  /* Minimal toolbar — language toggle + export + reset.
+     Back/title/launch date only shown in the standalone route (non-embedded);
+     in the Overview, the sidebar is the spine and these are redundant. */
+  const Toolbar = () => (
+    <div className="flex items-center justify-end gap-2 mb-4">
+      <div className="inline-flex rounded-full border border-carbon/[0.12] overflow-hidden">
+        <button
+          onClick={() => setLang('en')}
+          className={`px-3 py-1.5 text-[11px] font-semibold tracking-[0.05em] transition-colors ${lang === 'en' ? 'bg-carbon text-white' : 'text-carbon/50 hover:bg-carbon/[0.04]'}`}
+        >
+          EN
+        </button>
+        <button
+          onClick={() => setLang('es')}
+          className={`px-3 py-1.5 text-[11px] font-semibold tracking-[0.05em] transition-colors ${lang === 'es' ? 'bg-carbon text-white' : 'text-carbon/50 hover:bg-carbon/[0.04]'}`}
+        >
+          ES
+        </button>
+      </div>
+      <button
+        onClick={async () => {
+          if (!timeline) return;
+          const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
+          await exportTimelineToExcel(timeline, lang);
+        }}
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+        title={t.calendarPage.exportToExcel}
+      >
+        <Download className="w-3.5 h-3.5" />
+      </button>
+      <button
+        onClick={resetToDefaults}
+        className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+        title={t.calendarPage.resetToTemplate}
+      >
+        <RotateCcw className="w-3.5 h-3.5" />
+      </button>
+      {saving && (
+        <span className="inline-flex items-center gap-1 text-[11px] text-carbon/50 ml-2">
+          <Cloud className="w-3 h-3" />
+          {t.calendarPage.saving}
+        </span>
+      )}
+    </div>
+  );
+
   const calendarContent = (
     <>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          {!embedded && (
+      {!embedded && (
+        <div className="flex items-end justify-between mb-6">
+          <div>
             <Link
               href={`/planner/${plan.id}`}
-              className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-2 transition-colors"
+              className="inline-flex items-center gap-1 text-[12px] text-carbon/50 hover:text-carbon mb-2 transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               {t.calendarPage.backToPlanner}
             </Link>
-          )}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-crema flex items-center justify-center text-carbon">
-              <Calendar className="w-5 h-5" fill="currentColor" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {plan.name}{' '}
-                <span className="text-gray-400 font-semibold">
-                  {plan.season || 'SS27'}
-                </span>
-              </h1>
-              <p className="text-sm text-gray-500">
-                {t.calendarPage.launch}:{' '}
-                <span className="font-semibold text-gray-700">
-                  {timeline
-                    ? new Date(timeline.launchDate).toLocaleDateString(
-                        language === 'es' ? 'es-ES' : 'en-US',
-                        {
-                          weekday: 'long',
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        }
-                      )
-                    : ''}
-                </span>
-                {saving && (
-                  <span className="ml-2 inline-flex items-center gap-1 text-xs text-blue-500">
-                    <Cloud className="w-3 h-3" />
-                    {t.calendarPage.saving}
-                  </span>
-                )}
-              </p>
-            </div>
+            <h1 className="text-[28px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+              {plan.name}
+              <span className="ml-2 text-carbon/40">{plan.season || 'SS27'}</span>
+            </h1>
+            <p className="text-[13px] text-carbon/50 mt-1 tracking-[-0.01em]">
+              {t.calendarPage.launch}:{' '}
+              <span className="text-carbon/70">
+                {timeline
+                  ? new Date(timeline.launchDate).toLocaleDateString(
+                      language === 'es' ? 'es-ES' : 'en-US',
+                      {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      }
+                    )
+                  : ''}
+              </span>
+            </p>
           </div>
+          <Toolbar />
         </div>
+      )}
 
-        <div className="flex items-center gap-2">
-          {/* Language toggle */}
-          <div className="flex bg-white border border-gris overflow-hidden">
-            <button
-              onClick={() => setLang('en')}
-              className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'en' ? 'bg-carbon text-white' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLang('es')}
-              className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${lang === 'es' ? 'bg-carbon text-white' : 'text-gray-500 hover:bg-gray-50'}`}
-            >
-              ES
-            </button>
-          </div>
-          <button
-            onClick={async () => {
-              if (!timeline) return;
-              const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
-              await exportTimelineToExcel(timeline, lang);
-            }}
-            className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-            title={t.calendarPage.exportToExcel}
-          >
-            <Download className="w-4 h-4" />
-          </button>
-          <button
-            onClick={resetToDefaults}
-            className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
-            title={t.calendarPage.resetToTemplate}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
-          {!embedded && (
-            <Link
-              href={`/go-to-market/${plan.id}`}
-              className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-            >
-              {t.calendarPage.goToMarket}
-            </Link>
-          )}
-        </div>
-      </div>
+      {embedded && <Toolbar />}
 
-      {/* Collection data cards */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {/* SKUs card */}
-        <div className="bg-white border border-gris p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-carbon" />
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              {t.calendarPage.modelsToDevelop}
-            </span>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {stats.skuCount}{' '}
-            <span className="text-sm font-normal text-gray-400">SKUs</span>
-          </div>
-          {stats.families.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {stats.families.slice(0, 5).map((f) => (
-                <span
-                  key={f}
-                  className="text-[10px] bg-crema text-carbon px-1.5 py-0.5 rounded-full"
-                >
-                  {f}
-                </span>
-              ))}
-              {stats.families.length > 5 && (
-                <span className="text-[10px] text-gray-400">
-                  +{stats.families.length - 5} {t.calendarPage.more}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Drops card */}
-        <div className="bg-white border border-gris p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Layers className="w-4 h-4 text-carbon" />
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              {t.calendarPage.plannedDrops}
-            </span>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {stats.dropCount}{' '}
-            <span className="text-sm font-normal text-gray-400">{t.calendarPage.drops}</span>
-          </div>
-          {drops.length > 0 && (
-            <div className="flex flex-col gap-0.5 mt-2">
-              {drops.slice(0, 3).map((d) => (
-                <div
-                  key={d.id}
-                  className="text-[10px] text-gray-500 flex justify-between"
-                >
-                  <span>{d.name}</span>
-                  <span className="text-gray-400">
-                    {new Date(d.launch_date).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Commercial Actions card */}
-        <div className="bg-white border border-gris p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Megaphone className="w-4 h-4 text-carbon" />
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              {t.calendarPage.commercialActions}
-            </span>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {stats.actionCount}{' '}
-            <span className="text-sm font-normal text-gray-400">
-              {t.calendarPage.actions}
-            </span>
-          </div>
-          {commercialActions.length > 0 && (
-            <div className="flex flex-col gap-0.5 mt-2">
-              {commercialActions.slice(0, 3).map((a) => (
-                <div
-                  key={a.id}
-                  className="text-[10px] text-gray-500 flex justify-between"
-                >
-                  <span>{a.name}</span>
-                  <span className="text-gray-400">{a.action_type}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Phase legend */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {[
-          { label: t.calendarPage.phaseCreative, color: '#5A8A7A' },
-          { label: t.calendarPage.phasePlanning, color: '#9A7A60' },
-          { label: t.calendarPage.phaseDesign, color: '#7A6A9A' },
-          { label: t.calendarPage.phaseMarketing, color: '#9A6070' },
-        ].map((p) => (
-          <div
-            key={p.color}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gris"
-          >
-            <div
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: p.color }}
-            />
-            <span className="text-[11px] font-medium text-texto">
-              {p.label}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Gantt chart */}
+      {/* Gantt chart — the spine's horizontal extension */}
       {timeline && (
-        <div style={{ height: 'calc(100vh - 340px)' }}>
+        <div style={{ height: embedded ? 'calc(100vh - 240px)' : 'calc(100vh - 220px)' }}>
           <GanttChart
             timeline={timeline}
             onUpdateMilestone={updateMilestone}
@@ -361,15 +211,6 @@ export function CollectionCalendarClient({
           />
         </div>
       )}
-
-      {/* Instructions */}
-      <div className="mt-4 text-xs text-gray-400 flex items-center gap-4">
-        <span>{t.calendarPage.instructionStatus}</span>
-        <span>|</span>
-        <span>{t.calendarPage.instructionWeeks}</span>
-        <span>|</span>
-        <span>{t.calendarPage.instructionAutoSave}</span>
-      </div>
     </>
   );
 
@@ -382,7 +223,7 @@ export function CollectionCalendarClient({
   }
 
   return (
-    <div className="min-h-screen bg-crema">
+    <div className="min-h-screen bg-shade">
       <Navbar />
       <div className="pt-24 pb-8 px-4 max-w-[1600px] mx-auto">
         {calendarContent}

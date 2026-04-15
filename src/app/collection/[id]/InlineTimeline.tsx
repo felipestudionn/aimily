@@ -75,20 +75,18 @@ export default function InlineTimeline({ collectionId, collectionName, season, l
   }
 
   return (
-    <div className="px-4 sm:px-8 md:px-12 lg:px-16 py-2">
-      {/* Full interactive Gantt — maximized screen space */}
-      <div
-        ref={containerRef}
-        className="bg-white border border-carbon/[0.06] overflow-hidden"
-        style={{ height: 'calc(100vh - 200px)' }}
-      >
-        <GanttChart
-          timeline={timeline}
-          onUpdateMilestone={updateMilestone}
-          onUpdateTimeline={updateTimeline}
-          lang="es"
-        />
-      </div>
+    <div
+      ref={containerRef}
+      className="px-4 sm:px-8 md:px-12 lg:px-16"
+      style={{ height: 'calc(100vh - 220px)' }}
+    >
+      {/* Gantt wrapped by its own rounded surface — no double chrome. */}
+      <GanttChart
+        timeline={timeline}
+        onUpdateMilestone={updateMilestone}
+        onUpdateTimeline={updateTimeline}
+        lang="es"
+      />
     </div>
   );
 }
