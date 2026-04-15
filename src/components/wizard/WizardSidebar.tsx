@@ -503,10 +503,12 @@ export function WizardSidebar({
     const onUp = () => {
       if (!dragState) return;
       const movedPx = Math.abs(dragState.currentDeltaDays * CAL_DAY_WIDTH);
-      /* Click vs drag: if mouse barely moved AND it's a `move`-type event
-         (not a resize-handle), treat as click → exit calendar to the
-         workspace of this milestone's mini-block. */
-      if (movedPx < 5 && dragState.type === 'move') {
+      /* Click vs drag: humans ALWAYS twitch the mouse a few px when
+         clicking (especially on trackpads). 12px is the sweet spot —
+         strict enough to distinguish intentional drags, loose enough
+         to catch real clicks. Only applies to `move`-type events, not
+         the resize handles. */
+      if (movedPx < 12 && dragState.type === 'move') {
         const subId = MILESTONE_TO_MINI_BLOCK[dragState.milestoneId];
         if (subId) {
           let foundSubRoute: string | null = null;
