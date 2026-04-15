@@ -227,6 +227,23 @@ export function WizardSidebar({
   const [mode, setMode] = useState<'nav' | 'calendar' | 'presentation'>(modeFromUrl(pathname));
   useEffect(() => { setMode(modeFromUrl(pathname)); }, [pathname]);
 
+  /* Calendar inner fade-in: bg expands first, content materializes after.
+     Reset to 0 on mode flip, then rAF-bump to 1 so CSS opacity transition
+     kicks in. Delay + duration align with the 1.2s width animation so the
+     reveal feels intentional, not mechanical. */
+  const [calInnerVisible, setCalInnerVisible] = useState(false);
+  useEffect(() => {
+    if (mode === 'calendar') {
+      setCalInnerVisible(false);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setCalInnerVisible(true));
+      });
+      return () => cancelAnimationFrame(id);
+    } else {
+      setCalInnerVisible(false);
+    }
+  }, [mode]);
+
   /* Client-only mount flag (for createPortal on the edit modal). */
   const [clientMounted, setClientMounted] = useState(false);
   useEffect(() => setClientMounted(true), []);
@@ -591,8 +608,12 @@ export function WizardSidebar({
   const calendarInner = mode === 'calendar' ? (
     <>
         <div
-          className="flex flex-col overflow-hidden rounded-[16px] h-full"
-          style={{ background: CAL_SIDEBAR_BG }}
+          className="flex flex-col overflow-hidden rounded-[16px] h-full transition-opacity duration-[700ms] ease-out"
+          style={{
+            background: CAL_SIDEBAR_BG,
+            opacity: calInnerVisible ? 1 : 0,
+            transitionDelay: calInnerVisible ? '350ms' : '0ms',
+          }}
         >
           {/* Single scroll zone — horizontal + vertical */}
           <div
