@@ -24,6 +24,7 @@ import {
   Download,
   RotateCcw,
   Cloud,
+  Plus,
 } from 'lucide-react';
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
@@ -802,7 +803,7 @@ export function WizardSidebar({
                                     )}
                                     <div className="absolute left-0 top-0 w-2 h-full cursor-col-resize z-10" onMouseDown={(e) => handleBarDragStart(e, m.id, 'resize-left')} />
                                     <div
-                                      className={`w-full h-full rounded-full transition-shadow cursor-grab active:cursor-grabbing hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] ${isCompleted ? 'opacity-50' : ''} ${isDragging ? 'shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-2 ring-carbon/30' : ''}`}
+                                      className={`w-full h-full rounded-full transition-all duration-200 cursor-grab active:cursor-grabbing group-hover/bar:shadow-[0_4px_16px_rgba(0,0,0,0.10),inset_0_0_0_1px_rgba(255,255,255,0.18)] ${isCompleted ? 'opacity-50' : ''} ${isDragging ? 'shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-2 ring-carbon/30' : ''}`}
                                       style={{
                                         backgroundColor: m.color,
                                         backgroundImage: isInProgress ? 'repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(255,255,255,0.25) 4px, rgba(255,255,255,0.25) 8px)' : undefined,
@@ -810,9 +811,18 @@ export function WizardSidebar({
                                       onMouseDown={(e) => handleBarDragStart(e, m.id, 'move')}
                                       onDoubleClick={() => openEditor(m)}
                                     />
-                                    {/* Bars are intentionally bare — left-column labels give
-                                        the row context, hover tooltip gives the milestone
-                                        details + "Ir al workspace" CTA. Keeps the canvas clean. */}
+                                    {/* Hover-only "+" affordance — bar stays bare in repose
+                                        (clean canvas), but a faint plus fades in when the
+                                        cursor approaches, telegraphing "more here". Combined
+                                        with the inset highlight + drop shadow on the bar
+                                        itself, you get a tactile button feel. Hidden on
+                                        narrow bars where the icon would crowd the geometry. */}
+                                    {pos.width > 60 && !isDragging && (
+                                      <Plus
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-white opacity-0 group-hover/bar:opacity-70 transition-opacity duration-150 pointer-events-none"
+                                        strokeWidth={2.5}
+                                      />
+                                    )}
                                     <div className="absolute right-0 top-0 w-2 h-full cursor-col-resize z-10" onMouseDown={(e) => handleBarDragStart(e, m.id, 'resize-right')} />
                                     {!isDragging && (() => {
                                       // Look up the mini-block's sub.route so the CTA button can
