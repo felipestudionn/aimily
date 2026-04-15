@@ -154,10 +154,6 @@ function calSnapToWeek(days: number): number {
   return Math.round(days / CAL_DAYS_PER_WEEK) * CAL_DAYS_PER_WEEK;
 }
 
-function calBarTextColor(color: string): string {
-  const pale = ['#B6C8C7', '#FFF4CE', '#F1EFED', '#EDF1F0', '#FBF8EC'];
-  return pale.some(c => color.toUpperCase() === c.toUpperCase()) ? 'text-carbon' : 'text-white';
-}
 
 function CalStatusIcon({ status }: { status: MilestoneStatus }) {
   switch (status) {
@@ -809,23 +805,10 @@ export function WizardSidebar({
                                       }}
                                       onMouseDown={(e) => handleBarDragStart(e, m.id, 'move')}
                                       onDoubleClick={() => openEditor(m)}
-                                    >
-                                      {pos.width > 80 && (
-                                        <div className="absolute inset-0 flex items-center px-3 overflow-hidden pointer-events-none">
-                                          <span className={`text-[10px] font-semibold truncate tracking-[-0.01em] ${calBarTextColor(m.color)}`}>{m.nameEs}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    {/* Narrow bars (≤80px): label sits to the right of the bar so
-                                        names are always readable without truncation. */}
-                                    {pos.width <= 80 && (
-                                      <span
-                                        className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 text-[10px] font-semibold tracking-[-0.01em] text-carbon/75 whitespace-nowrap pointer-events-none"
-                                        style={{ maxWidth: 180 }}
-                                      >
-                                        {m.nameEs}
-                                      </span>
-                                    )}
+                                    />
+                                    {/* Bars are intentionally bare — left-column labels give
+                                        the row context, hover tooltip gives the milestone
+                                        details + "Ir al workspace" CTA. Keeps the canvas clean. */}
                                     <div className="absolute right-0 top-0 w-2 h-full cursor-col-resize z-10" onMouseDown={(e) => handleBarDragStart(e, m.id, 'resize-right')} />
                                     {!isDragging && (() => {
                                       // Look up the mini-block's sub.route so the CTA button can
