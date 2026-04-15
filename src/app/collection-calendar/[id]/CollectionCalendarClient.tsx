@@ -7,12 +7,9 @@ import { useCollectionTimeline } from '@/hooks/useCollectionTimeline';
 import {
   RotateCcw,
   Download,
-  ArrowLeft,
   Loader2,
   Cloud,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/i18n';
 
 interface CollectionCalendarClientProps {
@@ -64,7 +61,6 @@ export function CollectionCalendarClient({
   commercialActions,
   embedded = false,
 }: CollectionCalendarClientProps) {
-  const { language } = useLanguage();
   const t = useTranslation();
 
   // Derive launch date from earliest drop
@@ -163,46 +159,13 @@ export function CollectionCalendarClient({
 
   const calendarContent = (
     <>
-      {!embedded && (
-        <div className="flex items-end justify-between mb-6">
-          <div>
-            <Link
-              href={`/planner/${plan.id}`}
-              className="inline-flex items-center gap-1 text-[12px] text-carbon/50 hover:text-carbon mb-2 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              {t.calendarPage.backToPlanner}
-            </Link>
-            <h1 className="text-[28px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-              {plan.name}
-              <span className="ml-2 text-carbon/40">{plan.season || 'SS27'}</span>
-            </h1>
-            <p className="text-[13px] text-carbon/50 mt-1 tracking-[-0.01em]">
-              {t.calendarPage.launch}:{' '}
-              <span className="text-carbon/70">
-                {timeline
-                  ? new Date(timeline.launchDate).toLocaleDateString(
-                      language === 'es' ? 'es-ES' : 'en-US',
-                      {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      }
-                    )
-                  : ''}
-              </span>
-            </p>
-          </div>
-          <Toolbar />
-        </div>
-      )}
+      {/* Minimal toolbar — collection name & season already shown in the sidebar */}
+      <Toolbar />
 
-      {embedded && <Toolbar />}
-
-      {/* Gantt chart — the spine's horizontal extension */}
+      {/* Gantt chart — the spine's horizontal extension.
+          20 rows, one per mini-block, no internal label column. */}
       {timeline && (
-        <div style={{ height: embedded ? 'calc(100vh - 240px)' : 'calc(100vh - 220px)' }}>
+        <div style={{ height: embedded ? 'calc(100vh - 160px)' : 'calc(100vh - 160px)' }}>
           <GanttChart
             timeline={timeline}
             onUpdateMilestone={updateMilestone}

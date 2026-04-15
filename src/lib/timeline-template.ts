@@ -53,6 +53,102 @@ export const PHASE_ORDER: TimelinePhase[] = [
 ];
 
 /* ═══════════════════════════════════════════════════════════
+   SPINE MAPPING — the 20 mini-blocks in sidebar order.
+   Each mini-block = one calendar row. Used by GanttChart to
+   render bars on their correct row without duplicating the
+   sidebar's labels in the calendar canvas.
+   ═══════════════════════════════════════════════════════════ */
+
+export interface MiniBlockRow {
+  phase: TimelinePhase;
+  id: string;              // matches WizardSidebar sub-item id
+  labelKey: string;        // matches i18n sidebar key
+}
+
+export const MINI_BLOCK_ORDER: MiniBlockRow[] = [
+  // Creative
+  { phase: 'creative', id: 'consumer', labelKey: 'consumer' },
+  { phase: 'creative', id: 'moodboard', labelKey: 'moodboard' },
+  { phase: 'creative', id: 'market-research', labelKey: 'marketResearch' },
+  { phase: 'creative', id: 'brand-identity', labelKey: 'brandIdentity' },
+  { phase: 'creative', id: 'creative-overview', labelKey: 'creativeOverview' },
+  // Planning
+  { phase: 'planning', id: 'scenarios', labelKey: 'buyingStrategy' },
+  { phase: 'planning', id: 'families-pricing', labelKey: 'assortmentPricing' },
+  { phase: 'planning', id: 'channels', labelKey: 'distribution' },
+  { phase: 'planning', id: 'budget', labelKey: 'financialPlan' },
+  { phase: 'planning', id: 'builder-merch', labelKey: 'collectionBuilder' },
+  // Development
+  { phase: 'development', id: 'sketch', labelKey: 'sketchColor' },
+  { phase: 'development', id: 'tech-pack', labelKey: 'techPack' },
+  { phase: 'development', id: 'prototyping', labelKey: 'prototyping' },
+  { phase: 'development', id: 'production', labelKey: 'production' },
+  { phase: 'development', id: 'final-selection', labelKey: 'finalSelection' },
+  // Marketing & Sales
+  { phase: 'go_to_market', id: 'gtm-launch', labelKey: 'gtmLaunchPlan' },
+  { phase: 'go_to_market', id: 'content-studio', labelKey: 'contentStudio' },
+  { phase: 'go_to_market', id: 'communications', labelKey: 'communications' },
+  { phase: 'go_to_market', id: 'sales', labelKey: 'salesDashboard' },
+  { phase: 'go_to_market', id: 'pos', labelKey: 'pointOfSale' },
+];
+
+/* Reverse index: milestone id → mini-block id (primary assignment).
+   Each milestone belongs to exactly ONE mini-block row to avoid
+   draggable duplicates. Rows without any milestones (e.g. synthesis,
+   market-research) simply render empty. */
+export const MILESTONE_TO_MINI_BLOCK: Record<string, string> = {
+  // Creative
+  'cr-1': 'consumer',
+  'cr-2': 'moodboard',
+  'br-1': 'brand-identity',
+  'br-2': 'brand-identity',
+  'br-3': 'brand-identity',
+  'br-4': 'brand-identity',
+  // Planning
+  'rp-1': 'scenarios',
+  'rp-2': 'channels',
+  'rp-3': 'budget',
+  'rp-4': 'families-pricing',
+  'rp-5': 'builder-merch',
+  'rp-6': 'builder-merch',
+  // Development
+  'dd-1': 'sketch',
+  'dd-2': 'sketch',
+  'dd-3': 'sketch',
+  'dd-4': 'sketch',
+  'dd-5': 'sketch',
+  'dd-6': 'sketch',
+  'dd-7': 'prototyping',
+  'dd-8': 'prototyping',
+  'dd-9': 'prototyping',
+  'dd-10': 'tech-pack',
+  'dd-11': 'final-selection',
+  'dd-12': 'final-selection',
+  'dd-13': 'final-selection',
+  'dd-14': 'final-selection',
+  'dd-15': 'production',
+  'dd-16': 'production',
+  'dd-17': 'production',
+  'dd-18': 'production',
+  // Marketing & Sales
+  'gm-1': 'gtm-launch',
+  'gm-2': 'pos',
+  'gm-3': 'content-studio',
+  'gm-4': 'communications',
+  'gm-5': 'content-studio',
+  'gm-6': 'communications',
+  'gm-7': 'content-studio',
+  'gm-8': 'communications',
+  'gm-9': 'communications',
+  'gm-10': 'gtm-launch',
+  'gm-11': 'gtm-launch',
+  'gm-12': 'gtm-launch',
+  'gm-13': 'gtm-launch',
+  'gm-14': 'gtm-launch',
+  'gm-15': 'sales',
+};
+
+/* ═══════════════════════════════════════════════════════════
    DEFAULT MILESTONES — organized by the 4 blocks
    ═══════════════════════════════════════════════════════════ */
 

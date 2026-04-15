@@ -1,19 +1,13 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowRight, Check, ArrowLeft, Pencil } from 'lucide-react';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 import { computeWizardState } from '@/lib/wizard-phases';
-import InlineTimeline from './InlineTimeline';
-import { useTranslation } from '@/i18n';
 import { useRouter } from 'next/navigation';
-import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
-
-type ViewMode = 'blocks' | 'calendar' | 'presentation';
 
 /* ═══════════════════════════════════════════════════════════
    Block & sub-block definitions
@@ -114,11 +108,9 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const router = useRouter();
   const searchParams = useSearchParams();
   const milestones = timeline?.milestones || [];
-  const [view, setView] = useState<ViewMode>('blocks');
   const [expandedBlock, setExpandedBlock] = useState<TimelinePhase | null>(null);
   const [animating, setAnimating] = useState(false);
   const [exitingSubIdx, setExitingSubIdx] = useState<number | null>(null);
-  const t = useTranslation();
   const workspaceNav = useWorkspaceNavigationOptional();
 
   // Open block sub-dashboard when ?block= param is present
@@ -143,14 +135,6 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     acc[block as TimelinePhase] = total > 0 ? Math.round((done / total) * 100) : 0;
     return acc;
   }, {} as Record<TimelinePhase, number>);
-
-  const handleViewChange = (newView: string) => {
-    if (newView === 'presentation') {
-      router.push(`/collection/${collectionId}/presentation`);
-    } else {
-      setView(newView as ViewMode);
-    }
-  };
 
   const handleBlockClick = useCallback((phase: TimelinePhase) => {
     setAnimating(true);
@@ -192,40 +176,6 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     <div className="min-h-[80vh]">
       <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-16">
 
-        {/* ── Title area ── */}
-        <div className="text-center mb-12">
-          {/* Collection name — shrinks when inside a block */}
-          <p className={`font-medium text-carbon/40 tracking-[-0.02em] transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            activeBlock ? 'text-[14px] mb-2 opacity-100' : 'text-[36px] md:text-[46px] mb-0 opacity-100 !text-carbon'
-          }`}>
-            {plan.name}
-          </p>
-          {/* Block title — appears large when inside a block */}
-          <div className={`overflow-hidden transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-            activeBlock ? 'max-h-[140px] opacity-100' : 'max-h-0 opacity-0'
-          }`}>
-            <h2 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.2] pb-2">
-              {activeBlock?.title}
-            </h2>
-          </div>
-        </div>
-
-        {/* ── View switch — only visible at top level ── */}
-        <div className={`flex justify-center transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          expandedBlock ? 'max-h-0 opacity-0 mb-0 overflow-hidden' : 'max-h-[60px] opacity-100 mb-12'
-        }`}>
-          <SegmentedPill
-            options={[
-              { id: 'blocks', label: t.overview?.blocks || 'Blocks' },
-              { id: 'calendar', label: t.overview?.calendar || 'Calendar' },
-              { id: 'presentation', label: (t.overview as Record<string, string>)?.presentation || 'Presentation' },
-            ]}
-            value={view}
-            onChange={handleViewChange}
-            size="md"
-          />
-        </div>
-
         {/* ── Back button — only when inside a block ── */}
         <div className={`flex justify-start transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           expandedBlock ? 'max-h-[60px] opacity-100 mb-8' : 'max-h-0 opacity-0 mb-0 overflow-hidden'
@@ -240,8 +190,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
         </div>
 
         {/* ── Cards area ── */}
-        {view === 'blocks' && (
-          <div className={`${expandedBlock ? 'max-w-[1600px]' : 'max-w-[1300px]'} mx-auto transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        <div className={`${expandedBlock ? 'max-w-[1600px]' : 'max-w-[1300px]'} mx-auto transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
             animating ? 'opacity-0 scale-[0.96] translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}>
             {!expandedBlock ? (
@@ -396,18 +345,8 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                 })}
               </div>
             ) : null}
-          </div>
-        )}
+        </div>
       </div>
-
-      {view === 'calendar' && (
-        <InlineTimeline
-          collectionId={collectionId}
-          collectionName={plan.name}
-          season={plan.season || ''}
-          launchDate={timeline?.launch_date}
-        />
-      )}
     </div>
   );
 }
