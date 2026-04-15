@@ -749,7 +749,7 @@ export function WizardSidebar({
                     <button
                       type="button"
                       onClick={() => exitCalendarToHref(basePath)}
-                      className="w-full flex items-center px-3 py-2.5 -mx-1 rounded-[12px] text-carbon hover:bg-carbon/[0.04] transition-all"
+                      className="w-full flex items-center px-4 py-2.5 rounded-full text-carbon hover:bg-carbon/[0.04] transition-all"
                     >
                       <span className="text-[17px] font-bold tracking-[-0.03em] flex-1 text-left truncate">
                         {displayName}
@@ -1081,7 +1081,7 @@ export function WizardSidebar({
           <button
             type="button"
             onClick={() => setPresentationIndex(0)}
-            className={`w-full flex items-center px-3 py-2.5 -mx-1 rounded-[12px] mb-4 transition-all ${
+            className={`w-full flex items-center px-4 py-2.5 rounded-full mb-4 transition-all ${
               presentationIndex === 0
                 ? 'bg-carbon text-white'
                 : 'text-carbon hover:bg-carbon/[0.04]'
@@ -1244,7 +1244,7 @@ export function WizardSidebar({
                     if (workspaceNav) workspaceNav.navigateToDashboard();
                     else router.push(basePath);
                   }}
-                  className={`w-full flex items-center px-3 py-2.5 -mx-1 rounded-[12px] mb-4 transition-all ${
+                  className={`w-full flex items-center px-4 py-2.5 rounded-full mb-4 transition-all ${
                     pathname === basePath && !searchParams?.get('block')
                       ? 'bg-carbon text-white'
                       : 'text-carbon hover:bg-carbon/[0.04]'
