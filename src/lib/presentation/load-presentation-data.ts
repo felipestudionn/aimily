@@ -113,18 +113,24 @@ function extractLeadBody(raw: string | undefined): { lead?: string; body?: strin
 export async function loadPresentationData(collectionPlanId: string): Promise<PresentationData> {
   const ctx = await loadFullContext(collectionPlanId);
 
-  // Pull launch date directly (loadFullContext doesn't expose it)
+  // Pull plan basics + launch date. launch_date lives on the timeline
+  // row (collection_timelines), not on collection_plans.
   const { data: plan } = await supabaseAdmin
     .from('collection_plans')
-    .select('name, season, launch_date, setup_data')
+    .select('name, season, setup_data')
     .eq('id', collectionPlanId)
     .single();
+  const { data: timelineRow } = await supabaseAdmin
+    .from('collection_timelines')
+    .select('launch_date, milestones')
+    .eq('collection_plan_id', collectionPlanId)
+    .maybeSingle();
 
   const data: PresentationData = {
     cover: {
       brandName: ctx.collectionName || plan?.name || undefined,
       season: ctx.season || plan?.season || undefined,
-      launchDate: plan?.launch_date ?? null,
+      launchDate: timelineRow?.launch_date ?? null,
     },
     narratives: {},
     stats: {},
@@ -330,15 +336,11 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     }
   }
 
-  // Prototyping & Production — derived from timeline_data milestones
+  // Prototyping & Production — reuse the timeline row already fetched
+  // above (collection_timelines has both launch_date and milestones).
   {
-    const { data: tlRow } = await supabaseAdmin
-      .from('collection_timeline_data')
-      .select('milestones, launch_date')
-      .eq('collection_plan_id', collectionPlanId)
-      .single();
-    if (tlRow?.milestones) {
-      const all = (tlRow.milestones as Array<{ id: string; phase: string; name: string; status: string; startWeeksBefore: number }>) ?? [];
+    if (timelineRow?.milestones) {
+      const all = (timelineRow.milestones as Array<{ id: string; phase: string; name: string; status: string; startWeeksBefore: number }>) ?? [];
       const mkStatus = (s: string): 'done' | 'current' | 'next' => s === 'completed' ? 'done' : s === 'in-progress' ? 'current' : 'next';
 
       // Prototyping: phase=development, dd-7 through dd-10 (proto cycle + tech pack)

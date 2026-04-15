@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Page routes that don't require authentication
+// Page routes that don't require authentication (exact match)
 const publicPageRoutes = [
   '/',
   '/discover',
@@ -18,6 +18,13 @@ const publicPageRoutes = [
   '/how-it-works',
   '/video-reel',
   '/trust',
+];
+
+// Page routes that don't require auth (prefix match). Used by
+// /p/[token] — public shared-presentation links that anyone with the
+// token can view without signing in.
+const publicPagePrefixes = [
+  '/p/',
 ];
 
 // API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
@@ -68,7 +75,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Page route protection ──
-  const isPublicPage = publicPageRoutes.some((route) => pathname === route);
+  const isPublicPage =
+    publicPageRoutes.some((route) => pathname === route) ||
+    publicPagePrefixes.some((prefix) => pathname.startsWith(prefix));
   if (!user && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/';

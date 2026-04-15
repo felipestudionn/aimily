@@ -20,8 +20,8 @@
 
 'use client';
 
-import { useEffect, useCallback, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, Download, Loader2 } from 'lucide-react';
+import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight, X, Download, Loader2, Share2, Copy, Check } from 'lucide-react';
 import { SPINE, SLIDE_COUNT } from '@/lib/presentation/spine';
 import { getTheme, themeStyle } from '@/lib/presentation/themes';
 import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
@@ -55,15 +55,77 @@ interface Props {
   /* Called when the user hits Esc or clicks the X — parent flips out
      of presentation mode (mirrors the calendar exit pattern). */
   onExit: () => void;
+  /* True when rendering inside a public /p/[token] share. Hides the
+     X exit, the theme picker, and the Share button; PDF download
+     stays enabled so viewers can save their own copy. */
+  readOnly?: boolean;
 }
 
 /* Total slide count = 1 cover + SPINE mini-blocks. */
 const TOTAL_SLIDES = SLIDE_COUNT + 1;
 
-export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
+export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit, readOnly = false }: Props) {
   const theme = useMemo(() => getTheme(themeId), [themeId]);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+
+  /* Share modal state — only reachable in non-readOnly mode. */
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const shareRef = useRef<HTMLDivElement | null>(null);
+
+  /* Close Share dropdown on outside click + Esc (reuses the pattern
+     from ThemePicker for consistency). */
+  useEffect(() => {
+    if (!shareOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!shareRef.current?.contains(e.target as Node)) setShareOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShareOpen(false); };
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [shareOpen]);
+
+  const createShare = useCallback(async () => {
+    setShareLoading(true);
+    setShareError(null);
+    try {
+      const res = await fetch('/api/presentation/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionId, themeId, coverSubtitle }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `Failed to create share (HTTP ${res.status})`);
+      }
+      const j = await res.json();
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      setShareUrl(`${origin}/p/${j.token}`);
+    } catch (e) {
+      setShareError(e instanceof Error ? e.message : 'Failed to create share');
+    } finally {
+      setShareLoading(false);
+    }
+  }, [collectionId, themeId, coverSubtitle]);
+
+  const copyShareUrl = useCallback(async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* no-op */
+    }
+  }, [shareUrl]);
 
   const downloadPdf = useCallback(async () => {
     setExporting(true);
@@ -151,16 +213,85 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
     >
       {/* ── Top bar ── */}
       <div className="flex-shrink-0 h-[64px] flex items-center justify-between px-6 border-b border-white/10">
-        <button
-          type="button"
-          onClick={onExit}
-          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
-          title="Exit presentation (Esc)"
-        >
-          <X className="w-4 h-4 text-white" strokeWidth={1.8} />
-        </button>
+        {readOnly ? (
+          /* In a public share, the X has nowhere to exit to. Swap for
+             an aimily wordmark that links back to the product page. */
+          <a
+            href="https://www.aimily.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] tracking-[0.24em] uppercase text-white/60 hover:text-white font-semibold transition-colors"
+          >
+            aimily
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={onExit}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
+            title="Exit presentation (Esc)"
+          >
+            <X className="w-4 h-4 text-white" strokeWidth={1.8} />
+          </button>
+        )}
 
         <div className="flex items-center gap-3">
+          {!readOnly && (
+            <div ref={shareRef} className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShareOpen(o => !o);
+                  if (!shareUrl && !shareLoading) createShare();
+                }}
+                className={`inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border transition-colors ${
+                  shareOpen
+                    ? 'bg-white/20 border-white/30 text-white'
+                    : 'bg-white/10 hover:bg-white/15 border-white/15 text-white'
+                }`}
+                title="Create a public share link"
+              >
+                <Share2 className="w-3.5 h-3.5" strokeWidth={2} />
+                <span>Share</span>
+              </button>
+              {shareOpen && (
+                <div className="absolute right-0 top-full mt-2 w-[380px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-4 z-50">
+                  <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
+                    Share this presentation
+                  </div>
+                  <p className="text-[12px] text-carbon/60 leading-relaxed mb-3">
+                    Anyone with this link will see the deck in the theme you have active now. They can page through slides and download the PDF.
+                  </p>
+                  {shareLoading && (
+                    <div className="inline-flex items-center gap-2 text-[12px] text-carbon/60">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> Generating link…
+                    </div>
+                  )}
+                  {shareError && (
+                    <div className="text-[12px] text-error">{shareError}</div>
+                  )}
+                  {shareUrl && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        readOnly
+                        value={shareUrl}
+                        className="flex-1 px-3 py-2 text-[12px] bg-carbon/[0.04] text-carbon rounded-[10px] border border-carbon/[0.08] font-mono"
+                        onFocus={(e) => e.currentTarget.select()}
+                      />
+                      <button
+                        type="button"
+                        onClick={copyShareUrl}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors"
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={2} />}
+                        {copied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <button
             type="button"
             onClick={downloadPdf}
@@ -175,7 +306,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
             )}
             <span>{exporting ? 'Generating…' : 'PDF'}</span>
           </button>
-          <ThemePicker current={theme} onChange={onThemeChange} />
+          {!readOnly && <ThemePicker current={theme} onChange={onThemeChange} />}
           {isSlidePlaceholder && (
             <div
               className="text-[10px] tracking-[0.24em] uppercase text-citronella/90 font-semibold px-3 py-1.5 rounded-full bg-citronella/10 border border-citronella/30"

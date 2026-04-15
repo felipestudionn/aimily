@@ -73,7 +73,7 @@ export default async function PresentationExportPage({ params, searchParams }: P
   // Hardcoded English for now since export is primarily for PDF/print.
   const { data: plan } = await supabaseAdmin
     .from('collection_plans')
-    .select('name, season, launch_date')
+    .select('name, season')
     .eq('id', id)
     .single();
 
@@ -81,7 +81,7 @@ export default async function PresentationExportPage({ params, searchParams }: P
     collectionName: data.cover.brandName ?? plan?.name ?? 'Collection',
     brandName: data.cover.brandName ?? plan?.name ?? undefined,
     season: data.cover.season ?? plan?.season ?? undefined,
-    launchDate: data.cover.launchDate ?? plan?.launch_date ?? null,
+    launchDate: data.cover.launchDate ?? null,
   };
 
   // Slide title labels — matches SidebarSubItem labels in English.
