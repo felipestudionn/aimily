@@ -237,6 +237,18 @@ export function WizardSidebar({
     setMode(modeFromUrl(pathname));
   }, [pathname, pendingTarget]);
 
+  /* Exit calendar to a specific destination route. Same sequential
+     choreography as handleModeClick (target=nav): aside contracts,
+     then router.push lands the destination so WorkspaceShell's main
+     fade-in (delayed 900ms) materializes the workspace right as the
+     contraction finishes. Used by bar clicks, sticky-label clicks,
+     and block-header band clicks inside the calendar canvas. */
+  const exitCalendarTo = useCallback((href: string) => {
+    setPendingTarget('nav');
+    setMode('nav');
+    setTimeout(() => router.push(href), 60);
+    setTimeout(() => setPendingTarget(null), 1300);
+  }, [router]);
 
   /* Client-only mount flag (for createPortal on the edit modal). */
   const [clientMounted, setClientMounted] = useState(false);
@@ -474,6 +486,25 @@ export function WizardSidebar({
     };
     const onUp = () => {
       if (!dragState) return;
+      const movedPx = Math.abs(dragState.currentDeltaDays * CAL_DAY_WIDTH);
+      /* Click vs drag: if mouse barely moved AND it's a `move`-type event
+         (not a resize-handle), treat as click → exit calendar to the
+         workspace of this milestone's mini-block. */
+      if (movedPx < 5 && dragState.type === 'move') {
+        const subId = MILESTONE_TO_MINI_BLOCK[dragState.milestoneId];
+        if (subId) {
+          let foundSubRoute: string | null = null;
+          for (const block of SIDEBAR_BLOCKS) {
+            const sub = block.subItems.find(s => s.id === subId);
+            if (sub) { foundSubRoute = sub.route; break; }
+          }
+          if (foundSubRoute) {
+            exitCalendarTo(`${basePath}/${foundSubRoute}`);
+            setDragState(null);
+            return;
+          }
+        }
+      }
       const snapped = calSnapToWeek(dragState.currentDeltaDays);
       const dw = snapped / CAL_DAYS_PER_WEEK;
       if (dragState.type === 'move') {
@@ -496,7 +527,7 @@ export function WizardSidebar({
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     };
-  }, [dragState, updateMilestone]);
+  }, [dragState, updateMilestone, exitCalendarTo, basePath]);
 
   const cycleStatus = (id: string, current: MilestoneStatus) => {
     const next: MilestoneStatus = current === 'pending' ? 'in-progress' : current === 'in-progress' ? 'completed' : 'pending';
@@ -686,16 +717,26 @@ export function WizardSidebar({
                       {/* Block header row — same py-2.5 + mb-3 as nav, track on right */}
                       <div className="flex mb-3">
                         <div className="sticky left-0 z-20 px-6" style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}>
-                          <Link href={`${basePath}?block=${block.id}`} className="w-full px-4 py-2.5 rounded-full flex items-center bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors">
+                          <Link
+                            href={`${basePath}?block=${block.id}`}
+                            onClick={(e) => { e.preventDefault(); exitCalendarTo(`${basePath}?block=${block.id}`); }}
+                            className="w-full px-4 py-2.5 rounded-full flex items-center bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors"
+                          >
                             <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">{labelOf(block.labelKey)}</span>
                           </Link>
                         </div>
-                        <div className="relative" style={{ width: calChartWidth, background: phase.bgColor + '77' }}>
+                        <button
+                          type="button"
+                          onClick={() => exitCalendarTo(`${basePath}?block=${block.id}`)}
+                          className="relative cursor-pointer hover:brightness-95 transition"
+                          style={{ width: calChartWidth, background: phase.bgColor + '77' }}
+                          title="Open block sub-dashboard"
+                        >
                           {calTodayOffset > 0 && calTodayOffset < calChartWidth && (
                             <div className="absolute top-0 bottom-0 w-px bg-moss/50" style={{ left: calTodayOffset }} />
                           )}
                           <div className="absolute top-0 bottom-0 w-px bg-carbon/50" style={{ left: calLaunchOffset }} />
-                        </div>
+                        </button>
                       </div>
 
                       {/* Sub-item rows with tracks */}
@@ -710,6 +751,11 @@ export function WizardSidebar({
                               <div className="ml-1 pl-5 border-l border-carbon/[0.15] flex-1">
                                 <Link
                                   href={isLocked ? '#' : `${basePath}/${sub.route}`}
+                                  onClick={(e) => {
+                                    if (isLocked) { e.preventDefault(); return; }
+                                    e.preventDefault();
+                                    exitCalendarTo(`${basePath}/${sub.route}`);
+                                  }}
                                   className={`flex items-center justify-between py-1 px-3 -mx-3 rounded-[10px] transition-all ${
                                     isActive ? 'bg-carbon text-white'
                                     : isLocked ? 'text-carbon/25 cursor-not-allowed'
@@ -775,6 +821,10 @@ export function WizardSidebar({
                                           <div className="text-white/60 mt-1">{formatDate(pos.startDate)} → {formatDate(pos.endDate)}</div>
                                           <div className="text-white/50 mt-0.5">{pos.durationWeeks.toFixed(1)} semanas · {m.responsible}</div>
                                           {m.notes && <div className="text-citronella mt-1 text-[10px] max-w-[240px] break-words whitespace-normal">{m.notes}</div>}
+                                          <div className="mt-1.5 pt-1.5 border-t border-white/15 text-white/60 text-[10px] tracking-[0.02em] flex items-center gap-1">
+                                            Click → open workspace
+                                            <ArrowRight className="h-3 w-3" strokeWidth={2} />
+                                          </div>
                                         </div>
                                       </div>
                                     )}
