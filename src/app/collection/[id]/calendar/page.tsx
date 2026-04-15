@@ -1,42 +1,34 @@
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { CollectionCalendarClient } from '@/app/collection-calendar/[id]/CollectionCalendarClient';
+import { CalendarSpine } from '@/components/timeline/CalendarSpine';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/* Calendar mode = the sidebar EXPANDED. CalendarSpine renders the full
+   viewport as a single unified surface (label column + timeline tracks).
+   The default WorkspaceShell sidebar is still rendered by the parent
+   layout, but CalendarSpine overlays it with `fixed inset-0 z-50`. */
+
 export default async function CalendarPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [planRes, skusRes, dropsRes, actionsRes] = await Promise.all([
-    supabaseAdmin.from('collection_plans').select('*').eq('id', id).single(),
-    supabaseAdmin
-      .from('collection_skus')
-      .select('id, name, family, type, category, drop_number, launch_date, pvp, cost')
-      .eq('collection_plan_id', id)
-      .order('drop_number', { ascending: true }),
-    supabaseAdmin
-      .from('drops')
-      .select('*')
-      .eq('collection_plan_id', id)
-      .order('position', { ascending: true }),
-    supabaseAdmin
-      .from('commercial_actions')
-      .select('*')
-      .eq('collection_plan_id', id)
-      .order('start_date', { ascending: true }),
-  ]);
+  const { data: plan, error } = await supabaseAdmin
+    .from('collection_plans')
+    .select('id, name, season')
+    .eq('id', id)
+    .single();
 
-  if (planRes.error || !planRes.data) notFound();
+  if (error || !plan) notFound();
 
+  // Launch date comes from the collection_timelines row; CalendarSpine uses
+  // useCollectionTimeline hook which handles the fallback.
   return (
-    <CollectionCalendarClient
-      plan={planRes.data}
-      skus={skusRes.data || []}
-      drops={dropsRes.data || []}
-      commercialActions={actionsRes.data || []}
-      embedded
+    <CalendarSpine
+      collectionId={plan.id}
+      collectionName={plan.name}
+      season={plan.season || 'SS27'}
     />
   );
 }
