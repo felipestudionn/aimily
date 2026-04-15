@@ -226,16 +226,20 @@ export function WizardSidebar({
     : p?.endsWith('/presentation') ? 'presentation'
     : 'nav';
   const [mode, setMode] = useState<'nav' | 'calendar' | 'presentation'>(modeFromUrl(pathname));
-  /* While we're orchestrating a click-driven transition we manage `mode`
-     manually via setTimeouts. The pathname-sync useEffect would otherwise
-     fire from router.push BEFORE our delay completes, breaking the
-     sequential choreography. `pendingTarget` blocks the auto-sync until
-     the manual setMode lands. */
-  const [pendingTarget, setPendingTarget] = useState<'nav' | 'calendar' | 'presentation' | null>(null);
+  /* All click-driven mode changes go through setMode manually (handleModeClick,
+     exitCalendarToSubItem, exitCalendarToHref). We DON'T auto-sync from
+     `usePathname()` because:
+     (a) Next.js usePathname doesn't observe history.replaceState, which
+         workspaceNav uses — we'd be syncing against stale data and flipping
+         mode back to 'calendar' right after we exit.
+     (b) When router.push fires during a mode change, pathname updates mid-
+         animation and would race with our setMode timing.
+     Browser back/forward is still covered via a popstate listener below. */
   useEffect(() => {
-    if (pendingTarget) return;
-    setMode(modeFromUrl(pathname));
-  }, [pathname, pendingTarget]);
+    const onPop = () => setMode(modeFromUrl(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   /* Exit calendar and open the workspace of a sub-item (Consumer,
      Brand Identity, Buying Strategy, …). Uses workspaceNav.navigateToWorkspace
@@ -244,7 +248,6 @@ export function WizardSidebar({
      previous viewState would show the wrong content and the sidebar
      would fall back to the first sub-item (Consumer) as "active". */
   const exitCalendarToSubItem = useCallback((subRoute: string) => {
-    setPendingTarget('nav');
     setMode('nav');
     setTimeout(() => {
       if (workspaceNav) {
@@ -254,16 +257,13 @@ export function WizardSidebar({
         router.push(`${basePath}/${subRoute}`);
       }
     }, 60);
-    setTimeout(() => setPendingTarget(null), 1300);
   }, [router, workspaceNav, basePath]);
 
   /* Exit calendar to a plain URL (block sub-dashboard, dashboard, etc.).
      Used for block-header band clicks which navigate to basePath?block={phase}. */
   const exitCalendarToHref = useCallback((href: string) => {
-    setPendingTarget('nav');
     setMode('nav');
     setTimeout(() => router.push(href), 60);
-    setTimeout(() => setPendingTarget(null), 1300);
   }, [router]);
 
   /* Client-only mount flag (for createPortal on the edit modal). */
@@ -600,16 +600,11 @@ export function WizardSidebar({
          WorkspaceShell's main fade-in has a 900ms delay so it materializes
          right as the aside finishes shrinking. */
     if (target === 'nav') {
-      setPendingTarget(target);
       setMode(target); // start contraction immediately
       setTimeout(() => router.push(href), 60);
-      // Clear the lock once we're well past the contraction
-      setTimeout(() => setPendingTarget(null), 1300);
     } else {
-      setPendingTarget(target);
       router.push(href); // pathname flips → main fades out
       setTimeout(() => setMode(target), 550); // wait for fade-out to complete, then expand aside
-      setTimeout(() => setPendingTarget(null), 1800);
     }
   };
   /* Fixed width = INNER_W (356) − px-5 padding (40) = 316. Pinning the
