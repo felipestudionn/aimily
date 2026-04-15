@@ -53,18 +53,61 @@ export interface PresentationData {
   hasAnyData: boolean;
 }
 
-/* Split a CIS string into lead (first line) + body (rest). Used to
-   convert the flat "consumer", "brandDNA", "brandVoice" strings into
-   narrative-portrait shape. */
-function splitLeadBody(raw: string | undefined): { lead?: string; body?: string } {
+/* Strip markdown syntax from a raw CIS string so slides don't render
+   `# Consumer Profile SS27 SLAIZ` as a headline. Keeps the content,
+   drops the decoration. */
+function cleanMarkdown(raw: string): string {
+  return raw
+    .replace(/^#+\s+/gm, '')              // headers: # ## ###
+    .replace(/^[-*+]\s+/gm, '')           // bullet markers: - * +
+    .replace(/^\d+\.\s+/gm, '')           // numbered lists: 1.
+    .replace(/\*\*(.+?)\*\*/g, '$1')      // bold
+    .replace(/\*(.+?)\*/g, '$1')          // italic
+    .replace(/`([^`]+)`/g, '$1')          // inline code
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links → just text
+    .replace(/\n{3,}/g, '\n\n')           // collapse > 2 newlines
+    .trim();
+}
+
+/* Split a cleaned CIS string into a punchy lead sentence + a concise
+   body. Targets: lead ≤ 140 chars (one impactful sentence), body ≤
+   420 chars (2-3 sentences). Falls back gracefully for short content. */
+function extractLeadBody(raw: string | undefined): { lead?: string; body?: string } {
   if (!raw || !raw.trim()) return {};
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return {};
-  if (lines.length === 1) return { lead: lines[0] };
-  return {
-    lead: lines[0],
-    body: lines.slice(1).join(' '),
-  };
+  const cleaned = cleanMarkdown(raw);
+
+  // Sentence tokenise — keep punctuation, skip fragments < 12 chars
+  const sentences = cleaned
+    .split(/(?<=[.!?])\s+/)
+    .map(s => s.replace(/\s+/g, ' ').trim())
+    .filter(s => s.length > 12);
+
+  if (!sentences.length) {
+    // Short line, no punctuation — use it as lead, no body
+    const one = cleaned.replace(/\s+/g, ' ').trim();
+    return one ? { lead: one.slice(0, 180) } : {};
+  }
+
+  const LEAD_MAX = 150;
+  const BODY_MAX = 420;
+
+  // Pick the first sentence that fits the lead budget
+  let leadIdx = sentences.findIndex(s => s.length <= LEAD_MAX);
+  if (leadIdx === -1) {
+    // All sentences too long — truncate the first to a word boundary
+    const trimmed = sentences[0].slice(0, LEAD_MAX).replace(/\s\S*$/, '') + '…';
+    return { lead: trimmed, body: sentences.slice(1).join(' ').slice(0, BODY_MAX) || undefined };
+  }
+
+  const lead = sentences[leadIdx];
+  const rest = sentences.slice(leadIdx + 1).join(' ');
+  let body: string | undefined;
+  if (rest.length > BODY_MAX) {
+    body = rest.slice(0, BODY_MAX).replace(/\s\S*$/, '') + '…';
+  } else if (rest.length > 0) {
+    body = rest;
+  }
+  return { lead, body };
 }
 
 export async function loadPresentationData(collectionPlanId: string): Promise<PresentationData> {
@@ -90,8 +133,8 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     hasAnyData: false,
   };
 
-  // ─── F2.1 narrative templates ───────────────────────────────────
-  const consumerSplit = splitLeadBody(ctx.consumer);
+  // ─── Narrative templates ─────────────────────────────────────────
+  const consumerSplit = extractLeadBody(ctx.consumer);
   if (consumerSplit.lead || consumerSplit.body) {
     data.narratives.consumer = {
       ...consumerSplit,
@@ -100,7 +143,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     data.hasAnyData = true;
   }
 
-  const brandSplit = splitLeadBody(ctx.brandDNA);
+  const brandSplit = extractLeadBody(ctx.brandDNA);
   if (brandSplit.lead || brandSplit.body) {
     data.narratives['brand-identity'] = {
       ...brandSplit,
@@ -109,7 +152,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     data.hasAnyData = true;
   }
 
-  const voiceSplit = splitLeadBody(ctx.brandVoice);
+  const voiceSplit = extractLeadBody(ctx.brandVoice);
   if (voiceSplit.lead || voiceSplit.body) {
     data.narratives.communications = {
       ...voiceSplit,
@@ -144,6 +187,190 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       attribution: 'Buying strategy · Season blueprint',
     };
     data.hasAnyData = true;
+  }
+
+  // ─── Grid templates ──────────────────────────────────────────────
+
+  // Moodboard — keywords + trend signals as tiles
+  {
+    const moodTiles: { eyebrow: string; label: string; value?: string }[] = [];
+    if (ctx.moodboard) {
+      const kwMatch = ctx.moodboard.match(/Keywords:\s*(.+)/);
+      if (kwMatch) {
+        kwMatch[1].split(/[,·]/).map(k => k.trim()).filter(Boolean).slice(0, 3).forEach((kw, i) => {
+          moodTiles.push({ eyebrow: ['Texture', 'Form', 'Atmosphere'][i] ?? 'Signal', label: kw });
+        });
+      }
+    }
+    if (ctx.trends) {
+      ctx.trends.split(/\n{1,2}/).map(s => s.trim()).filter(Boolean).slice(0, 6 - moodTiles.length).forEach((line, i) => {
+        // "Title (brands): desc" → Title, brands
+        const m = line.match(/^(.+?)(?:\s*\((.+?)\))?(?::\s*(.+))?$/);
+        const label = m?.[1]?.trim() ?? line;
+        const brands = m?.[2]?.trim();
+        moodTiles.push({
+          eyebrow: brands || 'Trend',
+          label: label.length > 36 ? label.slice(0, 36) + '…' : label,
+          value: String(i + 1).padStart(2, '0'),
+        });
+      });
+    }
+    if (moodTiles.length) {
+      data.grids.moodboard = {
+        caption: 'Keywords and trend signals anchoring the visual voice.',
+        tiles: moodTiles.slice(0, 6),
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // Assortment & pricing — collection SKUs grouped by family
+  {
+    const { data: skuRows } = await supabaseAdmin
+      .from('collection_skus')
+      .select('name, family, subcategory, pvp, category')
+      .eq('collection_plan_id', collectionPlanId)
+      .limit(24);
+    if (skuRows?.length) {
+      // Group by family, pick cheapest + most expensive per family, up to 6 tiles
+      const byFamily: Record<string, typeof skuRows> = {};
+      for (const s of skuRows) {
+        const key = s.family || 'Other';
+        (byFamily[key] ||= []).push(s);
+      }
+      const tiles: { eyebrow: string; label: string; value?: string }[] = [];
+      for (const [family, rows] of Object.entries(byFamily)) {
+        if (tiles.length >= 6) break;
+        const sorted = [...rows].sort((a, b) => (a.pvp ?? 0) - (b.pvp ?? 0));
+        const rep = sorted[Math.floor(sorted.length / 2)];
+        tiles.push({
+          eyebrow: family,
+          label: rep.subcategory || rep.name || family,
+          value: rep.pvp ? `€${rep.pvp}` : undefined,
+        });
+      }
+      if (tiles.length) {
+        data.grids['assortment-pricing'] = {
+          caption: `${skuRows.length} SKUs across ${Object.keys(byFamily).length} families.`,
+          tiles,
+        };
+        data.hasAnyData = true;
+      }
+    }
+  }
+
+  // Sketch & Color — first 6 SKUs as the design starting lineup
+  {
+    const { data: skuRows } = await supabaseAdmin
+      .from('collection_skus')
+      .select('name, family, subcategory')
+      .eq('collection_plan_id', collectionPlanId)
+      .order('created_at', { ascending: true })
+      .limit(6);
+    if (skuRows?.length) {
+      data.grids['sketch-color'] = {
+        caption: 'Opening round of sketches.',
+        tiles: skuRows.map((s, i) => ({
+          eyebrow: `SKU ${String(i + 1).padStart(2, '0')}`,
+          label: s.subcategory || s.name || s.family,
+          value: `R${Math.floor(i / 3) + 1}`,
+        })),
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // Content studio — content pillars as tiles
+  if (ctx.contentPillars) {
+    const pillars = ctx.contentPillars.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 6);
+    if (pillars.length) {
+      data.grids['content-studio'] = {
+        caption: `${pillars.length} content pillars feeding every channel.`,
+        tiles: pillars.map((p, i) => {
+          const [name, desc] = p.split(':').map(s => s?.trim() ?? '');
+          return {
+            eyebrow: String(i + 1).padStart(2, '0'),
+            label: name,
+            value: desc ? desc.slice(0, 3) : undefined,
+          };
+        }),
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // ─── Timeline templates ──────────────────────────────────────────
+
+  // GTM Launch — drops as milestones (order by date)
+  if (ctx.drops) {
+    const dropLines = ctx.drops.split('\n').map(s => s.trim()).filter(Boolean);
+    // Format: "NAME (YYYY-MM-DD) — channels — X% sales"
+    type MStatus = 'done' | 'current' | 'next';
+    const milestones: { date: string; label: string; status: MStatus }[] = dropLines.slice(0, 5).map(line => {
+      const m = line.match(/^(.+?)\s*\((\d{4}-\d{2}-\d{2})\)/);
+      const name = m?.[1]?.trim() ?? line;
+      const date = m?.[2] ?? '';
+      const when = date ? new Date(date) : null;
+      const now = new Date();
+      const status: MStatus = when && when < now ? 'done' : 'next';
+      const dateLabel = when
+        ? when.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
+        : '—';
+      return { date: dateLabel, label: name.length > 24 ? name.slice(0, 24) + '…' : name, status };
+    });
+    // Mark the next upcoming as 'current'
+    const nextIdx = milestones.findIndex(m => m.status === 'next');
+    if (nextIdx >= 0) milestones[nextIdx].status = 'current';
+    if (milestones.length) {
+      data.timelines['gtm-launch'] = {
+        lead: `${dropLines.length} drops mapped across the season.`,
+        milestones,
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // Prototyping & Production — derived from timeline_data milestones
+  {
+    const { data: tlRow } = await supabaseAdmin
+      .from('collection_timeline_data')
+      .select('milestones, launch_date')
+      .eq('collection_plan_id', collectionPlanId)
+      .single();
+    if (tlRow?.milestones) {
+      const all = (tlRow.milestones as Array<{ id: string; phase: string; name: string; status: string; startWeeksBefore: number }>) ?? [];
+      const mkStatus = (s: string): 'done' | 'current' | 'next' => s === 'completed' ? 'done' : s === 'in-progress' ? 'current' : 'next';
+
+      // Prototyping: phase=development, dd-7 through dd-10 (proto cycle + tech pack)
+      const protoIds = ['dd-7', 'dd-8', 'dd-9', 'dd-19', 'dd-10'];
+      const protoMs = protoIds.map(id => all.find(m => m.id === id)).filter(Boolean) as typeof all;
+      if (protoMs.length) {
+        data.timelines.prototyping = {
+          lead: 'White proto → rectifications → final tech pack.',
+          milestones: protoMs.slice(0, 5).map(m => ({
+            date: `WK ${m.startWeeksBefore}`,
+            label: m.name.length > 26 ? m.name.slice(0, 26) + '…' : m.name,
+            status: mkStatus(m.status),
+          })),
+        };
+        data.hasAnyData = true;
+      }
+
+      // Production: phase=development, dd-11 through dd-15 (samples + production)
+      const prodIds = ['dd-11', 'dd-12', 'dd-13', 'dd-14', 'dd-15'];
+      const prodMs = prodIds.map(id => all.find(m => m.id === id)).filter(Boolean) as typeof all;
+      if (prodMs.length) {
+        data.timelines.production = {
+          lead: 'Bulk fabric → cutting & sewing → warehouse.',
+          milestones: prodMs.slice(0, 5).map(m => ({
+            date: `WK ${m.startWeeksBefore}`,
+            label: m.name.length > 26 ? m.name.slice(0, 26) + '…' : m.name,
+            status: mkStatus(m.status),
+          })),
+        };
+        data.hasAnyData = true;
+      }
+    }
   }
 
   return data;

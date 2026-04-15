@@ -10,11 +10,15 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
+import type { GridSlideData } from '@/lib/presentation/load-presentation-data';
 
 interface Props {
   slide: MicroBlockSlide;
   meta: DeckMeta;
   title: string;
+  /* Real CIS grid for this slide. When provided with tiles, overrides
+     the editorial placeholder. */
+  data?: GridSlideData;
 }
 
 interface Tile {
@@ -79,8 +83,12 @@ const FALLBACK = {
   })),
 };
 
-export function GridTileTemplate({ slide, meta, title }: Props) {
-  const data = GRID_PLACEHOLDERS[slide.id] ?? FALLBACK;
+export function GridTileTemplate({ slide, meta, title, data: cisData }: Props) {
+  const placeholder = GRID_PLACEHOLDERS[slide.id] ?? FALLBACK;
+  const data = {
+    caption: cisData?.caption ?? placeholder.caption,
+    tiles: (cisData?.tiles && cisData.tiles.length > 0) ? cisData.tiles : placeholder.tiles,
+  };
 
   return (
     <div

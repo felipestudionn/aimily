@@ -10,11 +10,15 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
+import type { TimelineSlideData } from '@/lib/presentation/load-presentation-data';
 
 interface Props {
   slide: MicroBlockSlide;
   meta: DeckMeta;
   title: string;
+  /* Real CIS timeline for this slide. When milestones are present,
+     overrides the editorial placeholder. */
+  data?: TimelineSlideData;
 }
 
 interface Milestone {
@@ -65,8 +69,14 @@ const FALLBACK = {
   })),
 };
 
-export function TimelineStripTemplate({ slide, meta, title }: Props) {
-  const data = TIMELINE_PLACEHOLDERS[slide.id] ?? FALLBACK;
+export function TimelineStripTemplate({ slide, meta, title, data: cisData }: Props) {
+  const placeholder = TIMELINE_PLACEHOLDERS[slide.id] ?? FALLBACK;
+  const data = {
+    lead: cisData?.lead ?? placeholder.lead,
+    milestones: (cisData?.milestones && cisData.milestones.length > 0)
+      ? cisData.milestones
+      : placeholder.milestones,
+  };
 
   return (
     <div
