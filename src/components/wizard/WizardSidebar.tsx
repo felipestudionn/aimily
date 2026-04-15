@@ -226,7 +226,16 @@ export function WizardSidebar({
     : p?.endsWith('/presentation') ? 'presentation'
     : 'nav';
   const [mode, setMode] = useState<'nav' | 'calendar' | 'presentation'>(modeFromUrl(pathname));
-  useEffect(() => { setMode(modeFromUrl(pathname)); }, [pathname]);
+  /* While we're orchestrating a click-driven transition we manage `mode`
+     manually via setTimeouts. The pathname-sync useEffect would otherwise
+     fire from router.push BEFORE our delay completes, breaking the
+     sequential choreography. `pendingTarget` blocks the auto-sync until
+     the manual setMode lands. */
+  const [pendingTarget, setPendingTarget] = useState<'nav' | 'calendar' | 'presentation' | null>(null);
+  useEffect(() => {
+    if (pendingTarget) return;
+    setMode(modeFromUrl(pathname));
+  }, [pathname, pendingTarget]);
 
 
   /* Client-only mount flag (for createPortal on the edit modal). */
@@ -560,11 +569,16 @@ export function WizardSidebar({
          WorkspaceShell's main fade-in has a 900ms delay so it materializes
          right as the aside finishes shrinking. */
     if (target === 'nav') {
-      setMode(target); // start contraction
+      setPendingTarget(target);
+      setMode(target); // start contraction immediately
       setTimeout(() => router.push(href), 60);
+      // Clear the lock once we're well past the contraction
+      setTimeout(() => setPendingTarget(null), 1300);
     } else {
+      setPendingTarget(target);
       router.push(href); // pathname flips → main fades out
-      setTimeout(() => setMode(target), 260); // then expand aside
+      setTimeout(() => setMode(target), 550); // wait for fade-out to complete, then expand aside
+      setTimeout(() => setPendingTarget(null), 1800);
     }
   };
   /* Fixed width = INNER_W (356) − px-5 padding (40) = 316. Pinning the
