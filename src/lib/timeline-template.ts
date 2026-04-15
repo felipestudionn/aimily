@@ -122,7 +122,9 @@ export const MILESTONE_TO_MINI_BLOCK: Record<string, string> = {
   'dd-4': 'sketch',
   'dd-5': 'sketch',
   'dd-6': 'sketch',
-  // tech-pack = technical sheets (specs / BOM)
+  // tech-pack = initial specs (v1 sent to factory before proto) +
+  //             final specs (v2 after rectification, ready for sampling)
+  'dd-19': 'tech-pack',
   'dd-10': 'tech-pack',
   // prototyping = all sample development / review activity
   'dd-7': 'prototyping',
@@ -180,10 +182,10 @@ export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   // BLOCK 2: RANGE PLANNING & STRATEGY (merchandising / planners)
   // Consumer → market → channel → budget → SKUs → GTM
   // ══════════════════════════════════════════════════════════
-  { id: 'rp-1', phase: 'planning', name: 'Consumer & Market Analysis', nameEs: 'Análisis de consumidor y mercado', responsible: 'US', startWeeksBefore: 46, durationWeeks: 2, color: '#808368' },
-  { id: 'rp-2', phase: 'planning', name: 'Channel & Distribution Strategy', nameEs: 'Estrategia de canal y distribución', responsible: 'US', startWeeksBefore: 44, durationWeeks: 2, color: '#808368' },
-  { id: 'rp-3', phase: 'planning', name: 'Sales Budget & Financial Framework', nameEs: 'Presupuesto de ventas y marco financiero', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#808368' },
-  { id: 'rp-4', phase: 'planning', name: 'Range Strategy & Framework', nameEs: 'Estrategia y framework de colección', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#808368' },
+  { id: 'rp-1', phase: 'planning', name: 'Buying Strategy Definition', nameEs: 'Definición de buying strategy', responsible: 'US', startWeeksBefore: 46, durationWeeks: 2, color: '#808368' },
+  { id: 'rp-2', phase: 'planning', name: 'Distribution Strategy', nameEs: 'Estrategia de distribución', responsible: 'US', startWeeksBefore: 44, durationWeeks: 2, color: '#808368' },
+  { id: 'rp-3', phase: 'planning', name: 'Financial Plan & Budget', nameEs: 'Plan financiero y presupuesto', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#808368' },
+  { id: 'rp-4', phase: 'planning', name: 'Assortment & Pricing Definition', nameEs: 'Definición de assortment y pricing', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#808368' },
   { id: 'rp-5', phase: 'planning', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 40, durationWeeks: 3, color: '#808368' },
   { id: 'rp-6', phase: 'planning', name: 'Range Plan Validation', nameEs: 'Validación del range plan', responsible: 'US', startWeeksBefore: 37, durationWeeks: 1, color: '#808368' },
 
@@ -200,11 +202,16 @@ export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   { id: 'dd-5', phase: 'development', name: 'Paper Pattern Development', nameEs: 'Desarrollo de patronaje', responsible: 'US', startWeeksBefore: 29, durationWeeks: 1.5, color: '#001519' },
   { id: 'dd-6', phase: 'development', name: 'Colorways Development', nameEs: 'Desarrollo de colorways', responsible: 'US', startWeeksBefore: 27.5, durationWeeks: 2, color: '#001519' },
 
+  // — Tech Pack v1 (initial specs sent to factory before proto) —
+  { id: 'dd-19', phase: 'development', name: 'Initial Tech Pack', nameEs: 'Tech pack inicial', responsible: 'US', startWeeksBefore: 30, durationWeeks: 2, color: '#001519' },
+
   // — Prototyping —
   { id: 'dd-7', phase: 'development', name: 'White Proto Development', nameEs: 'Desarrollo de proto blanco', responsible: 'FACTORY', startWeeksBefore: 28, durationWeeks: 7, color: '#001519' },
   { id: 'dd-8', phase: 'development', name: 'White Proto Delivery', nameEs: 'Entrega de proto blanco', responsible: 'FACTORY', startWeeksBefore: 21, durationWeeks: 1, color: '#001519' },
   { id: 'dd-9', phase: 'development', name: 'White Proto Rectification', nameEs: 'Rectificación de proto blanco', responsible: 'US', startWeeksBefore: 20, durationWeeks: 4, color: '#001519' },
-  { id: 'dd-10', phase: 'development', name: 'Technical Sheets Completion', nameEs: 'Fichas técnicas completas', responsible: 'US', startWeeksBefore: 20, durationWeeks: 4, color: '#001519' },
+
+  // — Tech Pack v2 (final tech pack post-rectification, ready for sampling) —
+  { id: 'dd-10', phase: 'development', name: 'Tech Pack Finalization', nameEs: 'Finalización del tech pack', responsible: 'US', startWeeksBefore: 16, durationWeeks: 4, color: '#001519' },
 
   // — Sampling —
   { id: 'dd-11', phase: 'development', name: 'Color Samples Development', nameEs: 'Desarrollo de muestras de color', responsible: 'FACTORY', startWeeksBefore: 19, durationWeeks: 6, color: '#001519' },

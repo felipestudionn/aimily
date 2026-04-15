@@ -278,7 +278,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       budget: ['rp-3'], builder: ['rp-5', 'rp-6'],
                       // Design & Development
                       sketch: ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'],
-                      'tech-pack': ['dd-10'],
+                      'tech-pack': ['dd-19', 'dd-10'],
                       prototyping: ['dd-7', 'dd-8', 'dd-9', 'dd-11', 'dd-12', 'dd-13'],
                       production: ['dd-15', 'dd-16', 'dd-17', 'dd-18'],
                       selection: ['dd-14'],
