@@ -228,6 +228,11 @@ export function WizardSidebar({
     : p?.endsWith('/presentation') ? 'presentation'
     : 'nav';
   const [mode, setMode] = useState<'nav' | 'calendar' | 'presentation'>(modeFromUrl(pathname));
+  /* Contraction flag — true during a covered→nav or covered→covered
+     transition. Forces the aside back to EXPANDED_W while keeping the
+     CURRENT inner rendered (so the morph visually contracts a familiar
+     panel rather than snapping to stretched nav content mid-animation). */
+  const [contractingOut, setContractingOut] = useState(false);
   /* All click-driven mode changes go through setMode manually (handleModeClick,
      exitCalendarToSubItem, exitCalendarToHref). We DON'T auto-sync from
      `usePathname()` because:
@@ -250,30 +255,32 @@ export function WizardSidebar({
      previous viewState would show the wrong content and the sidebar
      would fall back to the first sub-item (Consumer) as "active". */
   const exitCalendarToSubItem = useCallback((subRoute: string) => {
-    setMode('nav');
+    setContractingOut(true);
+    /* Flip URL in parallel so WorkspaceShell's main starts its 900ms-
+       delayed fade-in while the aside is contracting (concurrent
+       covered→nav pattern, same as handleModeClick). */
+    if (workspaceNav) {
+      const routeBase = subRoute.split('?')[0];
+      workspaceNav.navigateToWorkspace(routeBase, subRoute);
+      router.replace(`${basePath}/${subRoute}`, { scroll: false });
+    } else {
+      router.push(`${basePath}/${subRoute}`);
+    }
     setTimeout(() => {
-      if (workspaceNav) {
-        const routeBase = subRoute.split('?')[0];
-        workspaceNav.navigateToWorkspace(routeBase, subRoute);
-        /* workspaceNav uses history.replaceState — Next's usePathname()
-           doesn't observe it. Without syncing, WorkspaceShell's
-           isCovered stays stuck at `/calendar` → <main> never fades in
-           → the workspace mounts but is invisible. router.replace
-           gives Next a proper pathname update; ViewPort still shows
-           the WorkspaceComponent because viewState='workspace' (the
-           {children} page mount is hidden behind it). */
-        router.replace(`${basePath}/${subRoute}`, { scroll: false });
-      } else {
-        router.push(`${basePath}/${subRoute}`);
-      }
-    }, 60);
+      setContractingOut(false);
+      setMode('nav');
+    }, 1200);
   }, [router, workspaceNav, basePath]);
 
   /* Exit calendar to a plain URL (block sub-dashboard, dashboard, etc.).
      Used for block-header band clicks which navigate to basePath?block={phase}. */
   const exitCalendarToHref = useCallback((href: string) => {
-    setMode('nav');
-    setTimeout(() => router.push(href), 60);
+    setContractingOut(true);
+    router.push(href);
+    setTimeout(() => {
+      setContractingOut(false);
+      setMode('nav');
+    }, 1200);
   }, [router]);
 
   /* Client-only mount flag (for createPortal on the edit modal). */
@@ -603,21 +610,37 @@ export function WizardSidebar({
     if (mode === opt.mode) return;
     const target = opt.mode;
     const href = opt.path === '' ? basePath : `${basePath}${opt.path}`;
-    /* Sequential choreography (Felipe's vision):
-       - Going INTO covered mode (calendar / presentation): fire router.push
-         first so pathname flips → WorkspaceShell fades <main> out (250ms),
-         THEN setMode after the fade-out completes so the aside starts its
-         1.2s expansion on a blank stage.
-       - Going BACK TO nav: setMode first so the aside contracts, then push
-         after a short tick so pathname flips while aside is mid-contraction;
-         WorkspaceShell's main fade-in has a 900ms delay so it materializes
-         right as the aside finishes shrinking. */
-    if (target === 'nav') {
-      setMode(target); // start contraction immediately
-      setTimeout(() => router.push(href), 60);
+    /* Three transitions, all respecting the cube morph:
+       (1) nav → covered        : main fades out first (250ms), then aside
+           expands 380→100vw (1.2s) while the target's inner renders.
+       (2) covered → nav        : contractingOut=true keeps the CURRENT
+           inner rendered while the aside contracts 100vw→380 (1.2s).
+           URL flips in parallel so main starts its 900ms-delayed fade-in.
+           At t=1200, swap to 'nav' and clear the flag.
+       (3) covered → covered    : contractingOut first (full 1.2s contract
+           with the current inner still visible), THEN push + setMode so
+           the aside re-expands to the new mode's inner. Feels like the
+           cube rotating back to nav then into the other face. */
+    if (mode === 'nav' && target !== 'nav') {
+      /* (1) entry */
+      router.push(href);
+      setTimeout(() => setMode(target), 550);
+    } else if (target === 'nav') {
+      /* (2) covered → nav — concurrent: contract + URL flip */
+      setContractingOut(true);
+      router.push(href);
+      setTimeout(() => {
+        setContractingOut(false);
+        setMode('nav');
+      }, 1200);
     } else {
-      router.push(href); // pathname flips → main fades out
-      setTimeout(() => setMode(target), 550); // wait for fade-out to complete, then expand aside
+      /* (3) covered → covered — sequential: full contract, then re-expand */
+      setContractingOut(true);
+      setTimeout(() => {
+        setContractingOut(false);
+        router.push(href);
+        setMode(target);
+      }, 1200);
     }
   };
   /* Fixed width = INNER_W (356) − px-5 padding (40) = 316. Pinning the
@@ -958,15 +981,23 @@ export function WizardSidebar({
     </>
   ) : null;
 
-  const asideWidth = (mode === 'calendar' || mode === 'presentation')
-    ? '100vw'
-    : (collapsed ? COLLAPSED_W : EXPANDED_W);
+  const asideWidth = contractingOut
+    ? EXPANDED_W
+    : (mode === 'calendar' || mode === 'presentation')
+      ? '100vw'
+      : (collapsed ? COLLAPSED_W : EXPANDED_W);
 
-  /* Exit presentation → flip mode then push URL (mirrors handleModeClick's
-     'nav' branch so the contraction animates first, then the URL syncs). */
+  /* Exit presentation → same concurrent contract+push pattern as
+     handleModeClick's covered→nav branch (keeps the deck visible
+     shrinking while the aside contracts, then swaps to nav content
+     at the end). */
   const exitPresentation = useCallback(() => {
-    setMode('nav');
-    setTimeout(() => router.push(basePath), 60);
+    setContractingOut(true);
+    router.push(basePath);
+    setTimeout(() => {
+      setContractingOut(false);
+      setMode('nav');
+    }, 1200);
   }, [router, basePath]);
 
   /* Presentation owns its slide index + theme at the sidebar level so
@@ -984,13 +1015,20 @@ export function WizardSidebar({
      index), deck canvas on the RIGHT. Same DOM <aside> as nav and
      calendar so the cube width-morph stays uninterrupted. */
   const presentationInner = mode === 'presentation' ? (
-    <div className="flex h-full gap-3">
-      {/* LEFT — persistent spine column (same INNER_W as calendar) */}
+    /* One unified rounded container (same pattern as calendar): LEFT
+       spine column and RIGHT deck live inside it, no gap, so the spine
+       sits at exactly the same X as in nav and calendar modes. */
+    <div
+      className="flex h-full rounded-[16px] overflow-hidden"
+      style={{ background: CAL_SIDEBAR_BG }}
+    >
+      {/* LEFT — persistent spine column (INNER_W wide, sticky-in-spirit) */}
       <div
-        className="surface-card flex-shrink-0 flex flex-col overflow-hidden"
-        style={{ width: INNER_W }}
+        className="flex-shrink-0 flex flex-col"
+        style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}
       >
-        {/* Header: logo + collection name + mode switcher (same as nav) */}
+        {/* Header: logo + collection name + mode switcher — same spacing
+            as nav + calendar so the wizard block sits pixel-identical. */}
         <div className="shrink-0 px-5 pt-7 pb-6">
           <Link href="/my-collections" className="block mb-4">
             <Image
@@ -1012,9 +1050,14 @@ export function WizardSidebar({
         <div className="flex-1 overflow-y-auto scrollbar-subtle px-5 pb-4">
           {SIDEBAR_BLOCKS.map((block, bIdx) => (
             <div key={block.id} className="mb-5">
-              <div className="px-4 py-2.5 rounded-full bg-carbon/[0.04] mb-3">
+              {/* Block pill — block number on the RIGHT to mirror the
+                  CollectionOverview ghost-number convention */}
+              <div className="px-4 py-2.5 rounded-full bg-carbon/[0.04] mb-3 flex items-center justify-between gap-3">
                 <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">
                   {labelOf(block.labelKey)}
+                </span>
+                <span className="text-[13px] font-bold tracking-[-0.01em] text-carbon/35 tabular-nums shrink-0">
+                  {bIdx + 1}
                 </span>
               </div>
               <div className="ml-1 pl-5 border-l border-carbon/[0.15]">
@@ -1030,11 +1073,12 @@ export function WizardSidebar({
                         isActive ? 'bg-carbon text-white' : 'text-carbon hover:bg-carbon/[0.04]'
                       }`}
                     >
-                      <span className={`text-[10px] font-mono tabular-nums ${isActive ? 'text-white/55' : 'text-carbon/35'}`}>
-                        {String(slideIdx + 1).padStart(2, '0')}
-                      </span>
                       <span className={`text-[14px] truncate flex-1 text-left ${isActive ? 'font-semibold' : 'font-normal'}`}>
                         {labelOf(sub.labelKey)}
+                      </span>
+                      {/* Slide coordinate (1.1 / 1.2 / …) on the RIGHT */}
+                      <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${isActive ? 'text-white/55' : 'text-carbon/35'}`}>
+                        {bIdx + 1}.{sIdx + 1}
                       </span>
                     </button>
                   );
@@ -1045,9 +1089,9 @@ export function WizardSidebar({
         </div>
       </div>
 
-      {/* RIGHT — deck canvas */}
+      {/* RIGHT — deck canvas fills the remainder */}
       <div
-        className="flex-1 min-w-0 rounded-[16px] overflow-hidden"
+        className="flex-1 min-w-0 overflow-hidden"
         style={{ background: '#0A0A0A' }}
       >
         <PresentationDeck

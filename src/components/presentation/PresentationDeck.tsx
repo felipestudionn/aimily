@@ -81,7 +81,7 @@ export function PresentationDeck({ meta, titles, index, themeId, onIndexChange, 
 
   return (
     <div
-      className="w-full h-full flex flex-col rounded-[16px] overflow-hidden"
+      className="w-full h-full flex flex-col overflow-hidden"
       style={{ background: '#0A0A0A', color: '#FFFFFF' }}
     >
       {/* ── Top bar ── */}
