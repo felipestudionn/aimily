@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo, type ReactNode, type ComponentType } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { WizardSidebar } from '@/components/wizard/WizardSidebar';
 import { Navbar } from '@/components/layout/navbar';
@@ -52,9 +52,16 @@ export function WorkspaceShell({
   setupData,
 }: WorkspaceShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [displayName, setDisplayName] = useState(collectionName);
+
+  /* When the spine is in calendar/presentation mode it covers <main>.
+     Fade <main> out fast (no delay) when going INTO those modes; fade
+     it in with a delay matching the aside contraction (1.2s) when
+     coming back to nav. Result: outgoing-then-incoming choreography. */
+  const isCovered = !!pathname?.endsWith('/calendar') || !!pathname?.endsWith('/presentation');
 
   /* ── View state: 'page' = show children, 'workspace' = show lazy component ── */
   const [viewState, setViewState] = useState<ViewState>({ type: 'page' });
@@ -187,10 +194,18 @@ export function WorkspaceShell({
           <Menu className="h-4 w-4" />
         </button>
 
-        {/* ── Main content — offset by sidebar width ── */}
+        {/* ── Main content — offset by sidebar width.
+             Opacity choreography: instant fade-out when going into
+             calendar/presentation, delayed fade-in when returning to nav
+             (so the aside has time to contract first). */}
         <main
-          className="ml-0 pt-16 min-h-screen transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          style={{ marginLeft: `${sidebarWidth}px` }}
+          className="ml-0 pt-16 min-h-screen transition-opacity ease-out"
+          style={{
+            marginLeft: `${sidebarWidth}px`,
+            opacity: isCovered ? 0 : 1,
+            transitionDuration: isCovered ? '250ms' : '400ms',
+            transitionDelay: isCovered ? '0ms' : '900ms',
+          }}
         >
           <ViewPort
             showPage={showPage}

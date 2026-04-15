@@ -548,12 +548,24 @@ export function WizardSidebar({
   const handleModeClick = (e: React.MouseEvent<HTMLAnchorElement>, opt: typeof modeOptions[number]) => {
     e.preventDefault();
     if (mode === opt.mode) return;
-    setMode(opt.mode); // instant — CSS width transition fires now, not after Next navigation
+    const target = opt.mode;
     const href = opt.path === '' ? basePath : `${basePath}${opt.path}`;
-    // Trigger Next navigation in parallel so the destination page actually
-    // mounts behind the aside (otherwise contracting back to nav reveals
-    // an empty main area because Next still thinks we're on /calendar).
-    router.push(href);
+    /* Sequential choreography (Felipe's vision):
+       - Going INTO covered mode (calendar / presentation): fire router.push
+         first so pathname flips → WorkspaceShell fades <main> out (250ms),
+         THEN setMode after the fade-out completes so the aside starts its
+         1.2s expansion on a blank stage.
+       - Going BACK TO nav: setMode first so the aside contracts, then push
+         after a short tick so pathname flips while aside is mid-contraction;
+         WorkspaceShell's main fade-in has a 900ms delay so it materializes
+         right as the aside finishes shrinking. */
+    if (target === 'nav') {
+      setMode(target); // start contraction
+      setTimeout(() => router.push(href), 60);
+    } else {
+      router.push(href); // pathname flips → main fades out
+      setTimeout(() => setMode(target), 260); // then expand aside
+    }
   };
   /* Fixed width = INNER_W (356) − px-5 padding (40) = 316. Pinning the
      switcher width keeps icons/labels at their resting size during the
