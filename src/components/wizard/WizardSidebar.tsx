@@ -137,6 +137,10 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
 
 const COLLAPSED_W = 72;
 const EXPANDED_W = 380;
+/* Inner width of the visible sidebar card, after `aside p-3`. Used so the
+   calendar mode's sticky label column spans exactly the same area as the
+   nav mode's sidebar — same "common zone" in both views. */
+const INNER_W = EXPANDED_W - 24;
 
 /* ── Calendar-mode layout constants (used when pathname ends with /calendar) ── */
 const CAL_SUB_ITEM_HEIGHT = 37;
@@ -588,14 +592,14 @@ export function WizardSidebar({
             className="flex-1 overflow-auto scrollbar-subtle"
             style={{ cursor: dragState ? (dragState.type === 'move' ? 'grabbing' : 'col-resize') : undefined }}
           >
-            <div style={{ minWidth: EXPANDED_W + calChartWidth }}>
+            <div style={{ minWidth: INNER_W + calChartWidth }}>
               {/* Header row: logo+name+switcher (sticky, same padding as nav mode
                   to avoid visual shift when switching modes) | month header.
                   No fixed height — content drives it, matching nav mode naturally. */}
               <div className="flex items-stretch">
                 <div
                   className="sticky left-0 z-30 flex flex-col px-5 pt-7 pb-6"
-                  style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}
+                  style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}
                 >
                   <Link href="/my-collections" className="block mb-4">
                     <Image src="/images/aimily-logo-black.png" alt="aimily" width={774} height={96} className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity" unoptimized />
@@ -625,7 +629,7 @@ export function WizardSidebar({
               </div>
 
               {/* Separator */}
-              <div className="sticky left-0 h-px bg-carbon/[0.12]" style={{ minWidth: EXPANDED_W + calChartWidth }} />
+              <div className="sticky left-0 h-px bg-carbon/[0.12]" style={{ minWidth: INNER_W + calChartWidth }} />
 
               {/* Nav rows — same SIDEBAR_BLOCKS + labelOf() as nav mode */}
               <div className="pt-6 pb-4 flex flex-col">
@@ -635,7 +639,7 @@ export function WizardSidebar({
                     <div key={block.id} className="mb-5">
                       {/* Block header row — same py-2.5 + mb-3 as nav, track on right */}
                       <div className="flex mb-3">
-                        <div className="sticky left-0 z-20 px-6" style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}>
+                        <div className="sticky left-0 z-20 px-6" style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}>
                           <Link href={`${basePath}?block=${block.id}`} className="w-full px-4 py-2.5 rounded-full flex items-center bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors">
                             <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">{labelOf(block.labelKey)}</span>
                           </Link>
@@ -656,7 +660,7 @@ export function WizardSidebar({
                         const rowMilestones = calMilestonesByRow[sub.id] || [];
                         return (
                           <div key={sub.id} className="flex" style={{ height: CAL_SUB_ITEM_HEIGHT }}>
-                            <div className="sticky left-0 z-10 flex items-center px-6" style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}>
+                            <div className="sticky left-0 z-10 flex items-center px-6" style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}>
                               <div className="ml-1 pl-5 border-l border-carbon/[0.15] flex-1">
                                 <Link
                                   href={isLocked ? '#' : `${basePath}/${sub.route}`}
