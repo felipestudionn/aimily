@@ -45,7 +45,8 @@ const BLOCK_DEFS: BlockDef[] = [
     route: 'creative',
     subBlocks: [
       { id: 'consumer', label: 'Consumer\nDefinition', description: 'Define your target audience, build personas, and map their lifestyle and buying behavior.', route: 'creative?block=consumer' },
-      { id: 'moodboard', label: 'Moodboard\n& Research', description: 'Collect visual references, explore trends, and analyze competitors for your season.', route: 'creative?block=moodboard' },
+      { id: 'moodboard', label: 'Moodboard', description: 'Collect visual references and set the creative direction for your collection.', route: 'creative?block=moodboard' },
+      { id: 'research', label: 'Market\nResearch', description: 'Global trends, deep dive, live signals, and competitor analysis for your season.', route: 'creative?block=research' },
       { id: 'brand', label: 'Brand\nIdentity', description: 'Codify your brand DNA, define your voice, and design your visual identity.', route: 'creative?block=brand-dna' },
       { id: 'synthesis', label: 'Creative\nOverview', description: 'Consolidate everything into a creative brief, define the collection vibe and direction.', route: 'creative?block=synthesis', isOutput: true },
     ],
@@ -54,12 +55,13 @@ const BLOCK_DEFS: BlockDef[] = [
     phase: 'planning',
     number: '02',
     title: 'Merchandising & Planning',
-    description: 'Product families, pricing, channels, and budget.',
+    description: 'Buying strategy, assortment, channels, and budget.',
     route: 'merchandising',
     subBlocks: [
-      { id: 'families', label: 'Families\n& Pricing', description: 'Define product categories, set price architecture, and structure your segments.', route: 'merchandising?block=families' },
-      { id: 'channels', label: 'Channels\n& Markets', description: 'Plan your DTC and wholesale distribution across target markets.', route: 'merchandising?block=channels' },
-      { id: 'budget', label: 'Budget\n& Financials', description: 'Set your sales target, calculate margins, and plan sell-through rates.', route: 'merchandising?block=budget' },
+      { id: 'scenarios', label: 'Buying\nStrategy', description: 'Set target SKU count and budget — AI proposes A/B/C scenarios with families and pricing.', route: 'merchandising?block=scenarios' },
+      { id: 'families', label: 'Assortment\n& Pricing', description: 'Define product categories, set price architecture, and structure your segments.', route: 'merchandising?block=families' },
+      { id: 'channels', label: 'Distribution', description: 'Plan your DTC and wholesale distribution across target markets.', route: 'merchandising?block=channels' },
+      { id: 'budget', label: 'Financial\nPlan', description: 'Set your sales target, calculate margins, and plan sell-through rates.', route: 'merchandising?block=budget' },
       { id: 'builder', label: 'Collection\nBuilder', description: 'Build your SKU grid, validate the range plan, and organize by drops.', route: 'product', isOutput: true },
     ],
   },
@@ -67,26 +69,28 @@ const BLOCK_DEFS: BlockDef[] = [
     phase: 'development',
     number: '03',
     title: 'Design & Development',
-    description: 'Sketch, prototype, select, and produce your collection.',
+    description: 'Sketch, tech pack, prototype, produce, and select your collection.',
     route: 'product',
     subBlocks: [
       { id: 'sketch', label: 'Sketch\n& Color', description: 'Create sketches, define colorways, and select materials for each SKU.', route: 'product?phase=sketch' },
-      { id: 'prototyping', label: 'Proto\n& Fitting', description: 'Review prototypes, run fit sessions, and finalize tech packs.', route: 'product?phase=prototyping' },
-      { id: 'production', label: 'Production\n& Logistics', description: 'Send size runs, manage factory orders, and coordinate logistics.', route: 'product?phase=production' },
-      { id: 'selection', label: 'Final\nSelection', description: 'Conduct the line review and confirm the final lineup for your collection.', route: 'product?phase=selection' },
+      { id: 'tech-pack', label: 'Tech\nPack', description: 'Technical specs, BOM, materials sourcing, and factory selection for every SKU.', route: 'product?phase=techpack' },
+      { id: 'prototyping', label: 'Prototyping', description: 'Review prototypes, run fit sessions, and approve samples.', route: 'product?phase=prototyping' },
+      { id: 'production', label: 'Production', description: 'Send size runs, manage factory orders, and coordinate logistics.', route: 'product?phase=production' },
+      { id: 'selection', label: 'Final\nSelection', description: 'Conduct the line review and confirm the final lineup for your collection.', route: 'product?phase=selection', isOutput: true },
     ],
   },
   {
     phase: 'go_to_market',
     number: '04',
     title: 'Marketing & Sales',
-    description: 'Content, communications, and go-to-market strategy.',
+    description: 'Launch plan, content, communications, and commercial performance.',
     route: 'marketing/creation',
     subBlocks: [
-      { id: 'sales', label: 'Sales &\nPerformance', description: 'Revenue forecasting, drop planning, and commercial KPIs for your collection.', route: 'marketing/creation?block=sales' },
-      { id: 'content', label: 'Content\nCreation', description: 'Visual content per SKU: e-commerce, still life, editorial, and campaign shoots.', route: 'marketing/creation?block=content' },
-      { id: 'comms', label: 'Communications\n& Brand Voice', description: 'Copy, SEO, social templates, email sequences, and brand voice.', route: 'marketing/creation?block=comms' },
-      { id: 'pos', label: 'Distribution\n& Retail', description: 'Connect your web store, track wholesale orders, and manage distribution.', route: 'marketing/creation?block=pos' },
+      { id: 'gtm', label: 'GTM &\nLaunch Plan', description: 'Pre-launch timing, press kit, content calendar, paid ads, and launch countdown.', route: 'marketing/creation?block=gtm' },
+      { id: 'content', label: 'Content\nStudio', description: 'Visual content per SKU: e-commerce, still life, editorial, and campaign shoots.', route: 'marketing/creation?block=content' },
+      { id: 'comms', label: 'Communications', description: 'Copy, SEO, social templates, email sequences, and brand voice.', route: 'marketing/creation?block=comms' },
+      { id: 'sales', label: 'Sales\nDashboard', description: 'Revenue forecasting, drop planning, and commercial KPIs for your collection.', route: 'marketing/creation?block=sales' },
+      { id: 'pos', label: 'Point\nof Sale', description: 'Connect your web store, track wholesale orders, and manage distribution.', route: 'marketing/creation?block=pos', isOutput: true },
     ],
   },
 ];
@@ -237,7 +241,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
         {/* ── Cards area ── */}
         {view === 'blocks' && (
-          <div className={`max-w-[1300px] mx-auto transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          <div className={`${expandedBlock ? 'max-w-[1600px]' : 'max-w-[1300px]'} mx-auto transition-all duration-600 ease-[cubic-bezier(0.32,0.72,0,1)] ${
             animating ? 'opacity-0 scale-[0.96] translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}>
             {!expandedBlock ? (
@@ -294,22 +298,29 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                 })}
               </div>
             ) : activeBlock ? (
-              /* ═══ SUB-LEVEL — 4 mini-block cards inside a block ═══ */
-              <div className="grid grid-cols-4 gap-5">
+              /* ═══ SUB-LEVEL — 5 mini-block cards inside a block (matches sidebar 4×5) ═══ */
+              <div className="grid grid-cols-5 gap-5">
                 {activeBlock.subBlocks.map((sub, idx) => {
                   // Determine sub-block progress (simplified: check if phase milestones exist)
                   const subProgress = (() => {
                     // Map sub-block IDs to wizard phase IDs for progress tracking
                     const SUB_TO_PHASE: Record<string, string[]> = {
-                      consumer: ['cr-1'], moodboard: ['cr-2'], brand: ['br-1', 'br-2', 'br-3', 'br-4'],
-                      synthesis: [], families: ['rp-1', 'rp-3', 'rp-4'], channels: ['rp-2'],
+                      // Creative
+                      consumer: ['cr-1'], moodboard: ['cr-2'], research: ['cr-2'],
+                      brand: ['br-1', 'br-2', 'br-3', 'br-4'], synthesis: [],
+                      // Merchandising
+                      scenarios: ['rp-1'], families: ['rp-3', 'rp-4'], channels: ['rp-2'],
                       budget: ['rp-3'], builder: ['rp-5', 'rp-6'],
+                      // Design & Development
                       sketch: ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'],
+                      'tech-pack': ['dd-10'],
                       prototyping: ['dd-7', 'dd-8', 'dd-9', 'dd-10'],
                       production: ['dd-15', 'dd-16', 'dd-17', 'dd-18'],
                       selection: ['dd-11', 'dd-12', 'dd-13', 'dd-14'],
-                      sales: ['gm-3'], content: ['gm-4'], comms: ['gm-5'],
-                      pos: ['gm-1', 'gm-2'],
+                      // Marketing & Sales
+                      gtm: ['gm-1', 'gm-2', 'gm-6', 'gm-7', 'gm-8'],
+                      content: ['gm-3', 'gm-4'], comms: ['gm-5'],
+                      sales: ['gm-10', 'gm-11'], pos: ['gm-1', 'gm-2'],
                     };
                     const mIds = SUB_TO_PHASE[sub.id] || [];
                     if (mIds.length === 0) return 0;
