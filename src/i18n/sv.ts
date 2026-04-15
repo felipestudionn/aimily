@@ -361,6 +361,7 @@ export const sv: Dictionary = {
     pointOfSale: 'Försäljningsställe',
     presentation: 'Presentation',
     dashboard: 'Instrumentpanel',
+    workspace: 'Arbetsyta',
     moodboard: 'Moodboard',
     marketResearch: 'Marknadsundersökning',
     buyingStrategy: 'Inköpsstrategi',

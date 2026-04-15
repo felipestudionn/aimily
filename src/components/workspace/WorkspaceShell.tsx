@@ -28,7 +28,7 @@ import type { TimelineMilestone } from '@/types/timeline';
 
 /* ── Sidebar widths (match WizardSidebar constants) ── */
 const SIDEBAR_COLLAPSED = 72;
-const SIDEBAR_EXPANDED = 340;
+const SIDEBAR_EXPANDED = 380;
 
 interface WorkspaceShellProps {
   children: ReactNode;

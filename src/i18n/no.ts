@@ -361,6 +361,7 @@ export const no: Dictionary = {
     pointOfSale: 'Salgspunkt',
     presentation: 'Presentasjon',
     dashboard: 'Dashbord',
+    workspace: 'Arbeidsområde',
     moodboard: 'Moodboard',
     marketResearch: 'Markedsundersøkelse',
     buyingStrategy: 'Innkjøpsstrategi',

@@ -367,6 +367,7 @@ export const en = {
     pointOfSale: 'Point of Sale',
     presentation: 'Presentation',
     dashboard: 'Dashboard',
+    workspace: 'Workspace',
     moodboard: 'Moodboard',
     marketResearch: 'Market Research',
     buyingStrategy: 'Buying Strategy',

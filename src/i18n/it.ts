@@ -369,6 +369,7 @@ export const it: Dictionary = {
     pointOfSale: 'Punto Vendita',
     presentation: 'Presentazione',
     dashboard: 'Dashboard',
+    workspace: 'Workspace',
     moodboard: 'Moodboard',
     marketResearch: 'Ricerca di Mercato',
     buyingStrategy: 'Strategia di Acquisto',

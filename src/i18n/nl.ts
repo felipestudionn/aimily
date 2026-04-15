@@ -369,6 +369,7 @@ export const nl: Dictionary = {
     pointOfSale: 'Verkooppunt',
     presentation: 'Presentatie',
     dashboard: 'Dashboard',
+    workspace: 'Werkruimte',
     moodboard: 'Moodboard',
     marketResearch: 'Marktonderzoek',
     buyingStrategy: 'Inkoopstrategie',

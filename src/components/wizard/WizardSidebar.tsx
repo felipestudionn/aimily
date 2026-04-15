@@ -57,7 +57,7 @@ type SidebarLabelKey =
   | 'merchandisingPlanning' | 'buyingStrategy' | 'assortmentPricing' | 'familiesPricing' | 'distribution' | 'channelsMarkets' | 'financialPlan' | 'budgetFinancials' | 'collectionBuilder'
   | 'designDevelopment' | 'sketchColor' | 'techPack' | 'prototyping' | 'production' | 'finalSelection'
   | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'pointOfSale'
-  | 'calendar' | 'presentation' | 'dashboard';
+  | 'calendar' | 'presentation' | 'dashboard' | 'workspace';
 
 interface SidebarSubItem {
   id: string;
@@ -136,7 +136,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
 ];
 
 const COLLAPSED_W = 72;
-const EXPANDED_W = 340;
+const EXPANDED_W = 380;
 
 /* ── Calendar-mode layout constants (used when pathname ends with /calendar) ── */
 const CAL_SUB_ITEM_HEIGHT = 37;
@@ -534,7 +534,7 @@ export function WizardSidebar({
      Rendered identically at the top of the sidebar in all modes.
      ══════════════════════════════════════════════════════════════ */
   const modeOptions = [
-    { mode: 'nav' as const, label: labelOf('dashboard'), path: '', Icon: LayoutDashboard },
+    { mode: 'nav' as const, label: labelOf('workspace'), path: '', Icon: LayoutDashboard },
     { mode: 'calendar' as const, label: labelOf('calendar'), path: '/calendar', Icon: CalendarDays },
     { mode: 'presentation' as const, label: labelOf('presentation'), path: '/presentation', Icon: Presentation },
   ];
@@ -589,16 +589,17 @@ export function WizardSidebar({
             style={{ cursor: dragState ? (dragState.type === 'move' ? 'grabbing' : 'col-resize') : undefined }}
           >
             <div style={{ minWidth: EXPANDED_W + calChartWidth }}>
-              {/* Header row: logo+name (sticky) | month header */}
-              <div className="flex items-end" style={{ height: CAL_HEADER_AREA_HEIGHT }}>
+              {/* Header row: logo+name+switcher (sticky, same padding as nav mode
+                  to avoid visual shift when switching modes) | month header. */}
+              <div className="flex items-start" style={{ height: CAL_HEADER_AREA_HEIGHT }}>
                 <div
-                  className="sticky left-0 z-30 h-full flex flex-col justify-end px-5 pb-4"
+                  className="sticky left-0 z-30 h-full flex flex-col px-5 pt-7 pb-6"
                   style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}
                 >
                   <Link href="/my-collections" className="block mb-4">
                     <Image src="/images/aimily-logo-black.png" alt="aimily" width={774} height={96} className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity" unoptimized />
                   </Link>
-                  <Link href={basePath} className="block group mb-3">
+                  <Link href={basePath} className="block group mb-4">
                     <p className="text-[13px] font-medium text-carbon truncate">{displayName}</p>
                   </Link>
                   {modeSwitcher}

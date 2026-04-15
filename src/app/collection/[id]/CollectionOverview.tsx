@@ -176,6 +176,18 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     <div className="min-h-[80vh]">
       <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-16">
 
+        {/* ── Title — collection name at top level, block name when drilled ── */}
+        <div className="text-center mb-10">
+          <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+            {activeBlock ? activeBlock.title : plan.name}
+          </h1>
+          {activeBlock && (
+            <p className="text-[13px] font-medium text-carbon/40 tracking-[-0.01em] mt-2">
+              {plan.name}
+            </p>
+          )}
+        </div>
+
         {/* ── Back button — only when inside a block ── */}
         <div className={`flex justify-start transition-all duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           expandedBlock ? 'max-h-[60px] opacity-100 mb-8' : 'max-h-0 opacity-0 mb-0 overflow-hidden'
