@@ -29,6 +29,8 @@ import {
 import { useWizardState } from '@/hooks/useWizardState';
 import { useTimeline } from '@/contexts/TimelineContext';
 import { useSkus } from '@/hooks/useSkus';
+import { PresentationDeck } from '@/components/presentation/PresentationDeck';
+import { SPINE } from '@/lib/presentation/spine';
 import { useCollectionTimeline } from '@/hooks/useCollectionTimeline';
 import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
 import { useTranslation } from '@/i18n';
@@ -954,22 +956,54 @@ export function WizardSidebar({
     </>
   ) : null;
 
-  const asideWidth = mode === 'calendar' ? '100vw' : (collapsed ? COLLAPSED_W : EXPANDED_W);
+  const asideWidth = (mode === 'calendar' || mode === 'presentation')
+    ? '100vw'
+    : (collapsed ? COLLAPSED_W : EXPANDED_W);
+
+  /* Exit presentation → flip mode then push URL (mirrors handleModeClick's
+     'nav' branch so the contraction animates first, then the URL syncs). */
+  const exitPresentation = useCallback(() => {
+    setMode('nav');
+    setTimeout(() => router.push(basePath), 60);
+  }, [router, basePath]);
+
+  /* ── Presentation inner — mounted INSIDE the same <aside> as nav and
+     calendar so the cube's three faces all reuse one DOM element and
+     the width transition is uninterrupted. */
+  const presentationInner = mode === 'presentation' ? (
+    <PresentationDeck
+      meta={{
+        collectionName: displayName,
+        season,
+        launchDate,
+      }}
+      titles={Object.fromEntries(
+        SPINE.map(s => [s.titleKey, labelOf(s.titleKey as SidebarLabelKey)])
+      )}
+      onExit={exitPresentation}
+    />
+  ) : null;
 
   return (
     <>
-      {mobileOpen && mode !== 'calendar' && (
+      {mobileOpen && mode === 'nav' && (
         <div className="md:hidden fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={onMobileClose} />
       )}
 
       <aside
-        style={{ width: asideWidth, background: mode === 'calendar' ? '#F3F2F0' : undefined }}
+        style={{
+          width: asideWidth,
+          background: mode === 'calendar' ? '#F3F2F0'
+            : mode === 'presentation' ? '#0A0A0A'
+            : undefined,
+        }}
         className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
         {mode === 'calendar' && calendarInner}
-        {mode !== 'calendar' && (<>
+        {mode === 'presentation' && presentationInner}
+        {mode === 'nav' && (<>
         {/* ── Collapse button — bottom edge, not confused with "back" ── */}
         <button
           onClick={handleToggleCollapse}

@@ -57,12 +57,11 @@ export function WorkspaceShell({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [displayName, setDisplayName] = useState(collectionName);
 
-  /* When the spine is in calendar mode it covers <main>. Presentation
-     mode still renders its own page in <main> (the spine-expanded
-     presentation hasn't been built yet), so it's NOT in the covered list
-     for now — keeping main visible so the existing presentation page
-     shows through. */
-  const isCovered = !!pathname?.endsWith('/calendar');
+  /* The spine covers <main> in BOTH calendar and presentation modes —
+     in each, the aside expands to 100vw and renders its own canvas
+     (timeline / slide deck). Workspace stays underneath but invisible
+     so the cube morph is uninterrupted. */
+  const isCovered = !!pathname && (pathname.endsWith('/calendar') || pathname.endsWith('/presentation'));
 
   /* ── View state: 'page' = show children, 'workspace' = show lazy component ── */
   const [viewState, setViewState] = useState<ViewState>({ type: 'page' });
