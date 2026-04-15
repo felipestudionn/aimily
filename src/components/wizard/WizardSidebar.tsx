@@ -237,13 +237,29 @@ export function WizardSidebar({
     setMode(modeFromUrl(pathname));
   }, [pathname, pendingTarget]);
 
-  /* Exit calendar to a specific destination route. Same sequential
-     choreography as handleModeClick (target=nav): aside contracts,
-     then router.push lands the destination so WorkspaceShell's main
-     fade-in (delayed 900ms) materializes the workspace right as the
-     contraction finishes. Used by bar clicks, sticky-label clicks,
-     and block-header band clicks inside the calendar canvas. */
-  const exitCalendarTo = useCallback((href: string) => {
+  /* Exit calendar and open the workspace of a sub-item (Consumer,
+     Brand Identity, Buying Strategy, …). Uses workspaceNav.navigateToWorkspace
+     so the WorkspaceShell viewState flips to 'workspace' with the
+     matching lazy component + blockParam — otherwise the stale
+     previous viewState would show the wrong content and the sidebar
+     would fall back to the first sub-item (Consumer) as "active". */
+  const exitCalendarToSubItem = useCallback((subRoute: string) => {
+    setPendingTarget('nav');
+    setMode('nav');
+    setTimeout(() => {
+      if (workspaceNav) {
+        const routeBase = subRoute.split('?')[0];
+        workspaceNav.navigateToWorkspace(routeBase, subRoute);
+      } else {
+        router.push(`${basePath}/${subRoute}`);
+      }
+    }, 60);
+    setTimeout(() => setPendingTarget(null), 1300);
+  }, [router, workspaceNav, basePath]);
+
+  /* Exit calendar to a plain URL (block sub-dashboard, dashboard, etc.).
+     Used for block-header band clicks which navigate to basePath?block={phase}. */
+  const exitCalendarToHref = useCallback((href: string) => {
     setPendingTarget('nav');
     setMode('nav');
     setTimeout(() => router.push(href), 60);
@@ -499,7 +515,7 @@ export function WizardSidebar({
             if (sub) { foundSubRoute = sub.route; break; }
           }
           if (foundSubRoute) {
-            exitCalendarTo(`${basePath}/${foundSubRoute}`);
+            exitCalendarToSubItem(foundSubRoute);
             setDragState(null);
             return;
           }
@@ -527,7 +543,7 @@ export function WizardSidebar({
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     };
-  }, [dragState, updateMilestone, exitCalendarTo, basePath]);
+  }, [dragState, updateMilestone, exitCalendarToSubItem]);
 
   const cycleStatus = (id: string, current: MilestoneStatus) => {
     const next: MilestoneStatus = current === 'pending' ? 'in-progress' : current === 'in-progress' ? 'completed' : 'pending';
@@ -719,7 +735,7 @@ export function WizardSidebar({
                         <div className="sticky left-0 z-20 px-6" style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}>
                           <Link
                             href={`${basePath}?block=${block.id}`}
-                            onClick={(e) => { e.preventDefault(); exitCalendarTo(`${basePath}?block=${block.id}`); }}
+                            onClick={(e) => { e.preventDefault(); exitCalendarToHref(`${basePath}?block=${block.id}`); }}
                             className="w-full px-4 py-2.5 rounded-full flex items-center bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors"
                           >
                             <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">{labelOf(block.labelKey)}</span>
@@ -727,7 +743,7 @@ export function WizardSidebar({
                         </div>
                         <button
                           type="button"
-                          onClick={() => exitCalendarTo(`${basePath}?block=${block.id}`)}
+                          onClick={() => exitCalendarToHref(`${basePath}?block=${block.id}`)}
                           className="relative cursor-pointer hover:brightness-95 transition"
                           style={{ width: calChartWidth, background: phase.bgColor + '77' }}
                           title="Open block sub-dashboard"
@@ -754,7 +770,7 @@ export function WizardSidebar({
                                   onClick={(e) => {
                                     if (isLocked) { e.preventDefault(); return; }
                                     e.preventDefault();
-                                    exitCalendarTo(`${basePath}/${sub.route}`);
+                                    exitCalendarToSubItem(sub.route);
                                   }}
                                   className={`flex items-center justify-between py-1 px-3 -mx-3 rounded-[10px] transition-all ${
                                     isActive ? 'bg-carbon text-white'
