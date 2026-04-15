@@ -31,7 +31,7 @@ const MONO_JETBRAINS = '"JetBrains Mono", "IBM Plex Mono", "SF Mono", Menlo, mon
 const editorialHeritage: Theme = {
   id: 'editorial-heritage',
   name: 'Editorial Heritage',
-  archetype: 'Luxury silent · Hermès · Bottega · The Row',
+  archetype: 'Luxury silent · Muted serif · Editorial restraint',
   status: 'wired',
   tokens: {
     bg: '#F5F2EB',
@@ -61,7 +61,7 @@ const editorialHeritage: Theme = {
 const streetwearDrop: Theme = {
   id: 'streetwear-drop',
   name: 'Streetwear Drop',
-  archetype: 'Urban hype · Supreme · Off-White · Stüssy',
+  archetype: 'Urban hype · Condensed uppercase · Drop-culture',
   status: 'wired',
   tokens: {
     bg: '#0A0A0A',
@@ -91,7 +91,7 @@ const streetwearDrop: Theme = {
 const romanticFeminine: Theme = {
   id: 'romantic-feminine',
   name: 'Romantic Feminine',
-  archetype: 'Soft dreamy · Zimmermann · Cecilie Bahnsen · Ulla Johnson',
+  archetype: 'Soft dreamy · Blush palette · Garamond italic',
   status: 'wired',
   tokens: {
     bg: '#FAF1EC',
@@ -121,7 +121,7 @@ const romanticFeminine: Theme = {
 const minimalArchitect: Theme = {
   id: 'minimal-architect',
   name: 'Minimal Architect',
-  archetype: 'Swiss geometric · Jil Sander · COS · Lemaire',
+  archetype: 'Swiss geometric · Monochrome · Modular grid',
   status: 'wired',
   tokens: {
     bg: '#FFFFFF',
@@ -151,7 +151,7 @@ const minimalArchitect: Theme = {
 const performanceTech: Theme = {
   id: 'performance-tech',
   name: 'Performance Tech',
-  archetype: 'Data dynamic · Nike · ON Running · ACRONYM',
+  archetype: 'Data dynamic · Neon accents · Technical type',
   status: 'wired',
   tokens: {
     bg: '#0E0E10',
@@ -181,7 +181,7 @@ const performanceTech: Theme = {
 const avantGardeConcept: Theme = {
   id: 'avant-garde-concept',
   name: 'Avant-Garde Concept',
-  archetype: 'Conceptual · Rick Owens · Margiela · Comme des Garçons',
+  archetype: 'Art-book · Stark contrast · Off-grid composition',
   status: 'wired',
   tokens: {
     bg: '#FAFAF5',
@@ -210,7 +210,7 @@ const avantGardeConcept: Theme = {
 const sustainableCraft: Theme = {
   id: 'sustainable-craft',
   name: 'Sustainable Craft',
-  archetype: 'Earth transparency · Bode · Story mfg · Maria McManus',
+  archetype: 'Earth transparency · Slab serif · Craft warmth',
   status: 'preview',
   tokens: {
     bg: '#EEE6D7',
@@ -239,7 +239,7 @@ const sustainableCraft: Theme = {
 const y2kDigital: Theme = {
   id: 'y2k-digital',
   name: 'Y2K Digital Native',
-  archetype: 'Chrome glitch · Coperni · Marine Serre · Diesel reborn',
+  archetype: 'Chrome glitch · Neon-on-black · Mono display',
   status: 'preview',
   tokens: {
     bg: '#0F0F1A',
@@ -268,7 +268,7 @@ const y2kDigital: Theme = {
 const workwearHeritage: Theme = {
   id: 'workwear-heritage',
   name: 'Workwear Heritage',
-  archetype: 'Utility blueprint · Engineered Garments · Carhartt WIP',
+  archetype: 'Utility blueprint · Condensed uppercase · Sand + indigo',
   status: 'preview',
   tokens: {
     bg: '#E8E2D2',
@@ -297,7 +297,7 @@ const workwearHeritage: Theme = {
 const resortLuxe: Theme = {
   id: 'resort-luxe',
   name: 'Resort Luxe',
-  archetype: 'Mediterranean sun · Jacquemus · Loewe Paula\'s · Casa Raki',
+  archetype: 'Mediterranean sun · Cobalt + terracotta · Rounded luxury',
   status: 'preview',
   tokens: {
     bg: '#F4EAD8',
