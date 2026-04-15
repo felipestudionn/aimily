@@ -1029,8 +1029,10 @@ export function WizardSidebar({
 
   /* Fetch slide-shaped CIS data once when the user enters presentation
      mode. Cached per collectionId for the session. Templates render
-     editorial placeholders while loading / when a slide has no data. */
-  const { data: presentationData } = usePresentationData(collectionId, mode === 'presentation');
+     editorial placeholders while loading / when a slide has no data.
+     `refetch` is called by PresentationDeck after save/revert so the
+     deck re-renders with the latest merged overrides. */
+  const { data: presentationData, refetch: refetchPresentationData } = usePresentationData(collectionId, mode === 'presentation');
 
   const presentationTitles = useMemo(
     () => Object.fromEntries(SPINE.map(s => [s.titleKey, labelOf(s.titleKey as SidebarLabelKey)])),
@@ -1114,6 +1116,12 @@ export function WizardSidebar({
                   /* Cover occupies slot 0, so mini-block indices shift by +1. */
                   const slideIdx = bIdx * 5 + sIdx + 1;
                   const isActive = presentationIndex === slideIdx;
+                  /* SPINE[slideIdx - 1].id gives the canonical slide id
+                     (differs from sub.id in some blocks, e.g. sidebar
+                     'scenarios' → spine 'buying-strategy'). Used to
+                     check if the slide has deck overrides applied. */
+                  const spineSlideId = SPINE[slideIdx - 1]?.id;
+                  const hasOverride = !!spineSlideId && !!presentationData?.overrides[spineSlideId];
                   return (
                     <button
                       key={sub.id}
@@ -1126,6 +1134,12 @@ export function WizardSidebar({
                       <span className={`text-[14px] truncate flex-1 text-left ${isActive ? 'font-semibold' : 'font-normal'}`}>
                         {labelOf(sub.labelKey)}
                       </span>
+                      {hasOverride && (
+                        <span
+                          className="h-1.5 w-1.5 rounded-full shrink-0 bg-citronella"
+                          title="Edited · differs from the auto-generated content"
+                        />
+                      )}
                       <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${isActive ? 'text-white/55' : 'text-carbon/35'}`}>
                         {bIdx + 1}.{sIdx + 1}
                       </span>
@@ -1159,6 +1173,7 @@ export function WizardSidebar({
           onIndexChange={setPresentationIndex}
           onThemeChange={setPresentationThemeId}
           onExit={exitPresentation}
+          onDataChanged={refetchPresentationData}
         />
       </div>
     </div>

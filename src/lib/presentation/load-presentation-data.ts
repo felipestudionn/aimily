@@ -48,6 +48,13 @@ export interface PresentationData {
   stats: Record<string, StatSlideData>;
   grids: Record<string, GridSlideData>;
   timelines: Record<string, TimelineSlideData>;
+  /* Per-slide field override map. Populated from
+     presentation_deck_overrides. UI uses these to (a) mark slides with
+     edits (gold dot in sidebar) and (b) show "Revert to original"
+     when a field has an override. Merged OVER the CIS-derived values
+     above so templates read the final rendered text from the same
+     narratives/grids/timelines maps. */
+  overrides: Record<string, Record<string, string>>; // slideId → fieldName → value
   /* Presence flag so the UI can show "no data yet" states if
      the entire collection hasn't been filled. */
   hasAnyData: boolean;
@@ -136,6 +143,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     stats: {},
     grids: {},
     timelines: {},
+    overrides: {},
     hasAnyData: false,
   };
 
@@ -372,6 +380,39 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         };
         data.hasAnyData = true;
       }
+    }
+  }
+
+  // ─── Apply per-slide deck overrides (owner-edited text) ─────────
+  // Overrides win over CIS-derived values. They're kept in a separate
+  // map too so the UI can surface "Revert to original" per field.
+  const { data: overrideRows } = await supabaseAdmin
+    .from('presentation_deck_overrides')
+    .select('slide_id, field_overrides')
+    .eq('collection_plan_id', collectionPlanId);
+
+  for (const row of overrideRows ?? []) {
+    const slideId = row.slide_id as string;
+    const fields = (row.field_overrides as Record<string, string>) ?? {};
+    if (!Object.keys(fields).length) continue;
+
+    data.overrides[slideId] = fields;
+
+    // Apply to narratives (F5.1 scope). Grid/timeline overrides land
+    // in F5.3; their rows will still appear in data.overrides so the
+    // sidebar indicator fires, but the templates won't merge yet.
+    if (data.narratives[slideId]) {
+      if (fields.lead) data.narratives[slideId].lead = fields.lead;
+      if (fields.body) data.narratives[slideId].body = fields.body;
+      if (fields.attribution) data.narratives[slideId].attribution = fields.attribution;
+    } else if (fields.lead || fields.body) {
+      // No CIS narrative yet — seed one from the override so the
+      // template renders the user's copy instead of the placeholder.
+      data.narratives[slideId] = {
+        lead: fields.lead,
+        body: fields.body,
+        attribution: fields.attribution,
+      };
     }
   }
 

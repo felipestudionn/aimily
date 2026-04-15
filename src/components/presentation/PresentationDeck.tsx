@@ -21,7 +21,7 @@
 'use client';
 
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Download, Loader2, Share2, Copy, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Download, Loader2, Share2, Copy, Check, Pencil } from 'lucide-react';
 import { SPINE, SLIDE_COUNT } from '@/lib/presentation/spine';
 import { getTheme, themeStyle } from '@/lib/presentation/themes';
 import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
@@ -60,12 +60,15 @@ interface Props {
      X exit, the theme picker, and the Share button; PDF download
      stays enabled so viewers can save their own copy. */
   readOnly?: boolean;
+  /* Called after saving / reverting deck overrides so the hook in
+     WizardSidebar drops its cache and re-fetches. */
+  onDataChanged?: () => void;
 }
 
 /* Total slide count = 1 cover + SPINE mini-blocks. */
 const TOTAL_SLIDES = SLIDE_COUNT + 1;
 
-export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit, readOnly = false }: Props) {
+export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit, readOnly = false, onDataChanged }: Props) {
   const theme = useMemo(() => getTheme(themeId), [themeId]);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -127,6 +130,67 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
       /* no-op */
     }
   }, [shareUrl]);
+
+  /* ── Edit mode — owner-only inline slide text editing ─────────── */
+  const [editMode, setEditMode] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, Record<string, string>>>({});
+  const [saving, setSaving] = useState(false);
+  const hasDrafts = Object.keys(drafts).length > 0;
+
+  const handleDraftChange = useCallback((slideId: string, field: string, value: string) => {
+    setDrafts(prev => ({
+      ...prev,
+      [slideId]: { ...(prev[slideId] ?? {}), [field]: value },
+    }));
+  }, []);
+
+  const discardDrafts = useCallback(() => {
+    setDrafts({});
+  }, []);
+
+  const saveDrafts = useCallback(async () => {
+    if (!hasDrafts) return;
+    setSaving(true);
+    try {
+      for (const [slideId, fields] of Object.entries(drafts)) {
+        await fetch('/api/presentation/override', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionId, slideId, fields }),
+        });
+      }
+      setDrafts({});
+      onDataChanged?.();
+    } finally {
+      setSaving(false);
+    }
+  }, [drafts, hasDrafts, collectionId, onDataChanged]);
+
+  const revertField = useCallback(async (slideId: string, field: string) => {
+    await fetch(
+      `/api/presentation/override?collectionId=${encodeURIComponent(collectionId)}` +
+      `&slideId=${encodeURIComponent(slideId)}&field=${encodeURIComponent(field)}`,
+      { method: 'DELETE' },
+    );
+    // Clear any local draft for this field too
+    setDrafts(prev => {
+      const slide = prev[slideId];
+      if (!slide) return prev;
+      const next = { ...slide };
+      delete next[field];
+      const out = { ...prev };
+      if (Object.keys(next).length === 0) delete out[slideId];
+      else out[slideId] = next;
+      return out;
+    });
+    onDataChanged?.();
+  }, [collectionId, onDataChanged]);
+
+  /* When the user flips out of edit mode without saving, discard drafts. */
+  useEffect(() => {
+    if (!editMode && hasDrafts) setDrafts({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMode]);
 
   const downloadPdf = useCallback(async () => {
     setExporting(true);
@@ -238,7 +302,39 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
         )}
 
         <div className="flex items-center gap-3">
-          {!readOnly && (
+          {!readOnly && !editMode && (
+            <button
+              type="button"
+              onClick={() => setEditMode(true)}
+              className="inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border border-white/15 bg-white/10 hover:bg-white/15 text-white transition-colors"
+              title="Edit slide text"
+            >
+              <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
+              <span>Edit</span>
+            </button>
+          )}
+          {!readOnly && editMode && (
+            <>
+              <button
+                type="button"
+                onClick={() => { discardDrafts(); setEditMode(false); }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] border border-white/15 bg-white/5 hover:bg-white/10 text-white/70 transition-colors"
+              >
+                Done
+              </button>
+              <button
+                type="button"
+                onClick={saveDrafts}
+                disabled={saving || !hasDrafts}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] bg-citronella text-carbon hover:bg-citronella/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title={hasDrafts ? 'Save edits to this deck' : 'No changes to save'}
+              >
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
+                {saving ? 'Saving…' : 'Save edits'}
+              </button>
+            </>
+          )}
+          {!readOnly && !editMode && (
             <div ref={shareRef} className="relative">
               <button
                 type="button"
@@ -308,7 +404,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
             )}
             <span>{exporting ? 'Generating…' : 'PDF'}</span>
           </button>
-          {!readOnly && <ThemePicker current={theme} onChange={onThemeChange} />}
+          {!readOnly && !editMode && <ThemePicker current={theme} onChange={onThemeChange} />}
           {isSlidePlaceholder && (
             <div
               className="text-[10px] tracking-[0.24em] uppercase text-citronella/90 font-semibold px-3 py-1.5 rounded-full bg-citronella/10 border border-citronella/30"
@@ -339,6 +435,13 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
             title={slide ? titleFor(slide.titleKey) : (meta.brandName ?? meta.collectionName)}
             coverSubtitle={coverSubtitle}
             data={data}
+            editing={editMode && !readOnly && slide !== null ? {
+              editMode: true,
+              slideOverrides: data?.overrides[slide.id] ?? {},
+              drafts: drafts[slide.id] ?? {},
+              onDraftChange: (field, value) => handleDraftChange(slide.id, field, value),
+              onRevert: (field) => revertField(slide.id, field),
+            } : undefined}
           />
         </div>
       </div>

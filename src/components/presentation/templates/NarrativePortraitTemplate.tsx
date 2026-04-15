@@ -11,6 +11,8 @@
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { NarrativeSlideData } from '@/lib/presentation/load-presentation-data';
+import { EditableText } from '../EditableText';
+import type { EditingContext } from '../SlideRenderer';
 
 interface Props {
   slide: MicroBlockSlide;
@@ -19,6 +21,9 @@ interface Props {
   /* Real CIS data for this slide. When present, its fields override
      the editorial placeholders below. */
   data?: NarrativeSlideData;
+  /* When defined, the slide is in edit mode — lead + body become
+     click-to-edit via EditableText. */
+  editing?: EditingContext;
 }
 
 const NARRATIVE_PLACEHOLDERS: Record<string, { lead: string; body: string; attribution: string }> = {
@@ -55,15 +60,17 @@ const FALLBACK = {
   attribution: `${''} · Draft`,
 };
 
-export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }: Props) {
+export function NarrativePortraitTemplate({ slide, meta, title, data: cisData, editing }: Props) {
   const placeholder = NARRATIVE_PLACEHOLDERS[slide.id] ?? FALLBACK;
-  /* Prefer real CIS data field-by-field. Each field falls back to the
-     editorial placeholder when CIS hasn't been filled for this mini-block. */
+  /* Prefer draft (what user is typing) → committed CIS/override → placeholder.
+     Drafts win so the screen reflects typing without a round-trip. */
   const data = {
-    lead: cisData?.lead ?? placeholder.lead,
-    body: cisData?.body ?? placeholder.body,
+    lead: editing?.drafts.lead ?? cisData?.lead ?? placeholder.lead,
+    body: editing?.drafts.body ?? cisData?.body ?? placeholder.body,
     attribution: cisData?.attribution ?? placeholder.attribution,
   };
+  const isLeadOverride = !!editing?.slideOverrides.lead;
+  const isBodyOverride = !!editing?.slideOverrides.body;
 
   return (
     <div
@@ -144,10 +151,16 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }:
         </div>
 
         <div>
-          <p
+          <EditableText
+            as="p"
+            value={data.lead}
+            editMode={!!editing?.editMode}
+            isOverride={isLeadOverride}
+            onDraftChange={(v) => editing?.onDraftChange('lead', v)}
+            onRevert={() => editing?.onRevert('lead')}
             style={{
               fontFamily: 'var(--p-display-font)',
-            textTransform: 'var(--p-display-case)' as const,
+              textTransform: 'var(--p-display-case)' as const,
               fontWeight: 'var(--p-display-weight)',
               letterSpacing: 'var(--p-display-tracking)',
               fontSize: 'clamp(28px, 2.6vw, 44px)',
@@ -158,7 +171,7 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }:
             }}
           >
             {data.lead}
-          </p>
+          </EditableText>
           <div
             style={{
               width: '60px',
@@ -167,7 +180,13 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }:
               margin: '24px 0',
             }}
           />
-          <p
+          <EditableText
+            as="p"
+            value={data.body ?? ''}
+            editMode={!!editing?.editMode}
+            isOverride={isBodyOverride}
+            onDraftChange={(v) => editing?.onDraftChange('body', v)}
+            onRevert={() => editing?.onRevert('body')}
             style={{
               fontFamily: 'var(--p-body-font)',
               fontSize: 'clamp(14px, 1.1vw, 17px)',
@@ -179,7 +198,7 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }:
             }}
           >
             {data.body}
-          </p>
+          </EditableText>
         </div>
 
         <div
