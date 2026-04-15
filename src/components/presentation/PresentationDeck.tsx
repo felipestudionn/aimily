@@ -21,7 +21,7 @@
 'use client';
 
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Download, Loader2, Share2, Copy, Check, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Download, Loader2, Share2, Copy, Check, Pencil, ArrowUpCircle } from 'lucide-react';
 import { SPINE, SLIDE_COUNT } from '@/lib/presentation/spine';
 import { getTheme, themeStyle } from '@/lib/presentation/themes';
 import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
@@ -166,6 +166,10 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
     }
   }, [drafts, hasDrafts, collectionId, onDataChanged]);
 
+  const [promoting, setPromoting] = useState(false);
+  const [promoteError, setPromoteError] = useState<string | null>(null);
+  const [promoteConfirmOpen, setPromoteConfirmOpen] = useState(false);
+
   const revertField = useCallback(async (slideId: string, field: string) => {
     await fetch(
       `/api/presentation/override?collectionId=${encodeURIComponent(collectionId)}` +
@@ -223,6 +227,38 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
   /* Cover at index 0 has no mini-block slide context; SPINE starts at 1. */
   const slide = index === 0 ? null : SPINE[index - 1];
   const titleFor = useCallback((key: string) => titles[key] ?? key, [titles]);
+
+  /* Promote — copy the override for the current slide back into the
+     CIS (Workspace). Supported for consumer, brand-identity, and
+     communications (narrative slides with a clean single-field CIS
+     target). After a successful promote, the deck override is
+     deleted server-side because the CIS now holds the canonical
+     value. */
+  const PROMOTABLE_SLIDES = useMemo(() => new Set(['consumer', 'brand-identity', 'communications']), []);
+  const canPromoteCurrentSlide = !!slide
+    && PROMOTABLE_SLIDES.has(slide.id)
+    && !!data?.overrides[slide.id];
+
+  const promoteSlide = useCallback(async () => {
+    if (!slide) return;
+    setPromoting(true);
+    setPromoteError(null);
+    try {
+      const res = await fetch('/api/presentation/promote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionId, slideId: slide.id }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error || `Promote failed (HTTP ${res.status})`);
+      setPromoteConfirmOpen(false);
+      onDataChanged?.();
+    } catch (e) {
+      setPromoteError(e instanceof Error ? e.message : 'Promote failed');
+    } finally {
+      setPromoting(false);
+    }
+  }, [slide, collectionId, onDataChanged]);
 
   /* A slide is a PLACEHOLDER when it's showing editorial sample copy
      because its CIS slot hasn't been filled yet. Cover + hero templates
@@ -333,6 +369,50 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                 {saving ? 'Saving…' : 'Save edits'}
               </button>
             </>
+          )}
+          {!readOnly && canPromoteCurrentSlide && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setPromoteConfirmOpen(true); setPromoteError(null); }}
+                disabled={promoting}
+                className="inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border border-citronella/40 bg-citronella/15 hover:bg-citronella/25 text-citronella transition-colors disabled:opacity-60"
+                title="Promote this edit into your Workspace — AI and Workspace will use this text going forward"
+              >
+                {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <ArrowUpCircle className="w-3.5 h-3.5" strokeWidth={2} />}
+                <span>Promote</span>
+              </button>
+              {promoteConfirmOpen && (
+                <div className="absolute right-0 top-full mt-2 w-[360px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-4 z-50">
+                  <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
+                    Promote to Workspace
+                  </div>
+                  <p className="text-[12px] text-carbon/70 leading-relaxed mb-3">
+                    This will copy your slide edit into the collection data. Workspace views and AI suggestions will use this text going forward. The original content is preserved in your decision history.
+                  </p>
+                  {promoteError && <div className="text-[12px] text-error mb-3">{promoteError}</div>}
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setPromoteConfirmOpen(false)}
+                      disabled={promoting}
+                      className="inline-flex items-center px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={promoteSlide}
+                      disabled={promoting}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-60"
+                    >
+                      {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
+                      {promoting ? 'Promoting…' : 'Promote'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
           {!readOnly && !editMode && (
             <div ref={shareRef} className="relative">
