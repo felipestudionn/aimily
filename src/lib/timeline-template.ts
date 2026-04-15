@@ -94,38 +94,46 @@ export const MINI_BLOCK_ORDER: MiniBlockRow[] = [
 
 /* Reverse index: milestone id → mini-block id (primary assignment).
    Each milestone belongs to exactly ONE mini-block row to avoid
-   draggable duplicates. Rows without any milestones (e.g. synthesis,
-   market-research) simply render empty. */
+   draggable duplicates. Every mini-block in MINI_BLOCK_ORDER now has
+   at least one milestone so the calendar has visual weight on every
+   row of the spine. */
 export const MILESTONE_TO_MINI_BLOCK: Record<string, string> = {
-  // Creative
+  // Creative Direction
   'cr-1': 'consumer',
   'cr-2': 'moodboard',
+  'cr-3': 'market-research',   // NEW
+  'cr-4': 'creative-overview', // NEW — output: consolidated brief
   'br-1': 'brand-identity',
   'br-2': 'brand-identity',
   'br-3': 'brand-identity',
   'br-4': 'brand-identity',
-  // Planning
+  // Merchandising & Planning
   'rp-1': 'scenarios',
   'rp-2': 'channels',
   'rp-3': 'budget',
   'rp-4': 'families-pricing',
   'rp-5': 'builder-merch',
   'rp-6': 'builder-merch',
-  // Development
+  // Design & Development
+  // sketch = sketches + patterns + colorways
   'dd-1': 'sketch',
   'dd-2': 'sketch',
   'dd-3': 'sketch',
   'dd-4': 'sketch',
   'dd-5': 'sketch',
   'dd-6': 'sketch',
+  // tech-pack = technical sheets (specs / BOM)
+  'dd-10': 'tech-pack',
+  // prototyping = all sample development / review activity
   'dd-7': 'prototyping',
   'dd-8': 'prototyping',
   'dd-9': 'prototyping',
-  'dd-10': 'tech-pack',
-  'dd-11': 'final-selection',
-  'dd-12': 'final-selection',
-  'dd-13': 'final-selection',
+  'dd-11': 'prototyping',
+  'dd-12': 'prototyping',
+  'dd-13': 'prototyping',
+  // final-selection = output: lineup confirmed
   'dd-14': 'final-selection',
+  // production = factory order → QC → delivery
   'dd-15': 'production',
   'dd-16': 'production',
   'dd-17': 'production',
@@ -160,11 +168,13 @@ export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   // Brand identity + trend research + creative direction
   // ══════════════════════════════════════════════════════════
   { id: 'cr-1', phase: 'creative', name: 'Consumer & Target Definition', nameEs: 'Definición de consumidor y target', responsible: 'US', startWeeksBefore: 48, durationWeeks: 2, color: '#B6C8C7' },
-  { id: 'cr-2', phase: 'creative', name: 'Trend Research & Moodboarding', nameEs: 'Investigación de tendencias y moodboarding', responsible: 'US', startWeeksBefore: 46, durationWeeks: 3, color: '#B6C8C7' },
+  { id: 'cr-2', phase: 'creative', name: 'Moodboard Creation', nameEs: 'Creación del moodboard', responsible: 'US', startWeeksBefore: 46, durationWeeks: 3, color: '#B6C8C7' },
+  { id: 'cr-3', phase: 'creative', name: 'Market Research & Trend Analysis', nameEs: 'Investigación de mercado y tendencias', responsible: 'US', startWeeksBefore: 47, durationWeeks: 3, color: '#B6C8C7' },
   { id: 'br-1', phase: 'creative', name: 'Brand Naming & Strategy', nameEs: 'Naming y estrategia de marca', responsible: 'US', startWeeksBefore: 46, durationWeeks: 3, color: '#B6C8C7' },
   { id: 'br-2', phase: 'creative', name: 'Logo & Visual Identity', nameEs: 'Logo e identidad visual', responsible: 'AGENCY/US', startWeeksBefore: 43, durationWeeks: 4, color: '#B6C8C7' },
   { id: 'br-3', phase: 'creative', name: 'Brand Guidelines', nameEs: 'Manual de marca', responsible: 'AGENCY/US', startWeeksBefore: 39, durationWeeks: 2, color: '#B6C8C7' },
   { id: 'br-4', phase: 'creative', name: 'Packaging Design', nameEs: 'Diseño de packaging', responsible: 'AGENCY/US', startWeeksBefore: 37, durationWeeks: 3, color: '#B6C8C7' },
+  { id: 'cr-4', phase: 'creative', name: 'Creative Brief Consolidation', nameEs: 'Consolidación del brief creativo', responsible: 'US', startWeeksBefore: 36, durationWeeks: 1, color: '#B6C8C7' },
 
   // ══════════════════════════════════════════════════════════
   // BLOCK 2: RANGE PLANNING & STRATEGY (merchandising / planners)
@@ -175,7 +185,7 @@ export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   { id: 'rp-3', phase: 'planning', name: 'Sales Budget & Financial Framework', nameEs: 'Presupuesto de ventas y marco financiero', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#808368' },
   { id: 'rp-4', phase: 'planning', name: 'Range Strategy & Framework', nameEs: 'Estrategia y framework de colección', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#808368' },
   { id: 'rp-5', phase: 'planning', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 40, durationWeeks: 3, color: '#808368' },
-  { id: 'rp-6', phase: 'planning', name: 'Go-to-Market Strategy', nameEs: 'Estrategia Go-to-Market', responsible: 'US', startWeeksBefore: 37, durationWeeks: 1, color: '#808368' },
+  { id: 'rp-6', phase: 'planning', name: 'Range Plan Validation', nameEs: 'Validación del range plan', responsible: 'US', startWeeksBefore: 37, durationWeeks: 1, color: '#808368' },
 
   // ══════════════════════════════════════════════════════════
   // BLOCK 3: DESIGN & DEVELOPMENT (equipo técnico)

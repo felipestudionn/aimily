@@ -265,23 +265,28 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                   // Determine sub-block progress (simplified: check if phase milestones exist)
                   const subProgress = (() => {
                     // Map sub-block IDs to wizard phase IDs for progress tracking
+                    /* Keep in sync with MILESTONE_TO_MINI_BLOCK in timeline-template.ts.
+                       SUB_TO_PHASE uses the Overview's sub-block IDs (research, brand,
+                       builder, synthesis, selection, gtm, content, comms) which differ
+                       from sidebar IDs; the mapping below is the translation. */
                     const SUB_TO_PHASE: Record<string, string[]> = {
                       // Creative
-                      consumer: ['cr-1'], moodboard: ['cr-2'], research: ['cr-2'],
-                      brand: ['br-1', 'br-2', 'br-3', 'br-4'], synthesis: [],
+                      consumer: ['cr-1'], moodboard: ['cr-2'], research: ['cr-3'],
+                      brand: ['br-1', 'br-2', 'br-3', 'br-4'], synthesis: ['cr-4'],
                       // Merchandising
-                      scenarios: ['rp-1'], families: ['rp-3', 'rp-4'], channels: ['rp-2'],
+                      scenarios: ['rp-1'], families: ['rp-4'], channels: ['rp-2'],
                       budget: ['rp-3'], builder: ['rp-5', 'rp-6'],
                       // Design & Development
                       sketch: ['dd-1', 'dd-2', 'dd-3', 'dd-4', 'dd-5', 'dd-6'],
                       'tech-pack': ['dd-10'],
-                      prototyping: ['dd-7', 'dd-8', 'dd-9', 'dd-10'],
+                      prototyping: ['dd-7', 'dd-8', 'dd-9', 'dd-11', 'dd-12', 'dd-13'],
                       production: ['dd-15', 'dd-16', 'dd-17', 'dd-18'],
-                      selection: ['dd-11', 'dd-12', 'dd-13', 'dd-14'],
+                      selection: ['dd-14'],
                       // Marketing & Sales
-                      gtm: ['gm-1', 'gm-2', 'gm-6', 'gm-7', 'gm-8'],
-                      content: ['gm-3', 'gm-4'], comms: ['gm-5'],
-                      sales: ['gm-10', 'gm-11'], pos: ['gm-1', 'gm-2'],
+                      gtm: ['gm-1', 'gm-10', 'gm-11', 'gm-12', 'gm-13', 'gm-14'],
+                      content: ['gm-3', 'gm-5', 'gm-7'],
+                      comms: ['gm-4', 'gm-6', 'gm-8', 'gm-9'],
+                      sales: ['gm-15'], pos: ['gm-2'],
                     };
                     const mIds = SUB_TO_PHASE[sub.id] || [];
                     if (mIds.length === 0) return 0;
