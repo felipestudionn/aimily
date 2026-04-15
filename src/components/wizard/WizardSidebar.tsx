@@ -222,10 +222,9 @@ export function WizardSidebar({
     : pathname?.endsWith('/presentation') ? 'presentation'
     : 'nav';
 
-  /* Portal mount — calendar mode renders via portal to escape the
-     ViewPort's stacking context. Only load after client mount. */
-  const [portalMounted, setPortalMounted] = useState(false);
-  useEffect(() => setPortalMounted(true), []);
+  /* Client-only mount flag (for createPortal on the edit modal). */
+  const [clientMounted, setClientMounted] = useState(false);
+  useEffect(() => setClientMounted(true), []);
 
   /* Timeline data (only materially used in calendar mode, but calling
      the hook unconditionally keeps hook rules happy). Falls through
@@ -530,20 +529,25 @@ export function WizardSidebar({
   };
 
   /* ══════════════════════════════════════════════════════════════
-     CALENDAR MODE RENDER — portal to escape ViewPort stacking context.
-     Same SIDEBAR_BLOCKS, same labels, same IDs, same labelOf(). Each
-     row = single flex container with label (sticky left 340) + track.
-     Alignment pixel-perfect by construction (siblings in same row).
+     CALENDAR MODE RENDER — the SAME <aside> expands in place.
+     No portal, no new component. Just the aside's width grows from
+     EXPANDED_W to 100vw with a CSS transition, and its inner content
+     switches to the tracks layout. WorkspaceShell's <main> is still
+     under the aside (fixed z-50) so the expansion visually covers
+     everything rightward.
+
+     SIDEBAR_BLOCKS + labelOf() + getSubItemState() reused so labels
+     stay identical to nav mode.
      ══════════════════════════════════════════════════════════════ */
-  if (mode === 'calendar' && portalMounted && timeline) {
-    return createPortal(
-      <div
-        className="fixed top-0 left-0 right-0 bottom-0 z-[9999] p-3"
-        style={{ background: '#F3F2F0', width: '100vw', height: '100vh' }}
+  if (mode === 'calendar') {
+    return (
+      <aside
+        className="fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        style={{ width: '100vw' }}
       >
         <div
-          className="flex flex-col overflow-hidden rounded-[16px]"
-          style={{ background: CAL_SIDEBAR_BG, height: 'calc(100vh - 24px)' }}
+          className="flex flex-col overflow-hidden rounded-[16px] h-full"
+          style={{ background: CAL_SIDEBAR_BG }}
         >
           {/* Single scroll zone — horizontal + vertical */}
           <div
@@ -742,13 +746,13 @@ export function WizardSidebar({
           </div>
         </div>
 
-        {/* Editor modal */}
-        {editingMilestone && (() => {
+        {/* Editor modal — portal to escape the aside's stacking context */}
+        {editingMilestone && clientMounted && timeline && (() => {
           const m = timeline.milestones.find(mm => mm.id === editingMilestone);
           if (!m) return null;
           const sd = getMilestoneDate(timeline.launchDate, editValues.startWeeksBefore);
           const ed = getMilestoneEndDate(timeline.launchDate, editValues.startWeeksBefore, editValues.durationWeeks);
-          return (
+          return createPortal(
             <div className="fixed inset-0 bg-carbon/40 z-[10000] flex items-center justify-center backdrop-blur-sm" onClick={() => setEditingMilestone(null)}>
               <div className="bg-white rounded-[20px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
                 <div className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: m.color + '1F' }}>
@@ -786,11 +790,11 @@ export function WizardSidebar({
                   <button onClick={saveEditor} className="inline-flex items-center px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors">Guardar</button>
                 </div>
               </div>
-            </div>
+            </div>,
+            document.body
           );
         })()}
-      </div>,
-      document.body
+      </aside>
     );
   }
 
@@ -802,7 +806,7 @@ export function WizardSidebar({
 
       <aside
         style={{ width: collapsed ? COLLAPSED_W : EXPANDED_W }}
-        className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
