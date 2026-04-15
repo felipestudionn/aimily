@@ -597,11 +597,10 @@ export function WizardSidebar({
                   const phase = PHASES[block.id];
                   return (
                     <div key={block.id} className="mb-5">
-                      {/* Block header row */}
+                      {/* Block header row — identical styling to nav mode (no icon, no chevron) */}
                       <div className="flex" style={{ height: CAL_BLOCK_HEADER_HEIGHT }}>
                         <div className="sticky left-0 z-20 flex items-center px-6" style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}>
-                          <Link href={`${basePath}?block=${block.id}`} className="w-full px-4 py-2.5 rounded-full flex items-center gap-2 bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors">
-                            <block.icon className="h-[14px] w-[14px] text-carbon/50" strokeWidth={1.5} />
+                          <Link href={`${basePath}?block=${block.id}`} className="w-full px-4 py-2.5 rounded-full flex items-center bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-colors">
                             <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">{labelOf(block.labelKey)}</span>
                           </Link>
                         </div>
@@ -707,42 +706,56 @@ export function WizardSidebar({
             </div>
           </div>
 
-          {/* Utility bar — same links as nav mode, with active state per mode */}
-          <div className="flex-shrink-0 border-t border-carbon/[0.12] px-5 py-3 flex items-center gap-1" style={{ background: CAL_SIDEBAR_BG }}>
-            {utilityLinks.map((u) => {
-              const active = mode === u.mode;
-              const href = u.path === '' ? basePath : `${basePath}${u.path}`;
-              return (
-                <Link key={u.id} href={href} className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[13px] font-medium transition-colors ${active ? 'bg-carbon/[0.08] text-carbon' : 'text-carbon/60 hover:text-carbon hover:bg-carbon/[0.04]'}`}>
-                  <u.Icon className="h-[16px] w-[16px]" strokeWidth={1.5} />
-                  {u.label}
-                </Link>
-              );
-            })}
-            <div className="flex-1" />
-            <button
-              onClick={async () => {
-                if (!timeline) return;
-                const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
-                await exportTimelineToExcel(timeline, 'es');
-              }}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
-              title="Export"
-            >
-              <Download className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={resetToDefaults}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
-              title="Reset"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-            {saving && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-carbon/50">
-                <Cloud className="w-3 h-3" /> Saving
-              </span>
-            )}
+          {/* Utility bar — 3 prominent mode-switcher pills.
+              Uses the same icons + labels as the nav-mode utility links at
+              the bottom of the regular sidebar, so the user always sees
+              Dashboard · Calendar · Presentation as clearly clickable. */}
+          <div className="flex-shrink-0 border-t border-carbon/[0.12] h-[64px] flex items-center justify-between px-6" style={{ background: CAL_SIDEBAR_BG }}>
+            <div className="flex items-center gap-2">
+              {utilityLinks.map((u) => {
+                const active = mode === u.mode;
+                const href = u.path === '' ? basePath : `${basePath}${u.path}`;
+                return (
+                  <Link
+                    key={u.id}
+                    href={href}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[13px] font-medium transition-all ${
+                      active
+                        ? 'bg-carbon text-white'
+                        : 'bg-white border border-carbon/[0.12] text-carbon/70 hover:border-carbon/30 hover:text-carbon'
+                    }`}
+                  >
+                    <u.Icon className="h-[14px] w-[14px]" strokeWidth={1.5} />
+                    {u.label}
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  if (!timeline) return;
+                  const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
+                  await exportTimelineToExcel(timeline, 'es');
+                }}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+                title="Export"
+              >
+                <Download className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={resetToDefaults}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+                title="Reset"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+              {saving && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-carbon/50 ml-1">
+                  <Cloud className="w-3 h-3" /> Saving
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
