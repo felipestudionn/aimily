@@ -253,6 +253,14 @@ export function WizardSidebar({
       if (workspaceNav) {
         const routeBase = subRoute.split('?')[0];
         workspaceNav.navigateToWorkspace(routeBase, subRoute);
+        /* workspaceNav uses history.replaceState — Next's usePathname()
+           doesn't observe it. Without syncing, WorkspaceShell's
+           isCovered stays stuck at `/calendar` → <main> never fades in
+           → the workspace mounts but is invisible. router.replace
+           gives Next a proper pathname update; ViewPort still shows
+           the WorkspaceComponent because viewState='workspace' (the
+           {children} page mount is hidden behind it). */
+        router.replace(`${basePath}/${subRoute}`, { scroll: false });
       } else {
         router.push(`${basePath}/${subRoute}`);
       }
