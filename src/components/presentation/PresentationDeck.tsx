@@ -63,6 +63,23 @@ export function PresentationDeck({ meta, titles, coverSubtitle, data, index, the
   const slide = index === 0 ? null : SPINE[index - 1];
   const titleFor = useCallback((key: string) => titles[key] ?? key, [titles]);
 
+  /* A slide is a PLACEHOLDER when it's showing editorial sample copy
+     because its CIS slot hasn't been filled yet. Cover + hero templates
+     always have real meta; EditorialStat isn't wired to CIS yet so it's
+     always a placeholder; narrative / grid / timeline check their data map. */
+  const isSlidePlaceholder = useMemo(() => {
+    if (!slide) return false; // cover
+    switch (slide.template) {
+      case 'hero': return false;
+      case 'cover': return false;
+      case 'narrative-portrait': return !data?.narratives[slide.id];
+      case 'grid-tile': return !(data?.grids[slide.id]?.tiles?.length);
+      case 'timeline-strip': return !(data?.timelines[slide.id]?.milestones?.length);
+      case 'editorial-stat': return true; // not wired yet
+      default: return true;
+    }
+  }, [slide, data]);
+
   /* Keyboard nav */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -121,6 +138,14 @@ export function PresentationDeck({ meta, titles, coverSubtitle, data, index, the
 
         <div className="flex items-center gap-3">
           <ThemePicker current={theme} onChange={onThemeChange} />
+          {isSlidePlaceholder && (
+            <div
+              className="text-[10px] tracking-[0.24em] uppercase text-citronella/90 font-semibold px-3 py-1.5 rounded-full bg-citronella/10 border border-citronella/30"
+              title="This slide shows sample content — fill the matching mini-block to personalise it."
+            >
+              Sample
+            </div>
+          )}
           <div className="text-[11px] tabular-nums text-white/55 font-semibold tracking-[0.08em] px-3 py-1.5 rounded-full bg-white/8 border border-white/10">
             {String(index + 1).padStart(2, '0')} / {String(TOTAL_SLIDES).padStart(2, '0')}
           </div>
