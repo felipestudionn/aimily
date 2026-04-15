@@ -749,9 +749,8 @@ export function WizardSidebar({
                     <button
                       type="button"
                       onClick={() => exitCalendarToHref(basePath)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 -mx-1 rounded-[12px] text-carbon hover:bg-carbon/[0.04] transition-all"
+                      className="w-full flex items-center px-3 py-2.5 -mx-1 rounded-[12px] text-carbon hover:bg-carbon/[0.04] transition-all"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-carbon/30" />
                       <span className="text-[17px] font-bold tracking-[-0.03em] flex-1 text-left truncate">
                         {displayName}
                       </span>
@@ -1082,17 +1081,12 @@ export function WizardSidebar({
           <button
             type="button"
             onClick={() => setPresentationIndex(0)}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 -mx-1 rounded-[12px] mb-4 transition-all ${
+            className={`w-full flex items-center px-3 py-2.5 -mx-1 rounded-[12px] mb-4 transition-all ${
               presentationIndex === 0
                 ? 'bg-carbon text-white'
                 : 'text-carbon hover:bg-carbon/[0.04]'
             }`}
           >
-            <span
-              className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                presentationIndex === 0 ? 'bg-white/60' : 'bg-carbon/30'
-              }`}
-            />
             <span className="text-[17px] font-bold tracking-[-0.03em] flex-1 text-left truncate">
               {displayName}
             </span>
@@ -1250,22 +1244,12 @@ export function WizardSidebar({
                     if (workspaceNav) workspaceNav.navigateToDashboard();
                     else router.push(basePath);
                   }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 -mx-1 rounded-[12px] mb-4 transition-all ${
+                  className={`w-full flex items-center px-3 py-2.5 -mx-1 rounded-[12px] mb-4 transition-all ${
                     pathname === basePath && !searchParams?.get('block')
                       ? 'bg-carbon text-white'
                       : 'text-carbon hover:bg-carbon/[0.04]'
                   }`}
                 >
-                  {/* Tiny indicator dot — accent when active, muted when not.
-                      Gives the collection name a subtle "hero" signal at the
-                      start without competing with the typography. */}
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                      pathname === basePath && !searchParams?.get('block')
-                        ? 'bg-white/60'
-                        : 'bg-carbon/30'
-                    }`}
-                  />
                   <span className="text-[17px] font-bold tracking-[-0.03em] flex-1 text-left truncate">
                     {displayName}
                   </span>
