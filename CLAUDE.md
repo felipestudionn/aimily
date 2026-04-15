@@ -29,6 +29,14 @@ All 16 AI endpoints load context SERVER-SIDE via `loadFullContext()` from `src/l
 
 ---
 
+## 🔒 LAW — reuse ONLY canonical components
+
+**Before writing any new UI, read `memory/design-components-canonical.md`.** That file is the complete inventory of every card, hub, input, button, pill and typography pattern allowed in aimily. Do NOT invent new variants. If a pattern is not in that file, do not build it — ask first.
+
+The below gold standard block (kept here for quick reference) is ONE of the patterns documented in detail in the canonical file. See that file for Family Card · Anchor Card · Scenario Card · Result Card · EditorialText · TypographySpecimen · BrandBoardCanvas · buttons · inputs · pills · and the PROHIBITED patterns list.
+
+---
+
 ## 🔒 GOLD STANDARD — las tarjetas del Overview de colección (LAW)
 
 When Felipe says "las tarjetas del overview" / "estilo gold standard de los bloques" / "las tarjetas que ve al entrar en la colección" → **this exact pattern from `CollectionOverview.tsx`**:
