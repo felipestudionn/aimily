@@ -33,6 +33,7 @@ import { PresentationDeck } from '@/components/presentation/PresentationDeck';
 import { SPINE } from '@/lib/presentation/spine';
 import { DEFAULT_THEME_ID } from '@/lib/presentation/themes';
 import type { ThemeId } from '@/lib/presentation/types';
+import { usePresentationData } from '@/hooks/usePresentationData';
 import { useCollectionTimeline } from '@/hooks/useCollectionTimeline';
 import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
 import { useTranslation } from '@/i18n';
@@ -1026,6 +1027,11 @@ export function WizardSidebar({
   const [presentationIndex, setPresentationIndex] = useState(0);
   const [presentationThemeId, setPresentationThemeId] = useState<ThemeId>(DEFAULT_THEME_ID);
 
+  /* Fetch slide-shaped CIS data once when the user enters presentation
+     mode. Cached per collectionId for the session. Templates render
+     editorial placeholders while loading / when a slide has no data. */
+  const { data: presentationData } = usePresentationData(collectionId, mode === 'presentation');
+
   const presentationTitles = useMemo(
     () => Object.fromEntries(SPINE.map(s => [s.titleKey, labelOf(s.titleKey as SidebarLabelKey)])),
     [labelOf],
@@ -1138,9 +1144,15 @@ export function WizardSidebar({
         style={{ background: '#0A0A0A' }}
       >
         <PresentationDeck
-          meta={{ collectionName: displayName, season, launchDate }}
+          meta={{
+            collectionName: displayName,
+            brandName: presentationData?.cover.brandName,
+            season: presentationData?.cover.season ?? season,
+            launchDate: presentationData?.cover.launchDate ?? launchDate,
+          }}
           titles={presentationTitles}
           coverSubtitle={calT.coverSubtitle ?? 'A collection presentation'}
+          data={presentationData}
           index={presentationIndex}
           themeId={presentationThemeId}
           onIndexChange={setPresentationIndex}

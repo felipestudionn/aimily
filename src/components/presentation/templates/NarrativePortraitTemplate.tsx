@@ -10,11 +10,15 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
+import type { NarrativeSlideData } from '@/lib/presentation/load-presentation-data';
 
 interface Props {
   slide: MicroBlockSlide;
   meta: DeckMeta;
   title: string;
+  /* Real CIS data for this slide. When present, its fields override
+     the editorial placeholders below. */
+  data?: NarrativeSlideData;
 }
 
 const NARRATIVE_PLACEHOLDERS: Record<string, { lead: string; body: string; attribution: string }> = {
@@ -51,8 +55,15 @@ const FALLBACK = {
   attribution: `${''} · Draft`,
 };
 
-export function NarrativePortraitTemplate({ slide, meta, title }: Props) {
-  const data = NARRATIVE_PLACEHOLDERS[slide.id] ?? FALLBACK;
+export function NarrativePortraitTemplate({ slide, meta, title, data: cisData }: Props) {
+  const placeholder = NARRATIVE_PLACEHOLDERS[slide.id] ?? FALLBACK;
+  /* Prefer real CIS data field-by-field. Each field falls back to the
+     editorial placeholder when CIS hasn't been filled for this mini-block. */
+  const data = {
+    lead: cisData?.lead ?? placeholder.lead,
+    body: cisData?.body ?? placeholder.body,
+    attribution: cisData?.attribution ?? placeholder.attribution,
+  };
 
   return (
     <div

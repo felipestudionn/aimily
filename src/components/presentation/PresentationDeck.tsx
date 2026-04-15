@@ -25,6 +25,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { SPINE, SLIDE_COUNT } from '@/lib/presentation/spine';
 import { getTheme, themeStyle } from '@/lib/presentation/themes';
 import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
+import type { PresentationData } from '@/lib/presentation/load-presentation-data';
 import { SlideRenderer } from './SlideRenderer';
 import { ThemePicker } from './ThemePicker';
 
@@ -37,6 +38,10 @@ interface Props {
      stays out of this component. Presentation has one cover slide
      at index 0; SPINE mini-blocks start at index 1. */
   coverSubtitle: string;
+  /* Slide-shaped CIS data; null while loading or on error. Templates
+     fall back to editorial placeholders when the matching slide data
+     isn't present. */
+  data: PresentationData | null;
   /* Controlled index + theme — owned by WizardSidebar so the LEFT
      spine list and the RIGHT deck canvas stay in sync. index 0 is
      the cover; indices 1..SPINE.length map to SPINE[i-1]. */
@@ -52,7 +57,7 @@ interface Props {
 /* Total slide count = 1 cover + SPINE mini-blocks. */
 const TOTAL_SLIDES = SLIDE_COUNT + 1;
 
-export function PresentationDeck({ meta, titles, coverSubtitle, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
+export function PresentationDeck({ meta, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit }: Props) {
   const theme = useMemo(() => getTheme(themeId), [themeId]);
   /* Cover at index 0 has no mini-block slide context; SPINE starts at 1. */
   const slide = index === 0 ? null : SPINE[index - 1];
@@ -137,6 +142,7 @@ export function PresentationDeck({ meta, titles, coverSubtitle, index, themeId, 
             meta={meta}
             title={slide ? titleFor(slide.titleKey) : (meta.brandName ?? meta.collectionName)}
             coverSubtitle={coverSubtitle}
+            data={data}
           />
         </div>
       </div>
