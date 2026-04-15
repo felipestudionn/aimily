@@ -529,6 +529,39 @@ export function WizardSidebar({
   };
 
   /* ══════════════════════════════════════════════════════════════
+     MODE SWITCHER — Work / Calendar / Presentation.
+     The spine is always ONE wizard; mode switcher just re-shapes it.
+     Rendered identically at the top of the sidebar in all modes.
+     ══════════════════════════════════════════════════════════════ */
+  const modeOptions = [
+    { mode: 'nav' as const, label: labelOf('dashboard'), path: '', Icon: LayoutDashboard },
+    { mode: 'calendar' as const, label: labelOf('calendar'), path: '/calendar', Icon: CalendarDays },
+    { mode: 'presentation' as const, label: labelOf('presentation'), path: '/presentation', Icon: Presentation },
+  ];
+  const modeSwitcher = (
+    <div className="flex items-center gap-0.5 rounded-full bg-carbon/[0.04] p-1 w-full">
+      {modeOptions.map((opt) => {
+        const active = mode === opt.mode;
+        const href = opt.path === '' ? basePath : `${basePath}${opt.path}`;
+        return (
+          <Link
+            key={opt.mode}
+            href={href}
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] transition-all ${
+              active
+                ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] text-carbon'
+                : 'text-carbon/50 hover:text-carbon/80'
+            }`}
+          >
+            <opt.Icon className="h-[13px] w-[13px] shrink-0" strokeWidth={1.5} />
+            <span className="truncate">{opt.label}</span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+
+  /* ══════════════════════════════════════════════════════════════
      CALENDAR MODE RENDER — the SAME <aside> expands in place.
      No portal, no new component. Just the aside's width grows from
      EXPANDED_W to 100vw with a CSS transition, and its inner content
@@ -559,15 +592,16 @@ export function WizardSidebar({
               {/* Header row: logo+name (sticky) | month header */}
               <div className="flex items-end" style={{ height: CAL_HEADER_AREA_HEIGHT }}>
                 <div
-                  className="sticky left-0 z-30 h-full flex flex-col justify-end px-5 pb-6"
+                  className="sticky left-0 z-30 h-full flex flex-col justify-end px-5 pb-4"
                   style={{ width: EXPANDED_W, background: CAL_SIDEBAR_BG }}
                 >
-                  <Link href="/my-collections" className="block mb-5">
+                  <Link href="/my-collections" className="block mb-4">
                     <Image src="/images/aimily-logo-black.png" alt="aimily" width={774} height={96} className="h-6 w-auto opacity-60 hover:opacity-100 transition-opacity" unoptimized />
                   </Link>
-                  <Link href={basePath} className="block group">
+                  <Link href={basePath} className="block group mb-3">
                     <p className="text-[13px] font-medium text-carbon truncate">{displayName}</p>
                   </Link>
+                  {modeSwitcher}
                 </div>
                 <div className="relative flex items-end h-full" style={{ width: calChartWidth }}>
                   <div className="relative w-full" style={{ height: 46 }}>
@@ -706,56 +740,32 @@ export function WizardSidebar({
             </div>
           </div>
 
-          {/* Utility bar — 3 prominent mode-switcher pills.
-              Uses the same icons + labels as the nav-mode utility links at
-              the bottom of the regular sidebar, so the user always sees
-              Dashboard · Calendar · Presentation as clearly clickable. */}
-          <div className="flex-shrink-0 border-t border-carbon/[0.12] h-[64px] flex items-center justify-between px-6" style={{ background: CAL_SIDEBAR_BG }}>
-            <div className="flex items-center gap-2">
-              {utilityLinks.map((u) => {
-                const active = mode === u.mode;
-                const href = u.path === '' ? basePath : `${basePath}${u.path}`;
-                return (
-                  <Link
-                    key={u.id}
-                    href={href}
-                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[13px] font-medium transition-all ${
-                      active
-                        ? 'bg-carbon text-white'
-                        : 'bg-white border border-carbon/[0.12] text-carbon/70 hover:border-carbon/30 hover:text-carbon'
-                    }`}
-                  >
-                    <u.Icon className="h-[14px] w-[14px]" strokeWidth={1.5} />
-                    {u.label}
-                  </Link>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={async () => {
-                  if (!timeline) return;
-                  const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
-                  await exportTimelineToExcel(timeline, 'es');
-                }}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
-                title="Export"
-              >
-                <Download className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={resetToDefaults}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
-                title="Reset"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-              {saving && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-carbon/50 ml-1">
-                  <Cloud className="w-3 h-3" /> Saving
-                </span>
-              )}
-            </div>
+          {/* Bottom bar — calendar-specific tools only (Export / Reset /
+              Saving). Mode switching lives in the top switcher, not here. */}
+          <div className="flex-shrink-0 border-t border-carbon/[0.12] h-[52px] flex items-center justify-end px-6 gap-2" style={{ background: CAL_SIDEBAR_BG }}>
+            <button
+              onClick={async () => {
+                if (!timeline) return;
+                const { exportTimelineToExcel } = await import('@/lib/export-timeline-excel');
+                await exportTimelineToExcel(timeline, 'es');
+              }}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+              title="Export"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={resetToDefaults}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+              title="Reset"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            {saving && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-carbon/50 ml-1">
+                <Cloud className="w-3 h-3" /> Saving
+              </span>
+            )}
           </div>
         </div>
 
@@ -860,7 +870,7 @@ export function WizardSidebar({
               </Link>
             ) : (
               <>
-                <Link href="/my-collections" className="block mb-5">
+                <Link href="/my-collections" className="block mb-4">
                   <Image
                     src="/images/aimily-logo-black.png"
                     alt="aimily"
@@ -870,11 +880,12 @@ export function WizardSidebar({
                     unoptimized
                   />
                 </Link>
-                <Link href={basePath} className="block group">
+                <Link href={basePath} className="block group mb-4">
                   <p className="text-[13px] font-medium text-carbon transition-colors truncate">
                     {displayName}
                   </p>
                 </Link>
+                {modeSwitcher}
               </>
             )}
           </div>
@@ -1015,48 +1026,8 @@ export function WizardSidebar({
             })}
           </nav>
 
-          {/* ═══════════════════════════════════════════
-               Utilities
-               ═══════════════════════════════════════════ */}
-          <div className={`shrink-0 ${collapsed ? 'px-2' : 'px-3'} pb-4`}>
-            <div className={`border-t border-carbon/[0.12] pt-3 ${collapsed ? 'flex flex-col items-center' : ''}`}>
-              {utilityLinks.map((item) => {
-                const fullPath = `${basePath}${item.path}`;
-                const isActive = item.path === ''
-                  ? pathname === basePath || pathname === `${basePath}/`
-                  : pathname?.startsWith(fullPath);
-
-                const handleUtilityNav = (e: React.MouseEvent) => {
-                  // Dashboard link uses workspace navigation to go back to page mode
-                  if (item.id === 'overview' && workspaceNav) {
-                    e.preventDefault();
-                    workspaceNav.navigateToDashboard();
-                  }
-                };
-
-                return (
-                  <Link
-                    key={item.id}
-                    href={fullPath}
-                    onClick={handleUtilityNav}
-                    className={`flex items-center ${
-                      collapsed ? 'justify-center h-10 rounded-[10px]' : 'gap-3 px-3 py-2.5 rounded-[10px]'
-                    } transition-all ${
-                      isActive
-                        ? 'bg-carbon/[0.06] text-carbon'
-                        : 'text-carbon hover:bg-carbon/[0.04]'
-                    }`}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <item.Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
-                    {!collapsed && (
-                      <span className={`text-[14px] ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
+          {/* Mode switching now lives in the modeSwitcher at the top of
+             the sidebar — no duplicate utility bar at the bottom. */}
         </div>
       </aside>
     </>
