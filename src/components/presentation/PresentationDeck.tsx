@@ -117,24 +117,14 @@ export function PresentationDeck({ meta, titles, coverSubtitle, data, index, the
     >
       {/* ── Top bar ── */}
       <div className="flex-shrink-0 h-[64px] flex items-center justify-between px-6 border-b border-white/10">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={onExit}
-            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
-            title="Exit presentation (Esc)"
-          >
-            <X className="w-4 h-4 text-white" strokeWidth={1.8} />
-          </button>
-          <div className="hidden md:flex flex-col leading-tight">
-            <span className="text-[10px] tracking-[0.24em] uppercase text-white/55 font-semibold">
-              Presentation
-            </span>
-            <span className="text-[13px] font-semibold text-white truncate max-w-[280px]">
-              {meta.collectionName}{meta.season ? ` · ${meta.season}` : ''}
-            </span>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={onExit}
+          className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
+          title="Exit presentation (Esc)"
+        >
+          <X className="w-4 h-4 text-white" strokeWidth={1.8} />
+        </button>
 
         <div className="flex items-center gap-3">
           <ThemePicker current={theme} onChange={onThemeChange} />
