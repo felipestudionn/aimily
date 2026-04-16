@@ -26,7 +26,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, Plus, Trash2, MessageSquare, Download, Printer,
-  Loader2, Check, Upload, MapPin, X,
+  Loader2, Check, Upload, MapPin, X, Sparkles,
 } from 'lucide-react';
 import type { SKU } from '@/hooks/useSkus';
 import { useTranslation } from '@/i18n';
@@ -189,6 +189,31 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
     saveSection('factory_notes', { body: notes });
   }, [saveSection]);
 
+  /* ── AI generation (measurements / BOM / both) ── */
+  const [aiBusyScope, setAiBusyScope] = useState<'measurements' | 'bom' | 'both' | null>(null);
+  const aiGenerate = useCallback(async (scope: 'measurements' | 'bom' | 'both') => {
+    setAiBusyScope(scope);
+    try {
+      const res = await fetch('/api/ai/tech-pack/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skuId: sku.id, scope }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        console.error('[tech-pack/generate]', j);
+        return;
+      }
+      const j = await res.json();
+      const next: TechPackDataRow = { ...data };
+      if (j.result?.measurements) next.measurements = j.result.measurements;
+      if (j.result?.bom) next.bom = j.result.bom;
+      setData(next);
+    } finally {
+      setAiBusyScope(null);
+    }
+  }, [sku.id, data]);
+
   /* ── Design evolution strip data (read-only — from SKU) ── */
   const evolutionImages: { label: string; url?: string; fallback: string }[] = [
     { label: tp.drawingReference || 'Reference', url: sku.reference_image_url, fallback: 'REF' },
@@ -346,12 +371,21 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               notes={data.measurements?.notes || ''}
               saving={savingSection === 'measurements'}
               tp={tp}
+              onGenerate={() => aiGenerate('measurements')}
+              generating={aiBusyScope === 'measurements' || aiBusyScope === 'both'}
             />
           </div>
 
           {/* BOM */}
           <div className="border-t border-carbon/[0.06] p-8 md:p-10">
-            <BomTable lines={bomLines} onChange={updateBom} saving={savingSection === 'bom'} tp={tp} />
+            <BomTable
+              lines={bomLines}
+              onChange={updateBom}
+              saving={savingSection === 'bom'}
+              tp={tp}
+              onGenerate={() => aiGenerate('bom')}
+              generating={aiBusyScope === 'bom' || aiBusyScope === 'both'}
+            />
           </div>
 
           {/* Factory notes */}
@@ -895,11 +929,13 @@ function MaterialsSection({
 }
 
 /* ── Measurements table ──────────────────────────────────────────── */
-function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
+function MeasurementsTable({ rows, notes, onChange, saving, tp, onGenerate, generating }: {
   rows: MeasurementRow[]; notes: string;
   onChange: (rows: MeasurementRow[], notes?: string) => void;
   saving?: boolean;
   tp: Record<string, string>;
+  onGenerate?: () => void;
+  generating?: boolean;
 }) {
   const updateCell = (idx: number, key: keyof MeasurementRow, value: string) => {
     const next = [...rows];
@@ -911,7 +947,21 @@ function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
   const sizes: (keyof MeasurementRow)[] = ['xs', 's', 'm', 'l', 'xl'];
   return (
     <div>
-      <SectionHeader label={tp.measurementsTitle || 'Measurements'} saving={saving} />
+      <SectionHeader
+        label={tp.measurementsTitle || 'Measurements'}
+        saving={saving}
+        action={onGenerate && (
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={generating}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] text-[11px] font-semibold tracking-[-0.01em] disabled:opacity-50 transition-colors"
+          >
+            {generating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} /> : <Sparkles className="h-3 w-3" strokeWidth={2.5} />}
+            {generating ? (tp.generating || 'Generating…') : (tp.generateWithAI || 'Generate with AI')}
+          </button>
+        )}
+      />
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -979,11 +1029,13 @@ function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
 }
 
 /* ── BOM table ───────────────────────────────────────────────────── */
-function BomTable({ lines, onChange, saving, tp }: {
+function BomTable({ lines, onChange, saving, tp, onGenerate, generating }: {
   lines: BomLine[];
   onChange: (lines: BomLine[]) => void;
   saving?: boolean;
   tp: Record<string, string>;
+  onGenerate?: () => void;
+  generating?: boolean;
 }) {
   const update = (idx: number, key: keyof BomLine, value: string) => {
     const next = [...lines];
@@ -1002,7 +1054,21 @@ function BomTable({ lines, onChange, saving, tp }: {
   ];
   return (
     <div>
-      <SectionHeader label={tp.bomTitle || 'Bill of Materials'} saving={saving} />
+      <SectionHeader
+        label={tp.bomTitle || 'Bill of Materials'}
+        saving={saving}
+        action={onGenerate && (
+          <button
+            type="button"
+            onClick={onGenerate}
+            disabled={generating}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] text-[11px] font-semibold tracking-[-0.01em] disabled:opacity-50 transition-colors"
+          >
+            {generating ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} /> : <Sparkles className="h-3 w-3" strokeWidth={2.5} />}
+            {generating ? (tp.generating || 'Generating…') : (tp.generateWithAI || 'Generate with AI')}
+          </button>
+        )}
+      />
       <div className="mt-4 overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
