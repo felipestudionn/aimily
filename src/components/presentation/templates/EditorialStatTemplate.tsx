@@ -14,6 +14,8 @@ import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { StatSlideData } from '@/lib/presentation/load-presentation-data';
 import { useTranslation } from '@/i18n';
 import { Construction } from 'lucide-react';
+import { EditableText } from '../EditableText';
+import type { EditingContext } from '../SlideRenderer';
 
 interface Props {
   slide: MicroBlockSlide;
@@ -24,6 +26,9 @@ interface Props {
      computeFinancialPlan(); other stat slides (market-research,
      distribution, sales-dashboard) still fall back until wired. */
   data?: StatSlideData;
+  /* Narrative is editable (override key `narrative`). Used by the
+     Promote flow to write the curated summary back to CIS. */
+  editing?: EditingContext;
 }
 
 /* Placeholder copy per mini-block. F2 will replace via CIS. Keeping
@@ -82,8 +87,9 @@ const FALLBACK = {
   ],
 };
 
-export function EditorialStatTemplate({ slide, meta, title, data: real }: Props) {
+export function EditorialStatTemplate({ slide, meta, title, data: real, editing }: Props) {
   const tr = useTranslation().presentation;
+  const narrativeDraft = editing?.drafts?.narrative;
 
   /* Work-in-Progress mode: the loader knows there's a structural
      source for this slide but the data isn't populated yet. Render an
@@ -92,8 +98,9 @@ export function EditorialStatTemplate({ slide, meta, title, data: real }: Props)
 
   /* Prefer real CIS-derived data. Fall back to editorial placeholder
      when the slide hasn't been composed yet (keeps the deck readable
-     during demos with partial CIS coverage). */
-  const data = real && !wip && (real.value || real.narrative)
+     during demos with partial CIS coverage). Live narrative drafts
+     win so the user sees typed text while editing. */
+  const base = real && !wip && (real.value || real.narrative)
     ? {
         value: real.value ?? '—',
         caption: real.caption ?? '',
@@ -101,6 +108,7 @@ export function EditorialStatTemplate({ slide, meta, title, data: real }: Props)
         support: real.support ?? [],
       }
     : (STAT_PLACEHOLDERS[slide.id] ?? FALLBACK);
+  const data = { ...base, narrative: narrativeDraft ?? base.narrative };
 
   /* ─── WIP rendering (dedicated layout) ────────────────────────── */
   if (wip) {
@@ -318,18 +326,26 @@ export function EditorialStatTemplate({ slide, meta, title, data: real }: Props)
           >
             Context
           </span>
-          <p
+          <div style={{ margin: '12px 0 0 0' }}>
+          <EditableText
+            as="p"
+            value={data.narrative}
+            editMode={!!editing?.editMode}
+            isOverride={!!editing?.slideOverrides.narrative}
+            onDraftChange={(v) => editing?.onDraftChange('narrative', v)}
+            onRevert={() => editing?.onRevert('narrative')}
             style={{
               fontFamily: 'var(--p-body-font)',
               fontSize: 'clamp(14px, 1.1vw, 17px)',
               lineHeight: 1.55,
               color: 'var(--p-fg)',
               letterSpacing: 'var(--p-body-tracking)',
-              margin: '12px 0 0 0',
+              margin: 0,
             }}
           >
             {data.narrative}
-          </p>
+          </EditableText>
+          </div>
         </div>
 
         <div className="flex flex-col gap-5">

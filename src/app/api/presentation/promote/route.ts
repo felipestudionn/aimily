@@ -35,35 +35,79 @@ interface PromoteBody {
    The loader (buildPromptContext / compilePromptContext) reads this
    exact (domain, subdomain, key) triple, so writing here makes the
    new text visible to every downstream consumer: Workspace UI, AI
-   prompt builder, and the deck itself. */
-const SLIDE_PROMOTE_MAP: Record<string, { domain: string; subdomain: string; key: string; label: string }> = {
+   prompt builder, and the deck itself.
+
+   `fields` lists the override field names to combine into the
+   promoted text, in order. Different slide templates expose different
+   editable fields — narrative-portrait ships lead + body, editorial-stat
+   ships a single narrative, grid-tile ships caption. The combine
+   function joins non-empty values with a blank line. */
+const SLIDE_PROMOTE_MAP: Record<string, {
+  domain: string;
+  subdomain: string;
+  key: string;
+  label: string;
+  fields: string[];
+}> = {
   consumer: {
     domain: 'creative',
     subdomain: 'target',
     key: 'demographics',
     label: 'Consumer profile',
+    fields: ['lead', 'body'],
   },
   'brand-identity': {
     domain: 'creative',
     subdomain: 'identity',
     key: 'visual_direction',
     label: 'Brand identity · Visual direction',
+    fields: ['lead', 'body'],
   },
   communications: {
     domain: 'marketing',
     subdomain: 'voice',
     key: 'tone',
     label: 'Brand voice · Tone',
+    fields: ['lead', 'body'],
+  },
+  /* Category A — narrative extension, new CIS keys. None of these
+     overwrites structured data upstream; they're curated narrative
+     summaries that downstream AI prompts can choose to read. */
+  'buying-strategy': {
+    domain: 'merchandising',
+    subdomain: 'range_plan',
+    key: 'narrative_summary',
+    label: 'Buying strategy · Narrative summary',
+    fields: ['lead', 'body'],
+  },
+  'tech-pack': {
+    domain: 'development',
+    subdomain: 'tech_pack',
+    key: 'narrative_summary',
+    label: 'Tech pack · Narrative summary',
+    fields: ['lead', 'body'],
+  },
+  moodboard: {
+    domain: 'creative',
+    subdomain: 'moodboard',
+    key: 'curated_narrative',
+    label: 'Moodboard · Curated narrative',
+    fields: ['caption'],
+  },
+  'market-research': {
+    domain: 'creative',
+    subdomain: 'trends',
+    key: 'curated_summary',
+    label: 'Market research · Curated summary',
+    fields: ['narrative'],
   },
 };
 
-function combineFields(fields: Record<string, string>): string {
-  const lead = (fields.lead ?? '').trim();
-  const body = (fields.body ?? '').trim();
-  if (!lead && !body) return '';
-  if (!body) return lead;
-  if (!lead) return body;
-  return `${lead}\n\n${body}`;
+function combineFields(fields: Record<string, string>, order: string[]): string {
+  const parts = order
+    .map(name => (fields[name] ?? '').trim())
+    .filter(Boolean);
+  return parts.join('\n\n');
 }
 
 export async function POST(req: NextRequest) {
@@ -106,7 +150,7 @@ export async function POST(req: NextRequest) {
   }
 
   const fields = override.field_overrides as Record<string, string>;
-  const combined = combineFields(fields);
+  const combined = combineFields(fields, target.fields);
   if (!combined) {
     return NextResponse.json({ error: 'Override has no text content to promote' }, { status: 400 });
   }

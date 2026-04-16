@@ -57,7 +57,7 @@ export function SlideRenderer({ slide, meta, title, coverSubtitle, data, editing
     case 'hero':
       return <HeroTemplate slide={slide} meta={meta} title={title} />;
     case 'editorial-stat':
-      return <EditorialStatTemplate slide={slide} meta={meta} title={title} data={data?.stats[slide.id]} />;
+      return <EditorialStatTemplate slide={slide} meta={meta} title={title} data={data?.stats[slide.id]} editing={editing} />;
     case 'narrative-portrait':
       return <NarrativePortraitTemplate slide={slide} meta={meta} title={title} data={data?.narratives[slide.id]} editing={editing} />;
     case 'grid-tile':

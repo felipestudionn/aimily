@@ -254,12 +254,20 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
   const titleFor = useCallback((key: string) => titles[key] ?? key, [titles]);
 
   /* Promote — copy the override for the current slide back into the
-     CIS (Workspace). Supported for consumer, brand-identity, and
-     communications (narrative slides with a clean single-field CIS
-     target). After a successful promote, the deck override is
-     deleted server-side because the CIS now holds the canonical
-     value. */
-  const PROMOTABLE_SLIDES = useMemo(() => new Set(['consumer', 'brand-identity', 'communications']), []);
+     CIS (Workspace). Supported slides write to new CIS keys, never
+     overwriting structured upstream data. After a successful promote,
+     the deck override is deleted server-side because the CIS now
+     holds the canonical value. Must stay in sync with
+     SLIDE_PROMOTE_MAP in /api/presentation/promote/route.ts. */
+  const PROMOTABLE_SLIDES = useMemo(() => new Set([
+    'consumer',
+    'brand-identity',
+    'communications',
+    'buying-strategy',
+    'tech-pack',
+    'moodboard',
+    'market-research',
+  ]), []);
   const canPromoteCurrentSlide = !!slide
     && PROMOTABLE_SLIDES.has(slide.id)
     && !!data?.overrides[slide.id];

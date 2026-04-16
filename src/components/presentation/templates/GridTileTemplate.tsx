@@ -108,8 +108,12 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
     };
     return next;
   });
+  /* Caption is editable via the `caption` override key. Drafts apply
+     live; the Promote flow reads the final override value to write to
+     CIS (`creative.moodboard.curated_narrative` for moodboard). */
+  const captionDraft = editing?.drafts?.caption;
   const data = {
-    caption: cisData?.caption ?? placeholder.caption,
+    caption: captionDraft ?? cisData?.caption ?? placeholder.caption,
     tiles: tilesWithDrafts,
   };
 
@@ -151,20 +155,26 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
             {title}
           </h2>
         </div>
-        <p
-          style={{
-            fontFamily: 'var(--p-body-font)',
-            fontSize: '13px',
-            color: 'var(--p-mute)',
-            letterSpacing: 'var(--p-body-tracking)',
-            maxWidth: '40%',
-            textAlign: 'right',
-            lineHeight: 1.45,
-            margin: 0,
-          }}
-        >
-          {data.caption}
-        </p>
+        <div style={{ maxWidth: '40%', textAlign: 'right' }}>
+          <EditableText
+            as="p"
+            value={data.caption}
+            editMode={!!editing?.editMode}
+            isOverride={!!editing?.slideOverrides.caption}
+            onDraftChange={(v) => editing?.onDraftChange('caption', v)}
+            onRevert={() => editing?.onRevert('caption')}
+            style={{
+              fontFamily: 'var(--p-body-font)',
+              fontSize: '13px',
+              color: 'var(--p-mute)',
+              letterSpacing: 'var(--p-body-tracking)',
+              lineHeight: 1.45,
+              margin: 0,
+            }}
+          >
+            {data.caption}
+          </EditableText>
+        </div>
       </div>
 
       {/* Photo mosaic (moodboard w/ uploads) — 4×2 grid of cover-fitted
