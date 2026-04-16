@@ -386,6 +386,13 @@ export const no: Dictionary = {
     analyticsFamilyMix: 'Familie-mix',
     analyticsSegmentation: 'Segmenterings-mix',
     analyticsDesignProgress: 'Design-fremdrift',
+    finalSelectionIntro: 'Det kuraterte utvalget som går i salg. Godkjenn hver SKU for å låse den i den endelige kolleksjonen.',
+    finalSelectionSummary: 'Kuratert utvalg',
+    finalSelectionApproved: 'godkjent',
+    finalSelectionRevenue: 'Godkjent inntekt',
+    finalSelectionUnits: 'Godkjente enheter',
+    finalSelectionFamilies: 'Familier',
+    finalSelectionPending: 'Venter på gjennomgang',
   },
 
   // ─── Creative Block ───

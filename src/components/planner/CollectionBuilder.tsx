@@ -642,6 +642,26 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     ? phaseTitleMap[phaseFilter]
     : (sidebarT.collectionBuilder || 'Collection Builder');
 
+  /* Final Selection — the curated lineup summary. Built on top of
+     `production_approved` as the selection flag (already tracked per
+     SKU). Shown only when phaseFilter === 'selection'. */
+  const isFinalSelection = phaseFilter === 'selection';
+  const selectionStats = useMemo(() => {
+    if (!isFinalSelection) return null;
+    const eligible = skus; // already filtered to production + completed
+    const approved = eligible.filter(s => s.production_approved === true);
+    const approvedRevenue = approved.reduce((sum, s) => sum + (s.expected_sales || 0), 0);
+    const approvedUnits = approved.reduce((sum, s) => sum + (s.buy_units || 0), 0);
+    const approvedFamilies = new Set(approved.map(s => s.family)).size;
+    return {
+      eligibleCount: eligible.length,
+      approvedCount: approved.length,
+      approvedRevenue,
+      approvedUnits,
+      approvedFamilies,
+    };
+  }, [isFinalSelection, skus]);
+
   return (
     <div className="space-y-5">
       {/* ── Gold-standard header + KPI ribbon ───────────────────── */}
@@ -652,7 +672,57 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
         <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
           {headerTitle}
         </h1>
+        {isFinalSelection && (
+          <p className="text-[14px] text-carbon/50 tracking-[-0.01em] mt-3 max-w-[640px] mx-auto">
+            {sidebarT.finalSelectionIntro || 'The curated lineup that ships. Approve each SKU to lock it into the final collection.'}
+          </p>
+        )}
       </div>
+
+      {/* ── Final Selection summary card (only on selection phase) ── */}
+      {isFinalSelection && selectionStats && (
+        <div className="bg-white rounded-[20px] p-8 md:p-10">
+          <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <p className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+              {sidebarT.finalSelectionSummary || 'Curated lineup'}
+            </p>
+            <div className="flex items-center gap-2 text-[12px] text-carbon/55">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-carbon text-white font-semibold">
+                {selectionStats.approvedCount}
+              </span>
+              <span>/ {selectionStats.eligibleCount} {sidebarT.finalSelectionApproved || 'approved'}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div>
+              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionRevenue || 'Approved revenue'}</p>
+              <p className="text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">€{Math.round(selectionStats.approvedRevenue / 1000).toLocaleString()}K</p>
+            </div>
+            <div>
+              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionUnits || 'Approved units'}</p>
+              <p className="text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">{selectionStats.approvedUnits.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionFamilies || 'Families'}</p>
+              <p className="text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">{selectionStats.approvedFamilies}</p>
+            </div>
+            <div>
+              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionPending || 'Pending review'}</p>
+              <p className="text-[24px] font-bold text-carbon/40 tabular-nums tracking-[-0.03em] leading-none">{selectionStats.eligibleCount - selectionStats.approvedCount}</p>
+            </div>
+          </div>
+          {selectionStats.eligibleCount > 0 && (
+            <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
+              <div className="h-2 rounded-full bg-carbon/[0.06] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-carbon transition-all duration-700"
+                  style={{ width: `${(selectionStats.approvedCount / selectionStats.eligibleCount) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPI ribbon — white card with 10 stats (2-col mobile, 5-col tablet, 10-col desktop) */}
       <div className="bg-white rounded-[20px] p-8 md:p-10">

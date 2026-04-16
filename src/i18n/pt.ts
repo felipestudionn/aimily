@@ -394,6 +394,13 @@ export const pt: Dictionary = {
     analyticsFamilyMix: 'Mix por família',
     analyticsSegmentation: 'Mix de segmentação',
     analyticsDesignProgress: 'Progresso do design',
+    finalSelectionIntro: 'A seleção curada que vai à venda. Aprova cada SKU para fixá-lo na coleção final.',
+    finalSelectionSummary: 'Seleção curada',
+    finalSelectionApproved: 'aprovados',
+    finalSelectionRevenue: 'Receita aprovada',
+    finalSelectionUnits: 'Unidades aprovadas',
+    finalSelectionFamilies: 'Famílias',
+    finalSelectionPending: 'Pendentes de revisão',
   },
 
   // ─── Bloco Criativo ───

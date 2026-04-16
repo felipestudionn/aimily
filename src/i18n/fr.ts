@@ -394,6 +394,13 @@ export const fr: Dictionary = {
     analyticsFamilyMix: 'Mix par famille',
     analyticsSegmentation: 'Mix de segmentation',
     analyticsDesignProgress: 'Progression du design',
+    finalSelectionIntro: 'La sélection curée qui part en production. Validez chaque SKU pour le verrouiller dans la collection finale.',
+    finalSelectionSummary: 'Sélection curée',
+    finalSelectionApproved: 'validés',
+    finalSelectionRevenue: 'Revenus validés',
+    finalSelectionUnits: 'Unités validées',
+    finalSelectionFamilies: 'Familles',
+    finalSelectionPending: 'En attente de revue',
   },
 
   // ─── Bloc Créatif ───

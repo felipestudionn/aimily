@@ -392,6 +392,13 @@ export const en = {
     analyticsFamilyMix: 'Family mix',
     analyticsSegmentation: 'Segmentation mix',
     analyticsDesignProgress: 'Design progress',
+    finalSelectionIntro: 'The curated lineup that ships. Approve each SKU to lock it into the final collection.',
+    finalSelectionSummary: 'Curated lineup',
+    finalSelectionApproved: 'approved',
+    finalSelectionRevenue: 'Approved revenue',
+    finalSelectionUnits: 'Approved units',
+    finalSelectionFamilies: 'Families',
+    finalSelectionPending: 'Pending review',
   },
 
   // ─── Creative Block ───

@@ -394,6 +394,13 @@ export const nl: Dictionary = {
     analyticsFamilyMix: 'Family mix',
     analyticsSegmentation: 'Segmentatie mix',
     analyticsDesignProgress: 'Design voortgang',
+    finalSelectionIntro: 'De gekozen selectie die in verkoop gaat. Keur elk SKU goed om het vast te leggen in de finale collectie.',
+    finalSelectionSummary: 'Gekozen selectie',
+    finalSelectionApproved: 'goedgekeurd',
+    finalSelectionRevenue: 'Goedgekeurde omzet',
+    finalSelectionUnits: 'Goedgekeurde eenheden',
+    finalSelectionFamilies: 'Families',
+    finalSelectionPending: 'Wacht op beoordeling',
   },
 
   // ─── Creative Block ───

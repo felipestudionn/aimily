@@ -394,6 +394,13 @@ export const de: Dictionary = {
     analyticsFamilyMix: 'Familien-Mix',
     analyticsSegmentation: 'Segmentierungs-Mix',
     analyticsDesignProgress: 'Design-Fortschritt',
+    finalSelectionIntro: 'Die kuratierte Linie, die in den Verkauf geht. Genehmigen Sie jeden SKU, um ihn in der finalen Kollektion zu fixieren.',
+    finalSelectionSummary: 'Kuratierte Linie',
+    finalSelectionApproved: 'genehmigt',
+    finalSelectionRevenue: 'Genehmigter Umsatz',
+    finalSelectionUnits: 'Genehmigte Einheiten',
+    finalSelectionFamilies: 'Familien',
+    finalSelectionPending: 'Zur Prüfung ausstehend',
   },
 
   // ─── Creative Block ───
