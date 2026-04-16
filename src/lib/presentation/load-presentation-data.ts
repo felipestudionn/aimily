@@ -547,24 +547,31 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       if (touched) data.grids[slideId].tiles = tiles;
     }
 
-    // Timeline overrides (F5.3): dot-notation keys like
-    // `milestones.0.label`. Status stays unmanaged — it's derived
-    // from the actual milestone state, not an editable free-form.
+    // Timeline overrides: dot-notation keys `milestones.N.{label|date|status}`
+    // plus the free-form `lead`. Status accepts only the three enum values;
+    // anything else is discarded.
     if (data.timelines[slideId]?.milestones) {
       const ms = [...(data.timelines[slideId].milestones ?? [])];
+      const validStatus = (s: string): s is 'done' | 'current' | 'next' =>
+        s === 'done' || s === 'current' || s === 'next';
       let touched = false;
       for (const [k, v] of Object.entries(fields)) {
-        const m = k.match(/^milestones\.(\d+)\.(label|date)$/);
+        const m = k.match(/^milestones\.(\d+)\.(label|date|status)$/);
         if (!m) continue;
         const idx = Number(m[1]);
-        const prop = m[2] as 'label' | 'date';
-        if (ms[idx]) {
+        const prop = m[2] as 'label' | 'date' | 'status';
+        if (!ms[idx]) continue;
+        if (prop === 'status') {
+          if (validStatus(v)) {
+            ms[idx] = { ...ms[idx], status: v };
+            touched = true;
+          }
+        } else {
           ms[idx] = { ...ms[idx], [prop]: v };
           touched = true;
         }
       }
       if (touched) data.timelines[slideId].milestones = ms;
-      // Also allow overriding the timeline lead
       if (fields.lead) data.timelines[slideId].lead = fields.lead;
     }
   }

@@ -81,9 +81,18 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData, editi
     : placeholder.milestones;
   /* Apply live drafts over CIS/placeholder for real-time typing. */
   const drafts = editing?.drafts ?? {};
+  const validStatus = (s: string): s is Milestone['status'] =>
+    s === 'done' || s === 'current' || s === 'next';
   const milestonesWithDrafts = baseMilestones.map((m, i) => {
     const labelDraft = drafts[`milestones.${i}.label`];
-    return labelDraft != null ? { ...m, label: labelDraft } : m;
+    const dateDraft = drafts[`milestones.${i}.date`];
+    const statusDraft = drafts[`milestones.${i}.status`];
+    return {
+      ...m,
+      label: labelDraft ?? m.label,
+      date: dateDraft ?? m.date,
+      status: validStatus(statusDraft ?? '') ? (statusDraft as Milestone['status']) : m.status,
+    };
   });
   const data = {
     lead: drafts.lead ?? baseLead,
@@ -170,31 +179,53 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData, editi
             {data.milestones.map((m, i) => (
               <div key={i} className="flex flex-col items-center gap-0" style={{ width: '18%' }}>
                 {/* Date above */}
-                <div
-                  style={{
-                    fontFamily: 'var(--p-mono-font)',
-                    fontSize: '11px',
-                    letterSpacing: '0.18em',
-                    color: m.status === 'current' ? 'var(--p-accent)' : 'var(--p-mute)',
-                    textTransform: 'uppercase',
-                    fontWeight: m.status === 'current' ? 700 : 500,
-                    marginBottom: '20px',
-                  }}
-                >
-                  {m.date}
+                <div style={{ marginBottom: '20px' }}>
+                  <EditableText
+                    as="span"
+                    value={m.date}
+                    editMode={!!editing?.editMode}
+                    isOverride={!!editing?.slideOverrides[`milestones.${i}.date`]}
+                    onDraftChange={(v) => editing?.onDraftChange(`milestones.${i}.date`, v)}
+                    onRevert={() => editing?.onRevert(`milestones.${i}.date`)}
+                    style={{
+                      fontFamily: 'var(--p-mono-font)',
+                      fontSize: '11px',
+                      letterSpacing: '0.18em',
+                      color: m.status === 'current' ? 'var(--p-accent)' : 'var(--p-mute)',
+                      textTransform: 'uppercase',
+                      fontWeight: m.status === 'current' ? 700 : 500,
+                    }}
+                  >
+                    {m.date}
+                  </EditableText>
                 </div>
-                {/* Node on the axis */}
+                {/* Node on the axis — clickable in edit mode to cycle
+                    through done → current → next → done. */}
                 <div className="relative h-4 flex items-center justify-center">
-                  <div
-                    className="rounded-full"
+                  <button
+                    type="button"
+                    disabled={!editing?.editMode}
+                    onClick={() => {
+                      if (!editing) return;
+                      const nextStatus: Milestone['status'] =
+                        m.status === 'done' ? 'current' :
+                        m.status === 'current' ? 'next' : 'done';
+                      editing.onDraftChange(`milestones.${i}.status`, nextStatus);
+                    }}
+                    aria-label={`${m.label} status — ${m.status}`}
+                    title={editing?.editMode ? `Click to cycle status (${m.status})` : undefined}
+                    className={`rounded-full ${editing?.editMode ? 'cursor-pointer' : 'cursor-default'} transition-transform ${editing?.editMode ? 'hover:scale-110' : ''}`}
                     style={{
                       width: m.status === 'current' ? '18px' : '12px',
                       height: m.status === 'current' ? '18px' : '12px',
+                      padding: 0,
                       background: m.status === 'done' ? 'var(--p-fg)'
                         : m.status === 'current' ? 'var(--p-accent)'
                         : 'var(--p-bg)',
                       border: `2px solid ${m.status === 'next' ? 'var(--p-border)' : 'transparent'}`,
                       boxShadow: m.status === 'current' ? `0 0 0 4px var(--p-bg), 0 0 0 5px var(--p-accent)` : 'none',
+                      outline: editing?.slideOverrides[`milestones.${i}.status`] ? '1px dashed var(--p-accent)' : 'none',
+                      outlineOffset: '3px',
                     }}
                   />
                 </div>

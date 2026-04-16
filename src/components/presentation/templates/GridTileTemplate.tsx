@@ -95,8 +95,14 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
   const baseTiles = (cisData?.tiles && cisData.tiles.length > 0) ? cisData.tiles : placeholder.tiles;
   const tilesWithDrafts = baseTiles.map((t, i) => {
     if (!editing?.drafts) return t;
-    const labelDraft = editing.drafts[`tiles.${i}.label`];
-    return labelDraft != null ? { ...t, label: labelDraft } : t;
+    const d = editing.drafts;
+    const next: Tile = {
+      ...t,
+      eyebrow: d[`tiles.${i}.eyebrow`] ?? t.eyebrow,
+      label: d[`tiles.${i}.label`] ?? t.label,
+      value: d[`tiles.${i}.value`] ?? t.value,
+    };
+    return next;
   });
   const data = {
     caption: cisData?.caption ?? placeholder.caption,
@@ -171,14 +177,21 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
             }}
           >
             {/* Visual slot — dashed inset so templates scan as placeholders,
-                not as missing content. Vanishes in F2 when images land. */}
+                not as missing content. Vanishes in F2 when images land.
+                In edit mode, the value is editable. */}
             <div
-              className="absolute inset-4 flex items-center justify-center pointer-events-none"
+              className={`absolute inset-4 flex items-center justify-center ${editing?.editMode ? '' : 'pointer-events-none'}`}
               style={{
                 opacity: 0.35,
               }}
             >
-              <div
+              <EditableText
+                as="div"
+                value={tile.value ?? ''}
+                editMode={!!editing?.editMode}
+                isOverride={!!editing?.slideOverrides[`tiles.${i}.value`]}
+                onDraftChange={(v) => editing?.onDraftChange(`tiles.${i}.value`, v)}
+                onRevert={() => editing?.onRevert(`tiles.${i}.value`)}
                 style={{
                   fontFamily: 'var(--p-mono-font)',
                   fontSize: '28px',
@@ -188,11 +201,17 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
                 }}
               >
                 {tile.value}
-              </div>
+              </EditableText>
             </div>
 
             <div className="relative">
-              <span
+              <EditableText
+                as="span"
+                value={tile.eyebrow}
+                editMode={!!editing?.editMode}
+                isOverride={!!editing?.slideOverrides[`tiles.${i}.eyebrow`]}
+                onDraftChange={(v) => editing?.onDraftChange(`tiles.${i}.eyebrow`, v)}
+                onRevert={() => editing?.onRevert(`tiles.${i}.eyebrow`)}
                 style={{
                   fontFamily: 'var(--p-mono-font)',
                   fontSize: '10px',
@@ -202,7 +221,7 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
                 }}
               >
                 {tile.eyebrow}
-              </span>
+              </EditableText>
             </div>
 
             <div className="relative">
