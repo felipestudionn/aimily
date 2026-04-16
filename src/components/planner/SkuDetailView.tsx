@@ -368,34 +368,31 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[80] bg-[#F5F1E8] flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
+      className={`fixed inset-0 z-[80] flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
+      style={{ background: '#F3F2F0' }}
     >
-      {/* ── Top bar ── */}
-      <div className="shrink-0 border-b border-carbon/[0.06]">
-        {/* Row 1: Back to Collection + SKU identity card (centered) */}
-        <div className="flex items-center px-6 sm:px-10 py-3">
-          {/* Left: Back to Collection */}
-          <button onClick={handleClose} className="flex items-center gap-1.5 text-carbon/35 hover:text-carbon transition-colors shrink-0 group">
+      {/* ── Header — gold-standard centered title + back link ── */}
+      <div className="shrink-0">
+        <div className="relative px-6 md:px-10 pt-8 pb-5">
+          <button
+            onClick={handleClose}
+            className="absolute left-6 md:left-10 top-8 inline-flex items-center gap-2 text-carbon/50 hover:text-carbon transition-colors group"
+          >
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-[10px] font-medium tracking-[0.08em] uppercase group-hover:text-carbon">Back to Collection</span>
+            <span className="text-[13px] font-medium tracking-[-0.01em]">{t.skuPhases?.backToCollection || 'Back to Collection'}</span>
           </button>
-
-          {/* Center: SKU identity card */}
-          <div className="flex-1 flex justify-center">
-            <div className="bg-carbon px-5 py-2 flex items-center gap-3 rounded-md">
-              <div className="text-center">
-                <h1 className="text-[13px] font-light text-crema tracking-tight">{localSku.name}</h1>
-                <p className="text-[9px] text-crema/40">{localSku.family} · Drop {localSku.drop_number} · {localSku.type === 'IMAGEN' ? 'Image' : localSku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
-              </div>
-            </div>
+          <div className="text-center">
+            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
+              {localSku.family} · Drop {localSku.drop_number} · {localSku.type === 'IMAGEN' ? 'Image' : localSku.type === 'REVENUE' ? 'Revenue' : 'Entry'}
+            </p>
+            <h1 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+              {localSku.name}
+            </h1>
           </div>
-
-          {/* Right: spacer to balance the layout */}
-          <div className="w-[140px] shrink-0" />
         </div>
 
-        {/* Row 2: Evolution Strip */}
-        <div className="px-6 sm:px-10 py-2 border-t border-carbon/[0.03]">
+        {/* Evolution Strip — gold standard card rail */}
+        <div className="px-6 md:px-10 pb-4">
           <div className="max-w-5xl mx-auto">
             <EvolutionStrip
               active={activeStep}
@@ -409,57 +406,53 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
         </div>
       </div>
 
-      {/* ── Content — scrollable ── */}
-      <div className="flex-1 min-h-0 px-3.5 sm:px-10 lg:px-16 py-3 sm:py-6 overflow-y-auto">
-        <div className="max-w-5xl mx-auto h-full">
-          {/* Concept → identity + financials + reference + notes */}
-          {activeStep === 'concept' && (
-            <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} onDelete={handleDeleteSku} />
-          )}
-          {/* Sketch + Colorways + 3D Render → SketchPhase with evolution step sync */}
-          {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (
-            <SketchPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading}
-              onFooterAction={setChildFooterAction} onAdvancePhase={advancePhase} evolutionStep={activeStep} />
-          )}
-          {/* Prototype → PrototypingPhase */}
-          {activeStep === 'prototype' && (
-            <PrototypingPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
-          )}
-          {/* Production → ProductionPhase */}
-          {activeStep === 'production' && (
-            <ProductionPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
-          )}
+      {/* ── Content — scrollable, content wrapped in a white card ── */}
+      <div className="flex-1 min-h-0 px-6 md:px-10 pb-6 overflow-y-auto">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-white rounded-[20px] p-6 md:p-10">
+            {activeStep === 'concept' && (
+              <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} onDelete={handleDeleteSku} />
+            )}
+            {(activeStep === 'sketch' || activeStep === 'colorways' || activeStep === 'render3d') && (
+              <SketchPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading}
+                onFooterAction={setChildFooterAction} onAdvancePhase={advancePhase} evolutionStep={activeStep} />
+            )}
+            {activeStep === 'prototype' && (
+              <PrototypingPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
+            )}
+            {activeStep === 'production' && (
+              <ProductionPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ── Footer — navigate / undo / validate ── */}
+      {/* ── Footer — navigate / undo / validate (rounded-full gold standard) ── */}
       {!isCompleted && (
-        <div className="shrink-0 border-t border-carbon/[0.06] bg-[#F5F1E8] px-6 sm:px-10 lg:px-16 py-3">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
-            {/* Left: Navigate back + Undo */}
+        <div className="shrink-0 border-t border-carbon/[0.06] px-6 md:px-10 py-4 bg-shade/80 backdrop-blur-sm">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               {prevStepLabel && (
                 <button onClick={navigatePrev}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/30 hover:text-carbon/60 transition-colors">
-                  <ArrowLeft className="h-3 w-3" /> {prevStepLabel}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium text-carbon/60 hover:bg-carbon/[0.04] transition-colors">
+                  <ArrowLeft className="h-3.5 w-3.5" /> {prevStepLabel}
                 </button>
               )}
               {activeStep !== 'concept' && (
                 <button onClick={undoCurrentStep} disabled={savingPhase}
-                  className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-medium tracking-[0.08em] uppercase text-carbon/15 hover:text-[#A0463C]/50 transition-colors disabled:opacity-30">
-                  Undo & Go Back
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium text-carbon/30 hover:text-error hover:bg-error/[0.08] transition-colors disabled:opacity-30">
+                  Undo & go back
                 </button>
               )}
             </div>
 
-            {/* Right: Continue (sub-step) or Validate & Continue (evolution step) */}
             {childFooterAction ? (
               <button
                 onClick={childFooterAction.action}
                 disabled={savingPhase}
-                className="flex items-center gap-2 px-6 py-2.5 border border-carbon/[0.12] text-carbon text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-carbon/[0.15] bg-white text-carbon text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/[0.04] transition-colors disabled:opacity-50"
               >
-                {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : (
+                {savingPhase ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (
                   <>{childFooterAction.label} <ArrowRight className="h-3.5 w-3.5" /></>
                 )}
               </button>
@@ -467,10 +460,10 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
               <button
                 onClick={activeStep === 'production' ? advancePhase : validateAndContinue}
                 disabled={savingPhase}
-                className="flex items-center gap-2 px-6 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.12em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors disabled:opacity-50"
               >
-                {savingPhase ? <Loader2 className="h-3 w-3 animate-spin" /> : (
-                  <>{activeStep === 'production' ? 'Approve for Production' : 'Validate & Continue'} <ArrowRight className="h-3.5 w-3.5" /></>
+                {savingPhase ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : (
+                  <>{activeStep === 'production' ? (t.skuPhases?.approvedForProduction || 'Approve for production') : (t.skuPhases?.validateContinue || 'Validate & continue')} <ArrowRight className="h-3.5 w-3.5" /></>
                 )}
               </button>
             )}
