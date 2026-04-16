@@ -208,6 +208,80 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
 
   // ─── Stats (EditorialStat) ──────────────────────────────────────
 
+  // Market Research — the count of selected signals + a headline drawn
+  // from the first trend. The CIS only stores the selected list, so we
+  // count entries and treat the top entry as the headline.
+  if (ctx.trends) {
+    const lines = ctx.trends.split('\n').map(s => s.trim()).filter(Boolean);
+    const entries = lines.filter(l => /:|\(/.test(l));
+    const count = entries.length || lines.length;
+    if (count > 0) {
+      // First entry: "Title (brands): description" → title, brands, desc
+      const first = entries[0] || lines[0];
+      const m = first.match(/^(.+?)(?:\s*\((.+?)\))?(?::\s*(.+))?$/);
+      const title = m?.[1]?.trim() ?? first;
+      const brands = m?.[2]?.trim();
+      const desc = m?.[3]?.trim() ?? '';
+      data.stats['market-research'] = {
+        value: String(count).padStart(2, '0'),
+        caption: 'Signals tracked across global, deep-dive and live research',
+        narrative: desc
+          ? `${title}${brands ? ` · ${brands}` : ''} — ${desc.slice(0, 220)}${desc.length > 220 ? '…' : ''}`
+          : `${title}${brands ? ` · ${brands}` : ''} anchors the season's visual voice.`,
+        support: [
+          { value: String(count), label: 'signals selected' },
+          { value: '3', label: 'research streams' },
+          { value: ctx.season || '—', label: 'season frame' },
+        ],
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // Distribution — read the merchandising workspace channels card.
+  // We surface the channel mix (DTC / Wholesale / Retail as on/off) plus
+  // the count of target markets. No CIS pipeline read — same pattern as
+  // financial-plan: workspace is the source of truth, loader composes.
+  {
+    const { data: distRow } = await supabaseAdmin
+      .from('collection_workspace_data')
+      .select('data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('workspace', 'merchandising')
+      .maybeSingle();
+    type ChannelCfg = { enabled?: boolean; digital?: boolean; physical?: boolean };
+    type Market = { name: string; region?: string; opportunity?: string; selected?: boolean };
+    const dist = (distRow?.data || {}) as {
+      cardData?: { channels?: { data?: { dtc?: ChannelCfg; wholesale?: ChannelCfg; markets?: Market[] } } };
+    };
+    const channels = dist.cardData?.channels?.data || {};
+    const dtcOn = channels.dtc?.enabled === true;
+    const wholesaleOn = channels.wholesale?.enabled === true;
+    const markets = (channels.markets || []).filter(m => m.selected !== false);
+    const highOpps = markets.filter(m => m.opportunity === 'high').length;
+
+    if (dtcOn || wholesaleOn || markets.length > 0) {
+      const label = dtcOn && wholesaleOn ? 'DTC + Wholesale' : dtcOn ? 'DTC-only' : wholesaleOn ? 'Wholesale-led' : 'Channel TBD';
+      const primaryMarket = markets[0];
+      const narrative = primaryMarket
+        ? `Anchored in ${primaryMarket.name}${primaryMarket.region ? ` (${primaryMarket.region})` : ''}. ${markets.length} priority ${markets.length === 1 ? 'market' : 'markets'}${highOpps > 0 ? `, ${highOpps} flagged high-opportunity` : ''}.`
+        : `${label} distribution — markets still being mapped.`;
+      data.stats.distribution = {
+        value: markets.length > 0 ? String(markets.length).padStart(2, '0') : label,
+        caption: markets.length > 0
+          ? `Priority markets · ${label}`
+          : 'Channel architecture',
+        narrative,
+        support: [
+          { value: dtcOn ? 'YES' : '—', label: 'DTC active' },
+          { value: wholesaleOn ? 'YES' : '—', label: 'wholesale active' },
+          { value: String(markets.length), label: 'target markets' },
+        ],
+      };
+      data.hasAnyData = true;
+    }
+  }
+
   // Financial Plan — compose from selected scenario + user assumptions.
   // Reads the merchandising workspace directly (not loadFullContext, to
   // keep the AI context lock untouched) and the drops table. Uses the
