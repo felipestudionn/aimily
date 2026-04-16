@@ -717,8 +717,17 @@ function DrawingSlot({
             className={`absolute inset-0 ${pinMode ? 'cursor-crosshair' : ''}`}
             onClick={onClick}
           >
+            {/* Flat sketches must read completely — object-contain
+                with padding keeps the full drawing in frame and
+                leaves room for pin overlays without cropping the
+                silhouette. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+            <img
+              src={url}
+              alt={label}
+              className="absolute inset-0 w-full h-full object-contain p-6"
+              style={{ background: '#fdfdfc' }}
+            />
           </div>
 
           {/* Existing pins */}
