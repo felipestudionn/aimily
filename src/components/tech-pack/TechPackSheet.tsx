@@ -46,10 +46,14 @@ interface Callout { url: string; label: string }
 
 interface TechPackDataRow {
   header?: Record<string, string>;
+  /* Drawings — two category-aware flat-sketch slots. viewA/viewB
+     are optional overrides; when absent, the component falls back to
+     the SKU's existing sketch URLs (generated during Sketch & Color),
+     so the factory-ready tech pack auto-prefills with whatever the
+     designer already drew. */
   drawings?: {
-    front?: string;
-    back?: string;
-    side?: string;
+    viewA?: string;
+    viewB?: string;
     callouts?: Callout[];
   };
   materials?: { zones?: MaterialZone[] };
@@ -315,11 +319,16 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
           {/* Header block */}
           <HeaderBlock sku={sku} collectionName={collectionName} season={season} tp={tp} />
 
-          {/* Technical Drawings — editable + uploadable + pin comments */}
+          {/* Technical Drawings — 2 category-aware views, auto-prefilled
+              from the SKU's flat sketches (sketch_url + sketch_top_url),
+              with optional upload override + pin comments. */}
           <div className="border-t border-carbon/[0.06] p-8 md:p-10">
             <TechnicalDrawings
               collectionPlanId={collectionId}
+              category={sku.category}
               drawings={data.drawings || {}}
+              fallbackA={sku.sketch_url}
+              fallbackB={sku.sketch_top_url}
               onChange={updateDrawings}
               saving={savingSection === 'drawings'}
               tp={tp}
@@ -475,12 +484,22 @@ function HeaderBlock({ sku, collectionName, season, tp }: {
 }
 
 /* ── Technical drawings section ──────────────────────────────────── */
+/* Category-aware: footwear uses Side + Top-down; apparel/accessories
+   use Front + Back. Each slot auto-prefills from the SKU's flat
+   sketches (sku.sketch_url as viewA fallback, sku.sketch_top_url as
+   viewB fallback). User can upload to override; "Reset to flat sketch"
+   clears the override so the slot falls back to the AI-generated
+   drawing again. Pins anchor to 'viewA'/'viewB' regardless of
+   category. */
 function TechnicalDrawings({
-  collectionPlanId, drawings, onChange, saving, tp,
+  collectionPlanId, category, drawings, fallbackA, fallbackB, onChange, saving, tp,
   pinsBySlot, onAddPin, onDeletePin,
 }: {
   collectionPlanId: string;
+  category: SKU['category'];
   drawings: TechPackDataRow['drawings'];
+  fallbackA?: string;
+  fallbackB?: string;
   onChange: (next: TechPackDataRow['drawings']) => void;
   saving?: boolean;
   tp: Record<string, string>;
@@ -494,21 +513,40 @@ function TechnicalDrawings({
   const [pinBody, setPinBody] = useState('');
   const [openPinId, setOpenPinId] = useState<string | null>(null);
 
-  const slots: { id: 'front' | 'back' | 'side'; label: string }[] = [
-    { id: 'front', label: tp.drawingFront || 'Front view' },
-    { id: 'back', label: tp.drawingBack || 'Back view' },
-    { id: 'side', label: tp.drawingSide || 'Side view' },
-  ];
+  /* Labels adapt to the product category. Slot ids stay generic
+     (viewA/viewB) so comments and uploads don't need remapping if
+     the category changes later. */
+  const slots: { id: 'viewA' | 'viewB'; label: string }[] =
+    category === 'CALZADO'
+      ? [
+          { id: 'viewA', label: tp.drawingSide || 'Side view' },
+          { id: 'viewB', label: tp.drawingTop || 'Top-down view' },
+        ]
+      : [
+          { id: 'viewA', label: tp.drawingFront || 'Front view' },
+          { id: 'viewB', label: tp.drawingBack || 'Back view' },
+        ];
   const callouts: Callout[] = drawings?.callouts ?? [];
 
-  const handleUpload = async (slot: 'front' | 'back' | 'side', file: File) => {
+  /* URL resolution per slot: explicit override → SKU fallback. */
+  const urlFor = (slot: 'viewA' | 'viewB'): string | undefined => {
+    const override = drawings?.[slot];
+    if (override) return override;
+    return slot === 'viewA' ? fallbackA : fallbackB;
+  };
+  const hasOverride = (slot: 'viewA' | 'viewB'): boolean => !!drawings?.[slot];
+  const isFromSku = (slot: 'viewA' | 'viewB'): boolean => !hasOverride(slot) && !!urlFor(slot);
+
+  const handleUpload = async (slot: 'viewA' | 'viewB', file: File) => {
     setUploadingSlot(slot);
     const url = await uploadImage(collectionPlanId, 'tech_pack', file, `${slot}.${file.name.split('.').pop()}`);
     setUploadingSlot(null);
     if (url) onChange({ ...drawings, [slot]: url });
   };
 
-  const handleRemove = (slot: 'front' | 'back' | 'side') => {
+  /* Remove just clears the override — the slot falls back to the
+     SKU's flat sketch automatically. */
+  const handleRemove = (slot: 'viewA' | 'viewB') => {
     const next = { ...drawings, [slot]: undefined };
     onChange(next);
   };
@@ -579,15 +617,18 @@ function TechnicalDrawings({
       />
 
       <p className="text-[12px] text-carbon/40 mt-1 mb-5">
-        {tp.drawingsSubtitle || 'Flat technical sketches the factory uses to build the product. Upload front / back / side views; add close-up callouts for construction details.'}
+        {category === 'CALZADO'
+          ? (tp.drawingsSubtitleFootwear || 'Side and top-down views prefilled from your flat sketch. Drop pin comments on the exact point you want the factory to read.')
+          : (tp.drawingsSubtitleApparel || 'Front and back views prefilled from your flat sketch. Drop pin comments on the exact point you want the factory to read.')}
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {slots.map(s => (
           <DrawingSlot
             key={s.id}
             label={s.label}
-            url={drawings?.[s.id]}
+            url={urlFor(s.id)}
+            fromSku={isFromSku(s.id)}
             uploading={uploadingSlot === s.id}
             pins={pinsBySlot[s.id] ?? []}
             pinMode={pinMode}
@@ -643,7 +684,7 @@ function TechnicalDrawings({
 
 /* ── Individual drawing slot (with pin overlay + upload/remove) ── */
 function DrawingSlot({
-  label, url, uploading, pins, pinMode,
+  label, url, fromSku, uploading, pins, pinMode,
   onUpload, onRemove, onClick,
   pendingPin, pinBody, setPinBody, onSubmitPin, onCancelPin,
   openPinId, onPinClick, onPinDelete,
@@ -651,6 +692,7 @@ function DrawingSlot({
 }: {
   label: string;
   url?: string;
+  fromSku?: boolean;
   uploading: boolean;
   pins: (Comment & { pinNumber: number })[];
   pinMode: boolean;
@@ -766,16 +808,42 @@ function DrawingSlot({
             </div>
           ))}
 
-          {/* Remove overlay (only when not in pin mode) */}
+          {/* Overlay controls (only when not in pin mode). If the
+              image comes from the flat sketch (fromSku), show a
+              Replace affordance. If it's an uploaded override, show
+              Reset to flat sketch. */}
           {!pinMode && (
-            <button
-              type="button"
-              onClick={onRemove}
-              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-carbon/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              title={tp.remove || 'Remove'}
-            >
-              <X className="w-3 h-3" strokeWidth={2.5} />
-            </button>
+            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <label className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-carbon/80 text-white text-[10px] font-semibold cursor-pointer hover:bg-carbon transition-colors">
+                <Upload className="w-3 h-3" strokeWidth={2.5} />
+                {fromSku ? (tp.replaceDrawing || 'Replace') : (tp.reuploadDrawing || 'Replace')}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ''; }}
+                />
+              </label>
+              {!fromSku && (
+                <button
+                  type="button"
+                  onClick={onRemove}
+                  className="w-6 h-6 rounded-full bg-carbon/80 text-white flex items-center justify-center hover:bg-carbon transition-colors"
+                  title={tp.resetToSketch || 'Reset to flat sketch'}
+                >
+                  <X className="w-3 h-3" strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* "From flat sketch" chip — reminds the user this is the
+              AI-generated drawing, not a manual upload. */}
+          {fromSku && (
+            <div className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/90 backdrop-blur-sm text-[9px] font-semibold tracking-wide uppercase text-carbon/60 border border-carbon/[0.06]">
+              <Sparkles className="h-2.5 w-2.5" strokeWidth={2.5} />
+              {tp.fromFlatSketch || 'From flat sketch'}
+            </div>
           )}
         </>
       ) : (
@@ -785,7 +853,9 @@ function DrawingSlot({
           ) : (
             <>
               <Upload className="h-6 w-6 text-carbon/30" strokeWidth={1.5} />
-              <span className="text-[11px] font-semibold text-carbon/55 tracking-[-0.01em]">{tp.uploadDrawing || 'Upload drawing'}</span>
+              <span className="text-[11px] font-semibold text-carbon/55 tracking-[-0.01em] text-center px-3">
+                {tp.waitingForSketch || 'Waiting for flat sketch. Upload one or generate it in Sketch & Color.'}
+              </span>
             </>
           )}
           <input

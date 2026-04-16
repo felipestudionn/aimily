@@ -15,7 +15,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import Link from 'next/link';
-import { FileText, ArrowRight } from 'lucide-react';
+import { FileText, ArrowRight, Building2, Factory as FactoryIcon } from 'lucide-react';
 import { useSkus } from '@/hooks/useSkus';
 import { useTranslation } from '@/i18n';
 
@@ -41,6 +41,22 @@ export function TechPackWorkspace({ collectionPlanId, collectionName }: Props) {
           <p className="text-[14px] text-carbon/45 mt-3 max-w-[640px] mx-auto leading-relaxed">
             {tp.hubIntro || 'The factory-ready document of every SKU. Open any style to edit its technical sheet — header, drawings, measurements, BOM, factory notes, comments.'}
           </p>
+          <div className="mt-6 inline-flex items-center gap-2 flex-wrap justify-center">
+            <Link
+              href={`/collection/${collectionPlanId}/suppliers`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-carbon/[0.12] text-carbon/70 text-[12px] font-semibold hover:bg-carbon/[0.04] transition-colors"
+            >
+              <Building2 className="h-3.5 w-3.5" strokeWidth={2} />
+              {tp.hubSuppliers || 'Suppliers database'}
+            </Link>
+            <Link
+              href={`/collection/${collectionPlanId}/factories`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-carbon/[0.12] text-carbon/70 text-[12px] font-semibold hover:bg-carbon/[0.04] transition-colors"
+            >
+              <FactoryIcon className="h-3.5 w-3.5" strokeWidth={2} />
+              {tp.hubFactories || 'Factories database'}
+            </Link>
+          </div>
         </div>
 
         {loading ? (
