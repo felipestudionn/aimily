@@ -21,7 +21,7 @@
 'use client';
 
 import { useEffect, useCallback, useMemo, useState, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Download, Loader2, Share2, Copy, Check, Pencil, ArrowUpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Download, Loader2, Share2, Copy, Check, Pencil, ArrowUpCircle, Lock } from 'lucide-react';
 import { SPINE, SLIDE_COUNT } from '@/lib/presentation/spine';
 import { getTheme, themeStyle } from '@/lib/presentation/themes';
 import type { ThemeId, DeckMeta } from '@/lib/presentation/types';
@@ -80,6 +80,10 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const shareRef = useRef<HTMLDivElement | null>(null);
+  /* Expiry preset + password. Kept local — sent on Create. */
+  const [shareExpiry, setShareExpiry] = useState<'never' | '24h' | '7d' | '30d'>('7d');
+  const [sharePassword, setSharePassword] = useState('');
+  const [sharePasswordOn, setSharePasswordOn] = useState(false);
 
   /* Close Share dropdown on outside click + Esc (reuses the pattern
      from ThemePicker for consistency). */
@@ -101,10 +105,29 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
     setShareLoading(true);
     setShareError(null);
     try {
+      // Translate preset to Unix seconds — null means no expiry.
+      const now = Math.floor(Date.now() / 1000);
+      const expiresAt =
+        shareExpiry === 'never' ? null :
+        shareExpiry === '24h' ? now + 60 * 60 * 24 :
+        shareExpiry === '7d' ? now + 60 * 60 * 24 * 7 :
+        now + 60 * 60 * 24 * 30;
+
+      const password = sharePasswordOn ? sharePassword.trim() : '';
+      if (sharePasswordOn && password.length < 4) {
+        throw new Error('Password must be at least 4 characters');
+      }
+
       const res = await fetch('/api/presentation/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collectionId, themeId, coverSubtitle }),
+        body: JSON.stringify({
+          collectionId,
+          themeId,
+          coverSubtitle,
+          expiresAt,
+          password: password || null,
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -118,7 +141,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
     } finally {
       setShareLoading(false);
     }
-  }, [collectionId, themeId, coverSubtitle]);
+  }, [collectionId, themeId, coverSubtitle, shareExpiry, sharePasswordOn, sharePassword]);
 
   const copyShareUrl = useCallback(async () => {
     if (!shareUrl) return;
@@ -418,10 +441,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
             <div ref={shareRef} className="relative">
               <button
                 type="button"
-                onClick={() => {
-                  setShareOpen(o => !o);
-                  if (!shareUrl && !shareLoading) createShare();
-                }}
+                onClick={() => setShareOpen(o => !o)}
                 className={`inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border transition-colors ${
                   shareOpen
                     ? 'bg-white/20 border-white/30 text-white'
@@ -433,38 +453,107 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                 <span>Share</span>
               </button>
               {shareOpen && (
-                <div className="absolute right-0 top-full mt-2 w-[380px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-4 z-50">
+                <div className="absolute right-0 top-full mt-2 w-[420px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-5 z-50">
                   <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
                     Share this presentation
                   </div>
-                  <p className="text-[12px] text-carbon/60 leading-relaxed mb-3">
-                    Anyone with this link will see the deck in the theme you have active now. They can page through slides and download the PDF.
+                  <p className="text-[12px] text-carbon/60 leading-relaxed mb-4">
+                    The link opens in the theme active right now. PDF download stays available for viewers. Set expiry or add a password for private shares.
                   </p>
-                  {shareLoading && (
-                    <div className="inline-flex items-center gap-2 text-[12px] text-carbon/60">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> Generating link…
-                    </div>
-                  )}
-                  {shareError && (
-                    <div className="text-[12px] text-error">{shareError}</div>
-                  )}
-                  {shareUrl && (
-                    <div className="flex items-center gap-2">
-                      <input
-                        readOnly
-                        value={shareUrl}
-                        className="flex-1 px-3 py-2 text-[12px] bg-carbon/[0.04] text-carbon rounded-[10px] border border-carbon/[0.08] font-mono"
-                        onFocus={(e) => e.currentTarget.select()}
-                      />
+
+                  {!shareUrl && (
+                    <>
+                      {/* Expiry preset */}
+                      <div className="mb-4">
+                        <div className="text-[11px] font-semibold text-carbon/70 mb-2">Expires in</div>
+                        <div className="flex gap-1.5">
+                          {(['24h', '7d', '30d', 'never'] as const).map(opt => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setShareExpiry(opt)}
+                              className={`flex-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors ${
+                                shareExpiry === opt
+                                  ? 'bg-carbon text-white'
+                                  : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+                              }`}
+                            >
+                              {opt === '24h' ? '24 hours' : opt === '7d' ? '7 days' : opt === '30d' ? '30 days' : 'Never'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Password gate */}
+                      <div className="mb-4">
+                        <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={sharePasswordOn}
+                            onChange={(e) => setSharePasswordOn(e.target.checked)}
+                            className="accent-carbon"
+                          />
+                          <span className="text-[11px] font-semibold text-carbon/70">Require a password</span>
+                        </label>
+                        {sharePasswordOn && (
+                          <input
+                            type="text"
+                            value={sharePassword}
+                            onChange={(e) => setSharePassword(e.target.value)}
+                            placeholder="Minimum 4 characters"
+                            className="w-full px-3 py-2 text-[12px] bg-carbon/[0.04] text-carbon rounded-[10px] border border-carbon/[0.08] focus:outline-none focus:border-carbon/30 placeholder:text-carbon/30"
+                          />
+                        )}
+                      </div>
+
                       <button
                         type="button"
-                        onClick={copyShareUrl}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors"
+                        onClick={createShare}
+                        disabled={shareLoading}
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold disabled:opacity-60 hover:bg-carbon/90 transition-colors"
                       >
-                        {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={2} />}
-                        {copied ? 'Copied' : 'Copy'}
+                        {shareLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} />}
+                        {shareLoading ? 'Creating…' : 'Create link'}
                       </button>
-                    </div>
+                    </>
+                  )}
+
+                  {shareError && !shareUrl && (
+                    <div className="mt-3 text-[12px] text-error">{shareError}</div>
+                  )}
+
+                  {shareUrl && (
+                    <>
+                      <div className="flex items-center gap-2 mb-3">
+                        <input
+                          readOnly
+                          value={shareUrl}
+                          className="flex-1 px-3 py-2 text-[12px] bg-carbon/[0.04] text-carbon rounded-[10px] border border-carbon/[0.08] font-mono"
+                          onFocus={(e) => e.currentTarget.select()}
+                        />
+                        <button
+                          type="button"
+                          onClick={copyShareUrl}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors"
+                        >
+                          {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={2} />}
+                          {copied ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-carbon/50">
+                        <span>
+                          {shareExpiry === 'never' ? 'Never expires' :
+                           shareExpiry === '24h' ? 'Expires in 24 hours' :
+                           shareExpiry === '7d' ? 'Expires in 7 days' : 'Expires in 30 days'}
+                        </span>
+                        {sharePasswordOn && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-citronella/15 text-[10px] font-semibold text-carbon/70">
+                            <Lock className="w-3 h-3" strokeWidth={2.5} />
+                            Password · {sharePassword}
+                          </span>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               )}

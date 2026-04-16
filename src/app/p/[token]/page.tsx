@@ -1,20 +1,23 @@
 /* ═══════════════════════════════════════════════════════════════════
    /p/[token] — public read-only shared deck
 
-   Server component: validates the token, fetches the collection's
-   presentation data, hands off to the client SharedDeck component.
+   Server component. Three gates before the deck renders:
+   1. Share exists.
+   2. Share is not expired (→ ExpiredCard).
+   3. If the share has a password, the viewer holds a valid unlock
+      cookie (→ PasswordPrompt when missing/wrong).
 
-   - Uses supabaseAdmin so anon viewers can read through the share
-     (RLS locks the owner-only policies on the table).
-   - Increments views_count + stamps last_viewed_at as a fire-and-
-     forget side effect.
-   - Expired shares → 404 so viewers can't tell the link ever existed.
+   When all gates pass: fetch data, render <SharedDeck>, bump views.
    ═══════════════════════════════════════════════════════════════════ */
 
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { loadPresentationData } from '@/lib/presentation/load-presentation-data';
 import { SharedDeck } from '@/components/presentation/SharedDeck';
+import { ExpiredCard } from '@/components/presentation/ExpiredCard';
+import { PasswordPrompt } from '@/components/presentation/PasswordPrompt';
+import { cookieNameForToken, verifyUnlockCookie } from '@/lib/presentation/share-password';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +30,7 @@ export default async function SharedDeckPage({ params }: PageProps) {
 
   const shareResult = await supabaseAdmin
     .from('presentation_shares')
-    .select('collection_plan_id, theme_id, cover_subtitle, expires_at')
+    .select('collection_plan_id, theme_id, cover_subtitle, expires_at, password_hash')
     .eq('token', token)
     .maybeSingle();
   if (shareResult.error) {
@@ -36,12 +39,26 @@ export default async function SharedDeckPage({ params }: PageProps) {
   }
   const share = shareResult.data;
   if (!share) {
-    console.warn('[/p/[token]] no share for token', token);
     notFound();
   }
   if (share.expires_at && new Date(share.expires_at) < new Date()) {
-    console.warn('[/p/[token]] share expired');
-    notFound();
+    return (
+      <div style={{ width: '100vw', height: '100vh', background: '#0A0A0A' }}>
+        <ExpiredCard expiredAt={share.expires_at} />
+      </div>
+    );
+  }
+
+  if (share.password_hash) {
+    const jar = await cookies();
+    const cookieVal = jar.get(cookieNameForToken(token))?.value;
+    if (!verifyUnlockCookie(token, cookieVal)) {
+      return (
+        <div style={{ width: '100vw', height: '100vh', background: '#0A0A0A' }}>
+          <PasswordPrompt token={token} />
+        </div>
+      );
+    }
   }
 
   const planResult = await supabaseAdmin
@@ -63,8 +80,7 @@ export default async function SharedDeckPage({ params }: PageProps) {
     notFound();
   }
 
-  // Fire-and-forget: atomic view-count bump via SQL function. Never
-  // blocks rendering; a failed increment shouldn't break the share.
+  // Fire-and-forget: atomic view-count bump via SQL function.
   void (async () => {
     try {
       await supabaseAdmin.rpc('increment_share_views', { p_token: token });

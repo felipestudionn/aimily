@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateShareToken } from '@/lib/presentation/share-token';
+import { hashSharePassword } from '@/lib/presentation/share-password';
 
 export const runtime = 'nodejs';
 
@@ -17,6 +18,8 @@ interface CreateBody {
   coverSubtitle?: string;
   /* Unix seconds when the link should stop working. Undefined = never. */
   expiresAt?: number | null;
+  /* Optional password. Hashed server-side with scrypt. */
+  password?: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -30,13 +33,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { collectionId, themeId = 'editorial-heritage', coverSubtitle, expiresAt } = body;
+  const { collectionId, themeId = 'editorial-heritage', coverSubtitle, expiresAt, password } = body;
   if (!collectionId) {
     return NextResponse.json({ error: 'Missing collectionId' }, { status: 400 });
   }
 
   const check = await verifyCollectionOwnership(user!.id, collectionId);
   if (!check.authorized) return check.error;
+
+  const trimmedPassword = typeof password === 'string' ? password.trim() : '';
+  if (trimmedPassword && trimmedPassword.length < 4) {
+    return NextResponse.json({ error: 'Password must be at least 4 characters' }, { status: 400 });
+  }
+  const passwordHash = trimmedPassword ? hashSharePassword(trimmedPassword) : null;
 
   const token = generateShareToken();
   const { error } = await supabaseAdmin
@@ -47,6 +56,7 @@ export async function POST(req: NextRequest) {
       theme_id: themeId,
       cover_subtitle: coverSubtitle ?? null,
       expires_at: expiresAt ? new Date(expiresAt * 1000).toISOString() : null,
+      password_hash: passwordHash,
       created_by: user!.id,
     });
   if (error) {
