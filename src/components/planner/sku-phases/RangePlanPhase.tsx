@@ -46,44 +46,44 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDele
         <div className="space-y-5">
           {/* Product Details — all concept fields */}
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-3">
+            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-carbon/35 mb-4">
               Product Details
             </p>
-            <div className="bg-white border border-carbon/[0.06] p-4 space-y-3">
+            <div className="bg-carbon/[0.02] rounded-[16px] p-5 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">Name</p>
-                  <p className="text-sm font-light text-carbon">{sku.name}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Name</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.name}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">Family</p>
-                  <p className="text-sm font-light text-carbon">{sku.family}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Family</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.family}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">Category</p>
-                  <p className="text-sm font-light text-carbon">{categoryLabel}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Category</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{categoryLabel}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.channel || 'Channel'}</p>
-                  <p className="text-sm font-light text-carbon">{sku.channel}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.skuPhases?.channel || 'Channel'}</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.channel}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.origin || 'Origin'}</p>
-                  <p className="text-sm font-light text-carbon">{sku.origin || '—'}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.skuPhases?.origin || 'Origin'}</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.origin || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">{t.skuPhases?.role || 'Role'}</p>
-                  <p className="text-sm font-light text-carbon">
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.skuPhases?.role || 'Role'}</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">
                     {sku.sku_role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : sku.sku_role === 'CARRYOVER' ? 'Carry-over' : sku.sku_role || 'New'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">Segmentation</p>
-                  <p className="text-sm font-light text-carbon">{sku.type === 'IMAGEN' ? 'Image' : sku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Segmentation</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.type === 'IMAGEN' ? 'Image' : sku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-1">Drop</p>
-                  <p className="text-sm font-light text-carbon">Drop {sku.drop_number}</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Drop</p>
+                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">Drop {sku.drop_number}</p>
                 </div>
               </div>
             </div>
@@ -91,10 +91,10 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDele
 
           {/* Financial Details */}
           <div>
-            <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/35 mb-3">
+            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-carbon/35 mb-4">
               {t.skuPhases?.financials || 'Financial Details'}
             </p>
-            <div className="bg-white border border-carbon/[0.06] p-4 space-y-3">
+            <div className="bg-carbon/[0.02] rounded-[16px] p-5 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <MetricCell label="PVP" value={`€${sku.pvp}`} editable onChange={(v) => handleFinancialChange('pvp', v)} />
                 <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => handleFinancialChange('cost', v)} />

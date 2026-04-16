@@ -61,16 +61,16 @@ export function MetricCell({ label, value, secondary, editable, onChange }: {
 }) {
   return (
     <div>
-      <p className="text-[9px] text-carbon/30 uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{label}</p>
       {editable && onChange ? (
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="font-light text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/20 focus:outline-none w-full text-base"
+          className="font-medium text-carbon bg-transparent border-b border-carbon/[0.08] focus:border-carbon/30 focus:outline-none w-full text-[15px] pb-1 transition-colors"
         />
       ) : (
-        <p className={`font-light text-carbon ${secondary ? 'text-sm' : 'text-base'}`}>{value}</p>
+        <p className={`font-medium text-carbon tracking-[-0.01em] ${secondary ? 'text-[14px]' : 'text-[15px]'}`}>{value}</p>
       )}
     </div>
   );
