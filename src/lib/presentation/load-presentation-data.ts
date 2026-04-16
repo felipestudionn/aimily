@@ -224,18 +224,18 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   // Market Research — the count of selected signals + a headline drawn
   // from the first trend. The CIS only stores the selected list, so we
   // count entries and treat the top entry as the headline.
-  if (ctx.trends) {
-    const lines = ctx.trends.split('\n').map(s => s.trim()).filter(Boolean);
+  {
+    const lines = ctx.trends ? ctx.trends.split('\n').map(s => s.trim()).filter(Boolean) : [];
     const entries = lines.filter(l => /:|\(/.test(l));
     const count = entries.length || lines.length;
     if (count > 0) {
-      // First entry: "Title (brands): description" → title, brands, desc
       const first = entries[0] || lines[0];
       const m = first.match(/^(.+?)(?:\s*\((.+?)\))?(?::\s*(.+))?$/);
       const title = m?.[1]?.trim() ?? first;
       const brands = m?.[2]?.trim();
       const desc = m?.[3]?.trim() ?? '';
       data.stats['market-research'] = {
+        status: 'ready',
         value: String(count).padStart(2, '0'),
         caption: 'Signals tracked across global, deep-dive and live research',
         narrative: desc
@@ -248,6 +248,8 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         ],
       };
       data.hasAnyData = true;
+    } else {
+      data.stats['market-research'] = { status: 'pending' };
     }
   }
 
@@ -280,6 +282,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         ? `Anchored in ${primaryMarket.name}${primaryMarket.region ? ` (${primaryMarket.region})` : ''}. ${markets.length} priority ${markets.length === 1 ? 'market' : 'markets'}${highOpps > 0 ? `, ${highOpps} flagged high-opportunity` : ''}.`
         : `${label} distribution — markets still being mapped.`;
       data.stats.distribution = {
+        status: 'ready',
         value: markets.length > 0 ? String(markets.length).padStart(2, '0') : label,
         caption: markets.length > 0
           ? `Priority markets · ${label}`
@@ -292,7 +295,21 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         ],
       };
       data.hasAnyData = true;
+    } else {
+      // Structurally wired, waiting for the user to fill the channels card.
+      data.stats.distribution = { status: 'pending' };
     }
+  }
+
+  // Sales Dashboard — structurally wired; waits for post-launch sales
+  // data. When that pipeline is available, swap this block to query
+  // the sales metrics table. Until then, the slide renders an
+  // explicit Work-in-Progress card (driven by status === 'pending').
+  {
+    // Placeholder read path — any future sales_metrics / drops revenue
+    // source plugs in here. For now we always emit 'pending' so every
+    // collection's deck surfaces the WIP state consistently.
+    data.stats['sales-dashboard'] = { status: 'pending' };
   }
 
   // Financial Plan — compose from selected scenario + user assumptions.
@@ -319,6 +336,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       const derived = computeFinancialPlan(inputs, sources);
       const n = stored?.narrative;
       data.stats['financial-plan'] = {
+        status: 'ready',
         value: formatEur(derived.kpis.totalInvestment, { compact: true }),
         caption: `Investment → ${formatEur(derived.kpis.expectedRevenue, { compact: true })} revenue${inputs.marketing.status === 'pending' ? ' · marketing pending' : ''}`,
         narrative: n?.thesis
@@ -330,6 +348,9 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         ],
       };
       data.hasAnyData = true;
+    } else {
+      // Structurally wired; waiting for a scenario in Buying Strategy.
+      data.stats['financial-plan'] = { status: 'pending' };
     }
   }
 

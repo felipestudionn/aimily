@@ -8,8 +8,12 @@
    supporting stats on the right. Everything theme-tokenised.
    ═══════════════════════════════════════════════════════════════════ */
 
+'use client';
+
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { StatSlideData } from '@/lib/presentation/load-presentation-data';
+import { useTranslation } from '@/i18n';
+import { Construction } from 'lucide-react';
 
 interface Props {
   slide: MicroBlockSlide;
@@ -79,10 +83,17 @@ const FALLBACK = {
 };
 
 export function EditorialStatTemplate({ slide, meta, title, data: real }: Props) {
+  const tr = useTranslation().presentation;
+
+  /* Work-in-Progress mode: the loader knows there's a structural
+     source for this slide but the data isn't populated yet. Render an
+     explicit placeholder instead of editorial sample numbers. */
+  const wip = real?.status === 'pending';
+
   /* Prefer real CIS-derived data. Fall back to editorial placeholder
      when the slide hasn't been composed yet (keeps the deck readable
      during demos with partial CIS coverage). */
-  const data = real && (real.value || real.narrative)
+  const data = real && !wip && (real.value || real.narrative)
     ? {
         value: real.value ?? '—',
         caption: real.caption ?? '',
@@ -90,6 +101,111 @@ export function EditorialStatTemplate({ slide, meta, title, data: real }: Props)
         support: real.support ?? [],
       }
     : (STAT_PLACEHOLDERS[slide.id] ?? FALLBACK);
+
+  /* ─── WIP rendering (dedicated layout) ────────────────────────── */
+  if (wip) {
+    // Localize the WIP body by slide.id; fall back to the generic
+    // default when the slide doesn't have a dedicated message.
+    const wipMessages: Record<string, string> = {
+      'sales-dashboard': tr.wipSalesDashboard,
+      'financial-plan': tr.wipFinancialPlan,
+    };
+    const pendingMessage = real?.pendingMessage ?? wipMessages[slide.id] ?? tr.wipDefault;
+    return (
+      <div
+        className="w-full h-full flex flex-col"
+        style={{
+          background: 'var(--p-bg)',
+          color: 'var(--p-fg)',
+          padding: 'clamp(48px, 5vw, 88px)',
+        }}
+      >
+        <div>
+          <span
+            style={{
+              fontFamily: 'var(--p-mono-font)',
+              fontSize: '11px',
+              letterSpacing: '0.24em',
+              color: 'var(--p-mute)',
+              textTransform: 'uppercase',
+            }}
+          >
+            {slide.eyebrow}
+          </span>
+          <h2
+            style={{
+              fontFamily: 'var(--p-display-font)',
+              textTransform: 'var(--p-display-case)' as const,
+              fontWeight: 'var(--p-display-weight)',
+              letterSpacing: 'var(--p-display-tracking)',
+              fontSize: 'clamp(28px, 2.8vw, 42px)',
+              lineHeight: 1.1,
+              color: 'var(--p-fg)',
+              margin: '16px 0 0 0',
+            }}
+          >
+            {title}
+          </h2>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center gap-6" style={{ minHeight: 0 }}>
+          <div
+            style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'var(--p-surface)',
+              border: '1px solid var(--p-border)',
+            }}
+          >
+            <Construction className="w-7 h-7" style={{ color: 'var(--p-accent)' }} strokeWidth={1.5} />
+          </div>
+          <div style={{ textAlign: 'center', maxWidth: '560px' }}>
+            <div
+              style={{
+                fontFamily: 'var(--p-display-font)',
+                textTransform: 'var(--p-display-case)' as const,
+                fontWeight: 'var(--p-display-weight)',
+                letterSpacing: 'var(--p-display-tracking)',
+                fontSize: 'clamp(28px, 2.4vw, 36px)',
+                lineHeight: 1.15,
+                color: 'var(--p-fg)',
+                marginBottom: '12px',
+              }}
+            >
+              {tr.wipHeading}
+            </div>
+            <p
+              style={{
+                fontFamily: 'var(--p-body-font)',
+                fontSize: 'clamp(14px, 1.1vw, 17px)',
+                lineHeight: 1.55,
+                color: 'var(--p-mute)',
+                letterSpacing: 'var(--p-body-tracking)',
+                margin: 0,
+              }}
+            >
+              {pendingMessage}
+            </p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            fontFamily: 'var(--p-body-font)',
+            fontSize: '12px',
+            color: 'var(--p-mute)',
+            letterSpacing: 'var(--p-body-tracking)',
+          }}
+        >
+          {meta.collectionName}{meta.season ? ` · ${meta.season}` : ''}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
