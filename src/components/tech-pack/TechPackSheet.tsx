@@ -193,6 +193,36 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
     saveSection('factory_notes', { body: notes });
   }, [saveSection]);
 
+  /* ── PDF export ── */
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const exportPdf = useCallback(async () => {
+    setExportingPdf(true);
+    setExportError(null);
+    try {
+      const res = await fetch('/api/tech-pack/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skuId: sku.id }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tech-pack-${sku.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 40)}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Export failed');
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [sku.id, sku.name]);
+
   /* ── AI generation (measurements / BOM / both) ── */
   const [aiBusyScope, setAiBusyScope] = useState<'measurements' | 'bom' | 'both' | null>(null);
   const aiGenerate = useCallback(async (scope: 'measurements' | 'bom' | 'both') => {
@@ -303,11 +333,13 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
             </button>
             <button
               type="button"
-              disabled
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-carbon/[0.04] text-carbon/40 text-[12px] font-medium cursor-not-allowed"
+              onClick={exportPdf}
+              disabled={exportingPdf}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 disabled:opacity-60 transition-colors"
+              title={exportError ?? (tp.exportPdfHint || 'Download this tech pack as a print-ready A3 PDF')}
             >
-              <Download className="h-3.5 w-3.5" strokeWidth={2} />
-              {tp.export || 'Export PDF'}
+              {exportingPdf ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} /> : <Download className="h-3.5 w-3.5" strokeWidth={2} />}
+              {exportingPdf ? (tp.exportingPdf || 'Generating…') : (tp.export || 'Export PDF')}
             </button>
           </div>
         </div>

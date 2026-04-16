@@ -30,6 +30,7 @@ const publicPageRoutes = [
 const publicPagePrefixes = [
   '/p/',
   '/presentation/export/',
+  '/tech-pack/export/',
 ];
 
 // API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
