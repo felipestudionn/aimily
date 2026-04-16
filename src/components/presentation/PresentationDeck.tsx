@@ -29,6 +29,7 @@ import type { PresentationData } from '@/lib/presentation/load-presentation-data
 import { SlideRenderer } from './SlideRenderer';
 import { ThemePicker } from './ThemePicker';
 import { PresentationFonts } from './PresentationFonts';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   meta: DeckMeta;
@@ -69,6 +70,7 @@ interface Props {
 const TOTAL_SLIDES = SLIDE_COUNT + 1;
 
 export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, data, index, themeId, onIndexChange, onThemeChange, onExit, readOnly = false, onDataChanged }: Props) {
+  const tr = useTranslation().presentation;
   const theme = useMemo(() => getTheme(themeId), [themeId]);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -455,17 +457,17 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
               {shareOpen && (
                 <div className="absolute right-0 top-full mt-2 w-[420px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-5 z-50">
                   <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
-                    Share this presentation
+                    {tr.shareHeading}
                   </div>
                   <p className="text-[12px] text-carbon/60 leading-relaxed mb-4">
-                    The link opens in the theme active right now. PDF download stays available for viewers. Set expiry or add a password for private shares.
+                    {tr.shareIntro}
                   </p>
 
                   {!shareUrl && (
                     <>
                       {/* Expiry preset */}
                       <div className="mb-4">
-                        <div className="text-[11px] font-semibold text-carbon/70 mb-2">Expires in</div>
+                        <div className="text-[11px] font-semibold text-carbon/70 mb-2">{tr.shareExpiresIn}</div>
                         <div className="flex gap-1.5">
                           {(['24h', '7d', '30d', 'never'] as const).map(opt => (
                             <button
@@ -478,7 +480,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                                   : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
                               }`}
                             >
-                              {opt === '24h' ? '24 hours' : opt === '7d' ? '7 days' : opt === '30d' ? '30 days' : 'Never'}
+                              {opt === '24h' ? tr.shareExpiry24h : opt === '7d' ? tr.shareExpiry7d : opt === '30d' ? tr.shareExpiry30d : tr.shareExpiryNever}
                             </button>
                           ))}
                         </div>
@@ -493,14 +495,14 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                             onChange={(e) => setSharePasswordOn(e.target.checked)}
                             className="accent-carbon"
                           />
-                          <span className="text-[11px] font-semibold text-carbon/70">Require a password</span>
+                          <span className="text-[11px] font-semibold text-carbon/70">{tr.shareRequirePassword}</span>
                         </label>
                         {sharePasswordOn && (
                           <input
                             type="text"
                             value={sharePassword}
                             onChange={(e) => setSharePassword(e.target.value)}
-                            placeholder="Minimum 4 characters"
+                            placeholder={tr.sharePasswordPlaceholder}
                             className="w-full px-3 py-2 text-[12px] bg-carbon/[0.04] text-carbon rounded-[10px] border border-carbon/[0.08] focus:outline-none focus:border-carbon/30 placeholder:text-carbon/30"
                           />
                         )}
@@ -513,7 +515,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                         className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold disabled:opacity-60 hover:bg-carbon/90 transition-colors"
                       >
                         {shareLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} />}
-                        {shareLoading ? 'Creating…' : 'Create link'}
+                        {shareLoading ? tr.shareCreating : tr.shareCreateLink}
                       </button>
                     </>
                   )}
@@ -537,19 +539,20 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors"
                         >
                           {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={2} />}
-                          {copied ? 'Copied' : 'Copy'}
+                          {copied ? tr.shareCopied : tr.shareCopy}
                         </button>
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-carbon/50">
                         <span>
-                          {shareExpiry === 'never' ? 'Never expires' :
-                           shareExpiry === '24h' ? 'Expires in 24 hours' :
-                           shareExpiry === '7d' ? 'Expires in 7 days' : 'Expires in 30 days'}
+                          {shareExpiry === 'never' ? tr.shareNeverExpires :
+                           shareExpiry === '24h' ? `${tr.shareExpiresIn} ${tr.shareExpiry24h}` :
+                           shareExpiry === '7d' ? `${tr.shareExpiresIn} ${tr.shareExpiry7d}` :
+                           `${tr.shareExpiresIn} ${tr.shareExpiry30d}`}
                         </span>
                         {sharePasswordOn && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-citronella/15 text-[10px] font-semibold text-carbon/70">
                             <Lock className="w-3 h-3" strokeWidth={2.5} />
-                            Password · {sharePassword}
+                            {tr.sharePasswordPill} · {sharePassword}
                           </span>
                         )}
                       </div>
