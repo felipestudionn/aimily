@@ -1181,11 +1181,11 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 return (
                 <div
                   key={sku.id}
-                  className="border border-carbon/[0.06] overflow-hidden hover:border-carbon/15 transition-all cursor-pointer bg-white group"
+                  className="bg-white rounded-[20px] overflow-hidden hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer group"
                   onClick={() => openSkuDetail(sku)}
                 >
                   {/* Image / Name area */}
-                  <div className="aspect-[4/5] bg-white relative overflow-hidden">
+                  <div className="aspect-[4/5] bg-white relative overflow-hidden rounded-t-[20px]">
                     {showRender ? (
                       <img src={renderImage} alt={sku.name} className="w-full h-full object-contain p-1" />
                     ) : displayImage ? (
@@ -1287,10 +1287,10 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
                     </div>
                   </div>
-                  {/* CTA — dynamic per phase */}
+                  {/* CTA pill — gold standard rounded-full, readable size */}
                   <div className="px-3 pb-3">
-                    <div className="w-full py-1.5 bg-carbon text-crema text-[8px] font-medium tracking-[0.1em] uppercase text-center hover:bg-carbon/90 transition-colors rounded-full">
-                      {(sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url && (t.skuPhases?.ctaAddReference || 'Add Reference Image')}
+                    <div className="w-full py-2 bg-carbon text-white text-[11px] font-semibold tracking-[-0.01em] text-center group-hover:bg-carbon/90 transition-colors rounded-full">
+                      {(sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url && (t.skuPhases?.ctaAddReference || 'Add Reference')}
                       {(sku.design_phase || 'range_plan') === 'range_plan' && sku.reference_image_url && (t.skuPhases?.ctaStartSketch || 'Start Sketch')}
                       {sku.design_phase === 'sketch' && !sku.sketch_url && (t.skuPhases?.ctaUploadSketch || 'Upload Sketch')}
                       {sku.design_phase === 'sketch' && sku.sketch_url && (t.skuPhases?.ctaDefineColors || 'Define Colorways')}
