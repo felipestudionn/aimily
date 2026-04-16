@@ -248,16 +248,6 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
     }
   }, [sku.id, data]);
 
-  /* ── Design evolution strip data (read-only — from SKU) ── */
-  const evolutionImages: { label: string; url?: string; fallback: string }[] = [
-    { label: tp.drawingReference || 'Reference', url: sku.reference_image_url, fallback: 'REF' },
-    { label: tp.drawingSketch || 'Flat sketch', url: sku.sketch_url, fallback: 'SKT' },
-    { label: tp.drawingColor || 'Colorized', url: sku.render_url, fallback: 'CLR' },
-    { label: tp.drawing3d || '3D render', url: sku.render_urls?.['3d'], fallback: '3D' },
-    { label: tp.drawingProto || 'Prototype', url: sku.proto_iterations?.[sku.proto_iterations.length - 1]?.images?.[0], fallback: 'PR' },
-    { label: tp.drawingProduction || 'Production sample', url: sku.production_sample_url, fallback: 'PDN' },
-  ];
-
   /* ── Comment helpers ── */
   const addComment = useCallback(async (params: {
     block: CommentBlock; body: string; drawingSlot?: string; pinX?: number; pinY?: number;
@@ -368,29 +358,6 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               onAddPin={(slot, x, y, body) => addComment({ block: 'drawings', drawingSlot: slot, pinX: x, pinY: y, body })}
               onDeletePin={deleteComment}
             />
-          </div>
-
-          {/* Design Evolution — read-only strip pulling from SKU */}
-          <div className="border-t border-carbon/[0.06] p-8 md:p-10">
-            <SectionHeader label={tp.evolutionTitle || 'Design evolution'} />
-            <p className="text-[12px] text-carbon/40 mt-1 mb-4">{tp.evolutionSubtitle || 'Visual history of the build — pulled from the SKU lifecycle.'}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {evolutionImages.map((d, i) => (
-                <div key={i} className="relative aspect-[4/5] rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] overflow-hidden">
-                  {d.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={d.url} alt={d.label} className="absolute inset-0 w-full h-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/20">{d.fallback}</span>
-                    </div>
-                  )}
-                  <div className="absolute bottom-0 inset-x-0 px-2.5 py-1 bg-white/95 backdrop-blur-sm border-t border-carbon/[0.06]">
-                    <span className="text-[9px] tracking-[0.15em] uppercase font-semibold text-carbon/60">{d.label}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Material Swatches */}
