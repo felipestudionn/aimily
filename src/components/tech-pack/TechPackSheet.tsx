@@ -336,7 +336,7 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
       </div>
 
       {/* ── Sheet canvas ── */}
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-10">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-10 pt-10 pb-24">
         <div className="bg-white rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden">
           {/* Header block */}
           <HeaderBlock sku={sku} collectionName={collectionName} season={season} tp={tp} />
@@ -407,7 +407,7 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
           </div>
 
           {/* Comments thread (block-anchored + pin-anchored references) */}
-          <div className="border-t border-carbon/[0.06] bg-carbon/[0.015] p-8 md:p-10">
+          <div className="border-t border-carbon/[0.06] bg-carbon/[0.015] p-8 md:p-10 md:pb-14">
             <CommentsThread
               skuId={sku.id}
               blockComments={blockComments}
