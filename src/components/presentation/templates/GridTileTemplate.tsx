@@ -89,6 +89,10 @@ const FALLBACK = {
 
 export function GridTileTemplate({ slide, meta, title, data: cisData, editing }: Props) {
   const placeholder = GRID_PLACEHOLDERS[slide.id] ?? FALLBACK;
+  /* Photo mode: when the loader supplied images (e.g. moodboard with
+     uploaded references), render a photo mosaic instead of label tiles. */
+  const images = cisData?.images ?? [];
+  const photoMode = images.length > 0;
   /* Apply any live drafts on top of cisData (which already carries
      committed overrides from the loader). Drafts keep the canvas in
      sync while the user is typing, before Save. */
@@ -163,8 +167,35 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
         </p>
       </div>
 
-      {/* 3×2 tile grid */}
-      <div className="flex-1 grid grid-cols-3 gap-4">
+      {/* Photo mosaic (moodboard w/ uploads) — 4×2 grid of cover-fitted
+          images. Falls back to the tile grid below when no images. */}
+      {photoMode && (
+        <div className="flex-1 grid grid-cols-4 grid-rows-2 gap-3">
+          {images.slice(0, 8).map((src, i) => (
+            <div
+              key={i}
+              style={{
+                background: 'var(--p-surface)',
+                border: '1px solid var(--p-border)',
+                borderRadius: 'var(--p-radius)',
+                overflow: 'hidden',
+                position: 'relative',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={src}
+                alt=""
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 3×2 tile grid — label mode, used when no uploaded images. */}
+      {!photoMode && <div className="flex-1 grid grid-cols-3 gap-4">
         {data.tiles.map((tile, i) => (
           <div
             key={i}
@@ -247,7 +278,7 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
             </div>
           </div>
         ))}
-      </div>
+      </div>}
 
       {/* Footer */}
       <div className="mt-6 flex items-center justify-between">

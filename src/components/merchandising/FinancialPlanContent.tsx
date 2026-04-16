@@ -27,6 +27,7 @@ import {
   type FinancialPlanNarrative,
 } from '@/lib/financial-plan/types';
 import { computeFinancialPlan, emptySources, formatEur, formatPct } from '@/lib/financial-plan/compute';
+import { useTranslation } from '@/i18n';
 
 export type FinancialPlanMode = 'free' | 'assisted' | 'ai';
 
@@ -50,6 +51,7 @@ interface Props {
 }
 
 export function FinancialPlanContent({ mode, data, onChange, collectionContext, language = 'en' }: Props) {
+  const fp = useTranslation().financialPlan;
   const [sources, setSources] = useState<FinancialPlanSources | null>(null);
   const [loadingSources, setLoadingSources] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -100,11 +102,10 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
         <div className="max-w-[520px] text-center bg-white rounded-[20px] p-14 border border-carbon/[0.06]">
           <AlertCircle className="h-6 w-6 text-carbon/30 mx-auto mb-5" />
           <h3 className="text-[22px] font-semibold text-carbon tracking-[-0.03em] mb-3">
-            Select a buying strategy first
+            {fp.emptyHeading}
           </h3>
           <p className="text-[14px] text-carbon/50 leading-[1.6]">
-            Financial Plan reads from the scenario you pick in Buying Strategy.
-            Choose one there, then come back to see the pre-business plan compose.
+            {fp.emptyBody}
           </p>
         </div>
       </div>
@@ -185,29 +186,31 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
     <div className="space-y-5">
       {/* ── KPI ribbon — 5 stats in one card ────────────────────────── */}
       <div className="bg-white rounded-[20px] p-10 md:p-12 grid grid-cols-2 md:grid-cols-5 gap-6">
-        <Stat label="Total investment" value={formatEur(derived.kpis.totalInvestment, { compact: true })}
-              pending={marketingPending} />
-        <Stat label="Expected revenue" value={formatEur(derived.kpis.expectedRevenue, { compact: true })} />
-        <Stat label="Gross margin" value={formatPct(derived.kpis.grossMarginPct)} />
-        <Stat label="ROI" value={formatPct(derived.kpis.roi * 100)} accent />
-        <Stat label="Payback" value={`${Math.round(derived.kpis.paybackMonths)} mo`} />
+        <Stat label={fp.kpiTotalInvestment} value={formatEur(derived.kpis.totalInvestment, { compact: true })}
+              pending={marketingPending} pendingLabel={fp.chipAssumed} />
+        <Stat label={fp.kpiExpectedRevenue} value={formatEur(derived.kpis.expectedRevenue, { compact: true })} />
+        <Stat label={fp.kpiGrossMargin} value={formatPct(derived.kpis.grossMarginPct)} />
+        <Stat label={fp.kpiRoi} value={formatPct(derived.kpis.roi * 100)} accent />
+        <Stat label={fp.kpiPayback} value={`${Math.round(derived.kpis.paybackMonths)} mo`} />
       </div>
 
       {/* ── 4 chapter cards ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <InvestmentCard inputs={inputs} derived={derived} />
-        <RevenueCard inputs={inputs} derived={derived} onChangeSelected={(s) => updateInputs({ selectedScenario: s })} />
-        <MarginCard derived={derived} pending={marketingPending} />
-        <CashCurveCard cashCurve={derived.cashCurve} />
+        <InvestmentCard fp={fp} inputs={inputs} derived={derived} />
+        <RevenueCard fp={fp} inputs={inputs} derived={derived} onChangeSelected={(s) => updateInputs({ selectedScenario: s })} />
+        <MarginCard fp={fp} derived={derived} pending={marketingPending} />
+        <CashCurveCard fp={fp} cashCurve={derived.cashCurve} />
       </div>
 
       {/* ── Inputs row — assumptions + marketing placeholder ────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <AssumptionsCard
+          fp={fp}
           assumptions={inputs.assumptions}
           onChange={updateAssumptions}
         />
         <MarketingCard
+          fp={fp}
           marketing={inputs.marketing}
           onChange={updateMarketing}
           targetRevenue={derived.revenue.selected}
@@ -219,13 +222,13 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
         <div className="flex items-start justify-between gap-6 mb-6">
           <div>
             <div className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
-              Business thesis
+              {fp.thesisEyebrow}
             </div>
             <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
-              {narrative?.headline || 'Generate the business narrative'}
+              {narrative?.headline || fp.thesisEmptyHeading}
             </h3>
             <p className="text-[14px] text-carbon/50 leading-[1.6] max-w-[720px]">
-              {narrative?.thesis || 'A 60-80 word thesis that an investor or partner would read on the presentation deck. Explains the plan, the assumptions, and why the numbers hold.'}
+              {narrative?.thesis || fp.thesisEmptyBody}
             </p>
           </div>
           <Button
@@ -234,13 +237,13 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
             className="rounded-full shrink-0"
           >
             {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
-            {narrative ? 'Regenerate' : 'Generate'}
+            {narrative ? fp.thesisRegenerate : fp.thesisGenerate}
           </Button>
         </div>
 
         {narrative?.marketingNote && (
           <div className="mt-5 px-4 py-3 rounded-[12px] bg-citronella/10 text-[13px] text-carbon/70 border border-citronella/20">
-            <strong className="font-semibold">Marketing pending:</strong> {narrative.marketingNote}
+            <strong className="font-semibold">{fp.thesisMarketingPending}</strong> {narrative.marketingNote}
           </div>
         )}
 
@@ -248,7 +251,7 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6 pt-6 border-t border-carbon/[0.06]">
             <div>
               <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
-                Key assumptions
+                {fp.thesisAssumptions}
               </div>
               <ul className="space-y-2">
                 {narrative.assumptions.map((a, i) => (
@@ -260,7 +263,7 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
             </div>
             <div>
               <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
-                Risks
+                {fp.thesisRisks}
               </div>
               <ul className="space-y-2">
                 {narrative.risks.map((r, i) => (
@@ -278,7 +281,7 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
         {narrative && (
           <div className="flex justify-end mt-6 pt-6 border-t border-carbon/[0.06]">
             <Button variant="outline" onClick={handleCommitToCIS} className="rounded-full">
-              Save to Collection Intelligence
+              {fp.thesisSave}
             </Button>
           </div>
         )}
@@ -291,12 +294,12 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
    Sub-components
    ═══════════════════════════════════════════════════════════════════ */
 
-function Stat({ label, value, pending, accent }: { label: string; value: string; pending?: boolean; accent?: boolean }) {
+function Stat({ label, value, pending, pendingLabel, accent }: { label: string; value: string; pending?: boolean; pendingLabel?: string; accent?: boolean }) {
   return (
     <div className="flex flex-col">
       <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-3 flex items-center gap-1.5">
         {label}
-        {pending && <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-citronella/15 text-[9px] font-semibold text-carbon/70">ASSUMED</span>}
+        {pending && <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-citronella/15 text-[9px] font-semibold text-carbon/70">{pendingLabel}</span>}
       </div>
       <div className={`text-[32px] md:text-[40px] font-bold tracking-[-0.04em] leading-none ${accent ? 'text-carbon' : 'text-carbon'}`}>
         {value}
@@ -305,19 +308,21 @@ function Stat({ label, value, pending, accent }: { label: string; value: string;
   );
 }
 
-function InvestmentCard({ inputs, derived }: { inputs: FinancialPlanInputs; derived: ReturnType<typeof computeFinancialPlan> }) {
+type FpT = ReturnType<typeof useTranslation>['financialPlan'];
+
+function InvestmentCard({ fp, inputs, derived }: { fp: FpT; inputs: FinancialPlanInputs; derived: ReturnType<typeof computeFinancialPlan> }) {
   const { production, development, marketingAssumed, workingCapital, totalWithAssumedMarketing } = derived.investment;
   const marketingPending = inputs.marketing.status === 'pending';
   const rows: { label: string; value: number; pending?: boolean }[] = [
-    { label: 'Production (COGS)', value: production },
-    { label: 'Development & sampling', value: development },
-    { label: 'Marketing', value: marketingAssumed, pending: marketingPending },
-    { label: 'Working capital', value: workingCapital },
+    { label: fp.investmentProduction, value: production },
+    { label: fp.investmentDevelopment, value: development },
+    { label: fp.investmentMarketing, value: marketingAssumed, pending: marketingPending },
+    { label: fp.investmentWorkingCapital, value: workingCapital },
   ];
   const total = totalWithAssumedMarketing;
 
   return (
-    <ChapterCard number="01" title="Investment" subtitle="Where the euros go">
+    <ChapterCard number="01" title={fp.investmentTitle} subtitle={fp.investmentSubtitle}>
       <div className="space-y-3 mt-6">
         {rows.map(r => {
           const pct = total > 0 ? (r.value / total) * 100 : 0;
@@ -326,7 +331,7 @@ function InvestmentCard({ inputs, derived }: { inputs: FinancialPlanInputs; deri
               <div className="flex items-baseline justify-between mb-1.5">
                 <span className="text-[13px] text-carbon/70 flex items-center gap-1.5">
                   {r.label}
-                  {r.pending && <span className="inline-flex px-1.5 py-0.5 rounded-full bg-citronella/15 text-[9px] font-semibold text-carbon/70">PENDING</span>}
+                  {r.pending && <span className="inline-flex px-1.5 py-0.5 rounded-full bg-citronella/15 text-[9px] font-semibold text-carbon/70">{fp.chipPending}</span>}
                 </span>
                 <span className="text-[14px] font-semibold text-carbon tabular-nums">{formatEur(r.value, { compact: true })}</span>
               </div>
@@ -337,7 +342,7 @@ function InvestmentCard({ inputs, derived }: { inputs: FinancialPlanInputs; deri
           );
         })}
         <div className="pt-4 mt-4 border-t border-carbon/[0.06] flex items-baseline justify-between">
-          <span className="text-[13px] font-semibold text-carbon">Total</span>
+          <span className="text-[13px] font-semibold text-carbon">{fp.investmentTotal}</span>
           <span className="text-[20px] font-bold text-carbon tabular-nums">{formatEur(total, { compact: true })}</span>
         </div>
       </div>
@@ -345,18 +350,19 @@ function InvestmentCard({ inputs, derived }: { inputs: FinancialPlanInputs; deri
   );
 }
 
-function RevenueCard({ inputs, derived, onChangeSelected }: {
+function RevenueCard({ fp, inputs, derived, onChangeSelected }: {
+  fp: FpT;
   inputs: FinancialPlanInputs;
   derived: ReturnType<typeof computeFinancialPlan>;
   onChangeSelected: (s: FinancialPlanInputs['selectedScenario']) => void;
 }) {
   const scenarios: { id: FinancialPlanInputs['selectedScenario']; label: string; value: number; hint: string }[] = [
-    { id: 'conservative', label: 'Conservative', value: derived.revenue.conservative, hint: 'Lower sell-through' },
-    { id: 'target', label: 'Target', value: derived.revenue.target, hint: 'Base case' },
-    { id: 'stretch', label: 'Stretch', value: derived.revenue.stretch, hint: 'Strong season' },
+    { id: 'conservative', label: fp.scenarioConservative, value: derived.revenue.conservative, hint: fp.scenarioConservativeHint },
+    { id: 'target', label: fp.scenarioTarget, value: derived.revenue.target, hint: fp.scenarioTargetHint },
+    { id: 'stretch', label: fp.scenarioStretch, value: derived.revenue.stretch, hint: fp.scenarioStretchHint },
   ];
   return (
-    <ChapterCard number="02" title="Revenue projection" subtitle="Three scenarios · pick a commitment">
+    <ChapterCard number="02" title={fp.revenueTitle} subtitle={fp.revenueSubtitle}>
       <div className="space-y-3 mt-6">
         {scenarios.map(s => {
           const selected = inputs.selectedScenario === s.id;
@@ -383,17 +389,20 @@ function RevenueCard({ inputs, derived, onChangeSelected }: {
   );
 }
 
-function MarginCard({ derived, pending }: { derived: ReturnType<typeof computeFinancialPlan>; pending: boolean }) {
+function MarginCard({ fp, derived, pending }: { fp: FpT; derived: ReturnType<typeof computeFinancialPlan>; pending: boolean }) {
+  const roiPayback = fp.marginRoiPayback
+    .replace('{roi}', formatPct(derived.kpis.roi * 100))
+    .replace('{months}', String(Math.round(derived.kpis.paybackMonths)));
   return (
-    <ChapterCard number="03" title="Margin story" subtitle="Gross → contribution">
+    <ChapterCard number="03" title={fp.marginTitle} subtitle={fp.marginSubtitle}>
       <div className="space-y-5 mt-6">
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
-            <span className="text-[13px] text-carbon/70">Gross margin</span>
+            <span className="text-[13px] text-carbon/70">{fp.marginGross}</span>
             <span className="text-[18px] font-bold text-carbon tabular-nums">{formatEur(derived.margin.grossMargin, { compact: true })}</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-[11px] text-carbon/40">after COGS</span>
+            <span className="text-[11px] text-carbon/40">{fp.marginAfterCogs}</span>
             <span className="text-[12px] font-semibold text-carbon/60 tabular-nums">{formatPct(derived.margin.grossMarginPct)}</span>
           </div>
         </div>
@@ -401,31 +410,29 @@ function MarginCard({ derived, pending }: { derived: ReturnType<typeof computeFi
         <div>
           <div className="flex items-baseline justify-between mb-1.5">
             <span className="text-[13px] text-carbon/70 flex items-center gap-1.5">
-              Contribution margin
-              {pending && <span className="inline-flex px-1.5 py-0.5 rounded-full bg-citronella/15 text-[9px] font-semibold text-carbon/70">ASSUMED</span>}
+              {fp.marginContribution}
+              {pending && <span className="inline-flex px-1.5 py-0.5 rounded-full bg-citronella/15 text-[9px] font-semibold text-carbon/70">{fp.chipAssumed}</span>}
             </span>
             <span className="text-[18px] font-bold text-carbon tabular-nums">{formatEur(derived.margin.contributionMargin, { compact: true })}</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-[11px] text-carbon/40">after marketing</span>
+            <span className="text-[11px] text-carbon/40">{fp.marginAfterMarketing}</span>
             <span className="text-[12px] font-semibold text-carbon/60 tabular-nums">{formatPct(derived.margin.contributionMarginPct)}</span>
           </div>
         </div>
         <div className="pt-3 mt-1 border-t border-carbon/[0.06] flex items-center gap-2">
           <TrendingUp className="h-3.5 w-3.5 text-carbon/40" />
-          <span className="text-[12px] text-carbon/50">
-            ROI {formatPct(derived.kpis.roi * 100)} · payback {Math.round(derived.kpis.paybackMonths)} months
-          </span>
+          <span className="text-[12px] text-carbon/50">{roiPayback}</span>
         </div>
       </div>
     </ChapterCard>
   );
 }
 
-function CashCurveCard({ cashCurve }: { cashCurve: { month: number; cashOut: number; cashIn: number; net: number }[] }) {
+function CashCurveCard({ fp, cashCurve }: { fp: FpT; cashCurve: { month: number; cashOut: number; cashIn: number; net: number }[] }) {
   const chartData = cashCurve.map(p => ({ month: `M${p.month}`, net: Math.round(p.net), cashOut: Math.round(p.cashOut), cashIn: Math.round(p.cashIn) }));
   return (
-    <ChapterCard number="04" title="Cash curve" subtitle="Cumulative net over 12 months">
+    <ChapterCard number="04" title={fp.cashTitle} subtitle={fp.cashSubtitle}>
       <div className="mt-6 h-[180px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
@@ -441,7 +448,7 @@ function CashCurveCard({ cashCurve }: { cashCurve: { month: number; cashOut: num
                    tickFormatter={(v) => Math.abs(v) >= 1000 ? `€${(v / 1000).toFixed(0)}K` : `€${v}`} width={50} />
             <Tooltip
               formatter={(value: number) => formatEur(value, { compact: true })}
-              labelFormatter={(l) => `Month ${l.replace('M', '')}`}
+              labelFormatter={(l) => `${fp.cashMonthsAxis} ${l.replace('M', '')}`}
               contentStyle={{ background: '#fff', border: '1px solid #00000010', borderRadius: 12, fontSize: 12 }}
             />
             <Area type="monotone" dataKey="net" stroke="#000" strokeWidth={2} fill="url(#netFill)" />
@@ -452,20 +459,21 @@ function CashCurveCard({ cashCurve }: { cashCurve: { month: number; cashOut: num
   );
 }
 
-function AssumptionsCard({ assumptions, onChange }: {
+function AssumptionsCard({ fp, assumptions, onChange }: {
+  fp: FpT;
   assumptions: FinancialPlanInputs['assumptions'];
   onChange: (patch: Partial<FinancialPlanInputs['assumptions']>) => void;
 }) {
   const rows: { key: keyof typeof assumptions; label: string; suffix: string; min: number; max: number; hint: string }[] = [
-    { key: 'fullPriceSellThrough', label: 'Full-price sell-through', suffix: '%', min: 30, max: 90, hint: 'How much of the buy sells before markdown.' },
-    { key: 'markdownDepth', label: 'Markdown depth', suffix: '%', min: 10, max: 60, hint: 'Discount on the remainder.' },
-    { key: 'developmentCostPct', label: 'Development cost', suffix: '% of production', min: 3, max: 25, hint: 'Samples, tech packs, fittings.' },
-    { key: 'workingCapitalWeeks', label: 'Working capital', suffix: 'weeks', min: 0, max: 20, hint: 'Inventory sitting before sell-through.' },
+    { key: 'fullPriceSellThrough', label: fp.assumptionFpst, suffix: fp.assumptionFpstUnit, min: 30, max: 90, hint: fp.assumptionFpstHint },
+    { key: 'markdownDepth', label: fp.assumptionMarkdown, suffix: fp.assumptionMarkdownUnit, min: 10, max: 60, hint: fp.assumptionMarkdownHint },
+    { key: 'developmentCostPct', label: fp.assumptionDev, suffix: fp.assumptionDevUnit, min: 3, max: 25, hint: fp.assumptionDevHint },
+    { key: 'workingCapitalWeeks', label: fp.assumptionWc, suffix: fp.assumptionWcUnit, min: 0, max: 20, hint: fp.assumptionWcHint },
   ];
   return (
     <div className="bg-white rounded-[20px] p-10 md:p-12">
-      <div className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">Assumptions</div>
-      <h3 className="text-[22px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-6">The four levers you own</h3>
+      <div className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">{fp.assumptionsTitle}</div>
+      <h3 className="text-[22px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-6">{fp.assumptionsSubtitle}</h3>
       <div className="space-y-5">
         {rows.map(r => (
           <div key={r.key}>
@@ -491,35 +499,35 @@ function AssumptionsCard({ assumptions, onChange }: {
   );
 }
 
-function MarketingCard({ marketing, onChange, targetRevenue }: {
+function MarketingCard({ fp, marketing, onChange, targetRevenue }: {
+  fp: FpT;
   marketing: FinancialPlanInputs['marketing'];
   onChange: (patch: Partial<FinancialPlanInputs['marketing']>) => void;
   targetRevenue: number;
 }) {
   const pending = marketing.status === 'pending';
+  const pendingBody = fp.marketingPendingBody
+    .replace('{pct}', String(marketing.assumedPctOfRevenue))
+    .replace('{amount}', formatEur(targetRevenue * marketing.assumedPctOfRevenue / 100, { compact: true }));
   return (
     <div className={`rounded-[20px] p-10 md:p-12 transition-colors ${pending ? 'bg-citronella/[0.08] border border-citronella/30' : 'bg-white'}`}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Marketing investment</div>
+        <div className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{fp.marketingTitle}</div>
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${
           pending ? 'bg-citronella/30 text-carbon' : 'bg-carbon text-white'
         }`}>
-          {pending ? 'PENDING' : 'COMMITTED'}
+          {pending ? fp.chipPending : fp.chipCommitted}
         </span>
       </div>
       <h3 className="text-[22px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-6">
-        {pending ? 'Budget still to be decided' : 'Budget locked in'}
+        {pending ? fp.marketingPendingHeading : fp.marketingCommittedHeading}
       </h3>
 
       {pending ? (
         <div className="space-y-5">
-          <p className="text-[13px] text-carbon/60 leading-[1.6]">
-            Until you commit a number, margin math assumes marketing runs at
-            <strong className="font-semibold text-carbon"> {marketing.assumedPctOfRevenue}%</strong> of target revenue
-            (≈ {formatEur(targetRevenue * marketing.assumedPctOfRevenue / 100, { compact: true })}).
-          </p>
+          <p className="text-[13px] text-carbon/60 leading-[1.6]">{pendingBody}</p>
           <div>
-            <Label className="text-[13px] text-carbon/70 mb-2 block">Assumed % of revenue</Label>
+            <Label className="text-[13px] text-carbon/70 mb-2 block">{fp.marketingAssumedPct}</Label>
             <Slider
               value={[marketing.assumedPctOfRevenue]}
               min={3}
@@ -529,7 +537,7 @@ function MarketingCard({ marketing, onChange, targetRevenue }: {
               className="[&_[data-slot=slider-track]]:h-2 [&_[data-slot=slider-range]]:bg-carbon/40 [&_[data-slot=slider-thumb]]:size-4 [&_[data-slot=slider-thumb]]:border-2"
             />
             <div className="text-[14px] font-bold text-carbon mt-2 tabular-nums">
-              {marketing.assumedPctOfRevenue}% <span className="text-[11px] font-semibold text-carbon/40">of revenue</span>
+              {marketing.assumedPctOfRevenue}%
             </div>
           </div>
           <Button
@@ -537,7 +545,7 @@ function MarketingCard({ marketing, onChange, targetRevenue }: {
             className="rounded-full w-full"
             onClick={() => onChange({ status: 'set', investment: Math.round(targetRevenue * marketing.assumedPctOfRevenue / 100) })}
           >
-            Commit a number
+            {fp.marketingCommit}
           </Button>
         </div>
       ) : (
@@ -549,13 +557,13 @@ function MarketingCard({ marketing, onChange, targetRevenue }: {
             className="text-[36px] font-bold text-carbon tabular-nums tracking-[-0.03em] bg-transparent border-0 shadow-none focus-visible:ring-0 p-0 h-auto"
             placeholder="0"
           />
-          <div className="text-[11px] text-carbon/40">EUR committed to marketing</div>
+          <div className="text-[11px] text-carbon/40">{fp.marketingCommittedDesc}</div>
           <Button
             variant="outline"
             className="rounded-full w-full"
             onClick={() => onChange({ status: 'pending', investment: null })}
           >
-            Move back to pending
+            {fp.marketingBackToPending}
           </Button>
         </div>
       )}

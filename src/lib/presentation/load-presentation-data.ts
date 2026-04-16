@@ -38,6 +38,10 @@ export interface StatSlideData {
 export interface GridSlideData {
   caption?: string;
   tiles?: { eyebrow: string; label: string; value?: string }[];
+  /** Optional image URLs for photo grids. When present + non-empty,
+      the template renders a photo mosaic instead of label tiles. Used
+      today by the moodboard slide. Other slides keep tile labels. */
+  images?: string[];
 }
 
 export interface TimelineSlideData {
@@ -322,36 +326,57 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
 
   // ─── Grid templates ──────────────────────────────────────────────
 
-  // Moodboard — keywords + trend signals as tiles
+  // Moodboard — prefer real uploaded images; fall back to keywords+trend tiles.
   {
-    const moodTiles: { eyebrow: string; label: string; value?: string }[] = [];
-    if (ctx.moodboard) {
-      const kwMatch = ctx.moodboard.match(/Keywords:\s*(.+)/);
-      if (kwMatch) {
-        kwMatch[1].split(/[,·]/).map(k => k.trim()).filter(Boolean).slice(0, 3).forEach((kw, i) => {
-          moodTiles.push({ eyebrow: ['Texture', 'Form', 'Atmosphere'][i] ?? 'Signal', label: kw });
-        });
-      }
-    }
-    if (ctx.trends) {
-      ctx.trends.split(/\n{1,2}/).map(s => s.trim()).filter(Boolean).slice(0, 6 - moodTiles.length).forEach((line, i) => {
-        // "Title (brands): desc" → Title, brands
-        const m = line.match(/^(.+?)(?:\s*\((.+?)\))?(?::\s*(.+))?$/);
-        const label = m?.[1]?.trim() ?? line;
-        const brands = m?.[2]?.trim();
-        moodTiles.push({
-          eyebrow: brands || 'Trend',
-          label: label.length > 36 ? label.slice(0, 36) + '…' : label,
-          value: String(i + 1).padStart(2, '0'),
-        });
-      });
-    }
-    if (moodTiles.length) {
+    // Read moodboard images from the creative workspace directly. They
+    // live at blockData.moodboard.data.images as string[]. We pick the
+    // first 8 for a 4×2 photo mosaic on the slide.
+    const { data: creativeRow } = await supabaseAdmin
+      .from('collection_workspace_data')
+      .select('data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('workspace', 'creative')
+      .maybeSingle();
+    const creative = (creativeRow?.data || {}) as {
+      blockData?: { moodboard?: { data?: { images?: string[] } } };
+    };
+    const images = creative.blockData?.moodboard?.data?.images ?? [];
+
+    if (images.length > 0) {
       data.grids.moodboard = {
-        caption: 'Keywords and trend signals anchoring the visual voice.',
-        tiles: moodTiles.slice(0, 6),
+        caption: `${images.length} reference${images.length === 1 ? '' : 's'} anchoring the visual voice.`,
+        images: images.slice(0, 8),
       };
       data.hasAnyData = true;
+    } else {
+      const moodTiles: { eyebrow: string; label: string; value?: string }[] = [];
+      if (ctx.moodboard) {
+        const kwMatch = ctx.moodboard.match(/Keywords:\s*(.+)/);
+        if (kwMatch) {
+          kwMatch[1].split(/[,·]/).map(k => k.trim()).filter(Boolean).slice(0, 3).forEach((kw, i) => {
+            moodTiles.push({ eyebrow: ['Texture', 'Form', 'Atmosphere'][i] ?? 'Signal', label: kw });
+          });
+        }
+      }
+      if (ctx.trends) {
+        ctx.trends.split(/\n{1,2}/).map(s => s.trim()).filter(Boolean).slice(0, 6 - moodTiles.length).forEach((line, i) => {
+          const m = line.match(/^(.+?)(?:\s*\((.+?)\))?(?::\s*(.+))?$/);
+          const label = m?.[1]?.trim() ?? line;
+          const brands = m?.[2]?.trim();
+          moodTiles.push({
+            eyebrow: brands || 'Trend',
+            label: label.length > 36 ? label.slice(0, 36) + '…' : label,
+            value: String(i + 1).padStart(2, '0'),
+          });
+        });
+      }
+      if (moodTiles.length) {
+        data.grids.moodboard = {
+          caption: 'Keywords and trend signals anchoring the visual voice.',
+          tiles: moodTiles.slice(0, 6),
+        };
+        data.hasAnyData = true;
+      }
     }
   }
 
