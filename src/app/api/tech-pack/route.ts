@@ -9,7 +9,7 @@ import { getAuthenticatedUser } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 const VALID_SECTIONS = new Set([
-  'header', 'drawings', 'measurements', 'bom', 'grading', 'factory_notes',
+  'header', 'drawings', 'measurements', 'bom', 'grading', 'factory_notes', 'materials',
 ]);
 
 async function ensureOwnership(userId: string, skuId: string): Promise<{ collectionPlanId: string } | null> {

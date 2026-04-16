@@ -48,7 +48,7 @@ export default async function TechPackPage({ params }: PageProps) {
 
   const { data: comments } = await supabaseAdmin
     .from('tech_pack_comments')
-    .select('id, block, body, author_id, author_name, created_at, updated_at')
+    .select('id, block, body, author_id, author_name, drawing_slot, pin_x, pin_y, created_at, updated_at')
     .eq('sku_id', skuId)
     .order('created_at', { ascending: true });
 

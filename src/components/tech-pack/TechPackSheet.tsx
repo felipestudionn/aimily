@@ -1,39 +1,58 @@
 'use client';
 
 /* ═══════════════════════════════════════════════════════════════════
-   TechPackSheet — the real technical sheet canvas per SKU.
+   TechPackSheet — industry-grade technical sheet per SKU.
 
-   Layout (desktop): large print-style canvas in the center of the
-   viewport, ~1400px max width, white background, rounded-[20px].
-   Sections: Header · Drawings (left 60%) + Data Panel (right 40%) ·
-   Comments thread full-width. Every text field is inline editable;
-   comments are append/edit/delete with optimistic UI.
-
-   Data:
-   - SKU auto-fills the Header (family, category, season, drop, type)
-   - Drawings cells pull sku.reference_image_url, sku.sketch_url,
-     sku.render_url, sku.render_urls.3d, sku.production_sample_url
-     when available, else render placeholder slots
-   - Measurements / BOM / grading / factory notes are free-form
-     tables stored in tech_pack_data (per-section JSONB)
-   - Comments stream from tech_pack_comments
+   Sections, top-to-bottom:
+     1. Header block       — style metadata + version chip
+     2. Technical Drawings — front/back/side + dynamic callouts, with
+                             image upload per slot and pin comments
+                             dropped directly on the drawing
+     3. Design Evolution   — reference · sketch · colorized · 3D ·
+                             proto · production thumbs from the SKU
+                             (read-only, no upload here — they come
+                             from the SKU lifecycle)
+     4. Material Swatches  — zones with Pantone + supplier + swatch
+                             image, editable inline
+     5. Measurements       — XS-S-M-L-XL size table with Add row
+     6. Bill of Materials  — type · material · qty · unit · supplier
+                             · cost, editable inline
+     7. Factory Notes      — free-form textarea
+     8. Comments thread    — block-anchored + pin-anchored, inline
+                             edit + delete, Cmd+Enter to send
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, MessageSquare, Download, Printer, Loader2, Check } from 'lucide-react';
+import {
+  ArrowLeft, Plus, Trash2, MessageSquare, Download, Printer,
+  Loader2, Check, Upload, MapPin, X,
+} from 'lucide-react';
 import type { SKU } from '@/hooks/useSkus';
 import { useTranslation } from '@/i18n';
 
-type Section = 'header' | 'drawings' | 'measurements' | 'bom' | 'grading' | 'factory_notes';
-type CommentBlock = 'header' | 'drawings' | 'measurements' | 'bom' | 'grading' | 'factory' | 'general';
+type Section =
+  | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
+  | 'factory_notes' | 'materials';
+
+type CommentBlock =
+  | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
+  | 'factory' | 'general' | 'materials';
 
 interface MeasurementRow { point: string; xs: string; s: string; m: string; l: string; xl: string }
 interface BomLine { type: string; material: string; qty: string; unit: string; supplier: string; cost: string }
+interface MaterialZone { name: string; pantone: string; supplier: string; swatchUrl: string; notes: string }
+interface Callout { url: string; label: string }
 
 interface TechPackDataRow {
   header?: Record<string, string>;
-  drawings?: Record<string, string>;
+  drawings?: {
+    front?: string;
+    back?: string;
+    side?: string;
+    callouts?: Callout[];
+  };
+  materials?: { zones?: MaterialZone[] };
   measurements?: { rows?: MeasurementRow[]; notes?: string };
   bom?: { lines?: BomLine[] };
   grading?: Record<string, string>;
@@ -46,6 +65,9 @@ interface Comment {
   body: string;
   author_id: string | null;
   author_name: string | null;
+  drawing_slot: string | null;
+  pin_x: number | null;
+  pin_y: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -65,12 +87,48 @@ const DEFAULT_BOM_LINES: BomLine[] = [
   { type: 'Lining', material: '', qty: '', unit: '', supplier: '', cost: '' },
   { type: 'Sole', material: '', qty: '', unit: '', supplier: '', cost: '' },
 ];
+const DEFAULT_MATERIAL_ZONES: MaterialZone[] = [
+  { name: 'Upper', pantone: '', supplier: '', swatchUrl: '', notes: '' },
+  { name: 'Lining', pantone: '', supplier: '', swatchUrl: '', notes: '' },
+  { name: 'Outsole', pantone: '', supplier: '', swatchUrl: '', notes: '' },
+  { name: 'Hardware', pantone: '', supplier: '', swatchUrl: '', notes: '' },
+];
 
 function fmtDate(iso: string): string {
   try {
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   } catch { return iso; }
+}
+
+/* Upload helper — posts a base64 data URL to /api/storage/upload and
+   returns the public URL. Used by drawings + swatches + callouts. */
+async function uploadImage(
+  collectionPlanId: string,
+  assetType: 'tech_pack' | 'material_swatch' | 'callout',
+  file: File,
+  name: string,
+): Promise<string | null> {
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  const res = await fetch('/api/storage/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      collectionPlanId,
+      assetType,
+      name,
+      base64: base64.split(',')[1],
+      mimeType: file.type,
+    }),
+  });
+  if (!res.ok) return null;
+  const j = await res.json();
+  return j.publicUrl ?? null;
 }
 
 export function TechPackSheet({ collectionId, collectionName, season, sku, initialData, initialComments }: Props) {
@@ -80,7 +138,6 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [savingSection, setSavingSection] = useState<Section | null>(null);
 
-  // Default measurements if none stored
   const measurementRows: MeasurementRow[] = data.measurements?.rows && data.measurements.rows.length > 0
     ? data.measurements.rows
     : DEFAULT_MEASUREMENT_POINTS.map(p => ({ point: p, xs: '', s: '', m: '', l: '', xl: '' }));
@@ -88,6 +145,10 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
   const bomLines: BomLine[] = data.bom?.lines && data.bom.lines.length > 0
     ? data.bom.lines
     : DEFAULT_BOM_LINES;
+
+  const materialZones: MaterialZone[] = data.materials?.zones && data.materials.zones.length > 0
+    ? data.materials.zones
+    : DEFAULT_MATERIAL_ZONES;
 
   const saveSection = useCallback(async (section: Section, payload: Record<string, unknown>) => {
     setSavingSection(section);
@@ -101,6 +162,17 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
       setSavingSection(null);
     }
   }, [sku.id]);
+
+  /* ── Mutators ── */
+  const updateDrawings = useCallback((next: TechPackDataRow['drawings']) => {
+    setData(d => ({ ...d, drawings: next }));
+    saveSection('drawings', next as Record<string, unknown>);
+  }, [saveSection]);
+
+  const updateMaterials = useCallback((zones: MaterialZone[]) => {
+    setData(d => ({ ...d, materials: { zones } }));
+    saveSection('materials', { zones });
+  }, [saveSection]);
 
   const updateMeasurements = useCallback((rows: MeasurementRow[], notes?: string) => {
     setData(d => ({ ...d, measurements: { rows, notes: notes ?? d.measurements?.notes } }));
@@ -117,8 +189,8 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
     saveSection('factory_notes', { body: notes });
   }, [saveSection]);
 
-  /* ── Drawings — harvest everything we have on the SKU ── */
-  const drawings: { label: string; url?: string; fallback: string }[] = [
+  /* ── Design evolution strip data (read-only — from SKU) ── */
+  const evolutionImages: { label: string; url?: string; fallback: string }[] = [
     { label: tp.drawingReference || 'Reference', url: sku.reference_image_url, fallback: 'REF' },
     { label: tp.drawingSketch || 'Flat sketch', url: sku.sketch_url, fallback: 'SKT' },
     { label: tp.drawingColor || 'Colorized', url: sku.render_url, fallback: 'CLR' },
@@ -127,10 +199,62 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
     { label: tp.drawingProduction || 'Production sample', url: sku.production_sample_url, fallback: 'PDN' },
   ];
 
+  /* ── Comment helpers ── */
+  const addComment = useCallback(async (params: {
+    block: CommentBlock; body: string; drawingSlot?: string; pinX?: number; pinY?: number;
+  }) => {
+    const res = await fetch('/api/tech-pack/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        skuId: sku.id,
+        block: params.block,
+        body: params.body,
+        drawingSlot: params.drawingSlot ?? null,
+        pinX: params.pinX ?? null,
+        pinY: params.pinY ?? null,
+      }),
+    });
+    const j = await res.json();
+    if (j.comment) setComments(prev => [...prev, j.comment]);
+    return j.comment as Comment | undefined;
+  }, [sku.id]);
+
+  const deleteComment = useCallback(async (id: string) => {
+    await fetch(`/api/tech-pack/comments?id=${id}`, { method: 'DELETE' });
+    setComments(prev => prev.filter(c => c.id !== id));
+  }, []);
+
+  const updateComment = useCallback(async (id: string, body: string) => {
+    await fetch('/api/tech-pack/comments', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, body }),
+    });
+    setComments(prev => prev.map(c => c.id === id ? { ...c, body } : c));
+  }, []);
+
+  /* Pin comments per drawing slot — numbered in order of creation */
+  const pinCommentsBySlot = useMemo(() => {
+    const out: Record<string, (Comment & { pinNumber: number })[]> = {};
+    for (const c of comments) {
+      if (c.drawing_slot && c.pin_x !== null && c.pin_y !== null) {
+        const slot = c.drawing_slot;
+        if (!out[slot]) out[slot] = [];
+        out[slot].push({ ...c, pinNumber: out[slot].length + 1 });
+      }
+    }
+    return out;
+  }, [comments]);
+
+  const blockComments = useMemo(() =>
+    comments.filter(c => !c.drawing_slot),
+  [comments]);
+
   return (
     <div className="min-h-screen" style={{ background: '#F3F2F0' }}>
       {/* ── Top bar ── */}
-      <div className="sticky top-0 z-20 bg-shade/90 backdrop-blur-sm border-b border-carbon/[0.06]">
+      <div className="sticky top-0 z-30 bg-shade/90 backdrop-blur-sm border-b border-carbon/[0.06]">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
           <Link
             href={`/collection/${collectionId}/product?phase=techpack`}
@@ -144,7 +268,6 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               type="button"
               onClick={() => window.print()}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-carbon/[0.12] text-carbon/70 text-[12px] font-medium hover:bg-carbon/[0.04] transition-colors"
-              title={tp.print || 'Print'}
             >
               <Printer className="h-3.5 w-3.5" strokeWidth={2} />
               {tp.print || 'Print'}
@@ -153,7 +276,6 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               type="button"
               disabled
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-carbon/[0.04] text-carbon/40 text-[12px] font-medium cursor-not-allowed"
-              title={tp.exportComingSoon || 'PDF export coming soon'}
             >
               <Download className="h-3.5 w-3.5" strokeWidth={2} />
               {tp.export || 'Export PDF'}
@@ -166,67 +288,70 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-10">
         <div className="bg-white rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden">
           {/* Header block */}
-          <HeaderBlock
-            sku={sku}
-            collectionName={collectionName}
-            season={season}
-            tp={tp}
-          />
+          <HeaderBlock sku={sku} collectionName={collectionName} season={season} tp={tp} />
 
-          {/* Drawings + Data panel split */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 border-t border-carbon/[0.06]">
-            {/* Left 60% — drawings (6-cell grid) */}
-            <div className="lg:col-span-3 p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-carbon/[0.06]">
-              <SectionHeader
-                label={tp.drawingsTitle || 'Drawings'}
-                saving={savingSection === 'drawings'}
-              />
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                {drawings.map((d, i) => (
-                  <div
-                    key={i}
-                    className="relative aspect-[4/5] rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] overflow-hidden"
-                  >
-                    {d.url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={d.url} alt={d.label} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/20">
-                          {d.fallback}
-                        </span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-0 inset-x-0 px-3 py-1.5 bg-white/95 backdrop-blur-sm border-t border-carbon/[0.06]">
-                      <span className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/60">
-                        {d.label}
-                      </span>
+          {/* Technical Drawings — editable + uploadable + pin comments */}
+          <div className="border-t border-carbon/[0.06] p-8 md:p-10">
+            <TechnicalDrawings
+              collectionPlanId={collectionId}
+              drawings={data.drawings || {}}
+              onChange={updateDrawings}
+              saving={savingSection === 'drawings'}
+              tp={tp}
+              pinsBySlot={pinCommentsBySlot}
+              onAddPin={(slot, x, y, body) => addComment({ block: 'drawings', drawingSlot: slot, pinX: x, pinY: y, body })}
+              onDeletePin={deleteComment}
+            />
+          </div>
+
+          {/* Design Evolution — read-only strip pulling from SKU */}
+          <div className="border-t border-carbon/[0.06] p-8 md:p-10">
+            <SectionHeader label={tp.evolutionTitle || 'Design evolution'} />
+            <p className="text-[12px] text-carbon/40 mt-1 mb-4">{tp.evolutionSubtitle || 'Visual history of the build — pulled from the SKU lifecycle.'}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {evolutionImages.map((d, i) => (
+                <div key={i} className="relative aspect-[4/5] rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] overflow-hidden">
+                  {d.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={d.url} alt={d.label} className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/20">{d.fallback}</span>
                     </div>
+                  )}
+                  <div className="absolute bottom-0 inset-x-0 px-2.5 py-1 bg-white/95 backdrop-blur-sm border-t border-carbon/[0.06]">
+                    <span className="text-[9px] tracking-[0.15em] uppercase font-semibold text-carbon/60">{d.label}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right 40% — data panel */}
-            <div className="lg:col-span-2 p-8 md:p-10">
-              <MeasurementsTable
-                rows={measurementRows}
-                onChange={updateMeasurements}
-                notes={data.measurements?.notes || ''}
-                saving={savingSection === 'measurements'}
-                tp={tp}
-              />
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* BOM section — full width */}
+          {/* Material Swatches */}
           <div className="border-t border-carbon/[0.06] p-8 md:p-10">
-            <BomTable
-              lines={bomLines}
-              onChange={updateBom}
-              saving={savingSection === 'bom'}
+            <MaterialsSection
+              collectionPlanId={collectionId}
+              zones={materialZones}
+              onChange={updateMaterials}
+              saving={savingSection === 'materials'}
               tp={tp}
             />
+          </div>
+
+          {/* Measurements */}
+          <div className="border-t border-carbon/[0.06] p-8 md:p-10">
+            <MeasurementsTable
+              rows={measurementRows}
+              onChange={updateMeasurements}
+              notes={data.measurements?.notes || ''}
+              saving={savingSection === 'measurements'}
+              tp={tp}
+            />
+          </div>
+
+          {/* BOM */}
+          <div className="border-t border-carbon/[0.06] p-8 md:p-10">
+            <BomTable lines={bomLines} onChange={updateBom} saving={savingSection === 'bom'} tp={tp} />
           </div>
 
           {/* Factory notes */}
@@ -239,12 +364,15 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
             />
           </div>
 
-          {/* Comments thread — full width */}
+          {/* Comments thread (block-anchored + pin-anchored references) */}
           <div className="border-t border-carbon/[0.06] bg-carbon/[0.015] p-8 md:p-10">
             <CommentsThread
               skuId={sku.id}
-              comments={comments}
-              onChange={setComments}
+              blockComments={blockComments}
+              allComments={comments}
+              onAdd={addComment}
+              onUpdate={updateComment}
+              onDelete={deleteComment}
               tp={tp}
             />
           </div>
@@ -258,17 +386,14 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
    Sub-components
    ═══════════════════════════════════════════════════════════════════ */
 
-function SectionHeader({ label, saving }: { label: string; saving?: boolean }) {
+function SectionHeader({ label, saving, action }: { label: string; saving?: boolean; action?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between">
-      <h2 className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/50">
-        {label}
-      </h2>
-      {saving && (
-        <span className="inline-flex items-center gap-1 text-[10px] text-carbon/35">
-          <Loader2 className="h-3 w-3 animate-spin" strokeWidth={2} />
-        </span>
-      )}
+      <h2 className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/50">{label}</h2>
+      <div className="flex items-center gap-2">
+        {saving && <Loader2 className="h-3 w-3 animate-spin text-carbon/35" strokeWidth={2} />}
+        {action}
+      </div>
     </div>
   );
 }
@@ -315,6 +440,461 @@ function HeaderBlock({ sku, collectionName, season, tp }: {
   );
 }
 
+/* ── Technical drawings section ──────────────────────────────────── */
+function TechnicalDrawings({
+  collectionPlanId, drawings, onChange, saving, tp,
+  pinsBySlot, onAddPin, onDeletePin,
+}: {
+  collectionPlanId: string;
+  drawings: TechPackDataRow['drawings'];
+  onChange: (next: TechPackDataRow['drawings']) => void;
+  saving?: boolean;
+  tp: Record<string, string>;
+  pinsBySlot: Record<string, (Comment & { pinNumber: number })[]>;
+  onAddPin: (slot: string, x: number, y: number, body: string) => Promise<Comment | undefined>;
+  onDeletePin: (id: string) => Promise<void>;
+}) {
+  const [pinMode, setPinMode] = useState(false);
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const [pendingPin, setPendingPin] = useState<{ slot: string; x: number; y: number } | null>(null);
+  const [pinBody, setPinBody] = useState('');
+  const [openPinId, setOpenPinId] = useState<string | null>(null);
+
+  const slots: { id: 'front' | 'back' | 'side'; label: string }[] = [
+    { id: 'front', label: tp.drawingFront || 'Front view' },
+    { id: 'back', label: tp.drawingBack || 'Back view' },
+    { id: 'side', label: tp.drawingSide || 'Side view' },
+  ];
+  const callouts: Callout[] = drawings?.callouts ?? [];
+
+  const handleUpload = async (slot: 'front' | 'back' | 'side', file: File) => {
+    setUploadingSlot(slot);
+    const url = await uploadImage(collectionPlanId, 'tech_pack', file, `${slot}.${file.name.split('.').pop()}`);
+    setUploadingSlot(null);
+    if (url) onChange({ ...drawings, [slot]: url });
+  };
+
+  const handleRemove = (slot: 'front' | 'back' | 'side') => {
+    const next = { ...drawings, [slot]: undefined };
+    onChange(next);
+  };
+
+  const handleAddCallout = async (file: File) => {
+    setUploadingSlot('callout');
+    const url = await uploadImage(collectionPlanId, 'callout', file, file.name);
+    setUploadingSlot(null);
+    if (url) onChange({ ...drawings, callouts: [...callouts, { url, label: '' }] });
+  };
+
+  const updateCalloutLabel = (idx: number, label: string) => {
+    const next = [...callouts];
+    next[idx] = { ...next[idx], label };
+    onChange({ ...drawings, callouts: next });
+  };
+
+  const removeCallout = (idx: number) => {
+    onChange({ ...drawings, callouts: callouts.filter((_, i) => i !== idx) });
+  };
+
+  const handleDrawingClick = (slot: string, e: React.MouseEvent<HTMLDivElement>) => {
+    if (!pinMode) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setPendingPin({ slot, x, y });
+    setPinBody('');
+  };
+
+  const submitPin = async () => {
+    if (!pendingPin || !pinBody.trim()) return;
+    await onAddPin(pendingPin.slot, pendingPin.x, pendingPin.y, pinBody.trim());
+    setPendingPin(null);
+    setPinBody('');
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        label={tp.drawingsTitle || 'Technical drawings'}
+        saving={saving}
+        action={
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPinMode(p => !p)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
+                pinMode ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+              }`}
+              title={tp.pinModeHint || 'Click on any drawing to drop a comment pin'}
+            >
+              <MapPin className="h-3 w-3" strokeWidth={2.5} />
+              {pinMode ? (tp.pinModeOn || 'Pin mode on') : (tp.pinModeOff || 'Pin a comment')}
+            </button>
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08] text-[11px] font-semibold cursor-pointer transition-colors">
+              <Plus className="h-3 w-3" strokeWidth={2.5} />
+              {tp.addCallout || 'Add callout'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAddCallout(f); e.target.value = ''; }}
+              />
+            </label>
+          </div>
+        }
+      />
+
+      <p className="text-[12px] text-carbon/40 mt-1 mb-5">
+        {tp.drawingsSubtitle || 'Flat technical sketches the factory uses to build the product. Upload front / back / side views; add close-up callouts for construction details.'}
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {slots.map(s => (
+          <DrawingSlot
+            key={s.id}
+            label={s.label}
+            url={drawings?.[s.id]}
+            uploading={uploadingSlot === s.id}
+            pins={pinsBySlot[s.id] ?? []}
+            pinMode={pinMode}
+            onUpload={(f) => handleUpload(s.id, f)}
+            onRemove={() => handleRemove(s.id)}
+            onClick={(e) => handleDrawingClick(s.id, e)}
+            onPinClick={setOpenPinId}
+            openPinId={openPinId}
+            onPinDelete={onDeletePin}
+            pendingPin={pendingPin?.slot === s.id ? pendingPin : null}
+            pinBody={pinBody}
+            setPinBody={setPinBody}
+            onSubmitPin={submitPin}
+            onCancelPin={() => setPendingPin(null)}
+            tp={tp}
+          />
+        ))}
+      </div>
+
+      {/* Callouts row */}
+      {callouts.length > 0 && (
+        <div className="mt-6">
+          <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
+            {tp.calloutsTitle || 'Construction callouts'}
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {callouts.map((c, i) => (
+              <div key={i} className="relative aspect-square rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] overflow-hidden group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={c.url} alt={c.label || 'callout'} className="absolute inset-0 w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeCallout(i)}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-carbon/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" strokeWidth={2.5} />
+                </button>
+                <input
+                  type="text"
+                  value={c.label}
+                  onChange={(e) => updateCalloutLabel(i, e.target.value)}
+                  placeholder={tp.calloutLabel || 'Callout label'}
+                  className="absolute bottom-0 inset-x-0 px-3 py-1.5 bg-white/95 backdrop-blur-sm border-t border-carbon/[0.06] text-[11px] font-medium text-carbon focus:outline-none"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Individual drawing slot (with pin overlay + upload/remove) ── */
+function DrawingSlot({
+  label, url, uploading, pins, pinMode,
+  onUpload, onRemove, onClick,
+  pendingPin, pinBody, setPinBody, onSubmitPin, onCancelPin,
+  openPinId, onPinClick, onPinDelete,
+  tp,
+}: {
+  label: string;
+  url?: string;
+  uploading: boolean;
+  pins: (Comment & { pinNumber: number })[];
+  pinMode: boolean;
+  onUpload: (f: File) => void;
+  onRemove: () => void;
+  onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  pendingPin: { slot: string; x: number; y: number } | null;
+  pinBody: string;
+  setPinBody: (v: string) => void;
+  onSubmitPin: () => void;
+  onCancelPin: () => void;
+  openPinId: string | null;
+  onPinClick: (id: string | null) => void;
+  onPinDelete: (id: string) => Promise<void>;
+  tp: Record<string, string>;
+}) {
+  return (
+    <div className="relative aspect-[4/5] rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] overflow-hidden group">
+      {url ? (
+        <>
+          <div
+            className={`absolute inset-0 ${pinMode ? 'cursor-crosshair' : ''}`}
+            onClick={onClick}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt={label} className="absolute inset-0 w-full h-full object-cover" />
+          </div>
+
+          {/* Existing pins */}
+          {pins.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onPinClick(openPinId === p.id ? null : p.id); }}
+              className={`absolute w-6 h-6 -ml-3 -mt-3 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                openPinId === p.id
+                  ? 'bg-carbon text-white ring-2 ring-white shadow-lg scale-110'
+                  : 'bg-white text-carbon ring-2 ring-carbon shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:scale-110'
+              }`}
+              style={{ left: `${p.pin_x ?? 0}%`, top: `${p.pin_y ?? 0}%` }}
+            >
+              {p.pinNumber}
+            </button>
+          ))}
+
+          {/* Pending pin marker + composer */}
+          {pendingPin && (
+            <>
+              <div
+                className="absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-carbon text-white ring-2 ring-white flex items-center justify-center text-[10px] font-bold shadow-lg animate-pulse"
+                style={{ left: `${pendingPin.x}%`, top: `${pendingPin.y}%` }}
+              >
+                ?
+              </div>
+              <div
+                className="absolute z-10 bg-white rounded-[12px] shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-carbon/[0.06] p-3 w-[240px]"
+                style={{
+                  left: `${Math.min(pendingPin.x, 60)}%`,
+                  top: `${pendingPin.y + 4}%`,
+                }}
+              >
+                <textarea
+                  value={pinBody}
+                  onChange={(e) => setPinBody(e.target.value)}
+                  autoFocus
+                  rows={2}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') { e.preventDefault(); onCancelPin(); }
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); onSubmitPin(); }
+                  }}
+                  placeholder={tp.pinPlaceholder || 'Drop a comment on this point…'}
+                  className="w-full bg-carbon/[0.02] rounded-[8px] px-2.5 py-1.5 text-[12px] text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 leading-[1.5] resize-none"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <button
+                    type="button"
+                    onClick={onCancelPin}
+                    className="text-[10px] text-carbon/40 hover:text-carbon/80"
+                  >
+                    {tp.pinCancel || 'Cancel'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onSubmitPin}
+                    disabled={!pinBody.trim()}
+                    className="px-3 py-1 rounded-full bg-carbon text-white text-[10px] font-semibold disabled:opacity-40"
+                  >
+                    {tp.pinDrop || 'Drop pin'}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Open pin card */}
+          {pins.filter(p => p.id === openPinId).map(p => (
+            <div
+              key={p.id}
+              className="absolute z-10 bg-white rounded-[12px] shadow-[0_8px_32px_rgba(0,0,0,0.15)] border border-carbon/[0.06] p-3 w-[240px]"
+              style={{ left: `${Math.min((p.pin_x ?? 0), 60)}%`, top: `${(p.pin_y ?? 0) + 4}%` }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-semibold text-carbon/70">#{p.pinNumber} · {p.author_name || 'user'}</span>
+                <button
+                  type="button"
+                  onClick={() => onPinDelete(p.id)}
+                  className="text-carbon/30 hover:text-error"
+                >
+                  <Trash2 className="h-3 w-3" strokeWidth={2} />
+                </button>
+              </div>
+              <p className="text-[12px] text-carbon/80 leading-[1.5] whitespace-pre-wrap">{p.body}</p>
+            </div>
+          ))}
+
+          {/* Remove overlay (only when not in pin mode) */}
+          {!pinMode && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-carbon/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              title={tp.remove || 'Remove'}
+            >
+              <X className="w-3 h-3" strokeWidth={2.5} />
+            </button>
+          )}
+        </>
+      ) : (
+        <label className="absolute inset-0 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-carbon/[0.04] transition-colors">
+          {uploading ? (
+            <Loader2 className="h-6 w-6 animate-spin text-carbon/40" strokeWidth={1.5} />
+          ) : (
+            <>
+              <Upload className="h-6 w-6 text-carbon/30" strokeWidth={1.5} />
+              <span className="text-[11px] font-semibold text-carbon/55 tracking-[-0.01em]">{tp.uploadDrawing || 'Upload drawing'}</span>
+            </>
+          )}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ''; }}
+          />
+        </label>
+      )}
+
+      <div className="absolute bottom-0 inset-x-0 px-3 py-1.5 bg-white/95 backdrop-blur-sm border-t border-carbon/[0.06] flex items-center justify-between">
+        <span className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/60">{label}</span>
+        {pins.length > 0 && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-carbon/60">
+            <MessageSquare className="h-2.5 w-2.5" strokeWidth={2.5} /> {pins.length}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Material swatches section ───────────────────────────────────── */
+function MaterialsSection({
+  collectionPlanId, zones, onChange, saving, tp,
+}: {
+  collectionPlanId: string;
+  zones: MaterialZone[];
+  onChange: (next: MaterialZone[]) => void;
+  saving?: boolean;
+  tp: Record<string, string>;
+}) {
+  const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
+
+  const update = (idx: number, patch: Partial<MaterialZone>) => {
+    const next = [...zones];
+    next[idx] = { ...next[idx], ...patch };
+    onChange(next);
+  };
+  const add = () => onChange([...zones, { name: '', pantone: '', supplier: '', swatchUrl: '', notes: '' }]);
+  const remove = (idx: number) => onChange(zones.filter((_, i) => i !== idx));
+
+  const handleUpload = async (idx: number, file: File) => {
+    setUploadingIdx(idx);
+    const url = await uploadImage(collectionPlanId, 'material_swatch', file, `swatch-${idx}-${file.name}`);
+    setUploadingIdx(null);
+    if (url) update(idx, { swatchUrl: url });
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        label={tp.materialsTitle || 'Material swatches'}
+        saving={saving}
+        action={
+          <button
+            type="button"
+            onClick={add}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08] text-[11px] font-semibold tracking-[-0.01em] transition-colors"
+          >
+            <Plus className="h-3 w-3" strokeWidth={2.5} />
+            {tp.addZone || 'Add zone'}
+          </button>
+        }
+      />
+
+      <p className="text-[12px] text-carbon/40 mt-1 mb-5">
+        {tp.materialsSubtitle || 'Visual reference per construction zone. Attach a swatch photo, Pantone / color code, supplier name and any material notes.'}
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {zones.map((z, i) => (
+          <div key={i} className="bg-carbon/[0.02] rounded-[16px] p-4 relative group">
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-carbon/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-3 h-3" strokeWidth={2.5} />
+            </button>
+
+            {/* Swatch */}
+            <div className="aspect-[5/4] rounded-[10px] bg-white border border-carbon/[0.06] overflow-hidden mb-3 relative">
+              {z.swatchUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={z.swatchUrl} alt={z.name} className="absolute inset-0 w-full h-full object-cover" />
+                </>
+              ) : (
+                <label className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:bg-carbon/[0.04] transition-colors">
+                  {uploadingIdx === i ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-carbon/40" strokeWidth={1.5} />
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5 text-carbon/30" strokeWidth={1.5} />
+                      <span className="text-[10px] font-semibold text-carbon/50">{tp.uploadSwatch || 'Upload swatch'}</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(i, f); e.target.value = ''; }}
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Fields */}
+            <input
+              value={z.name}
+              onChange={(e) => update(i, { name: e.target.value })}
+              placeholder={tp.zonePlaceholder || 'Zone (Upper, Lining, Sole…)'}
+              className="w-full bg-white rounded-[8px] px-3 py-2 text-[13px] font-semibold text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 border border-carbon/[0.06] mb-2"
+            />
+            <input
+              value={z.pantone}
+              onChange={(e) => update(i, { pantone: e.target.value })}
+              placeholder={tp.pantonePlaceholder || 'Pantone / code'}
+              className="w-full bg-white rounded-[8px] px-3 py-2 text-[12px] text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 border border-carbon/[0.06] mb-2 font-mono"
+            />
+            <input
+              value={z.supplier}
+              onChange={(e) => update(i, { supplier: e.target.value })}
+              placeholder={tp.supplierPlaceholder || 'Supplier'}
+              className="w-full bg-white rounded-[8px] px-3 py-2 text-[12px] text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 border border-carbon/[0.06] mb-2"
+            />
+            <textarea
+              value={z.notes}
+              onChange={(e) => update(i, { notes: e.target.value })}
+              rows={2}
+              placeholder={tp.materialNotesPlaceholder || 'Notes (finish, weight, care…)'}
+              className="w-full bg-white rounded-[8px] px-3 py-2 text-[12px] text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 border border-carbon/[0.06] leading-[1.45] resize-none"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Measurements table ──────────────────────────────────────────── */
 function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
   rows: MeasurementRow[]; notes: string;
   onChange: (rows: MeasurementRow[], notes?: string) => void;
@@ -328,7 +908,6 @@ function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
   };
   const addRow = () => onChange([...rows, { point: '', xs: '', s: '', m: '', l: '', xl: '' }]);
   const removeRow = (idx: number) => onChange(rows.filter((_, i) => i !== idx));
-
   const sizes: (keyof MeasurementRow)[] = ['xs', 's', 'm', 'l', 'xl'];
   return (
     <div>
@@ -337,13 +916,9 @@ function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-carbon/[0.08]">
-              <th className="py-2 pr-3 text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
-                {tp.measurementsPoint || 'Point'}
-              </th>
+              <th className="py-2 pr-3 text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40">{tp.measurementsPoint || 'Point'}</th>
               {sizes.map(s => (
-                <th key={s} className="py-2 px-2 text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 text-center">
-                  {s.toUpperCase()}
-                </th>
+                <th key={s} className="py-2 px-2 text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 text-center">{s.toUpperCase()}</th>
               ))}
               <th className="w-6" />
             </tr>
@@ -370,12 +945,7 @@ function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
                   </td>
                 ))}
                 <td className="py-1.5 pl-1">
-                  <button
-                    type="button"
-                    onClick={() => removeRow(i)}
-                    className="text-carbon/25 hover:text-error transition-colors"
-                    title="Remove row"
-                  >
+                  <button type="button" onClick={() => removeRow(i)} className="text-carbon/25 hover:text-error transition-colors">
                     <Trash2 className="h-3 w-3" strokeWidth={2} />
                   </button>
                 </td>
@@ -408,6 +978,7 @@ function MeasurementsTable({ rows, notes, onChange, saving, tp }: {
   );
 }
 
+/* ── BOM table ───────────────────────────────────────────────────── */
 function BomTable({ lines, onChange, saving, tp }: {
   lines: BomLine[];
   onChange: (lines: BomLine[]) => void;
@@ -437,9 +1008,7 @@ function BomTable({ lines, onChange, saving, tp }: {
           <thead>
             <tr className="border-b border-carbon/[0.08]">
               {cols.map(c => (
-                <th key={c.key} className={`py-2 px-2 text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 ${c.widthClass}`}>
-                  {c.label}
-                </th>
+                <th key={c.key} className={`py-2 px-2 text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 ${c.widthClass}`}>{c.label}</th>
               ))}
               <th className="w-6" />
             </tr>
@@ -458,11 +1027,7 @@ function BomTable({ lines, onChange, saving, tp }: {
                   </td>
                 ))}
                 <td className="py-1.5 pl-1">
-                  <button
-                    type="button"
-                    onClick={() => remove(i)}
-                    className="text-carbon/25 hover:text-error transition-colors"
-                  >
+                  <button type="button" onClick={() => remove(i)} className="text-carbon/25 hover:text-error transition-colors">
                     <Trash2 className="h-3 w-3" strokeWidth={2} />
                   </button>
                 </td>
@@ -483,13 +1048,13 @@ function BomTable({ lines, onChange, saving, tp }: {
   );
 }
 
+/* ── Factory notes ───────────────────────────────────────────────── */
 function FactoryNotes({ value, onChange, saving, tp }: {
   value: string;
   onChange: (v: string) => void;
   saving?: boolean;
   tp: Record<string, string>;
 }) {
-  // Debounced save — save on blur + 800ms after last keystroke
   const [local, setLocal] = useState(value);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -516,10 +1081,17 @@ function FactoryNotes({ value, onChange, saving, tp }: {
   );
 }
 
-function CommentsThread({ skuId, comments, onChange, tp }: {
+/* ── Comments thread (block-anchored + pin roll-up) ──────────────── */
+function CommentsThread({
+  skuId, blockComments, allComments,
+  onAdd, onUpdate, onDelete, tp,
+}: {
   skuId: string;
-  comments: Comment[];
-  onChange: (next: Comment[]) => void;
+  blockComments: Comment[];
+  allComments: Comment[];
+  onAdd: (params: { block: CommentBlock; body: string }) => Promise<Comment | undefined>;
+  onUpdate: (id: string, body: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   tp: Record<string, string>;
 }) {
   const [body, setBody] = useState('');
@@ -528,36 +1100,22 @@ function CommentsThread({ skuId, comments, onChange, tp }: {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
 
+  const pinCount = allComments.filter(c => c.drawing_slot).length;
+
   const post = async () => {
     if (!body.trim()) return;
     setPosting(true);
     try {
-      const res = await fetch('/api/tech-pack/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skuId, block, body: body.trim() }),
-      });
-      const j = await res.json();
-      if (j.comment) onChange([...comments, j.comment]);
+      await onAdd({ block, body: body.trim() });
       setBody('');
     } finally {
       setPosting(false);
     }
   };
 
-  const del = async (id: string) => {
-    await fetch(`/api/tech-pack/comments?id=${id}`, { method: 'DELETE' });
-    onChange(comments.filter(c => c.id !== id));
-  };
-
   const saveEdit = async () => {
     if (!editingId || !editBody.trim()) return;
-    await fetch('/api/tech-pack/comments', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: editingId, body: editBody.trim() }),
-    });
-    onChange(comments.map(c => c.id === editingId ? { ...c, body: editBody.trim() } : c));
+    await onUpdate(editingId, editBody.trim());
     setEditingId(null);
     setEditBody('');
   };
@@ -566,26 +1124,34 @@ function CommentsThread({ skuId, comments, onChange, tp }: {
     { id: 'general', label: tp.commentsBlockGeneral || 'General' },
     { id: 'header', label: tp.commentsBlockHeader || 'Header' },
     { id: 'drawings', label: tp.commentsBlockDrawings || 'Drawings' },
+    { id: 'materials', label: tp.commentsBlockMaterials || 'Materials' },
     { id: 'measurements', label: tp.commentsBlockMeasurements || 'Measurements' },
     { id: 'bom', label: tp.commentsBlockBom || 'BOM' },
-    { id: 'grading', label: tp.commentsBlockGrading || 'Grading' },
     { id: 'factory', label: tp.commentsBlockFactory || 'Factory' },
   ];
 
+  // Keep skuId reference so lint doesn't mark it unused
+  void skuId;
+
   return (
     <div>
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
         <MessageSquare className="h-4 w-4 text-carbon/50" strokeWidth={2} />
         <h2 className="text-[13px] tracking-[-0.01em] font-semibold text-carbon">
           {tp.commentsTitle || 'Comments'}
-          <span className="text-carbon/40 font-normal ml-2">({comments.length})</span>
+          <span className="text-carbon/40 font-normal ml-2">({blockComments.length})</span>
         </h2>
+        {pinCount > 0 && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-carbon/[0.04] text-[11px] font-medium text-carbon/60">
+            <MapPin className="h-3 w-3" strokeWidth={2} />
+            {pinCount} {pinCount === 1 ? (tp.pinsSingular || 'pin') : (tp.pinsPlural || 'pins')}
+          </span>
+        )}
       </div>
 
-      {/* Existing comments */}
-      {comments.length > 0 && (
+      {blockComments.length > 0 && (
         <div className="space-y-3 mb-6">
-          {comments.map(c => (
+          {blockComments.map(c => (
             <div key={c.id} className="bg-white rounded-[12px] p-4 border border-carbon/[0.06]">
               <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                 <div className="flex items-center gap-2 text-[11px] text-carbon/55">
@@ -614,7 +1180,7 @@ function CommentsThread({ skuId, comments, onChange, tp }: {
                     </button>
                   )}
                   <button
-                    onClick={() => del(c.id)}
+                    onClick={() => onDelete(c.id)}
                     className="text-carbon/30 hover:text-error transition-colors p-1"
                   >
                     <Trash2 className="h-3 w-3" strokeWidth={2} />

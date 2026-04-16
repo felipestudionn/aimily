@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   const { data } = await supabaseAdmin
     .from('tech_pack_comments')
-    .select('id, block, body, author_id, author_name, created_at, updated_at')
+    .select('id, block, body, author_id, author_name, drawing_slot, pin_x, pin_y, created_at, updated_at')
     .eq('sku_id', skuId)
     .order('created_at', { ascending: true });
 
@@ -50,7 +50,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
-  let body: { skuId?: string; block?: string; body?: string };
+  let body: {
+    skuId?: string;
+    block?: string;
+    body?: string;
+    drawingSlot?: string | null;
+    pinX?: number | null;
+    pinY?: number | null;
+  };
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   if (!body.skuId || !body.block || !VALID_BLOCKS.has(body.block) || !body.body?.trim()) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
@@ -59,6 +66,7 @@ export async function POST(req: NextRequest) {
   if (!collectionPlanId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const authorName = user!.email?.split('@')[0] || null;
+  const isPin = typeof body.pinX === 'number' && typeof body.pinY === 'number' && body.drawingSlot;
   const { data, error } = await supabaseAdmin
     .from('tech_pack_comments')
     .insert({
@@ -68,6 +76,9 @@ export async function POST(req: NextRequest) {
       body: body.body.trim(),
       author_id: user!.id,
       author_name: authorName,
+      drawing_slot: isPin ? body.drawingSlot : null,
+      pin_x: isPin ? body.pinX : null,
+      pin_y: isPin ? body.pinY : null,
     })
     .select()
     .single();

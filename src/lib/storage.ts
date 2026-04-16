@@ -34,7 +34,10 @@ export type AssetType =
   | 'editorial'
   | 'tryon'
   | 'model'
-  | 'video';
+  | 'video'
+  | 'tech_pack'
+  | 'material_swatch'
+  | 'callout';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 const ALLOWED_MIME_TYPES = [
