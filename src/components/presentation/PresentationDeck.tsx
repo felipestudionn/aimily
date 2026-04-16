@@ -29,6 +29,7 @@ import type { PresentationData } from '@/lib/presentation/load-presentation-data
 import { SlideRenderer } from './SlideRenderer';
 import { ThemePicker } from './ThemePicker';
 import { PresentationFonts } from './PresentationFonts';
+import { ShareManager } from './ShareManager';
 import { useTranslation } from '@/i18n';
 
 interface Props {
@@ -86,6 +87,9 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
   const [shareExpiry, setShareExpiry] = useState<'never' | '24h' | '7d' | '30d'>('7d');
   const [sharePassword, setSharePassword] = useState('');
   const [sharePasswordOn, setSharePasswordOn] = useState(false);
+  /* Share manager — reveals the list of active shares with revoke. */
+  const [shareManagerOpen, setShareManagerOpen] = useState(false);
+  const [sharesVersion, setSharesVersion] = useState(0);
 
   /* Close Share dropdown on outside click + Esc (reuses the pattern
      from ThemePicker for consistency). */
@@ -138,6 +142,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
       const j = await res.json();
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       setShareUrl(`${origin}/p/${j.token}`);
+      setSharesVersion(v => v + 1);
     } catch (e) {
       setShareError(e instanceof Error ? e.message : 'Failed to create share');
     } finally {
@@ -566,6 +571,25 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                       </div>
                     </>
                   )}
+
+                  {/* Manager toggle + list */}
+                  <div className="mt-4 pt-4 border-t border-carbon/[0.06]">
+                    <button
+                      type="button"
+                      onClick={() => setShareManagerOpen(o => !o)}
+                      className="text-[11px] font-semibold text-carbon/60 hover:text-carbon transition-colors"
+                    >
+                      {shareManagerOpen ? tr.managerToggleClose : tr.managerToggleOpen}
+                    </button>
+                    {shareManagerOpen && (
+                      <div className="mt-3">
+                        <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
+                          {tr.managerTitle}
+                        </div>
+                        <ShareManager collectionId={collectionId} refreshKey={sharesVersion} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

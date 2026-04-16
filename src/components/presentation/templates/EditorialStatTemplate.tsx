@@ -324,7 +324,7 @@ export function EditorialStatTemplate({ slide, meta, title, data: real, editing 
               textTransform: 'uppercase',
             }}
           >
-            Context
+            {tr.tplContext}
           </span>
           <div style={{ margin: '12px 0 0 0' }}>
           <EditableText

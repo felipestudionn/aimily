@@ -10,7 +10,10 @@
    eyebrow bottom-right. Everything theme-tokenised.
    ═══════════════════════════════════════════════════════════════════ */
 
+'use client';
+
 import type { DeckMeta } from '@/lib/presentation/types';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   meta: DeckMeta;
@@ -31,6 +34,7 @@ function formatLaunchDate(d: string | null | undefined): string | null {
 }
 
 export function CoverTemplate({ meta, subtitle }: Props) {
+  const tr = useTranslation().presentation;
   const launch = formatLaunchDate(meta.launchDate);
 
   return (
@@ -125,7 +129,7 @@ export function CoverTemplate({ meta, subtitle }: Props) {
                 marginBottom: '6px',
               }}
             >
-              Launching
+              {tr.tplLaunching}
             </div>
             <div
               style={{
@@ -154,7 +158,7 @@ export function CoverTemplate({ meta, subtitle }: Props) {
               marginBottom: '6px',
             }}
           >
-            Collection
+            {tr.tplCollection}
           </div>
           <div
             style={{

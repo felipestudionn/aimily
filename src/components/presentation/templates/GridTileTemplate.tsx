@@ -9,10 +9,13 @@
    carries a visual slot + 2-line label. Theme-tokenised throughout.
    ═══════════════════════════════════════════════════════════════════ */
 
+'use client';
+
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { GridSlideData } from '@/lib/presentation/load-presentation-data';
 import { EditableText } from '../EditableText';
 import type { EditingContext } from '../SlideRenderer';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   slide: MicroBlockSlide;
@@ -88,6 +91,7 @@ const FALLBACK = {
 };
 
 export function GridTileTemplate({ slide, meta, title, data: cisData, editing }: Props) {
+  const tr = useTranslation().presentation;
   const placeholder = GRID_PLACEHOLDERS[slide.id] ?? FALLBACK;
   /* Photo mode: when the loader supplied images (e.g. moodboard with
      uploaded references), render a photo mosaic instead of label tiles. */
@@ -333,7 +337,7 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
             textTransform: 'uppercase',
           }}
         >
-          06 tiles
+          {String((data.tiles.length || 6)).padStart(2, '0')} {tr.tplTiles}
         </span>
       </div>
     </div>

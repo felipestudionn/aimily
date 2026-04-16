@@ -9,10 +9,13 @@
    position highlighted with the theme accent.
    ═══════════════════════════════════════════════════════════════════ */
 
+'use client';
+
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { TimelineSlideData } from '@/lib/presentation/load-presentation-data';
 import { EditableText } from '../EditableText';
 import type { EditingContext } from '../SlideRenderer';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   slide: MicroBlockSlide;
@@ -74,6 +77,7 @@ const FALLBACK = {
 };
 
 export function TimelineStripTemplate({ slide, meta, title, data: cisData, editing }: Props) {
+  const tr = useTranslation().presentation;
   const placeholder = TIMELINE_PLACEHOLDERS[slide.id] ?? FALLBACK;
   const baseLead = cisData?.lead ?? placeholder.lead;
   const baseMilestones = (cisData?.milestones && cisData.milestones.length > 0)
@@ -280,7 +284,7 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData, editi
             textTransform: 'uppercase',
           }}
         >
-          {data.milestones.filter(m => m.status === 'done').length} / {data.milestones.length} complete
+          {data.milestones.filter(m => m.status === 'done').length} / {data.milestones.length} {tr.tplComplete}
         </span>
       </div>
     </div>
