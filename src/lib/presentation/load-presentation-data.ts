@@ -33,6 +33,15 @@ export interface StatSlideData {
   caption?: string;
   narrative?: string;
   support?: { value: string; label: string }[];
+  /** When 'pending', the template renders a Work-in-Progress overlay
+      instead of the sample-editorial placeholder. Used for slides that
+      have a structural data source defined but no populated data yet
+      (e.g. sales-dashboard before launch, financial-plan before a
+      buying strategy is selected). */
+  status?: 'ready' | 'pending';
+  /** Short contextual note shown under the WIP overlay. Explains what
+      is still needed for the slide to populate. */
+  pendingMessage?: string;
 }
 
 export interface GridSlideData {

@@ -168,29 +168,50 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
       </div>
 
       {/* Photo mosaic (moodboard w/ uploads) — 4×2 grid of cover-fitted
-          images. Falls back to the tile grid below when no images. */}
+          images. Fills exactly the available slide area; no overflow.
+          `minHeight: 0` on the grid + cells keeps the row-track from
+          ballooning to the intrinsic image height. Falls back to the
+          tile grid below when no images. */}
       {photoMode && (
-        <div className="flex-1 grid grid-cols-4 grid-rows-2 gap-3">
-          {images.slice(0, 8).map((src, i) => (
-            <div
-              key={i}
-              style={{
-                background: 'var(--p-surface)',
-                border: '1px solid var(--p-border)',
-                borderRadius: 'var(--p-radius)',
-                overflow: 'hidden',
-                position: 'relative',
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={src}
-                alt=""
-                loading="lazy"
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </div>
-          ))}
+        <div
+          className="grid grid-cols-4 grid-rows-2 gap-3"
+          style={{ flex: '1 1 0', minHeight: 0 }}
+        >
+          {Array.from({ length: 8 }).map((_, i) => {
+            const src = images[i];
+            const cell = (
+              <div
+                key={i}
+                style={{
+                  background: 'var(--p-surface)',
+                  border: '1px solid var(--p-border)',
+                  borderRadius: 'var(--p-radius)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  minHeight: 0,
+                  minWidth: 0,
+                }}
+              >
+                {src && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={src}
+                    alt=""
+                    loading="lazy"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                )}
+              </div>
+            );
+            return cell;
+          })}
         </div>
       )}
 
