@@ -629,139 +629,165 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     );
   }
 
+  /* Gold-standard title per phase — centered header matches the
+     Creative / Merchandising / Financial Plan pattern. */
+  const sidebarT = (t.sidebar as Record<string, string>) || {};
+  const phaseTitleMap: Record<string, string> = {
+    sketch: sidebarT.sketchColor || 'Sketch & Color',
+    prototyping: sidebarT.prototyping || 'Prototyping',
+    production: sidebarT.production || 'Production',
+    selection: sidebarT.finalSelection || 'Final Selection',
+  };
+  const headerTitle = phaseFilter && phaseTitleMap[phaseFilter]
+    ? phaseTitleMap[phaseFilter]
+    : (sidebarT.collectionBuilder || 'Collection Builder');
+
   return (
-    <div className="space-y-6">
-      {/* ── Collection Overview — unified carbon card with expandable analytics ── */}
-      <div className="bg-carbon">
-        <div className="p-6 sm:p-8">
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-crema/60">Collection Overview</p>
-            {skus.length > 0 && (
-              <button onClick={() => setAnalyticsOpen(!analyticsOpen)} className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium tracking-[0.08em] uppercase text-crema/50 border border-crema/15 rounded-full hover:text-crema/80 hover:border-crema/30 transition-colors">
-                {analyticsOpen ? 'Hide Details' : 'Details'}
-                <svg className={`h-3.5 w-3.5 transition-transform duration-200 ${analyticsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-10 gap-4 sm:gap-5">
-            {[
-              { label: 'Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
-              { label: 'COGS', value: `€${Math.round(totalCOGS / 1000).toLocaleString()}K` },
-              { label: 'Gross Profit', value: `€${Math.round((totalExpectedSales - totalCOGS) / 1000).toLocaleString()}K` },
-              { label: 'WS Value', value: `€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K` },
-              { label: 'DTC Margin', value: `${dtcMargin.toFixed(0)}%` },
-              { label: 'WS Margin', value: `${wsMargin.toFixed(0)}%` },
-              { label: 'Avg Price', value: `€${frameworkValidation.avgPrice}` },
-              { label: 'SKUs', value: `${skus.length}` },
-              { label: 'Families', value: `${new Set(skus.map(s => s.family)).size}` },
-              { label: 'Total Units', value: `${skus.reduce((s, sk) => s + sk.buy_units, 0).toLocaleString()}` },
-            ].map((metric) => (
-              <div key={metric.label}>
-                <p className="text-[11px] font-medium tracking-[0.08em] uppercase text-crema/50 mb-1">{metric.label}</p>
-                <p className="text-xl font-normal text-crema tracking-tight">{metric.value}</p>
-              </div>
-            ))}
-          </div>
+    <div className="space-y-5">
+      {/* ── Gold-standard header + KPI ribbon ───────────────────── */}
+      <div className="text-center pt-6 pb-2">
+        <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
+          {setupData.productCategory ? setupData.productCategory : 'Collection'}
+        </p>
+        <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+          {headerTitle}
+        </h1>
+      </div>
+
+      {/* KPI ribbon — white card with 10 stats (2-col mobile, 5-col tablet, 10-col desktop) */}
+      <div className="bg-white rounded-[20px] p-8 md:p-10">
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+            {sidebarT.collectionOverviewLabel || 'Overview'}
+          </p>
+          {skus.length > 0 && (
+            <button
+              onClick={() => setAnalyticsOpen(!analyticsOpen)}
+              className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold tracking-[0.05em] uppercase text-carbon/50 border border-carbon/[0.12] rounded-full hover:text-carbon/80 hover:border-carbon/30 transition-colors"
+            >
+              {analyticsOpen ? (sidebarT.hideDetails || 'Hide details') : (sidebarT.showDetails || 'Details')}
+              <svg className={`h-3.5 w-3.5 transition-transform duration-200 ${analyticsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-6">
+          {[
+            { label: sidebarT.metricRevenue || 'Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
+            { label: sidebarT.metricCogs || 'COGS', value: `€${Math.round(totalCOGS / 1000).toLocaleString()}K` },
+            { label: sidebarT.metricGrossProfit || 'Gross profit', value: `€${Math.round((totalExpectedSales - totalCOGS) / 1000).toLocaleString()}K` },
+            { label: sidebarT.metricWsValue || 'WS value', value: `€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K` },
+            { label: sidebarT.metricDtcMargin || 'DTC margin', value: `${dtcMargin.toFixed(0)}%` },
+            { label: sidebarT.metricWsMargin || 'WS margin', value: `${wsMargin.toFixed(0)}%` },
+            { label: sidebarT.metricAvgPrice || 'Avg price', value: `€${frameworkValidation.avgPrice}` },
+            { label: sidebarT.metricSkus || 'SKUs', value: `${skus.length}` },
+            { label: sidebarT.metricFamilies || 'Families', value: `${new Set(skus.map(s => s.family)).size}` },
+            { label: sidebarT.metricTotalUnits || 'Total units', value: `${skus.reduce((s, sk) => s + sk.buy_units, 0).toLocaleString()}` },
+          ].map((metric) => (
+            <div key={metric.label} className="flex flex-col">
+              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{metric.label}</p>
+              <p className="text-[22px] md:text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">{metric.value}</p>
+            </div>
+          ))}
         </div>
 
-        {/* ── Expanded analytics (Family Mix, Segmentation, Design Progress) ── */}
+        {/* Analytics — expandable (Family Mix · Segmentation · Design Progress) */}
         {analyticsOpen && skus.length > 0 && (
-          <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-white/[0.06]">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Family mix — horizontal bars */}
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-crema/50 mb-4">Family Mix</p>
-              <div className="space-y-3">
-                {frameworkValidation.familyDistribution.map((fam) => (
-                  <div key={fam.name}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[13px] text-crema/80">{fam.name}</span>
-                      <span className="text-[13px] text-crema/50">{fam.actual}%</span>
-                    </div>
-                    <div className="h-1.5 bg-white/[0.06] overflow-hidden">
-                      <div className="h-full bg-crema/40 transition-all duration-700" style={{ width: `${fam.actual}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Type mix — single donut */}
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-crema/50 mb-4">Segmentation Mix</p>
-              <div className="flex items-center gap-6">
-                {(() => {
-                  const r = 50; const circ = 2 * Math.PI * r;
-                  const segments = frameworkValidation.typeDistribution;
-                  const segColors = ['#9c7c4c', '#7d5a8c', '#4c7c6c'];
-                  let cumulative = 0;
-                  return (
-                    <svg width="110" height="110" className="transform -rotate-90 shrink-0">
-                      <circle cx="55" cy="55" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
-                      {segments.map((seg, i) => {
-                        const offset = circ * (1 - cumulative / 100);
-                        const length = circ * (seg.actual / 100);
-                        cumulative += seg.actual;
-                        return (
-                          <circle key={seg.name} cx="55" cy="55" r={r} fill="none" stroke={segColors[i] || '#999'} strokeWidth="8"
-                            strokeDasharray={`${length} ${circ - length}`} strokeDashoffset={offset}
-                            className="transition-all duration-700" />
-                        );
-                      })}
-                    </svg>
-                  );
-                })()}
-                <div className="space-y-2.5">
-                  {frameworkValidation.typeDistribution.map((td) => {
-                    const labels: Record<string, string> = { REVENUE: 'Revenue', IMAGEN: 'Image', ENTRY: 'Entry' };
-                    const dots: Record<string, string> = { REVENUE: 'bg-[#9c7c4c]', IMAGEN: 'bg-[#7d5a8c]', ENTRY: 'bg-[#4c7c6c]' };
-                    return (
-                      <div key={td.name} className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 shrink-0 ${dots[td.name] || 'bg-carbon/30'}`} />
-                        <span className="text-[13px] text-crema/80">{labels[td.name] || td.name}</span>
-                        <span className="text-[13px] text-crema/50">{td.actual}%</span>
-                        <span className="text-[10px] text-crema/35 italic">target {td.target}%</span>
+          <div className="mt-8 pt-8 border-t border-carbon/[0.06]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {/* Family mix — horizontal bars */}
+              <div>
+                <p className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsFamilyMix || 'Family mix'}</p>
+                <div className="space-y-3">
+                  {frameworkValidation.familyDistribution.map((fam) => (
+                    <div key={fam.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[13px] text-carbon/80">{fam.name}</span>
+                        <span className="text-[13px] text-carbon/50 tabular-nums">{fam.actual}%</span>
                       </div>
+                      <div className="h-1.5 rounded-full bg-carbon/[0.06] overflow-hidden">
+                        <div className="h-full bg-carbon/70 transition-all duration-700" style={{ width: `${fam.actual}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Type mix — single donut */}
+              <div>
+                <p className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsSegmentation || 'Segmentation mix'}</p>
+                <div className="flex items-center gap-6">
+                  {(() => {
+                    const r = 50; const circ = 2 * Math.PI * r;
+                    const segments = frameworkValidation.typeDistribution;
+                    const segColors = ['#282A29', '#9c7c4c', '#7d5a8c'];
+                    let cumulative = 0;
+                    return (
+                      <svg width="110" height="110" className="transform -rotate-90 shrink-0">
+                        <circle cx="55" cy="55" r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="8" />
+                        {segments.map((seg, i) => {
+                          const offset = circ * (1 - cumulative / 100);
+                          const length = circ * (seg.actual / 100);
+                          cumulative += seg.actual;
+                          return (
+                            <circle key={seg.name} cx="55" cy="55" r={r} fill="none" stroke={segColors[i] || '#999'} strokeWidth="8"
+                              strokeDasharray={`${length} ${circ - length}`} strokeDashoffset={offset}
+                              className="transition-all duration-700" />
+                          );
+                        })}
+                      </svg>
                     );
-                  })}
+                  })()}
+                  <div className="space-y-2.5">
+                    {frameworkValidation.typeDistribution.map((td, i) => {
+                      const labels: Record<string, string> = { REVENUE: 'Revenue', IMAGEN: 'Image', ENTRY: 'Entry' };
+                      const colors = ['bg-[#282A29]', 'bg-[#9c7c4c]', 'bg-[#7d5a8c]'];
+                      return (
+                        <div key={td.name} className="flex items-center gap-2">
+                          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${colors[i] || 'bg-carbon/30'}`} />
+                          <span className="text-[13px] text-carbon/80">{labels[td.name] || td.name}</span>
+                          <span className="text-[13px] text-carbon/50 tabular-nums">{td.actual}%</span>
+                          <span className="text-[10px] text-carbon/35 italic">target {td.target}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Design Progress — SKUs by phase */}
+              <div>
+                <p className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsDesignProgress || 'Design progress'}</p>
+                <div className="space-y-3">
+                  {(() => {
+                    const phases: { id: string; label: string; color: string }[] = [
+                      { id: 'range_plan', label: 'Concept', color: '#6b7280' },
+                      { id: 'sketch', label: 'Sketch', color: '#9c7c4c' },
+                      { id: 'prototyping', label: 'Proto', color: '#7d5a8c' },
+                      { id: 'production', label: 'Production', color: '#4c7c6c' },
+                      { id: 'completed', label: 'Complete', color: '#2d6a4f' },
+                    ];
+                    const total = skus.length || 1;
+                    return phases.map((phase) => {
+                      const count = skus.filter(s => (s.design_phase || 'range_plan') === phase.id).length;
+                      const pct = Math.round((count / total) * 100);
+                      return (
+                        <div key={phase.id}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[13px] text-carbon/80">{phase.label}</span>
+                            <span className="text-[13px] text-carbon/50 tabular-nums">{count}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-carbon/[0.06] overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: phase.color }} />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             </div>
-
-            {/* Design Progress — SKUs by phase */}
-            <div>
-              <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-crema/50 mb-4">Design Progress</p>
-              <div className="space-y-3">
-                {(() => {
-                  const phases: { id: string; label: string; color: string }[] = [
-                    { id: 'range_plan', label: 'Concept', color: '#282A29' },
-                    { id: 'sketch', label: 'Sketch', color: '#9c7c4c' },
-                    { id: 'prototyping', label: 'Proto', color: '#7d5a8c' },
-                    { id: 'production', label: 'Production', color: '#4c7c6c' },
-                    { id: 'completed', label: 'Complete', color: '#2d6a4f' },
-                  ];
-                  const total = skus.length || 1;
-                  return phases.map((phase) => {
-                    const count = skus.filter(s => (s.design_phase || 'range_plan') === phase.id).length;
-                    const pct = Math.round((count / total) * 100);
-                    return (
-                      <div key={phase.id}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[13px] text-crema/80">{phase.label}</span>
-                          <span className="text-[13px] text-crema/50">{count}</span>
-                        </div>
-                        <div className="h-1.5 bg-white/[0.06] overflow-hidden">
-                          <div className="h-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: phase.color }} />
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
           </div>
-          </div>
-          )}
+        )}
       </div>
 
       {/* ── Add SKU Form (collapsible) ── */}
