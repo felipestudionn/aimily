@@ -351,8 +351,9 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
       style={{ background: '#0A0A0A', color: '#FFFFFF' }}
     >
       <PresentationFonts />
-      {/* ── Top bar ── */}
-      <div className="flex-shrink-0 h-[64px] flex items-center justify-between px-6 border-b border-white/10">
+      {/* ── Top bar. Horizontal scroll on narrow viewports so the
+           action buttons don't overflow off-screen on mobile. ── */}
+      <div className="flex-shrink-0 h-[64px] flex items-center justify-between px-3 md:px-6 border-b border-white/10 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {readOnly ? (
           /* In a public share, the X has nowhere to exit to. Swap for
              an aimily wordmark that links back to the product page. */

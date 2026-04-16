@@ -194,14 +194,15 @@ export function WorkspaceShell({
           <Menu className="h-4 w-4" />
         </button>
 
-        {/* ── Main content — offset by sidebar width.
-             Opacity choreography: instant fade-out when going into
-             calendar/presentation, delayed fade-in when returning to nav
-             (so the aside has time to contract first). */}
+        {/* ── Main content — offset by sidebar width on md+.
+             On mobile the sidebar is off-screen (drawer), so content
+             takes the full viewport. Opacity choreography: instant
+             fade-out when going into calendar/presentation, delayed
+             fade-in when returning to nav. */}
         <main
-          className="ml-0 pt-16 min-h-screen transition-opacity ease-out"
+          className="ml-0 md:ml-[var(--sb-w)] pt-16 min-h-screen transition-opacity ease-out"
           style={{
-            marginLeft: `${sidebarWidth}px`,
+            ['--sb-w' as string]: `${sidebarWidth}px`,
             opacity: isCovered ? 0 : 1,
             transitionDuration: isCovered ? '250ms' : '400ms',
             transitionDelay: isCovered ? '0ms' : '900ms',

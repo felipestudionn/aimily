@@ -102,12 +102,12 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
     const isDark = variant === 'workspace-dark';
     return (
       <div
-        className={`fixed top-0 right-0 z-40 transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed top-0 right-0 z-40 left-0 md:left-[var(--nav-left)] transition-all duration-250 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           isDark
             ? 'bg-transparent'
             : 'bg-shade/80 backdrop-blur-sm'
         }`}
-        style={{ left: sidebarWidth }}
+        style={{ ['--nav-left' as string]: `${sidebarWidth}px` }}
       >
         <div className="flex h-16 items-center justify-end px-6 md:px-8">
           {/* Left side intentionally empty — logo + collection name live in sidebar */}

@@ -207,7 +207,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           }`}>
             {!expandedBlock ? (
               /* ═══ TOP LEVEL — 4 block cards ═══ */
-              <div className="grid grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {BLOCK_DEFS.map((block) => {
                   const progress = allBlockProgress[block.phase] || 0;
                   const isComplete = progress === 100;
@@ -260,7 +260,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               </div>
             ) : activeBlock ? (
               /* ═══ SUB-LEVEL — 5 mini-block cards inside a block (matches sidebar 4×5) ═══ */
-              <div className="grid grid-cols-5 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
                 {activeBlock.subBlocks.map((sub, idx) => {
                   // Determine sub-block progress (simplified: check if phase milestones exist)
                   const subProgress = (() => {

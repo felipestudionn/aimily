@@ -1051,9 +1051,11 @@ export function WizardSidebar({
       className="flex h-full rounded-[16px] overflow-hidden"
       style={{ background: CAL_SIDEBAR_BG }}
     >
-      {/* LEFT — persistent spine column (INNER_W wide, sticky-in-spirit) */}
+      {/* LEFT — persistent spine column (INNER_W wide on md+). Hidden
+          on mobile so the deck canvas takes the full viewport; users
+          navigate via the deck's prev/next and slide pager. */}
       <div
-        className="flex-shrink-0 flex flex-col"
+        className="flex-shrink-0 hidden md:flex flex-col"
         style={{ width: INNER_W, background: CAL_SIDEBAR_BG }}
       >
         {/* Header: logo + mode switcher. The collection name now lives
@@ -1191,7 +1193,7 @@ export function WizardSidebar({
           background: (mode === 'calendar' || mode === 'presentation') ? '#F3F2F0' : undefined,
         }}
         className={`fixed left-0 top-0 bottom-0 z-50 p-3 transition-[width] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          (mobileOpen || mode !== 'nav') ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
         {mode === 'calendar' && calendarInner}
