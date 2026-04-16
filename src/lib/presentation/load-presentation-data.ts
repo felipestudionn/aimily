@@ -12,6 +12,9 @@
 
 import { loadFullContext } from '@/lib/ai/load-full-context';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { loadFinancialPlanSources } from '@/lib/financial-plan/load-sources';
+import { computeFinancialPlan, formatEur, formatPct } from '@/lib/financial-plan/compute';
+import { DEFAULT_INPUTS, type FinancialPlanInputs, type FinancialPlanNarrative } from '@/lib/financial-plan/types';
 
 export interface NarrativeSlideData {
   lead?: string;
@@ -201,6 +204,46 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       attribution: 'Buying strategy · Season blueprint',
     };
     data.hasAnyData = true;
+  }
+
+  // ─── Stats (EditorialStat) ──────────────────────────────────────
+
+  // Financial Plan — compose from selected scenario + user assumptions.
+  // Reads the merchandising workspace directly (not loadFullContext, to
+  // keep the AI context lock untouched) and the drops table. Uses the
+  // same pure compute() as the workspace, so the slide and the UI
+  // always agree. Narrative comes from the AI button in the workspace;
+  // when absent we still render KPIs with a short fallback sentence.
+  {
+    const { data: merchRow } = await supabaseAdmin
+      .from('collection_workspace_data')
+      .select('data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('workspace', 'merchandising')
+      .maybeSingle();
+
+    const merch = (merchRow?.data || {}) as {
+      cardData?: { budget?: { data?: { inputs?: FinancialPlanInputs; narrative?: FinancialPlanNarrative } } };
+    };
+    const stored = merch.cardData?.budget?.data;
+    const inputs = stored?.inputs ?? DEFAULT_INPUTS;
+    const sources = await loadFinancialPlanSources(collectionPlanId);
+    if (sources.scenarioId) {
+      const derived = computeFinancialPlan(inputs, sources);
+      const n = stored?.narrative;
+      data.stats['financial-plan'] = {
+        value: formatEur(derived.kpis.totalInvestment, { compact: true }),
+        caption: `Investment → ${formatEur(derived.kpis.expectedRevenue, { compact: true })} revenue${inputs.marketing.status === 'pending' ? ' · marketing pending' : ''}`,
+        narrative: n?.thesis
+          ?? `Pre-business plan composed from the ${sources.scenarioName ?? 'selected'} scenario. Gross margin ${formatPct(derived.kpis.grossMarginPct)}, payback ${Math.round(derived.kpis.paybackMonths)} months.`,
+        support: [
+          { value: formatPct(derived.kpis.grossMarginPct), label: 'gross margin' },
+          { value: formatPct(derived.kpis.roi * 100), label: 'ROI' },
+          { value: `${Math.round(derived.kpis.paybackMonths)} mo`, label: 'payback' },
+        ],
+      };
+      data.hasAnyData = true;
+    }
   }
 
   // ─── Grid templates ──────────────────────────────────────────────

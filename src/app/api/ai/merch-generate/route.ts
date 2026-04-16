@@ -21,7 +21,8 @@ type GenerationType =
   | 'channels-assisted'
   | 'channels-proposals'
   | 'budget-assisted'
-  | 'budget-proposals';
+  | 'budget-proposals'
+  | 'financial-plan-narrative';
 
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();

@@ -10,6 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard } from '@/components/workspace/DecisionCard';
 import { ScenariosContent } from '@/components/merchandising/ScenariosContent';
+import { FinancialPlanContent } from '@/components/merchandising/FinancialPlanContent';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Toggle } from '@/components/ui/toggle';
@@ -786,331 +787,6 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
   );
 }
 
-function BudgetContent({ mode, data, onChange, collectionContext, familiesStr, pricingStr, channelsStr }: {
-  mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void;
-  collectionContext: Record<string, string>; familiesStr: string; pricingStr: string; channelsStr: string;
-}) {
-  const t = useTranslation();
-  const { language } = useLanguage();
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  type Seg = { name: string; percentage: number };
-  const typeSeg = (data.typeSegmentation as Seg[]) || [{ name: 'Revenue', percentage: 60 }, { name: 'Image', percentage: 20 }, { name: 'Entry', percentage: 20 }];
-  const newnessSeg = (data.newnessSegmentation as Seg[]) || [{ name: 'Newness', percentage: 70 }, { name: 'Carry-Over', percentage: 30 }];
-
-  const kpiCards = [
-    { key: 'salesTarget', label: t.merchandising.salesTarget, prefix: '€', suffix: '', format: (v: number) => v ? v.toLocaleString() : '—' },
-    { key: 'targetMargin', label: t.merchandising.targetMargin, prefix: '', suffix: '%', format: (v: number) => v ? String(v) : '—' },
-    { key: 'avgDiscount', label: t.merchandising.avgDiscount, prefix: '', suffix: '%', format: (v: number) => v ? String(v) : '—' },
-    { key: 'sellThroughMonths', label: t.merchandising.sellThroughMonths, prefix: '', suffix: 'mo', format: (v: number) => v ? String(v) : '—' },
-  ];
-
-  /* ── KPI Card — reusable mini card with big number ── */
-  const KpiCard = ({ kpi }: { kpi: typeof kpiCards[0] }) => {
-    const val = (data[kpi.key] as number) || 0;
-    return (
-      <Card className="rounded-[20px] border-0 shadow-none">
-        <CardContent className="p-6 md:p-8 flex flex-col">
-          <Label className="text-[13px] text-carbon/40 mb-4">{kpi.label}</Label>
-          <div className="flex items-baseline gap-1 mb-4">
-            {kpi.prefix && <span className="text-[24px] font-medium text-carbon/30">{kpi.prefix}</span>}
-            <Input
-              type="number"
-              value={val || ''}
-              onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-              placeholder="0"
-              className="text-[42px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto w-full placeholder:text-carbon/10"
-            />
-            {kpi.suffix && <span className="text-[24px] font-medium text-carbon/30 shrink-0">{kpi.suffix}</span>}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  /* ── Segmentation row ── */
-  const SegRow = ({ label, segs, dataKey }: { label: string; segs: Seg[]; dataKey: string }) => (
-    <div className="flex items-center gap-4">
-      <span className="text-[12px] text-carbon/30 shrink-0 w-20">{label}</span>
-      {segs.map((s, i) => (
-        <div key={s.name} className="flex items-center gap-1.5">
-          <span className="text-[13px] text-carbon/50">{s.name}</span>
-          <Input type="number" value={s.percentage}
-            onChange={(e) => { const u = [...segs]; u[i] = { ...u[i], percentage: Number(e.target.value) }; onChange({ ...data, [dataKey]: u }); }}
-            className="w-12 px-2 py-1 text-[13px] text-carbon text-center bg-carbon/[0.03] rounded-[8px] border-carbon/[0.06] h-auto" />
-          <span className="text-[12px] text-carbon/30">%</span>
-        </div>
-      ))}
-    </div>
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* ═══ FREE — 4 KPI cards in a row (like sub-block cards) ═══ */}
-      {mode === 'free' && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-            {kpiCards.map(kpi => {
-              const val = (data[kpi.key] as number) || 0;
-              const isEmpty = !val;
-              return (
-                <Card key={kpi.key} className="rounded-[20px] border-0 shadow-none min-h-[300px]">
-                  <CardContent className="p-8 flex flex-col h-full">
-                    <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
-                      {kpi.label}
-                    </h3>
-                    <p className="text-[13px] text-carbon/30">
-                      {kpi.key === 'salesTarget' && 'Total revenue target for this collection'}
-                      {kpi.key === 'targetMargin' && 'Gross margin percentage goal'}
-                      {kpi.key === 'avgDiscount' && 'Average markdown expected'}
-                      {kpi.key === 'sellThroughMonths' && 'Time to sell full inventory'}
-                    </p>
-                    <div className="mt-auto">
-                      <div className="flex items-end">
-                        <Input
-                          type="number"
-                          value={val || ''}
-                          onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-                          placeholder="—"
-                          className="text-[56px] font-bold text-carbon tracking-[-0.04em] bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto flex-1 min-w-0 placeholder:text-carbon/[0.08] leading-none"
-                        />
-                        <span className="text-[28px] font-semibold text-carbon/15 mb-[6px] ml-1 shrink-0">
-                          {kpi.prefix || kpi.suffix}
-                        </span>
-                      </div>
-                      {isEmpty && (
-                        <div className="h-[2px] w-20 bg-carbon/10 rounded-full mt-2" />
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Segmentation — shadcn Slider + Card */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Product Type */}
-            <Card className="rounded-[20px] border-0 shadow-none">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[20px] font-semibold tracking-[-0.03em]">Product Type</CardTitle>
-                <p className="text-[13px] text-muted-foreground">Drag to adjust the split</p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Labels with big numbers */}
-                <div className="flex items-center justify-between">
-                  {typeSeg.map((s) => (
-                    <div key={s.name} className="text-center">
-                      <span className="text-[36px] font-bold text-foreground tracking-[-0.04em] leading-none">
-                        {s.percentage}<span className="text-[16px] font-semibold text-muted-foreground/40 ml-0.5">%</span>
-                      </span>
-                      <p className="text-[12px] text-muted-foreground mt-1">{s.name}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* shadcn Slider */}
-                <Slider
-                  value={[typeSeg[0].percentage]}
-                  min={10} max={85} step={1}
-                  onValueChange={([rev]) => {
-                    const remaining = 100 - rev;
-                    const ratio = typeSeg[1].percentage / Math.max(1, typeSeg[1].percentage + typeSeg[2].percentage);
-                    const img = Math.max(5, Math.round(remaining * ratio));
-                    const entry = Math.max(5, remaining - img);
-                    onChange({ ...data, typeSegmentation: [
-                      { name: 'Revenue', percentage: rev },
-                      { name: 'Image', percentage: img },
-                      { name: 'Entry', percentage: entry },
-                    ]});
-                  }}
-                  className="[&_[data-slot=slider-track]]:h-3 [&_[data-slot=slider-range]]:bg-primary [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2"
-                />
-
-                {/* Stacked bar visualization */}
-                <div className="h-[8px] rounded-full overflow-hidden flex">
-                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${typeSeg[0].percentage}%` }} />
-                  <div className="h-full bg-primary/40 transition-all duration-300" style={{ width: `${typeSeg[1].percentage}%` }} />
-                  <div className="h-full bg-primary/15 transition-all duration-300" style={{ width: `${typeSeg[2].percentage}%` }} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Newness Split */}
-            <Card className="rounded-[20px] border-0 shadow-none">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-[20px] font-semibold tracking-[-0.03em]">Newness Split</CardTitle>
-                <p className="text-[13px] text-muted-foreground">Drag to adjust the split</p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Labels with big numbers */}
-                <div className="flex items-center justify-between">
-                  {newnessSeg.map((s) => (
-                    <div key={s.name} className="text-center">
-                      <span className="text-[36px] font-bold text-foreground tracking-[-0.04em] leading-none">
-                        {s.percentage}<span className="text-[16px] font-semibold text-muted-foreground/40 ml-0.5">%</span>
-                      </span>
-                      <p className="text-[12px] text-muted-foreground mt-1">{s.name}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* shadcn Slider */}
-                <Slider
-                  value={[newnessSeg[0].percentage]}
-                  min={10} max={90} step={1}
-                  onValueChange={([val]) => {
-                    onChange({ ...data, newnessSegmentation: [
-                      { name: 'Newness', percentage: val },
-                      { name: 'Carry-Over', percentage: 100 - val },
-                    ]});
-                  }}
-                  className="[&_[data-slot=slider-track]]:h-3 [&_[data-slot=slider-range]]:bg-primary [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-2"
-                />
-
-                {/* Stacked bar visualization */}
-                <div className="h-[8px] rounded-full overflow-hidden flex">
-                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${newnessSeg[0].percentage}%` }} />
-                  <div className="h-full bg-primary/20 transition-all duration-300" style={{ width: `${newnessSeg[1].percentage}%` }} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
-
-      {(mode === 'assisted' || mode === 'ai') && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* ── Left: 2×2 KPI cards + generate button ── */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {kpiCards.map(kpi => (
-                <Card key={kpi.key} className="rounded-[20px] border-0 shadow-none min-h-[160px]">
-                  <CardContent className="p-6 flex flex-col h-full">
-                    <Label className="text-[15px] font-semibold tracking-[-0.02em] mb-auto">{kpi.label}</Label>
-                    <div className="flex items-end mt-4">
-                      <Input
-                        type="number"
-                        value={(data[kpi.key] as number) || ''}
-                        onChange={(e) => onChange({ ...data, [kpi.key]: Number(e.target.value) })}
-                        placeholder="—"
-                        className="text-[36px] font-bold tracking-[-0.04em] bg-transparent border-none shadow-none focus-visible:ring-0 p-0 h-auto leading-none placeholder:text-muted-foreground/10"
-                      />
-                      <span className="text-[20px] font-semibold text-muted-foreground/30 mb-[2px] ml-1 shrink-0">
-                        {kpi.prefix || kpi.suffix}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            {/* Segmentation compact */}
-            <div className="bg-white rounded-[20px] p-6 space-y-3">
-              <SegRow label="Product" segs={(data.typeSegmentation as Seg[]) || typeSeg} dataKey="typeSegmentation" />
-              <SegRow label="Newness" segs={(data.newnessSegmentation as Seg[]) || newnessSeg} dataKey="newnessSegmentation" />
-            </div>
-            <Button
-              onClick={async () => {
-                setGenerating(true); setError(null);
-                const apiType = mode === 'assisted' ? 'budget-assisted' : 'budget-proposals';
-                const { result, error: err } = await generateMerch(apiType, {
-                  families: familiesStr, pricing: pricingStr, channels: channelsStr,
-                  direction: (data.direction as string) || '', ...collectionContext,
-                }, language, collectionContext.collectionPlanId);
-                if (err) { setError(err); setGenerating(false); return; }
-                const parsed = result as { salesTarget: number; targetMargin: number; avgDiscount: number; sellThroughMonths: number; segmentation: { type: Seg[]; newness: Seg[] }; rationale?: string; selectedModel?: string; selectedModelRef?: string; whyThisModel?: string; risks?: string[]; advantages?: string[]; fineTuning?: string };
-                onChange({
-                  ...data,
-                  salesTarget: parsed.salesTarget, targetMargin: parsed.targetMargin,
-                  avgDiscount: parsed.avgDiscount, sellThroughMonths: parsed.sellThroughMonths,
-                  typeSegmentation: parsed.segmentation?.type || typeSeg,
-                  newnessSegmentation: parsed.segmentation?.newness || newnessSeg,
-                  rationale: parsed.rationale,
-                  selectedModel: parsed.selectedModel, selectedModelRef: parsed.selectedModelRef,
-                  whyThisModel: parsed.whyThisModel, risks: parsed.risks, advantages: parsed.advantages, fineTuning: parsed.fineTuning,
-                });
-                setGenerating(false);
-              }}
-              disabled={generating || (mode === 'assisted' && !(data.growthModel as string))}
-              className="rounded-full"
-            >
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
-              {mode === 'assisted' ? t.merchandising.suggestBudget : t.merchandising.generateFinancialPlan}
-            </Button>
-            {error && <p className="text-[13px] text-destructive">{error}</p>}
-          </div>
-
-          {/* ── Right: Reference context ── */}
-          <Card className="rounded-[20px] border-0 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[20px] font-semibold tracking-[-0.03em]">
-                {mode === 'assisted' ? 'Growth Models' : 'Context'}
-              </CardTitle>
-              <p className="text-[13px] text-muted-foreground">
-                {mode === 'assisted' ? 'Select a reference model' : 'Data used for AI proposal'}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-2 flex-1 overflow-y-auto">
-              {mode === 'assisted' && (
-                <>
-                  {[
-                    { id: 'dtc-bootstrap', name: 'DTC-First Bootstrap', ref: 'Axel Arigato', revenue: '€100K–300K', mix: '80% DTC', margin: '65%' },
-                    { id: 'wholesale-led', name: 'Wholesale-Led', ref: 'Jacquemus', revenue: '€200K–500K', mix: '60% WS', margin: '50%' },
-                    { id: 'community-nordic', name: 'Community-Driven', ref: 'Holzweiler / Ganni', revenue: '€150K–400K', mix: '50/50', margin: '60%' },
-                    { id: 'quiet-luxury', name: 'Quiet Luxury', ref: 'COS / The Row', revenue: '€300K–800K', mix: 'Controlled', margin: '70%' },
-                    { id: 'collab-hype', name: 'Collab & Hype', ref: 'Aimé Leon Dore', revenue: '€200K–600K', mix: 'DTC+Collabs', margin: '60%' },
-                    { id: 'digital-native', name: 'Digital Native', ref: 'Pangaia', revenue: '€150K–500K', mix: '90% Digital', margin: '65%' },
-                    { id: 'accessible-premium', name: 'Accessible Premium', ref: 'Sandro / Maje', revenue: '€400K–1M', mix: 'Omni', margin: '55%' },
-                    { id: 'artisan-craft', name: 'Artisan Craft', ref: 'HEREU / Loewe', revenue: '€80K–250K', mix: 'Selective', margin: '70%' },
-                  ].map((s) => {
-                    const sel = (data.growthModel as string) === s.id;
-                    return (
-                      <Card
-                        key={s.id}
-                        className={`rounded-[16px] cursor-pointer transition-all ${sel ? 'border-primary/30 bg-primary/[0.02]' : 'hover:border-primary/15'}`}
-                        onClick={() => onChange({ ...data, growthModel: sel ? '' : s.id, direction: sel ? '' : `Growth model: ${s.name} (ref: ${s.ref}). Target: ${s.revenue}, mix: ${s.mix}, margin: ${s.margin}.` })}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className={`text-[14px] font-medium ${sel ? 'text-foreground' : 'text-foreground/70'}`}>{s.name}</span>
-                            <span className="text-[11px] text-muted-foreground italic">{s.ref}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <Badge variant="outline" className="rounded-full text-[10px] font-medium">{s.revenue}</Badge>
-                            <Badge variant="outline" className="rounded-full text-[10px] font-medium">{s.margin}</Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </>
-              )}
-
-              {mode === 'ai' && (
-                <div className="space-y-3">
-                  {[
-                    { label: 'Families', value: familiesStr || 'Not defined yet' },
-                    { label: 'Pricing', value: pricingStr ? `${JSON.parse(pricingStr).length || 0} families priced` : 'Not defined yet' },
-                    { label: 'Channels', value: channelsStr || 'Not defined yet' },
-                    { label: 'Consumer', value: collectionContext.consumer ? collectionContext.consumer.slice(0, 80) + '...' : 'Not defined yet' },
-                    { label: 'Collection', value: `${collectionContext.collectionName} · ${collectionContext.season}` },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-[12px] bg-muted/50 p-4">
-                      <Label className="text-[12px] text-muted-foreground block mb-1">{item.label}</Label>
-                      <span className="text-[13px] text-foreground/70 leading-relaxed">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ─── Content Router ─── */
 function ExpandedCardContent({ cardId, mode, data, onChange, collectionContext, familiesData, familiesStr, pricingStr, channelsStr, pricingData, onPricingChange }: {
   cardId: string; mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void;
@@ -1121,7 +797,18 @@ function ExpandedCardContent({ cardId, mode, data, onChange, collectionContext, 
     case 'families': return <FamiliesContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} pricingData={pricingData} onPricingChange={onPricingChange} />;
     case 'pricing': return <PricingContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} familiesData={familiesData} />;
     case 'channels': return <ChannelsContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} />;
-    case 'budget': return <BudgetContent mode={mode} data={data} onChange={onChange} collectionContext={collectionContext} familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr} />;
+    case 'budget': return (
+      <FinancialPlanContent
+        mode={mode}
+        data={data as Parameters<typeof FinancialPlanContent>[0]['data']}
+        onChange={(next) => onChange(next as Record<string, unknown>)}
+        collectionContext={{
+          collectionPlanId: (collectionContext.collectionPlanId as string) ?? '',
+          productCategory: collectionContext.productCategory,
+          collectionName: collectionContext.collectionName,
+        }}
+      />
+    );
     default: return null;
   }
 }
@@ -1386,11 +1073,16 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
 
           {blockParam === 'budget' && (
             <div className="min-h-[calc((100vh-380px)*0.8)]">
-              <BudgetContent
-                mode={state.mode} data={state.data}
-                onChange={(newData) => updateCardData('budget', { data: newData })}
-                collectionContext={collectionContext}
-                familiesStr={familiesStr} pricingStr={pricingStr} channelsStr={channelsStr}
+              <FinancialPlanContent
+                mode={state.mode}
+                data={state.data as Parameters<typeof FinancialPlanContent>[0]['data']}
+                onChange={(newData) => updateCardData('budget', { data: newData as Record<string, unknown> })}
+                collectionContext={{
+                  collectionPlanId: collectionId,
+                  productCategory: collectionContext.productCategory,
+                  collectionName: collectionContext.collectionName,
+                }}
+                language={language}
               />
             </div>
           )}

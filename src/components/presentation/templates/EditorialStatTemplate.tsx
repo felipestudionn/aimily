@@ -9,11 +9,17 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
+import type { StatSlideData } from '@/lib/presentation/load-presentation-data';
 
 interface Props {
   slide: MicroBlockSlide;
   meta: DeckMeta;
   title: string;
+  /* Real data shaped by load-presentation-data. When present, overrides
+     the editorial placeholder. Populated today for financial-plan via
+     computeFinancialPlan(); other stat slides (market-research,
+     distribution, sales-dashboard) still fall back until wired. */
+  data?: StatSlideData;
 }
 
 /* Placeholder copy per mini-block. F2 will replace via CIS. Keeping
@@ -72,8 +78,18 @@ const FALLBACK = {
   ],
 };
 
-export function EditorialStatTemplate({ slide, meta, title }: Props) {
-  const data = STAT_PLACEHOLDERS[slide.id] ?? FALLBACK;
+export function EditorialStatTemplate({ slide, meta, title, data: real }: Props) {
+  /* Prefer real CIS-derived data. Fall back to editorial placeholder
+     when the slide hasn't been composed yet (keeps the deck readable
+     during demos with partial CIS coverage). */
+  const data = real && (real.value || real.narrative)
+    ? {
+        value: real.value ?? '—',
+        caption: real.caption ?? '',
+        narrative: real.narrative ?? '',
+        support: real.support ?? [],
+      }
+    : (STAT_PLACEHOLDERS[slide.id] ?? FALLBACK);
 
   return (
     <div

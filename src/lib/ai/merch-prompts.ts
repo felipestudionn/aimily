@@ -32,7 +32,8 @@ type MerchPromptType =
   | 'channels-assisted'
   | 'channels-proposals'
   | 'budget-assisted'
-  | 'budget-proposals';
+  | 'budget-proposals'
+  | 'financial-plan-narrative';
 
 export function buildMerchPrompt(
   type: MerchPromptType,
@@ -496,6 +497,66 @@ Return:
     ]
   },
   "rationale": "60-100 words: complete financial thesis — the numbers, key assumptions, and how they connect to the selected growth model"
+}`,
+      };
+
+    // ═══════════════════════════════════════════════════
+    // FINANCIAL PLAN NARRATIVE
+    // ═══════════════════════════════════════════════════
+    // Numbers are already computed by computeFinancialPlan().
+    // This prompt writes the investor-facing story that wraps them.
+    // Used by the Presentation deck as the 'financial-plan' slide.
+
+    case 'financial-plan-narrative':
+      return {
+        temperature: 0.5,
+        system: PERSONAS.financialStrategist,
+        user: `${ctx}
+
+Numbers (pre-computed, do NOT invent or alter):
+- Buying-strategy scenario: ${input.scenarioName || 'unspecified'}
+- Total investment: €${Number(input.totalInvestment).toLocaleString('en-US')}
+- Expected revenue: €${Number(input.expectedRevenue).toLocaleString('en-US')}
+- Gross margin: ${input.grossMarginPct}%
+- ROI: ${input.roi}%
+- Payback: ${input.paybackMonths} months
+- Full-price sell-through assumption: ${input.fullPriceSellThrough}%
+- Revenue scenario committed: ${input.selectedScenario}
+- Marketing: ${input.marketingStatus === 'pending'
+  ? `PENDING — numbers assume €${Number(input.marketingAssumed).toLocaleString('en-US')} (placeholder until investment decision)`
+  : `committed at €${Number(input.marketingAssumed).toLocaleString('en-US')}`}
+
+Write a pre-business-plan narrative that a founder would put in front of an investor,
+a brand partner, or a buying committee. This is the Financial Plan slide of the
+presentation deck — it has to sound like an investment memo, not a spreadsheet summary.
+
+RULES:
+1. NEVER invent numbers. You may only reference the numbers above. Do not introduce
+   new financial figures, channel splits, or assumptions.
+2. The narrative has to be GROUNDED in this specific brand: reference the consumer,
+   the vibe, the season, and the scenario name where natural.
+3. If marketing is PENDING, the narrative must acknowledge it explicitly and explain
+   that contribution margin assumes a placeholder. Include a "marketingNote" field.
+4. If marketing is SET, no marketingNote — the narrative speaks as if locked.
+5. Tone: senior, confident, crisp. No clichés ("we believe", "unlock", "unprecedented",
+   "game-changing"). No emojis. No marketing-speak.
+
+${OUTPUT_RULES}
+
+Return EXACTLY this JSON:
+{
+  "headline": "One 10-14 word line that pairs investment with outcome. E.g. '€120K investment returns €340K at 58% gross margin, payback in 6 months'",
+  "thesis": "60-90 words. The business story. What is being built, why the numbers hold, what the collection's position is. Reference the scenario name and the consumer/vibe from context.",
+  "assumptions": [
+    "Assumption 1 (15-25 words — sell-through, pricing tier, channel mix, something specific)",
+    "Assumption 2",
+    "Assumption 3"
+  ],
+  "risks": [
+    "Risk 1 (15-25 words — what would break the plan)",
+    "Risk 2"
+  ]${input.marketingStatus === 'pending' ? `,
+  "marketingNote": "20-35 words explaining that marketing is pending and what the placeholder assumes. No speculation on what the real number should be."` : ''}
 }`,
       };
 
