@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Check, FileText, Image, Pencil, Palette, Box, Factory, Package } from 'lucide-react';
+import { Check, FileText, Image as ImageIcon, Pencil, Palette, Box, Factory, Package, Lock } from 'lucide-react';
 
 export type EvolutionStep =
   | 'concept'
@@ -33,62 +33,88 @@ interface EvolutionStripProps {
   reachable: EvolutionStep;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   EvolutionStrip — gold-standard 6-step card rail.
+
+   Rendered above the SKU detail workspace. Each step is a mini card
+   (rounded-[12px], aspect-[4/5] thumbnail + label) that the user can
+   click to jump into that phase. Active step gets a ring + shadow;
+   completed steps show a check corner; locked steps dim to 35%
+   grayscale so the user reads the flow at a glance.
+   ═══════════════════════════════════════════════════════════════════ */
 export function EvolutionStrip({ active, onSelect, thumbnails, textPreviews, completed, reachable }: EvolutionStripProps) {
   const reachableIdx = EVOLUTION_STEPS.findIndex(s => s.id === reachable);
 
   return (
-    <div className="flex items-stretch gap-px bg-carbon/[0.04] border border-carbon/[0.06] overflow-hidden overflow-x-auto">
-      {EVOLUTION_STEPS.map((step, idx) => {
-        const isActive = step.id === active;
-        const isCompleted = completed.has(step.id);
-        const isReachable = idx <= reachableIdx;
-        const thumb = thumbnails[step.id];
-        const textPreview = textPreviews?.[step.id];
-        const Icon = step.icon;
+    <div className="bg-white rounded-[20px] border border-carbon/[0.06] p-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        {EVOLUTION_STEPS.map((step, idx) => {
+          const isActive = step.id === active;
+          const isCompleted = completed.has(step.id);
+          const isReachable = idx <= reachableIdx;
+          const thumb = thumbnails[step.id];
+          const textPreview = textPreviews?.[step.id];
+          const Icon = step.icon;
 
-        return (
-          <button
-            key={step.id}
-            onClick={() => isReachable && onSelect(step.id)}
-            disabled={!isReachable}
-            className={`flex-1 min-w-[80px] flex flex-col items-center transition-all relative ${
-              isActive
-                ? 'bg-white ring-1 ring-carbon/[0.12] z-10'
-                : isCompleted
-                  ? 'bg-white hover:bg-carbon/[0.02]'
+          return (
+            <button
+              key={step.id}
+              onClick={() => isReachable && onSelect(step.id)}
+              disabled={!isReachable}
+              className={`relative flex flex-col overflow-hidden rounded-[12px] text-left transition-all duration-200 ${
+                isActive
+                  ? 'ring-2 ring-carbon shadow-[0_8px_32px_rgba(0,0,0,0.08)] bg-white'
                   : isReachable
-                    ? 'bg-white/60 hover:bg-white/80'
-                    : 'bg-carbon/[0.02] opacity-40 cursor-default'
-            }`}
-          >
-            {/* Thumbnail area */}
-            <div className={`w-full aspect-square flex items-center justify-center p-2 overflow-hidden ${
-              isActive ? 'bg-white' : ''
-            }`}>
-              {thumb ? (
-                <img src={thumb} alt={step.label} className="max-w-full max-h-full object-contain" />
-              ) : textPreview ? (
-                <p className="text-[11px] font-light text-carbon/50 text-center leading-snug px-2 line-clamp-4">{textPreview}</p>
-              ) : (
-                <div className="flex flex-col items-center gap-1.5">
-                  <Icon className={`h-7 w-7 ${isActive ? 'text-carbon/30' : 'text-carbon/[0.08]'}`} />
-                </div>
-              )}
-            </div>
+                    ? 'bg-carbon/[0.02] hover:bg-white hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)] cursor-pointer'
+                    : 'bg-carbon/[0.02] opacity-35 grayscale cursor-default'
+              }`}
+            >
+              {/* Thumbnail area — aspect-square, fills the top of the card */}
+              <div className="relative w-full aspect-square bg-carbon/[0.02] overflow-hidden">
+                {thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={thumb} alt={step.label} className="w-full h-full object-cover" />
+                ) : textPreview ? (
+                  <div className="absolute inset-0 flex items-center justify-center p-3">
+                    <p className="text-[11px] text-carbon/55 text-center leading-snug line-clamp-4">{textPreview}</p>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    {isReachable ? (
+                      <Icon className={`h-7 w-7 ${isActive ? 'text-carbon/40' : 'text-carbon/15'}`} strokeWidth={1.5} />
+                    ) : (
+                      <Lock className="h-5 w-5 text-carbon/20" strokeWidth={1.5} />
+                    )}
+                  </div>
+                )}
 
-            {/* Label */}
-            <div className={`w-full py-2 text-center border-t ${
-              isActive
-                ? 'border-carbon bg-carbon text-crema'
-                : isCompleted
-                  ? 'border-carbon/[0.06] text-carbon/50'
-                  : 'border-carbon/[0.04] text-carbon/20'
-            }`}>
-              <span className="text-[9px] font-semibold tracking-[0.08em] uppercase">{step.label}</span>
-            </div>
-          </button>
-        );
-      })}
+                {/* Completed check — top-right corner */}
+                {isCompleted && (
+                  <div className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center ${
+                    isActive ? 'bg-carbon text-white' : 'bg-white text-carbon shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                  }`}>
+                    <Check className="h-3 w-3" strokeWidth={2.5} />
+                  </div>
+                )}
+              </div>
+
+              {/* Label — 13px, semibold on active, medium on reachable */}
+              <div className="px-2.5 py-2.5">
+                <div className={`text-[12px] tracking-[-0.01em] leading-tight ${
+                  isActive ? 'font-semibold text-carbon' : isReachable ? 'font-medium text-carbon/75' : 'text-carbon/30'
+                }`}>
+                  {step.label}
+                </div>
+                <div className={`text-[10px] tracking-[0.1em] uppercase mt-1 ${
+                  isActive ? 'text-carbon/40' : 'text-carbon/30'
+                }`}>
+                  {String(idx + 1).padStart(2, '0')}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -112,14 +138,11 @@ export function computeEvolutionState(sku: {
   const textPreviews: Partial<Record<EvolutionStep, string>> = {};
 
   // Concept — completed only when user has validated (advanced past range_plan)
-  // Has data (name+pvp) from Range Plan, but not confirmed until user decides on reference + validates
-  // Concept — always show preview text or reference thumbnail
   const conceptHasData = !!(sku.name && sku.pvp && sku.pvp > 0);
   const conceptValidated = sku.design_phase !== 'range_plan';
   if (conceptHasData && conceptValidated) {
     completed.add('concept');
   }
-  // Always show something in the concept cell — reference image or text
   if (sku.reference_image_url) {
     thumbnails.concept = sku.reference_image_url;
   } else if (sku.name) {
@@ -128,51 +151,39 @@ export function computeEvolutionState(sku: {
     textPreviews.concept = parts.join(' · ');
   }
 
-  // Sketch B&W
   if (sku.sketch_url) {
     completed.add('sketch');
     thumbnails.sketch = sku.sketch_url;
   }
-
-  // Colorways (colored sketch)
   if (sku.render_url) {
     completed.add('colorways');
     thumbnails.colorways = sku.render_url;
   }
-
-  // 3D Render
   const render3d = (sku.render_urls as Record<string, string>)?.['3d'];
   if (render3d) {
     completed.add('render3d');
     thumbnails.render3d = render3d;
   }
-
-  // Prototype — has at least one iteration with an image
   const protoImg = sku.proto_iterations?.find(it => it.images?.length > 0)?.images?.[0];
   if (protoImg) {
     completed.add('prototype');
     thumbnails.prototype = protoImg;
   }
-
-  // Production — has sample photo
   if (sku.production_sample_url) {
     completed.add('production');
     thumbnails.production = sku.production_sample_url;
   }
 
-  // Determine farthest reachable step — uses BOTH completion state AND DB design_phase
-  // design_phase gates major transitions; within a phase, completion of prior steps gates the next
   const order: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
   const phaseGate: Record<string, number> = {
-    range_plan: 0,   // can reach concept only
-    sketch: 3,       // can reach up to render3d
-    prototyping: 4,  // can reach prototype
-    production: 5,   // can reach production
+    range_plan: 0,
+    sketch: 3,
+    prototyping: 4,
+    production: 5,
     completed: 5,
   };
   const maxByPhase = phaseGate[sku.design_phase || 'range_plan'] ?? 0;
 
-  // Within the phase, find farthest reachable by completion
   let maxByCompletion = 0;
   for (let i = 0; i < order.length; i++) {
     if (completed.has(order[i])) {
@@ -185,12 +196,14 @@ export function computeEvolutionState(sku: {
   const reachableIdx = Math.min(Math.max(maxByPhase, maxByCompletion), order.length - 1);
   const reachable = order[reachableIdx];
 
-  // Determine active step — farthest incomplete, or last if all done
   let active: EvolutionStep = 'concept';
   for (const step of order) {
     if (!completed.has(step)) { active = step; break; }
     active = step;
   }
+
+  // ImageIcon reserved for future use (empty-thumbnail state variant)
+  void ImageIcon;
 
   return { completed, thumbnails, textPreviews, reachable, active };
 }
