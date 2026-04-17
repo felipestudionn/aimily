@@ -3338,6 +3338,36 @@ export const en = {
   thesisRisks: 'Risks',
   thesisSave: 'Save to Collection Intelligence',
   },
+  // ─── Final Selection workspace ───
+  finalSelectionWorkspace: {
+    title: "Final Selection",
+    intro: "Curate the drop. Approve each style to lock it in or reject it to hold it back. The merch-mix panel updates live as you decide.",
+    filterAll: "All",
+    filterApproved: "Approved",
+    filterRejected: "Rejected",
+    emptyTitle: "Nothing to review yet",
+    emptyBody: "SKUs show up here once they move into Production. Finish a prototype to unlock the lineup review.",
+    drop: "Drop",
+    cardPvp: "PVP",
+    cardUnits: "Units",
+    cardRevenue: "Revenue",
+    cardApprove: "Approve",
+    cardApproved: "Approved",
+    cardReject: "Reject",
+    approvedChip: "Approved",
+    sidebarTitle: "Curated lineup",
+    sidebarApprovedHint: "approved SKUs",
+    sidebarFamilies: "Family mix",
+    sidebarTierSplit: "Tier split",
+    sidebarDrops: "Drop split",
+    tierRevenue: "Revenue",
+    tierImage: "Image",
+    tierEntry: "Entry",
+    sidebarLockCta: "Lock the collection",
+    sidebarLockedChip: "Selection locked",
+    sidebarLockEmptyHint: "Approve at least one SKU to lock.",
+  },
+
 };
 
 export type Dictionary = typeof en;

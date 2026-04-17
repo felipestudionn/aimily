@@ -47,6 +47,7 @@ export const AUDIT_ACTIONS = {
   COLLECTION_EXPORTED: 'collection_exported',
   DESIGN_PHASE_ADVANCED: 'design_phase_advanced',
   FACTORY_DETAILS_UPDATED: 'factory_details_updated',
+  SELECTION_LOCKED: 'selection_locked',
   ACCOUNT_DELETED: 'account_deleted',
 
   // Marketing — AI generation (billed, plan-scoped)
