@@ -3187,4 +3187,27 @@ export const no: Dictionary = {
     sidebarLockEmptyHint: "Godkjenn minst én SKU for å låse.",
   },
 
+  // ─── Prototyping workspace ───
+  prototypingWorkspace: {
+    title: "Prototyping",
+    intro: "Følg hvert prototyp i gang. Bilder, passform, konstruksjons-feedback — hele fabrikk-loopen i ett blikk.",
+    summaryTitle: "Proto-pipeline",
+    filterAll: "Alle",
+    status_pending: "Venter",
+    status_issues: "Issues",
+    status_approved: "Godkjent",
+    status_rejected: "Avvist",
+    status_noproto: "Ingen proto",
+    drop: "Drop",
+    firstIteration: "første iterasjon",
+    iterationsPrior: "{n} tidligere",
+    noIterYet: "Ingen iterasjoner",
+    today: "i dag",
+    daysShort: "d",
+    ctaStart: "Registrer første iterasjon",
+    ctaReview: "Gjennomgå iterasjon",
+    emptyTitle: "Ingen prototyper ennå",
+    emptyBody: "SKU-er dukker opp her etter Sketch. Godkjenn en tech pack for å starte et prototyp.",
+  },
+
 };

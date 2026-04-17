@@ -3186,4 +3186,27 @@ export const sv: Dictionary = {
     sidebarLockEmptyHint: "Godkänn minst en SKU för att låsa.",
   },
 
+  // ─── Prototyping workspace ───
+  prototypingWorkspace: {
+    title: "Prototyping",
+    intro: "Spåra varje prototyp i pipeline. Bilder, passform, konstruktionsfeedback — hela fabriksloopen på ett ögonkast.",
+    summaryTitle: "Proto-pipeline",
+    filterAll: "Alla",
+    status_pending: "Väntar",
+    status_issues: "Problem",
+    status_approved: "Godkänd",
+    status_rejected: "Avvisad",
+    status_noproto: "Ingen proto",
+    drop: "Drop",
+    firstIteration: "första iteration",
+    iterationsPrior: "{n} tidigare",
+    noIterYet: "Inga iterationer",
+    today: "i dag",
+    daysShort: "d",
+    ctaStart: "Registrera första iteration",
+    ctaReview: "Granska iteration",
+    emptyTitle: "Inga prototyper ännu",
+    emptyBody: "SKU:er dyker upp här efter Sketch. Godkänn en tech pack för att starta en prototyp.",
+  },
+
 } as Dictionary;

@@ -3368,6 +3368,29 @@ export const en = {
     sidebarLockEmptyHint: "Approve at least one SKU to lock.",
   },
 
+  // ─── Prototyping workspace ───
+  prototypingWorkspace: {
+    title: "Prototyping",
+    intro: "Track every prototype in flight. Photos, fit, construction feedback — the whole factory loop at a glance.",
+    summaryTitle: "Proto pipeline",
+    filterAll: "All",
+    status_pending: "Waiting",
+    status_issues: "Issues",
+    status_approved: "Approved",
+    status_rejected: "Rejected",
+    status_noproto: "No proto yet",
+    drop: "Drop",
+    firstIteration: "first iteration",
+    iterationsPrior: "{n} prior",
+    noIterYet: "No iterations logged",
+    today: "today",
+    daysShort: "d",
+    ctaStart: "Log first iteration",
+    ctaReview: "Review iteration",
+    emptyTitle: "No prototypes yet",
+    emptyBody: "SKUs show up here once they move out of Sketch. Approve a tech pack to start a prototype.",
+  },
+
 };
 
 export type Dictionary = typeof en;

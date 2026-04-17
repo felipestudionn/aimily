@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { PlannerDashboard } from '@/components/planner/PlannerDashboard';
 import { TechPackWorkspace } from '@/components/tech-pack/TechPackWorkspace';
 import { FinalSelectionWorkspace } from '@/components/design-dev/FinalSelectionWorkspace';
+import { PrototypingWorkspace } from '@/components/design-dev/PrototypingWorkspace';
 import type { CollectionPlan, SetupData, ProductFamily, PriceSegment, ProductTypeSegment } from '@/types/planner';
 
 interface PageProps {
@@ -153,6 +154,16 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         collectionPlanId={id}
         collectionName={enrichedPlan.name || 'Collection'}
         productCategory={enrichedPlan.setup_data?.productCategory}
+      />
+    );
+  }
+
+  // Prototyping workspace — dedicated proto iteration tracker
+  if (phase === 'prototyping') {
+    return (
+      <PrototypingWorkspace
+        collectionPlanId={id}
+        collectionName={enrichedPlan.name || 'Collection'}
       />
     );
   }

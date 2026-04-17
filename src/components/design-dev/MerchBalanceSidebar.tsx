@@ -60,7 +60,7 @@ export function MerchBalanceSidebar({ skus, approvedSkus, setupData, onLock, loc
     if (fam.name) targetMap.set(fam.name, Number(fam.percentage) || 0);
   });
   const allFamilyNames = new Set<string>([
-    ...targetMap.keys(),
+    ...Array.from(targetMap.keys()),
     ...Array.from(approvedByFamily.keys()),
     ...skus.map(s => s.family).filter(Boolean),
   ]);

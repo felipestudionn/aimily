@@ -3301,4 +3301,27 @@ export const nl: Dictionary = {
     sidebarLockEmptyHint: "Keur minstens één SKU goed om vast te zetten.",
   },
 
+  // ─── Prototyping workspace ───
+  prototypingWorkspace: {
+    title: "Prototyping",
+    intro: "Volg elk prototype in omloop. Foto’s, pasvorm, constructie-feedback — de volledige fabrieksloop in één oogopslag.",
+    summaryTitle: "Proto-pijplijn",
+    filterAll: "Alles",
+    status_pending: "In afwachting",
+    status_issues: "Met issues",
+    status_approved: "Goedgekeurd",
+    status_rejected: "Afgewezen",
+    status_noproto: "Geen proto",
+    drop: "Drop",
+    firstIteration: "eerste iteratie",
+    iterationsPrior: "{n} eerder",
+    noIterYet: "Geen iteraties",
+    today: "vandaag",
+    daysShort: "d",
+    ctaStart: "Eerste iteratie vastleggen",
+    ctaReview: "Iteratie bekijken",
+    emptyTitle: "Nog geen prototypes",
+    emptyBody: "SKU’s komen hier na Sketch. Keur een tech pack goed om een prototype te starten.",
+  },
+
 };

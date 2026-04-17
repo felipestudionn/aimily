@@ -3302,4 +3302,27 @@ export const fr: Dictionary = {
     sidebarLockEmptyHint: "Approuve au moins un SKU pour verrouiller.",
   },
 
+  // ─── Prototyping workspace ───
+  prototypingWorkspace: {
+    title: "Prototypage",
+    intro: "Suis chaque prototype en cours. Photos, fit, retours de construction — toute la boucle usine d’un coup d’œil.",
+    summaryTitle: "Pipeline de protos",
+    filterAll: "Tous",
+    status_pending: "En attente",
+    status_issues: "Problèmes",
+    status_approved: "Approuvé",
+    status_rejected: "Rejeté",
+    status_noproto: "Pas de proto",
+    drop: "Drop",
+    firstIteration: "première itération",
+    iterationsPrior: "{n} précédentes",
+    noIterYet: "Aucune itération",
+    today: "aujourd’hui",
+    daysShort: "j",
+    ctaStart: "Enregistrer la première itération",
+    ctaReview: "Revoir l’itération",
+    emptyTitle: "Pas encore de prototype",
+    emptyBody: "Les SKUs apparaissent ici après Sketch. Approuve un tech pack pour lancer un prototype.",
+  },
+
 };
