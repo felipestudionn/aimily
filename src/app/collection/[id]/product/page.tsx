@@ -4,6 +4,7 @@ import { PlannerDashboard } from '@/components/planner/PlannerDashboard';
 import { TechPackWorkspace } from '@/components/tech-pack/TechPackWorkspace';
 import { FinalSelectionWorkspace } from '@/components/design-dev/FinalSelectionWorkspace';
 import { PrototypingWorkspace } from '@/components/design-dev/PrototypingWorkspace';
+import { ProductionWorkspace } from '@/components/design-dev/ProductionWorkspace';
 import type { CollectionPlan, SetupData, ProductFamily, PriceSegment, ProductTypeSegment } from '@/types/planner';
 
 interface PageProps {
@@ -162,6 +163,16 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
   if (phase === 'prototyping') {
     return (
       <PrototypingWorkspace
+        collectionPlanId={id}
+        collectionName={enrichedPlan.name || 'Collection'}
+      />
+    );
+  }
+
+  // Production workspace — PO + sample validation hub
+  if (phase === 'production') {
+    return (
+      <ProductionWorkspace
         collectionPlanId={id}
         collectionName={enrichedPlan.name || 'Collection'}
       />

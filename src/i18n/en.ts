@@ -3391,6 +3391,36 @@ export const en = {
     emptyBody: "SKUs show up here once they move out of Sketch. Approve a tech pack to start a prototype.",
   },
 
+  // ─── Production workspace ───
+  productionWorkspace: {
+    title: "Production",
+    intro: "Own the production order. Factories, POs, costs, ETAs and final samples — everything the team needs to land the drop on time and on budget.",
+    summaryOpenPos: "Open POs",
+    summaryTotalValue: "Total PO value",
+    summaryCostOverrun: "Over COGS",
+    summaryEtaSlip: "ETA slipping",
+    filterAll: "All",
+    status_draft: "Draft",
+    status_sent: "PO sent",
+    status_in_production: "In production",
+    status_shipped: "Sample in",
+    status_approved: "Approved",
+    drop: "Drop",
+    cardQty: "Qty",
+    cardCost: "Unit cost",
+    cardEta: "ETA",
+    noFactory: "Factory not assigned",
+    today: "today",
+    daysShort: "d",
+    etaOverdue: "Overdue",
+    ctaReviewSample: "Review sample",
+    ctaApprove: "Approve",
+    ctaApproved: "Approved for drop",
+    ctaOpen: "Open production",
+    emptyTitle: "No production orders yet",
+    emptyBody: "SKUs show up here once the prototype is approved. Sign off on a proto to kick off the factory order.",
+  },
+
 };
 
 export type Dictionary = typeof en;
