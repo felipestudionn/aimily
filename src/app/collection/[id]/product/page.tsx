@@ -5,6 +5,7 @@ import { TechPackWorkspace } from '@/components/tech-pack/TechPackWorkspace';
 import { FinalSelectionWorkspace } from '@/components/design-dev/FinalSelectionWorkspace';
 import { PrototypingWorkspace } from '@/components/design-dev/PrototypingWorkspace';
 import { ProductionWorkspace } from '@/components/design-dev/ProductionWorkspace';
+import { SketchColorWorkspace } from '@/components/design-dev/SketchColorWorkspace';
 import type { CollectionPlan, SetupData, ProductFamily, PriceSegment, ProductTypeSegment } from '@/types/planner';
 
 interface PageProps {
@@ -155,6 +156,16 @@ export default async function ProductPage({ params, searchParams }: PageProps) {
         collectionPlanId={id}
         collectionName={enrichedPlan.name || 'Collection'}
         productCategory={enrichedPlan.setup_data?.productCategory}
+      />
+    );
+  }
+
+  // Sketch & Color workspace — sketches, colorways, material zones
+  if (phase === 'sketch') {
+    return (
+      <SketchColorWorkspace
+        collectionPlanId={id}
+        collectionName={enrichedPlan.name || 'Collection'}
       />
     );
   }

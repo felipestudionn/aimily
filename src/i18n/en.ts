@@ -3421,6 +3421,36 @@ export const en = {
     emptyBody: "SKUs show up here once the prototype is approved. Sign off on a proto to kick off the factory order.",
   },
 
+  // ─── Sketch & Color workspace ───
+  sketchWorkspace: {
+    title: "Sketch & Color",
+    intro: "Every silhouette, colorway, and material in one hub. Finish a sketch, lock a palette, define the zones — then ship the tech pack.",
+    summarySketched: "Sketched",
+    summaryColorways: "Colorways",
+    summaryReadyTechPack: "Ready for tech pack",
+    summaryEmpty: "Awaiting sketch",
+    filterAll: "All",
+    status_empty: "No sketch",
+    status_sketching: "Sketching",
+    status_coloring: "Coloring",
+    status_ready: "Ready",
+    drop: "Drop",
+    cardPvp: "PVP",
+    cardCogs: "COGS",
+    noSketch: "No sketch yet",
+    noColorways: "No colorways yet",
+    colorwaySingular: "colorway",
+    colorwayPlural: "colorways",
+    zoneSingular: "material zone",
+    zonePlural: "material zones",
+    noZones: "No material zones defined",
+    ctaReady: "Ready for tech pack",
+    ctaStart: "Start sketch",
+    ctaContinue: "Continue",
+    emptyTitle: "Nothing to sketch yet",
+    emptyBody: "Add SKUs in the Collection Builder to start sketching silhouettes and colorways here.",
+  },
+
 };
 
 export type Dictionary = typeof en;
