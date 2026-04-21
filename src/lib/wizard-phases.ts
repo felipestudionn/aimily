@@ -138,7 +138,7 @@ export const WIZARD_PHASES: WizardPhase[] = [
     path: 'marketing/creation',
     block: 'go_to_market',
     milestoneIds: ['gm-3', 'gm-4', 'gm-5'],
-    unlockWhen: ['rp-6'], // Requires: Range plan done (SKUs + brand DNA)
+    unlockWhen: [], // Always accessible
   },
   {
     id: 'marketing-distribution',
@@ -147,7 +147,7 @@ export const WIZARD_PHASES: WizardPhase[] = [
     path: 'marketing/distribution',
     block: 'go_to_market',
     milestoneIds: ['gm-1', 'gm-2', 'gm-6', 'gm-7', 'gm-8', 'gm-9', 'gm-10', 'gm-11', 'gm-12', 'gm-13', 'gm-14', 'gm-15'],
-    unlockWhen: ['rp-6'], // Requires: Range plan done — parallel with Creation
+    unlockWhen: [], // Always accessible
   },
 ];
 
