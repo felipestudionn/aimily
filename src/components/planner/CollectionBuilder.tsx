@@ -1260,7 +1260,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                         </div>
                         <span className="text-[12px] font-semibold text-carbon/70 tabular-nums tracking-[-0.01em]">€{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
-                      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
                 const protoImg = sku.proto_iterations?.length > 0 ? sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] : undefined;
@@ -1283,7 +1283,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 return (
                 <div
                   key={sku.id}
-                  className="bg-white rounded-[20px] overflow-hidden hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer group"
+                  className="bg-white rounded-[20px] overflow-hidden border border-carbon/[0.05] hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-carbon/[0.1] transition-all duration-300 cursor-pointer group"
                   onClick={() => openSkuDetail(sku)}
                 >
                   {/* Visual zone — CLEAN. Only the image. No overlays, no pills, no CTA. */}
@@ -1359,53 +1359,65 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
                   </div>
 
-                  {/* Footer — phase + type signal as dots, then adaptive metrics */}
-                  <div className="px-4 py-3">
-                    {/* Line 1 — name + PVP */}
-                    <div className="flex items-baseline justify-between gap-2 mb-1">
-                      <p className="text-[13px] font-medium text-carbon tracking-[-0.01em] truncate leading-tight">{sku.name}</p>
-                      <span className="text-[13px] font-semibold text-carbon tabular-nums shrink-0">€{sku.pvp}</span>
+                  {/* Footer — generous, no truncation, commercial info always readable */}
+                  <div className="px-5 pt-4 pb-5 space-y-3">
+                    {/* Line 1 — name (up to 2 lines) + PVP */}
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-[14px] font-medium text-carbon tracking-[-0.01em] leading-[1.25] line-clamp-2 flex-1">
+                        {sku.name}
+                      </p>
+                      <span className="text-[15px] font-semibold text-carbon tabular-nums shrink-0 leading-tight">
+                        €{sku.pvp}
+                      </span>
                     </div>
 
-                    {/* Line 2 — phase + type as quiet colored dots with labels */}
-                    <div className="flex items-center gap-3 text-[9px] font-semibold tracking-[0.08em] uppercase">
-                      <span className="inline-flex items-center gap-1" style={{ color: phaseStrokeColor }}>
+                    {/* Line 2 — phase + type indicators, quiet colored dots */}
+                    <div className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
+                      <span className="inline-flex items-center gap-1.5" style={{ color: phaseStrokeColor }}>
                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
                         {phaseLabel}
                       </span>
-                      <span className="inline-flex items-center gap-1" style={{ color: typeColor }}>
+                      <span className="inline-flex items-center gap-1.5" style={{ color: typeColor }}>
                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeColor }} />
                         {typeLabel}
                       </span>
                     </div>
 
                     {showMetrics ? (
-                      /* Expanded — 2×2 metrics grid, fits comfortably at 220px card width */
-                      <div className="mt-3 pt-3 border-t border-carbon/[0.05] grid grid-cols-2 gap-x-4 gap-y-2 tabular-nums">
+                      /* Expanded — 2×2 grid with comfortable cells (~140px each at 330px card) */
+                      <div className="pt-3 border-t border-carbon/[0.06] grid grid-cols-2 gap-x-5 gap-y-3 tabular-nums">
                         <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">COGS</p>
-                          <p className="text-[13px] font-semibold text-carbon/85">€{sku.cost}</p>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p>
+                          <p className="text-[14px] font-semibold text-carbon/85">€{sku.cost}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Units</p>
-                          <p className="text-[13px] font-semibold text-carbon/85">{sku.buy_units}</p>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
+                          <p className="text-[14px] font-semibold text-carbon/85">{sku.buy_units}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Margin</p>
-                          <p className="text-[13px] font-semibold text-carbon/85">{Math.round(sku.margin)}%</p>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
+                          <p className="text-[14px] font-semibold text-carbon/85">{Math.round(sku.margin)}%</p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Sales</p>
-                          <p className="text-[13px] font-semibold text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Sales</p>
+                          <p className="text-[14px] font-semibold text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
                         </div>
                       </div>
                     ) : (
-                      /* Minimal — single muted line */
-                      <p className="mt-1 text-[11px] text-carbon/45 tabular-nums">
-                        {Math.round(sku.margin)}% margin
-                        <span className="text-carbon/25 mx-1.5">·</span>
-                        €{Math.round(sku.expected_sales).toLocaleString()}
-                      </p>
+                      /* Default — 3 clean metrics in one row, no squeezing */
+                      <div className="pt-2 border-t border-carbon/[0.06] flex items-center justify-between tabular-nums text-[12px]">
+                        <span className="text-carbon/50">
+                          <span className="font-semibold text-carbon/80">{Math.round(sku.margin)}%</span>
+                          <span className="text-carbon/35 ml-1">margin</span>
+                        </span>
+                        <span className="text-carbon/50">
+                          <span className="font-semibold text-carbon/80 tabular-nums">{sku.buy_units}</span>
+                          <span className="text-carbon/35 ml-1">units</span>
+                        </span>
+                        <span className="font-semibold text-carbon tabular-nums">
+                          €{Math.round(sku.expected_sales).toLocaleString()}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
