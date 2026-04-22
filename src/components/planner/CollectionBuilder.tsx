@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, X, Download, ChevronDown, Kanban, Package, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, X, Download, ChevronDown, Kanban, Package } from 'lucide-react';
 import { useSkus, type SKU, type DesignPhase } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -99,7 +99,10 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   const [autoGenStep, setAutoGenStep] = useState(0);
   const [autoGenDone, setAutoGenDone] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'pipeline' | 'orders'>('cards');
-  const [showMetrics, setShowMetrics] = useState(false);
+  /* cardDensity 1 (huge, ~3 per row) → 5 (thumbnails, ~9 per row). Replaces
+     the old Show/Hide metrics toggle. Content inside each card adapts: rich
+     footer at low density, progressively stripped as density increases. */
+  const [cardDensity, setCardDensity] = useState<1 | 2 | 3 | 4 | 5>(2);
   const [showAddForm, setShowAddForm] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
@@ -1031,10 +1034,10 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
       {/* ── Range Plan ── */}
       <div className="bg-white border border-carbon/[0.06]">
-        <div className="px-6 sm:px-8 py-5 flex items-center justify-between border-b border-carbon/[0.04]">
-          <div className="flex items-center gap-4">
-            <p className="text-[13px] font-semibold tracking-[0.12em] uppercase text-carbon/70">Range Plan</p>
-            <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors">
+        <div className="px-6 sm:px-8 py-5 flex items-center justify-between gap-4 flex-wrap border-b border-carbon/[0.04]">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="text-[13px] font-semibold tracking-[0.12em] uppercase text-carbon/70 whitespace-nowrap">Range Plan</p>
+            <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors whitespace-nowrap">
               <Plus className="h-3 w-3" /> Add SKU
             </button>
             <button
@@ -1096,7 +1099,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   btn.innerHTML = origText;
                 }
               }}
-              className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors whitespace-nowrap"
             >
               <Sparkles className="h-3 w-3" /> Refresh Creative
             </button>
@@ -1126,25 +1129,31 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   btn.innerHTML = '<svg class="h-3 w-3" />' + ' Excel';
                 }
               }}
-              className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors whitespace-nowrap"
             >
               <Download className="h-3 w-3" /> Excel
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {viewMode === 'cards' && (
-              <button
-                onClick={() => setShowMetrics(!showMetrics)}
-                className={`inline-flex items-center justify-center h-[30px] w-[30px] rounded-full transition-all ${
-                  showMetrics
-                    ? 'bg-carbon text-crema'
-                    : 'border border-carbon/[0.12] text-carbon/50 hover:text-carbon hover:border-carbon/30'
-                }`}
-                title={showMetrics ? (t.plannerSections?.hideMetrics || 'Hide metrics') : (t.plannerSections?.showMetrics || 'Show metrics')}
-                aria-label={showMetrics ? (t.plannerSections?.hideMetrics || 'Hide metrics') : (t.plannerSections?.showMetrics || 'Show metrics')}
-              >
-                {showMetrics ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </button>
+              <div className="flex items-center gap-2 pr-1">
+                <span className="text-[9px] text-carbon/35 uppercase tracking-[0.12em] font-semibold hidden sm:inline">Zoom</span>
+                <div className="flex items-center gap-1.5">
+                  {([1, 2, 3, 4, 5] as const).map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setCardDensity(n)}
+                      className={`rounded-full transition-all ${
+                        cardDensity === n
+                          ? 'bg-carbon w-2.5 h-2.5'
+                          : 'bg-carbon/15 hover:bg-carbon/40 w-2 h-2'
+                      }`}
+                      title={`Zoom ${n}`}
+                      aria-label={`Zoom level ${n}`}
+                    />
+                  ))}
+                </div>
+              </div>
             )}
             <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5">
               {(['pipeline', 'list', 'cards', 'orders'] as const).map((mode) => (
@@ -1260,7 +1269,17 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                         </div>
                         <span className="text-[12px] font-semibold text-carbon/70 tabular-nums tracking-[-0.01em]">€{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
-                      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                      <div
+                        className="grid gap-5"
+                        style={{
+                          gridTemplateColumns: `repeat(auto-fill, minmax(${
+                            cardDensity === 1 ? 360 :
+                            cardDensity === 2 ? 280 :
+                            cardDensity === 3 ? 220 :
+                            cardDensity === 4 ? 170 : 130
+                          }px, 1fr))`,
+                        }}
+                      >
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
                 const protoImg = sku.proto_iterations?.length > 0 ? sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] : undefined;
@@ -1280,14 +1299,62 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 const phaseStrokeColor = progress <= 25 ? '#9c7c4c' : progress <= 50 ? '#7d5a8c' : progress <= 75 ? '#4c7c6c' : '#282A29';
                 const typeColor = sku.type === 'REVENUE' ? '#9c7c4c' : sku.type === 'IMAGEN' ? '#7d5a8c' : '#4c7c6c';
                 const typeLabel = sku.type === 'IMAGEN' ? 'IMAGE' : sku.type;
+                const isRich = cardDensity <= 2;
+                const isThumbnail = cardDensity === 5;
                 return (
                 <div
                   key={sku.id}
-                  className="bg-white rounded-[20px] overflow-hidden border border-carbon/[0.05] hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-carbon/[0.1] transition-all duration-300 cursor-pointer group"
+                  className="relative group"
                   onClick={() => openSkuDetail(sku)}
                 >
+                {/* ── Hover peek — floats ABOVE the card with full metrics ── */}
+                <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[260px] opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50">
+                  <div className="bg-white rounded-[16px] shadow-[0_24px_56px_rgba(0,0,0,0.14)] border border-carbon/[0.06] p-4">
+                    <p className="text-[13px] font-medium text-carbon tracking-[-0.01em] leading-tight mb-1 truncate">{sku.name}</p>
+                    <div className="flex items-center gap-3 mb-3 text-[9px] font-semibold tracking-[0.08em] uppercase">
+                      <span className="inline-flex items-center gap-1.5" style={{ color: phaseStrokeColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
+                        {phaseLabel}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5" style={{ color: typeColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeColor }} />
+                        {typeLabel}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 tabular-nums pt-3 border-t border-carbon/[0.06]">
+                      <div>
+                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">PVP</p>
+                        <p className="text-[14px] font-semibold text-carbon">€{sku.pvp}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p>
+                        <p className="text-[14px] font-semibold text-carbon">€{sku.cost}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
+                        <p className="text-[14px] font-semibold text-carbon">{sku.buy_units}</p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
+                        <p className="text-[14px] font-semibold text-carbon">{Math.round(sku.margin)}%</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-carbon/[0.06] flex items-center justify-between">
+                      <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Expected sales</span>
+                      <span className="text-[14px] font-semibold text-carbon tabular-nums">€{Math.round(sku.expected_sales).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  {/* arrow */}
+                  <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-r border-b border-carbon/[0.06] rotate-45" />
+                </div>
+
+                <div
+                  className="bg-white rounded-[20px] overflow-hidden border border-carbon/[0.05] hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-carbon/[0.1] transition-all duration-300 cursor-pointer"
+                >
+                  {/* Commercial stripe — type color at the top edge (scan mix at a glance) */}
+                  <div className="h-[3px] w-full" style={{ backgroundColor: typeColor }} />
                   {/* Visual zone — CLEAN. Only the image. No overlays, no pills, no CTA. */}
-                  <div className="aspect-[4/5] bg-white relative overflow-hidden rounded-t-[20px]">
+                  <div className="aspect-[4/5] bg-white relative overflow-hidden">
                     {showRender ? (
                       <img src={renderImage} alt={sku.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : displayImage ? (
@@ -1359,67 +1426,63 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
                   </div>
 
-                  {/* Footer — generous, no truncation, commercial info always readable */}
-                  <div className="px-5 pt-4 pb-5 space-y-3">
-                    {/* Line 1 — name (up to 2 lines) + PVP */}
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-[14px] font-medium text-carbon tracking-[-0.01em] leading-[1.25] line-clamp-2 flex-1">
-                        {sku.name}
-                      </p>
-                      <span className="text-[15px] font-semibold text-carbon tabular-nums shrink-0 leading-tight">
-                        €{sku.pvp}
-                      </span>
-                    </div>
-
-                    {/* Line 2 — phase + type indicators, quiet colored dots */}
-                    <div className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
-                      <span className="inline-flex items-center gap-1.5" style={{ color: phaseStrokeColor }}>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
-                        {phaseLabel}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5" style={{ color: typeColor }}>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeColor }} />
-                        {typeLabel}
-                      </span>
-                    </div>
-
-                    {showMetrics ? (
-                      /* Expanded — 2×2 grid with comfortable cells (~140px each at 330px card) */
-                      <div className="pt-3 border-t border-carbon/[0.06] grid grid-cols-2 gap-x-5 gap-y-3 tabular-nums">
-                        <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p>
-                          <p className="text-[14px] font-semibold text-carbon/85">€{sku.cost}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
-                          <p className="text-[14px] font-semibold text-carbon/85">{sku.buy_units}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
-                          <p className="text-[14px] font-semibold text-carbon/85">{Math.round(sku.margin)}%</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Sales</p>
-                          <p className="text-[14px] font-semibold text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      /* Default — 3 clean metrics in one row, no squeezing */
-                      <div className="pt-2 border-t border-carbon/[0.06] flex items-center justify-between tabular-nums text-[12px]">
-                        <span className="text-carbon/50">
-                          <span className="font-semibold text-carbon/80">{Math.round(sku.margin)}%</span>
-                          <span className="text-carbon/35 ml-1">margin</span>
-                        </span>
-                        <span className="text-carbon/50">
-                          <span className="font-semibold text-carbon/80 tabular-nums">{sku.buy_units}</span>
-                          <span className="text-carbon/35 ml-1">units</span>
-                        </span>
-                        <span className="font-semibold text-carbon tabular-nums">
-                          €{Math.round(sku.expected_sales).toLocaleString()}
+                  {/* Footer — content adapts to density level. At thumbnail density it disappears. */}
+                  {!isThumbnail && (
+                    <div className={isRich ? 'px-5 pt-4 pb-5 space-y-3' : 'px-4 pt-3 pb-4 space-y-2'}>
+                      {/* Line 1 — name + PVP */}
+                      <div className="flex items-start justify-between gap-3">
+                        <p className={`text-carbon tracking-[-0.01em] leading-[1.25] line-clamp-2 flex-1 ${
+                          isRich ? 'text-[14px] font-medium' : 'text-[12px] font-medium'
+                        }`}>
+                          {sku.name}
+                        </p>
+                        <span className={`font-semibold text-carbon tabular-nums shrink-0 leading-tight ${
+                          isRich ? 'text-[15px]' : 'text-[13px]'
+                        }`}>
+                          €{sku.pvp}
                         </span>
                       </div>
-                    )}
-                  </div>
+
+                      {/* Line 2 — phase + type dots (hidden at density 4 to save space) */}
+                      {cardDensity <= 3 && (
+                        <div className={`flex items-center gap-3 font-semibold tracking-[0.06em] uppercase ${
+                          isRich ? 'text-[10px]' : 'text-[9px]'
+                        }`}>
+                          <span className="inline-flex items-center gap-1.5" style={{ color: phaseStrokeColor }}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
+                            {phaseLabel}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5" style={{ color: typeColor }}>
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeColor }} />
+                            {typeLabel}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Rich footer only at density 1-2 — full 2×2 metrics grid */}
+                      {isRich && (
+                        <div className="pt-3 border-t border-carbon/[0.06] grid grid-cols-2 gap-x-5 gap-y-3 tabular-nums">
+                          <div>
+                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p>
+                            <p className="text-[14px] font-semibold text-carbon/85">€{sku.cost}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
+                            <p className="text-[14px] font-semibold text-carbon/85">{sku.buy_units}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
+                            <p className="text-[14px] font-semibold text-carbon/85">{Math.round(sku.margin)}%</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Sales</p>
+                            <p className="text-[14px] font-semibold text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 </div>
                 );
               })}
