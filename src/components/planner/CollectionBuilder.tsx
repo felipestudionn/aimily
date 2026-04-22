@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, ImagePlus, X, Download, ChevronDown, Kanban, Package } from 'lucide-react';
+import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, X, Download, ChevronDown, Kanban, Package } from 'lucide-react';
 import { useSkus, type SKU, type DesignPhase } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -1249,7 +1249,6 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 const protoImg = sku.proto_iterations?.length > 0 ? sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] : undefined;
                 const displayImage = sku.production_sample_url || protoImg || sku.render_url || sku.sketch_url || sku.reference_image_url;
                 const renderImage = (sku.render_urls as Record<string, string>)?.['3d'] || (sku.render_urls as Record<string, string>)?.['preview'];
-                const isSketchImage = !sku.production_sample_url && !protoImg && !!sku.sketch_url;
                 const showRender = aiViewSkus.has(sku.id) && renderImage;
                 // Phase progress
                 const phaseProgress: Record<string, number> = {
@@ -1262,28 +1261,59 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 const phaseLabel = phaseLabels[sku.design_phase || 'range_plan'] || 'Concept';
                 // Circle colors per segment: gold (0-25), plum (25-50), sage (50-75), carbon (75-100)
                 const phaseStrokeColor = progress <= 25 ? '#9c7c4c' : progress <= 50 ? '#7d5a8c' : progress <= 75 ? '#4c7c6c' : '#282A29';
+                const ctaText =
+                  (sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url ? (t.skuPhases?.ctaAddReference || 'Add Reference')
+                  : (sku.design_phase || 'range_plan') === 'range_plan' ? (t.skuPhases?.ctaStartSketch || 'Start Sketch')
+                  : sku.design_phase === 'sketch' && !sku.sketch_url ? (t.skuPhases?.ctaUploadSketch || 'Upload Sketch')
+                  : sku.design_phase === 'sketch' ? (t.skuPhases?.ctaDefineColors || 'Define Colorways')
+                  : sku.design_phase === 'prototyping' ? (t.skuPhases?.ctaReviewProto || 'Review Proto')
+                  : sku.design_phase === 'production' ? (t.skuPhases?.ctaValidate || 'Validate Sample')
+                  : sku.design_phase === 'completed' ? (t.skuPhases?.ctaCompleted || 'View Details')
+                  : (t.skuPhases?.ctaAddReference || 'Add Reference');
                 return (
                 <div
                   key={sku.id}
                   className="bg-white rounded-[20px] overflow-hidden hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer group"
                   onClick={() => openSkuDetail(sku)}
                 >
-                  {/* Image / Name area */}
+                  {/* Visual zone — dominant cover (70% of card) */}
                   <div className="aspect-[4/5] bg-white relative overflow-hidden rounded-t-[20px]">
                     {showRender ? (
-                      <img src={renderImage} alt={sku.name} className="w-full h-full object-contain p-1" />
+                      <img src={renderImage} alt={sku.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : displayImage ? (
-                      <img src={displayImage as string} alt={sku.name} className="w-full h-full object-contain p-2" />
+                      <img src={displayImage as string} alt={sku.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <>
-                        <div className="absolute inset-0 flex items-center justify-center px-4">
-                          <p className="text-[14px] font-medium text-carbon tracking-[-0.02em] leading-tight text-center">{sku.name}</p>
-                        </div>
-                        <div className="absolute bottom-2 right-2">
-                          <ImagePlus className="h-5 w-5 text-carbon/[0.08]" />
+                        {/* Editorial empty cover — gradient + ghost initial + centered name */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-carbon/[0.03] via-shade/70 to-carbon/[0.015]" />
+                        <span className="absolute top-4 left-5 text-[72px] font-bold text-carbon/[0.08] leading-none tracking-[-0.04em] select-none pointer-events-none">
+                          {sku.name.charAt(0).toUpperCase()}
+                        </span>
+                        <div className="absolute inset-0 flex items-center justify-center px-5">
+                          <p className="text-[14px] font-medium text-carbon/75 tracking-[-0.01em] leading-tight text-center">{sku.name}</p>
                         </div>
                       </>
                     )}
+
+                    {/* Phase pill — top-right (always visible) */}
+                    <div className="absolute top-3 right-3 z-10 pointer-events-none">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold tracking-[0.1em] uppercase bg-white/90 backdrop-blur-sm shadow-[0_1px_3px_rgba(0,0,0,0.06)]" style={{ color: phaseStrokeColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
+                        {phaseLabel}
+                      </span>
+                    </div>
+
+                    {/* Type pill — bottom-left (always visible) */}
+                    <span className={`absolute bottom-3 left-3 z-10 px-2.5 py-0.5 text-[9px] font-semibold tracking-[0.05em] uppercase text-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.12)] pointer-events-none ${
+                      sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
+                    }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
+
+                    {/* Hover CTA — reveal over darkening gradient */}
+                    <div className="absolute inset-x-0 bottom-0 z-5 px-4 pt-12 pb-4 bg-gradient-to-t from-carbon/85 via-carbon/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-center">
+                      <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white text-carbon text-[11px] font-semibold tracking-[-0.01em] rounded-full shadow-sm">
+                        {ctaText}
+                      </span>
+                    </div>
 
                     {/* Sketch / AI pill toggle — top center */}
                     {sku.sketch_url && (
@@ -1345,43 +1375,18 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       </div>
                     )}
 
-                    {/* Phase Progress Bar — bottom overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-white/90 px-3 py-2">
-                      <div className="w-full h-1 bg-carbon/[0.06] mb-1.5">
-                        <div className="h-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: phaseStrokeColor }} />
-                      </div>
-                      <p className="text-[8px] font-semibold tracking-[0.1em] uppercase" style={{ color: phaseStrokeColor }}>{phaseLabel}</p>
-                    </div>
                   </div>
 
-                  {/* Metrics — 2 clean rows, no inner dividers */}
-                  <div className="px-4 pt-4 pb-3 space-y-3">
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">PVP</p><p className="text-[14px] font-semibold text-carbon tabular-nums">€{sku.pvp}</p></div>
-                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p><p className="text-[14px] font-semibold text-carbon tabular-nums">€{sku.cost}</p></div>
-                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p><p className="text-[14px] font-semibold text-carbon tabular-nums">{sku.buy_units}</p></div>
-                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p><p className="text-[14px] font-semibold text-carbon tabular-nums">{Math.round(sku.margin)}%</p></div>
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-carbon/[0.05]">
-                      <div>
-                        <p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">Sales</p>
-                        <p className="text-[13px] font-semibold text-carbon tabular-nums">€{Math.round(sku.expected_sales).toLocaleString()}</p>
-                      </div>
-                      <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white rounded-full ${
-                        sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
-                      }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
-                    </div>
-                  </div>
-                  {/* CTA pill — centered small pill, gold standard */}
-                  <div className="px-4 pb-4 flex justify-center">
-                    <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-carbon text-white text-[11px] font-semibold tracking-[-0.01em] rounded-full group-hover:bg-carbon/90 transition-colors">
-                      {(sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url && (t.skuPhases?.ctaAddReference || 'Add Reference')}
-                      {(sku.design_phase || 'range_plan') === 'range_plan' && sku.reference_image_url && (t.skuPhases?.ctaStartSketch || 'Start Sketch')}
-                      {sku.design_phase === 'sketch' && !sku.sketch_url && (t.skuPhases?.ctaUploadSketch || 'Upload Sketch')}
-                      {sku.design_phase === 'sketch' && sku.sketch_url && (t.skuPhases?.ctaDefineColors || 'Define Colorways')}
-                      {sku.design_phase === 'prototyping' && (t.skuPhases?.ctaReviewProto || 'Review Proto')}
-                      {sku.design_phase === 'production' && (t.skuPhases?.ctaValidate || 'Validate Sample')}
-                      {sku.design_phase === 'completed' && (t.skuPhases?.ctaCompleted || 'View Details')}
+                  {/* Slim footer — name + commercial one-liner */}
+                  <div className="px-4 py-3">
+                    <p className="text-[13px] font-medium text-carbon tracking-[-0.01em] truncate leading-tight mb-1">{sku.name}</p>
+                    <div className="flex items-center justify-between gap-2 text-[11px] tabular-nums">
+                      <span className="text-carbon/55 shrink-0">
+                        €{sku.pvp}
+                        <span className="text-carbon/25 mx-1">·</span>
+                        {Math.round(sku.margin)}%
+                      </span>
+                      <span className="font-semibold text-carbon/75 truncate text-right">€{Math.round(sku.expected_sales).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
