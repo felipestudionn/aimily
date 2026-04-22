@@ -1351,8 +1351,6 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 <div
                   className="bg-white rounded-[20px] overflow-hidden border border-carbon/[0.05] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-carbon/[0.1] transition-all duration-300 cursor-pointer"
                 >
-                  {/* Commercial stripe — type color at the top edge (scan mix at a glance) */}
-                  <div className="h-[3px] w-full" style={{ backgroundColor: typeColor }} />
                   {/* Visual zone — CLEAN. Only the image. No overlays, no pills, no CTA. */}
                   <div className="aspect-[4/5] bg-white relative overflow-hidden">
                     {showRender ? (
@@ -1436,8 +1434,8 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
                   </div>
 
-                  {/* Front footer — name + price + dots + next-step CTA */}
-                  <div className="px-5 pt-4 pb-4 space-y-3">
+                  {/* Front footer — only the 4 essentials: name, price, state, next step */}
+                  <div className="px-5 pt-4 pb-4 space-y-2.5">
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-[14px] font-medium text-carbon tracking-[-0.01em] leading-[1.25] line-clamp-2 flex-1">
                         {sku.name}
@@ -1446,19 +1444,15 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                         €{sku.pvp}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
-                      <span className="inline-flex items-center gap-1.5" style={{ color: phaseStrokeColor }}>
+                    <div className="pt-2.5 border-t border-carbon/[0.06] flex items-center justify-between gap-2 min-h-[20px]">
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.06em] uppercase shrink-0"
+                        style={{ color: phaseStrokeColor }}
+                      >
                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
                         {phaseLabel}
                       </span>
-                      <span className="inline-flex items-center gap-1.5" style={{ color: typeColor }}>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeColor }} />
-                        {typeLabel}
-                      </span>
-                    </div>
-                    <div className="pt-3 border-t border-carbon/[0.06] flex items-center justify-between gap-2">
-                      <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-carbon/35 shrink-0">Next</span>
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[-0.01em] text-carbon/75 truncate">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[-0.01em] text-carbon/65 truncate">
                         {ctaText}
                         <ArrowRight className="h-3 w-3 shrink-0" />
                       </span>
