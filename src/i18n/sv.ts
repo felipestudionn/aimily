@@ -2370,6 +2370,8 @@ export const sv: Dictionary = {
     listView: 'Lista',
     cardsView: 'Kort',
     showMetrics: 'Visa nyckeltal',
+    flipForDetails: 'Visa detaljer',
+    showVisual: 'Visa visuell',
     hideMetrics: 'Dölj nyckeltal',
     loadingSkus: 'Laddar SKU:er...',
     noSkusYet: 'Inga SKU:er ännu. Lägg till din första produkt ovan.',

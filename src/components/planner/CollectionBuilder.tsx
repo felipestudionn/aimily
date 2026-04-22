@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, X, Download, ChevronDown, Kanban, Package } from 'lucide-react';
+import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, X, Download, ChevronDown, Kanban, Package, FlipHorizontal2, ArrowRight } from 'lucide-react';
 import { useSkus, type SKU, type DesignPhase } from '@/hooks/useSkus';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -99,10 +99,10 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   const [autoGenStep, setAutoGenStep] = useState(0);
   const [autoGenDone, setAutoGenDone] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'pipeline' | 'orders'>('cards');
-  /* cardDensity 1 (huge, ~3 per row) → 5 (thumbnails, ~9 per row). Replaces
-     the old Show/Hide metrics toggle. Content inside each card adapts: rich
-     footer at low density, progressively stripped as density increases. */
-  const [cardDensity, setCardDensity] = useState<1 | 2 | 3 | 4 | 5>(2);
+  /* Flip toggle — when true, every SKU card in the grid rotates to its
+     back side showing full financial detail with a mini thumbnail.
+     Two states, no zoom, no modes. */
+  const [flipped, setFlipped] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [selectedSku, setSelectedSku] = useState<SKU | null>(null);
@@ -1136,24 +1136,18 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
           </div>
           <div className="flex items-center gap-3">
             {viewMode === 'cards' && (
-              <div className="flex items-center gap-2 pr-1">
-                <span className="text-[9px] text-carbon/35 uppercase tracking-[0.12em] font-semibold hidden sm:inline">Zoom</span>
-                <div className="flex items-center gap-1.5">
-                  {([1, 2, 3, 4, 5] as const).map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setCardDensity(n)}
-                      className={`rounded-full transition-all ${
-                        cardDensity === n
-                          ? 'bg-carbon w-2.5 h-2.5'
-                          : 'bg-carbon/15 hover:bg-carbon/40 w-2 h-2'
-                      }`}
-                      title={`Zoom ${n}`}
-                      aria-label={`Zoom level ${n}`}
-                    />
-                  ))}
-                </div>
-              </div>
+              <button
+                onClick={() => setFlipped(!flipped)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase rounded-full transition-all whitespace-nowrap ${
+                  flipped
+                    ? 'bg-carbon text-crema'
+                    : 'border border-carbon/[0.12] text-carbon/50 hover:text-carbon hover:border-carbon/30'
+                }`}
+                title={flipped ? (t.plannerSections?.showVisual || 'Show visual') : (t.plannerSections?.flipForDetails || 'Flip for details')}
+              >
+                <FlipHorizontal2 className="h-3 w-3" />
+                {flipped ? (t.plannerSections?.showVisual || 'Show visual') : (t.plannerSections?.flipForDetails || 'Flip for details')}
+              </button>
             )}
             <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5">
               {(['pipeline', 'list', 'cards', 'orders'] as const).map((mode) => (
@@ -1271,14 +1265,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       </div>
                       <div
                         className="grid gap-5"
-                        style={{
-                          gridTemplateColumns: `repeat(auto-fill, minmax(${
-                            cardDensity === 1 ? 360 :
-                            cardDensity === 2 ? 280 :
-                            cardDensity === 3 ? 220 :
-                            cardDensity === 4 ? 170 : 130
-                          }px, 1fr))`,
-                        }}
+                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
                       >
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
@@ -1299,15 +1286,23 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 const phaseStrokeColor = progress <= 25 ? '#9c7c4c' : progress <= 50 ? '#7d5a8c' : progress <= 75 ? '#4c7c6c' : '#282A29';
                 const typeColor = sku.type === 'REVENUE' ? '#9c7c4c' : sku.type === 'IMAGEN' ? '#7d5a8c' : '#4c7c6c';
                 const typeLabel = sku.type === 'IMAGEN' ? 'IMAGE' : sku.type;
-                const isRich = cardDensity <= 2;
-                const isThumbnail = cardDensity === 5;
+                const ctaText =
+                  (sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url ? (t.skuPhases?.ctaAddReference || 'Add Reference')
+                  : (sku.design_phase || 'range_plan') === 'range_plan' ? (t.skuPhases?.ctaStartSketch || 'Start Sketch')
+                  : sku.design_phase === 'sketch' && !sku.sketch_url ? (t.skuPhases?.ctaUploadSketch || 'Upload Sketch')
+                  : sku.design_phase === 'sketch' ? (t.skuPhases?.ctaDefineColors || 'Define Colorways')
+                  : sku.design_phase === 'prototyping' ? (t.skuPhases?.ctaReviewProto || 'Review Proto')
+                  : sku.design_phase === 'production' ? (t.skuPhases?.ctaValidate || 'Validate Sample')
+                  : sku.design_phase === 'completed' ? (t.skuPhases?.ctaCompleted || 'View Details')
+                  : (t.skuPhases?.ctaAddReference || 'Add Reference');
                 return (
                 <div
                   key={sku.id}
-                  className="relative group"
+                  className="relative group [perspective:1200px]"
                   onClick={() => openSkuDetail(sku)}
                 >
-                {/* ── Hover peek — floats ABOVE the card with full metrics ── */}
+                {/* ── Hover peek — shown only when grid is in visual mode ── */}
+                {!flipped && (
                 <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[260px] opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50">
                   <div className="bg-white rounded-[16px] shadow-[0_24px_56px_rgba(0,0,0,0.14)] border border-carbon/[0.06] p-4">
                     <p className="text-[13px] font-medium text-carbon tracking-[-0.01em] leading-tight mb-1 truncate">{sku.name}</p>
@@ -1340,16 +1335,21 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-carbon/[0.06] flex items-center justify-between">
-                      <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Expected sales</span>
-                      <span className="text-[14px] font-semibold text-carbon tabular-nums">€{Math.round(sku.expected_sales).toLocaleString()}</span>
+                      <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Next step</span>
+                      <span className="text-[11px] font-semibold text-carbon tracking-[-0.01em]">{ctaText}</span>
                     </div>
                   </div>
-                  {/* arrow */}
                   <div className="absolute bottom-[-5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white border-r border-b border-carbon/[0.06] rotate-45" />
                 </div>
+                )}
 
+                {/* ── Flipper — 3D transform container ── */}
+                <div className={`relative transition-transform duration-700 [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}>
+
+                {/* ── FRONT — visual-first ── */}
+                <div className="[backface-visibility:hidden]">
                 <div
-                  className="bg-white rounded-[20px] overflow-hidden border border-carbon/[0.05] hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-carbon/[0.1] transition-all duration-300 cursor-pointer"
+                  className="bg-white rounded-[20px] overflow-hidden border border-carbon/[0.05] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] hover:border-carbon/[0.1] transition-all duration-300 cursor-pointer"
                 >
                   {/* Commercial stripe — type color at the top edge (scan mix at a glance) */}
                   <div className="h-[3px] w-full" style={{ backgroundColor: typeColor }} />
@@ -1360,8 +1360,18 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                     ) : displayImage ? (
                       <img src={displayImage as string} alt={sku.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
-                      /* Empty cover — soft gradient, nothing else. Reserved for the image. */
-                      <div className="absolute inset-0 bg-gradient-to-br from-carbon/[0.025] via-shade/60 to-carbon/[0.01]" />
+                      <>
+                        {/* Empty cover — soft gradient + the SKU name as the first visual version */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-carbon/[0.025] via-shade/60 to-carbon/[0.01]" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+                          <p className="text-[20px] font-medium text-carbon tracking-[-0.02em] leading-[1.2]">
+                            {sku.name}
+                          </p>
+                          <span className="mt-4 text-[9px] font-semibold tracking-[0.16em] uppercase text-carbon/30">
+                            {phaseLabel}
+                          </span>
+                        </div>
+                      </>
                     )}
 
                     {/* Sketch / AI pill toggle — top center (only when a sketch exists, functional) */}
@@ -1426,62 +1436,101 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
                   </div>
 
-                  {/* Footer — content adapts to density level. At thumbnail density it disappears. */}
-                  {!isThumbnail && (
-                    <div className={isRich ? 'px-5 pt-4 pb-5 space-y-3' : 'px-4 pt-3 pb-4 space-y-2'}>
-                      {/* Line 1 — name + PVP */}
-                      <div className="flex items-start justify-between gap-3">
-                        <p className={`text-carbon tracking-[-0.01em] leading-[1.25] line-clamp-2 flex-1 ${
-                          isRich ? 'text-[14px] font-medium' : 'text-[12px] font-medium'
-                        }`}>
-                          {sku.name}
-                        </p>
-                        <span className={`font-semibold text-carbon tabular-nums shrink-0 leading-tight ${
-                          isRich ? 'text-[15px]' : 'text-[13px]'
-                        }`}>
-                          €{sku.pvp}
-                        </span>
+                  {/* Front footer — name + price + dots + next-step CTA */}
+                  <div className="px-5 pt-4 pb-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-[14px] font-medium text-carbon tracking-[-0.01em] leading-[1.25] line-clamp-2 flex-1">
+                        {sku.name}
+                      </p>
+                      <span className="text-[15px] font-semibold text-carbon tabular-nums shrink-0 leading-tight">
+                        €{sku.pvp}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] font-semibold tracking-[0.06em] uppercase">
+                      <span className="inline-flex items-center gap-1.5" style={{ color: phaseStrokeColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
+                        {phaseLabel}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5" style={{ color: typeColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeColor }} />
+                        {typeLabel}
+                      </span>
+                    </div>
+                    <div className="pt-3 border-t border-carbon/[0.06] flex items-center justify-between gap-2">
+                      <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-carbon/35 shrink-0">Next</span>
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[-0.01em] text-carbon/75 truncate">
+                        {ctaText}
+                        <ArrowRight className="h-3 w-3 shrink-0" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                </div>
+
+                {/* ── BACK — financial detail with mini thumbnail ── */}
+                <div className="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                  <div className="bg-white rounded-[20px] border border-carbon/[0.05] h-full flex flex-col overflow-hidden cursor-pointer">
+                    <div className="h-[3px] w-full shrink-0" style={{ backgroundColor: typeColor }} />
+                    <div className="flex-1 p-5 flex flex-col gap-4">
+                      {/* Header — mini thumbnail + name + dots */}
+                      <div className="flex gap-3">
+                        <div className="w-[72px] h-[90px] rounded-[12px] overflow-hidden bg-gradient-to-br from-carbon/[0.04] to-carbon/[0.01] shrink-0 flex items-center justify-center border border-carbon/[0.05]">
+                          {displayImage ? (
+                            <img src={displayImage as string} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] font-medium text-carbon/40 text-center px-1 leading-tight line-clamp-3">{sku.name}</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <p className="text-[13px] font-semibold text-carbon tracking-[-0.01em] leading-tight line-clamp-2 mb-1.5">{sku.name}</p>
+                          <div className="flex items-center gap-2.5 text-[9px] font-semibold tracking-[0.08em] uppercase flex-wrap">
+                            <span className="inline-flex items-center gap-1" style={{ color: phaseStrokeColor }}>
+                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />{phaseLabel}
+                            </span>
+                            <span className="inline-flex items-center gap-1" style={{ color: typeColor }}>
+                              <span className="w-1 h-1 rounded-full" style={{ backgroundColor: typeColor }} />{typeLabel}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Line 2 — phase + type dots (hidden at density 4 to save space) */}
-                      {cardDensity <= 3 && (
-                        <div className={`flex items-center gap-3 font-semibold tracking-[0.06em] uppercase ${
-                          isRich ? 'text-[10px]' : 'text-[9px]'
-                        }`}>
-                          <span className="inline-flex items-center gap-1.5" style={{ color: phaseStrokeColor }}>
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
-                            {phaseLabel}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5" style={{ color: typeColor }}>
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: typeColor }} />
-                            {typeLabel}
-                          </span>
+                      {/* Financial 2×2 */}
+                      <div className="grid grid-cols-2 gap-x-5 gap-y-3 tabular-nums pt-3 border-t border-carbon/[0.06]">
+                        <div>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">PVP</p>
+                          <p className="text-[15px] font-semibold text-carbon">€{sku.pvp}</p>
                         </div>
-                      )}
+                        <div>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p>
+                          <p className="text-[15px] font-semibold text-carbon">€{sku.cost}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
+                          <p className="text-[15px] font-semibold text-carbon">{sku.buy_units}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
+                          <p className="text-[15px] font-semibold text-carbon">{Math.round(sku.margin)}%</p>
+                        </div>
+                      </div>
 
-                      {/* Rich footer only at density 1-2 — full 2×2 metrics grid */}
-                      {isRich && (
-                        <div className="pt-3 border-t border-carbon/[0.06] grid grid-cols-2 gap-x-5 gap-y-3 tabular-nums">
-                          <div>
-                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p>
-                            <p className="text-[14px] font-semibold text-carbon/85">€{sku.cost}</p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
-                            <p className="text-[14px] font-semibold text-carbon/85">{sku.buy_units}</p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
-                            <p className="text-[14px] font-semibold text-carbon/85">{Math.round(sku.margin)}%</p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Sales</p>
-                            <p className="text-[14px] font-semibold text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p>
-                          </div>
+                      {/* Expected sales + Next step, bottom-aligned */}
+                      <div className="mt-auto pt-3 border-t border-carbon/[0.06] space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Expected sales</span>
+                          <span className="text-[16px] font-semibold text-carbon tabular-nums tracking-[-0.02em]">€{Math.round(sku.expected_sales).toLocaleString()}</span>
                         </div>
-                      )}
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-carbon/35 shrink-0">Next</span>
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[-0.01em] text-carbon/75 truncate">
+                            {ctaText}
+                            <ArrowRight className="h-3 w-3 shrink-0" />
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
+                </div>
                 </div>
                 </div>
                 );

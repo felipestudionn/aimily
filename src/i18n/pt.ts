@@ -2467,6 +2467,8 @@ export const pt: Dictionary = {
     listView: 'Lista',
     cardsView: 'Cartões',
     showMetrics: 'Mostrar métricas',
+    flipForDetails: 'Ver detalhes',
+    showVisual: 'Ver visual',
     hideMetrics: 'Ocultar métricas',
     loadingSkus: 'Carregando SKUs...',
     noSkusYet: 'Sem SKUs ainda. Adicione seu primeiro produto acima.',

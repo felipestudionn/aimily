@@ -2485,6 +2485,8 @@ export const nl: Dictionary = {
     listView: 'Lijst',
     cardsView: 'Kaarten',
     showMetrics: 'Toon statistieken',
+    flipForDetails: 'Details tonen',
+    showVisual: 'Visual tonen',
     hideMetrics: 'Verberg statistieken',
     loadingSkus: 'SKU\'s worden geladen...',
     noSkusYet: 'Nog geen SKU\'s. Voeg uw eerste product hierboven toe.',

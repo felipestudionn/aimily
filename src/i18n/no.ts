@@ -2371,6 +2371,8 @@ export const no: Dictionary = {
     listView: 'Liste',
     cardsView: 'Kort',
     showMetrics: 'Vis nøkkeltall',
+    flipForDetails: 'Vis detaljer',
+    showVisual: 'Vis visuell',
     hideMetrics: 'Skjul nøkkeltall',
     loadingSkus: 'Laster SKU-er...',
     noSkusYet: 'Ingen SKU-er ennå. Legg til ditt første produkt ovenfor.',

@@ -2538,6 +2538,8 @@ export const en = {
     listView: 'List',
     cardsView: 'Cards',
     showMetrics: 'Show metrics',
+    flipForDetails: 'Flip for details',
+    showVisual: 'Show visual',
     hideMetrics: 'Hide metrics',
     loadingSkus: 'Loading SKUs...',
     noSkusYet: 'No SKUs yet. Add your first product above.',
