@@ -608,7 +608,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
           {/* What happens next — educational */}
           <div className="mt-10 pt-6 border-t border-carbon/[0.06] max-w-sm mx-auto" style={{ animation: 'fadeIn 0.6s ease-out 2s both' }}>
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/20 mb-3">What happens next</p>
+            <p className="text-[10px] font-medium tracking-[0.12em] uppercase text-carbon/20 mb-3">What happens next</p>
             <div className="space-y-2 text-left">
               <div className="flex items-start gap-2.5">
                 <span className="text-[10px] text-carbon/20 mt-0.5 font-medium">1</span>
@@ -683,7 +683,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
       {isFinalSelection && selectionStats && (
         <div className="bg-white rounded-[20px] p-8 md:p-10">
           <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-            <p className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+            <p className="text-[11px] tracking-[0.12em] uppercase font-semibold text-carbon/35">
               {sidebarT.finalSelectionSummary || 'Curated lineup'}
             </p>
             <div className="flex items-center gap-2 text-[12px] text-carbon/55">
@@ -695,19 +695,19 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
-              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionRevenue || 'Approved revenue'}</p>
+              <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionRevenue || 'Approved revenue'}</p>
               <p className="text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">€{Math.round(selectionStats.approvedRevenue / 1000).toLocaleString()}K</p>
             </div>
             <div>
-              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionUnits || 'Approved units'}</p>
+              <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionUnits || 'Approved units'}</p>
               <p className="text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">{selectionStats.approvedUnits.toLocaleString()}</p>
             </div>
             <div>
-              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionFamilies || 'Families'}</p>
+              <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionFamilies || 'Families'}</p>
               <p className="text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">{selectionStats.approvedFamilies}</p>
             </div>
             <div>
-              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionPending || 'Pending review'}</p>
+              <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2">{sidebarT.finalSelectionPending || 'Pending review'}</p>
               <p className="text-[24px] font-bold text-carbon/40 tabular-nums tracking-[-0.03em] leading-none">{selectionStats.eligibleCount - selectionStats.approvedCount}</p>
             </div>
           </div>
@@ -724,38 +724,49 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
         </div>
       )}
 
-      {/* KPI ribbon — white card with 10 stats (2-col mobile, 5-col tablet, 10-col desktop) */}
+      {/* KPI ribbon — 5 primary (large) + 5 secondary (muted second row) */}
       <div className="bg-white rounded-[20px] p-8 md:p-10">
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-[11px] tracking-[0.12em] uppercase font-semibold text-carbon/35">
             {sidebarT.collectionOverviewLabel || 'Overview'}
           </p>
           {skus.length > 0 && (
             <button
               onClick={() => setAnalyticsOpen(!analyticsOpen)}
-              className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold tracking-[0.05em] uppercase text-carbon/50 border border-carbon/[0.12] rounded-full hover:text-carbon/80 hover:border-carbon/30 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon/50 border border-carbon/[0.12] rounded-full hover:text-carbon/80 hover:border-carbon/30 transition-colors"
             >
               {analyticsOpen ? (sidebarT.hideDetails || 'Hide details') : (sidebarT.showDetails || 'Details')}
               <svg className={`h-3.5 w-3.5 transition-transform duration-200 ${analyticsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
           )}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-6">
+        {/* Primary KPIs — single-word labels only so no line wrapping */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8">
           {[
             { label: sidebarT.metricRevenue || 'Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
-            { label: sidebarT.metricCogs || 'COGS', value: `€${Math.round(totalCOGS / 1000).toLocaleString()}K` },
             { label: sidebarT.metricGrossProfit || 'Gross profit', value: `€${Math.round((totalExpectedSales - totalCOGS) / 1000).toLocaleString()}K` },
-            { label: sidebarT.metricWsValue || 'WS value', value: `€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K` },
-            { label: sidebarT.metricDtcMargin || 'DTC margin', value: `${dtcMargin.toFixed(0)}%` },
-            { label: sidebarT.metricWsMargin || 'WS margin', value: `${wsMargin.toFixed(0)}%` },
             { label: sidebarT.metricAvgPrice || 'Avg price', value: `€${frameworkValidation.avgPrice}` },
             { label: sidebarT.metricSkus || 'SKUs', value: `${skus.length}` },
-            { label: sidebarT.metricFamilies || 'Families', value: `${new Set(skus.map(s => s.family)).size}` },
             { label: sidebarT.metricTotalUnits || 'Total units', value: `${skus.reduce((s, sk) => s + sk.buy_units, 0).toLocaleString()}` },
           ].map((metric) => (
             <div key={metric.label} className="flex flex-col">
-              <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{metric.label}</p>
-              <p className="text-[22px] md:text-[24px] font-bold text-carbon tabular-nums tracking-[-0.03em] leading-none">{metric.value}</p>
+              <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2.5 whitespace-nowrap">{metric.label}</p>
+              <p className="text-[24px] md:text-[26px] font-semibold text-carbon tabular-nums tracking-[-0.03em] leading-none">{metric.value}</p>
+            </div>
+          ))}
+        </div>
+        {/* Secondary KPIs — hairline row, smaller + muted */}
+        <div className="mt-7 pt-6 border-t border-carbon/[0.06] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8">
+          {[
+            { label: sidebarT.metricCogs || 'COGS', value: `€${Math.round(totalCOGS / 1000).toLocaleString()}K` },
+            { label: sidebarT.metricWsValue || 'WS value', value: `€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K` },
+            { label: sidebarT.metricDtcMargin || 'DTC margin', value: `${dtcMargin.toFixed(0)}%` },
+            { label: sidebarT.metricWsMargin || 'WS margin', value: `${wsMargin.toFixed(0)}%` },
+            { label: sidebarT.metricFamilies || 'Families', value: `${new Set(skus.map(s => s.family)).size}` },
+          ].map((metric) => (
+            <div key={metric.label} className="flex flex-col">
+              <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-1.5 whitespace-nowrap">{metric.label}</p>
+              <p className="text-[16px] font-semibold text-carbon/70 tabular-nums tracking-[-0.02em] leading-none">{metric.value}</p>
             </div>
           ))}
         </div>
@@ -766,7 +777,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {/* Family mix — horizontal bars */}
               <div>
-                <p className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsFamilyMix || 'Family mix'}</p>
+                <p className="text-[11px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsFamilyMix || 'Family mix'}</p>
                 <div className="space-y-3">
                   {frameworkValidation.familyDistribution.map((fam) => (
                     <div key={fam.name}>
@@ -784,7 +795,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
               {/* Type mix — single donut */}
               <div>
-                <p className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsSegmentation || 'Segmentation mix'}</p>
+                <p className="text-[11px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsSegmentation || 'Segmentation mix'}</p>
                 <div className="flex items-center gap-6">
                   {(() => {
                     const r = 50; const circ = 2 * Math.PI * r;
@@ -826,7 +837,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
               {/* Design Progress — SKUs by phase */}
               <div>
-                <p className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsDesignProgress || 'Design progress'}</p>
+                <p className="text-[11px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-4">{sidebarT.analyticsDesignProgress || 'Design progress'}</p>
                 <div className="space-y-3">
                   {(() => {
                     const phases: { id: string; label: string; color: string }[] = [
@@ -1021,7 +1032,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
       <div className="bg-white border border-carbon/[0.06]">
         <div className="px-6 sm:px-8 py-5 flex items-center justify-between border-b border-carbon/[0.04]">
           <div className="flex items-center gap-4">
-            <p className="text-[13px] font-semibold tracking-[0.15em] uppercase text-carbon/70">Range Plan</p>
+            <p className="text-[13px] font-semibold tracking-[0.12em] uppercase text-carbon/70">Range Plan</p>
             <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors">
               <Plus className="h-3 w-3" /> Add SKU
             </button>
@@ -1224,12 +1235,15 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   const famSkus = skus.filter(s => s.family === fam);
                   return (
                     <div key={fam}>
-                      {/* Family pill header */}
-                      <div className={`flex items-center gap-3 mb-3 ${fIdx > 0 ? 'pt-2' : ''}`}>
-                        <span className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/[0.15] rounded-full">{fam}</span>
-                        <span className="text-[11px] text-carbon/50">{famSkus.length} SKUs · €{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
+                      {/* Family pill header — pill on left, totals on right */}
+                      <div className={`flex items-center justify-between gap-3 flex-wrap mb-4 ${fIdx > 0 ? 'pt-6 border-t border-carbon/[0.06]' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          <span className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/[0.15] rounded-full">{fam}</span>
+                          <span className="text-[11px] text-carbon/55 tabular-nums">{famSkus.length} SKUs</span>
+                        </div>
+                        <span className="text-[12px] font-semibold text-carbon/70 tabular-nums tracking-[-0.01em]">€{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
                       </div>
-                      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                      <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
                 const protoImg = sku.proto_iterations?.length > 0 ? sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] : undefined;
@@ -1263,7 +1277,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                     ) : (
                       <>
                         <div className="absolute inset-0 flex items-center justify-center px-4">
-                          <p className="text-[13px] font-light text-carbon leading-snug text-center">{sku.name}</p>
+                          <p className="text-[14px] font-medium text-carbon tracking-[-0.02em] leading-tight text-center">{sku.name}</p>
                         </div>
                         <div className="absolute bottom-2 right-2">
                           <ImagePlus className="h-5 w-5 text-carbon/[0.08]" />
@@ -1340,26 +1354,27 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                     </div>
                   </div>
 
-                  {/* Metrics — 3 rows of 2 */}
-                  <div className="px-3 py-2.5 border-t border-carbon/[0.04] space-y-1.5">
-                    <div className="grid grid-cols-2 gap-x-3">
-                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">PVP</p><p className="text-[14px] font-medium text-carbon">€{sku.pvp}</p></div>
-                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">COGS</p><p className="text-[14px] font-medium text-carbon">€{sku.cost}</p></div>
+                  {/* Metrics — 2 clean rows, no inner dividers */}
+                  <div className="px-4 pt-4 pb-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">PVP</p><p className="text-[14px] font-semibold text-carbon tabular-nums">€{sku.pvp}</p></div>
+                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">COGS</p><p className="text-[14px] font-semibold text-carbon tabular-nums">€{sku.cost}</p></div>
+                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p><p className="text-[14px] font-semibold text-carbon tabular-nums">{sku.buy_units}</p></div>
+                      <div><p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p><p className="text-[14px] font-semibold text-carbon tabular-nums">{Math.round(sku.margin)}%</p></div>
                     </div>
-                    <div className="grid grid-cols-2 gap-x-3 pt-1 border-t border-carbon/[0.03]">
-                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">Units</p><p className="text-[14px] font-medium text-carbon">{sku.buy_units}</p></div>
-                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">Margin</p><p className="text-[14px] font-medium text-carbon">{Math.round(sku.margin)}%</p></div>
-                    </div>
-                    <div className="flex items-center justify-between pt-1 border-t border-carbon/[0.03]">
-                      <div><p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">Sales</p><p className="text-[14px] font-medium text-carbon">€{Math.round(sku.expected_sales).toLocaleString()}</p></div>
-                      <span className={`px-2 py-0.5 text-[8px] font-semibold tracking-[0.04em] uppercase text-white rounded ${
+                    <div className="flex items-center justify-between pt-3 border-t border-carbon/[0.05]">
+                      <div>
+                        <p className="text-[9px] text-carbon/45 uppercase tracking-[0.08em] font-semibold mb-0.5">Sales</p>
+                        <p className="text-[13px] font-semibold text-carbon tabular-nums">€{Math.round(sku.expected_sales).toLocaleString()}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 text-[9px] font-semibold tracking-[0.04em] uppercase text-white rounded-full ${
                         sku.type === 'REVENUE' ? 'bg-[#9c7c4c]' : sku.type === 'IMAGEN' ? 'bg-[#7d5a8c]' : 'bg-[#4c7c6c]'
                       }`}>{sku.type === 'IMAGEN' ? 'IMAGE' : sku.type}</span>
                     </div>
                   </div>
-                  {/* CTA pill — gold standard rounded-full, readable size */}
-                  <div className="px-3 pb-3">
-                    <div className="w-full py-2 bg-carbon text-white text-[11px] font-semibold tracking-[-0.01em] text-center group-hover:bg-carbon/90 transition-colors rounded-full">
+                  {/* CTA pill — centered small pill, gold standard */}
+                  <div className="px-4 pb-4 flex justify-center">
+                    <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-carbon text-white text-[11px] font-semibold tracking-[-0.01em] rounded-full group-hover:bg-carbon/90 transition-colors">
                       {(sku.design_phase || 'range_plan') === 'range_plan' && !sku.reference_image_url && (t.skuPhases?.ctaAddReference || 'Add Reference')}
                       {(sku.design_phase || 'range_plan') === 'range_plan' && sku.reference_image_url && (t.skuPhases?.ctaStartSketch || 'Start Sketch')}
                       {sku.design_phase === 'sketch' && !sku.sketch_url && (t.skuPhases?.ctaUploadSketch || 'Upload Sketch')}
