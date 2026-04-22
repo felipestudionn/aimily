@@ -1448,13 +1448,12 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                     <p className="text-[12.5px] font-normal text-carbon/80 tracking-[-0.005em] leading-[1.35] line-clamp-2 min-h-[2.7em]">
                       {sku.name}
                     </p>
-                    {/* Next step — single row, full width, no truncation */}
-                    <div className="mt-3 pt-3 border-t border-carbon/[0.06] flex items-center justify-between gap-2">
-                      <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-carbon/35">Next</span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-[-0.005em] text-carbon whitespace-nowrap">
+                    {/* Next step — full-width pill button. Action is self-evident, no label needed. */}
+                    <div className="mt-3">
+                      <div className="w-full rounded-full bg-carbon/[0.04] group-hover:bg-carbon/[0.08] transition-colors py-2 px-3 flex items-center justify-center gap-1.5 text-[11px] font-semibold tracking-[-0.005em] text-carbon whitespace-nowrap">
                         {ctaText}
                         <ArrowRight className="h-3 w-3 shrink-0" />
-                      </span>
+                      </div>
                     </div>
                   </div>
                 </div>
