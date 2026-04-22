@@ -1265,7 +1265,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       </div>
                       <div
                         className="grid gap-5"
-                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
+                        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' }}
                       >
               {famSkus.map((sku) => {
                 // Dynamic image: show most advanced phase image
