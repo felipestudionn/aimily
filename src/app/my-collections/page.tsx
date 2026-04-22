@@ -198,45 +198,6 @@ export default function MyCollectionsPage() {
     return { totalOverdue, totalUpcoming, avgProgress, nextLaunch, totalRevenue };
   }, [enrichedCollections]);
 
-  const upcomingDeadlines = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const sevenDays = new Date(today);
-    sevenDays.setDate(sevenDays.getDate() + 7);
-
-    const deadlines: { milestone: string; collection: string; collectionId: string; endDate: Date; isOverdue: boolean }[] = [];
-
-    for (const c of enrichedCollections) {
-      if (!c.timeline) continue;
-      for (const m of c.timeline.milestones) {
-        if (m.status === 'completed') continue;
-        const startDate = new Date(c.timeline.launch_date);
-        startDate.setDate(startDate.getDate() - m.startWeeksBefore * 7);
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + m.durationWeeks * 7);
-        const isOverdue = endDate < today;
-
-        if (isOverdue || endDate <= sevenDays) {
-          deadlines.push({
-            milestone: language === 'es' ? m.nameEs || m.name : m.name,
-            collection: c.name,
-            collectionId: c.id,
-            endDate,
-            isOverdue,
-          });
-        }
-      }
-    }
-
-    deadlines.sort((a, b) => {
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
-      return a.endDate.getTime() - b.endDate.getTime();
-    });
-
-    return deadlines.slice(0, 6);
-  }, [enrichedCollections, language]);
-
   const [showNewModal, setShowNewModal] = useState(false);
 
   if (authLoading || !user) {
@@ -306,34 +267,6 @@ export default function MyCollectionsPage() {
                   </button>
                 </div>
 
-                {/* ── Upcoming deadlines strip (only when actionable) ── */}
-                {upcomingDeadlines.length > 0 && (
-                  <div className="bg-white rounded-[20px] p-5 md:p-6">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <p className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35 shrink-0">
-                        {c.upcomingDeadlines || 'Upcoming deadlines'}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {upcomingDeadlines.map((d, i) => (
-                          <Link
-                            key={`${d.collectionId}-${i}`}
-                            href={`/collection/${d.collectionId}/calendar`}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
-                              d.isOverdue
-                                ? 'bg-[#A0463C]/10 text-[#A0463C] hover:bg-[#A0463C]/15'
-                                : 'bg-carbon/[0.06] text-carbon/65 hover:bg-carbon/[0.1]'
-                            }`}
-                          >
-                            {d.isOverdue && <AlertTriangle className="h-3 w-3" strokeWidth={2.5} />}
-                            <span className="truncate max-w-[180px]">{d.milestone}</span>
-                            <span className="text-carbon/35 truncate max-w-[140px]">· {d.collection}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {/* ── Collection cards grid ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {enrichedCollections.map((col, idx) => (
@@ -391,30 +324,30 @@ function CollectionCard({ collection, idx, onDelete, language, t }: {
       className="group relative bg-white rounded-[20px] overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
     >
       {/* Typographic cover — the name IS the cover until we have real imagery */}
-      <div className="aspect-[4/5] relative overflow-hidden bg-gradient-to-br from-carbon/[0.025] via-shade/80 to-carbon/[0.015]">
+      <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-carbon/[0.025] via-shade/80 to-carbon/[0.015]">
         {/* Ghost number */}
-        <span className="absolute top-5 left-6 text-[42px] font-bold text-carbon/[0.09] leading-none tracking-[-0.04em]">
+        <span className="absolute top-4 left-5 text-[32px] font-bold text-carbon/[0.09] leading-none tracking-[-0.04em]">
           {n}.
         </span>
 
         {/* Top meta line */}
         {metaParts.length > 0 && (
-          <p className="absolute top-6 right-6 text-[10px] tracking-[0.18em] uppercase font-semibold text-carbon/40 text-right max-w-[55%]">
+          <p className="absolute top-5 right-5 text-[10px] tracking-[0.18em] uppercase font-semibold text-carbon/40 text-right max-w-[55%]">
             {metaParts.join(' · ')}
           </p>
         )}
 
         {/* Overdue chip */}
         {collection.overdue > 0 && (
-          <span className="absolute bottom-6 right-6 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#A0463C] text-white text-[10px] font-bold tracking-[0.1em] uppercase">
+          <span className="absolute bottom-5 right-5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#A0463C] text-white text-[10px] font-bold tracking-[0.1em] uppercase">
             <AlertTriangle className="h-3 w-3" strokeWidth={2.5} />
             {collection.overdue} {t.overdue || 'overdue'}
           </span>
         )}
 
-        {/* Centered collection name as editorial cover */}
-        <div className="absolute inset-0 flex items-center justify-center px-8">
-          <h2 className="font-display italic text-center text-carbon tracking-[-0.03em] leading-[1.04] text-[clamp(32px,4.5vw,52px)]">
+        {/* Centered collection name — matches CollectionOverview typography */}
+        <div className="absolute inset-0 flex items-center justify-center px-6">
+          <h2 className="text-center text-carbon font-medium tracking-[-0.03em] leading-[1.1] text-[clamp(24px,2.6vw,34px)]">
             {collection.name}
           </h2>
         </div>
@@ -422,7 +355,7 @@ function CollectionCard({ collection, idx, onDelete, language, t }: {
         {/* Hover delete */}
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
-          className="absolute bottom-5 left-5 p-2 rounded-full bg-transparent text-carbon/0 group-hover:bg-white/80 group-hover:text-carbon/45 hover:!text-[#A0463C] transition-all"
+          className="absolute bottom-4 left-4 p-2 rounded-full bg-transparent text-carbon/0 group-hover:bg-white/80 group-hover:text-carbon/45 hover:!text-[#A0463C] transition-all"
           title={t.deleteCollection || 'Delete collection'}
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -430,9 +363,9 @@ function CollectionCard({ collection, idx, onDelete, language, t }: {
       </div>
 
       {/* Body */}
-      <div className="px-6 py-5 flex flex-col">
+      <div className="px-5 py-4 flex flex-col">
         {/* Metadata line */}
-        <div className="flex items-center gap-2.5 text-[11px] text-carbon/50 mb-4 flex-wrap">
+        <div className="flex items-center gap-2.5 text-[11px] text-carbon/50 mb-3 flex-wrap">
           {skuCount > 0 && (
             <span className="tabular-nums font-semibold text-carbon/70">{skuCount} SKUs</span>
           )}
@@ -489,7 +422,7 @@ function NewCollectionTile({ onClick, t }: { onClick: () => void; t: Record<stri
   return (
     <button
       onClick={onClick}
-      className="group relative bg-white rounded-[20px] border border-dashed border-carbon/[0.15] flex flex-col items-center justify-center p-10 min-h-[480px] transition-all duration-300 hover:border-carbon/40 hover:bg-white/60 hover:scale-[1.02]"
+      className="group relative bg-white rounded-[20px] border border-dashed border-carbon/[0.15] flex flex-col items-center justify-center p-8 transition-all duration-300 hover:border-carbon/40 hover:bg-white/60 hover:scale-[1.02]"
     >
       <div className="w-14 h-14 rounded-full bg-carbon/[0.04] flex items-center justify-center mb-5 group-hover:bg-carbon group-hover:text-white transition-colors">
         <Plus className="h-5 w-5 text-carbon/60 group-hover:text-white transition-colors" strokeWidth={2} />

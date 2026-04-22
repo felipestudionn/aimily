@@ -138,7 +138,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
   }
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-crema/80 backdrop-blur-sm border-b border-carbon/[0.03] animate-fade-in">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-shade/80 backdrop-blur-sm animate-fade-in">
       <div className="px-6 md:px-10">
       <div className="flex h-16 items-center">
         <Link href="/" className="flex items-center">
@@ -147,7 +147,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
             alt="aimily"
             width={774}
             height={96}
-            className="object-contain h-10 w-auto"
+            className="object-contain h-6 w-auto opacity-60 hover:opacity-100 transition-opacity"
             priority
             unoptimized
           />
