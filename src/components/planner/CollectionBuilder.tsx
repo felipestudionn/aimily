@@ -1359,15 +1359,10 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       <img src={displayImage as string} alt={sku.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <>
-                        {/* Empty cover — soft gradient + the SKU name as the first visual version */}
+                        {/* Empty cover — quiet canvas, no text. Name + phase live in the footer. */}
                         <div className="absolute inset-0 bg-gradient-to-br from-carbon/[0.025] via-shade/60 to-carbon/[0.01]" />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-                          <p className="text-[20px] font-medium text-carbon tracking-[-0.02em] leading-[1.2]">
-                            {sku.name}
-                          </p>
-                          <span className="mt-4 text-[9px] font-semibold tracking-[0.16em] uppercase text-carbon/30">
-                            {phaseLabel}
-                          </span>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-6 h-px bg-carbon/15" />
                         </div>
                       </>
                     )}
@@ -1434,25 +1429,29 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
                   </div>
 
-                  {/* Front footer — only the 4 essentials: name, price, state, next step */}
-                  <div className="px-5 pt-4 pb-4 space-y-2.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-[14px] font-medium text-carbon tracking-[-0.01em] leading-[1.25] line-clamp-2 flex-1">
-                        {sku.name}
-                      </p>
-                      <span className="text-[15px] font-semibold text-carbon tabular-nums shrink-0 leading-tight">
+                  {/* Front footer — 4 essentials, deterministic height so the grid stays symmetric */}
+                  <div className="px-5 pt-4 pb-4">
+                    {/* Phase — tiny, at top as a state indicator */}
+                    <div className="flex items-center justify-between mb-2">
+                      <span
+                        className="inline-flex items-center gap-1.5 text-[9px] font-semibold tracking-[0.12em] uppercase"
+                        style={{ color: phaseStrokeColor }}
+                      >
+                        <span className="w-1 h-1 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
+                        {phaseLabel}
+                      </span>
+                      <span className="text-[13px] font-semibold text-carbon tabular-nums leading-none">
                         €{sku.pvp}
                       </span>
                     </div>
-                    <div className="pt-2.5 border-t border-carbon/[0.06] flex items-center justify-between gap-2 min-h-[20px]">
-                      <span
-                        className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.06em] uppercase shrink-0"
-                        style={{ color: phaseStrokeColor }}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: phaseStrokeColor }} />
-                        {phaseLabel}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[-0.01em] text-carbon/65 truncate">
+                    {/* Name — quiet, reserves fixed 2-line height so cards stay symmetric */}
+                    <p className="text-[12.5px] font-normal text-carbon/80 tracking-[-0.005em] leading-[1.35] line-clamp-2 min-h-[2.7em]">
+                      {sku.name}
+                    </p>
+                    {/* Next step — single row, full width, no truncation */}
+                    <div className="mt-3 pt-3 border-t border-carbon/[0.06] flex items-center justify-between gap-2">
+                      <span className="text-[9px] font-semibold tracking-[0.12em] uppercase text-carbon/35">Next</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-[-0.005em] text-carbon whitespace-nowrap">
                         {ctaText}
                         <ArrowRight className="h-3 w-3 shrink-0" />
                       </span>
