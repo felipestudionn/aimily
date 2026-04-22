@@ -2370,6 +2370,8 @@ export const no: Dictionary = {
     skuList: 'SKU-liste',
     listView: 'Liste',
     cardsView: 'Kort',
+    showMetrics: 'Vis nøkkeltall',
+    hideMetrics: 'Skjul nøkkeltall',
     loadingSkus: 'Laster SKU-er...',
     noSkusYet: 'Ingen SKU-er ennå. Legg til ditt første produkt ovenfor.',
     cost: 'Kostnad',

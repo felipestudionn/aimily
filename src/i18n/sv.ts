@@ -2369,6 +2369,8 @@ export const sv: Dictionary = {
     skuList: 'SKU-lista',
     listView: 'Lista',
     cardsView: 'Kort',
+    showMetrics: 'Visa nyckeltal',
+    hideMetrics: 'Dölj nyckeltal',
     loadingSkus: 'Laddar SKU:er...',
     noSkusYet: 'Inga SKU:er ännu. Lägg till din första produkt ovan.',
     cost: 'Kostnad',

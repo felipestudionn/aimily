@@ -2513,6 +2513,8 @@ export const es: Dictionary = {
     skuList: 'Lista de SKUs',
     listView: 'Lista',
     cardsView: 'Tarjetas',
+    showMetrics: 'Mostrar métricas',
+    hideMetrics: 'Ocultar métricas',
     loadingSkus: 'Cargando SKUs...',
     noSkusYet: 'Sin SKUs aún. Añade tu primer producto arriba.',
     cost: 'Coste',

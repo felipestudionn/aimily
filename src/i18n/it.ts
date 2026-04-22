@@ -2484,6 +2484,8 @@ export const it: Dictionary = {
     skuList: 'Lista SKU',
     listView: 'Lista',
     cardsView: 'Schede',
+    showMetrics: 'Mostra metriche',
+    hideMetrics: 'Nascondi metriche',
     loadingSkus: 'Caricamento SKU...',
     noSkusYet: 'Nessun SKU ancora. Aggiungi il tuo primo prodotto sopra.',
     cost: 'Costo',

@@ -2484,6 +2484,8 @@ export const nl: Dictionary = {
     skuList: 'SKU-lijst',
     listView: 'Lijst',
     cardsView: 'Kaarten',
+    showMetrics: 'Toon statistieken',
+    hideMetrics: 'Verberg statistieken',
     loadingSkus: 'SKU\'s worden geladen...',
     noSkusYet: 'Nog geen SKU\'s. Voeg uw eerste product hierboven toe.',
     cost: 'Kosten',

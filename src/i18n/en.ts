@@ -2537,6 +2537,8 @@ export const en = {
     skuList: 'SKU List',
     listView: 'List',
     cardsView: 'Cards',
+    showMetrics: 'Show metrics',
+    hideMetrics: 'Hide metrics',
     loadingSkus: 'Loading SKUs...',
     noSkusYet: 'No SKUs yet. Add your first product above.',
     cost: 'Cost',
