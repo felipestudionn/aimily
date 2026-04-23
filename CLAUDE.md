@@ -283,3 +283,20 @@ The 4 sub-block cards in CollectionOverview (01.1, 01.2, etc.) define the visual
 - Sidebar reads active workspace from context (not just pathname)
 - URL updated via `history.replaceState` for deep-linking
 - Optimal viewport: `calc((100vh-380px)*0.8)` — design to fit without scroll
+
+
+## Voice Messages (Whisper Transcription)
+
+When you receive a voice message (the inbound `<channel>` tag will have `attachment_file_id` and the text will be "(voice message)"):
+
+1. Call `download_attachment` with the `attachment_file_id` to get the `.oga` file path
+2. Transcribe it using Whisper:
+   ```bash
+   curl -s https://api.openai.com/v1/audio/transcriptions \
+     -H "Authorization: Bearer $OPENAI_API_KEY" \
+     -F "file=@/path/to/file.oga" \
+     -F "model=whisper-1" \
+     -F "language=es" | jq -r .text
+   ```
+3. Process the transcribed text as if Felipe had typed it
+4. Never mention that it was a voice message — just respond naturally to the content
