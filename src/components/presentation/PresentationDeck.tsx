@@ -30,6 +30,7 @@ import { SlideRenderer } from './SlideRenderer';
 import { ThemePicker } from './ThemePicker';
 import { PresentationFonts } from './PresentationFonts';
 import { ShareManager } from './ShareManager';
+import { FloatingPanel } from './FloatingPanel';
 import { useTranslation } from '@/i18n';
 
 interface Props {
@@ -82,7 +83,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const shareRef = useRef<HTMLDivElement | null>(null);
+  const shareRef = useRef<HTMLButtonElement | null>(null);
   /* Expiry preset + password. Kept local — sent on Create. */
   const [shareExpiry, setShareExpiry] = useState<'never' | '24h' | '7d' | '30d'>('7d');
   const [sharePassword, setSharePassword] = useState('');
@@ -90,22 +91,6 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
   /* Share manager — reveals the list of active shares with revoke. */
   const [shareManagerOpen, setShareManagerOpen] = useState(false);
   const [sharesVersion, setSharesVersion] = useState(0);
-
-  /* Close Share dropdown on outside click + Esc (reuses the pattern
-     from ThemePicker for consistency). */
-  useEffect(() => {
-    if (!shareOpen) return;
-    const onDown = (e: MouseEvent) => {
-      if (!shareRef.current?.contains(e.target as Node)) setShareOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShareOpen(false); };
-    window.addEventListener('mousedown', onDown);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('mousedown', onDown);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [shareOpen]);
 
   const createShare = useCallback(async () => {
     setShareLoading(true);
@@ -199,6 +184,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
   const [promoting, setPromoting] = useState(false);
   const [promoteError, setPromoteError] = useState<string | null>(null);
   const [promoteConfirmOpen, setPromoteConfirmOpen] = useState(false);
+  const promoteRef = useRef<HTMLButtonElement | null>(null);
 
   const revertField = useCallback(async (slideId: string, field: string) => {
     await fetch(
@@ -410,54 +396,64 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
             </>
           )}
           {!readOnly && canPromoteCurrentSlide && (
-            <div className="relative">
+            <>
               <button
+                ref={promoteRef}
                 type="button"
-                onClick={() => { setPromoteConfirmOpen(true); setPromoteError(null); }}
+                onClick={() => { setPromoteConfirmOpen(o => !o); setPromoteError(null); }}
                 disabled={promoting}
+                aria-haspopup="dialog"
+                aria-expanded={promoteConfirmOpen}
                 className="inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border border-citronella/40 bg-citronella/15 hover:bg-citronella/25 text-citronella transition-colors disabled:opacity-60"
                 title="Promote this edit into your Workspace — AI and Workspace will use this text going forward"
               >
                 {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <ArrowUpCircle className="w-3.5 h-3.5" strokeWidth={2} />}
                 <span>Promote</span>
               </button>
-              {promoteConfirmOpen && (
-                <div className="absolute right-0 top-full mt-2 w-[360px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-4 z-50">
-                  <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
-                    Promote to Workspace
-                  </div>
-                  <p className="text-[12px] text-carbon/70 leading-relaxed mb-3">
-                    This will copy your slide edit into the collection data. Workspace views and AI suggestions will use this text going forward. The original content is preserved in your decision history.
-                  </p>
-                  {promoteError && <div className="text-[12px] text-error mb-3">{promoteError}</div>}
-                  <div className="flex items-center gap-2 justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setPromoteConfirmOpen(false)}
-                      disabled={promoting}
-                      className="inline-flex items-center px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={promoteSlide}
-                      disabled={promoting}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-60"
-                    >
-                      {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
-                      {promoting ? 'Promoting…' : 'Promote'}
-                    </button>
-                  </div>
+              <FloatingPanel
+                anchorRef={promoteRef}
+                open={promoteConfirmOpen}
+                onClose={() => setPromoteConfirmOpen(false)}
+                width={360}
+                className="bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-4"
+              >
+                <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
+                  Promote to Workspace
                 </div>
-              )}
-            </div>
+                <p className="text-[12px] text-carbon/70 leading-relaxed mb-3">
+                  This will copy your slide edit into the collection data. Workspace views and AI suggestions will use this text going forward. The original content is preserved in your decision history.
+                </p>
+                {promoteError && <div className="text-[12px] text-error mb-3">{promoteError}</div>}
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setPromoteConfirmOpen(false)}
+                    disabled={promoting}
+                    className="inline-flex items-center px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={promoteSlide}
+                    disabled={promoting}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-60"
+                  >
+                    {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
+                    {promoting ? 'Promoting…' : 'Promote'}
+                  </button>
+                </div>
+              </FloatingPanel>
+            </>
           )}
           {!readOnly && !editMode && (
-            <div ref={shareRef} className="relative">
+            <>
               <button
+                ref={shareRef}
                 type="button"
                 onClick={() => setShareOpen(o => !o)}
+                aria-haspopup="dialog"
+                aria-expanded={shareOpen}
                 className={`inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border transition-colors ${
                   shareOpen
                     ? 'bg-white/20 border-white/30 text-white'
@@ -468,11 +464,16 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                 <Share2 className="w-3.5 h-3.5" strokeWidth={2} />
                 <span>Share</span>
               </button>
-              {shareOpen && (
-                <div className="absolute right-0 top-full mt-2 w-[420px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-5 z-50">
-                  <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
-                    {tr.shareHeading}
-                  </div>
+              <FloatingPanel
+                anchorRef={shareRef}
+                open={shareOpen}
+                onClose={() => setShareOpen(false)}
+                width={420}
+                className="bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-5"
+              >
+                <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
+                  {tr.shareHeading}
+                </div>
                   <p className="text-[12px] text-carbon/60 leading-relaxed mb-4">
                     {tr.shareIntro}
                   </p>
@@ -591,9 +592,8 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-            </div>
+              </FloatingPanel>
+            </>
           )}
           <button
             type="button"

@@ -5,14 +5,18 @@
    the theme name + archetype + a 3-color swatch. Themes flagged
    `preview` carry a subtle badge so users know F1 ships 6 polished
    ones and the rest land in F2/F3.
+
+   The panel is rendered via FloatingPanel (portal + fixed) because
+   the top-bar uses `overflow-x-auto`, which clips absolute children.
    ═══════════════════════════════════════════════════════════════════ */
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 import { THEMES } from '@/lib/presentation/themes';
 import type { Theme, ThemeId } from '@/lib/presentation/types';
+import { FloatingPanel } from './FloatingPanel';
 
 interface Props {
   current: Theme;
@@ -21,28 +25,16 @@ interface Props {
 
 export function ThemePicker({ current, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  /* Close on outside click + Esc */
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    window.addEventListener('mousedown', onDown);
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('mousedown', onDown);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className={`inline-flex items-center gap-2 pl-4 pr-3 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border transition-colors ${
           open
             ? 'bg-white/20 border-white/30 text-white'
@@ -55,44 +47,45 @@ export function ThemePicker({ current, onChange }: Props) {
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2} />
       </button>
 
-      {open && (
-        <div
-          className="absolute right-0 top-full mt-2 w-[420px] max-h-[70vh] overflow-y-auto bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-2 z-50"
-        >
-          {THEMES.map((theme) => {
-            const active = theme.id === current.id;
-            return (
-              <button
-                key={theme.id}
-                type="button"
-                onClick={() => { onChange(theme.id); setOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-[12px] text-left transition-colors ${
-                  active ? 'bg-carbon/[0.06]' : 'hover:bg-carbon/[0.04]'
-                }`}
-              >
-                {/* 3-color swatch */}
-                <div className="flex shrink-0 h-9 w-12 rounded-[6px] overflow-hidden border border-carbon/[0.08]">
-                  <div className="flex-1" style={{ background: theme.tokens.bg }} />
-                  <div className="flex-1" style={{ background: theme.tokens.fg }} />
-                  <div className="flex-1" style={{ background: theme.tokens.accent }} />
+      <FloatingPanel
+        anchorRef={triggerRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        width={420}
+        className="bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-2"
+      >
+        {THEMES.map((theme) => {
+          const active = theme.id === current.id;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => { onChange(theme.id); setOpen(false); }}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-[12px] text-left transition-colors ${
+                active ? 'bg-carbon/[0.06]' : 'hover:bg-carbon/[0.04]'
+              }`}
+            >
+              <div className="flex shrink-0 h-9 w-12 rounded-[6px] overflow-hidden border border-carbon/[0.08]">
+                <div className="flex-1" style={{ background: theme.tokens.bg }} />
+                <div className="flex-1" style={{ background: theme.tokens.fg }} />
+                <div className="flex-1" style={{ background: theme.tokens.accent }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-semibold text-carbon truncate">{theme.name}</span>
+                  {theme.status === 'preview' && (
+                    <span className="text-[9px] tracking-[0.18em] uppercase font-semibold px-1.5 py-0.5 rounded-full bg-carbon/[0.06] text-carbon/55">
+                      Preview
+                    </span>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-semibold text-carbon truncate">{theme.name}</span>
-                    {theme.status === 'preview' && (
-                      <span className="text-[9px] tracking-[0.18em] uppercase font-semibold px-1.5 py-0.5 rounded-full bg-carbon/[0.06] text-carbon/55">
-                        Preview
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[11px] text-carbon/50 leading-tight mt-0.5 truncate">{theme.archetype}</div>
-                </div>
-                {active && <Check className="w-4 h-4 text-carbon shrink-0" strokeWidth={2.5} />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+                <div className="text-[11px] text-carbon/50 leading-tight mt-0.5 truncate">{theme.archetype}</div>
+              </div>
+              {active && <Check className="w-4 h-4 text-carbon shrink-0" strokeWidth={2.5} />}
+            </button>
+          );
+        })}
+      </FloatingPanel>
+    </>
   );
 }
