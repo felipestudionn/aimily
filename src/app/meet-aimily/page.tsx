@@ -665,9 +665,9 @@ export default function MeetAimilyPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { name: 'Starter', price: 159, suffix: '/mo · annual', desc: '1 user · 2 collections · 100 AI generations · all blocks' },
-              { name: 'Professional', price: 269, suffix: '/mo · annual', desc: '10 users · unlimited collections · 500 AI · multi-brand', popular: true },
-              { name: 'Business', price: 499, suffix: '/mo · annual', desc: 'unlimited users · unlimited AI · SSO · custom integrations' },
+              { name: 'Starter', price: '159', suffix: '/mo · billed annually', desc: '1 user · 2 collections · 100 AI generations / month · all blocks' },
+              { name: 'Professional', price: '479', suffix: '/mo · billed annually', desc: '10 users · unlimited collections · 500 AI / month · multi-brand · realtime collaboration', popular: true },
+              { name: 'Enterprise', price: 'Custom', suffix: '', desc: 'Unlimited everything · SSO · custom integrations · dedicated support' },
             ].map((tier) => (
               <Reveal key={tier.name}>
                 <div className={`rounded-[20px] border p-10 md:p-12 min-h-[320px] flex flex-col ${tier.popular ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon border-carbon/[0.08]'}`}>
@@ -676,17 +676,23 @@ export default function MeetAimilyPage() {
                   </div>
                   <div className="text-[20px] font-light tracking-[-0.02em] mb-2">{tier.name}</div>
                   <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-[44px] md:text-[56px] font-light tracking-[-0.03em] leading-none">€{tier.price}</span>
-                    <span className={`text-[12px] ${tier.popular ? 'text-crema/55' : 'text-carbon/45'}`}>{tier.suffix}</span>
+                    {tier.price === 'Custom' ? (
+                      <span className="text-[40px] md:text-[52px] font-light tracking-[-0.03em] leading-none italic">Custom</span>
+                    ) : (
+                      <>
+                        <span className="text-[44px] md:text-[56px] font-light tracking-[-0.03em] leading-none">€{tier.price}</span>
+                        <span className={`text-[12px] ${tier.popular ? 'text-crema/55' : 'text-carbon/45'}`}>{tier.suffix}</span>
+                      </>
+                    )}
                   </div>
                   <p className={`text-[14px] leading-[1.6] tracking-[-0.01em] mb-8 ${tier.popular ? 'text-crema/65' : 'text-carbon/55'}`}>
                     {tier.desc}
                   </p>
                   <button
-                    onClick={openAuth}
+                    onClick={tier.price === 'Custom' ? () => { window.location.href = 'mailto:hello@aimily.app?subject=Enterprise%20enquiry'; } : openAuth}
                     className={`mt-auto w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-[13px] font-semibold transition-colors ${tier.popular ? 'bg-crema text-carbon hover:bg-crema/90' : 'bg-carbon text-crema hover:bg-carbon/90'}`}
                   >
-                    Start free trial
+                    {tier.price === 'Custom' ? 'Contact us' : 'Start free trial'}
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -696,7 +702,7 @@ export default function MeetAimilyPage() {
 
           <Reveal delay={400}>
             <p className="mt-10 text-[12px] text-carbon/40 italic">
-              No credit card required. Cancel any time. Monthly billing also available — €199 / €329 / €599.
+              No credit card required. Cancel any time. Monthly billing also available — €199 (Starter) / €599 (Professional).
             </p>
           </Reveal>
         </div>
