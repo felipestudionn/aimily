@@ -101,9 +101,10 @@ async function main() {
   console.log('1. Professional Max');
   const proMaxProd = await findOrCreateProduct('professional_max', 'aimily Professional Max');
   const proMaxMonthly = await createPriceIfNeeded(proMaxProd, 1499, 'month', 'aimily_pro_max_monthly');
-  const proMaxAnnual = await createPriceIfNeeded(proMaxProd, 1199, 'month', 'aimily_pro_max_annual');
-  // Annual price: bills monthly at €1199 — for true annual at-once, we'd use unit_amount=14388 with interval=year.
-  // Match Starter/Pro pattern (monthly billing, annual discount).
+  // Annual price: total €14,388/year (= €1,199/mo equivalent). interval=year so
+  // Stripe Customer Portal can offer it as the "annual" choice next to monthly.
+  // (The original setup wrongly used interval=month; rebuilt 2026-04-28.)
+  const proMaxAnnual = await createPriceIfNeeded(proMaxProd, 14388, 'year', 'aimily_pro_max_annual_v2');
 
   // 2. Aimily Credits packs — one-time payment products
   console.log('\n2. Aimily Credits — pack 50 (€29)');
