@@ -60,3 +60,7 @@ landing.png
 local-brand-full.png
 local-sidebar.md
 *-screenshot.png
+
+# Playwright MCP artifacts (transient screenshots and snapshots)
+.playwright-mcp/
+*-onboarding.png
