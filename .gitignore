@@ -64,3 +64,4 @@ local-sidebar.md
 # Playwright MCP artifacts (transient screenshots and snapshots)
 .playwright-mcp/
 *-onboarding.png
+stripe-*.png
