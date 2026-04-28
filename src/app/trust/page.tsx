@@ -8,6 +8,7 @@ import { EyeOff, Lock, Fingerprint, Server, FileCheck, Eye, ArrowRight, Check } 
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 const SHIELD_LAYERS = [
   { icon: EyeOff, titleKey: 'trustShield1Title', descKey: 'trustShield1Desc' },
@@ -52,7 +53,7 @@ export default function TrustPage() {
             </Link>
           </div>
 
-          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/30 mb-6">
+          <p className="text-[12px] font-semibold tracking-[0.3em] uppercase text-crema/60 mb-6">
             {trust.whyTitle || 'Why this matters'}
           </p>
 
@@ -67,7 +68,7 @@ export default function TrustPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {['whyCard1', 'whyCard2', 'whyCard3'].map((key, i) => (
               <div key={i} className="border border-gris/15 px-5 py-3 max-w-xs">
-                <p className="text-[12px] font-light text-crema/60 leading-relaxed">
+                <p className="text-[14px] text-crema/75 leading-relaxed">
                   {trust[key] || ''}
                 </p>
               </div>
@@ -79,7 +80,7 @@ export default function TrustPage() {
       {/* ── 6 Layers ── */}
       <section className="py-20 sm:py-28 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/40 mb-4">
+          <p className="text-[12px] font-semibold tracking-[0.3em] uppercase text-crema/65 mb-4">
             {trust.howTitle || 'How Aimily protects you'}
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-crema tracking-tight leading-[1.1] mb-16 max-w-xl">
@@ -98,7 +99,7 @@ export default function TrustPage() {
                     <h3 className="text-[13px] font-medium text-crema/80 mb-1.5 tracking-wide">
                       {trust[layer.titleKey] || ''}
                     </h3>
-                    <p className="text-[12px] font-light text-gris/55 leading-relaxed">
+                    <p className="text-[14px] text-gris/75 leading-relaxed">
                       {trust[layer.descKey] || ''}
                     </p>
                   </div>
@@ -112,7 +113,7 @@ export default function TrustPage() {
       {/* ── Comparison: "Con Aimily" vs "Sin Aimily" ── */}
       <section className="py-20 sm:py-28 px-6 bg-crema">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-carbon/25 mb-4">
+          <p className="text-[12px] font-semibold tracking-[0.3em] uppercase text-carbon/55 mb-4">
             {trust.compareTitle || 'The difference'}
           </p>
           <h2 className="text-3xl sm:text-4xl font-light text-carbon tracking-tight leading-[1.1] mb-14 max-w-xl">
@@ -122,13 +123,13 @@ export default function TrustPage() {
           <div className="border border-carbon/[0.08]">
             {/* Header */}
             <div className="grid grid-cols-12 border-b border-carbon/[0.08]">
-              <div className="col-span-6 p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon/30">
+              <div className="col-span-6 p-4 text-[12px] font-semibold tracking-[0.15em] uppercase text-carbon/60">
                 {trust.compareFeature || 'Protection'}
               </div>
-              <div className="col-span-3 p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon text-center border-l border-carbon/[0.08]">
+              <div className="col-span-3 p-4 text-[12px] font-semibold tracking-[0.15em] uppercase text-carbon text-center border-l border-carbon/[0.08]">
                 {trust.compareAimily || 'Via Aimily'}
               </div>
-              <div className="col-span-3 p-4 text-[10px] font-semibold tracking-[0.15em] uppercase text-carbon/25 text-center border-l border-carbon/[0.08]">
+              <div className="col-span-3 p-4 text-[12px] font-semibold tracking-[0.15em] uppercase text-carbon/55 text-center border-l border-carbon/[0.08]">
                 {trust.compareDirect || 'Direct AI use'}
               </div>
             </div>
@@ -161,7 +162,7 @@ export default function TrustPage() {
       {/* ── AI Partners ── */}
       <section className="py-20 sm:py-28 px-6">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase text-crema/40 mb-4">
+          <p className="text-[12px] font-semibold tracking-[0.3em] uppercase text-crema/65 mb-4">
             {trust.providersTitle || 'Our AI partners'}
           </p>
           <h2 className="text-2xl sm:text-3xl font-light text-crema tracking-tight leading-[1.15] mb-4 max-w-xl">
@@ -179,8 +180,8 @@ export default function TrustPage() {
               { name: 'Perplexity', detailKey: 'providerPerplexityDetail' },
             ].map((provider) => (
               <div key={provider.name} className="bg-carbon p-5">
-                <p className="text-[11px] font-medium text-crema/60 mb-1">{provider.name}</p>
-                <p className="text-[10px] font-light text-gris/45 leading-relaxed">{trust[provider.detailKey] || ''}</p>
+                <p className="text-[14px] font-medium text-crema/85 mb-1">{provider.name}</p>
+                <p className="text-[13px] text-gris/65 leading-relaxed">{trust[provider.detailKey] || ''}</p>
               </div>
             ))}
           </div>
@@ -206,16 +207,7 @@ export default function TrustPage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <div className="relative z-20 pb-6">
-        <div className="flex items-center justify-center gap-6 py-5">
-          <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">{t.common.terms}</Link>
-          <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">{t.common.privacy}</Link>
-        </div>
-        <p className="text-center text-gris/15 text-[10px] tracking-wide">
-          {trust.footerNote || 'Last updated: March 2026'}
-        </p>
-      </div>
+      <SiteFooter variant="dark" />
 
       <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} onSuccess={() => router.push('/my-collections')} defaultMode="signup" />
     </div>

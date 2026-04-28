@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Mail, Phone, MapPin, Linkedin, Instagram, ArrowUpRight } from 'lucide-react';
 import { useTranslation } from '@/i18n';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 export default function ContactPage() {
   const t = useTranslation();
@@ -181,35 +182,7 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="border-t border-gris/10 py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/images/aimily-logo-white.png"
-              alt="aimily"
-              width={774}
-              height={96}
-              className="object-contain h-4 w-auto opacity-40"
-              unoptimized
-            />
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/terms" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              {t.common.terms}
-            </Link>
-            <Link href="/privacy" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              {t.common.privacy}
-            </Link>
-            <Link href="/cookies" className="text-gris/30 text-[10px] font-medium tracking-widest uppercase hover:text-gris/60 transition-colors">
-              {t.common.cookies}
-            </Link>
-          </div>
-          <p className="text-gris/20 text-[10px] tracking-widest uppercase">
-            &copy; {new Date().getFullYear()} StudioNN Agency
-          </p>
-        </div>
-      </footer>
+      <SiteFooter variant="dark" />
     </div>
   );
 }

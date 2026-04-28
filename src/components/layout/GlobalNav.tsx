@@ -12,8 +12,10 @@ import { useRouter } from 'next/navigation';
  * Only renders on public pages (not in /collection/*, /my-collections, etc.)
  */
 
-const PUBLIC_ROUTES = ['/', '/discover', '/how-it-works', '/contact', '/trust', '/meet-aimily', '/video-reel'];
-const LIGHT_ROUTES = ['/privacy', '/terms', '/cookies', '/pricing'];
+// Routes simplified 2026-04-28 — /discover, /how-it-works, /meet-aimily,
+// /pricing were consolidated into `/`.
+const PUBLIC_ROUTES = ['/', '/contact', '/trust', '/video-reel'];
+const LIGHT_ROUTES = ['/privacy', '/terms', '/cookies'];
 
 export function GlobalNav() {
   const pathname = usePathname();

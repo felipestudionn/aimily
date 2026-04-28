@@ -15,9 +15,9 @@ interface PublicNavProps {
   onAuth?: (mode: 'signin' | 'signup') => void;
 }
 
+// Nav reduced 2026-04-28: /discover and /how-it-works were retired —
+// the public landing now lives at `/` and tells the full story.
 const NAV_LINKS = [
-  { href: '/discover', key: 'discover' },
-  { href: '/how-it-works', key: 'howAimilyWorks' },
   { href: '/contact', key: 'contact' },
   { href: '/trust', key: 'trust' },
 ];
@@ -34,8 +34,6 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
   const logo = isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png';
 
   const navLabelMap: Record<string, string> = {
-    discover: t.common.discover,
-    howAimilyWorks: t.common.howAimilyWorks,
     contact: t.common.contact,
     trust: trust.navLabel || 'Trust',
   };

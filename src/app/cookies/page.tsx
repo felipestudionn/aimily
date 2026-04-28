@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@/i18n';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 export default function CookiesPage() {
   const t = useTranslation();
@@ -74,6 +75,7 @@ export default function CookiesPage() {
           </div>
         </div>
       </div>
+      <SiteFooter variant="light" />
     </div>
   );
 }

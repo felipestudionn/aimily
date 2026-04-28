@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@/i18n';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 export default function PrivacyPage() {
   const t = useTranslation();
@@ -172,6 +173,7 @@ export default function PrivacyPage() {
           </div>
         </div>
       </div>
+      <SiteFooter variant="light" />
     </div>
   );
 }

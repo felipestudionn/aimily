@@ -6,6 +6,14 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  async redirects() {
+    return [
+      { source: '/meet-aimily', destination: '/', permanent: true },
+      { source: '/how-it-works', destination: '/', permanent: true },
+      { source: '/discover', destination: '/', permanent: true },
+      { source: '/pricing', destination: '/#pricing', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

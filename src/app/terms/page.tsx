@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@/i18n';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 
 export default function TermsPage() {
   const t = useTranslation();
@@ -258,6 +259,7 @@ export default function TermsPage() {
           </div>
         </div>
       </div>
+      <SiteFooter variant="light" />
     </div>
   );
 }

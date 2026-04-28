@@ -1,32 +1,21 @@
 'use client';
 
 /* ═══════════════════════════════════════════════════════════════════
-   /meet-aimily — DWP-themed launch landing (v2 · 2026-04-28)
+   MeetAimilyContent — narrative E2E body of the public landing.
 
-   Audience drops here from a meme/social campaign. Must convert by:
-     1. Hooking with the Miranda angle ("the assistant Miranda would have hired")
-     2. Showing aimily is the END-TO-END platform — from idea to sold-out —
-        not just an "AI image generator for fashion"
-     3. Walking through the FOUR BLOCKS (Creative · Merchandising · Design ·
-        Marketing) using AZUR · SS27 as the connecting thread
-     4. Closing with pricing + CTA
+   Lives between the minimalist home hero (logo + tagline) and the
+   pricing detail / footer. Holds the full Devil Wears Prada angle,
+   the four-block journey with AZUR · SS27, the enterprise artifacts
+   recap and the StudioNN origin story.
+
+   No wrapper bg / footer / pricing inside — those belong to the home
+   that composes this component.
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { ReactNode } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
-import {
-  ArrowRight,
-  ChevronDown,
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { AuthModal } from '@/components/auth/AuthModal';
-import { track, Events } from '@/lib/posthog';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 
-/* ── Reveal wrapper — content is always rendered visible.
-     Subtle fade-up applied via CSS animation triggered on mount.
-     Avoids IntersectionObserver flakiness in headless captures.    */
 interface RevealProps {
   children: ReactNode;
   delay?: number;
@@ -43,7 +32,6 @@ function Reveal({ children, delay = 0, className = '' }: RevealProps) {
   );
 }
 
-/* ── Block heading — repeated section header (01..04) */
 function BlockHeading({
   num,
   label,
@@ -69,7 +57,7 @@ function BlockHeading({
           <span className={`text-[88px] md:text-[120px] font-light tracking-[-0.04em] leading-none ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>
             {num}
           </span>
-          <span className={`text-[11px] tracking-[0.3em] uppercase font-medium ${isDark ? 'text-crema/45' : 'text-carbon/40'}`}>
+          <span className={`text-[12px] tracking-[0.3em] uppercase font-medium ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
             {label}
           </span>
         </div>
@@ -82,7 +70,7 @@ function BlockHeading({
       </Reveal>
 
       <Reveal delay={250}>
-        <p className={`max-w-[680px] text-[16px] md:text-[19px] leading-[1.6] tracking-[-0.01em] mb-12 ${isDark ? 'text-crema/55' : 'text-carbon/60'}`}>
+        <p className={`max-w-[680px] text-[16px] md:text-[19px] leading-[1.6] tracking-[-0.01em] mb-12 ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
           {description}
         </p>
       </Reveal>
@@ -90,15 +78,15 @@ function BlockHeading({
       <Reveal delay={400}>
         <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl border-t ${isDark ? 'border-crema/[0.08]' : 'border-carbon/[0.08]'} pt-8`}>
           <div>
-            <div className={`text-[10px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/35' : 'text-carbon/35'}`}>
+            <div className={`text-[12px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
               Before aimily
             </div>
-            <p className={`text-[15px] leading-[1.5] tracking-[-0.01em] italic font-light ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+            <p className={`text-[15px] leading-[1.5] tracking-[-0.01em] italic font-light ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
               {before}
             </p>
           </div>
           <div>
-            <div className={`text-[10px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/55' : 'text-carbon/65'}`}>
+            <div className={`text-[12px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
               With aimily
             </div>
             <p className={`text-[15px] leading-[1.5] tracking-[-0.01em] font-light ${isDark ? 'text-crema/85' : 'text-carbon/85'}`}>
@@ -111,33 +99,15 @@ function BlockHeading({
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   PAGE
-   ───────────────────────────────────────────────────────────────── */
-export default function MeetAimilyPage() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [authOpen, setAuthOpen] = useState(false);
+interface MeetAimilyContentProps {
+  openAuth: () => void;
+}
 
-  useEffect(() => {
-    track(Events.LANDING_VIEWED, { page: 'meet-aimily' });
-  }, []);
-
-  const openAuth = () => {
-    track(Events.CTA_CLICKED, { source: 'meet-aimily', authed: !!user });
-    if (user) router.push('/my-collections');
-    else {
-      track(Events.AUTH_OPENED, { source: 'meet-aimily' });
-      setAuthOpen(true);
-    }
-  };
-
+export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
   return (
-    <div className="bg-carbon text-crema min-h-screen overflow-x-hidden">
-      {/* GlobalNav (mounted in root layout) handles the top navigation. */}
-
-      {/* ═══════════════════════ HERO ═══════════════════════ */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-32 pb-24">
+    <>
+      {/* ═══════════════════════ MEET AIMILY HERO (DWP angle) ═══════════════════════ */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-32 pb-24 border-t border-crema/[0.06]">
         <div
           className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
@@ -147,7 +117,7 @@ export default function MeetAimilyPage() {
         />
 
         <Reveal>
-          <div className="text-[10px] md:text-[11px] tracking-[0.4em] uppercase text-crema/45 font-medium mb-10 text-center">
+          <div className="text-[12px] tracking-[0.4em] uppercase text-crema/55 font-medium mb-10 text-center">
             Meet aimily
           </div>
         </Reveal>
@@ -161,7 +131,7 @@ export default function MeetAimilyPage() {
         </Reveal>
 
         <Reveal delay={500}>
-          <p className="mt-12 max-w-[680px] text-center text-[16px] md:text-[19px] text-crema/55 leading-[1.55] font-light tracking-[-0.01em]">
+          <p className="mt-12 max-w-[680px] text-center text-[16px] md:text-[19px] text-crema/65 leading-[1.55] font-light tracking-[-0.01em]">
             One platform takes a fashion idea from the spark of a moodboard to a sold-out launch.
             Brand DNA. Range plan. Tech packs. Campaigns. Every block, connected.
           </p>
@@ -176,14 +146,14 @@ export default function MeetAimilyPage() {
               Start your collection — free 14 days
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <span className="text-[12px] text-crema/35 tracking-[-0.01em]">No credit card required</span>
+            <span className="text-[13px] text-crema/55 tracking-[-0.01em]">No credit card required</span>
           </div>
         </Reveal>
 
         <Reveal delay={1100}>
-          <div className="mt-24 flex flex-col items-center gap-3 text-crema/35">
+          <div className="mt-24 flex flex-col items-center gap-3 text-crema/55">
             <ChevronDown className="h-5 w-5 animate-bounce" />
-            <span className="text-[10px] tracking-[0.3em] uppercase">See the journey</span>
+            <span className="text-[12px] tracking-[0.3em] uppercase">See the journey</span>
           </div>
         </Reveal>
       </section>
@@ -192,7 +162,7 @@ export default function MeetAimilyPage() {
       <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6 text-center">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6 text-center">
               The Devil Wears Prada · 2006 → 2026
             </div>
           </Reveal>
@@ -207,14 +177,14 @@ export default function MeetAimilyPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-start max-w-5xl mx-auto">
             <Reveal delay={300}>
               <div>
-                <div className="text-[10px] tracking-[0.3em] uppercase text-crema/35 font-medium mb-4">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
                   2006 · Emily
                 </div>
-                <p className="text-[18px] md:text-[22px] font-light leading-[1.5] tracking-[-0.01em] text-crema/75">
+                <p className="text-[18px] md:text-[22px] font-light leading-[1.5] tracking-[-0.01em] text-crema/85">
                   An assistant who never slept. Coordinated suppliers. Tracked samples. Managed Miranda's diary.
                   Held the office together with caffeine, gut feeling, and grace.
                 </p>
-                <p className="mt-5 text-[13px] text-crema/40 leading-[1.65] tracking-[-0.01em]">
+                <p className="mt-5 text-[14px] text-crema/65 leading-[1.65] tracking-[-0.01em]">
                   Did everything in fashion — exhausted, exploited, limited.
                 </p>
               </div>
@@ -222,14 +192,14 @@ export default function MeetAimilyPage() {
 
             <Reveal delay={500}>
               <div>
-                <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-crema/65 font-medium mb-4">
                   2026 · aimily
                 </div>
                 <p className="text-[18px] md:text-[22px] font-light leading-[1.5] tracking-[-0.01em] text-crema">
                   An AI assistant who never sleeps. Generates moodboards. Builds range plans. Drafts campaigns.
                   Walks a collection from spark to launch — across every block of the business.
                 </p>
-                <p className="mt-5 text-[13px] text-crema/55 leading-[1.65] tracking-[-0.01em]">
+                <p className="mt-5 text-[14px] text-crema/75 leading-[1.65] tracking-[-0.01em]">
                   Does it too — at scale, in seconds, never burned out.
                 </p>
               </div>
@@ -237,7 +207,7 @@ export default function MeetAimilyPage() {
           </div>
 
           <Reveal delay={800}>
-            <div className="mt-24 max-w-2xl mx-auto text-center text-[15px] text-crema/45 italic font-light leading-[1.7]">
+            <div className="mt-24 max-w-2xl mx-auto text-center text-[16px] text-crema/65 italic font-light leading-[1.7]">
               "Miranda needed Emily.
               <br />
               You need aimily."
@@ -250,7 +220,7 @@ export default function MeetAimilyPage() {
       <section className="bg-crema text-carbon px-6 py-32 md:py-44">
         <div className="max-w-6xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-carbon/40 font-medium mb-6">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-6">
               The problem
             </div>
           </Reveal>
@@ -262,7 +232,7 @@ export default function MeetAimilyPage() {
             </h2>
           </Reveal>
           <Reveal delay={250}>
-            <p className="max-w-[680px] text-[16px] md:text-[19px] text-carbon/55 leading-[1.65] tracking-[-0.01em]">
+            <p className="max-w-[680px] text-[16px] md:text-[19px] text-carbon/65 leading-[1.65] tracking-[-0.01em]">
               The brand brief lives in Notion. The range plan in Excel. The tech pack in PDF. The drop calendar in
               Google Calendar. The campaign in InDesign. Nothing talks to anything else. Information walks the building.
             </p>
@@ -280,7 +250,7 @@ export default function MeetAimilyPage() {
                   <div className="text-[40px] md:text-[60px] font-light tracking-[-0.03em] text-carbon leading-none mb-2">
                     {item.count}
                   </div>
-                  <div className="text-[12px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                  <div className="text-[12px] tracking-[0.1em] uppercase text-carbon/65 font-medium">
                     {item.label}
                   </div>
                 </div>
@@ -294,7 +264,7 @@ export default function MeetAimilyPage() {
       <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6 text-center">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6 text-center">
               Pull the thread
             </div>
           </Reveal>
@@ -306,7 +276,7 @@ export default function MeetAimilyPage() {
             </h2>
           </Reveal>
           <Reveal delay={250}>
-            <p className="max-w-[700px] mx-auto text-[16px] md:text-[18px] text-crema/55 leading-[1.65] tracking-[-0.01em] text-center mb-24">
+            <p className="max-w-[700px] mx-auto text-[16px] md:text-[18px] text-crema/65 leading-[1.65] tracking-[-0.01em] text-center mb-24">
               Four blocks, one platform. A vision becomes a brand DNA card. The DNA becomes a range plan.
               The plan becomes tech packs. The packs become product photos. The photos become a launch.
               Each block reads from the one before — nothing gets retyped.
@@ -349,16 +319,16 @@ export default function MeetAimilyPage() {
                   <div className="text-[44px] font-light text-crema/20 leading-none tracking-[-0.04em] mb-6">
                     {step.num}
                   </div>
-                  <div className="text-[10px] tracking-[0.25em] uppercase text-crema/45 font-medium mb-3">
+                  <div className="text-[12px] tracking-[0.25em] uppercase text-crema/55 font-medium mb-3">
                     {step.label}
                   </div>
                   <h3 className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] leading-[1.2] text-crema mb-6">
                     {step.title}
                   </h3>
-                  <p className="text-[12px] text-crema/55 leading-[1.6] tracking-[-0.005em] mb-6 flex-1">
+                  <p className="text-[14px] text-crema/65 leading-[1.6] tracking-[-0.005em] mb-6 flex-1">
                     {step.outputs}
                   </p>
-                  <div className="text-[11px] tracking-[0.05em] text-crema/65 italic font-medium border-t border-crema/[0.08] pt-4">
+                  <div className="text-[12px] tracking-[0.05em] text-crema/75 italic font-medium border-t border-crema/[0.08] pt-4">
                     {step.stat}
                   </div>
                 </div>
@@ -367,8 +337,8 @@ export default function MeetAimilyPage() {
           </div>
 
           <Reveal delay={600}>
-            <p className="mt-16 text-center text-[12px] text-crema/35 italic max-w-[680px] mx-auto leading-[1.65]">
-              Below: the same thread pulled all the way through, using <span className="text-crema/55 not-italic font-medium">AZUR · SS27</span>{' '}
+            <p className="mt-16 text-center text-[14px] text-crema/55 italic max-w-[680px] mx-auto leading-[1.65]">
+              Below: the same thread pulled all the way through, using <span className="text-crema/85 not-italic font-medium">AZUR · SS27</span>{' '}
               — a real Mediterranean resort collection, generated end-to-end inside aimily.
             </p>
           </Reveal>
@@ -386,75 +356,71 @@ export default function MeetAimilyPage() {
           after="Vision codified in 60 minutes. Brand DNA, target consumer, color palette and references — all stored, all queryable, all reused by every other block."
         />
 
-        {/* Outputs grid: Brand DNA card + Consumer + Moodboard demo (existing AZUR images) */}
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-5">
-          {/* Brand DNA card */}
           <Reveal className="md:col-span-5">
             <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-8 md:p-10 h-full">
-              <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+              <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
                 Brand DNA · azur
               </div>
               <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
                 Wear what the sea would wear.
               </div>
-              <div className="space-y-3 text-[13px] leading-[1.65]">
+              <div className="space-y-3 text-[14px] leading-[1.65]">
                 <div className="flex gap-3">
-                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Heritage</span>
-                  <span className="text-crema/75">Côte d'Azur — sun-bleached linen, raffia, terracotta tile</span>
+                  <span className="text-crema/55 w-24 shrink-0 uppercase tracking-[0.1em] text-[11px] mt-1">Heritage</span>
+                  <span className="text-crema/85">Côte d'Azur — sun-bleached linen, raffia, terracotta tile</span>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Voice</span>
-                  <span className="text-crema/75">Quiet luxury · fluent French · "Côte du Sol"</span>
+                  <span className="text-crema/55 w-24 shrink-0 uppercase tracking-[0.1em] text-[11px] mt-1">Voice</span>
+                  <span className="text-crema/85">Quiet luxury · fluent French · "Côte du Sol"</span>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Values</span>
-                  <span className="text-crema/75">Heritage materials · slow craft · zero plastic</span>
+                  <span className="text-crema/55 w-24 shrink-0 uppercase tracking-[0.1em] text-[11px] mt-1">Values</span>
+                  <span className="text-crema/85">Heritage materials · slow craft · zero plastic</span>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Refs</span>
-                  <span className="text-crema/75">Jacquemus · Khaite · Hereu · La DoubleJ</span>
+                  <span className="text-crema/55 w-24 shrink-0 uppercase tracking-[0.1em] text-[11px] mt-1">Refs</span>
+                  <span className="text-crema/85">Jacquemus · Khaite · Hereu · La DoubleJ</span>
                 </div>
               </div>
             </div>
           </Reveal>
 
-          {/* Consumer profile */}
           <Reveal delay={150} className="md:col-span-7">
             <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-8 md:p-10 h-full">
-              <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+              <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
                 Consumer profile · azur woman
               </div>
               <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
                 She summers the same way every year.
               </div>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-[13px] leading-[1.55]">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-[14px] leading-[1.55]">
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">Demographics</div>
-                  <div className="text-crema/75">Women 28–45 · €120–250k HHI · Paris, NYC, Madrid, Milan</div>
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-crema/55 mb-1">Demographics</div>
+                  <div className="text-crema/85">Women 28–45 · €120–250k HHI · Paris, NYC, Madrid, Milan</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">Psychographics</div>
-                  <div className="text-crema/75">Heritage-conscious · slow-shopper · post-trend</div>
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-crema/55 mb-1">Psychographics</div>
+                  <div className="text-crema/85">Heritage-conscious · slow-shopper · post-trend</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">Where she shops</div>
-                  <div className="text-crema/75">Net-a-Porter · Mytheresa · concept stores in resort towns</div>
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-crema/55 mb-1">Where she shops</div>
+                  <div className="text-crema/85">Net-a-Porter · Mytheresa · concept stores in resort towns</div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">What she avoids</div>
-                  <div className="text-crema/75">Logos · synthetics · anything that follows trends</div>
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-crema/55 mb-1">What she avoids</div>
+                  <div className="text-crema/85">Logos · synthetics · anything that follows trends</div>
                 </div>
               </div>
-              <div className="mt-6 pt-6 border-t border-crema/[0.08] text-[12px] text-crema/45 italic leading-[1.6]">
+              <div className="mt-6 pt-6 border-t border-crema/[0.08] text-[13px] text-crema/55 italic leading-[1.6]">
                 Generated from the brief by aimily — used to lock pricing tier, channel mix, and campaign tone in the next blocks.
               </div>
             </div>
           </Reveal>
 
-          {/* Moodboard demo — use existing AZUR mood images */}
           <Reveal delay={250} className="md:col-span-12">
             <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
-              <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
+              <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6">
                 Moodboard generated · 30 seconds · azur · ss27
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -487,7 +453,7 @@ export default function MeetAimilyPage() {
                 </div>
               </div>
               <div className="mt-6 pt-6 border-t border-crema/[0.06] flex flex-wrap gap-3">
-                <span className="text-[11px] tracking-[0.1em] uppercase text-crema/40">Palette extracted</span>
+                <span className="text-[12px] tracking-[0.1em] uppercase text-crema/55">Palette extracted</span>
                 {[
                   { hex: '#3B5F73', label: 'Sea Foam' },
                   { hex: '#E9DCC4', label: 'Linen' },
@@ -495,7 +461,7 @@ export default function MeetAimilyPage() {
                   { hex: '#1F1B16', label: 'Carbon' },
                   { hex: '#D9C68A', label: 'Citronella' },
                 ].map((c) => (
-                  <span key={c.hex} className="inline-flex items-center gap-2 text-[11px] text-crema/65">
+                  <span key={c.hex} className="inline-flex items-center gap-2 text-[12px] text-crema/75">
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.hex }} />
                     {c.label}
                   </span>
@@ -519,29 +485,28 @@ export default function MeetAimilyPage() {
         />
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-5">
-          {/* Range plan grid */}
           <Reveal className="md:col-span-12">
             <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-6 md:p-8 overflow-hidden">
               <div className="flex items-baseline justify-between mb-6">
                 <div>
-                  <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-2">
+                  <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-2">
                     Range plan · azur · ss27
                   </div>
                   <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] italic">
                     24 SKUs across 4 families.
                   </div>
                 </div>
-                <div className="hidden md:flex items-baseline gap-6 text-[12px] text-carbon/55">
+                <div className="hidden md:flex items-baseline gap-6 text-[13px] text-carbon/65">
                   <div>
-                    <span className="block text-[10px] uppercase tracking-[0.1em] text-carbon/40">Total Cost</span>
+                    <span className="block text-[11px] uppercase tracking-[0.1em] text-carbon/55">Total Cost</span>
                     <span className="text-[18px] font-light text-carbon">€127,400</span>
                   </div>
                   <div>
-                    <span className="block text-[10px] uppercase tracking-[0.1em] text-carbon/40">Revenue forecast</span>
+                    <span className="block text-[11px] uppercase tracking-[0.1em] text-carbon/55">Revenue forecast</span>
                     <span className="text-[18px] font-light text-carbon">€512,000</span>
                   </div>
                   <div>
-                    <span className="block text-[10px] uppercase tracking-[0.1em] text-carbon/40">Avg. margin</span>
+                    <span className="block text-[11px] uppercase tracking-[0.1em] text-carbon/55">Avg. margin</span>
                     <span className="text-[18px] font-light text-carbon">75%</span>
                   </div>
                 </div>
@@ -549,49 +514,21 @@ export default function MeetAimilyPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                  {
-                    family: 'Skin Linens',
-                    skus: 8,
-                    pricing: '€140 – €380',
-                    units: 1850,
-                    sample: 'Solène · maxi linen dress',
-                    color: '#E9DCC4',
-                  },
-                  {
-                    family: 'Sculpted Knits',
-                    skus: 6,
-                    pricing: '€180 – €520',
-                    units: 920,
-                    sample: 'Pauline · merino crochet bra',
-                    color: '#3B5F73',
-                  },
-                  {
-                    family: 'Sun Footwear',
-                    skus: 5,
-                    pricing: '€220 – €450',
-                    units: 1100,
-                    sample: 'Amélie · raffia espadrille',
-                    color: '#B85C3A',
-                  },
-                  {
-                    family: 'Marea Objects',
-                    skus: 5,
-                    pricing: '€95 – €310',
-                    units: 760,
-                    sample: 'Marina · raffia tote',
-                    color: '#1F1B16',
-                  },
+                  { family: 'Skin Linens', skus: 8, pricing: '€140 – €380', units: 1850, sample: 'Solène · maxi linen dress', color: '#E9DCC4' },
+                  { family: 'Sculpted Knits', skus: 6, pricing: '€180 – €520', units: 920, sample: 'Pauline · merino crochet bra', color: '#3B5F73' },
+                  { family: 'Sun Footwear', skus: 5, pricing: '€220 – €450', units: 1100, sample: 'Amélie · raffia espadrille', color: '#B85C3A' },
+                  { family: 'Marea Objects', skus: 5, pricing: '€95 – €310', units: 760, sample: 'Marina · raffia tote', color: '#1F1B16' },
                 ].map((f, i) => (
                   <Reveal key={f.family} delay={i * 80}>
                     <div className="border border-carbon/[0.08] rounded-[12px] p-5 bg-white hover:bg-carbon/[0.02] transition-colors">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="w-3 h-3 rounded-full" style={{ backgroundColor: f.color }} />
-                        <span className="text-[11px] tracking-[0.1em] uppercase text-carbon/40 font-medium">{f.skus} SKUs</span>
+                        <span className="text-[12px] tracking-[0.1em] uppercase text-carbon/55 font-medium">{f.skus} SKUs</span>
                       </div>
                       <div className="text-[18px] font-medium tracking-[-0.02em] mb-3">{f.family}</div>
-                      <div className="text-[13px] text-carbon/65 leading-[1.5] mb-1">{f.pricing}</div>
-                      <div className="text-[11px] text-carbon/45">{f.units.toLocaleString('en-US')} units forecast</div>
-                      <div className="mt-4 pt-3 border-t border-carbon/[0.06] text-[11px] text-carbon/50 italic">
+                      <div className="text-[14px] text-carbon/75 leading-[1.5] mb-1">{f.pricing}</div>
+                      <div className="text-[12px] text-carbon/55">{f.units.toLocaleString('en-US')} units forecast</div>
+                      <div className="mt-4 pt-3 border-t border-carbon/[0.06] text-[12px] text-carbon/65 italic">
                         e.g. {f.sample}
                       </div>
                     </div>
@@ -601,10 +538,9 @@ export default function MeetAimilyPage() {
             </div>
           </Reveal>
 
-          {/* Channel split */}
           <Reveal delay={150} className="md:col-span-7">
             <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10 h-full">
-              <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+              <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                 Channel allocation
               </div>
               <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
@@ -618,9 +554,9 @@ export default function MeetAimilyPage() {
                   { name: 'Pop-up · Cap Ferret', pct: 7, color: '#D9C68A' },
                 ].map((ch) => (
                   <div key={ch.name}>
-                    <div className="flex items-center justify-between text-[13px] mb-1.5">
-                      <span className="text-carbon/75">{ch.name}</span>
-                      <span className="text-carbon/55 font-medium">{ch.pct}%</span>
+                    <div className="flex items-center justify-between text-[14px] mb-1.5">
+                      <span className="text-carbon/85">{ch.name}</span>
+                      <span className="text-carbon/65 font-medium">{ch.pct}%</span>
                     </div>
                     <div className="h-1.5 bg-carbon/[0.06] rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${ch.pct}%`, backgroundColor: ch.color }} />
@@ -628,22 +564,21 @@ export default function MeetAimilyPage() {
                   </div>
                 ))}
               </div>
-              <div className="mt-6 pt-6 border-t border-carbon/[0.06] text-[12px] text-carbon/45 italic leading-[1.6]">
+              <div className="mt-6 pt-6 border-t border-carbon/[0.06] text-[13px] text-carbon/55 italic leading-[1.6]">
                 Driven by the consumer profile — DTC over wholesale because she shops direct, pop-up because she summers in coastal towns.
               </div>
             </div>
           </Reveal>
 
-          {/* Budget */}
           <Reveal delay={250} className="md:col-span-5">
             <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10 h-full">
-              <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+              <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                 Budget · ss27 cycle
               </div>
               <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-8 italic">
                 Reconciled to production.
               </div>
-              <div className="space-y-4 text-[13px]">
+              <div className="space-y-4 text-[14px]">
                 {[
                   { label: 'Materials & sampling', amount: '€42,300', share: 33 },
                   { label: 'Production (5 factories)', amount: '€68,800', share: 54 },
@@ -652,15 +587,15 @@ export default function MeetAimilyPage() {
                 ].map((b) => (
                   <div key={b.label}>
                     <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-carbon/75">{b.label}</span>
+                      <span className="text-carbon/85">{b.label}</span>
                       <span className="text-carbon font-medium">{b.amount}</span>
                     </div>
-                    <div className="text-[10px] text-carbon/40 uppercase tracking-[0.05em]">{b.share}% of cycle</div>
+                    <div className="text-[11px] text-carbon/55 uppercase tracking-[0.05em]">{b.share}% of cycle</div>
                   </div>
                 ))}
               </div>
               <div className="mt-8 pt-6 border-t border-carbon/[0.06] flex items-baseline justify-between">
-                <span className="text-[11px] uppercase tracking-[0.15em] text-carbon/55">Total invested</span>
+                <span className="text-[12px] uppercase tracking-[0.15em] text-carbon/65">Total invested</span>
                 <span className="text-[24px] font-light tracking-[-0.02em]">€127,400</span>
               </div>
             </div>
@@ -668,7 +603,7 @@ export default function MeetAimilyPage() {
         </div>
 
         <Reveal delay={500}>
-          <p className="mt-12 max-w-7xl mx-auto text-[12px] text-carbon/40 italic leading-[1.65]">
+          <p className="mt-12 max-w-7xl mx-auto text-[13px] text-carbon/55 italic leading-[1.65]">
             Range plan, channel mix and budget all generated by aimily from the brand DNA above. Excel export ready for ERP.
           </p>
         </Reveal>
@@ -685,10 +620,9 @@ export default function MeetAimilyPage() {
           after="Each SKU comes with a generated sketch, a colorway grid, a tech pack, a BOM and a pin-comment thread. First sample matches the brief."
         />
 
-        {/* Sketch grid (existing AZUR sketches) */}
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
               Sketch · auto-generated · 4 SKUs
             </div>
           </Reveal>
@@ -711,7 +645,7 @@ export default function MeetAimilyPage() {
                       className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-700"
                     />
                   </div>
-                  <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-crema/50 font-medium">
+                  <div className="mt-3 text-[12px] tracking-[0.1em] uppercase text-crema/65 font-medium">
                     {sketch.label}
                   </div>
                 </div>
@@ -719,9 +653,8 @@ export default function MeetAimilyPage() {
             ))}
           </div>
 
-          {/* 3D renders */}
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-4">
               Sketch → 3D render · 60 seconds · colorway applied
             </div>
           </Reveal>
@@ -744,35 +677,33 @@ export default function MeetAimilyPage() {
                   </div>
                   <div className="mt-4 flex items-baseline gap-3">
                     <div className="text-[18px] font-light tracking-[-0.02em] text-crema italic">{render.label}</div>
-                    <div className="text-[11px] tracking-[0.1em] uppercase text-crema/45">{render.sub}</div>
+                    <div className="text-[12px] tracking-[0.1em] uppercase text-crema/55">{render.sub}</div>
                   </div>
                 </div>
               </Reveal>
             ))}
           </div>
 
-          {/* Tech pack mockup */}
           <Reveal>
             <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
               <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
                 <div>
-                  <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-2">
+                  <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-2">
                     Tech pack · solène · maxi linen dress
                   </div>
                   <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] italic">
                     A3 landscape · factory inbox ready.
                   </div>
                 </div>
-                <span className="text-[11px] tracking-[0.15em] uppercase text-crema/45 border border-crema/[0.12] rounded-full px-3 py-1.5">
+                <span className="text-[12px] tracking-[0.15em] uppercase text-crema/65 border border-crema/[0.12] rounded-full px-3 py-1.5">
                   PDF · annotated · 6 pages
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* Measurements column */}
                 <div className="bg-carbon/30 rounded-[12px] p-5 border border-crema/[0.06]">
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/45 mb-3">Measurements (S)</div>
-                  <div className="space-y-2 text-[12px]">
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-crema/55 mb-3">Measurements (S)</div>
+                  <div className="space-y-2 text-[13px]">
                     {[
                       ['Bust', '92 cm'],
                       ['Waist', '74 cm'],
@@ -782,17 +713,16 @@ export default function MeetAimilyPage() {
                       ['Sleeve drop', '8 cm'],
                     ].map(([k, v]) => (
                       <div key={k} className="flex justify-between">
-                        <span className="text-crema/55">{k}</span>
+                        <span className="text-crema/65">{k}</span>
                         <span className="text-crema/85 font-medium">{v}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* BOM column */}
                 <div className="bg-carbon/30 rounded-[12px] p-5 border border-crema/[0.06]">
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/45 mb-3">Bill of materials</div>
-                  <div className="space-y-2 text-[12px]">
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-crema/55 mb-3">Bill of materials</div>
+                  <div className="space-y-2 text-[13px]">
                     {[
                       ['Main', 'Linen 230gsm · Solbiati'],
                       ['Lining', 'Cotton voile 80gsm'],
@@ -802,17 +732,16 @@ export default function MeetAimilyPage() {
                       ['Care', '10×3 cm · 4 langs'],
                     ].map(([k, v]) => (
                       <div key={k}>
-                        <div className="text-crema/45 text-[10px] uppercase">{k}</div>
+                        <div className="text-crema/55 text-[11px] uppercase">{k}</div>
                         <div className="text-crema/85">{v}</div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Pin comments column */}
                 <div className="bg-carbon/30 rounded-[12px] p-5 border border-crema/[0.06]">
-                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/45 mb-3">Open pin comments</div>
-                  <div className="space-y-3 text-[12px]">
+                  <div className="text-[11px] uppercase tracking-[0.1em] text-crema/55 mb-3">Open pin comments</div>
+                  <div className="space-y-3 text-[13px]">
                     {[
                       { tag: 'shoulder', user: 'Felipe', msg: 'drop seam to 8cm — confirmed with Solbiati', resolved: true },
                       { tag: 'hem', user: 'Patternmaker', msg: 'rolled hem 1.2cm or curled?', resolved: false },
@@ -820,12 +749,12 @@ export default function MeetAimilyPage() {
                     ].map((c, i) => (
                       <div key={i} className="border-l-2 pl-3 border-crema/[0.15]">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[9px] px-2 py-0.5 rounded-full ${c.resolved ? 'bg-crema/[0.08] text-crema/55' : 'bg-amber-500/20 text-amber-300'}`}>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full ${c.resolved ? 'bg-crema/[0.08] text-crema/65' : 'bg-amber-500/20 text-amber-300'}`}>
                             {c.resolved ? 'resolved' : 'open'}
                           </span>
-                          <span className="text-crema/55 text-[10px]">{c.user} · {c.tag}</span>
+                          <span className="text-crema/65 text-[11px]">{c.user} · {c.tag}</span>
                         </div>
-                        <div className="text-crema/75 leading-[1.45]">{c.msg}</div>
+                        <div className="text-crema/85 leading-[1.45]">{c.msg}</div>
                       </div>
                     ))}
                   </div>
@@ -834,16 +763,15 @@ export default function MeetAimilyPage() {
             </div>
           </Reveal>
 
-          {/* Production timeline strip */}
           <Reveal delay={300}>
             <div className="mt-8 bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
               <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
-                <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium">
                   Production timeline · 5 factories
                 </div>
-                <span className="text-[11px] text-crema/45 italic">14 weeks · 24 SKUs · 4 drops</span>
+                <span className="text-[12px] text-crema/55 italic">14 weeks · 24 SKUs · 4 drops</span>
               </div>
-              <div className="grid grid-cols-7 gap-2 text-[10px] text-crema/45 mb-2 uppercase tracking-[0.05em]">
+              <div className="grid grid-cols-7 gap-2 text-[11px] text-crema/55 mb-2 uppercase tracking-[0.05em]">
                 {['W1','W3','W5','W7','W9','W11','W13'].map((w) => <div key={w}>{w}</div>)}
               </div>
               <div className="space-y-2">
@@ -855,10 +783,10 @@ export default function MeetAimilyPage() {
                   { factory: 'Atlas Weaving · accessories', start: 3, length: 3, label: 'Loom → Finish' },
                 ].map((f, i) => (
                   <div key={i} className="grid grid-cols-7 gap-2 items-center">
-                    <div className="col-span-7 md:col-span-2 text-[11px] text-crema/65">{f.factory}</div>
+                    <div className="col-span-7 md:col-span-2 text-[12px] text-crema/75">{f.factory}</div>
                     <div className="col-span-7 md:col-span-5 relative h-6 bg-crema/[0.04] rounded-full overflow-hidden">
                       <div
-                        className="absolute h-full rounded-full bg-crema/35 flex items-center px-3 text-[10px] text-carbon font-medium whitespace-nowrap"
+                        className="absolute h-full rounded-full bg-crema/35 flex items-center px-3 text-[11px] text-carbon font-medium whitespace-nowrap"
                         style={{ left: `${(f.start / 7) * 100}%`, width: `${(f.length / 7) * 100}%` }}
                       >
                         {f.label}
@@ -884,10 +812,9 @@ export default function MeetAimilyPage() {
           after="The day a SKU is signed, its editorial is ready. Drop calendar locked across stockists. KPIs live before the launch email goes out."
         />
 
-        {/* Editorial demos (existing AZUR images) */}
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
               Editorial · on-model · no photoshoot
             </div>
           </Reveal>
@@ -903,7 +830,7 @@ export default function MeetAimilyPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                <div className="mt-3 text-[12px] tracking-[0.1em] uppercase text-carbon/65 font-medium">
                   Solène · Editorial · Cap Ferret · golden hour
                 </div>
               </div>
@@ -919,7 +846,7 @@ export default function MeetAimilyPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                <div className="mt-3 text-[12px] tracking-[0.1em] uppercase text-carbon/65 font-medium">
                   Lifestyle · Mallorca alley
                 </div>
               </div>
@@ -935,7 +862,7 @@ export default function MeetAimilyPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                <div className="mt-3 text-[12px] tracking-[0.1em] uppercase text-carbon/65 font-medium">
                   Amélie · Product detail · terracotta floor
                 </div>
               </div>
@@ -943,10 +870,9 @@ export default function MeetAimilyPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
-            {/* Drop calendar */}
             <Reveal>
               <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10">
-                <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                   Drop calendar · azur · ss27
                 </div>
                 <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
@@ -961,11 +887,11 @@ export default function MeetAimilyPage() {
                     <div key={d.name} className="flex items-baseline gap-5 pb-5 border-b border-carbon/[0.06] last:border-0">
                       <div className="w-20 shrink-0">
                         <div className="text-[16px] font-medium tracking-[-0.02em]">{d.name}</div>
-                        <div className="text-[11px] text-carbon/45 mt-0.5">{d.date}</div>
+                        <div className="text-[12px] text-carbon/55 mt-0.5">{d.date}</div>
                       </div>
                       <div className="flex-1">
-                        <div className="text-[13px] text-carbon/75 leading-[1.5]">{d.focus}</div>
-                        <div className="text-[10px] text-carbon/40 mt-1 uppercase tracking-[0.05em]">{d.skus} SKUs</div>
+                        <div className="text-[14px] text-carbon/85 leading-[1.5]">{d.focus}</div>
+                        <div className="text-[11px] text-carbon/55 mt-1 uppercase tracking-[0.05em]">{d.skus} SKUs</div>
                       </div>
                     </div>
                   ))}
@@ -973,10 +899,9 @@ export default function MeetAimilyPage() {
               </div>
             </Reveal>
 
-            {/* Sales dashboard */}
             <Reveal delay={150}>
               <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10">
-                <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                   Sales dashboard · live (mock)
                 </div>
                 <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
@@ -992,9 +917,9 @@ export default function MeetAimilyPage() {
                     { label: 'Pop-up footfall', value: '1,420', delta: 'Cap Ferret · day 1' },
                   ].map((kpi) => (
                     <div key={kpi.label}>
-                      <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40 mb-1">{kpi.label}</div>
+                      <div className="text-[11px] uppercase tracking-[0.1em] text-carbon/55 mb-1">{kpi.label}</div>
                       <div className="text-[24px] font-light tracking-[-0.02em] leading-none">{kpi.value}</div>
-                      <div className="text-[11px] text-carbon/55 mt-1">{kpi.delta}</div>
+                      <div className="text-[12px] text-carbon/65 mt-1">{kpi.delta}</div>
                     </div>
                   ))}
                 </div>
@@ -1002,16 +927,15 @@ export default function MeetAimilyPage() {
             </Reveal>
           </div>
 
-          {/* Content studio per-SKU */}
           <Reveal>
             <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10">
-              <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+              <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
                 Content studio · per SKU · per channel
               </div>
               <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
                 One SKU. Every visual format. One click.
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[13px]">
                 {[
                   { tier: 'E-commerce', desc: 'White background · 4 angles · 2000×2000' },
                   { tier: 'Still life', desc: 'Editorial flat · prop-styled · brand mood' },
@@ -1019,11 +943,11 @@ export default function MeetAimilyPage() {
                   { tier: 'Campaign', desc: 'Hero stories · 9:16 video clips · Kling 2.1' },
                 ].map((t, i) => (
                   <div key={t.tier} className="bg-carbon/[0.03] rounded-[12px] p-4 border border-carbon/[0.06]">
-                    <div className="text-[10px] tracking-[0.15em] uppercase text-carbon/45 font-medium mb-2">
+                    <div className="text-[11px] tracking-[0.15em] uppercase text-carbon/55 font-medium mb-2">
                       Tier 0{i + 1}
                     </div>
                     <div className="text-[14px] font-medium mb-2">{t.tier}</div>
-                    <div className="text-[11px] text-carbon/55 leading-[1.5]">{t.desc}</div>
+                    <div className="text-[12px] text-carbon/65 leading-[1.5]">{t.desc}</div>
                   </div>
                 ))}
               </div>
@@ -1036,7 +960,7 @@ export default function MeetAimilyPage() {
       <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6">
               Every artifact a fashion brand needs
             </div>
           </Reveal>
@@ -1060,10 +984,10 @@ export default function MeetAimilyPage() {
                   <div className="text-[28px] md:text-[34px] font-light tracking-[-0.02em] leading-[1.15] mb-4 text-crema">
                     {item.title}
                   </div>
-                  <p className="text-[14px] text-crema/55 leading-[1.65] tracking-[-0.01em] mb-5 max-w-[360px]">
+                  <p className="text-[15px] text-crema/65 leading-[1.65] tracking-[-0.01em] mb-5 max-w-[360px]">
                     {item.desc}
                   </p>
-                  <span className="inline-block text-[10px] tracking-[0.2em] uppercase text-crema/45 font-medium border-t border-crema/15 pt-3">
+                  <span className="inline-block text-[11px] tracking-[0.2em] uppercase text-crema/65 font-medium border-t border-crema/15 pt-3">
                     {item.tag}
                   </span>
                 </div>
@@ -1077,7 +1001,7 @@ export default function MeetAimilyPage() {
       <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
         <div className="max-w-5xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
+            <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6">
               Built by StudioNN — the fashion agency
             </div>
           </Reveal>
@@ -1089,7 +1013,7 @@ export default function MeetAimilyPage() {
             </h2>
           </Reveal>
           <Reveal delay={300}>
-            <div className="space-y-8 text-[17px] md:text-[19px] font-light leading-[1.55] tracking-[-0.01em] text-crema/70 max-w-[760px]">
+            <div className="space-y-8 text-[17px] md:text-[19px] font-light leading-[1.55] tracking-[-0.01em] text-crema/75 max-w-[760px]">
               <p>
                 For three years, StudioNN consulted independent fashion brands across Europe — from emerging
                 designers in Madrid and Barcelona to established houses in Milan and Paris. We watched every
@@ -1107,7 +1031,7 @@ export default function MeetAimilyPage() {
             </div>
           </Reveal>
           <Reveal delay={500}>
-            <div className="mt-16 flex items-baseline gap-6 text-[12px] tracking-[0.15em] uppercase text-crema/40 font-medium flex-wrap">
+            <div className="mt-16 flex items-baseline gap-6 text-[13px] tracking-[0.15em] uppercase text-crema/55 font-medium flex-wrap">
               <span>StudioNN Agency S.L.</span>
               <span className="opacity-50">·</span>
               <span>Alicante, Spain</span>
@@ -1117,127 +1041,6 @@ export default function MeetAimilyPage() {
           </Reveal>
         </div>
       </section>
-
-      {/* ═══════════════════════ PRICING ═══════════════════════ */}
-      <section className="bg-crema text-carbon px-6 py-32 md:py-44">
-        <div className="max-w-7xl mx-auto">
-          <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-carbon/40 font-medium mb-6">
-              Pricing
-            </div>
-          </Reveal>
-          <Reveal delay={150}>
-            <h2 className="text-[40px] md:text-[64px] font-light tracking-[-0.03em] leading-[1.05] mb-6">
-              <span className="italic">Free</span> for 14 days. Same models on every tier.
-            </h2>
-          </Reveal>
-          <Reveal delay={250}>
-            <p className="max-w-[640px] text-[16px] md:text-[18px] text-carbon/55 leading-[1.6] tracking-[-0.01em] mb-16">
-              Differentiation by quantity, never by quality. Top imagery models on every plan — Starter, Professional, Pro Max, Enterprise.
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              { name: 'Starter', price: '159', suffix: '/mo · billed annually', desc: '1 user · unlimited collections · 200 imagery / month · all blocks' },
-              { name: 'Professional', price: '479', suffix: '/mo · billed annually', desc: '5 users · 1,000 imagery / month · video Kling 2.1 · realtime collaboration', popular: true },
-              { name: 'Professional Max', price: '1,199', suffix: '/mo · billed annually', desc: '25 users · 5,000 imagery / month · priority support · top-up packs' },
-            ].map((tier) => (
-              <Reveal key={tier.name}>
-                <div className={`rounded-[20px] border p-10 md:p-12 min-h-[320px] flex flex-col ${tier.popular ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon border-carbon/[0.08]'}`}>
-                  <div className={`text-[11px] tracking-[0.25em] uppercase font-medium mb-6 ${tier.popular ? 'text-crema/55' : 'text-carbon/40'}`}>
-                    {tier.popular ? 'Most popular' : tier.name}
-                  </div>
-                  <div className="text-[20px] font-light tracking-[-0.02em] mb-2">{tier.name}</div>
-                  <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-[44px] md:text-[56px] font-light tracking-[-0.03em] leading-none">€{tier.price}</span>
-                    <span className={`text-[12px] ${tier.popular ? 'text-crema/55' : 'text-carbon/45'}`}>{tier.suffix}</span>
-                  </div>
-                  <p className={`text-[14px] leading-[1.6] tracking-[-0.01em] mb-8 ${tier.popular ? 'text-crema/65' : 'text-carbon/55'}`}>
-                    {tier.desc}
-                  </p>
-                  <button
-                    onClick={openAuth}
-                    className={`mt-auto w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-[13px] font-semibold transition-colors ${tier.popular ? 'bg-crema text-carbon hover:bg-crema/90' : 'bg-carbon text-crema hover:bg-carbon/90'}`}
-                  >
-                    Start free trial
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <Reveal delay={400}>
-            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-2 text-[12px] text-carbon/50">
-              <span>Enterprise tier (from €3,000/mo) on contact</span>
-              <span>Aimily Credits packs from €29</span>
-              <Link href="/pricing" className="underline hover:text-carbon transition-colors">All plans →</Link>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══════════════════════ FINAL CTA ═══════════════════════ */}
-      <section className="px-6 py-32 md:py-56 border-t border-crema/[0.06] relative overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)`,
-            backgroundSize: '80px 80px',
-          }}
-        />
-        <div className="max-w-5xl mx-auto text-center relative">
-          <Reveal>
-            <h2 className="text-[60px] md:text-[120px] lg:text-[160px] font-light tracking-[-0.04em] leading-[0.92] italic">
-              That's all.
-            </h2>
-          </Reveal>
-          <Reveal delay={300}>
-            <p className="mt-12 max-w-[600px] mx-auto text-[16px] md:text-[19px] text-crema/55 leading-[1.55] font-light tracking-[-0.01em]">
-              Start a collection in 90 seconds. Free 14 days. No credit card required.
-            </p>
-          </Reveal>
-          <Reveal delay={500}>
-            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                onClick={openAuth}
-                className="group inline-flex items-center gap-3 px-9 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
-              >
-                Try aimily free
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <Link
-                href="/pricing"
-                className="px-7 py-4 text-[13px] font-medium text-crema/60 hover:text-crema transition-colors tracking-[-0.01em]"
-              >
-                See all plans →
-              </Link>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══════════════════════ FOOTER ═══════════════════════ */}
-      <footer className="border-t border-crema/[0.06] px-6 py-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-[12px] text-crema/40 tracking-[-0.01em]">
-          <div className="flex items-center gap-3">
-            <Image src="/images/aimily-logo-white.png" alt="aimily" width={20} height={20} className="opacity-60" />
-            <span>aimily — built by StudioNN Agency S.L., Alicante</span>
-          </div>
-          <div className="flex flex-col md:flex-row items-center gap-3 md:gap-6">
-            <div className="flex gap-6">
-              <Link href="/privacy" className="hover:text-crema transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-crema transition-colors">Terms</Link>
-              <Link href="/cookies" className="hover:text-crema transition-colors">Cookies</Link>
-            </div>
-            <span className="opacity-50 hidden md:inline">·</span>
-            <span className="italic text-center md:text-left">Not affiliated with The Devil Wears Prada or NBCUniversal.</span>
-          </div>
-        </div>
-      </footer>
-
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} defaultMode="signup" />
-    </div>
+    </>
   );
 }
