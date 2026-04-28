@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { sendWelcomeEmail } from '@/lib/transactional-emails';
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -43,7 +45,31 @@ export async function GET(request: NextRequest) {
       }
 
       if (type === 'signup') {
-        // Email confirmation — redirect to collections
+        // Welcome email — only on the very first signup confirmation per user.
+        // Idempotent via a `welcome_email_sent_at` column on subscriptions.
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email) {
+            const { data: sub } = await supabaseAdmin
+              .from('subscriptions')
+              .select('welcome_email_sent_at')
+              .eq('user_id', user.id)
+              .single();
+            if (!sub?.welcome_email_sent_at) {
+              await sendWelcomeEmail({
+                to: user.email,
+                name: (user.user_metadata?.full_name as string | undefined) || undefined,
+              });
+              await supabaseAdmin
+                .from('subscriptions')
+                .update({ welcome_email_sent_at: new Date().toISOString() })
+                .eq('user_id', user.id);
+            }
+          }
+        } catch (err) {
+          console.error('[auth/callback] welcome email error:', err);
+          // Never block signup on email error
+        }
         return NextResponse.redirect(`${origin}/my-collections`);
       }
 

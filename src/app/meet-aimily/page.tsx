@@ -8,7 +8,7 @@
    3. Convert with a clear "Try free" CTA
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useState, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
+import { track, Events } from '@/lib/posthog';
 
 /* ── Reveal wrapper — content is always rendered visible.
      Subtle fade-up applied via CSS animation triggered on mount.
@@ -50,9 +51,17 @@ export default function MeetAimilyPage() {
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
 
+  useEffect(() => {
+    track(Events.LANDING_VIEWED, { page: 'meet-aimily' });
+  }, []);
+
   const openAuth = () => {
+    track(Events.CTA_CLICKED, { source: 'meet-aimily', authed: !!user });
     if (user) router.push('/my-collections');
-    else setAuthOpen(true);
+    else {
+      track(Events.AUTH_OPENED, { source: 'meet-aimily' });
+      setAuthOpen(true);
+    }
   };
 
   return (

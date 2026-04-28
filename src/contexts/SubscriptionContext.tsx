@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { track, Events } from '@/lib/posthog';
 
 type PlanId = 'trial' | 'starter' | 'professional' | 'professional_max' | 'enterprise';
 
@@ -154,6 +155,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const checkoutPlan = async (targetPlan: PlanId, annual?: boolean) => {
     if (!user) return;
+    track(Events.CHECKOUT_OPENED, { plan: targetPlan, annual: !!annual });
 
     const res = await fetch('/api/billing/checkout', {
       method: 'POST',
@@ -167,6 +169,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const buyCreditPack = async (pack: 'pack_50' | 'pack_250' | 'pack_1000') => {
     if (!user) return;
+    track(Events.CREDIT_PACK_OPENED, { pack });
 
     const res = await fetch('/api/billing/checkout', {
       method: 'POST',

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { rateLimit, clientIp } from '@/lib/rate-limit';
 
 // Page routes that don't require authentication (exact match)
 const publicPageRoutes = [
@@ -41,6 +42,20 @@ const publicApiPrefixes = [
 ];
 
 export async function middleware(request: NextRequest) {
+  const { pathname: rawPath } = request.nextUrl;
+
+  // ── Rate limit AI endpoints by IP — first line of defence before any auth lookup
+  if (rawPath.startsWith('/api/ai/') || rawPath.startsWith('/api/billing/checkout')) {
+    const ip = clientIp(request);
+    // 30 calls / minute per IP across all AI routes (per warm instance — see rate-limit.ts)
+    if (!rateLimit.allow(`${ip}:ai`, 30, 60_000)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Slow down a bit and try again.' },
+        { status: 429, headers: { 'Retry-After': '30' } },
+      );
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -69,7 +84,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+  const pathname = rawPath;
 
   // ── API route protection ──
   if (pathname.startsWith('/api/')) {

@@ -21,99 +21,15 @@ import {
 type PlanId = 'starter' | 'professional' | 'professional_max' | 'enterprise';
 type PackId = 'pack_50' | 'pack_250' | 'pack_1000';
 
-interface PlanCard {
-  id: PlanId;
-  name: string;
-  tagline: string;
-  price: number | null;
-  priceAnnual: number | null;
-  imagery: string;
-  seats: string;
-  popular?: boolean;
-  icon: typeof Rocket;
-  highlights: string[];
-}
-
-const PLAN_CARDS: PlanCard[] = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    tagline: 'For solo founders building their first collections.',
-    price: 199,
-    priceAnnual: 159,
-    imagery: '200 imagery / month',
-    seats: '1 user',
-    icon: Rocket,
-    highlights: [
-      'Unlimited brands & collections',
-      'All 28 aimily models',
-      'Top-quality AI on every render',
-      'Unlimited text generation',
-      'Email support',
-    ],
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    tagline: 'For small fashion teams shipping multiple drops.',
-    price: 599,
-    priceAnnual: 479,
-    imagery: '1,000 imagery / month',
-    seats: '5 users',
-    popular: true,
-    icon: Building2,
-    highlights: [
-      'Everything in Starter',
-      'Video generation (Kling 2.1)',
-      'Priority email support',
-      'Roles & permissions',
-      'Realtime collaboration',
-    ],
-  },
-  {
-    id: 'professional_max',
-    name: 'Professional Max',
-    tagline: 'For studios and brands at full creative velocity.',
-    price: 1499,
-    priceAnnual: 1199,
-    imagery: '5,000 imagery / month',
-    seats: '25 users',
-    icon: Crown,
-    highlights: [
-      'Everything in Professional',
-      '5× more imagery',
-      '25 seats',
-      'Priority email + setup call',
-      'Volume top-up packs available',
-    ],
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    tagline: 'Custom imagery + seats, dedicated onboarding.',
-    price: null,
-    priceAnnual: null,
-    imagery: 'Unlimited imagery',
-    seats: 'Unlimited users',
-    icon: Crown,
-    highlights: [
-      'Everything in Pro Max',
-      'Unlimited imagery',
-      'API access',
-      'SSO',
-      'Dedicated onboarding',
-    ],
-  },
+// Plan + pack metadata is structural only. All visible labels come from i18n.
+const PLAN_META = [
+  { id: 'starter' as PlanId, price: 199, priceAnnual: 159, imageryNum: 200, seatsNum: 1, icon: Rocket },
+  { id: 'professional' as PlanId, price: 599, priceAnnual: 479, imageryNum: 1000, seatsNum: 5, icon: Building2, popular: true },
+  { id: 'professional_max' as PlanId, price: 1499, priceAnnual: 1199, imageryNum: 5000, seatsNum: 25, icon: Crown },
+  { id: 'enterprise' as PlanId, price: null, priceAnnual: null, imageryNum: -1, seatsNum: -1, icon: Crown },
 ];
 
-interface PackCard {
-  id: PackId;
-  imagery: number;
-  price: number;
-  perImg: string;
-}
-
-const PACKS: PackCard[] = [
+const PACKS: { id: PackId; imagery: number; price: number; perImg: string }[] = [
   { id: 'pack_50', imagery: 50, price: 29, perImg: '€0.58' },
   { id: 'pack_250', imagery: 250, price: 119, perImg: '€0.48' },
   { id: 'pack_1000', imagery: 1000, price: 399, perImg: '€0.40' },
@@ -129,38 +45,33 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [loadingPack, setLoadingPack] = useState<PackId | null>(null);
 
+  const tp = t.pricingPage;
+
+  // Plan name + tagline + highlights resolution by id
+  const planLabels = (id: PlanId) => {
+    if (id === 'starter') return { name: t.landing.starter, tagline: tp.starterTagline, highlights: [tp.hStarter1, tp.hStarter2, tp.hStarter3, tp.hStarter4, tp.hStarter5] };
+    if (id === 'professional') return { name: t.landing.professional, tagline: tp.professionalTagline, highlights: [tp.hPro1, tp.hPro2, tp.hPro3, tp.hPro4, tp.hPro5] };
+    if (id === 'professional_max') return { name: tp.proMax, tagline: tp.proMaxTagline, highlights: [tp.hProMax1, tp.hProMax2, tp.hProMax3, tp.hProMax4, tp.hProMax5] };
+    return { name: t.landing.enterprise, tagline: tp.enterpriseTagline, highlights: [tp.hEnt1, tp.hEnt2, tp.hEnt3, tp.hEnt4, tp.hEnt5] };
+  };
+
   const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'enterprise') {
       window.location.href = 'mailto:hello@aimily.app?subject=Enterprise%20Plan%20Inquiry';
       return;
     }
-
-    if (!user) {
-      setShowAuth(true);
-      return;
-    }
-
+    if (!user) { setShowAuth(true); return; }
     if (planId === subscription?.plan) return;
-
     setLoadingPlan(planId);
-    try {
-      await checkoutPlan(planId, annual);
-    } finally {
-      setLoadingPlan(null);
-    }
+    try { await checkoutPlan(planId, annual); }
+    finally { setLoadingPlan(null); }
   };
 
   const handleBuyPack = async (packId: PackId) => {
-    if (!user) {
-      setShowAuth(true);
-      return;
-    }
+    if (!user) { setShowAuth(true); return; }
     setLoadingPack(packId);
-    try {
-      await buyCreditPack(packId);
-    } finally {
-      setLoadingPack(null);
-    }
+    try { await buyCreditPack(packId); }
+    finally { setLoadingPack(null); }
   };
 
   return (
@@ -171,10 +82,10 @@ export default function PricingPage() {
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-4xl font-light text-carbon tracking-tight mb-3">
-            {t.pricingPage.title}
+            {tp.title}
           </h1>
           <p className="text-lg text-carbon/60 mb-2">
-            Same top-quality models on every plan. Differentiation by quantity, never by quality.
+            {tp.subtitleV2}
           </p>
         </div>
 
@@ -185,46 +96,42 @@ export default function PricingPage() {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-medium text-sm">14-day free trial</p>
-              <p className="text-white/70 text-xs">Full access. No card required.</p>
+              <p className="font-medium text-sm">{tp.bannerTitle}</p>
+              <p className="text-white/70 text-xs">{tp.bannerSubtitle}</p>
             </div>
           </div>
         </div>
 
         {/* Toggle annual/monthly */}
         <div className="flex items-center justify-center gap-3 mb-10">
-          <span className={`text-sm ${!annual ? 'text-carbon font-medium' : 'text-carbon/50'}`}>
-            {t.landing.monthly}
-          </span>
+          <span className={`text-sm ${!annual ? 'text-carbon font-medium' : 'text-carbon/50'}`}>{t.landing.monthly}</span>
           <button
             onClick={() => setAnnual(!annual)}
-            className={`relative w-14 h-7 rounded-full transition-colors ${
-              annual ? 'bg-carbon' : 'bg-carbon/30'
-            }`}
+            className={`relative w-14 h-7 rounded-full transition-colors ${annual ? 'bg-carbon' : 'bg-carbon/30'}`}
+            aria-label="Toggle annual billing"
           >
-            <span
-              className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${
-                annual ? 'translate-x-7' : ''
-              }`}
-            />
+            <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${annual ? 'translate-x-7' : ''}`} />
           </button>
-          <span className={`text-sm ${annual ? 'text-carbon font-medium' : 'text-carbon/50'}`}>
-            {t.landing.annual}
-          </span>
+          <span className={`text-sm ${annual ? 'text-carbon font-medium' : 'text-carbon/50'}`}>{t.landing.annual}</span>
           {annual && (
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-              Save 20%
-            </span>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{tp.saveAnnual}</span>
           )}
         </div>
 
         {/* Plans grid — 4 columns */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
-          {PLAN_CARDS.map((plan) => {
+          {PLAN_META.map((plan) => {
             const price = annual ? plan.priceAnnual : plan.price;
             const isCurrent = subscription?.plan === plan.id;
             const isLoading = loadingPlan === plan.id;
-
+            const labels = planLabels(plan.id);
+            const Icon = plan.icon;
+            const imageryLabel = plan.imageryNum === -1
+              ? tp.unlimitedImagery
+              : `${plan.imageryNum.toLocaleString()} ${tp.imageryPerMonth}`;
+            const seatsLabel = plan.seatsNum === -1
+              ? tp.unlimitedUsers
+              : plan.seatsNum === 1 ? tp.oneUser : `${plan.seatsNum} ${tp.seats}`;
             return (
               <div
                 key={plan.id}
@@ -234,35 +141,31 @@ export default function PricingPage() {
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-carbon text-white text-xs px-3 py-1 rounded-full font-medium">
-                    Most popular
+                    {tp.mostPopular}
                   </div>
                 )}
 
                 <div className="mb-4">
-                  <plan.icon className="w-7 h-7 text-carbon mb-3" />
-                  <h3 className="text-lg font-medium text-carbon tracking-tight">{plan.name}</h3>
-                  <p className="text-xs text-carbon/50 mt-1 leading-relaxed min-h-[2.5rem]">
-                    {plan.tagline}
-                  </p>
+                  <Icon className="w-7 h-7 text-carbon mb-3" />
+                  <h3 className="text-lg font-medium text-carbon tracking-tight">{labels.name}</h3>
+                  <p className="text-xs text-carbon/50 mt-1 leading-relaxed min-h-[2.5rem]">{labels.tagline}</p>
                 </div>
 
                 <div className="mb-5 min-h-[5rem]">
                   {price !== null ? (
                     <>
-                      <span className="text-3xl font-light text-carbon tracking-tight">
-                        {price}€
-                      </span>
-                      <span className="text-carbon/50 text-sm">/mo</span>
+                      <span className="text-3xl font-light text-carbon tracking-tight">{price}€</span>
+                      <span className="text-carbon/50 text-sm">{tp.perMonthShort}</span>
                       {annual && (
                         <div className="text-xs text-carbon/40 mt-1">
-                          Billed monthly · {Math.round(((plan.price! - plan.priceAnnual!) / plan.price!) * 100)}% off
+                          {tp.billedMonthly} · {Math.round(((plan.price! - plan.priceAnnual!) / plan.price!) * 100)}% {tp.off}
                         </div>
                       )}
                     </>
                   ) : (
                     <>
-                      <span className="text-2xl font-light text-carbon tracking-tight">Custom</span>
-                      <div className="text-xs text-carbon/40 mt-1">From €3,000/mo</div>
+                      <span className="text-2xl font-light text-carbon tracking-tight">{tp.custom}</span>
+                      <div className="text-xs text-carbon/40 mt-1">{tp.customFrom}</div>
                     </>
                   )}
                 </div>
@@ -281,17 +184,11 @@ export default function PricingPage() {
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   ) : isCurrent ? (
-                    <>Current plan</>
+                    <>{tp.currentPlan}</>
                   ) : plan.id === 'enterprise' ? (
-                    <>
-                      Contact sales
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                    <>{tp.contactSales}<ArrowRight className="w-4 h-4" /></>
                   ) : (
-                    <>
-                      Start free trial
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                    <>{tp.startFreeTrial}<ArrowRight className="w-4 h-4" /></>
                   )}
                 </button>
 
@@ -299,17 +196,17 @@ export default function PricingPage() {
                 <div className="mb-4 pb-4 border-b border-carbon/10 space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <ImageIcon className="w-4 h-4 text-carbon/60 shrink-0" />
-                    <span className="text-carbon font-medium">{plan.imagery}</span>
+                    <span className="text-carbon font-medium">{imageryLabel}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Building2 className="w-4 h-4 text-carbon/60 shrink-0" />
-                    <span className="text-carbon font-medium">{plan.seats}</span>
+                    <span className="text-carbon font-medium">{seatsLabel}</span>
                   </div>
                 </div>
 
                 {/* Highlights */}
                 <ul className="space-y-2.5">
-                  {plan.highlights.map((h, i) => (
+                  {labels.highlights.map((h, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
                       <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
                       <span className="text-carbon">{h}</span>
@@ -326,11 +223,9 @@ export default function PricingPage() {
           <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 mb-3">
               <Zap className="w-5 h-5 text-carbon" />
-              <h2 className="text-2xl font-light text-carbon tracking-tight">Aimily Credits</h2>
+              <h2 className="text-2xl font-light text-carbon tracking-tight">{tp.packsTitle}</h2>
             </div>
-            <p className="text-sm text-carbon/60 max-w-xl mx-auto">
-              One-time imagery top-ups for busy months. No subscription, no expiry — added straight to your account balance.
-            </p>
+            <p className="text-sm text-carbon/60 max-w-xl mx-auto">{tp.packsSubtitle}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
@@ -341,11 +236,11 @@ export default function PricingPage() {
               >
                 <div className="text-center mb-4">
                   <div className="text-3xl font-light text-carbon tracking-tight">+{pack.imagery}</div>
-                  <div className="text-xs text-carbon/50 mt-1">imagery generations</div>
+                  <div className="text-xs text-carbon/50 mt-1">{tp.imageryGenerations}</div>
                 </div>
                 <div className="text-center mb-4">
                   <div className="text-2xl font-medium text-carbon">€{pack.price}</div>
-                  <div className="text-xs text-carbon/40 mt-1">{pack.perImg} per imagery</div>
+                  <div className="text-xs text-carbon/40 mt-1">{pack.perImg} {tp.perImagery}</div>
                 </div>
                 <button
                   onClick={() => handleBuyPack(pack.id)}
@@ -355,43 +250,36 @@ export default function PricingPage() {
                   {loadingPack === pack.id ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <>
-                      Buy pack
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                    <>{tp.buyPack}<ArrowRight className="w-4 h-4" /></>
                   )}
                 </button>
               </div>
             ))}
           </div>
 
-          <p className="text-xs text-carbon/40 text-center mt-6">
-            Tip: 2-3 packs per month means you'd save with the next plan tier.
-          </p>
+          <p className="text-xs text-carbon/40 text-center mt-6">{tp.packsTip}</p>
         </div>
 
         {/* What counts as imagery */}
         <div className="max-w-3xl mx-auto mb-16">
-          <h2 className="text-xl font-light text-carbon text-center mb-6 tracking-tight">
-            What counts as one imagery?
-          </h2>
+          <h2 className="text-xl font-light text-carbon text-center mb-6 tracking-tight">{tp.whatCounts}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             {[
-              { label: 'Sketch from photo', units: '1' },
-              { label: 'Colorize / 3D render', units: '1' },
-              { label: 'Editorial on-model', units: '1' },
-              { label: 'Still life / try-on / brand-model', units: '1' },
-              { label: 'Brand visual references (4 images)', units: '4' },
-              { label: 'Video Kling Pro', units: '5' },
-              { label: 'Text generation (briefs, copy, plans, …)', units: 'free' },
-              { label: 'Research & analysis', units: 'free' },
+              { label: tp.countSketch, units: 1 },
+              { label: tp.countColorize, units: 1 },
+              { label: tp.countEditorial, units: 1 },
+              { label: tp.countStillLife, units: 1 },
+              { label: tp.countVisualRefs, units: 4 },
+              { label: tp.countVideo, units: 5 },
+              { label: tp.countText, units: 0 },
+              { label: tp.countResearch, units: 0 },
             ].map((item, i) => (
               <div key={i} className="flex items-center justify-between bg-white/60 rounded-md px-4 py-3">
                 <span className="text-carbon">{item.label}</span>
                 <span className={`font-medium text-xs px-2 py-0.5 rounded-full ${
-                  item.units === 'free' ? 'bg-green-100 text-green-700' : 'bg-carbon/10 text-carbon'
+                  item.units === 0 ? 'bg-green-100 text-green-700' : 'bg-carbon/10 text-carbon'
                 }`}>
-                  {item.units === 'free' ? 'Unlimited' : `${item.units} imagery`}
+                  {item.units === 0 ? tp.unlimited : `${item.units} imagery`}
                 </span>
               </div>
             ))}
@@ -401,16 +289,16 @@ export default function PricingPage() {
         {/* Bottom */}
         <div className="text-center">
           <p className="text-carbon/50 text-sm">
-            All plans include a 14-day free trial. No card required.
+            {tp.bottomNote}
             <br />
-            <span className="text-carbon/30 text-xs">Prices exclude VAT.</span>
+            <span className="text-carbon/30 text-xs">{tp.pricesExclVat}</span>
           </p>
           {isPaid && (
             <button
               onClick={() => openPortal()}
               className="mt-4 text-sm text-carbon/50 hover:text-carbon underline transition-colors"
             >
-              Manage subscription
+              {tp.manageSubscription}
             </button>
           )}
         </div>

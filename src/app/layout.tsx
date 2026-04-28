@@ -6,6 +6,7 @@ import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { CookieConsent } from '@/components/CookieConsent';
+import { PostHogBootstrap } from '@/components/PostHogBootstrap';
 import { GlobalNav } from '@/components/layout/GlobalNav';
 import { ToastProvider } from '@/components/ui/toast';
 import { Analytics } from '@vercel/analytics/react';
@@ -21,8 +22,12 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: 'aimily — Collection Management',
-  description: 'Plan, design, and launch fashion collections.',
+  metadataBase: new URL('https://www.aimily.app'),
+  title: {
+    default: 'aimily — fashion collection platform',
+    template: '%s · aimily',
+  },
+  description: 'Plan, design, render and launch fashion collections. AI-powered. Same top-quality models on every plan. 14-day free trial.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -35,6 +40,18 @@ export const metadata: Metadata = {
     initialScale: 1,
     maximumScale: 1,
   },
+  openGraph: {
+    type: 'website',
+    siteName: 'aimily',
+    locale: 'en_US',
+    images: [{ url: '/meet-aimily/og.jpg', width: 1200, height: 630, alt: 'aimily' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/meet-aimily/og.jpg'],
+    creator: '@studionn_agency',
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({
@@ -53,6 +70,7 @@ export default function RootLayout({
           <LanguageProvider>
             <SubscriptionProvider>
               <ToastProvider>
+                <PostHogBootstrap />
                 <ServiceWorkerRegistrar />
                 <GlobalNav />
                 <main className="relative min-h-screen">{children}</main>
