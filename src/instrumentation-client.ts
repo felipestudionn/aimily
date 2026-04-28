@@ -18,3 +18,9 @@ Sentry.init({
     'Non-Error promise rejection captured',
   ],
 });
+
+/**
+ * Required by Sentry SDK v10+ for navigation transaction instrumentation
+ * in the App Router. Without this export, soft navigations are not traced.
+ */
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
