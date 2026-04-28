@@ -6,7 +6,7 @@ import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { CookieConsent } from '@/components/CookieConsent';
-import { PostHogBootstrap } from '@/components/PostHogBootstrap';
+import { ObservabilityBootstrap } from '@/components/ObservabilityBootstrap';
 import { GlobalNav } from '@/components/layout/GlobalNav';
 import { ToastProvider } from '@/components/ui/toast';
 import { Analytics } from '@vercel/analytics/react';
@@ -70,7 +70,7 @@ export default function RootLayout({
           <LanguageProvider>
             <SubscriptionProvider>
               <ToastProvider>
-                <PostHogBootstrap />
+                <ObservabilityBootstrap />
                 <ServiceWorkerRegistrar />
                 <GlobalNav />
                 <main className="relative min-h-screen">{children}</main>

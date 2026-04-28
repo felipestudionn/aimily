@@ -1,55 +1,18 @@
-import posthog from 'posthog-js';
-
-let initialized = false;
-
-export function initPostHog() {
-  if (initialized) return;
-  if (typeof window === 'undefined') return;
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  if (!key) return;
-
-  posthog.init(key, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
-    person_profiles: 'identified_only',
-    capture_pageview: 'history_change',
-    capture_pageleave: true,
-    autocapture: true,
-    loaded: (ph) => {
-      if (process.env.NODE_ENV === 'development') {
-        ph.opt_out_capturing();
-      }
-    },
-  });
-  initialized = true;
-}
+/**
+ * PostHog event helpers. The actual SDK init lives in ObservabilityBootstrap.
+ * `track()` reads window.posthog (set by the bootstrap) and is a no-op when
+ * the SDK isn't available — never throws.
+ */
 
 export function track(event: string, properties?: Record<string, unknown>) {
   if (typeof window === 'undefined') return;
-  if (!initialized) return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ph = (window as any).posthog;
+  if (!ph || typeof ph.capture !== 'function') return;
   try {
-    posthog.capture(event, properties);
+    ph.capture(event, properties);
   } catch {
     /* never throw on telemetry */
-  }
-}
-
-export function identify(userId: string, traits?: Record<string, unknown>) {
-  if (typeof window === 'undefined') return;
-  if (!initialized) return;
-  try {
-    posthog.identify(userId, traits);
-  } catch {
-    /* never throw */
-  }
-}
-
-export function reset() {
-  if (typeof window === 'undefined') return;
-  if (!initialized) return;
-  try {
-    posthog.reset();
-  } catch {
-    /* never throw */
   }
 }
 
