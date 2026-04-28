@@ -110,6 +110,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    // Skip the middleware on:
+    //   - Next.js internals (_next/static, _next/image)
+    //   - any path ending with a static-asset extension
+    //   - root-level static files (manifest.json, robots.txt, sitemap.xml,
+    //     monitoring tunnel, well-known)
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|monitoring|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|woff2?|ttf)$).*)',
   ],
 };
