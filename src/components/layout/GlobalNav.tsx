@@ -12,8 +12,8 @@ import { useRouter } from 'next/navigation';
  * Only renders on public pages (not in /collection/*, /my-collections, etc.)
  */
 
-const PUBLIC_ROUTES = ['/', '/discover', '/how-it-works', '/contact', '/trust', '/pricing', '/meet-aimily', '/video-reel'];
-const LIGHT_ROUTES = ['/privacy', '/terms', '/cookies'];
+const PUBLIC_ROUTES = ['/', '/discover', '/how-it-works', '/contact', '/trust', '/meet-aimily', '/video-reel'];
+const LIGHT_ROUTES = ['/privacy', '/terms', '/cookies', '/pricing'];
 
 export function GlobalNav() {
   const pathname = usePathname();

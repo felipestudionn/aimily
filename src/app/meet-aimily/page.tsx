@@ -66,32 +66,9 @@ export default function MeetAimilyPage() {
 
   return (
     <div className="bg-carbon text-crema min-h-screen overflow-x-hidden">
-      {/* ═══════════════════════ NAV ═══════════════════════ */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-carbon/80 backdrop-blur-md border-b border-crema/[0.06]">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <Image
-              src="/images/aimily-logo-white.png"
-              alt="aimily"
-              width={28}
-              height={28}
-              className="opacity-80 group-hover:opacity-100 transition-opacity"
-            />
-            <span className="text-[15px] font-medium text-crema tracking-[-0.01em]">aimily</span>
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/pricing" className="hidden md:block text-[13px] text-crema/60 hover:text-crema transition-colors">
-              Pricing
-            </Link>
-            <button
-              onClick={openAuth}
-              className="px-5 py-2 rounded-full bg-crema text-carbon text-[13px] font-semibold hover:bg-crema/90 transition-colors"
-            >
-              Try free
-            </button>
-          </div>
-        </div>
-      </nav>
+      {/* GlobalNav (mounted in root layout) handles the top navigation —
+          this page used to render its own <nav> which caused a double
+          header in production. Removed 2026-04-28. */}
 
       {/* ═══════════════════════ HERO ═══════════════════════ */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-32 pb-24">

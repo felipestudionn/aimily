@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '@/components/layout/navbar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useTranslation } from '@/i18n';
@@ -76,7 +75,9 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-[#fff6dc]">
-      <Navbar />
+      {/* GlobalNav (mounted in root layout) handles the top navigation —
+          dropped the legacy <Navbar /> here that was creating a double
+          header. Removed 2026-04-28. */}
 
       <div className="pt-28 pb-16 px-4 max-w-7xl mx-auto">
         {/* Header */}
