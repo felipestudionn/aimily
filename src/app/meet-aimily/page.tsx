@@ -766,7 +766,7 @@ export default function MeetAimilyPage() {
         </div>
       </footer>
 
-      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} initialMode="signup" />
+      <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} defaultMode="signup" />
     </div>
   );
 }
