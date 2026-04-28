@@ -1,21 +1,18 @@
 'use client';
 
 /* ═══════════════════════════════════════════════════════════════════
-   PricingDetail — single source of truth for plans + packs + imagery.
+   PricingDetail — clean editorial pricing, fully i18n.
 
-   Lives inside the home (`/#pricing`). Replaces both:
-     - The 3-plan inline pricing block that used to live in /page.tsx
-     - The standalone /pricing route (now redirected to /#pricing)
-
-   4 plans synced 1:1 with Stripe LIVE: Starter, Professional, Pro Max,
-   Enterprise. Same dark editorial language as the rest of the home.
+   4 plans synced 1:1 with Stripe LIVE. Every visible string comes
+   from `useHomeTranslation()` so the section follows the global
+   language switcher coherently across all 9 locales.
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useTranslation } from '@/i18n';
-import { ArrowRight, Check, Clock, Zap } from 'lucide-react';
+import { useHomeTranslation } from '@/i18n/home';
+import { ArrowRight, Check } from 'lucide-react';
 
 type PlanId = 'starter' | 'professional' | 'professional_max' | 'enterprise';
 type PackId = 'pack_50' | 'pack_250' | 'pack_1000';
@@ -24,20 +21,20 @@ const PLAN_META: {
   id: PlanId;
   price: number | null;
   priceAnnual: number | null;
-  imageryNum: number;
-  seatsNum: number;
+  imagery: string;
+  seats: string;
   popular?: boolean;
 }[] = [
-  { id: 'starter', price: 199, priceAnnual: 159, imageryNum: 200, seatsNum: 1 },
-  { id: 'professional', price: 599, priceAnnual: 479, imageryNum: 1000, seatsNum: 5, popular: true },
-  { id: 'professional_max', price: 1499, priceAnnual: 1199, imageryNum: 5000, seatsNum: 25 },
-  { id: 'enterprise', price: null, priceAnnual: null, imageryNum: -1, seatsNum: -1 },
+  { id: 'starter', price: 199, priceAnnual: 159, imagery: '200', seats: '1' },
+  { id: 'professional', price: 599, priceAnnual: 479, imagery: '1.000', seats: '5', popular: true },
+  { id: 'professional_max', price: 1499, priceAnnual: 1199, imagery: '5.000', seats: '25' },
+  { id: 'enterprise', price: null, priceAnnual: null, imagery: '∞', seats: '∞' },
 ];
 
-const PACKS: { id: PackId; imagery: number; price: number; perImg: string }[] = [
-  { id: 'pack_50', imagery: 50, price: 29, perImg: '€0.58' },
-  { id: 'pack_250', imagery: 250, price: 119, perImg: '€0.48' },
-  { id: 'pack_1000', imagery: 1000, price: 399, perImg: '€0.40' },
+const PACKS: { id: PackId; imagery: number; price: number }[] = [
+  { id: 'pack_50', imagery: 50, price: 29 },
+  { id: 'pack_250', imagery: 250, price: 119 },
+  { id: 'pack_1000', imagery: 1000, price: 399 },
 ];
 
 interface PricingDetailProps {
@@ -47,17 +44,45 @@ interface PricingDetailProps {
 export function PricingDetail({ openAuth }: PricingDetailProps) {
   const { user } = useAuth();
   const { subscription, checkoutPlan, buyCreditPack, isPaid, openPortal } = useSubscription();
-  const t = useTranslation();
-  const tp = t.pricingPage;
+  const h = useHomeTranslation();
+  const p = h.pricing;
   const [annual, setAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [loadingPack, setLoadingPack] = useState<PackId | null>(null);
 
-  const planLabels = (id: PlanId) => {
-    if (id === 'starter') return { name: t.landing.starter, tagline: tp.starterTagline, highlights: [tp.hStarter1, tp.hStarter2, tp.hStarter3, tp.hStarter4, tp.hStarter5] };
-    if (id === 'professional') return { name: t.landing.professional, tagline: tp.professionalTagline, highlights: [tp.hPro1, tp.hPro2, tp.hPro3, tp.hPro4, tp.hPro5] };
-    if (id === 'professional_max') return { name: tp.proMax, tagline: tp.proMaxTagline, highlights: [tp.hProMax1, tp.hProMax2, tp.hProMax3, tp.hProMax4, tp.hProMax5] };
-    return { name: t.landing.enterprise, tagline: tp.enterpriseTagline, highlights: [tp.hEnt1, tp.hEnt2, tp.hEnt3, tp.hEnt4, tp.hEnt5] };
+  const planName: Record<PlanId, string> = {
+    starter: p.starterName,
+    professional: p.professionalName,
+    professional_max: p.proMaxName,
+    enterprise: p.enterpriseName,
+  };
+
+  const planTagline: Record<PlanId, string> = {
+    starter: p.starterTagline,
+    professional: p.professionalTagline,
+    professional_max: p.proMaxTagline,
+    enterprise: p.enterpriseTagline,
+  };
+
+  const planHighlights: Record<PlanId, string[]> = {
+    starter: [p.h.starter1, p.h.starter2, p.h.starter3, p.h.starter4],
+    professional: [p.h.pro1, p.h.pro2, p.h.pro3, p.h.pro4],
+    professional_max: [p.h.proMax1, p.h.proMax2, p.h.proMax3, p.h.proMax4],
+    enterprise: [p.h.ent1, p.h.ent2, p.h.ent3, p.h.ent4],
+  };
+
+  const planImagery: Record<PlanId, string> = {
+    starter: '200',
+    professional: '1.000',
+    professional_max: '5.000',
+    enterprise: p.unlimited,
+  };
+
+  const planSeats: Record<PlanId, string> = {
+    starter: '1',
+    professional: '5',
+    professional_max: '25',
+    enterprise: p.unlimited,
   };
 
   const handleSelectPlan = async (planId: PlanId) => {
@@ -83,105 +108,122 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
     <section id="pricing" className="bg-crema text-carbon px-6 py-32 md:py-44 border-t border-carbon/[0.06]">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12 md:mb-16">
+        <div className="text-center mb-16">
           <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-6">
-            Pricing
+            {p.eyebrow}
           </div>
-          <h2 className="text-[40px] md:text-[64px] font-light tracking-[-0.03em] leading-[1.05] max-w-[1000px] mx-auto mb-6">
-            <span className="italic">Free</span> for 14 days. Same models on every tier.
+          <h2 className="text-[40px] md:text-[56px] font-light tracking-[-0.03em] leading-[1.05] max-w-[820px] mx-auto mb-6">
+            <span className="italic">{p.titleItalic}</span>{p.titleEnd}
           </h2>
-          <p className="max-w-[640px] mx-auto text-[16px] md:text-[18px] text-carbon/65 leading-[1.6] tracking-[-0.01em] mb-10">
-            Differentiation by quantity, never by quality. Top imagery models on every plan.
+          <p className="max-w-[520px] mx-auto text-[15px] text-carbon/65 leading-[1.6] mb-10">
+            {p.subtitle}
           </p>
 
-          {/* Trial badge */}
-          <div className="inline-flex items-center gap-2 mb-8 text-[13px] text-carbon/65">
-            <Clock className="w-4 h-4" />
-            <span>14 days free trial — full access, no credit card</span>
-          </div>
-
           {/* Billing toggle */}
-          <div className="flex items-center justify-center gap-3">
-            <span className={`text-sm ${!annual ? 'text-carbon font-medium' : 'text-carbon/55'}`}>{t.landing.monthly}</span>
+          <div className="inline-flex items-center gap-1 bg-white border border-carbon/10 rounded-full p-1">
             <button
-              onClick={() => setAnnual(!annual)}
-              className={`relative w-14 h-7 rounded-full transition-colors ${annual ? 'bg-carbon' : 'bg-carbon/30'}`}
-              aria-label="Toggle annual billing"
+              onClick={() => setAnnual(false)}
+              className={`px-5 py-2 rounded-full text-[13px] font-medium transition-colors ${
+                !annual ? 'bg-carbon text-crema' : 'text-carbon/65 hover:text-carbon'
+              }`}
             >
-              <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${annual ? 'translate-x-7' : ''}`} />
+              {p.monthly}
             </button>
-            <span className={`text-sm ${annual ? 'text-carbon font-medium' : 'text-carbon/55'}`}>{t.landing.annual}</span>
-            {annual && (
-              <span className="text-xs bg-carbon/10 text-carbon/85 px-2.5 py-0.5 rounded-full font-medium">{tp.saveAnnual}</span>
-            )}
+            <button
+              onClick={() => setAnnual(true)}
+              className={`px-5 py-2 rounded-full text-[13px] font-medium transition-colors ${
+                annual ? 'bg-carbon text-crema' : 'text-carbon/65 hover:text-carbon'
+              }`}
+            >
+              {p.annual} <span className="opacity-65 ml-1">{p.annualSave}</span>
+            </button>
           </div>
         </div>
 
-        {/* Plans grid — 4 columns on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-20">
+        {/* Plans grid — 4 cards with equal min-h */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-24 items-stretch">
           {PLAN_META.map((plan) => {
             const price = annual ? plan.priceAnnual : plan.price;
             const isCurrent = subscription?.plan === plan.id;
             const isLoading = loadingPlan === plan.id;
-            const labels = planLabels(plan.id);
-            const imageryLabel = plan.imageryNum === -1
-              ? tp.unlimitedImagery
-              : `${plan.imageryNum.toLocaleString('en-US')} ${tp.imageryPerMonth}`;
-            const seatsLabel = plan.seatsNum === -1
-              ? tp.unlimitedUsers
-              : plan.seatsNum === 1 ? tp.oneUser : `${plan.seatsNum} ${tp.seats}`;
-
             const isDark = plan.popular;
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-[20px] p-8 md:p-10 flex flex-col min-h-[520px] transition-all ${
+                className={`relative rounded-[20px] p-7 flex flex-col h-full min-h-[620px] transition-all ${
                   isDark
-                    ? 'bg-carbon text-crema border border-carbon'
+                    ? 'bg-carbon text-crema'
                     : 'bg-white text-carbon border border-carbon/[0.08] hover:border-carbon/20'
                 } ${isCurrent ? 'ring-2 ring-carbon/40' : ''}`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-crema text-carbon text-[11px] tracking-[0.15em] uppercase font-medium px-3 py-1 rounded-full">
-                    {tp.mostPopular}
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-moss text-crema text-[11px] tracking-[0.18em] uppercase font-bold px-4 py-2 rounded-full shadow-[0_6px_22px_rgba(128,131,104,0.35)] whitespace-nowrap">
+                    {p.recommended}
                   </div>
                 )}
 
-                <div className={`text-[12px] tracking-[0.25em] uppercase font-medium mb-6 ${isDark ? 'text-crema/65' : 'text-carbon/55'}`}>
-                  {labels.name}
-                </div>
-
-                <div className="mb-6 min-h-[3rem]">
-                  <p className={`text-[14px] leading-[1.5] ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
-                    {labels.tagline}
+                <div className="mb-7">
+                  <div className={`text-[12px] tracking-[0.25em] uppercase font-medium mb-2 ${isDark ? 'text-crema/65' : 'text-carbon/55'}`}>
+                    {planName[plan.id]}
+                  </div>
+                  <p className={`text-[13px] leading-[1.5] min-h-[2.6rem] ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
+                    {planTagline[plan.id]}
                   </p>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-7 min-h-[4rem]">
                   {price !== null ? (
                     <>
-                      <span className="text-[44px] md:text-[56px] font-light tracking-[-0.03em] leading-none">€{price}</span>
-                      <span className={`text-[13px] ml-1 ${isDark ? 'text-crema/65' : 'text-carbon/55'}`}>{tp.perMonthShort}</span>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-[40px] font-light tracking-[-0.03em] leading-none">€{price}</span>
+                        <span className={`text-[13px] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>{p.perMonth}</span>
+                      </div>
                       {annual && (
                         <div className={`text-[12px] mt-2 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                          {tp.billedMonthly} · {Math.round(((plan.price! - plan.priceAnnual!) / plan.price!) * 100)}% {tp.off}
+                          {p.perYear.replace('{price}', String(price * 12))}
                         </div>
                       )}
                     </>
                   ) : (
                     <>
-                      <span className="text-[36px] md:text-[44px] font-light tracking-[-0.03em] leading-none">{tp.custom}</span>
-                      <div className={`text-[12px] mt-2 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>{tp.customFrom}</div>
+                      <div className="text-[32px] font-light tracking-[-0.03em] leading-none">{p.customPrice}</div>
+                      <div className={`text-[12px] mt-2 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+                        {p.customFrom}
+                      </div>
                     </>
                   )}
                 </div>
 
+                <div className={`grid grid-cols-2 gap-4 pb-6 mb-6 border-b ${isDark ? 'border-crema/15' : 'border-carbon/10'}`}>
+                  <div>
+                    <div className={`text-[11px] uppercase tracking-[0.12em] mb-1 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+                      {p.imagery}
+                    </div>
+                    <div className="text-[18px] font-light tracking-[-0.02em]">{planImagery[plan.id]}</div>
+                  </div>
+                  <div>
+                    <div className={`text-[11px] uppercase tracking-[0.12em] mb-1 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+                      {p.seats}
+                    </div>
+                    <div className="text-[18px] font-light tracking-[-0.02em]">{planSeats[plan.id]}</div>
+                  </div>
+                </div>
+
+                <ul className="space-y-2.5 flex-1 mb-7">
+                  {planHighlights[plan.id].map((highlight, i) => (
+                    <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.5]">
+                      <Check className={`w-3.5 h-3.5 mt-1 shrink-0 ${isDark ? 'text-crema/65' : 'text-carbon/55'}`} />
+                      <span className={isDark ? 'text-crema/85' : 'text-carbon/85'}>{highlight}</span>
+                    </li>
+                  ))}
+                </ul>
+
                 <button
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={isCurrent || isLoading}
-                  className={`w-full py-3 px-6 rounded-full text-[13px] font-semibold transition-all flex items-center justify-center gap-2 mb-6 ${
+                  className={`w-full py-3 px-5 rounded-full text-[13px] font-semibold transition-all flex items-center justify-center gap-2 ${
                     isCurrent
-                      ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
+                      ? 'bg-green-50 text-green-700 cursor-default'
                       : isDark
                         ? 'bg-crema text-carbon hover:bg-crema/90'
                         : 'bg-carbon text-crema hover:bg-carbon/90'
@@ -190,129 +232,97 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   ) : isCurrent ? (
-                    <>{tp.currentPlan}</>
+                    <>{p.ctaCurrent}</>
                   ) : plan.id === 'enterprise' ? (
-                    <>{tp.contactSales}<ArrowRight className="w-4 h-4" /></>
+                    <>{p.ctaContact}<ArrowRight className="w-4 h-4" /></>
                   ) : (
-                    <>{tp.startFreeTrial}<ArrowRight className="w-4 h-4" /></>
+                    <>{p.ctaStart}<ArrowRight className="w-4 h-4" /></>
                   )}
                 </button>
-
-                {/* Imagery + seats */}
-                <div className={`mb-6 pb-6 border-b space-y-2 text-[14px] ${isDark ? 'border-crema/15' : 'border-carbon/10'}`}>
-                  <div className="flex items-center justify-between">
-                    <span className={isDark ? 'text-crema/65' : 'text-carbon/55'}>Imagery</span>
-                    <span className="font-medium">{imageryLabel.replace(/imagery.*/i, '').trim() || imageryLabel}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className={isDark ? 'text-crema/65' : 'text-carbon/55'}>Seats</span>
-                    <span className="font-medium">{seatsLabel}</span>
-                  </div>
-                </div>
-
-                {/* Highlights */}
-                <ul className="space-y-2.5 flex-1">
-                  {labels.highlights.map((h, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.5]">
-                      <Check className={`w-4 h-4 mt-0.5 shrink-0 ${isDark ? 'text-crema/65' : 'text-carbon/65'}`} />
-                      <span className={isDark ? 'text-crema/85' : 'text-carbon/85'}>{h}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
             );
           })}
         </div>
 
-        {/* Aimily Credits packs */}
-        <div className="bg-white border border-carbon/[0.08] rounded-[20px] p-10 md:p-14 mb-16">
+        {/* Top-up packs */}
+        <div className="border-t border-carbon/10 pt-16 mb-12">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 mb-3">
-              <Zap className="w-5 h-5 text-carbon" />
-              <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium">{tp.packsTitle}</div>
+            <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4">
+              {p.topupsEyebrow}
             </div>
-            <h3 className="text-[28px] md:text-[36px] font-light tracking-[-0.02em] mb-3 italic">
-              Top up imagery on demand.
+            <h3 className="text-[24px] md:text-[32px] font-light tracking-[-0.02em] italic">
+              {p.topupsTitle}
             </h3>
-            <p className="text-[14px] text-carbon/65 max-w-xl mx-auto leading-[1.6]">{tp.packsSubtitle}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
             {PACKS.map((pack) => (
-              <div
+              <button
                 key={pack.id}
-                className="border border-carbon/[0.08] rounded-[16px] p-8 hover:border-carbon/20 transition-colors"
+                onClick={() => handleBuyPack(pack.id)}
+                disabled={loadingPack === pack.id}
+                className="bg-white border border-carbon/10 rounded-[16px] p-6 hover:border-carbon/30 transition-colors text-left group"
               >
-                <div className="text-center mb-5">
-                  <div className="text-[40px] font-light text-carbon tracking-[-0.03em] leading-none">+{pack.imagery}</div>
-                  <div className="text-[12px] text-carbon/55 mt-2 uppercase tracking-[0.1em]">{tp.imageryGenerations}</div>
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-[24px] font-light tracking-[-0.02em]">+{pack.imagery}</span>
+                  <span className="text-[20px] font-medium">€{pack.price}</span>
                 </div>
-                <div className="text-center mb-6">
-                  <div className="text-[28px] font-medium text-carbon tracking-[-0.02em]">€{pack.price}</div>
-                  <div className="text-[12px] text-carbon/55 mt-1">{pack.perImg} {tp.perImagery}</div>
+                <div className="flex items-center justify-between text-[12px] text-carbon/55">
+                  <span>imagery</span>
+                  <span className="inline-flex items-center gap-1 text-carbon group-hover:translate-x-0.5 transition-transform text-[13px] font-medium">
+                    {p.topupsBuy} <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
                 </div>
-                <button
-                  onClick={() => handleBuyPack(pack.id)}
-                  disabled={loadingPack === pack.id}
-                  className="w-full py-3 px-4 rounded-full text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors flex items-center justify-center gap-2"
-                >
-                  {loadingPack === pack.id ? (
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>{tp.buyPack}<ArrowRight className="w-4 h-4" /></>
-                  )}
-                </button>
-              </div>
+                {loadingPack === pack.id && (
+                  <div className="mt-2 w-4 h-4 border-2 border-carbon border-t-transparent rounded-full animate-spin" />
+                )}
+              </button>
             ))}
           </div>
-
-          <p className="text-[13px] text-carbon/55 text-center mt-8 italic">{tp.packsTip}</p>
         </div>
 
-        {/* What counts as imagery */}
-        <div className="max-w-3xl mx-auto mb-12">
-          <div className="text-[12px] tracking-[0.3em] uppercase text-carbon/55 font-medium mb-4 text-center">
-            What counts as imagery
-          </div>
-          <h3 className="text-[24px] md:text-[32px] font-light tracking-[-0.02em] text-center mb-10 italic">
-            {tp.whatCounts}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[14px]">
+        {/* What counts — collapsed */}
+        <details className="max-w-2xl mx-auto group">
+          <summary className="flex items-center justify-center gap-2 cursor-pointer text-[13px] text-carbon/65 hover:text-carbon transition-colors list-none">
+            <span className="border-b border-carbon/30 group-hover:border-carbon transition-colors">
+              {p.whatCounts}
+            </span>
+            <ArrowRight className="w-3.5 h-3.5 rotate-90 group-open:rotate-[270deg] transition-transform" />
+          </summary>
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[13px]">
             {[
-              { label: tp.countSketch, units: 1 },
-              { label: tp.countColorize, units: 1 },
-              { label: tp.countEditorial, units: 1 },
-              { label: tp.countStillLife, units: 1 },
-              { label: tp.countVisualRefs, units: 4 },
-              { label: tp.countVideo, units: 5 },
-              { label: tp.countText, units: 0 },
-              { label: tp.countResearch, units: 0 },
+              { label: p.countSketch, units: 1 },
+              { label: p.countColorize, units: 1 },
+              { label: p.countEditorial, units: 1 },
+              { label: p.countStillLife, units: 1 },
+              { label: p.countVisualRefs, units: 4 },
+              { label: p.countVideo, units: 5 },
+              { label: p.countText, units: 0 },
+              { label: p.countResearch, units: 0 },
             ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between bg-white/60 border border-carbon/[0.06] rounded-[12px] px-5 py-4">
+              <div key={i} className="flex items-center justify-between bg-white/60 border border-carbon/10 rounded-[10px] px-4 py-3">
                 <span className="text-carbon/85">{item.label}</span>
-                <span className={`font-medium text-[12px] px-2.5 py-1 rounded-full ${
+                <span className={`text-[11px] uppercase tracking-[0.1em] font-medium px-2 py-0.5 rounded-full ${
                   item.units === 0 ? 'bg-carbon/10 text-carbon/85' : 'bg-carbon text-crema'
                 }`}>
-                  {item.units === 0 ? tp.unlimited : `${item.units} imagery`}
+                  {item.units === 0 ? p.countFree : p.countImg.replace('{n}', String(item.units))}
                 </span>
               </div>
             ))}
           </div>
-        </div>
+        </details>
 
         {/* Bottom note */}
-        <div className="text-center">
-          <p className="text-[14px] text-carbon/65 leading-[1.65]">
-            {tp.bottomNote}
-            <br />
-            <span className="text-[13px] text-carbon/55">{tp.pricesExclVat}</span>
+        <div className="text-center mt-16">
+          <p className="text-[12px] text-carbon/55">
+            {p.footerNote}
           </p>
           {isPaid && (
             <button
               onClick={() => openPortal()}
-              className="mt-6 text-[13px] text-carbon/65 hover:text-carbon underline transition-colors"
+              className="mt-4 text-[13px] text-carbon/65 hover:text-carbon underline transition-colors"
             >
-              {tp.manageSubscription}
+              {p.manage}
             </button>
           )}
         </div>

@@ -27,11 +27,13 @@ import { track, Events } from '@/lib/posthog';
 import { MeetAimilyContent } from '@/components/landing/MeetAimilyContent';
 import { PricingDetail } from '@/components/landing/PricingDetail';
 import { SiteFooter } from '@/components/layout/SiteFooter';
+import { useHomeTranslation } from '@/i18n/home';
 
 export default function HomePage() {
   const { user } = useAuth();
   const router = useRouter();
   const t = useTranslation();
+  const h = useHomeTranslation();
   const [authOpen, setAuthOpen] = useState(false);
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export default function HomePage() {
           aria-label="Scroll to content"
         >
           <ChevronDown className="w-5 h-5 animate-bounce" />
-          <span className="text-[11px] tracking-[0.3em] uppercase">Discover</span>
+          <span className="text-[11px] tracking-[0.3em] uppercase">{h.hero.scrollCue}</span>
         </a>
       </section>
 
@@ -129,17 +131,17 @@ export default function HomePage() {
         />
         <div className="max-w-5xl mx-auto text-center relative">
           <h2 className="text-[60px] md:text-[120px] lg:text-[160px] font-light tracking-[-0.04em] leading-[0.92] italic">
-            That's all.
+            {h.finalCta.title}
           </h2>
           <p className="mt-12 max-w-[600px] mx-auto text-[16px] md:text-[19px] text-crema/65 leading-[1.55] font-light tracking-[-0.01em]">
-            Start a collection in 90 seconds. Free 14 days. No credit card required.
+            {h.finalCta.subtitle}
           </p>
           <div className="mt-12 flex justify-center">
             <button
               onClick={openAuth}
               className="group inline-flex items-center gap-3 px-9 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
             >
-              Try aimily free
+              {h.finalCta.button}
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
