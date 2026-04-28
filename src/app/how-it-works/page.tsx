@@ -1,15 +1,10 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useTranslation } from '@/i18n';
-import { HorizontalSlideshow } from '@/components/how-it-works/HorizontalSlideshow';
-
+/**
+ * /how-it-works was the old slideshow-based explainer. The full E2E story
+ * (4-block journey + AZUR walkthrough + Before/After per block) lives in
+ * /meet-aimily. Single source of truth — redirect anyone who lands here.
+ */
 export default function HowItWorksPage() {
-  const t = useTranslation();
-
-  return (
-    <div className="bg-carbon min-h-screen">
-      {/* Slideshow */}
-      <HorizontalSlideshow mode="page" t={t.howItWorksPage} />
-    </div>
-  );
+  redirect('/meet-aimily');
 }
