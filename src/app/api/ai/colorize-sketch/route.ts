@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 import sharp from 'sharp';
 
@@ -15,6 +15,10 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 export async function POST(req: NextRequest) {
   const { user, error } = await getAuthenticatedUser();
   if (error) return error;
+
+  // Imagery quota — gpt-image-1.5 high quality is one of our most expensive endpoints
+  const usage = await checkImageryUsage(user!.id, user!.email!);
+  if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {
     const { sketch_url, colorway_name, color_description, zone_colors, category, product_name, family, collectionPlanId, is_3d_render } = await req.json();

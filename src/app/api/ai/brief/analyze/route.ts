@@ -1,7 +1,7 @@
 export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildAnalyzePrompt } from '@/lib/ai/brief-prompts';
 import { loadFullContext } from '@/lib/ai/load-full-context';
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
-  const usage = await checkAIUsage(user.id, user.email || '');
+  const usage = await checkAuthOnly(user.id, user.email || '');
   if (!usage.allowed) return usageDeniedResponse(usage);
 
   try {

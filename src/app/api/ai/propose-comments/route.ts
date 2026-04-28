@@ -4,7 +4,7 @@ import {
   COMMENT_PROPOSAL_PROMPT,
   buildCommentUserPrompt,
 } from '@/lib/prompts/sketch-generation';
-import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
 import { extractJSON } from '@/lib/ai/llm-client';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
 
-    const usage = await checkAIUsage(user.id, user.email!);
+    const usage = await checkAuthOnly(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
     const body: RequestBody = await req.json();

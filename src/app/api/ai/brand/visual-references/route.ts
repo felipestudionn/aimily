@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse } from '@/lib/api-auth';
 import { loadFullContext } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -206,7 +206,8 @@ export async function POST(req: NextRequest) {
       collectionPlanId?: string;
     };
 
-    const usage = await checkAIUsage(user!.id, user!.email!);
+    // 4× Freepik Mystic per call → counts as 4 imagery units
+    const usage = await checkImageryUsage(user!.id, user!.email!, 4);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
     const ctx: EnrichedCtx = {

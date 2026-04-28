@@ -65,7 +65,6 @@ export interface SelectedTrends {
 
 /**
  * Creative Brief data — aggregated creative direction for a collection.
- * Used by CreativeBriefWorkspace and passed to generate-plan.
  */
 export interface CreativeBriefData {
   visionText: string;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAIUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     });
     if (!perm.allowed) return perm.error!;
 
-    const usage = await checkAIUsage(user!.id, user!.email!);
+    const usage = await checkAuthOnly(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
     // SERVER-SIDE: Load FULL context from CIS + Creative + Brief

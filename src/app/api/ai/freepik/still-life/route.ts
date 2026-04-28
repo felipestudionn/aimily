@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
-  checkAIUsage,
+  checkImageryUsage,
   usageDeniedResponse,
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
@@ -378,7 +378,7 @@ export async function POST(req: NextRequest) {
       if (!perm.allowed) return perm.error!;
     }
 
-    const usage = await checkAIUsage(user!.id, user!.email!);
+    const usage = await checkImageryUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
 
     // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══

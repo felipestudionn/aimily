@@ -4,25 +4,16 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { useAuth } from './AuthContext';
 import { createClient } from '@/lib/supabase/client';
 
-type PlanId = 'trial' | 'starter' | 'professional' | 'enterprise';
+type PlanId = 'trial' | 'starter' | 'professional' | 'professional_max' | 'enterprise';
 
 interface PlanLimits {
   collections: number;
-  aiGenerations: number;
+  imageryGenerations: number;
   users: number;
   exportEnabled: boolean;
-  trendsEnabled: boolean;
-  trendAlertsEnabled: boolean;
-  goToMarketEnabled: boolean;
-  aiModelsEnabled: boolean;
   aiVideoEnabled: boolean;
-  collaborationEnabled: boolean;
-  rolesEnabled: boolean;
-  multiBrandEnabled: boolean;
-  lookbookEnabled: boolean;
-  techPackPdfEnabled: boolean;
-  ssoEnabled: boolean;
   apiAccessEnabled: boolean;
+  ssoEnabled: boolean;
 }
 
 interface SubscriptionData {
@@ -34,9 +25,10 @@ interface SubscriptionData {
   trialEndsAt: string | null;
   isAdmin: boolean;
   usage: {
-    aiGenerations: number;
+    imagery: number;
     month: string;
   };
+  packBalance: number;
 }
 
 interface SubscriptionContextType {
@@ -44,21 +36,22 @@ interface SubscriptionContextType {
   loading: boolean;
   isStarter: boolean;
   isProfessional: boolean;
+  isProfessionalMax: boolean;
   isEnterprise: boolean;
   isPaid: boolean;
   isTrial: boolean;
   isTrialExpired: boolean;
   isAdmin: boolean;
   trialDaysLeft: number | null;
-  canUseAI: boolean;
-  aiUsagePercent: number;
+  canGenerateImagery: boolean;
+  imageryUsagePercent: number;
   refresh: () => Promise<void>;
   checkoutPlan: (plan: PlanId, annual?: boolean) => Promise<void>;
+  buyCreditPack: (pack: 'pack_50' | 'pack_250' | 'pack_1000') => Promise<void>;
   openPortal: () => Promise<void>;
-  trackAIUsage: () => Promise<boolean>;
 }
 
-// Trial defaults — full access for 14 days
+// Trial defaults — full access for 14 days, same imagery limit as Starter
 const TRIAL_DEFAULTS: SubscriptionData = {
   plan: 'trial',
   status: 'active',
@@ -66,25 +59,17 @@ const TRIAL_DEFAULTS: SubscriptionData = {
   cancelAtPeriodEnd: false,
   limits: {
     collections: -1,
-    aiGenerations: 250,
-    users: 10,
+    imageryGenerations: 200,
+    users: 1,
     exportEnabled: true,
-    trendsEnabled: true,
-    trendAlertsEnabled: true,
-    goToMarketEnabled: true,
-    aiModelsEnabled: true,
-    aiVideoEnabled: true,
-    collaborationEnabled: true,
-    rolesEnabled: true,
-    multiBrandEnabled: false,
-    lookbookEnabled: true,
-    techPackPdfEnabled: true,
-    ssoEnabled: false,
+    aiVideoEnabled: false,
     apiAccessEnabled: false,
+    ssoEnabled: false,
   },
   trialEndsAt: null,
   isAdmin: false,
-  usage: { aiGenerations: 0, month: '' },
+  usage: { imagery: 0, month: '' },
+  packBalance: 0,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -139,12 +124,13 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, fetchSubscription]);
+  }, [user?.id, fetchSubscription, supabase]);
 
   const plan = subscription?.plan || 'trial';
   const isAdmin = subscription?.isAdmin || false;
-  const isStarter = plan === 'starter' || plan === 'professional' || plan === 'enterprise';
-  const isProfessional = plan === 'professional' || plan === 'enterprise';
+  const isStarter = plan === 'starter' || plan === 'professional' || plan === 'professional_max' || plan === 'enterprise';
+  const isProfessional = plan === 'professional' || plan === 'professional_max' || plan === 'enterprise';
+  const isProfessionalMax = plan === 'professional_max' || plan === 'enterprise';
   const isEnterprise = plan === 'enterprise';
   const isPaid = plan !== 'trial';
   const isTrial = plan === 'trial';
@@ -160,10 +146,11 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   }, [isTrial, subscription?.trialEndsAt, isAdmin]);
 
   const limits = subscription?.limits || TRIAL_DEFAULTS.limits;
-  const aiUsed = subscription?.usage?.aiGenerations || 0;
-  const aiLimit = limits.aiGenerations;
-  const canUseAI = isAdmin || aiLimit === -1 || aiUsed < aiLimit;
-  const aiUsagePercent = aiLimit === -1 ? 0 : Math.round((aiUsed / aiLimit) * 100);
+  const imageryUsed = subscription?.usage?.imagery || 0;
+  const imageryLimit = limits.imageryGenerations;
+  const packBalance = subscription?.packBalance || 0;
+  const canGenerateImagery = isAdmin || imageryLimit === -1 || imageryUsed < imageryLimit || packBalance > 0;
+  const imageryUsagePercent = imageryLimit === -1 ? 0 : Math.round((imageryUsed / imageryLimit) * 100);
 
   const checkoutPlan = async (targetPlan: PlanId, annual?: boolean) => {
     if (!user) return;
@@ -172,6 +159,19 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan: targetPlan, annual }),
+    });
+
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+  };
+
+  const buyCreditPack = async (pack: 'pack_50' | 'pack_250' | 'pack_1000') => {
+    if (!user) return;
+
+    const res = await fetch('/api/billing/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pack }),
     });
 
     const { url } = await res.json();
@@ -189,51 +189,25 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     if (url) window.location.href = url;
   };
 
-  const trackAIUsage = async (): Promise<boolean> => {
-    if (!user) return false;
-
-    const res = await fetch('/api/billing/usage', {
-      method: 'POST',
-    });
-
-    const data = await res.json();
-
-    if (!data.allowed) {
-      return false;
-    }
-
-    // Update local state
-    if (subscription) {
-      setSubscription({
-        ...subscription,
-        usage: {
-          ...subscription.usage,
-          aiGenerations: data.current,
-        },
-      });
-    }
-
-    return true;
-  };
-
   return (
     <SubscriptionContext.Provider value={{
       subscription,
       loading,
       isStarter,
       isProfessional,
+      isProfessionalMax,
       isEnterprise,
       isPaid,
       isTrial,
       isTrialExpired,
       isAdmin,
       trialDaysLeft,
-      canUseAI,
-      aiUsagePercent,
+      canGenerateImagery,
+      imageryUsagePercent,
       refresh: fetchSubscription,
       checkoutPlan,
+      buyCreditPack,
       openPortal,
-      trackAIUsage,
     }}>
       {children}
     </SubscriptionContext.Provider>

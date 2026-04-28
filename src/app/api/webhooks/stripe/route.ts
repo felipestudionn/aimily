@@ -19,6 +19,8 @@ function mapSubscriptionPlan(priceId: string): string {
   if (process.env.STRIPE_STARTER_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_STARTER_ANNUAL_PRICE_ID] = 'starter';
   if (process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID] = 'professional';
   if (process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID] = 'professional';
+  if (process.env.STRIPE_PRO_MAX_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PRO_MAX_MONTHLY_PRICE_ID] = 'professional_max';
+  if (process.env.STRIPE_PRO_MAX_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PRO_MAX_ANNUAL_PRICE_ID] = 'professional_max';
 
   return priceMap[priceId] || 'trial';
 }
@@ -75,7 +77,29 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Ensure subscription record has customer ID
+  // Aimily Credits pack purchase (one-time payment, mode='payment')
+  if (session.mode === 'payment' && session.metadata?.pack) {
+    const imagery = parseInt(session.metadata.imagery || '0', 10);
+    if (imagery <= 0) {
+      console.error('Invalid imagery amount in pack metadata');
+      return;
+    }
+
+    // Atomic credit add via RPC (handles concurrent purchases)
+    const { error } = await supabaseAdmin.rpc('add_imagery_credits', {
+      p_user_id: userId,
+      p_amount: imagery,
+      p_pack: session.metadata.pack,
+      p_stripe_session_id: session.id,
+    });
+
+    if (error) {
+      console.error('Failed to add imagery credits:', error);
+    }
+    return;
+  }
+
+  // Subscription checkout — ensure subscription row has customer ID
   await supabaseAdmin
     .from('subscriptions')
     .upsert({

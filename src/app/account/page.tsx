@@ -13,7 +13,7 @@ import {
 
 export default function AccountPage() {
   const { user, updatePassword, signOut } = useAuth();
-  const { subscription, openPortal, aiUsagePercent, loading: subLoading } = useSubscription();
+  const { subscription, openPortal, imageryUsagePercent, loading: subLoading } = useSubscription();
   const t = useTranslation();
   const { language, setLanguage } = useLanguage();
 
@@ -248,8 +248,9 @@ export default function AccountPage() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gris">{t.account.aiUsageMonth}</span>
                   <span className="text-carbon font-medium">
-                    {subscription?.usage?.aiGenerations || 0} / {subscription?.limits?.aiGenerations === -1 ? t.account.unlimited : subscription?.limits?.aiGenerations}
-                    {aiUsagePercent > 0 && ` (${aiUsagePercent}%)`}
+                    {subscription?.usage?.imagery || 0} / {subscription?.limits?.imageryGenerations === -1 ? t.account.unlimited : subscription?.limits?.imageryGenerations}
+                    {imageryUsagePercent > 0 && ` (${imageryUsagePercent}%)`}
+                    {subscription?.packBalance ? ` + ${subscription.packBalance} pack` : ''}
                   </span>
                 </div>
                 <button

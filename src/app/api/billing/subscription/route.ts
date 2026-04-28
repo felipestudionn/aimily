@@ -29,9 +29,15 @@ export async function GET() {
 
     const { data: usage } = await supabaseAdmin
       .from('ai_usage')
-      .select('generation_count')
+      .select('imagery_count')
       .eq('user_id', user.id)
       .eq('month', month)
+      .single();
+
+    const { data: credits } = await supabaseAdmin
+      .from('imagery_credits')
+      .select('balance')
+      .eq('user_id', user.id)
       .single();
 
     return NextResponse.json({
@@ -43,9 +49,10 @@ export async function GET() {
       trialEndsAt: sub?.trial_ends_at || null,
       isAdmin,
       usage: {
-        aiGenerations: usage?.generation_count || 0,
+        imagery: usage?.imagery_count || 0,
         month,
       },
+      packBalance: credits?.balance || 0,
     });
   } catch (error) {
     console.error('Subscription fetch error:', error);

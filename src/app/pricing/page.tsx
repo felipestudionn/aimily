@@ -9,99 +9,125 @@ import { useTranslation } from '@/i18n';
 import { AuthModal } from '@/components/auth/AuthModal';
 import {
   Check,
-  X,
   Rocket,
   Building2,
   Crown,
+  Zap,
   ArrowRight,
   Clock,
-  Shield,
-  Sparkles,
+  Image as ImageIcon,
 } from 'lucide-react';
 
-type PlanId = 'starter' | 'professional' | 'enterprise';
+type PlanId = 'starter' | 'professional' | 'professional_max' | 'enterprise';
+type PackId = 'pack_50' | 'pack_250' | 'pack_1000';
 
-type FeatureKey = 'featUsers' | 'featActiveCollections' | 'featAIGenerations' | 'featSketchFlow' | 'featAIModelGenerator' | 'featAIVideo' | 'featTrendAnalytics' | 'featTrendAlerts' | 'featTimelineGantt' | 'featTechPacks' | 'featGTMPlanning' | 'featCreativeSpace' | 'featLookbookBuilder' | 'featRealtimeCollab' | 'featRolesPermissions' | 'featMultiBrand' | 'featSSO' | 'featAPIAccess' | 'featSupport' | 'featOnboarding';
-type ValueKey = 'unlimited' | 'emailSupport' | 'prioritySupport' | 'dedicatedSupport' | 'selfServe' | 'oneSession' | 'threeSessions';
-
-interface FeatureRow {
-  labelKey: FeatureKey;
-  starter: boolean | string | ValueKey;
-  professional: boolean | string | ValueKey;
-  enterprise: boolean | string | ValueKey;
+interface PlanCard {
+  id: PlanId;
+  name: string;
+  tagline: string;
+  price: number | null;
+  priceAnnual: number | null;
+  imagery: string;
+  seats: string;
+  popular?: boolean;
+  icon: typeof Rocket;
+  highlights: string[];
 }
 
-const VALUE_KEYS: ValueKey[] = ['unlimited', 'emailSupport', 'prioritySupport', 'dedicatedSupport', 'selfServe', 'oneSession', 'threeSessions'];
-
-const FEATURES: FeatureRow[] = [
-  { labelKey: 'featUsers', starter: '1', professional: '10', enterprise: 'unlimited' },
-  { labelKey: 'featActiveCollections', starter: '2', professional: 'unlimited', enterprise: 'unlimited' },
-  { labelKey: 'featAIGenerations', starter: '100', professional: '500', enterprise: 'unlimited' },
-  { labelKey: 'featSketchFlow', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featAIModelGenerator', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featAIVideo', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featTrendAnalytics', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featTrendAlerts', starter: false, professional: true, enterprise: true },
-  { labelKey: 'featTimelineGantt', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featTechPacks', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featGTMPlanning', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featCreativeSpace', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featLookbookBuilder', starter: true, professional: true, enterprise: true },
-  { labelKey: 'featRealtimeCollab', starter: false, professional: true, enterprise: true },
-  { labelKey: 'featRolesPermissions', starter: false, professional: true, enterprise: true },
-  { labelKey: 'featMultiBrand', starter: false, professional: true, enterprise: true },
-  { labelKey: 'featSSO', starter: false, professional: false, enterprise: true },
-  { labelKey: 'featAPIAccess', starter: false, professional: false, enterprise: true },
-  { labelKey: 'featSupport', starter: 'emailSupport', professional: 'prioritySupport', enterprise: 'dedicatedSupport' },
-  { labelKey: 'featOnboarding', starter: 'selfServe', professional: 'oneSession', enterprise: 'threeSessions' },
-];
-
-const PLANS = [
+const PLAN_CARDS: PlanCard[] = [
   {
-    id: 'starter' as PlanId,
-    nameKey: 'starter' as const,
-    descKey: 'starterDesc' as const,
-    taglineKey: 'starterTagline' as const,
-    icon: Rocket,
+    id: 'starter',
+    name: 'Starter',
+    tagline: 'For solo founders building their first collections.',
     price: 199,
     priceAnnual: 159,
+    imagery: '200 imagery / month',
+    seats: '1 user',
+    icon: Rocket,
+    highlights: [
+      'Unlimited brands & collections',
+      'All 28 aimily models',
+      'Top-quality AI on every render',
+      'Unlimited text generation',
+      'Email support',
+    ],
   },
   {
-    id: 'professional' as PlanId,
-    nameKey: 'professional' as const,
-    descKey: 'professionalDesc' as const,
-    taglineKey: 'professionalTagline' as const,
-    icon: Building2,
+    id: 'professional',
+    name: 'Professional',
+    tagline: 'For small fashion teams shipping multiple drops.',
     price: 599,
     priceAnnual: 479,
+    imagery: '1,000 imagery / month',
+    seats: '5 users',
     popular: true,
+    icon: Building2,
+    highlights: [
+      'Everything in Starter',
+      'Video generation (Kling 2.1)',
+      'Priority email support',
+      'Roles & permissions',
+      'Realtime collaboration',
+    ],
   },
   {
-    id: 'enterprise' as PlanId,
-    nameKey: 'enterprise' as const,
-    descKey: 'enterpriseDesc' as const,
-    taglineKey: 'enterpriseTagline' as const,
+    id: 'professional_max',
+    name: 'Professional Max',
+    tagline: 'For studios and brands at full creative velocity.',
+    price: 1499,
+    priceAnnual: 1199,
+    imagery: '5,000 imagery / month',
+    seats: '25 users',
     icon: Crown,
-    price: null as number | null, // custom
-    priceAnnual: null as number | null,
+    highlights: [
+      'Everything in Professional',
+      '5× more imagery',
+      '25 seats',
+      'Priority email + setup call',
+      'Volume top-up packs available',
+    ],
   },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    tagline: 'Custom imagery + seats, dedicated onboarding.',
+    price: null,
+    priceAnnual: null,
+    imagery: 'Unlimited imagery',
+    seats: 'Unlimited users',
+    icon: Crown,
+    highlights: [
+      'Everything in Pro Max',
+      'Unlimited imagery',
+      'API access',
+      'SSO',
+      'Dedicated onboarding',
+    ],
+  },
+];
+
+interface PackCard {
+  id: PackId;
+  imagery: number;
+  price: number;
+  perImg: string;
+}
+
+const PACKS: PackCard[] = [
+  { id: 'pack_50', imagery: 50, price: 29, perImg: '€0.58' },
+  { id: 'pack_250', imagery: 250, price: 119, perImg: '€0.48' },
+  { id: 'pack_1000', imagery: 1000, price: 399, perImg: '€0.40' },
 ];
 
 export default function PricingPage() {
   const { user } = useAuth();
-  const { subscription, checkoutPlan, isPaid, openPortal } = useSubscription();
+  const { subscription, checkoutPlan, buyCreditPack, isPaid, openPortal } = useSubscription();
   const router = useRouter();
   const t = useTranslation();
   const [annual, setAnnual] = useState(true);
   const [showAuth, setShowAuth] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
-
-  /** Resolve a feature cell value — translate ValueKeys, pass through numbers/booleans */
-  const resolveValue = (val: boolean | string | ValueKey): boolean | string => {
-    if (typeof val === 'boolean') return val;
-    if (VALUE_KEYS.includes(val as ValueKey)) return t.pricingPage[val as ValueKey];
-    return val; // plain number strings like '1', '10', '100', '500'
-  };
+  const [loadingPack, setLoadingPack] = useState<PackId | null>(null);
 
   const handleSelectPlan = async (planId: PlanId) => {
     if (planId === 'enterprise') {
@@ -124,18 +150,31 @@ export default function PricingPage() {
     }
   };
 
+  const handleBuyPack = async (packId: PackId) => {
+    if (!user) {
+      setShowAuth(true);
+      return;
+    }
+    setLoadingPack(packId);
+    try {
+      await buyCreditPack(packId);
+    } finally {
+      setLoadingPack(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#fff6dc]">
       <Navbar />
 
-      <div className="pt-28 pb-16 px-4 max-w-6xl mx-auto">
+      <div className="pt-28 pb-16 px-4 max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-4xl font-light text-carbon tracking-tight mb-3">
             {t.pricingPage.title}
           </h1>
           <p className="text-lg text-carbon/60 mb-2">
-            {t.pricingPage.subtitle}
+            Same top-quality models on every plan. Differentiation by quantity, never by quality.
           </p>
         </div>
 
@@ -146,12 +185,8 @@ export default function PricingPage() {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-medium text-sm">
-                {t.pricingPage.trialTitle}
-              </p>
-              <p className="text-white/70 text-xs">
-                {t.pricingPage.trialSubtitle}
-              </p>
+              <p className="font-medium text-sm">14-day free trial</p>
+              <p className="text-white/70 text-xs">Full access. No card required.</p>
             </div>
           </div>
         </div>
@@ -178,14 +213,14 @@ export default function PricingPage() {
           </span>
           {annual && (
             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
-              {t.landing.savePercent}
+              Save 20%
             </span>
           )}
         </div>
 
-        {/* Plans grid — 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-          {PLANS.map((plan) => {
+        {/* Plans grid — 4 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
+          {PLAN_CARDS.map((plan) => {
             const price = annual ? plan.priceAnnual : plan.price;
             const isCurrent = subscription?.plan === plan.id;
             const isLoading = loadingPlan === plan.id;
@@ -194,52 +229,40 @@ export default function PricingPage() {
               <div
                 key={plan.id}
                 className={`relative bg-white rounded-md p-6 border transition-all hover:shadow-lg ${
-                  plan.popular
-                    ? 'border-carbon shadow-md'
-                    : 'border-carbon/10'
+                  plan.popular ? 'border-carbon shadow-md' : 'border-carbon/10'
                 } ${isCurrent ? 'ring-2 ring-green-500' : ''}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-carbon text-white text-xs px-3 py-1 rounded-full font-medium">
-                    {t.landing.mostPopular}
+                    Most popular
                   </div>
                 )}
 
                 <div className="mb-4">
-                  <plan.icon className="w-8 h-8 text-carbon mb-3" />
-                  <h3 className="text-xl font-light text-carbon tracking-tight">{t.landing[plan.nameKey]}</h3>
-                  <p className="text-sm text-carbon/50 mt-1">
-                    {t.landing[plan.descKey]}
-                  </p>
-                  <p className="text-xs text-carbon/40 mt-0.5 italic">
-                    {t.landing[plan.taglineKey]}
+                  <plan.icon className="w-7 h-7 text-carbon mb-3" />
+                  <h3 className="text-lg font-medium text-carbon tracking-tight">{plan.name}</h3>
+                  <p className="text-xs text-carbon/50 mt-1 leading-relaxed min-h-[2.5rem]">
+                    {plan.tagline}
                   </p>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-5 min-h-[5rem]">
                   {price !== null ? (
                     <>
-                      <span className="text-4xl font-light text-carbon tracking-tight">
+                      <span className="text-3xl font-light text-carbon tracking-tight">
                         {price}€
                       </span>
-                      <span className="text-carbon/50 text-sm">
-                        {t.landing.perMonth}
-                      </span>
+                      <span className="text-carbon/50 text-sm">/mo</span>
                       {annual && (
                         <div className="text-xs text-carbon/40 mt-1">
-                          {price * 12}€{t.landing.perYear}{' '}
-                          <span className="line-through text-carbon/30">
-                            {plan.price! * 12}€
-                          </span>
+                          Billed monthly · {Math.round(((plan.price! - plan.priceAnnual!) / plan.price!) * 100)}% off
                         </div>
                       )}
                     </>
                   ) : (
                     <>
-                      <span className="text-3xl font-light text-carbon tracking-tight">{t.landing.custom}</span>
-                      <div className="text-xs text-carbon/40 mt-1">
-                        {t.landing.customFrom}
-                      </div>
+                      <span className="text-2xl font-light text-carbon tracking-tight">Custom</span>
+                      <div className="text-xs text-carbon/40 mt-1">From €3,000/mo</div>
                     </>
                   )}
                 </div>
@@ -247,7 +270,7 @@ export default function PricingPage() {
                 <button
                   onClick={() => handleSelectPlan(plan.id)}
                   disabled={isCurrent || isLoading}
-                  className={`w-full py-2.5 px-4 rounded-md font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-2.5 px-4 rounded-md font-medium text-sm transition-all flex items-center justify-center gap-2 mb-4 ${
                     isCurrent
                       ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
                       : plan.popular
@@ -258,147 +281,136 @@ export default function PricingPage() {
                   {isLoading ? (
                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   ) : isCurrent ? (
-                    <>{t.pricingPage.currentPlan}</>
+                    <>Current plan</>
                   ) : plan.id === 'enterprise' ? (
                     <>
-                      {t.landing.contactSales}
+                      Contact sales
                       <ArrowRight className="w-4 h-4" />
                     </>
                   ) : (
                     <>
-                      {t.common.startFreeTrial}
+                      Start free trial
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
 
-                {/* Quick feature highlights */}
-                <ul className="mt-6 space-y-2.5">
-                  {FEATURES.slice(0, 8).map((feature, i) => {
-                    const rawValue = feature[plan.id];
-                    const resolved = resolveValue(rawValue);
-                    const included = resolved !== false;
+                {/* Imagery + seats — the two key dimensions */}
+                <div className="mb-4 pb-4 border-b border-carbon/10 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <ImageIcon className="w-4 h-4 text-carbon/60 shrink-0" />
+                    <span className="text-carbon font-medium">{plan.imagery}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Building2 className="w-4 h-4 text-carbon/60 shrink-0" />
+                    <span className="text-carbon font-medium">{plan.seats}</span>
+                  </div>
+                </div>
 
-                    return (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        {included ? (
-                          <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                        ) : (
-                          <X className="w-4 h-4 text-carbon/20 mt-0.5 shrink-0" />
-                        )}
-                        <span className={included ? 'text-carbon' : 'text-carbon/30'}>
-                          {typeof resolved === 'string'
-                            ? `${t.pricingPage[feature.labelKey]}: ${resolved}`
-                            : t.pricingPage[feature.labelKey]}
-                        </span>
-                      </li>
-                    );
-                  })}
+                {/* Highlights */}
+                <ul className="space-y-2.5">
+                  {plan.highlights.map((h, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                      <span className="text-carbon">{h}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
             );
           })}
         </div>
 
-        {/* Full feature comparison table */}
-        <div className="bg-white rounded-md border border-carbon/10 overflow-hidden mb-16">
-          <div className="px-6 py-4 border-b border-carbon/10">
-            <h2 className="text-lg font-light text-carbon tracking-tight">
-              {t.pricingPage.fullComparison}
-            </h2>
+        {/* Aimily Credits packs */}
+        <div className="bg-white rounded-md border border-carbon/10 p-8 mb-16">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 mb-3">
+              <Zap className="w-5 h-5 text-carbon" />
+              <h2 className="text-2xl font-light text-carbon tracking-tight">Aimily Credits</h2>
+            </div>
+            <p className="text-sm text-carbon/60 max-w-xl mx-auto">
+              One-time imagery top-ups for busy months. No subscription, no expiry — added straight to your account balance.
+            </p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-carbon/10">
-                  <th className="text-left text-sm font-medium text-carbon/50 px-6 py-3 w-1/3">
-                    {t.pricingPage.feature}
-                  </th>
-                  <th className="text-center text-sm font-medium text-carbon px-4 py-3">{t.landing.starter}</th>
-                  <th className="text-center text-sm font-medium text-carbon px-4 py-3 bg-carbon/5">{t.landing.professional}</th>
-                  <th className="text-center text-sm font-medium text-carbon px-4 py-3">{t.landing.enterprise}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {FEATURES.map((feature, i) => (
-                  <tr key={i} className={i % 2 === 0 ? '' : 'bg-carbon/[0.02]'}>
-                    <td className="text-sm text-carbon px-6 py-2.5">
-                      {t.pricingPage[feature.labelKey]}
-                    </td>
-                    {(['starter', 'professional', 'enterprise'] as PlanId[]).map((planId) => {
-                      const resolved = resolveValue(feature[planId]);
-                      return (
-                        <td
-                          key={planId}
-                          className={`text-center text-sm px-4 py-2.5 ${
-                            planId === 'professional' ? 'bg-carbon/5' : ''
-                          }`}
-                        >
-                          {typeof resolved === 'string' ? (
-                            <span className="text-carbon font-medium">{resolved}</span>
-                          ) : resolved ? (
-                            <Check className="w-4 h-4 text-green-600 mx-auto" />
-                          ) : (
-                            <X className="w-4 h-4 text-carbon/20 mx-auto" />
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
-        {/* Value proposition */}
-        <div className="max-w-3xl mx-auto mb-16">
-          <h2 className="text-2xl font-medium text-carbon text-center mb-8">
-            {t.pricingPage.replaceTools}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { tool: t.pricingPage.toolPLM, cost: '€597/mo', icon: Shield },
-              { tool: t.pricingPage.toolSketch, cost: '€560/mo', icon: Sparkles },
-              { tool: t.pricingPage.toolPhoto, cost: '€500/mo', icon: Sparkles },
-              { tool: t.pricingPage.toolVideo, cost: '€330/mo', icon: Sparkles },
-              { tool: t.pricingPage.toolTrend, cost: '€1,500/mo', icon: Sparkles },
-              { tool: t.pricingPage.toolTimeline, cost: '€57/mo', icon: Clock },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white/60 rounded-md px-4 py-3">
-                <X className="w-4 h-4 text-red-400 shrink-0" />
-                <div className="flex-1">
-                  <span className="text-sm text-carbon">{item.tool}</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            {PACKS.map((pack) => (
+              <div
+                key={pack.id}
+                className="border border-carbon/10 rounded-md p-6 hover:border-carbon/30 transition-colors"
+              >
+                <div className="text-center mb-4">
+                  <div className="text-3xl font-light text-carbon tracking-tight">+{pack.imagery}</div>
+                  <div className="text-xs text-carbon/50 mt-1">imagery generations</div>
                 </div>
-                <span className="text-sm text-carbon/40 line-through">{item.cost}</span>
+                <div className="text-center mb-4">
+                  <div className="text-2xl font-medium text-carbon">€{pack.price}</div>
+                  <div className="text-xs text-carbon/40 mt-1">{pack.perImg} per imagery</div>
+                </div>
+                <button
+                  onClick={() => handleBuyPack(pack.id)}
+                  disabled={loadingPack === pack.id}
+                  className="w-full py-2.5 px-4 rounded-md text-sm font-medium bg-carbon/5 text-carbon hover:bg-carbon/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  {loadingPack === pack.id ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      Buy pack
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
               </div>
             ))}
           </div>
-          <div className="text-center mt-6">
-            <p className="text-carbon/50 text-sm">
-              {t.pricingPage.totalSeparateTools}
-            </p>
-            <p className="text-carbon font-bold text-lg mt-1">
-              {t.pricingPage.aimilyFromSave}
-            </p>
+
+          <p className="text-xs text-carbon/40 text-center mt-6">
+            Tip: 2-3 packs per month means you'd save with the next plan tier.
+          </p>
+        </div>
+
+        {/* What counts as imagery */}
+        <div className="max-w-3xl mx-auto mb-16">
+          <h2 className="text-xl font-light text-carbon text-center mb-6 tracking-tight">
+            What counts as one imagery?
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {[
+              { label: 'Sketch from photo', units: '1' },
+              { label: 'Colorize / 3D render', units: '1' },
+              { label: 'Editorial on-model', units: '1' },
+              { label: 'Still life / try-on / brand-model', units: '1' },
+              { label: 'Brand visual references (4 images)', units: '4' },
+              { label: 'Video Kling Pro', units: '5' },
+              { label: 'Text generation (briefs, copy, plans, …)', units: 'free' },
+              { label: 'Research & analysis', units: 'free' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center justify-between bg-white/60 rounded-md px-4 py-3">
+                <span className="text-carbon">{item.label}</span>
+                <span className={`font-medium text-xs px-2 py-0.5 rounded-full ${
+                  item.units === 'free' ? 'bg-green-100 text-green-700' : 'bg-carbon/10 text-carbon'
+                }`}>
+                  {item.units === 'free' ? 'Unlimited' : `${item.units} imagery`}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Bottom */}
         <div className="text-center">
           <p className="text-carbon/50 text-sm">
-            {t.landing.allPlansNote}
+            All plans include a 14-day free trial. No card required.
             <br />
-            <span className="text-carbon/30 text-xs">
-              {t.landing.pricesExclVat}
-            </span>
+            <span className="text-carbon/30 text-xs">Prices exclude VAT.</span>
           </p>
           {isPaid && (
             <button
               onClick={() => openPortal()}
               className="mt-4 text-sm text-carbon/50 hover:text-carbon underline transition-colors"
             >
-              {t.pricingPage.manageSubscription}
+              Manage subscription
             </button>
           )}
         </div>
