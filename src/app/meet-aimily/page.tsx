@@ -1,11 +1,15 @@
 'use client';
 
 /* ═══════════════════════════════════════════════════════════════════
-   /meet-aimily — DWP-themed launch landing
-   Audience drops here from social campaign. Page must:
-   1. Hook with the Emily→Aimily angle (Miranda's signature)
-   2. Demonstrate product capabilities (real AZUR assets)
-   3. Convert with a clear "Try free" CTA
+   /meet-aimily — DWP-themed launch landing (v2 · 2026-04-28)
+
+   Audience drops here from a meme/social campaign. Must convert by:
+     1. Hooking with the Miranda angle ("the assistant Miranda would have hired")
+     2. Showing aimily is the END-TO-END platform — from idea to sold-out —
+        not just an "AI image generator for fashion"
+     3. Walking through the FOUR BLOCKS (Creative · Merchandising · Design ·
+        Marketing) using AZUR · SS27 as the connecting thread
+     4. Closing with pricing + CTA
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, ReactNode } from 'react';
@@ -14,10 +18,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight,
-  Sparkles,
-  Palette,
-  Layers,
-  Megaphone,
   ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +39,74 @@ function Reveal({ children, delay = 0, className = '' }: RevealProps) {
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
       {children}
+    </div>
+  );
+}
+
+/* ── Block heading — repeated section header (01..04) */
+function BlockHeading({
+  num,
+  label,
+  title,
+  before,
+  after,
+  description,
+  variant = 'dark',
+}: {
+  num: string;
+  label: string;
+  title: ReactNode;
+  before: string;
+  after: string;
+  description: string;
+  variant?: 'dark' | 'light';
+}) {
+  const isDark = variant === 'dark';
+  return (
+    <div className="max-w-7xl mx-auto mb-16 md:mb-24">
+      <Reveal>
+        <div className="flex items-baseline gap-6 mb-8">
+          <span className={`text-[88px] md:text-[120px] font-light tracking-[-0.04em] leading-none ${isDark ? 'text-crema/15' : 'text-carbon/15'}`}>
+            {num}
+          </span>
+          <span className={`text-[11px] tracking-[0.3em] uppercase font-medium ${isDark ? 'text-crema/45' : 'text-carbon/40'}`}>
+            {label}
+          </span>
+        </div>
+      </Reveal>
+
+      <Reveal delay={150}>
+        <h2 className={`text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] max-w-[1100px] mb-10 ${isDark ? 'text-crema' : 'text-carbon'}`}>
+          {title}
+        </h2>
+      </Reveal>
+
+      <Reveal delay={250}>
+        <p className={`max-w-[680px] text-[16px] md:text-[19px] leading-[1.6] tracking-[-0.01em] mb-12 ${isDark ? 'text-crema/55' : 'text-carbon/60'}`}>
+          {description}
+        </p>
+      </Reveal>
+
+      <Reveal delay={400}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl border-t ${isDark ? 'border-crema/[0.08]' : 'border-carbon/[0.08]'} pt-8`}>
+          <div>
+            <div className={`text-[10px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/35' : 'text-carbon/35'}`}>
+              Before aimily
+            </div>
+            <p className={`text-[15px] leading-[1.5] tracking-[-0.01em] italic font-light ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+              {before}
+            </p>
+          </div>
+          <div>
+            <div className={`text-[10px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/55' : 'text-carbon/65'}`}>
+              With aimily
+            </div>
+            <p className={`text-[15px] leading-[1.5] tracking-[-0.01em] font-light ${isDark ? 'text-crema/85' : 'text-carbon/85'}`}>
+              {after}
+            </p>
+          </div>
+        </div>
+      </Reveal>
     </div>
   );
 }
@@ -66,9 +134,7 @@ export default function MeetAimilyPage() {
 
   return (
     <div className="bg-carbon text-crema min-h-screen overflow-x-hidden">
-      {/* GlobalNav (mounted in root layout) handles the top navigation —
-          this page used to render its own <nav> which caused a double
-          header in production. Removed 2026-04-28. */}
+      {/* GlobalNav (mounted in root layout) handles the top navigation. */}
 
       {/* ═══════════════════════ HERO ═══════════════════════ */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-32 pb-24">
@@ -95,8 +161,9 @@ export default function MeetAimilyPage() {
         </Reveal>
 
         <Reveal delay={500}>
-          <p className="mt-12 max-w-[640px] text-center text-[16px] md:text-[19px] text-crema/55 leading-[1.55] font-light tracking-[-0.01em]">
-            From the spark of a moodboard to a sold-out launch — one platform handles every step of building a fashion collection.
+          <p className="mt-12 max-w-[680px] text-center text-[16px] md:text-[19px] text-crema/55 leading-[1.55] font-light tracking-[-0.01em]">
+            One platform takes a fashion idea from the spark of a moodboard to a sold-out launch.
+            Brand DNA. Range plan. Tech packs. Campaigns. Every block, connected.
           </p>
         </Reveal>
 
@@ -116,7 +183,7 @@ export default function MeetAimilyPage() {
         <Reveal delay={1100}>
           <div className="mt-24 flex flex-col items-center gap-3 text-crema/35">
             <ChevronDown className="h-5 w-5 animate-bounce" />
-            <span className="text-[10px] tracking-[0.3em] uppercase">See how it works</span>
+            <span className="text-[10px] tracking-[0.3em] uppercase">See the journey</span>
           </div>
         </Reveal>
       </section>
@@ -139,7 +206,7 @@ export default function MeetAimilyPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-start max-w-5xl mx-auto">
             <Reveal delay={300}>
-              <div className="relative">
+              <div>
                 <div className="text-[10px] tracking-[0.3em] uppercase text-crema/35 font-medium mb-4">
                   2006 · Emily
                 </div>
@@ -154,13 +221,13 @@ export default function MeetAimilyPage() {
             </Reveal>
 
             <Reveal delay={500}>
-              <div className="relative">
+              <div>
                 <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
                   2026 · aimily
                 </div>
                 <p className="text-[18px] md:text-[22px] font-light leading-[1.5] tracking-[-0.01em] text-crema">
-                  An AI assistant who never sleeps. Generates moodboards. Calculates margins. Drafts campaigns.
-                  Builds a collection from spark to launch.
+                  An AI assistant who never sleeps. Generates moodboards. Builds range plans. Drafts campaigns.
+                  Walks a collection from spark to launch — across every block of the business.
                 </p>
                 <p className="mt-5 text-[13px] text-crema/55 leading-[1.65] tracking-[-0.01em]">
                   Does it too — at scale, in seconds, never burned out.
@@ -194,6 +261,12 @@ export default function MeetAimilyPage() {
               one creative director, and a prayer.
             </h2>
           </Reveal>
+          <Reveal delay={250}>
+            <p className="max-w-[680px] text-[16px] md:text-[19px] text-carbon/55 leading-[1.65] tracking-[-0.01em]">
+              The brand brief lives in Notion. The range plan in Excel. The tech pack in PDF. The drop calendar in
+              Google Calendar. The campaign in InDesign. Nothing talks to anything else. Information walks the building.
+            </p>
+          </Reveal>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20 max-w-4xl">
             {[
@@ -217,95 +290,410 @@ export default function MeetAimilyPage() {
         </div>
       </section>
 
-      {/* ═══════════════════════ FOUR BLOCKS ═══════════════════════ */}
+      {/* ═══════════════════════ PULL THE THREAD — JOURNEY OVERVIEW ═══════════════════════ */}
       <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
-              The platform · four blocks
+            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6 text-center">
+              Pull the thread
             </div>
           </Reveal>
           <Reveal delay={150}>
-            <h2 className="text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] max-w-[900px] mb-20">
-              From <span className="italic">a vision</span> to <span className="italic">a launch</span>,
+            <h2 className="text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] text-center max-w-[1100px] mx-auto mb-8">
+              From a <span className="italic">spark</span> in your head
               <br />
-              connected.
+              to a <span className="italic">sold-out</span> drop.
             </h2>
           </Reveal>
+          <Reveal delay={250}>
+            <p className="max-w-[700px] mx-auto text-[16px] md:text-[18px] text-crema/55 leading-[1.65] tracking-[-0.01em] text-center mb-24">
+              Four blocks, one platform. A vision becomes a brand DNA card. The DNA becomes a range plan.
+              The plan becomes tech packs. The packs become product photos. The photos become a launch.
+              Each block reads from the one before — nothing gets retyped.
+            </p>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-px bg-crema/[0.08] rounded-[20px] overflow-hidden">
             {[
               {
                 num: '01',
                 label: 'Creative & Brand',
-                title: 'Start with a vision, not a spreadsheet',
-                desc: 'Capture creative direction with AI moodboards, brand DNA, consumer profiles, and trend analysis.',
-                icon: Sparkles,
+                title: 'Codify the vision',
+                outputs: 'Brand DNA · Consumer profile · Moodboard · Trend signal',
+                stat: '3 weeks → 1 hour',
               },
               {
                 num: '02',
                 label: 'Merchandising',
-                title: 'From gut feeling to business model',
-                desc: 'Define product families, set pricing strategies, plan distribution channels, build budgets — all data-driven.',
-                icon: Palette,
+                title: 'Make it a business',
+                outputs: 'Range plan · Pricing strategy · Channel split · Budget',
+                stat: 'CFO-ready in 1 day',
               },
               {
                 num: '03',
                 label: 'Design & Development',
-                title: 'Pixel to pattern',
-                desc: 'AI-generated sketches, color application, tech packs ready for the factory, prototypes, production tracking.',
-                icon: Layers,
+                title: 'Ship it to the factory',
+                outputs: 'Sketches · Colorways · Tech packs · Production timeline',
+                stat: '6 weeks → 6 days',
               },
               {
                 num: '04',
                 label: 'Marketing & Launch',
-                title: 'Launch day? Already planned.',
-                desc: 'Content studio, drop calendar, GTM plan, presentation deck export — sold-out before you cut the ribbon.',
-                icon: Megaphone,
+                title: 'Sell it before launch',
+                outputs: 'Editorials · Drop calendar · GTM · Sales dashboard',
+                stat: 'Sold-out before ribbon-cut',
               },
-            ].map((block, i) => (
-              <Reveal key={block.num} delay={i * 100}>
-                <div className="group relative bg-crema/[0.03] border border-crema/[0.08] rounded-[20px] p-10 md:p-12 hover:bg-crema/[0.05] transition-colors min-h-[320px]">
-                  <div className="text-[64px] font-light text-crema/15 leading-none tracking-[-0.04em] mb-6">
-                    {block.num}
+            ].map((step, i) => (
+              <Reveal key={step.num} delay={i * 100}>
+                <div className="bg-carbon p-8 md:p-10 h-full flex flex-col">
+                  <div className="text-[44px] font-light text-crema/20 leading-none tracking-[-0.04em] mb-6">
+                    {step.num}
                   </div>
-                  <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-3">
-                    {block.label}
+                  <div className="text-[10px] tracking-[0.25em] uppercase text-crema/45 font-medium mb-3">
+                    {step.label}
                   </div>
-                  <h3 className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] text-crema mb-4">
-                    {block.title}
+                  <h3 className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] leading-[1.2] text-crema mb-6">
+                    {step.title}
                   </h3>
-                  <p className="text-[15px] text-crema/55 leading-[1.6] tracking-[-0.01em] max-w-[400px]">
-                    {block.desc}
+                  <p className="text-[12px] text-crema/55 leading-[1.6] tracking-[-0.005em] mb-6 flex-1">
+                    {step.outputs}
                   </p>
-                  <block.icon className="absolute top-10 right-10 h-5 w-5 text-crema/30 group-hover:text-crema/60 transition-colors" />
+                  <div className="text-[11px] tracking-[0.05em] text-crema/65 italic font-medium border-t border-crema/[0.08] pt-4">
+                    {step.stat}
+                  </div>
                 </div>
               </Reveal>
             ))}
           </div>
+
+          <Reveal delay={600}>
+            <p className="mt-16 text-center text-[12px] text-crema/35 italic max-w-[680px] mx-auto leading-[1.65]">
+              Below: the same thread pulled all the way through, using <span className="text-crema/55 not-italic font-medium">AZUR · SS27</span>{' '}
+              — a real Mediterranean resort collection, generated end-to-end inside aimily.
+            </p>
+          </Reveal>
         </div>
       </section>
 
-      {/* ═══════════════════════ DEMO 1 — Sketch generation ═══════════════════════ */}
-      <section className="bg-crema text-carbon px-6 py-32 md:py-44 border-t border-carbon/[0.05]">
-        <div className="max-w-7xl mx-auto">
-          <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-carbon/40 font-medium mb-6">
-              Capability · Design 01
+      {/* ═══════════════════════ BLOCK 01 — CREATIVE & BRAND ═══════════════════════ */}
+      <section id="block-1" className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
+        <BlockHeading
+          num="01"
+          label="Creative & Brand"
+          title={<>Start with a <span className="italic">vision</span>, not a spreadsheet.</>}
+          description="Type the brief. aimily extracts the brand DNA, builds the consumer profile, generates a curated moodboard, and pulls trend signals from live social data — so every downstream output speaks the same language."
+          before="Three weeks of mood meetings. PDFs that nobody reads. A creative direction that lives in one designer's head."
+          after="Vision codified in 60 minutes. Brand DNA, target consumer, color palette and references — all stored, all queryable, all reused by every other block."
+        />
+
+        {/* Outputs grid: Brand DNA card + Consumer + Moodboard demo (existing AZUR images) */}
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-5">
+          {/* Brand DNA card */}
+          <Reveal className="md:col-span-5">
+            <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-8 md:p-10 h-full">
+              <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+                Brand DNA · azur
+              </div>
+              <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
+                Wear what the sea would wear.
+              </div>
+              <div className="space-y-3 text-[13px] leading-[1.65]">
+                <div className="flex gap-3">
+                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Heritage</span>
+                  <span className="text-crema/75">Côte d'Azur — sun-bleached linen, raffia, terracotta tile</span>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Voice</span>
+                  <span className="text-crema/75">Quiet luxury · fluent French · "Côte du Sol"</span>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Values</span>
+                  <span className="text-crema/75">Heritage materials · slow craft · zero plastic</span>
+                </div>
+                <div className="flex gap-3">
+                  <span className="text-crema/40 w-24 shrink-0 uppercase tracking-[0.1em] text-[10px] mt-1">Refs</span>
+                  <span className="text-crema/75">Jacquemus · Khaite · Hereu · La DoubleJ</span>
+                </div>
+              </div>
             </div>
           </Reveal>
-          <Reveal delay={150}>
-            <h2 className="text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] max-w-[1000px] mb-6">
-              Describe a piece. <span className="italic">Get a sketch.</span>
-            </h2>
-          </Reveal>
-          <Reveal delay={250}>
-            <p className="max-w-[640px] text-[16px] md:text-[18px] text-carbon/60 leading-[1.6] tracking-[-0.01em] mb-16">
-              Type a description. aimily generates a technical fashion sketch — front, back, detail views — ready to send to a tech designer or convert into a colored render.
-            </p>
+
+          {/* Consumer profile */}
+          <Reveal delay={150} className="md:col-span-7">
+            <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-8 md:p-10 h-full">
+              <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+                Consumer profile · azur woman
+              </div>
+              <div className="text-[24px] md:text-[28px] font-light tracking-[-0.02em] leading-[1.15] mb-6 italic">
+                She summers the same way every year.
+              </div>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-[13px] leading-[1.55]">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">Demographics</div>
+                  <div className="text-crema/75">Women 28–45 · €120–250k HHI · Paris, NYC, Madrid, Milan</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">Psychographics</div>
+                  <div className="text-crema/75">Heritage-conscious · slow-shopper · post-trend</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">Where she shops</div>
+                  <div className="text-crema/75">Net-a-Porter · Mytheresa · concept stores in resort towns</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/40 mb-1">What she avoids</div>
+                  <div className="text-crema/75">Logos · synthetics · anything that follows trends</div>
+                </div>
+              </div>
+              <div className="mt-6 pt-6 border-t border-crema/[0.08] text-[12px] text-crema/45 italic leading-[1.6]">
+                Generated from the brief by aimily — used to lock pricing tier, channel mix, and campaign tone in the next blocks.
+              </div>
+            </div>
           </Reveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+          {/* Moodboard demo — use existing AZUR mood images */}
+          <Reveal delay={250} className="md:col-span-12">
+            <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
+              <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
+                Moodboard generated · 30 seconds · azur · ss27
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="md:col-span-2 group aspect-[4/3] overflow-hidden rounded-[12px] bg-crema/[0.03]">
+                  <Image
+                    src="/meet-aimily/azur/mood-1-mediterranean-wall.jpg"
+                    alt="AZUR moodboard — Mediterranean wall"
+                    width={1600}
+                    height={1200}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                </div>
+                <div className="group aspect-square overflow-hidden rounded-[12px] bg-crema/[0.03]">
+                  <Image
+                    src="/meet-aimily/azur/mood-2-fabric-detail.jpg"
+                    alt="AZUR moodboard — fabric detail"
+                    width={1200}
+                    height={1200}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                </div>
+                <div className="md:col-span-3 group aspect-[16/9] overflow-hidden rounded-[12px] bg-crema/[0.03]">
+                  <Image
+                    src="/meet-aimily/azur/mood-3-sea-tile.jpg"
+                    alt="AZUR moodboard — sea tile"
+                    width={1920}
+                    height={1080}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 pt-6 border-t border-crema/[0.06] flex flex-wrap gap-3">
+                <span className="text-[11px] tracking-[0.1em] uppercase text-crema/40">Palette extracted</span>
+                {[
+                  { hex: '#3B5F73', label: 'Sea Foam' },
+                  { hex: '#E9DCC4', label: 'Linen' },
+                  { hex: '#B85C3A', label: 'Terracotta' },
+                  { hex: '#1F1B16', label: 'Carbon' },
+                  { hex: '#D9C68A', label: 'Citronella' },
+                ].map((c) => (
+                  <span key={c.hex} className="inline-flex items-center gap-2 text-[11px] text-crema/65">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: c.hex }} />
+                    {c.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══════════════════════ BLOCK 02 — MERCHANDISING ═══════════════════════ */}
+      <section id="block-2" className="bg-crema text-carbon px-6 py-32 md:py-44">
+        <BlockHeading
+          variant="light"
+          num="02"
+          label="Merchandising"
+          title={<>From <span className="italic">gut feeling</span> to a business model.</>}
+          description="The block your CFO actually cares about. aimily turns the brand DNA into a range plan: families, SKUs, pricing tiers, channel split, and budget — every line aware of margin, sell-through risk, and production capacity."
+          before="An Excel that nobody trusts. Buyers ask for a line sheet, you scramble. The CFO asks for margin per family, you escape the meeting."
+          after="A range plan that finance signs in a day. Pricing locked by family. Channel allocation based on consumer signal. Budget reconciled with production capacity."
+        />
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-5">
+          {/* Range plan grid */}
+          <Reveal className="md:col-span-12">
+            <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-6 md:p-8 overflow-hidden">
+              <div className="flex items-baseline justify-between mb-6">
+                <div>
+                  <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-2">
+                    Range plan · azur · ss27
+                  </div>
+                  <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] italic">
+                    24 SKUs across 4 families.
+                  </div>
+                </div>
+                <div className="hidden md:flex items-baseline gap-6 text-[12px] text-carbon/55">
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-[0.1em] text-carbon/40">Total Cost</span>
+                    <span className="text-[18px] font-light text-carbon">€127,400</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-[0.1em] text-carbon/40">Revenue forecast</span>
+                    <span className="text-[18px] font-light text-carbon">€512,000</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] uppercase tracking-[0.1em] text-carbon/40">Avg. margin</span>
+                    <span className="text-[18px] font-light text-carbon">75%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[
+                  {
+                    family: 'Skin Linens',
+                    skus: 8,
+                    pricing: '€140 – €380',
+                    units: 1850,
+                    sample: 'Solène · maxi linen dress',
+                    color: '#E9DCC4',
+                  },
+                  {
+                    family: 'Sculpted Knits',
+                    skus: 6,
+                    pricing: '€180 – €520',
+                    units: 920,
+                    sample: 'Pauline · merino crochet bra',
+                    color: '#3B5F73',
+                  },
+                  {
+                    family: 'Sun Footwear',
+                    skus: 5,
+                    pricing: '€220 – €450',
+                    units: 1100,
+                    sample: 'Amélie · raffia espadrille',
+                    color: '#B85C3A',
+                  },
+                  {
+                    family: 'Marea Objects',
+                    skus: 5,
+                    pricing: '€95 – €310',
+                    units: 760,
+                    sample: 'Marina · raffia tote',
+                    color: '#1F1B16',
+                  },
+                ].map((f, i) => (
+                  <Reveal key={f.family} delay={i * 80}>
+                    <div className="border border-carbon/[0.08] rounded-[12px] p-5 bg-white hover:bg-carbon/[0.02] transition-colors">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: f.color }} />
+                        <span className="text-[11px] tracking-[0.1em] uppercase text-carbon/40 font-medium">{f.skus} SKUs</span>
+                      </div>
+                      <div className="text-[18px] font-medium tracking-[-0.02em] mb-3">{f.family}</div>
+                      <div className="text-[13px] text-carbon/65 leading-[1.5] mb-1">{f.pricing}</div>
+                      <div className="text-[11px] text-carbon/45">{f.units.toLocaleString()} units forecast</div>
+                      <div className="mt-4 pt-3 border-t border-carbon/[0.06] text-[11px] text-carbon/50 italic">
+                        e.g. {f.sample}
+                      </div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Channel split */}
+          <Reveal delay={150} className="md:col-span-7">
+            <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10 h-full">
+              <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+                Channel allocation
+              </div>
+              <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+                Where the units go.
+              </div>
+              <div className="space-y-3">
+                {[
+                  { name: 'DTC · azur.com', pct: 45, color: '#1F1B16' },
+                  { name: 'Wholesale · 6 stockists', pct: 30, color: '#3B5F73' },
+                  { name: 'Concept stores · resort towns', pct: 18, color: '#B85C3A' },
+                  { name: 'Pop-up · Cap Ferret', pct: 7, color: '#D9C68A' },
+                ].map((ch) => (
+                  <div key={ch.name}>
+                    <div className="flex items-center justify-between text-[13px] mb-1.5">
+                      <span className="text-carbon/75">{ch.name}</span>
+                      <span className="text-carbon/55 font-medium">{ch.pct}%</span>
+                    </div>
+                    <div className="h-1.5 bg-carbon/[0.06] rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${ch.pct}%`, backgroundColor: ch.color }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 pt-6 border-t border-carbon/[0.06] text-[12px] text-carbon/45 italic leading-[1.6]">
+                Driven by the consumer profile — DTC over wholesale because she shops direct, pop-up because she summers in coastal towns.
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Budget */}
+          <Reveal delay={250} className="md:col-span-5">
+            <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10 h-full">
+              <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+                Budget · ss27 cycle
+              </div>
+              <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-8 italic">
+                Reconciled to production.
+              </div>
+              <div className="space-y-4 text-[13px]">
+                {[
+                  { label: 'Materials & sampling', amount: '€42,300', share: 33 },
+                  { label: 'Production (5 factories)', amount: '€68,800', share: 54 },
+                  { label: 'Marketing & launch', amount: '€11,400', share: 9 },
+                  { label: 'Logistics & 3PL', amount: '€4,900', share: 4 },
+                ].map((b) => (
+                  <div key={b.label}>
+                    <div className="flex items-baseline justify-between mb-1">
+                      <span className="text-carbon/75">{b.label}</span>
+                      <span className="text-carbon font-medium">{b.amount}</span>
+                    </div>
+                    <div className="text-[10px] text-carbon/40 uppercase tracking-[0.05em]">{b.share}% of cycle</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 pt-6 border-t border-carbon/[0.06] flex items-baseline justify-between">
+                <span className="text-[11px] uppercase tracking-[0.15em] text-carbon/55">Total invested</span>
+                <span className="text-[24px] font-light tracking-[-0.02em]">€127,400</span>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+
+        <Reveal delay={500}>
+          <p className="mt-12 max-w-7xl mx-auto text-[12px] text-carbon/40 italic leading-[1.65]">
+            Range plan, channel mix and budget all generated by aimily from the brand DNA above. Excel export ready for ERP.
+          </p>
+        </Reveal>
+      </section>
+
+      {/* ═══════════════════════ BLOCK 03 — DESIGN & DEVELOPMENT ═══════════════════════ */}
+      <section id="block-3" className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
+        <BlockHeading
+          num="03"
+          label="Design & Development"
+          title={<>Pixel to <span className="italic">pattern</span>, ready for the factory.</>}
+          description="The range plan becomes design briefs. aimily generates technical sketches, applies colorways, builds tech packs the patternmaker can read, and tracks production from sample to delivery — every step linked to the SKU above."
+          before="Sketches the factory can't read. Tech packs that miss measurements. Three back-and-forth rounds before the first sample lands."
+          after="Each SKU comes with a generated sketch, a colorway grid, a tech pack, a BOM and a pin-comment thread. First sample matches the brief."
+        />
+
+        {/* Sketch grid (existing AZUR sketches) */}
+        <div className="max-w-7xl mx-auto">
+          <Reveal>
+            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+              Sketch · auto-generated · 4 SKUs
+            </div>
+          </Reveal>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5 mb-12">
             {[
               { src: '/meet-aimily/azur/sketch-solene.jpg', label: 'Solène · maxi linen dress' },
               { src: '/meet-aimily/azur/sketch-pauline.jpg', label: 'Pauline · linen trouser' },
@@ -314,7 +702,7 @@ export default function MeetAimilyPage() {
             ].map((sketch, i) => (
               <Reveal key={sketch.src} delay={i * 100}>
                 <div className="group">
-                  <div className="aspect-square overflow-hidden rounded-[16px] bg-white border border-carbon/[0.06]">
+                  <div className="aspect-square overflow-hidden rounded-[16px] bg-white">
                     <Image
                       src={sketch.src}
                       alt={sketch.label}
@@ -323,7 +711,7 @@ export default function MeetAimilyPage() {
                       className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-700"
                     />
                   </div>
-                  <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                  <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-crema/50 font-medium">
                     {sketch.label}
                   </div>
                 </div>
@@ -331,34 +719,13 @@ export default function MeetAimilyPage() {
             ))}
           </div>
 
-          <Reveal delay={500}>
-            <p className="mt-10 text-[12px] text-carbon/35 italic max-w-[640px] leading-[1.65]">
-              Generated inside aimily for the AZUR · SS27 collection. Real outputs, not stock illustrations.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ═══════════════════════ DEMO 2 — Sketch → 3D Render ═══════════════════════ */}
-      <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
-        <div className="max-w-7xl mx-auto">
+          {/* 3D renders */}
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
-              Capability · Design 02
+            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-4">
+              Sketch → 3D render · 60 seconds · colorway applied
             </div>
           </Reveal>
-          <Reveal delay={150}>
-            <h2 className="text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] max-w-[1000px] mb-6 text-crema">
-              Sketch to <span className="italic">3D render</span> in 60 seconds.
-            </h2>
-          </Reveal>
-          <Reveal delay={250}>
-            <p className="max-w-[640px] text-[16px] md:text-[18px] text-crema/55 leading-[1.6] tracking-[-0.01em] mb-16">
-              Apply colorways, materials, finishes. aimily renders a photorealistic product image you can drop into a buyer presentation, a wholesale lookbook, or a Shopify page.
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
             {[
               { src: '/meet-aimily/azur/render-solene.jpg', label: 'Solène', sub: 'asymmetric maxi · azur', aspect: 'aspect-[3/4]' },
               { src: '/meet-aimily/azur/render-amelie.jpg', label: 'Amélie', sub: 'raffia espadrille · natural', aspect: 'aspect-square' },
@@ -383,31 +750,148 @@ export default function MeetAimilyPage() {
               </Reveal>
             ))}
           </div>
+
+          {/* Tech pack mockup */}
+          <Reveal>
+            <div className="bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
+              <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
+                <div>
+                  <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-2">
+                    Tech pack · solène · maxi linen dress
+                  </div>
+                  <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] italic">
+                    A3 landscape · factory inbox ready.
+                  </div>
+                </div>
+                <span className="text-[11px] tracking-[0.15em] uppercase text-crema/45 border border-crema/[0.12] rounded-full px-3 py-1.5">
+                  PDF · annotated · 6 pages
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* Measurements column */}
+                <div className="bg-carbon/30 rounded-[12px] p-5 border border-crema/[0.06]">
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/45 mb-3">Measurements (S)</div>
+                  <div className="space-y-2 text-[12px]">
+                    {[
+                      ['Bust', '92 cm'],
+                      ['Waist', '74 cm'],
+                      ['Hip', '102 cm'],
+                      ['Length', '138 cm'],
+                      ['Shoulder', '40 cm'],
+                      ['Sleeve drop', '8 cm'],
+                    ].map(([k, v]) => (
+                      <div key={k} className="flex justify-between">
+                        <span className="text-crema/55">{k}</span>
+                        <span className="text-crema/85 font-medium">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* BOM column */}
+                <div className="bg-carbon/30 rounded-[12px] p-5 border border-crema/[0.06]">
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/45 mb-3">Bill of materials</div>
+                  <div className="space-y-2 text-[12px]">
+                    {[
+                      ['Main', 'Linen 230gsm · Solbiati'],
+                      ['Lining', 'Cotton voile 80gsm'],
+                      ['Trim', 'Mother-of-pearl button × 4'],
+                      ['Thread', 'Aurifil 50wt · ecru'],
+                      ['Label', 'Woven · azur logo'],
+                      ['Care', '10×3 cm · 4 langs'],
+                    ].map(([k, v]) => (
+                      <div key={k}>
+                        <div className="text-crema/45 text-[10px] uppercase">{k}</div>
+                        <div className="text-crema/85">{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pin comments column */}
+                <div className="bg-carbon/30 rounded-[12px] p-5 border border-crema/[0.06]">
+                  <div className="text-[10px] uppercase tracking-[0.1em] text-crema/45 mb-3">Open pin comments</div>
+                  <div className="space-y-3 text-[12px]">
+                    {[
+                      { tag: 'shoulder', user: 'Felipe', msg: 'drop seam to 8cm — confirmed with Solbiati', resolved: true },
+                      { tag: 'hem', user: 'Patternmaker', msg: 'rolled hem 1.2cm or curled?', resolved: false },
+                      { tag: 'lining', user: 'Felipe', msg: 'no lining on bodice — only skirt', resolved: true },
+                    ].map((c, i) => (
+                      <div key={i} className="border-l-2 pl-3 border-crema/[0.15]">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full ${c.resolved ? 'bg-crema/[0.08] text-crema/55' : 'bg-amber-500/20 text-amber-300'}`}>
+                            {c.resolved ? 'resolved' : 'open'}
+                          </span>
+                          <span className="text-crema/55 text-[10px]">{c.user} · {c.tag}</span>
+                        </div>
+                        <div className="text-crema/75 leading-[1.45]">{c.msg}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Production timeline strip */}
+          <Reveal delay={300}>
+            <div className="mt-8 bg-crema/[0.03] border border-crema/[0.08] rounded-[16px] p-6 md:p-8">
+              <div className="flex items-baseline justify-between mb-6 flex-wrap gap-3">
+                <div className="text-[10px] tracking-[0.3em] uppercase text-crema/45 font-medium">
+                  Production timeline · 5 factories
+                </div>
+                <span className="text-[11px] text-crema/45 italic">14 weeks · 24 SKUs · 4 drops</span>
+              </div>
+              <div className="grid grid-cols-7 gap-2 text-[10px] text-crema/45 mb-2 uppercase tracking-[0.05em]">
+                {['W1','W3','W5','W7','W9','W11','W13'].map((w) => <div key={w}>{w}</div>)}
+              </div>
+              <div className="space-y-2">
+                {[
+                  { factory: 'Tasificat · linen', start: 0, length: 5, label: 'Sampling → Production' },
+                  { factory: 'L\'Atelier Provence · knit', start: 1, length: 6, label: 'Yarn drop → Knit run' },
+                  { factory: 'Calzados Algarve · footwear', start: 2, length: 4, label: 'Last fit → Production' },
+                  { factory: 'Casa Loayza · raffia', start: 1, length: 5, label: 'Weave → QC → Ship' },
+                  { factory: 'Atlas Weaving · accessories', start: 3, length: 3, label: 'Loom → Finish' },
+                ].map((f, i) => (
+                  <div key={i} className="grid grid-cols-7 gap-2 items-center">
+                    <div className="col-span-7 md:col-span-2 text-[11px] text-crema/65">{f.factory}</div>
+                    <div className="col-span-7 md:col-span-5 relative h-6 bg-crema/[0.04] rounded-full overflow-hidden">
+                      <div
+                        className="absolute h-full rounded-full bg-crema/35 flex items-center px-3 text-[10px] text-carbon font-medium whitespace-nowrap"
+                        style={{ left: `${(f.start / 7) * 100}%`, width: `${(f.length / 7) * 100}%` }}
+                      >
+                        {f.label}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ═══════════════════════ DEMO 3 — Editorial / on-model ═══════════════════════ */}
-      <section className="bg-crema text-carbon px-6 py-32 md:py-44">
+      {/* ═══════════════════════ BLOCK 04 — MARKETING & LAUNCH ═══════════════════════ */}
+      <section id="block-4" className="bg-crema text-carbon px-6 py-32 md:py-44">
+        <BlockHeading
+          variant="light"
+          num="04"
+          label="Marketing & Launch"
+          title={<>Sold-out <span className="italic">before</span> the ribbon-cut.</>}
+          description="The collection isn't done when it ships — it's done when it sells. aimily produces editorials without a photoshoot, schedules drops, plans content per channel, and tracks sales in a single dashboard. Marketing reads from the SKUs above — never from a brief PDF."
+          before="Marketing scrambles two weeks before launch. Photographer cancels. Lookbook is rushed. Drop date slips. Pre-orders die in the pipe."
+          after="The day a SKU is signed, its editorial is ready. Drop calendar locked across stockists. KPIs live before the launch email goes out."
+        />
+
+        {/* Editorial demos (existing AZUR images) */}
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-carbon/40 font-medium mb-6">
-              Capability · Marketing 01
+            <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+              Editorial · on-model · no photoshoot
             </div>
           </Reveal>
-          <Reveal delay={150}>
-            <h2 className="text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] max-w-[1000px] mb-6">
-              Editorial campaigns,
-              <br />
-              <span className="italic">without a photoshoot.</span>
-            </h2>
-          </Reveal>
-          <Reveal delay={250}>
-            <p className="max-w-[640px] text-[16px] md:text-[18px] text-carbon/60 leading-[1.6] tracking-[-0.01em] mb-16">
-              Place a piece on a model in the location you want. Editorial photographs, lookbook stills, social campaign assets — generated with aimily's library of 28 brand-safe AI models.
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
             <Reveal delay={0}>
               <div className="md:col-span-2 group">
                 <div className="aspect-[4/3] overflow-hidden rounded-[16px] bg-white">
@@ -419,7 +903,7 @@ export default function MeetAimilyPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="mt-4 text-[12px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
                   Solène · Editorial · Cap Ferret · golden hour
                 </div>
               </div>
@@ -435,7 +919,7 @@ export default function MeetAimilyPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="mt-4 text-[12px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
                   Lifestyle · Mallorca alley
                 </div>
               </div>
@@ -451,85 +935,108 @@ export default function MeetAimilyPage() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                 </div>
-                <div className="mt-4 text-[12px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
+                <div className="mt-3 text-[11px] tracking-[0.1em] uppercase text-carbon/45 font-medium">
                   Amélie · Product detail · terracotta floor
                 </div>
               </div>
             </Reveal>
           </div>
-        </div>
-      </section>
 
-      {/* ═══════════════════════ DEMO 4 — Moodboard ═══════════════════════ */}
-      <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
-        <div className="max-w-7xl mx-auto">
-          <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
-              Capability · Creative 01
-            </div>
-          </Reveal>
-          <Reveal delay={150}>
-            <h2 className="text-[40px] md:text-[72px] font-light tracking-[-0.03em] leading-[1.05] max-w-[1100px] mb-6 text-crema">
-              Brand DNA <span className="italic">→</span> moodboard
-              <br />
-              in 30 seconds.
-            </h2>
-          </Reveal>
-          <Reveal delay={250}>
-            <p className="max-w-[640px] text-[16px] md:text-[18px] text-crema/55 leading-[1.6] tracking-[-0.01em] mb-16">
-              Describe your brand. aimily generates an editorial-grade moodboard, color palette, and visual references that align across every output downstream.
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-            <Reveal className="col-span-2 md:col-span-2">
-              <div className="group aspect-[4/3] overflow-hidden rounded-[16px] bg-crema/[0.03] border border-crema/[0.08]">
-                <Image
-                  src="/meet-aimily/azur/mood-1-mediterranean-wall.jpg"
-                  alt="AZUR moodboard — Mediterranean wall"
-                  width={1600}
-                  height={1200}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-12">
+            {/* Drop calendar */}
+            <Reveal>
+              <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10">
+                <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+                  Drop calendar · azur · ss27
+                </div>
+                <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+                  Three drops, locked across stockists.
+                </div>
+                <div className="space-y-5">
+                  {[
+                    { name: 'Pre-Tide', date: '15 Mar 2027', skus: 8, focus: 'Linen · early pre-orders · DTC only' },
+                    { name: 'High Tide', date: '08 May 2027', skus: 12, focus: 'Full launch · all 6 stockists · pop-up opens' },
+                    { name: 'Low Tide', date: '12 Jul 2027', skus: 4, focus: 'End-of-season · resort capsule · sell-through last' },
+                  ].map((d) => (
+                    <div key={d.name} className="flex items-baseline gap-5 pb-5 border-b border-carbon/[0.06] last:border-0">
+                      <div className="w-20 shrink-0">
+                        <div className="text-[16px] font-medium tracking-[-0.02em]">{d.name}</div>
+                        <div className="text-[11px] text-carbon/45 mt-0.5">{d.date}</div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-[13px] text-carbon/75 leading-[1.5]">{d.focus}</div>
+                        <div className="text-[10px] text-carbon/40 mt-1 uppercase tracking-[0.05em]">{d.skus} SKUs</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </Reveal>
-            <Reveal delay={120} className="col-span-2 md:col-span-1">
-              <div className="group aspect-square overflow-hidden rounded-[16px] bg-crema/[0.03] border border-crema/[0.08]">
-                <Image
-                  src="/meet-aimily/azur/mood-2-fabric-detail.jpg"
-                  alt="AZUR moodboard — fabric detail"
-                  width={1200}
-                  height={1200}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-            </Reveal>
-            <Reveal delay={240} className="col-span-2 md:col-span-3">
-              <div className="group aspect-[16/9] overflow-hidden rounded-[16px] bg-crema/[0.03] border border-crema/[0.08]">
-                <Image
-                  src="/meet-aimily/azur/mood-3-sea-tile.jpg"
-                  alt="AZUR moodboard — sea tile"
-                  width={1920}
-                  height={1080}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+
+            {/* Sales dashboard */}
+            <Reveal delay={150}>
+              <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10">
+                <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+                  Sales dashboard · live (mock)
+                </div>
+                <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+                  Did the launch work?
+                </div>
+                <div className="grid grid-cols-2 gap-5">
+                  {[
+                    { label: 'Day 1 revenue', value: '€84,200', delta: '+38% vs target' },
+                    { label: 'Sell-through', value: '24%', delta: 'Day 1 of 14' },
+                    { label: 'Top SKU', value: 'Solène', delta: '180 units · sold out' },
+                    { label: 'Gross margin', value: '76%', delta: 'Above plan +1pp' },
+                    { label: 'DTC vs WS', value: '52 / 48', delta: 'In line with plan' },
+                    { label: 'Pop-up footfall', value: '1,420', delta: 'Cap Ferret · day 1' },
+                  ].map((kpi) => (
+                    <div key={kpi.label}>
+                      <div className="text-[10px] uppercase tracking-[0.1em] text-carbon/40 mb-1">{kpi.label}</div>
+                      <div className="text-[24px] font-light tracking-[-0.02em] leading-none">{kpi.value}</div>
+                      <div className="text-[11px] text-carbon/55 mt-1">{kpi.delta}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </Reveal>
           </div>
 
-          <Reveal delay={600}>
-            <p className="mt-10 text-[12px] text-crema/35 italic max-w-[640px] leading-[1.65]">
-              AZUR · SS27 brand world. From a single brief: "Mediterranean luxury for women who summer the same way every year."
-            </p>
+          {/* Content studio per-SKU */}
+          <Reveal>
+            <div className="bg-white border border-carbon/[0.08] rounded-[16px] p-8 md:p-10">
+              <div className="text-[10px] tracking-[0.3em] uppercase text-carbon/45 font-medium mb-4">
+                Content studio · per SKU · per channel
+              </div>
+              <div className="text-[20px] md:text-[24px] font-light tracking-[-0.02em] mb-6 italic">
+                One SKU. Every visual format. One click.
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
+                {[
+                  { tier: 'E-commerce', desc: 'White background · 4 angles · 2000×2000' },
+                  { tier: 'Still life', desc: 'Editorial flat · prop-styled · brand mood' },
+                  { tier: 'Editorial', desc: 'On-model · location · 28 aimily models' },
+                  { tier: 'Campaign', desc: 'Hero stories · 9:16 video clips · Kling 2.1' },
+                ].map((t, i) => (
+                  <div key={t.tier} className="bg-carbon/[0.03] rounded-[12px] p-4 border border-carbon/[0.06]">
+                    <div className="text-[10px] tracking-[0.15em] uppercase text-carbon/45 font-medium mb-2">
+                      Tier 0{i + 1}
+                    </div>
+                    <div className="text-[14px] font-medium mb-2">{t.tier}</div>
+                    <div className="text-[11px] text-carbon/55 leading-[1.5]">{t.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </Reveal>
         </div>
       </section>
 
       {/* ═══════════════════════ ENTERPRISE ARTIFACTS ═══════════════════════ */}
-      <section className="bg-crema text-carbon px-6 py-32 md:py-44">
+      <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
         <div className="max-w-7xl mx-auto">
           <Reveal>
-            <div className="text-[11px] tracking-[0.3em] uppercase text-carbon/40 font-medium mb-6">
+            <div className="text-[11px] tracking-[0.3em] uppercase text-crema/45 font-medium mb-6">
               Every artifact a fashion brand needs
             </div>
           </Reveal>
@@ -541,46 +1048,22 @@ export default function MeetAimilyPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-16">
             {[
-              {
-                title: 'Tech Pack PDF',
-                desc: 'A3 landscape, every measurement and BOM, pin-comments threaded by team. Ready for the factory inbox.',
-                tag: 'A3 · annotated',
-              },
-              {
-                title: 'Presentation Deck',
-                desc: '21-slide collection deck. 10 themes. PDF export in 3 seconds. Public share link with view counter.',
-                tag: '21 slides · 10 themes',
-              },
-              {
-                title: 'Drop Calendar',
-                desc: '45 milestones across 4 blocks. Cross-block dependencies. Excel export to share with team.',
-                tag: 'Gantt · cross-team',
-              },
-              {
-                title: 'Range Plan',
-                desc: 'Full SKU grid with PVP/COGS/units/margin. Excel export. Pre-baked for ERP imports.',
-                tag: 'XLS · ERP-ready',
-              },
-              {
-                title: 'Wholesale Order Sheet',
-                desc: 'Per-buyer line sheets, drop-by-drop allocations, status tracking from PO to delivery.',
-                tag: 'Per buyer',
-              },
-              {
-                title: 'Content Calendar',
-                desc: 'Multi-channel campaign plan. Per-SKU 4-tier visual pipeline. Drop coordination built-in.',
-                tag: 'Multi-channel',
-              },
+              { title: 'Tech Pack PDF', desc: 'A3 landscape, every measurement and BOM, pin-comments threaded by team. Ready for the factory inbox.', tag: 'A3 · annotated' },
+              { title: 'Presentation Deck', desc: '21-slide collection deck. 10 themes. PDF export in 3 seconds. Public share link with view counter.', tag: '21 slides · 10 themes' },
+              { title: 'Drop Calendar', desc: '45 milestones across 4 blocks. Cross-block dependencies. Excel export to share with team.', tag: 'Gantt · cross-team' },
+              { title: 'Range Plan', desc: 'Full SKU grid with PVP/COGS/units/margin. Excel export. Pre-baked for ERP imports.', tag: 'XLS · ERP-ready' },
+              { title: 'Wholesale Order Sheet', desc: 'Per-buyer line sheets, drop-by-drop allocations, status tracking from PO to delivery.', tag: 'Per buyer' },
+              { title: 'Content Calendar', desc: 'Multi-channel campaign plan. Per-SKU 4-tier visual pipeline. Drop coordination built-in.', tag: 'Multi-channel' },
             ].map((item, i) => (
               <Reveal key={item.title} delay={i * 80}>
                 <div>
-                  <div className="text-[28px] md:text-[34px] font-light tracking-[-0.02em] leading-[1.15] mb-4">
+                  <div className="text-[28px] md:text-[34px] font-light tracking-[-0.02em] leading-[1.15] mb-4 text-crema">
                     {item.title}
                   </div>
-                  <p className="text-[14px] text-carbon/60 leading-[1.65] tracking-[-0.01em] mb-5 max-w-[360px]">
+                  <p className="text-[14px] text-crema/55 leading-[1.65] tracking-[-0.01em] mb-5 max-w-[360px]">
                     {item.desc}
                   </p>
-                  <span className="inline-block text-[10px] tracking-[0.2em] uppercase text-carbon/45 font-medium border-t border-carbon/15 pt-3">
+                  <span className="inline-block text-[10px] tracking-[0.2em] uppercase text-crema/45 font-medium border-t border-crema/15 pt-3">
                     {item.tag}
                   </span>
                 </div>
@@ -624,7 +1107,7 @@ export default function MeetAimilyPage() {
             </div>
           </Reveal>
           <Reveal delay={500}>
-            <div className="mt-16 flex items-baseline gap-6 text-[12px] tracking-[0.15em] uppercase text-crema/40 font-medium">
+            <div className="mt-16 flex items-baseline gap-6 text-[12px] tracking-[0.15em] uppercase text-crema/40 font-medium flex-wrap">
               <span>StudioNN Agency S.L.</span>
               <span className="opacity-50">·</span>
               <span>Alicante, Spain</span>
@@ -644,16 +1127,21 @@ export default function MeetAimilyPage() {
             </div>
           </Reveal>
           <Reveal delay={150}>
-            <h2 className="text-[40px] md:text-[64px] font-light tracking-[-0.03em] leading-[1.05] mb-16">
-              <span className="italic">Free</span> for 14 days. Then choose your tier.
+            <h2 className="text-[40px] md:text-[64px] font-light tracking-[-0.03em] leading-[1.05] mb-6">
+              <span className="italic">Free</span> for 14 days. Same models on every tier.
             </h2>
+          </Reveal>
+          <Reveal delay={250}>
+            <p className="max-w-[640px] text-[16px] md:text-[18px] text-carbon/55 leading-[1.6] tracking-[-0.01em] mb-16">
+              Differentiation by quantity, never by quality. Top imagery models on every plan — Starter, Professional, Pro Max, Enterprise.
+            </p>
           </Reveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { name: 'Starter', price: '159', suffix: '/mo · billed annually', desc: '1 user · 2 collections · 100 AI generations / month · all blocks' },
-              { name: 'Professional', price: '479', suffix: '/mo · billed annually', desc: '10 users · unlimited collections · 500 AI / month · multi-brand · realtime collaboration', popular: true },
-              { name: 'Enterprise', price: 'Custom', suffix: '', desc: 'Unlimited everything · SSO · custom integrations · dedicated support' },
+              { name: 'Starter', price: '159', suffix: '/mo · billed annually', desc: '1 user · unlimited collections · 200 imagery / month · all blocks' },
+              { name: 'Professional', price: '479', suffix: '/mo · billed annually', desc: '5 users · 1,000 imagery / month · video Kling 2.1 · realtime collaboration', popular: true },
+              { name: 'Professional Max', price: '1,199', suffix: '/mo · billed annually', desc: '25 users · 5,000 imagery / month · priority support · top-up packs' },
             ].map((tier) => (
               <Reveal key={tier.name}>
                 <div className={`rounded-[20px] border p-10 md:p-12 min-h-[320px] flex flex-col ${tier.popular ? 'bg-carbon text-crema border-carbon' : 'bg-white text-carbon border-carbon/[0.08]'}`}>
@@ -662,23 +1150,17 @@ export default function MeetAimilyPage() {
                   </div>
                   <div className="text-[20px] font-light tracking-[-0.02em] mb-2">{tier.name}</div>
                   <div className="flex items-baseline gap-2 mb-6">
-                    {tier.price === 'Custom' ? (
-                      <span className="text-[40px] md:text-[52px] font-light tracking-[-0.03em] leading-none italic">Custom</span>
-                    ) : (
-                      <>
-                        <span className="text-[44px] md:text-[56px] font-light tracking-[-0.03em] leading-none">€{tier.price}</span>
-                        <span className={`text-[12px] ${tier.popular ? 'text-crema/55' : 'text-carbon/45'}`}>{tier.suffix}</span>
-                      </>
-                    )}
+                    <span className="text-[44px] md:text-[56px] font-light tracking-[-0.03em] leading-none">€{tier.price}</span>
+                    <span className={`text-[12px] ${tier.popular ? 'text-crema/55' : 'text-carbon/45'}`}>{tier.suffix}</span>
                   </div>
                   <p className={`text-[14px] leading-[1.6] tracking-[-0.01em] mb-8 ${tier.popular ? 'text-crema/65' : 'text-carbon/55'}`}>
                     {tier.desc}
                   </p>
                   <button
-                    onClick={tier.price === 'Custom' ? () => { window.location.href = 'mailto:hello@aimily.app?subject=Enterprise%20enquiry'; } : openAuth}
+                    onClick={openAuth}
                     className={`mt-auto w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-[13px] font-semibold transition-colors ${tier.popular ? 'bg-crema text-carbon hover:bg-crema/90' : 'bg-carbon text-crema hover:bg-carbon/90'}`}
                   >
-                    {tier.price === 'Custom' ? 'Contact us' : 'Start free trial'}
+                    Start free trial
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -687,16 +1169,19 @@ export default function MeetAimilyPage() {
           </div>
 
           <Reveal delay={400}>
-            <p className="mt-10 text-[12px] text-carbon/40 italic">
-              No credit card required. Cancel any time. Monthly billing also available — €199 (Starter) / €599 (Professional).
-            </p>
+            <div className="mt-10 flex flex-wrap gap-x-8 gap-y-2 text-[12px] text-carbon/50">
+              <span>Enterprise tier (from €3,000/mo) on contact</span>
+              <span>Aimily Credits packs from €29</span>
+              <Link href="/pricing" className="underline hover:text-carbon transition-colors">All plans →</Link>
+            </div>
           </Reveal>
         </div>
       </section>
 
       {/* ═══════════════════════ FINAL CTA ═══════════════════════ */}
       <section className="px-6 py-32 md:py-56 border-t border-crema/[0.06] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        <div
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{
             backgroundImage: `linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)`,
             backgroundSize: '80px 80px',
