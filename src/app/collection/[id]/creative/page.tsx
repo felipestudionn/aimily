@@ -1548,7 +1548,7 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
                 className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Check className="h-3.5 w-3.5" />
-                {t.creative.confirmBrand || 'Confirm Brand'}
+                {t.creative.confirmBrand || "That's all."}
               </button>
               <button
                 onClick={handleSaveBrand}
@@ -1599,7 +1599,7 @@ function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMo
                 className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Check className="h-3.5 w-3.5" />
-                {t.creative.confirmBrand || 'Confirm Brand'}
+                {t.creative.confirmBrand || "That's all."}
               </button>
               <button
                 onClick={handleSaveBrand}

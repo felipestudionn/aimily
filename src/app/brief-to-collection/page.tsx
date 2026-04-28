@@ -655,7 +655,7 @@ export default function BriefToCollectionPage() {
                     disabled={!collectionName.trim()}
                     className="flex items-center gap-3 px-10 py-4 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-crema/90 transition-colors disabled:opacity-30"
                   >
-                    {bt.launchBtn || 'Launch collection'}
+                    {bt.launchBtn || "That's all."}
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>
