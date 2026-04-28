@@ -590,7 +590,7 @@ export default function MeetAimilyPage() {
                       </div>
                       <div className="text-[18px] font-medium tracking-[-0.02em] mb-3">{f.family}</div>
                       <div className="text-[13px] text-carbon/65 leading-[1.5] mb-1">{f.pricing}</div>
-                      <div className="text-[11px] text-carbon/45">{f.units.toLocaleString()} units forecast</div>
+                      <div className="text-[11px] text-carbon/45">{f.units.toLocaleString('en-US')} units forecast</div>
                       <div className="mt-4 pt-3 border-t border-carbon/[0.06] text-[11px] text-carbon/50 italic">
                         e.g. {f.sample}
                       </div>

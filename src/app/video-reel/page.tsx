@@ -172,7 +172,7 @@ function progress(now: number, start: number, end: number) {
 function AnimatedNumber({ value, now, start, duration = 1500 }: { value: number; now: number; start: number; duration?: number }) {
   const p = progress(now, start, start + duration);
   const eased = 1 - Math.pow(1 - p, 3);
-  return <>{Math.round(eased * value).toLocaleString()}</>;
+  return <>{Math.round(eased * value).toLocaleString('en-US')}</>;
 }
 
 /* ══════════════════════════════════════════════════════════════

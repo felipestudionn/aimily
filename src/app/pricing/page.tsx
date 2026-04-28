@@ -129,7 +129,7 @@ export default function PricingPage() {
             const Icon = plan.icon;
             const imageryLabel = plan.imageryNum === -1
               ? tp.unlimitedImagery
-              : `${plan.imageryNum.toLocaleString()} ${tp.imageryPerMonth}`;
+              : `${plan.imageryNum.toLocaleString('en-US')} ${tp.imageryPerMonth}`;
             const seatsLabel = plan.seatsNum === -1
               ? tp.unlimitedUsers
               : plan.seatsNum === 1 ? tp.oneUser : `${plan.seatsNum} ${tp.seats}`;
