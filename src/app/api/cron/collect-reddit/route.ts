@@ -9,7 +9,11 @@ function verifyCronAuth(req: NextRequest): boolean {
 }
 
 export async function GET(req: NextRequest) {
-  // If CRON_SECRET is set, enforce it. If no secret, allow local manual calls.
+  // Always require auth in production. Local manual calls without a secret
+  // are only permitted when NODE_ENV is not 'production'.
+  if (process.env.NODE_ENV === 'production' && !verifyCronAuth(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   if (process.env.CRON_SECRET && !verifyCronAuth(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

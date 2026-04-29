@@ -6,7 +6,9 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const tokenHash = searchParams.get('token_hash');
   const type = searchParams.get('type') as 'recovery' | 'signup' | 'email' | 'invite' | null;
-  const next = searchParams.get('next') ?? '/my-collections';
+  const rawNext = searchParams.get('next') ?? '/my-collections';
+  // Open-redirect guard: only same-origin paths
+  const next = /^\/(?!\/)/.test(rawNext) ? rawNext : '/my-collections';
 
   if (tokenHash && type) {
     const cookieStore = await cookies();

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createDefaultTimeline } from '@/lib/timeline-template';
-import { ADMIN_EMAILS, getPlanLimits, PlanId } from '@/lib/stripe';
+import { getPlanLimits, PlanId } from '@/lib/stripe';
+import { getAuthenticatedUser } from '@/lib/api-auth';
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, error: authError } = await getAuthenticatedUser();
+    if (authError) return authError;
+
     const body = await req.json();
     const {
       name,
@@ -12,10 +16,11 @@ export async function POST(req: NextRequest) {
       season,
       location,
       setup_data,
-      user_id,
       launch_date,
       milestones: customMilestones,
     } = body;
+
+    const user_id = user.id;
 
     if (!name) {
       return NextResponse.json(
@@ -25,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check collection limit
-    if (user_id) {
+    {
       const { data: sub } = await supabaseAdmin
         .from('subscriptions')
         .select('plan, status, trial_ends_at, is_admin')
@@ -100,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     // CIS: capture initial collection plan decisions from setup_data (fire-and-forget)
-    if (data && setup_data && user_id) {
+    if (data && setup_data) {
       const { recordDecisions } = await import('@/lib/collection-intelligence');
       const base = { collectionPlanId: data.id, sourcePhase: 'merchandising', sourceComponent: 'CollectionWizard', userId: user_id };
       const decisions: Parameters<typeof recordDecisions>[0] = [];

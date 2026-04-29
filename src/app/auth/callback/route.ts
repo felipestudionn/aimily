@@ -7,7 +7,11 @@ import { sendWelcomeEmail } from '@/lib/transactional-emails';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/my-collections';
+  const rawNext = searchParams.get('next') ?? '/my-collections';
+  // Open-redirect guard: only allow same-origin paths.
+  // Reject protocol-relative ("//evil.com"), absolute URLs ("https://evil.com"),
+  // and anything that doesn't start with "/".
+  const next = /^\/(?!\/)/.test(rawNext) ? rawNext : '/my-collections';
 
   if (code) {
     const cookieStore = await cookies();
