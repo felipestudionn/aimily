@@ -1427,6 +1427,7 @@ export const sv: Dictionary = {
     productionOrders: 'Produktionsordrar',
     qualityControl: 'Kvalitetskontroll',
     logistics: 'Logistik',
+    packaging: 'Förpackning',
   },
 
   // ─── Calendar ───
