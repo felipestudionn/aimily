@@ -34,8 +34,8 @@
      presentation headers, chart accents. Carbon/Midnight remain dominant. */
   --color-sea-foam: #b6c8c7;   /* Sea Foam — cool, airy (Block 01 — Creative & Brand) */
   --color-linen: #f1efed;      /* Linen — warm off-white surface */
-  --color-moss: #808368;       /* Moss — earthy green (Block 02 — Merchandising) */
-  --color-clay: #b0856a;       /* Clay — warm tan (Block 03 — Design & Development) */
+  --color-moss: #c5caa8;       /* Moss — pale sage (Block 02 — Merchandising). Lightened from #808368 so all 4 block tints pass WCAG with carbon text. */
+  --color-clay: #d8baa0;       /* Clay — pale warm tan (Block 03 — Design & Development). Lightened from #b0856a for the same reason. */
   --color-citronella: #fff4ce; /* Citronella — soft yellow (Block 04 — Marketing & Sales) */
   --color-midnight: #001519;   /* Midnight — kept as deep accent for surfaces / non-block use */
   /* ─── shadcn semantic colors (direct values for v4) ─── */

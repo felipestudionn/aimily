@@ -33,13 +33,22 @@ function defaultLaunchDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Derive SS/FW season label from launch date. SS = Feb–Jul, FW = Aug–Jan. */
+/**
+ * Derive SS/FW season label from launch date using fashion industry
+ * convention:
+ *   • Feb–Jul launch → SS of that calendar year (e.g. "SS27").
+ *   • Aug–Dec launch → FW of that calendar year (e.g. "FW26").
+ *   • Jan launch    → FW of the *previous* year — that's the tail of the
+ *                     prior FW capsule still selling through, not the
+ *                     start of a new one.
+ */
 function deriveSeason(iso: string): string {
   const d = new Date(iso);
-  const month = d.getMonth();
-  const isFW = month >= 7 || month === 0;
-  const yearTwoDigit = String(d.getFullYear()).slice(2);
-  return `${isFW ? 'FW' : 'SS'}${yearTwoDigit}`;
+  const month = d.getMonth(); // 0 = Jan
+  const year = d.getFullYear();
+  if (month === 0) return `FW${String(year - 1).slice(2)}`;
+  if (month >= 7) return `FW${String(year).slice(2)}`;
+  return `SS${String(year).slice(2)}`;
 }
 
 function defaultName(season: string, untitledLabel: string): string {
@@ -210,7 +219,7 @@ function NewCollectionFlow() {
                 <TimelinePreview launchDate={launchDate} language={language} asCards={false} />
               </div>
 
-              <div className="flex flex-col items-center gap-8">
+              <div className="flex flex-col items-center gap-3">
                 <label className="flex items-center gap-3 px-5 py-3 bg-white rounded-full border border-carbon/[0.08] text-[14px] text-carbon shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
                   <Calendar className="h-4 w-4 text-carbon/50" />
                   <span className="text-carbon/50">{launchLabel}:</span>
@@ -223,6 +232,13 @@ function NewCollectionFlow() {
                     disabled={creating}
                   />
                 </label>
+
+                <p className="text-[12px] text-carbon/45 italic tracking-[-0.01em]">
+                  {(nc.seasonLabel || 'Temporada')}: <span className="not-italic font-medium text-carbon/65">{season}</span>
+                </p>
+              </div>
+
+              <div className="mt-8 flex flex-col items-center gap-8">
 
                 <button
                   onClick={handleStart}

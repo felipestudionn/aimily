@@ -1317,6 +1317,10 @@ export function WizardSidebar({
               const blockHref = `${basePath}?block=${block.id}`;
               const isExpanded = expandedBlocks.has(block.id);
 
+              // Per-phase accent for the sidebar pill — same colour the
+              // user saw on the launch canvas and on the dashboard cards.
+              const phaseAccent = PHASES[block.id]?.color || '#B6C8C7';
+
               const handleBlockNav = (e: React.MouseEvent) => {
                 if (allLocked) { e.preventDefault(); return; }
                 if (workspaceNav) {
@@ -1331,24 +1335,27 @@ export function WizardSidebar({
                     <Link
                       href={allLocked ? '#' : blockHref}
                       onClick={handleBlockNav}
+                      style={!allLocked ? { backgroundColor: phaseAccent } : undefined}
                       className={`w-10 h-10 flex items-center justify-center rounded-[10px] transition-all ${
                         allLocked ? 'opacity-25 cursor-not-allowed'
-                        : blockActive ? 'bg-carbon/[0.08]'
-                        : 'hover:bg-carbon/[0.04]'
+                        : 'hover:opacity-90'
                       }`}
                       title={labelOf(block.labelKey)}
                     >
-                      <block.icon className={`h-[18px] w-[18px] ${
-                        blockActive ? 'text-carbon' : 'text-carbon/50'
-                      }`} strokeWidth={1.5} />
+                      <block.icon
+                        className="h-[18px] w-[18px] text-carbon"
+                        strokeWidth={1.5}
+                      />
                     </Link>
                   ) : (
                     <>
-                      {/* ── Block header: label navigates, chevron toggles ── */}
-                      <div className={`flex items-center justify-between px-4 py-2.5 rounded-full mb-3 transition-colors ${
-                        allLocked ? 'opacity-25'
-                        : 'bg-carbon/[0.04]'
-                      }`}>
+                      {/* ── Block header: label navigates, chevron toggles. Painted with the phase accent so the sidebar reads as 4 colour-coded sections at a glance. ── */}
+                      <div
+                        style={!allLocked ? { backgroundColor: phaseAccent } : undefined}
+                        className={`flex items-center justify-between px-4 py-2.5 rounded-full mb-3 transition-colors ${
+                          allLocked ? 'opacity-25 bg-carbon/[0.04]' : ''
+                        }`}
+                      >
                         <Link
                           href={allLocked ? '#' : blockHref}
                           onClick={handleBlockNav}
@@ -1394,28 +1401,29 @@ export function WizardSidebar({
                                 key={sub.id}
                                 href={isLocked ? '#' : subHref}
                                 onClick={handleSubNav}
+                                style={state === 'active' ? { backgroundColor: phaseAccent } : undefined}
                                 className={`flex items-center justify-between py-2 px-3 -mx-3 rounded-[10px] transition-all ${
                                   state === 'active'
-                                    ? 'bg-carbon text-white'
+                                    ? 'text-carbon'
                                     : state === 'locked'
                                     ? 'text-carbon/25 cursor-not-allowed'
                                     : 'text-carbon hover:bg-carbon/[0.04]'
                                 }`}
                               >
                                 <span className={`text-[14px] ${
-                                  state === 'active' ? 'font-semibold text-white' : 'font-normal'
+                                  state === 'active' ? 'font-semibold' : 'font-normal'
                                 }`}>
                                   {labelOf(sub.labelKey)}
                                 </span>
 
                                 {/* Output items → arrow */}
                                 {sub.isOutput && (
-                                  <ArrowRight className={`h-3.5 w-3.5 shrink-0 ${state === 'active' ? 'text-white/60' : 'text-carbon/40'}`} strokeWidth={2} />
+                                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-carbon/55" strokeWidth={2} />
                                 )}
 
                                 {/* SKU count badge */}
                                 {!sub.isOutput && skuPhaseCounts[sub.id] > 0 && (
-                                  <span className={`text-[12px] font-normal tabular-nums ${state === 'active' ? 'text-white/60' : 'text-carbon/40'}`}>
+                                  <span className="text-[12px] font-normal tabular-nums text-carbon/55">
                                     {skuPhaseCounts[sub.id]}
                                   </span>
                                 )}

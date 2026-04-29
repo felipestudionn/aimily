@@ -36,8 +36,8 @@ module.exports = {
         /* ─── Aimily accent palette (2026-04-15) ─── */
         "sea-foam": "#B6C8C7",      /* Sea Foam — cool, airy (Block 01 Creative) */
         linen: "#F1EFED",           /* Linen — warm off-white / surface */
-        moss: "#808368",            /* Moss — earthy green (Block 02 Merchandising) */
-        clay: "#B0856A",            /* Clay — warm tan (Block 03 Design & Development) */
+        moss: "#C5CAA8",            /* Moss — pale sage (Block 02 Merchandising). Lightened so block tints share carbon text. */
+        clay: "#D8BAA0",            /* Clay — pale tan (Block 03 Design & Development). Lightened for the same reason. */
         citronella: "#FFF4CE",      /* Citronella — soft yellow (Block 04 Marketing & Sales) */
         midnight: "#001519",        /* Midnight — deep accent for surfaces / non-block use */
         /* ─── shadcn/ui semantic tokens ─── */

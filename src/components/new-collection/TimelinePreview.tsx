@@ -45,12 +45,15 @@ const PHASE_BLOCK_NUMBER: Record<TimelinePhase, string> = {
   go_to_market: '04',
 };
 
-// Text contrast: pale accents need carbon, dark accents need crema.
+// All four block tints are pale earth-tones now (sea-foam, sage moss,
+// pale clay, citronella). They share the same carbon text — no per-phase
+// contrast switching needed. Kept as a Record so future palette swaps
+// have a single tweak point.
 const PHASE_TEXT_ON_ACCENT: Record<TimelinePhase, string> = {
-  creative: 'text-carbon',      // sea-foam (pale)
-  planning: 'text-white',       // moss (dark)
-  development: 'text-white',    // clay (mid-dark warm tan)
-  go_to_market: 'text-carbon',  // citronella (pale)
+  creative: 'text-carbon',
+  planning: 'text-carbon',
+  development: 'text-carbon',
+  go_to_market: 'text-carbon',
 };
 
 function formatLaunchLabel(iso: string, language: string) {
