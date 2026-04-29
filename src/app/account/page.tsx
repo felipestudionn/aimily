@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,11 +12,19 @@ import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { track } from '@/lib/posthog';
 
+interface RefundEligibility {
+  eligible: boolean;
+  reason: string;
+  daysRemaining?: number;
+  amount?: number;
+  currency?: string;
+}
+
 const SUPPORT_EMAIL = 'hello@aimily.app';
 
 export default function AccountPage() {
   const { user, updatePassword, signOut } = useAuth();
-  const { subscription, openPortal, imageryUsagePercent, loading: subLoading } = useSubscription();
+  const { subscription, openPortal, imageryUsagePercent, refresh: refreshSubscription, loading: subLoading } = useSubscription();
   const t = useTranslation();
   const { language, setLanguage } = useLanguage();
   const router = useRouter();
@@ -39,6 +47,11 @@ export default function AccountPage() {
   const [exportLoading, setExportLoading] = useState(false);
 
   const [signOutLoading, setSignOutLoading] = useState(false);
+
+  const [refundElig, setRefundElig] = useState<RefundEligibility | null>(null);
+  const [refundStep, setRefundStep] = useState<0 | 1>(0); // 0=hidden, 1=confirm
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
 
   const [deleteStep, setDeleteStep] = useState(0); // 0=hidden, 1=confirm, 2=final
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -97,6 +110,43 @@ export default function AccountPage() {
       router.push('/');
     } catch {
       setSignOutLoading(false);
+    }
+  };
+
+  // Fetch refund eligibility once subscription is loaded.
+  useEffect(() => {
+    if (subLoading) return;
+    if (!subscription || subscription.isAdmin || subscription.plan === 'trial') {
+      setRefundElig(null);
+      return;
+    }
+    fetch('/api/billing/refund-eligibility')
+      .then(r => r.ok ? r.json() : null)
+      .then((data) => setRefundElig(data))
+      .catch(() => setRefundElig(null));
+  }, [subLoading, subscription]);
+
+  const handleRefund = async () => {
+    setRefundLoading(true);
+    setRefundError(null);
+    try {
+      track('refund_requested');
+      const res = await fetch('/api/billing/refund', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setRefundError(data.message || t.account.refundFailed);
+        setRefundLoading(false);
+        return;
+      }
+      // Subscription is now canceled + refunded. Refresh state.
+      await refreshSubscription?.();
+      setRefundStep(0);
+      setRefundElig(null);
+      // Hard reload to pick up the new (downgraded) state across the app.
+      window.location.href = '/?refunded=1';
+    } catch {
+      setRefundError(t.account.refundFailed);
+      setRefundLoading(false);
     }
   };
 
@@ -251,6 +301,60 @@ export default function AccountPage() {
                       </>
                     )}
                   </div>
+
+                  {/* 7-day money-back self-service refund */}
+                  {billingState === 'has-subscription' && refundElig?.eligible && refundStep === 0 && (
+                    <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <p className="text-[13px] text-carbon/70 leading-[1.6]">
+                          {t.account.refundEligibleNote.replace('{days}', String(refundElig.daysRemaining ?? 7))}
+                        </p>
+                        <button
+                          onClick={() => setRefundStep(1)}
+                          className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-[13px] font-medium border border-[#A0463C]/30 text-[#A0463C] hover:bg-[#A0463C]/[0.05] transition-colors whitespace-nowrap"
+                        >
+                          {t.account.requestRefund}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {refundStep === 1 && (
+                    <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
+                      <div className="rounded-[16px] bg-[#A0463C]/[0.04] border border-[#A0463C]/15 p-6 space-y-4">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-4 w-4 text-[#A0463C] mt-0.5 flex-shrink-0" />
+                          <div className="text-[14px] text-carbon leading-[1.7]">
+                            <p className="font-semibold text-[#A0463C]">{t.account.refundConfirmTitle}</p>
+                            <p className="mt-2 text-carbon/70">{t.account.refundConfirmBody}</p>
+                          </div>
+                        </div>
+                        {refundError && (
+                          <p className="text-[13px] text-[#A0463C] pl-7">{refundError}</p>
+                        )}
+                        <div className="flex flex-wrap gap-3 pt-1">
+                          <button
+                            onClick={handleRefund}
+                            disabled={refundLoading}
+                            className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-[#A0463C] text-white hover:bg-[#A0463C]/90 transition-colors disabled:opacity-50"
+                          >
+                            {refundLoading ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t.account.processingRefund}
+                              </>
+                            ) : t.account.confirmRefund}
+                          </button>
+                          <button
+                            onClick={() => { setRefundStep(0); setRefundError(null); }}
+                            disabled={refundLoading}
+                            className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-[13px] font-medium border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04] transition-colors disabled:opacity-50"
+                          >
+                            {t.common.cancel}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </section>
