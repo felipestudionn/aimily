@@ -589,7 +589,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
                   type="number"
                   value={(data.ageMin as string) || ''}
                   onChange={(e) => onChange({ ...data, ageMin: e.target.value })}
-                  placeholder="Min"
+                  placeholder={(t.common as Record<string, string>)?.min || "Min"}
                   className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
                 />
                 <span className="text-carbon/20 text-sm">—</span>
@@ -597,7 +597,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
                   type="number"
                   value={(data.ageMax as string) || ''}
                   onChange={(e) => onChange({ ...data, ageMax: e.target.value })}
-                  placeholder="Max"
+                  placeholder={(t.common as Record<string, string>)?.max || "Max"}
                   className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
                 />
               </div>
@@ -639,7 +639,7 @@ function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: In
               <textarea
                 value={(data.keywords as string) || ''}
                 onChange={(e) => onChange({ ...data, keywords: e.target.value })}
-                placeholder="Give direction — e.g. 'urban millennials, sustainability-conscious, mid-range luxury, European market'..."
+                placeholder={(t.creative as Record<string, string>)?.consumerDirectionPlaceholder || "Give direction"}
                 className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
               />
               <div className="mt-4 flex items-center gap-3 shrink-0">
@@ -782,7 +782,7 @@ function VibeContent({ mode, data, onChange, collectionContext, consumerProfile 
             <textarea
               value={(data.direction as string) || ''}
               onChange={(e) => onChange({ ...data, direction: e.target.value })}
-              placeholder="Give a few keywords or a brief direction — e.g. '90s minimalism meets Mediterranean warmth'..."
+              placeholder={(t.creative as Record<string, string>)?.moodboardPlaceholder || "Give a few keywords"}
               className="w-full h-24 px-4 py-3 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
             />
           </div>
@@ -2475,7 +2475,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         <div className="w-14 h-14 bg-carbon/[0.04] rounded-[14px] flex items-center justify-center mb-6">
           <Sparkles className="h-6 w-6 text-carbon/30" />
         </div>
-        <h3 className="text-2xl font-light text-carbon tracking-tight mb-3">Creative Synthesis</h3>
+        <h3 className="text-2xl font-light text-carbon tracking-tight mb-3">{(t.creative as Record<string, string>)?.creativeSynthesis || "Creative Synthesis"}</h3>
         <p className="text-sm text-carbon/60 max-w-md leading-relaxed">
           Complete your Creative Vision and Market Research to see your unified creative direction here.
         </p>
@@ -2583,7 +2583,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
               )}
             </>
           ) : (
-            <div className="py-8 text-center text-xs text-carbon/30">No moodboard images yet</div>
+            <div className="py-8 text-center text-xs text-carbon/30">{(t.creative as Record<string, string>)?.noMoodboardImages || "No moodboard images yet"}</div>
           )}
         </div>
       )}
@@ -2593,7 +2593,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         {hasBrand && (
           <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6 sm:p-8">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/30">Brand DNA</div>
+              <div className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/30">{(t.creative as Record<string, string>)?.brandDNA || "Brand DNA"}</div>
               <button
                 onClick={() => setEditingBrand(!editingBrand)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors"
@@ -2604,23 +2604,23 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
             {editingBrand ? (
               <div className="space-y-3">
                 <div>
-                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Brand Name</div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.brandName || "Brand Name"}</div>
                   <input type="text" value={brandName} onChange={(e) => updateBrandField('brandName', e.target.value)} className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
                 </div>
                 <div>
-                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Colors (hex, comma-separated)</div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.colorsHexLabel || "Colors (hex, comma-separated)"}</div>
                   <input type="text" value={brandColors.join(', ')} onChange={(e) => updateBrandField('colors', e.target.value.split(',').map(c => c.trim()).filter(Boolean))} className="w-full px-2 py-1.5 text-xs text-carbon border border-carbon/[0.12] focus:outline-none font-mono" />
                 </div>
                 <div>
-                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Voice & Tone</div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.voiceTone || "Voice & Tone"}</div>
                   <textarea value={brandTone} onChange={(e) => updateBrandField('tone', e.target.value)} className="w-full px-2 py-1.5 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
                 </div>
                 <div>
-                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Typography</div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.typography || "Typography"}</div>
                   <textarea value={brandTypography} onChange={(e) => updateBrandField('typography', e.target.value)} className="w-full px-2 py-1.5 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-12" />
                 </div>
                 <div>
-                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Visual Identity</div>
+                  <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.visualIdentity || "Visual Identity"}</div>
                   <textarea value={brandStyle} onChange={(e) => updateBrandField('style', e.target.value)} className="w-full px-2 py-1.5 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
                 </div>
               </div>
@@ -2642,19 +2642,19 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
                 )}
                 {brandTone && (
                   <div className="mb-3">
-                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Voice & Tone</div>
+                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.voiceTone || "Voice & Tone"}</div>
                     <p className="text-xs text-carbon/70 leading-relaxed">{brandTone}</p>
                   </div>
                 )}
                 {brandTypography && (
                   <div className="mb-3">
-                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Typography</div>
+                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.typography || "Typography"}</div>
                     <p className="text-xs text-carbon/70 leading-relaxed">{brandTypography}</p>
                   </div>
                 )}
                 {brandStyle && (
                   <div>
-                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">Visual Identity</div>
+                    <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.visualIdentity || "Visual Identity"}</div>
                     <p className="text-xs text-carbon/70 leading-relaxed">{brandStyle}</p>
                   </div>
                 )}
@@ -2683,7 +2683,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
                     <div className="space-y-2 p-3 border border-carbon/[0.12]">
                       <input type="text" value={p.title} onChange={(e) => updateConsumerProposal(i, { title: e.target.value })} className="w-full px-2 py-1 text-sm font-medium text-carbon border border-carbon/[0.12] focus:outline-none" />
                       <textarea value={p.desc} onChange={(e) => updateConsumerProposal(i, { desc: e.target.value })} className="w-full px-2 py-1 text-xs text-carbon/70 border border-carbon/[0.12] focus:outline-none resize-none h-20" />
-                      <button onClick={() => setEditingConsumerIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Done</button>
+                      <button onClick={() => setEditingConsumerIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">{(t.common as Record<string, string>)?.done || "Done"}</button>
                     </div>
                   ) : (
                     <>
@@ -2700,16 +2700,16 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
             </div>
             {addingConsumer && (
               <div className="mt-4 p-4 border border-dashed border-carbon/[0.15] space-y-2">
-                <input type="text" value={newConsumer.title} onChange={(e) => setNewConsumer({ ...newConsumer, title: e.target.value })} placeholder="Consumer segment name..." className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
-                <textarea value={newConsumer.desc} onChange={(e) => setNewConsumer({ ...newConsumer, desc: e.target.value })} placeholder="Profile description..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-20" />
+                <input type="text" value={newConsumer.title} onChange={(e) => setNewConsumer({ ...newConsumer, title: e.target.value })} placeholder={(t.creative as Record<string, string>)?.consumerSegmentPlaceholder || "Consumer segment name..."} className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
+                <textarea value={newConsumer.desc} onChange={(e) => setNewConsumer({ ...newConsumer, desc: e.target.value })} placeholder={(t.creative as Record<string, string>)?.profileDescPlaceholder || "Profile description..."} className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-20" />
                 <div className="flex gap-2">
-                  <button onClick={addManualConsumer} disabled={!newConsumer.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">Add</button>
-                  <button onClick={() => setAddingConsumer(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Cancel</button>
+                  <button onClick={addManualConsumer} disabled={!newConsumer.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">{(t.common as Record<string, string>)?.add || "Add"}</button>
+                  <button onClick={() => setAddingConsumer(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">{(t.common as Record<string, string>)?.cancel || "Cancel"}</button>
                 </div>
               </div>
             )}
             {!hasConsumer && !addingConsumer && (
-              <div className="py-4 text-center text-xs text-carbon/30">No consumer profiles selected</div>
+              <div className="py-4 text-center text-xs text-carbon/30">{(t.creative as Record<string, string>)?.noConsumerProfiles || "No consumer profiles selected"}</div>
             )}
           </div>
         )}
@@ -2735,9 +2735,9 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
                 {editingTrendIdx === i ? (
                   <div className="space-y-2">
                     <input type="text" value={tr.title} onChange={(e) => updateTrend(i, { title: e.target.value })} className="w-full px-2 py-1 text-sm font-medium text-carbon border border-carbon/[0.12] focus:outline-none" />
-                    <input type="text" value={tr.brands || ''} onChange={(e) => updateTrend(i, { brands: e.target.value })} placeholder="Brands..." className="w-full px-2 py-1 text-[10px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
+                    <input type="text" value={tr.brands || ''} onChange={(e) => updateTrend(i, { brands: e.target.value })} placeholder={(t.creative as Record<string, string>)?.brandsPlaceholder || "Brands..."} className="w-full px-2 py-1 text-[10px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
                     <textarea value={tr.desc} onChange={(e) => updateTrend(i, { desc: e.target.value })} className="w-full px-2 py-1 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
-                    <button onClick={() => setEditingTrendIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Done</button>
+                    <button onClick={() => setEditingTrendIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">{(t.common as Record<string, string>)?.done || "Done"}</button>
                   </div>
                 ) : (
                   <>
@@ -2756,12 +2756,12 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
           {/* Add trend form */}
           {addingTrend && (
             <div className="mt-4 p-4 border border-dashed border-carbon/[0.15] space-y-2">
-              <input type="text" value={newCard.title} onChange={(e) => setNewCard({ ...newCard, title: e.target.value })} placeholder="Trend name..." className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
-              <input type="text" value={newCard.brands} onChange={(e) => setNewCard({ ...newCard, brands: e.target.value })} placeholder="Reference brands..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
+              <input type="text" value={newCard.title} onChange={(e) => setNewCard({ ...newCard, title: e.target.value })} placeholder={(t.creative as Record<string, string>)?.trendNamePlaceholder || "Trend name..."} className="w-full px-2 py-1.5 text-sm text-carbon border border-carbon/[0.12] focus:outline-none" />
+              <input type="text" value={newCard.brands} onChange={(e) => setNewCard({ ...newCard, brands: e.target.value })} placeholder={(t.creative as Record<string, string>)?.referenceBrandsPlaceholder || "Reference brands..."} className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
               <textarea value={newCard.desc} onChange={(e) => setNewCard({ ...newCard, desc: e.target.value })} placeholder="Description..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
               <div className="flex gap-2">
-                <button onClick={addManualTrend} disabled={!newCard.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">Add</button>
-                <button onClick={() => setAddingTrend(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Cancel</button>
+                <button onClick={addManualTrend} disabled={!newCard.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">{(t.common as Record<string, string>)?.add || "Add"}</button>
+                <button onClick={() => setAddingTrend(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">{(t.common as Record<string, string>)?.cancel || "Cancel"}</button>
               </div>
             </div>
           )}
@@ -2788,9 +2788,9 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
                 {editingCompIdx === i ? (
                   <div className="space-y-2">
                     <input type="text" value={c.title} onChange={(e) => updateCompetitor(i, { title: e.target.value })} className="w-full px-2 py-1 text-sm font-medium text-carbon border border-carbon/[0.12] focus:outline-none" />
-                    <input type="text" value={c.brands || ''} onChange={(e) => updateCompetitor(i, { brands: e.target.value })} placeholder="Brands..." className="w-full px-2 py-1 text-[10px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
+                    <input type="text" value={c.brands || ''} onChange={(e) => updateCompetitor(i, { brands: e.target.value })} placeholder={(t.creative as Record<string, string>)?.brandsPlaceholder || "Brands..."} className="w-full px-2 py-1 text-[10px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
                     <textarea value={c.desc} onChange={(e) => updateCompetitor(i, { desc: e.target.value })} className="w-full px-2 py-1 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
-                    <button onClick={() => setEditingCompIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Done</button>
+                    <button onClick={() => setEditingCompIdx(null)} className="text-[10px] tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">{(t.common as Record<string, string>)?.done || "Done"}</button>
                   </div>
                 ) : (
                   <>
@@ -2813,8 +2813,8 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
               <input type="text" value={newCard.brands} onChange={(e) => setNewCard({ ...newCard, brands: e.target.value })} placeholder="Related brands..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none" />
               <textarea value={newCard.desc} onChange={(e) => setNewCard({ ...newCard, desc: e.target.value })} placeholder="Positioning, prices, gap, lesson..." className="w-full px-2 py-1.5 text-[11px] text-carbon/60 border border-carbon/[0.12] focus:outline-none resize-none h-16" />
               <div className="flex gap-2">
-                <button onClick={addManualCompetitor} disabled={!newCard.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">Add</button>
-                <button onClick={() => setAddingCompetitor(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">Cancel</button>
+                <button onClick={addManualCompetitor} disabled={!newCard.title.trim()} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 disabled:opacity-30">{(t.common as Record<string, string>)?.add || "Add"}</button>
+                <button onClick={() => setAddingCompetitor(false)} className="px-4 py-1.5 text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon">{(t.common as Record<string, string>)?.cancel || "Cancel"}</button>
               </div>
             </div>
           )}

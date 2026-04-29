@@ -149,6 +149,13 @@ export const es: Dictionary = {
     directToConsumer: 'Venta Directa al Consumidor',
   },
 
+  brandBoard: {
+    boardTitle: 'Tablero de Identidad de Marca',
+    logoArea: 'Logo',
+    palette: 'Paleta',
+    voice: 'Voz',
+  },
+
   cookie: {
     message: 'Usamos cookies esenciales para mantener tu sesión y cookies funcionales para mejorar tu experiencia.',
     cookiePolicy: 'Política de cookies',
@@ -504,6 +511,15 @@ export const es: Dictionary = {
 
   // ─── Bloque Creativo ───
   creative: {
+    moodboardPlaceholder: 'Dame unas palabras clave o una breve dirección — ej. \'minimalismo de los 90 con calidez mediterránea\'...',
+    consumerDirectionPlaceholder: 'Dale dirección — ej. \'millennials urbanos, conscientes de sostenibilidad, lujo medio, mercado europeo\'...',
+    brandsPlaceholder: 'Marcas...',
+    trendNamePlaceholder: 'Nombre de la tendencia...',
+    consumerSegmentPlaceholder: 'Nombre del segmento de consumidor...',
+    noConsumerProfiles: 'No hay perfiles de consumidor seleccionados',
+    noMoodboardImages: 'Aún no hay imágenes en el moodboard',
+    typography: 'Tipografía',
+    colorsHexLabel: 'Colores (hex, separados por comas)',
     title: 'Creativo y Marca',
     subtitle: 'Define tu visión creativa, investiga el mercado y sintetiza todo en un input creativo unificado.',
     creativeVision: 'Visión Creativa',
@@ -582,7 +598,7 @@ export const es: Dictionary = {
     editAction: 'Editar',
     addProfileManually: 'Añadir Perfil Manualmente',
     profileNamePlaceholder: "Nombre del perfil — ej. 'Profesional Urbano Creativo'",
-    profileDescPlaceholder: 'Describe este segmento de consumidor — demografía, estilo de vida, comportamiento de compra...',
+    profileDescPlaceholder: 'Descripción del perfil...',
     addProfile: 'Añadir Perfil',
     regenerateRejected: 'Regenerar',
     rejectedLabel: 'rechazados',
@@ -646,7 +662,7 @@ export const es: Dictionary = {
     categoriesToMonitorPlaceholder: 'ej. sneakers, moda sostenible, tendencias Gen Z...',
     scanLiveSignals: 'Escanear Señales en Vivo',
     referenceBrands: 'Marcas de Referencia',
-    referenceBrandsPlaceholder: 'ej. Veja, Sézane, COS, Axel Arigato...',
+    referenceBrandsPlaceholder: 'Marcas de referencia...',
     analyzeCompetitors: 'Analizar Competidores',
     unselectedCount: 'no seleccionados',
     totalCount: 'total',

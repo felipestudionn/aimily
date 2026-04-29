@@ -149,6 +149,13 @@ export const it: Dictionary = {
     directToConsumer: 'Vendita Diretta al Consumatore',
   },
 
+  brandBoard: {
+    boardTitle: 'Bacheca Identità Brand',
+    logoArea: 'Logo',
+    palette: 'Palette',
+    voice: 'Voce',
+  },
+
   cookie: {
     message: 'Utilizziamo cookie essenziali per mantenerti connesso e cookie funzionali per migliorare la tua esperienza.',
     cookiePolicy: 'Politica sui Cookie',
@@ -504,6 +511,15 @@ export const it: Dictionary = {
 
   // ─── Creative Block ───
   creative: {
+    moodboardPlaceholder: 'Dammi alcune parole chiave o una breve direzione — es. \'minimalismo anni \'90 incontra calore mediterraneo\'...',
+    consumerDirectionPlaceholder: 'Dai una direzione — es. \'millennial urbani, consapevoli della sostenibilità, lusso di fascia media, mercato europeo\'...',
+    brandsPlaceholder: 'Brand...',
+    trendNamePlaceholder: 'Nome della tendenza...',
+    consumerSegmentPlaceholder: 'Nome del segmento consumatore...',
+    noConsumerProfiles: 'Nessun profilo consumatore selezionato',
+    noMoodboardImages: 'Ancora nessuna immagine nel moodboard',
+    typography: 'Tipografia',
+    colorsHexLabel: 'Colori (hex, separati da virgole)',
     title: 'Creativo & Brand',
     subtitle: 'Definisci la tua visione creativa, esplora il mercato e sintetizza tutto in un input creativo unificato.',
     creativeVision: 'Visione Creativa',
@@ -618,14 +634,14 @@ export const it: Dictionary = {
     brandIdentity: 'Identit\u00e0 del Brand',
     brandName: 'Nome del Brand',
     colorsLabel: 'Colori',
-    voiceTone: 'Voce & Tono',
+    voiceTone: 'Voce e Tono',
     voiceTonePlaceholder: 'Come parla il brand? Intimo o autorevole? Giocoso o serio?...',
     voiceToneKeywordPlaceholder: 'Audace',
     voiceToneAdd: 'Aggiungi parola',
     typographyLabel: 'Tipografia',
     typographyFontPlaceholder: 'es. Playfair Display, Inter, DM Serif Display…',
     typographyPlaceholder: 'Note — pesi, abbinamenti, gerarchia (opzionale)…',
-    visualIdentity: 'Identit\u00e0 Visiva',
+    visualIdentity: 'Identità Visiva',
     visualIdentityPlaceholder: 'Cosa rende questo brand riconoscibile? Spaziatura, trattamento delle immagini, composizione...',
     visualIdentityGenerate: 'Genera riferimenti',
     visualIdentityUpload: 'Carica',
@@ -646,7 +662,7 @@ export const it: Dictionary = {
     categoriesToMonitorPlaceholder: 'es. sneaker, moda sostenibile, tendenze Gen Z...',
     scanLiveSignals: 'Scansiona Segnali Live',
     referenceBrands: 'Brand di Riferimento',
-    referenceBrandsPlaceholder: 'es. Veja, S\u00e9zane, COS, Axel Arigato...',
+    referenceBrandsPlaceholder: 'Brand di riferimento...',
     analyzeCompetitors: 'Analizza Competitor',
     unselectedCount: 'non selezionati',
     totalCount: 'totale',

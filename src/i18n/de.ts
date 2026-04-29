@@ -149,6 +149,13 @@ export const de: Dictionary = {
     directToConsumer: 'Direktvertrieb an Konsumenten',
   },
 
+  brandBoard: {
+    boardTitle: 'Markenidentitäts-Board',
+    logoArea: 'Logo',
+    palette: 'Palette',
+    voice: 'Stimme',
+  },
+
   cookie: {
     message: 'Wir verwenden essenzielle Cookies für die Anmeldung und funktionale Cookies zur Verbesserung Ihrer Erfahrung.',
     cookiePolicy: 'Cookie-Richtlinie',
@@ -504,6 +511,15 @@ export const de: Dictionary = {
 
   // ─── Creative Block ───
   creative: {
+    moodboardPlaceholder: 'Gib ein paar Schlüsselwörter oder eine kurze Richtung — z.B. \'90er-Jahre-Minimalismus trifft mediterrane Wärme\'...',
+    consumerDirectionPlaceholder: 'Gib Richtung — z.B. \'urbane Millennials, nachhaltig denkend, Mid-Range-Luxus, europäischer Markt\'...',
+    brandsPlaceholder: 'Marken...',
+    trendNamePlaceholder: 'Trend-Name...',
+    consumerSegmentPlaceholder: 'Konsumentensegment-Name...',
+    noConsumerProfiles: 'Keine Konsumentenprofile ausgewählt',
+    noMoodboardImages: 'Noch keine Moodboard-Bilder',
+    typography: 'Typografie',
+    colorsHexLabel: 'Farben (Hex, kommagetrennt)',
     title: 'Kreativ & Marke',
     subtitle: 'Definieren Sie Ihre kreative Vision, erforschen Sie den Markt und fassen Sie alles zu einem einheitlichen kreativen Input zusammen.',
     creativeVision: 'Kreative Vision',
@@ -582,7 +598,7 @@ export const de: Dictionary = {
     editAction: 'Bearbeiten',
     addProfileManually: 'Profil manuell hinzufügen',
     profileNamePlaceholder: "Profilname — z. B. 'Urbaner Kreativprofi'",
-    profileDescPlaceholder: 'Beschreiben Sie dieses Kundensegment — Demografie, Lebensstil, Einkaufsverhalten...',
+    profileDescPlaceholder: 'Profilbeschreibung...',
     addProfile: 'Profil hinzufügen',
     regenerateRejected: 'Neu generieren',
     rejectedLabel: 'abgelehnt',
@@ -618,7 +634,7 @@ export const de: Dictionary = {
     brandIdentity: 'Markenidentität',
     brandName: 'Markenname',
     colorsLabel: 'Farben',
-    voiceTone: 'Stimme & Tonalität',
+    voiceTone: 'Stimme und Ton',
     voiceTonePlaceholder: 'Wie spricht die Marke? Vertraut oder autoritär? Verspielt oder seriös?...',
     voiceToneKeywordPlaceholder: 'Mutig',
     voiceToneAdd: 'Wort hinzufügen',
@@ -646,7 +662,7 @@ export const de: Dictionary = {
     categoriesToMonitorPlaceholder: 'z. B. Sneaker, nachhaltige Mode, Gen-Z-Trends...',
     scanLiveSignals: 'Live Signale scannen',
     referenceBrands: 'Referenzmarken',
-    referenceBrandsPlaceholder: 'z. B. Veja, Sézane, COS, Axel Arigato...',
+    referenceBrandsPlaceholder: 'Referenzmarken...',
     analyzeCompetitors: 'Wettbewerber analysieren',
     unselectedCount: 'nicht ausgewählt',
     totalCount: 'gesamt',

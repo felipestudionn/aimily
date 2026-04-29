@@ -147,6 +147,13 @@ export const en = {
     directToConsumer: 'Direct to Consumer',
   },
 
+  brandBoard: {
+    boardTitle: 'Brand Identity Board',
+    logoArea: 'Logo',
+    palette: 'Palette',
+    voice: 'Voice',
+  },
+
   cookie: {
     message: 'We use essential cookies to keep you signed in and functional cookies to improve your experience.',
     cookiePolicy: 'Cookie Policy',
@@ -502,6 +509,15 @@ export const en = {
 
   // ─── Creative Block ───
   creative: {
+    moodboardPlaceholder: 'Give a few keywords or a brief direction — e.g. \'90s minimalism meets Mediterranean warmth\'...',
+    consumerDirectionPlaceholder: 'Give direction — e.g. \'urban millennials, sustainability-conscious, mid-range luxury, European market\'...',
+    brandsPlaceholder: 'Brands...',
+    trendNamePlaceholder: 'Trend name...',
+    consumerSegmentPlaceholder: 'Consumer segment name...',
+    noConsumerProfiles: 'No consumer profiles selected',
+    noMoodboardImages: 'No moodboard images yet',
+    typography: 'Typography',
+    colorsHexLabel: 'Colors (hex, comma-separated)',
     title: 'Creative & Brand',
     subtitle: 'Define your creative vision, research the market, and synthesize everything into a unified creative input.',
     creativeVision: 'Creative Vision',
@@ -580,7 +596,7 @@ export const en = {
     editAction: 'Edit',
     addProfileManually: 'Add Profile Manually',
     profileNamePlaceholder: "Profile name — e.g. 'Urban Creative Professional'",
-    profileDescPlaceholder: 'Describe this consumer segment — demographics, lifestyle, shopping behavior...',
+    profileDescPlaceholder: 'Profile description...',
     addProfile: 'Add Profile',
     regenerateRejected: 'Regenerate',
     rejectedLabel: 'rejected',
@@ -644,7 +660,7 @@ export const en = {
     categoriesToMonitorPlaceholder: 'e.g. sneakers, sustainable fashion, Gen Z trends...',
     scanLiveSignals: 'Scan Live Signals',
     referenceBrands: 'Reference Brands',
-    referenceBrandsPlaceholder: 'e.g. Veja, Sézane, COS, Axel Arigato...',
+    referenceBrandsPlaceholder: 'Reference brands...',
     analyzeCompetitors: 'Analyze Competitors',
     unselectedCount: 'unselected',
     totalCount: 'total',

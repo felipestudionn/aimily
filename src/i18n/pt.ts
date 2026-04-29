@@ -149,6 +149,13 @@ export const pt: Dictionary = {
     directToConsumer: 'Venda Direta ao Consumidor',
   },
 
+  brandBoard: {
+    boardTitle: 'Quadro de Identidade da Marca',
+    logoArea: 'Logo',
+    palette: 'Paleta',
+    voice: 'Voz',
+  },
+
   cookie: {
     message: 'Usamos cookies essenciais para manter sua sessão e cookies funcionais para melhorar sua experiência.',
     cookiePolicy: 'Política de cookies',
@@ -367,7 +374,7 @@ export const pt: Dictionary = {
     consumerDefinition: 'Definição do Consumidor',
     collectionVibe: 'Vibe da Coleção',
     moodboard: 'Moodboard',
-    brandDNA: 'DNA da Marca',
+    brandDNA: 'ADN de Marca',
     productFamilies: 'Famílias de Produto',
     pricing: 'Preços',
     channelsMarkets: 'Canais e Mercados',
@@ -504,6 +511,15 @@ export const pt: Dictionary = {
 
   // ─── Bloco Criativo ───
   creative: {
+    moodboardPlaceholder: 'Dá-me umas palavras-chave ou uma breve direção — ex. \'minimalismo dos anos 90 com calor mediterrâneo\'...',
+    consumerDirectionPlaceholder: 'Dá direção — ex. \'millennials urbanos, conscientes da sustentabilidade, luxo médio, mercado europeu\'...',
+    brandsPlaceholder: 'Marcas...',
+    trendNamePlaceholder: 'Nome da tendência...',
+    consumerSegmentPlaceholder: 'Nome do segmento de consumidor...',
+    noConsumerProfiles: 'Nenhum perfil de consumidor selecionado',
+    noMoodboardImages: 'Ainda sem imagens no moodboard',
+    typography: 'Tipografia',
+    colorsHexLabel: 'Cores (hex, separadas por vírgulas)',
     title: 'Criativo e Marca',
     subtitle: 'Defina sua visão criativa, pesquise o mercado e sintetize tudo em um input criativo unificado.',
     creativeVision: 'Visão Criativa',
@@ -582,7 +598,7 @@ export const pt: Dictionary = {
     editAction: 'Editar',
     addProfileManually: 'Adicionar Perfil Manualmente',
     profileNamePlaceholder: "Nome do perfil — ex. 'Profissional Urbano Criativo'",
-    profileDescPlaceholder: 'Descreva este segmento de consumidor — demografia, estilo de vida, comportamento de compra...',
+    profileDescPlaceholder: 'Descrição do perfil...',
     addProfile: 'Adicionar Perfil',
     regenerateRejected: 'Regenerar',
     rejectedLabel: 'rejeitados',
@@ -646,7 +662,7 @@ export const pt: Dictionary = {
     categoriesToMonitorPlaceholder: 'ex. sneakers, moda sustentável, tendências Gen Z...',
     scanLiveSignals: 'Escanear Sinais ao Vivo',
     referenceBrands: 'Marcas de Referência',
-    referenceBrandsPlaceholder: 'ex. Veja, Sézane, COS, Axel Arigato...',
+    referenceBrandsPlaceholder: 'Marcas de referência...',
     analyzeCompetitors: 'Analisar Concorrentes',
     unselectedCount: 'não selecionados',
     totalCount: 'total',
