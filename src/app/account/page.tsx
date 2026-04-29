@@ -260,7 +260,7 @@ export default function AccountPage() {
                         {subscription?.cancelAtPeriodEnd ? t.account.cancelsAtPeriodEnd : (subscription?.status || t.account.active)}
                       </dd>
                     </div>
-                    {subscription?.currentPeriodEnd && (
+                    {subscription?.currentPeriodEnd && !isCanceled && (
                       <div className="flex items-baseline justify-between gap-4">
                         <dt className="text-carbon/50">{t.account.nextBilling}</dt>
                         <dd className="text-carbon font-medium">
@@ -277,60 +277,66 @@ export default function AccountPage() {
                       </dd>
                     </div>
                   </dl>
-                  <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    {billingState === 'admin' ? (
+                  {billingState === 'admin' && (
+                    <div className="mt-8">
                       <p className="text-[12px] text-carbon/45 leading-[1.6]">
                         {t.account.adminNote}
                       </p>
-                    ) : billingState === 'canceled' ? (
-                      <>
-                        <p className="text-[13px] text-carbon/70 leading-[1.6] max-w-md">
-                          {subscription?.refundedAt && subscription?.refundAmountCents
-                            ? t.account.canceledWithRefundNote.replace(
-                                '{amount}',
-                                formatRefundAmount(
-                                  subscription.refundAmountCents,
-                                  subscription.refundCurrency || 'eur'
-                                )
+                    </div>
+                  )}
+
+                  {billingState === 'canceled' && (
+                    <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <p className="text-[13px] text-carbon/70 leading-[1.6] max-w-md">
+                        {subscription?.refundedAt && subscription?.refundAmountCents
+                          ? t.account.canceledWithRefundNote.replace(
+                              '{amount}',
+                              formatRefundAmount(
+                                subscription.refundAmountCents,
+                                subscription.refundCurrency || 'eur'
                               )
-                            : t.account.canceledNote}
-                        </p>
-                        <Link
-                          href="/#pricing"
-                          className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
-                        >
-                          {t.billing.seePlans}
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-[12px] text-carbon/45 leading-[1.6] max-w-sm">
-                          {t.account.refundNote}{' '}
-                          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-carbon underline underline-offset-2 hover:text-carbon/70">
-                            {SUPPORT_EMAIL}
-                          </a>
-                        </p>
-                        {billingState === 'has-subscription' ? (
-                          <button
-                            onClick={openPortal}
-                            className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
-                          >
-                            {t.account.manageSubscription}
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </button>
-                        ) : (
-                          <Link
-                            href="/#pricing"
-                            className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
-                          >
-                            {t.billing.seePlans}
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </Link>
-                        )}
-                      </>
-                    )}
-                  </div>
+                            )
+                          : t.account.canceledNote}
+                      </p>
+                      <Link
+                        href="/#pricing"
+                        className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                      >
+                        {t.billing.seePlans}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  )}
+
+                  {billingState === 'has-subscription' && (
+                    <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <p className="text-[12px] text-carbon/45 leading-[1.6] max-w-sm">
+                        {t.account.refundNote}{' '}
+                        <a href={`mailto:${SUPPORT_EMAIL}`} className="text-carbon underline underline-offset-2 hover:text-carbon/70">
+                          {SUPPORT_EMAIL}
+                        </a>
+                      </p>
+                      <button
+                        onClick={openPortal}
+                        className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                      >
+                        {t.account.manageSubscription}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {billingState === 'no-subscription' && (
+                    <div className="mt-8 flex justify-end">
+                      <Link
+                        href="/#pricing"
+                        className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                      >
+                        {t.billing.seePlans}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  )}
 
                   {/* 7-day money-back self-service refund */}
                   {billingState === 'has-subscription' && refundElig?.eligible && refundStep === 0 && (
