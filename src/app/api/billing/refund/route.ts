@@ -52,11 +52,14 @@ export async function POST() {
       );
     }
 
-    // Find the latest paid invoice for this customer
+    // Find the latest paid invoice for this customer.
+    // Expand `payments` so the modern API shape (post-2024 invoice payments)
+    // gives us a payment_intent we can refund against.
     const invoices = await stripe.invoices.list({
       customer: sub.stripe_customer_id,
       limit: 1,
       status: 'paid',
+      expand: ['data.payments'],
     });
 
     const invoice = invoices.data[0];
@@ -82,38 +85,45 @@ export async function POST() {
       );
     }
 
-    // Resolve the charge to refund. Modern Stripe puts the charge id on
-    // the invoice via expand, but we read it from latest_invoice.charge.
+    // Resolve the payment to refund. Stripe API shapes (newest → oldest):
+    //   1. invoice.payments[0].payment.payment_intent  (modern, 2024+)
+    //   2. invoice.payment_intent                      (legacy)
+    //   3. invoice.charge                              (very legacy)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const invoiceAny = invoice as any;
-    const chargeId: string | null = invoiceAny.charge || invoiceAny.payment_intent || null;
-    if (!chargeId) {
-      // Fall back to expanding the invoice
-      const fullInvoice = await stripe.invoices.retrieve(invoice.id!, {
-        expand: ['charge', 'payment_intent'],
-      });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fi = fullInvoice as any;
-      const fallback = (typeof fi.charge === 'string' ? fi.charge : fi.charge?.id)
-        || (typeof fi.payment_intent === 'string' ? fi.payment_intent : fi.payment_intent?.id);
-      if (!fallback) {
-        return NextResponse.json(
-          { error: 'no_charge_found', message: 'Could not locate the charge for refund.' },
-          { status: 500 },
-        );
-      }
-      // Create refund via payment_intent if charge is missing
-      await stripe.refunds.create(
-        typeof fallback === 'string' && fallback.startsWith('pi_')
-          ? { payment_intent: fallback, reason: 'requested_by_customer' }
-          : { charge: fallback, reason: 'requested_by_customer' }
-      );
-    } else {
-      await stripe.refunds.create({
-        charge: chargeId,
-        reason: 'requested_by_customer',
-      });
+    let paymentIntentId: string | null = null;
+    let chargeId: string | null = null;
+
+    const payments = invoiceAny.payments?.data || [];
+    if (payments.length > 0) {
+      const p = payments[0];
+      const pi = p?.payment?.payment_intent;
+      if (typeof pi === 'string') paymentIntentId = pi;
+      else if (pi?.id) paymentIntentId = pi.id;
     }
+    if (!paymentIntentId) {
+      const legacyPi = invoiceAny.payment_intent;
+      if (typeof legacyPi === 'string') paymentIntentId = legacyPi;
+      else if (legacyPi?.id) paymentIntentId = legacyPi.id;
+    }
+    if (!paymentIntentId) {
+      const legacyCharge = invoiceAny.charge;
+      if (typeof legacyCharge === 'string') chargeId = legacyCharge;
+      else if (legacyCharge?.id) chargeId = legacyCharge.id;
+    }
+
+    if (!paymentIntentId && !chargeId) {
+      return NextResponse.json(
+        { error: 'no_charge_found', message: 'Could not locate the charge for refund. Please contact hello@aimily.app.' },
+        { status: 500 },
+      );
+    }
+
+    await stripe.refunds.create(
+      paymentIntentId
+        ? { payment_intent: paymentIntentId, reason: 'requested_by_customer' }
+        : { charge: chargeId!, reason: 'requested_by_customer' }
+    );
 
     // Cancel subscription immediately (not at_period_end — they got their
     // money back, no reason to leave them with paid access).
