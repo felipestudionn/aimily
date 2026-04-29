@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/api-auth';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { uploadBase64, uploadFromUrl, saveAssetRecord, type AssetType } from '@/lib/storage';
 
 const VALID_ASSET_TYPES: AssetType[] = ['moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model', 'still_life', 'editorial', 'tech_pack', 'material_swatch', 'callout'];
@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+    if (!ownership.authorized) return ownership.error;
 
     // Upload to Supabase Storage
     let upload;

@@ -1,7 +1,7 @@
 export const maxDuration = 90;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { generateJSON, generateText, extractJSON } from '@/lib/ai/llm-client';
 import { loadFullContext } from '@/lib/ai/load-full-context';
 import { formatCisPrefix } from '@/lib/ai/cis-prefix';
@@ -80,6 +80,9 @@ export async function POST(req: NextRequest) {
     if (!collectionPlanId) {
       return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
     }
+
+    const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+    if (!ownership.authorized) return ownership.error;
 
     // 1. Load full CIS
     const ctx = await loadFullContext(collectionPlanId);

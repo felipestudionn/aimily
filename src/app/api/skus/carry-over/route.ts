@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getAuthenticatedUser } from '@/lib/api-auth';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 
 // GET /api/skus/carry-over?userId=xxx - List SKUs from other collections for import
 export async function GET(req: NextRequest) {
@@ -74,14 +74,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch source SKUs
+    // Target plan must belong to the user
+    const targetOwnership = await verifyCollectionOwnership(user.id, targetPlanId);
+    if (!targetOwnership.authorized) return targetOwnership.error;
+
+    // Fetch source SKUs and require every one of them to live in a plan
+    // owned by the same user. Cross-account copies would otherwise leak
+    // the original SKUs into the attacker's collection.
     const { data: sourceSkus, error: fetchError } = await supabaseAdmin
       .from('collection_skus')
-      .select('*')
+      .select('*, collection_plans!inner(user_id)')
       .in('id', sourceSkuIds);
 
     if (fetchError) {
       return NextResponse.json({ error: fetchError.message }, { status: 500 });
+    }
+
+    const cross = (sourceSkus || []).find(
+      (s: { collection_plans?: { user_id: string } }) =>
+        s.collection_plans?.user_id !== user.id,
+    );
+    if (cross || (sourceSkus?.length || 0) !== sourceSkuIds.length) {
+      return NextResponse.json(
+        { error: 'One or more source SKUs do not belong to your account' },
+        { status: 403 },
+      );
     }
 
     // Create copies in target collection

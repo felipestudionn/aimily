@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/api-auth';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import {
   getIntelligence,
   recordDecision,
@@ -17,7 +17,7 @@ import {
  *   &preset=editorial_prompt — compile a preset context (returns flat object)
  */
 export async function GET(req: NextRequest) {
-  const { error: authError } = await getAuthenticatedUser();
+  const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
   const params = req.nextUrl.searchParams;
@@ -25,6 +25,9 @@ export async function GET(req: NextRequest) {
   if (!planId) {
     return NextResponse.json({ error: 'planId is required' }, { status: 400 });
   }
+
+  const ownership = await verifyCollectionOwnership(user.id, planId);
+  if (!ownership.authorized) return ownership.error;
 
   const preset = params.get('preset');
   if (preset) {
@@ -63,7 +66,15 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    d.userId = d.userId || user!.id;
+    // Force userId to the authenticated user — never trust the body.
+    d.userId = user!.id;
+  }
+
+  // Verify ownership for every distinct planId in the batch.
+  const planIds = Array.from(new Set(decisions.map(d => d.collectionPlanId)));
+  for (const planId of planIds) {
+    const ownership = await verifyCollectionOwnership(user!.id, planId);
+    if (!ownership.authorized) return ownership.error;
   }
 
   await Promise.all(decisions.map(recordDecision));

@@ -1,7 +1,7 @@
 export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { generateJSON, generateText, extractJSON } from '@/lib/ai/llm-client';
 import { buildGeneratePrompt } from '@/lib/ai/brief-prompts';
 import { loadFullContext } from '@/lib/ai/load-full-context';
@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
     // ── CIS context: opt-in for post-creation flows ──
     let cisPrefix = '';
     if (collectionPlanId && typeof collectionPlanId === 'string') {
+      const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+      if (!ownership.authorized) return ownership.error;
       try {
         const ctx = await loadFullContext(collectionPlanId);
         cisPrefix = formatCisPrefix(ctx);

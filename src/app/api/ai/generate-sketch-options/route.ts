@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 import sharp from 'sharp';
 
@@ -105,6 +105,11 @@ export async function POST(req: NextRequest) {
 
     if (!body.images?.length) {
       return NextResponse.json({ error: 'At least 1 reference photo required' }, { status: 400 });
+    }
+
+    if (body.collectionPlanId) {
+      const ownership = await verifyCollectionOwnership(user.id, body.collectionPlanId);
+      if (!ownership.authorized) return ownership.error;
     }
 
     const photoBase64 = body.images[0].base64;

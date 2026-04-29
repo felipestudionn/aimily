@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/api-auth';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /**
  * GET /api/wholesale-orders?planId=X
  */
 export async function GET(req: NextRequest) {
-  const { error: authError } = await getAuthenticatedUser();
+  const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
 
   const planId = req.nextUrl.searchParams.get('planId');
   if (!planId) return NextResponse.json({ error: 'planId required' }, { status: 400 });
+
+  const ownership = await verifyCollectionOwnership(user.id, planId);
+  if (!ownership.authorized) return ownership.error;
 
   const { data, error } = await supabaseAdmin
     .from('wholesale_orders')
@@ -35,6 +38,9 @@ export async function POST(req: NextRequest) {
   if (!collection_plan_id || !buyer_name) {
     return NextResponse.json({ error: 'collection_plan_id and buyer_name required' }, { status: 400 });
   }
+
+  const ownership = await verifyCollectionOwnership(user.id, collection_plan_id);
+  if (!ownership.authorized) return ownership.error;
 
   const lines = order_lines || [];
   const totalUnits = lines.reduce((sum: number, l: { quantity?: number }) => sum + (l.quantity || 0), 0);

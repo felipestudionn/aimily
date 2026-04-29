@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 import sharp from 'sharp';
 
@@ -28,6 +28,11 @@ export async function POST(req: NextRequest) {
     }
     if (!OPENAI_API_KEY) {
       return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
+    }
+
+    if (collectionPlanId) {
+      const ownership = await verifyCollectionOwnership(user!.id, collectionPlanId);
+      if (!ownership.authorized) return ownership.error;
     }
 
     // Build zone-specific color instructions

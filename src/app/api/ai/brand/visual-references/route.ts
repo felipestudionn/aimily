@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { loadFullContext } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -219,6 +219,8 @@ export async function POST(req: NextRequest) {
     };
 
     if (collectionPlanId) {
+      const ownership = await verifyCollectionOwnership(user!.id, collectionPlanId);
+      if (!ownership.authorized) return ownership.error;
       try {
         const full = await loadFullContext(collectionPlanId);
         ctx.productCategory = full.productCategory || undefined;

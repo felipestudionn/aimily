@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import Anthropic from '@anthropic-ai/sdk';
 import { generateJSON, extractJSON } from '@/lib/ai/llm-client';
 
@@ -118,6 +118,11 @@ export async function POST(req: NextRequest) {
         { error: 'No images provided' },
         { status: 400 }
       );
+    }
+
+    if (collectionPlanId) {
+      const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+      if (!ownership.authorized) return ownership.error;
     }
 
 

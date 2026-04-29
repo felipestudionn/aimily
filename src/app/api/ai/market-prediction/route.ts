@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
 
     // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
     if (collectionPlanId) {
+      const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+      if (!ownership.authorized) return ownership.error;
       const serverCtx = await loadFullContext(collectionPlanId);
       const flat: Record<string, string> = {
         season: season || '',

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { generateJSON, generateText } from '@/lib/ai/llm-client';
 import { buildCreativePrompt } from '@/lib/ai/creative-prompts';
 import { scrapeBrandContent } from '@/lib/brand-scraper';
@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
 
   // SERVER-SIDE: Load FULL context from CIS + Creative + Brief
   if (collectionPlanId) {
+    const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+    if (!ownership.authorized) return ownership.error;
     const serverCtx = await loadFullContext(collectionPlanId);
     mergeContextWithInput(serverCtx, input);
   }

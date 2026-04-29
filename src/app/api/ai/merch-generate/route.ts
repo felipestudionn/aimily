@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildMerchPrompt } from '@/lib/ai/merch-prompts';
 import { researchBrandPricing } from '@/lib/ai/perplexity-client';
@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
 
   // SERVER-SIDE: Load FULL context from CIS + Creative + Brief (source of truth)
   if (collectionPlanId) {
+    const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
+    if (!ownership.authorized) return ownership.error;
     const serverCtx = await loadFullContext(collectionPlanId);
     mergeContextWithInput(serverCtx, input);
   }
