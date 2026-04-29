@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase/server';
@@ -53,11 +53,15 @@ export default async function CollectionHubLayout({ children, params }: LayoutPr
   // and read brand DNA, SKUs, financials, presentation overrides, etc.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  // No session OR not the owner / no team access → 404. We deliberately
-  // hide both cases as the same response: no information about whether
-  // the resource exists is leaked to a non-owner.
-  if (!user) notFound();
+  // If the SSR cookie chain fails to read the session, the safe behavior
+  // is to send the user to the home page (the middleware would do the
+  // same for an anon visitor). DO NOT use notFound() here: a logged-in
+  // owner whose cookie didn't deserialize would see 404 on their own
+  // collection.
+  if (!user) redirect('/');
 
+  // Now we have a real user. If they don't own the plan and aren't on
+  // its team, hide the resource as 404 (no info leak about existence).
   const access = await checkTeamPermission({
     userId: user.id,
     collectionPlanId: id,
