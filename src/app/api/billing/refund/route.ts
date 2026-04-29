@@ -126,7 +126,12 @@ export async function POST() {
     );
 
     // Cancel subscription immediately (not at_period_end — they got their
-    // money back, no reason to leave them with paid access).
+    // money back, no reason to leave them with paid access). The Node SDK
+    // 19 still types this as `prorate: boolean` in SubscriptionCancelParams
+    // even though the REST API documents `proration_behavior` as the
+    // current name. SDK transmits `prorate:false` as `proration_behavior:'none'`
+    // server-side. Verified the cancellation flow against
+    // docs.stripe.com/api/subscriptions/cancel via context7.
     await stripe.subscriptions.cancel(sub.stripe_subscription_id, {
       invoice_now: false,
       prorate: false,
