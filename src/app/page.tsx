@@ -40,11 +40,21 @@ export default function HomePage() {
     track(Events.LANDING_VIEWED, { page: 'home' });
   }, []);
 
-  // If already authenticated, redirect to collections
-  if (user) {
+  // If already authenticated, redirect to collections — UNLESS the user
+  // landed here intentionally to see pricing (e.g. clicked "Ver planes"
+  // from /account). Detected via the #pricing hash. In that case we let
+  // the page render and scroll to the pricing section.
+  useEffect(() => {
+    if (!user) return;
+    if (typeof window !== 'undefined' && window.location.hash === '#pricing') {
+      // Allow logged-in upgrade/downgrade flow. Scroll to pricing once mounted.
+      const t = setTimeout(() => {
+        document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
+      return () => clearTimeout(t);
+    }
     router.push('/my-collections');
-    return null;
-  }
+  }, [user, router]);
 
   const openAuth = () => {
     track(Events.CTA_CLICKED, { source: 'home', authed: !!user });
