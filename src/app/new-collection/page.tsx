@@ -3,16 +3,19 @@
 /* ═══════════════════════════════════════════════════════════════════════
    /new-collection — single-screen, single-decision entry to the tool.
 
-   The morph stays inside this page: bands → cards in the same layout
-   group, sidebar slides in from the left, headline fades up to title,
-   and the URL silently updates to /collection/[id] via history API.
-   No route navigation = no flash, the user feels they never left the
-   screen — only that the tool revealed itself around them.
+   1. Land → see the 40-week timeline as 4 colored bands.
+   2. Adjust launch date inline (the only required field).
+   3. Click "Empezar" → the canvas fades, then we navigate to the real
+      /collection/[id] where the WorkspaceShell takes over.
+
+   Plain fade transition. No layout morph — that turned out to be too
+   fragile across the heavy WorkspaceShell mount, so we keep the entry
+   simple and reliable: the bands fade out, the wizard loads.
    ═══════════════════════════════════════════════════════════════════════ */
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, Loader2, X, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -20,10 +23,6 @@ import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TimelinePreview } from '@/components/new-collection/TimelinePreview';
-import { OverviewLanding } from '@/components/new-collection/OverviewLanding';
-import { createDefaultTimeline } from '@/lib/timeline-template';
-import type { TimelineMilestone } from '@/types/timeline';
-import type { CollectionPlan } from '@/types/planner';
 import { track, Events } from '@/lib/posthog';
 
 /** Default launch ≈ 6 months from today, snapped to the 1st of the month. */
@@ -47,17 +46,7 @@ function defaultName(season: string, untitledLabel: string): string {
   return `${untitledLabel} · ${season}`;
 }
 
-type View = 'pick-date' | 'overview';
-
-interface CreatedState {
-  plan: CollectionPlan;
-  timeline: {
-    id: string;
-    collection_plan_id: string;
-    launch_date: string;
-    milestones: TimelineMilestone[];
-  };
-}
+type View = 'pick-date' | 'leaving';
 
 function NewCollectionFlow() {
   const router = useRouter();
@@ -70,7 +59,6 @@ function NewCollectionFlow() {
   const [showAuth, setShowAuth] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState<CreatedState | null>(null);
 
   const season = useMemo(() => deriveSeason(launchDate), [launchDate]);
 
@@ -113,32 +101,18 @@ function NewCollectionFlow() {
         throw new Error(j.error || 'create_failed');
       }
 
-      const plan = (await res.json()) as CollectionPlan;
+      const plan = await res.json();
 
-      // Build the timeline locally — same template the API uses, no extra fetch.
-      const tpl = createDefaultTimeline(plan.name, season, launchDate);
-      const timeline = {
-        id: tpl.id,
-        collection_plan_id: plan.id,
-        launch_date: launchDate,
-        milestones: tpl.milestones as TimelineMilestone[],
-      };
-
-      setCreated({ plan, timeline });
-      setView('overview');
-      setCreating(false);
-
-      // Silently update the URL after the morph has settled. No route
-      // change = no remount = no flash. If the user refreshes, they
-      // land on the real /collection/[id] which renders the same UI.
+      // Fade the canvas out, then navigate. Plain transition.
+      setView('leaving');
       setTimeout(() => {
-        window.history.replaceState({}, '', `/collection/${plan.id}`);
-      }, 1100);
+        router.push(`/collection/${plan.id}`);
+      }, 450);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'create_failed');
       setCreating(false);
     }
-  }, [user, launchDate, season, untitledLabel]);
+  }, [user, launchDate, season, untitledLabel, router]);
 
   const onLaunchDateChange = useCallback((iso: string) => {
     if (!iso) return;
@@ -146,67 +120,45 @@ function NewCollectionFlow() {
     setLaunchDate(iso);
   }, []);
 
-  // ─── ONE outer <LayoutGroup> wrapping BOTH views. Framer Motion only
-  // matches `layoutId` between elements in the same group, so we render
-  // pick-date and overview as siblings (one always conditional) inside
-  // the same group node. That's what makes the bands physically morph
-  // into the four block cards instead of remounting fresh. ──────────────
   return (
-    <LayoutGroup>
-      {view === 'overview' && created ? (
-        <OverviewLanding
-          plan={created.plan}
-          season={season}
-          language={language}
-        />
-      ) : (
-      <div className="min-h-screen bg-shade flex flex-col">
-        <header className="flex items-center justify-between px-6 md:px-10 lg:px-14 py-6">
-          <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">aimily</span>
-          <button
-            onClick={() => router.push('/my-collections')}
-            className="flex items-center gap-2 text-[12px] tracking-[0.16em] uppercase text-carbon/40 hover:text-carbon transition-colors"
-            aria-label={cancel}
-          >
-            {cancel}
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </header>
+    <div className="min-h-screen bg-shade flex flex-col">
+      <header className="flex items-center justify-between px-6 md:px-10 lg:px-14 py-6">
+        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">aimily</span>
+        <button
+          onClick={() => router.push('/my-collections')}
+          className="flex items-center gap-2 text-[12px] tracking-[0.16em] uppercase text-carbon/40 hover:text-carbon transition-colors"
+          aria-label={cancel}
+        >
+          {cancel}
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </header>
 
-        <main className="flex-1 flex items-center justify-center px-4 md:px-10 lg:px-14 pb-12">
-          <div className="w-full max-w-[1100px] mx-auto">
-            <motion.header
-              initial={{ opacity: 0, y: 12 }}
+      <main className="flex-1 flex items-center justify-center px-4 md:px-10 lg:px-14 pb-12">
+        <AnimatePresence mode="wait">
+          {view === 'pick-date' && (
+            <motion.div
+              key="canvas"
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-              className="text-center mb-10 md:mb-14"
+              className="w-full max-w-[1100px] mx-auto"
             >
-              <h1 className="text-[40px] md:text-[56px] font-semibold text-carbon tracking-[-0.04em] leading-[1.05]">
-                {headline}
-              </h1>
-              <p className="mt-3 text-[16px] md:text-[18px] text-carbon/55 italic tracking-[-0.01em]">
-                {subheadline}
-              </p>
-            </motion.header>
+              <div className="text-center mb-10 md:mb-14">
+                <h1 className="text-[40px] md:text-[56px] font-semibold text-carbon tracking-[-0.04em] leading-[1.05]">
+                  {headline}
+                </h1>
+                <p className="mt-3 text-[16px] md:text-[18px] text-carbon/55 italic tracking-[-0.01em]">
+                  {subheadline}
+                </p>
+              </div>
 
-            <div className="mb-10">
-              <TimelinePreview
-                launchDate={launchDate}
-                language={language}
-                asCards={false}
-              />
-            </div>
+              <div className="mb-10">
+                <TimelinePreview launchDate={launchDate} language={language} asCards={false} />
+              </div>
 
-            <AnimatePresence>
-              <motion.div
-                key="controls"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
-                className="flex flex-col items-center gap-8"
-              >
+              <div className="flex flex-col items-center gap-8">
                 <label className="flex items-center gap-3 px-5 py-3 bg-white rounded-full border border-carbon/[0.08] text-[14px] text-carbon shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
                   <Calendar className="h-4 w-4 text-carbon/50" />
                   <span className="text-carbon/50">{launchLabel}:</span>
@@ -243,20 +195,32 @@ function NewCollectionFlow() {
                     {error}
                   </p>
                 )}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </main>
+              </div>
+            </motion.div>
+          )}
 
-        <AuthModal
-          isOpen={showAuth}
-          defaultMode="signup"
-          onClose={() => setShowAuth(false)}
-          onSuccess={() => setShowAuth(false)}
-        />
-      </div>
-      )}
-    </LayoutGroup>
+          {view === 'leaving' && (
+            <motion.div
+              key="leaving"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+              className="flex items-center gap-3 text-[14px] text-carbon/50"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {creatingCopy}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      <AuthModal
+        isOpen={showAuth}
+        defaultMode="signup"
+        onClose={() => setShowAuth(false)}
+        onSuccess={() => setShowAuth(false)}
+      />
+    </div>
   );
 }
 
