@@ -261,7 +261,7 @@ export const es: Dictionary = {
     subscriptionActivated: 'Suscripción activada. Bienvenido.',
     creditsAdded: 'Aimily Credits añadidos a tu cuenta.',
     checkoutCanceled: 'Compra cancelada. Tu cuenta sigue como estaba.',
-    refundNote: '¿Necesitas un reembolso o tienes alguna duda de facturación? Escríbenos a',
+    refundNote: 'Garantía 7 días: si aimily no te convence, te devolvemos el dinero íntegro. Después de los 7 días, cancela cuando quieras — sin más cobros. Escríbenos a',
     adminNote: 'Cuenta administrativa — sin facturación.',
     yourData: 'Tus datos',
     yourDataDesc: 'Tus datos son tuyos. Descarga una copia en JSON cuando quieras, o elimina permanentemente tu cuenta y todo lo que guardamos sobre ti.',
@@ -1206,7 +1206,7 @@ export const es: Dictionary = {
     s4_1AccountLink: 'configuración de cuenta',
     s4_1TextCont: ' o a través del portal de cliente de Stripe. Tras la cancelación:',
     s4_1Item1: 'El Usuario conservará el acceso activo hasta el final del período de facturación en curso, ya abonado.',
-    s4_1Item2: 'No se realizarán reembolsos por las fracciones de período no consumidas, salvo en los supuestos legalmente previstos para consumidores en la Unión Europea (en particular, el derecho de desistimiento de 14 días para contrataciones a distancia, aplicable conforme al Real Decreto Legislativo 1/2007 y a la Directiva 2011/83/UE, siempre que no se haya iniciado el uso efectivo del servicio).',
+    s4_1Item2: 'Garantía de devolución: dentro de los primeros 7 días tras el primer cobro, puedes solicitar el reembolso íntegro si aimily no te convence — escríbenos a hello@aimily.app. Pasados los 7 días no se realizan reembolsos por fracciones de período no consumidas; al cancelar dejarás de pagar los siguientes cobros. Se mantiene el derecho de desistimiento de 14 días para consumidores en la UE conforme al Real Decreto Legislativo 1/2007 y a la Directiva 2011/83/UE, siempre que no se haya iniciado el uso efectivo del servicio.',
     s4_1Item3: 'Finalizado el período contratado, la cuenta pasará a modo de solo lectura. Los datos se conservarán durante 30 días adicionales antes de ser eliminados de forma permanente, salvo solicitud expresa del Usuario.',
     // Sección 4.2
     s4_2Title: '4.2 Eliminación de Cuenta',
