@@ -288,6 +288,7 @@ export type HomeDict = {
     seats: string;
     unlimited: string;
     ctaStart: string;
+    ctaSubscribe: string;
     ctaContact: string;
     ctaCurrent: string;
     h: {
@@ -570,6 +571,7 @@ const en: HomeDict = {
     seats: 'Users',
     unlimited: 'Unlimited',
     ctaStart: 'Start free',
+    ctaSubscribe: 'Subscribe',
     ctaContact: 'Contact sales',
     ctaCurrent: 'Current plan',
     h: {
@@ -864,6 +866,7 @@ const es: HomeDict = {
     seats: 'Usuarios',
     unlimited: 'Ilimitado',
     ctaStart: 'Empezar gratis',
+    ctaSubscribe: 'Suscribirse',
     ctaContact: 'Contactar ventas',
     ctaCurrent: 'Plan actual',
     h: {
@@ -1155,6 +1158,7 @@ const fr: HomeDict = {
     seats: 'Utilisateurs',
     unlimited: 'Illimité',
     ctaStart: 'Commencer gratuitement',
+    ctaSubscribe: 'S’abonner',
     ctaContact: 'Contacter les ventes',
     ctaCurrent: 'Plan actuel',
     h: {
@@ -1446,6 +1450,7 @@ const it: HomeDict = {
     seats: 'Utenti',
     unlimited: 'Illimitato',
     ctaStart: 'Inizia gratis',
+    ctaSubscribe: 'Abbonati',
     ctaContact: 'Contatta vendite',
     ctaCurrent: 'Piano attuale',
     h: {
@@ -1737,6 +1742,7 @@ const de: HomeDict = {
     seats: 'Nutzer',
     unlimited: 'Unbegrenzt',
     ctaStart: 'Kostenlos starten',
+    ctaSubscribe: 'Abonnieren',
     ctaContact: 'Vertrieb kontaktieren',
     ctaCurrent: 'Aktueller Plan',
     h: {
@@ -2028,6 +2034,7 @@ const pt: HomeDict = {
     seats: 'Utilizadores',
     unlimited: 'Ilimitado',
     ctaStart: 'Começar grátis',
+    ctaSubscribe: 'Assinar',
     ctaContact: 'Contactar vendas',
     ctaCurrent: 'Plano atual',
     h: {
@@ -2319,6 +2326,7 @@ const nl: HomeDict = {
     seats: 'Gebruikers',
     unlimited: 'Onbeperkt',
     ctaStart: 'Gratis starten',
+    ctaSubscribe: 'Abonneren',
     ctaContact: 'Sales contacteren',
     ctaCurrent: 'Huidig plan',
     h: {
@@ -2610,6 +2618,7 @@ const sv: HomeDict = {
     seats: 'Användare',
     unlimited: 'Obegränsat',
     ctaStart: 'Starta gratis',
+    ctaSubscribe: 'Prenumerera',
     ctaContact: 'Kontakta sälj',
     ctaCurrent: 'Aktuell plan',
     h: {
@@ -2901,6 +2910,7 @@ const no: HomeDict = {
     seats: 'Brukere',
     unlimited: 'Ubegrenset',
     ctaStart: 'Start gratis',
+    ctaSubscribe: 'Abonner',
     ctaContact: 'Kontakt salg',
     ctaCurrent: 'Gjeldende plan',
     h: {

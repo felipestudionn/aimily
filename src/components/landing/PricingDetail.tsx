@@ -218,27 +218,45 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => handleSelectPlan(plan.id)}
-                  disabled={isCurrent || isLoading}
-                  className={`w-full py-3 px-5 rounded-full text-[13px] font-semibold transition-all flex items-center justify-center gap-2 ${
-                    isCurrent
-                      ? 'bg-green-50 text-green-700 cursor-default'
-                      : isDark
-                        ? 'bg-crema text-carbon hover:bg-crema/90'
-                        : 'bg-carbon text-crema hover:bg-carbon/90'
-                  }`}
-                >
-                  {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : isCurrent ? (
-                    <>{p.ctaCurrent}</>
-                  ) : plan.id === 'enterprise' ? (
-                    <>{p.ctaContact}<ArrowRight className="w-4 h-4" /></>
-                  ) : (
-                    <>{p.ctaStart}<ArrowRight className="w-4 h-4" /></>
-                  )}
-                </button>
+                {(() => {
+                  // CTA copy depends on context:
+                  //   - enterprise plan      → Contact sales
+                  //   - this is current plan → Current plan (disabled)
+                  //   - logged in (trial/paid + not this plan) → Subscribe (no "free" promise — they already passed signup)
+                  //   - anonymous            → Start free (signup CTA)
+                  const isEnterprise = plan.id === 'enterprise';
+                  const ctaLabel = isEnterprise
+                    ? p.ctaContact
+                    : isCurrent
+                      ? p.ctaCurrent
+                      : user
+                        ? p.ctaSubscribe
+                        : p.ctaStart;
+                  return (
+                    <button
+                      onClick={() => handleSelectPlan(plan.id)}
+                      disabled={isCurrent || isLoading}
+                      className={`w-full py-3 px-5 rounded-full text-[13px] font-semibold transition-all flex items-center justify-center gap-2 ${
+                        isCurrent
+                          ? (isDark
+                              ? 'bg-crema/15 text-crema/65 cursor-default'
+                              : 'bg-carbon/[0.06] text-carbon/55 cursor-default')
+                          : isDark
+                            ? 'bg-crema text-carbon hover:bg-crema/90'
+                            : 'bg-carbon text-crema hover:bg-carbon/90'
+                      }`}
+                    >
+                      {isLoading ? (
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          {ctaLabel}
+                          {!isCurrent && <ArrowRight className="w-4 h-4" />}
+                        </>
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
             );
           })}
