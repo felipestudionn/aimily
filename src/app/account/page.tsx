@@ -178,15 +178,16 @@ export default function AccountPage() {
     ? new Date(user.created_at).toLocaleDateString(dateFmtLocale, { year: 'numeric', month: 'long', day: 'numeric' })
     : '—';
 
-  // Billing CTA: depends on the user's billing state.
-  //   - admin     → no button + admin note (no Stripe customer exists)
-  //   - trial     → "Ver planes" → /#pricing (no Stripe customer yet)
-  //   - any paid  → "Gestionar suscripción" → Stripe Customer Portal
-  // We do NOT gate by currentPeriodEnd because the webhook that fills
-  // that field can arrive moments after checkout.session.completed —
-  // plan being non-trial is a stronger signal of "they paid".
-  const billingState: 'admin' | 'no-subscription' | 'has-subscription' =
+  // Billing CTA: depends on the user's billing state. Derived from BD
+  // so it survives a full page reload (no in-memory state required).
+  //   - admin            → no button + admin note (no Stripe customer)
+  //   - trial            → "Ver planes" → /#pricing
+  //   - canceled         → cancellation notice + "Ver planes" to resubscribe
+  //   - active paid      → "Gestionar suscripción" → Stripe Portal
+  const isCanceled = subscription?.status === 'canceled' || subscription?.status === 'unpaid';
+  const billingState: 'admin' | 'no-subscription' | 'canceled' | 'has-subscription' =
     subscription?.isAdmin ? 'admin'
+    : isCanceled ? 'canceled'
     : (planKey === 'trial') ? 'no-subscription'
     : 'has-subscription';
 
@@ -281,6 +282,19 @@ export default function AccountPage() {
                       <p className="text-[12px] text-carbon/45 leading-[1.6]">
                         {t.account.adminNote}
                       </p>
+                    ) : billingState === 'canceled' ? (
+                      <>
+                        <p className="text-[13px] text-carbon/70 leading-[1.6] max-w-md">
+                          {t.account.canceledNote}
+                        </p>
+                        <Link
+                          href="/#pricing"
+                          className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                        >
+                          {t.billing.seePlans}
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                      </>
                     ) : (
                       <>
                         <p className="text-[12px] text-carbon/45 leading-[1.6] max-w-sm">

@@ -272,6 +272,7 @@ export const pt: Dictionary = {
     refundSuccessTitle: 'Reembolso processado — {amount} a caminho do seu cartão.',
     refundSuccessBody: 'Sua assinatura foi cancelada. O dinheiro costuma chegar à sua conta em 5-10 dias úteis, dependendo do seu banco. Você pode continuar usando aimily pelo restante do seu período de teste.',
     adminNote: 'Conta administrativa — sem faturamento.',
+    canceledNote: 'Sua assinatura foi cancelada. Você pode escolher um plano quando quiser para voltar.',
     yourData: 'Seus dados',
     yourDataDesc: 'Seus dados são seus. Baixe uma cópia em JSON quando quiser, ou exclua permanentemente sua conta e tudo o que guardamos sobre você.',
     exportData: 'Exportar seus dados',

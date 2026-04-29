@@ -272,6 +272,7 @@ export const nl: Dictionary = {
     refundSuccessTitle: 'Terugbetaling verwerkt — {amount} onderweg naar je kaart.',
     refundSuccessBody: 'Je abonnement is opgezegd. Het geld staat doorgaans binnen 5-10 werkdagen op je rekening, afhankelijk van je bank. Je kunt aimily blijven gebruiken voor de rest van je proefperiode.',
     adminNote: 'Beheerdersaccount — geen facturering.',
+    canceledNote: 'Je abonnement is opgezegd. Je kunt op elk moment een plan kiezen om terug te komen.',
     yourData: 'Jouw gegevens',
     yourDataDesc: 'Jouw gegevens zijn van jou. Download op elk moment een JSON-kopie, of verwijder je account en alles wat we over je bewaren permanent.',
     exportData: 'Uw gegevens exporteren',

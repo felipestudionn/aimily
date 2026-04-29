@@ -272,6 +272,7 @@ export const de: Dictionary = {
     refundSuccessTitle: 'Erstattung bearbeitet — {amount} sind unterwegs zu Ihrer Karte.',
     refundSuccessBody: 'Ihr Abonnement wurde gekündigt. Das Geld erscheint je nach Bank in 5-10 Werktagen auf Ihrem Konto. Sie können aimily für den Rest Ihres Testzeitraums weiter nutzen.',
     adminNote: 'Administrator-Konto — keine Abrechnung.',
+    canceledNote: 'Ihr Abonnement wurde gekündigt. Sie können jederzeit einen Plan wählen, um zurückzukehren.',
     yourData: 'Ihre Daten',
     yourDataDesc: 'Ihre Daten gehören Ihnen. Laden Sie jederzeit eine JSON-Kopie herunter oder löschen Sie Ihr Konto und alles, was wir über Sie speichern, dauerhaft.',
     exportData: 'Ihre Daten exportieren',

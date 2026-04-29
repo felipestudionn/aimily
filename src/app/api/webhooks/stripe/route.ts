@@ -29,7 +29,7 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
   const item = subscription.items.data[0];
   const priceId = item?.price.id;
-  const plan = mapSubscriptionPlan(priceId);
+  const stripeStatus = subscription.status;
 
   // Map Stripe status to our status
   const statusMap: Record<string, string> = {
@@ -42,7 +42,15 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
     incomplete_expired: 'canceled',
     paused: 'canceled',
   };
-  const status = statusMap[subscription.status] || 'active';
+  const status = statusMap[stripeStatus] || 'active';
+
+  // Plan: when the subscription is canceled, the user no longer has paid
+  // access — set plan back to 'trial' regardless of which price the
+  // (now dead) subscription was on. Otherwise, derive plan from the
+  // current price id.
+  const plan = (status === 'canceled' || status === 'unpaid')
+    ? 'trial'
+    : mapSubscriptionPlan(priceId);
 
   // Stripe API 2025+ moved current_period_start/end from the subscription
   // root onto each subscription item. Read from the item, fall back to
