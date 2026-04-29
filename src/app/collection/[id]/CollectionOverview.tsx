@@ -147,6 +147,23 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
       start: ov.start || 'Start',
     })[state];
 
+  // Localised label + description for each sub-block. The id matches
+  // BLOCK_DEFS sub-block ids. We swap `-` for `_` when composing the
+  // key because hyphens aren't valid in unquoted JS object keys (the
+  // i18n source files use plain literals). Falls back to the English
+  // literal so we never render `undefined` if a locale lacks a key.
+  const localizedSub = (subId: string): { label: string; description: string } => {
+    const allSubs = BLOCK_DEFS.flatMap((b) => b.subBlocks);
+    const sub = allSubs.find((s) => s.id === subId);
+    const safeId = subId.replace(/-/g, '_');
+    const labelKey = `sub_${safeId}_label`;
+    const descKey = `sub_${safeId}_desc`;
+    return {
+      label: ov[labelKey] || sub?.label || subId,
+      description: ov[descKey] || sub?.description || '',
+    };
+  };
+
   // Open block sub-dashboard when ?block= param is present
   useEffect(() => {
     const blockParam = searchParams?.get('block') as TimelinePhase | null;
@@ -281,6 +298,14 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               {titleDraft}
             </h1>
           )}
+          {/* Season chip — derived from launch date at create-time, persisted in BD. */}
+          {plan.season && !activeBlock && (
+            <div className="mt-3 flex justify-center">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-carbon/[0.04] text-[11px] font-semibold tracking-[0.18em] uppercase text-carbon/55">
+                {plan.season}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* ── Back button — only when inside a block ── */}
@@ -292,7 +317,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
             className="flex items-center gap-2 text-[13px] font-medium text-carbon/40 hover:text-carbon transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            All blocks
+            {ov.allBlocks || 'All blocks'}
           </button>
         </div>
 
@@ -431,11 +456,11 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       </div>
 
                       <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-6 whitespace-pre-line">
-                        {sub.label}
+                        {localizedSub(sub.id).label}
                       </h3>
 
                       <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
-                        {sub.description}
+                        {localizedSub(sub.id).description}
                       </p>
 
                       <div className="flex-1" />
@@ -444,7 +469,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       <div className="flex justify-center mt-10">
                         {sub.isOutput ? (
                           <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white group-hover:bg-carbon/90 transition-all">
-                            Open
+                            {ov.openCta || 'Open'}
                             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                           </div>
                         ) : (
@@ -453,7 +478,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                               ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
                               : 'bg-carbon text-white group-hover:bg-carbon/90'
                           }`}>
-                            {isSubComplete ? 'Completed' : isSubStarted ? 'Continue' : 'Start'}
+                            {ctaCopy(isSubComplete ? 'completed' : isSubStarted ? 'continue' : 'start')}
                             {!isSubComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
                             {isSubComplete && <Pencil className="h-3 w-3 ml-0.5" />}
                           </div>
