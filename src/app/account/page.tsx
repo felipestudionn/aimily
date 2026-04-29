@@ -121,12 +121,15 @@ export default function AccountPage() {
     : '—';
 
   // Billing CTA: depends on the user's billing state.
-  //   - admin            → no button + admin note (no Stripe customer exists)
-  //   - trial / no sub   → "Ver planes" → /#pricing (no Stripe customer yet)
-  //   - paid sub         → "Gestionar suscripción" → Stripe Customer Portal
+  //   - admin     → no button + admin note (no Stripe customer exists)
+  //   - trial     → "Ver planes" → /#pricing (no Stripe customer yet)
+  //   - any paid  → "Gestionar suscripción" → Stripe Customer Portal
+  // We do NOT gate by currentPeriodEnd because the webhook that fills
+  // that field can arrive moments after checkout.session.completed —
+  // plan being non-trial is a stronger signal of "they paid".
   const billingState: 'admin' | 'no-subscription' | 'has-subscription' =
     subscription?.isAdmin ? 'admin'
-    : (planKey === 'trial' || !subscription?.currentPeriodEnd) ? 'no-subscription'
+    : (planKey === 'trial') ? 'no-subscription'
     : 'has-subscription';
 
   return (
