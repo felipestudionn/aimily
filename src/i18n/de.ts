@@ -269,6 +269,8 @@ export const de: Dictionary = {
     confirmRefund: 'Ja, erstatten und kündigen',
     processingRefund: 'Erstattung wird bearbeitet…',
     refundFailed: 'Die Erstattung konnte nicht verarbeitet werden. Bitte erneut versuchen oder Support kontaktieren.',
+    refundSuccessTitle: 'Erstattung bearbeitet — {amount} sind unterwegs zu Ihrer Karte.',
+    refundSuccessBody: 'Ihr Abonnement wurde gekündigt. Das Geld erscheint je nach Bank in 5-10 Werktagen auf Ihrem Konto. Sie können aimily für den Rest Ihres Testzeitraums weiter nutzen.',
     adminNote: 'Administrator-Konto — keine Abrechnung.',
     yourData: 'Ihre Daten',
     yourDataDesc: 'Ihre Daten gehören Ihnen. Laden Sie jederzeit eine JSON-Kopie herunter oder löschen Sie Ihr Konto und alles, was wir über Sie speichern, dauerhaft.',

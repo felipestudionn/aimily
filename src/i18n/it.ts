@@ -269,6 +269,8 @@ export const it: Dictionary = {
     confirmRefund: 'Sì, rimborsa e cancella',
     processingRefund: 'Elaborazione del rimborso…',
     refundFailed: 'Il rimborso non è stato elaborato. Riprova o contatta il supporto.',
+    refundSuccessTitle: 'Rimborso elaborato — {amount} in arrivo sulla tua carta.',
+    refundSuccessBody: 'Il tuo abbonamento è stato cancellato. Il denaro arriva tipicamente sul tuo conto in 5-10 giorni lavorativi, a seconda della tua banca. Puoi continuare a usare aimily per il resto del periodo di prova.',
     adminNote: 'Account amministrativo — nessuna fatturazione.',
     yourData: 'I tuoi dati',
     yourDataDesc: 'I tuoi dati sono tuoi. Scarica una copia JSON quando vuoi, oppure elimina definitivamente il tuo account e tutto ciò che conserviamo su di te.',

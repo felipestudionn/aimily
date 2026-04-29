@@ -267,6 +267,8 @@ export const en = {
     confirmRefund: 'Yes, refund and cancel',
     processingRefund: 'Processing refund…',
     refundFailed: 'Refund could not be processed. Please try again or contact support.',
+    refundSuccessTitle: 'Refund processed — {amount} on its way back to your card.',
+    refundSuccessBody: 'Your subscription has been canceled. The money typically lands in your bank account in 5-10 business days, depending on your bank. You can keep using aimily for the rest of your trial period.',
     adminNote: 'Administrative account — no billing applies.',
     yourData: 'Your Data',
     yourDataDesc: 'You own your data. Download a JSON copy anytime, or permanently delete your account and everything we hold about you.',

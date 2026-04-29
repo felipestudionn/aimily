@@ -49,9 +49,10 @@ export default function AccountPage() {
   const [signOutLoading, setSignOutLoading] = useState(false);
 
   const [refundElig, setRefundElig] = useState<RefundEligibility | null>(null);
-  const [refundStep, setRefundStep] = useState<0 | 1>(0); // 0=hidden, 1=confirm
+  const [refundStep, setRefundStep] = useState<0 | 1 | 2>(0); // 0=hidden, 1=confirm, 2=success
   const [refundLoading, setRefundLoading] = useState(false);
   const [refundError, setRefundError] = useState<string | null>(null);
+  const [refundedAmount, setRefundedAmount] = useState<{ amount: number; currency: string } | null>(null);
 
   const [deleteStep, setDeleteStep] = useState(0); // 0=hidden, 1=confirm, 2=final
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -138,16 +139,23 @@ export default function AccountPage() {
         setRefundLoading(false);
         return;
       }
-      // Subscription is now canceled + refunded. Refresh state.
-      await refreshSubscription?.();
-      setRefundStep(0);
+      // Refund processed + subscription canceled. Show success state in
+      // place — no jarring page reload, no orphan toast on a stranger page.
+      setRefundedAmount({ amount: data.refunded ?? 0, currency: data.currency ?? 'eur' });
+      setRefundStep(2);
       setRefundElig(null);
-      // Hard reload to pick up the new (downgraded) state across the app.
-      window.location.href = '/?refunded=1';
+      setRefundLoading(false);
+      await refreshSubscription?.();
     } catch {
       setRefundError(t.account.refundFailed);
       setRefundLoading(false);
     }
+  };
+
+  const formatRefundAmount = (cents: number, currency: string) => {
+    const amount = (cents / 100).toFixed(2);
+    const symbol = currency.toLowerCase() === 'eur' ? '€' : currency.toUpperCase() + ' ';
+    return `${symbol}${amount}`;
   };
 
   const handleDelete = async () => {
@@ -352,6 +360,19 @@ export default function AccountPage() {
                             {t.common.cancel}
                           </button>
                         </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {refundStep === 2 && refundedAmount && (
+                    <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
+                      <div className="rounded-[16px] bg-carbon/[0.03] border border-carbon/[0.08] p-6 space-y-3">
+                        <p className="text-[14px] font-semibold text-carbon">
+                          ✓ {t.account.refundSuccessTitle.replace('{amount}', formatRefundAmount(refundedAmount.amount, refundedAmount.currency))}
+                        </p>
+                        <p className="text-[13px] text-carbon/65 leading-[1.7]">
+                          {t.account.refundSuccessBody}
+                        </p>
                       </div>
                     </div>
                   )}

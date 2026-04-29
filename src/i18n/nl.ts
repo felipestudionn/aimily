@@ -269,6 +269,8 @@ export const nl: Dictionary = {
     confirmRefund: 'Ja, terugbetalen en opzeggen',
     processingRefund: 'Terugbetaling verwerken…',
     refundFailed: 'De terugbetaling kon niet worden verwerkt. Probeer opnieuw of neem contact op met de support.',
+    refundSuccessTitle: 'Terugbetaling verwerkt — {amount} onderweg naar je kaart.',
+    refundSuccessBody: 'Je abonnement is opgezegd. Het geld staat doorgaans binnen 5-10 werkdagen op je rekening, afhankelijk van je bank. Je kunt aimily blijven gebruiken voor de rest van je proefperiode.',
     adminNote: 'Beheerdersaccount — geen facturering.',
     yourData: 'Jouw gegevens',
     yourDataDesc: 'Jouw gegevens zijn van jou. Download op elk moment een JSON-kopie, of verwijder je account en alles wat we over je bewaren permanent.',

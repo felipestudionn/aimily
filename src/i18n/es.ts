@@ -269,6 +269,8 @@ export const es: Dictionary = {
     confirmRefund: 'Sí, reembolsar y cancelar',
     processingRefund: 'Procesando reembolso…',
     refundFailed: 'No se pudo procesar el reembolso. Inténtalo de nuevo o escríbenos a soporte.',
+    refundSuccessTitle: 'Reembolso procesado — {amount} de vuelta a tu tarjeta.',
+    refundSuccessBody: 'Tu suscripción se ha cancelado. El dinero suele aparecer en tu cuenta bancaria en 5-10 días hábiles, según tu banco. Puedes seguir usando aimily durante el tiempo que te queda de prueba.',
     adminNote: 'Cuenta administrativa — sin facturación.',
     yourData: 'Tus datos',
     yourDataDesc: 'Tus datos son tuyos. Descarga una copia en JSON cuando quieras, o elimina permanentemente tu cuenta y todo lo que guardamos sobre ti.',

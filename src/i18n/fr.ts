@@ -269,6 +269,8 @@ export const fr: Dictionary = {
     confirmRefund: 'Oui, rembourser et annuler',
     processingRefund: 'Traitement du remboursement…',
     refundFailed: 'Le remboursement n\'a pas pu être traité. Réessayez ou contactez le support.',
+    refundSuccessTitle: 'Remboursement traité — {amount} en route vers votre carte.',
+    refundSuccessBody: 'Votre abonnement a été annulé. L\'argent arrive généralement sur votre compte en 5-10 jours ouvrés selon votre banque. Vous pouvez continuer à utiliser aimily pendant le reste de votre période d\'essai.',
     adminNote: 'Compte administrateur — sans facturation.',
     yourData: 'Vos données',
     yourDataDesc: 'Vos données vous appartiennent. Téléchargez une copie JSON à tout moment, ou supprimez définitivement votre compte et tout ce que nous conservons à votre sujet.',

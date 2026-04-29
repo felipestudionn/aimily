@@ -263,6 +263,8 @@ export const sv: Dictionary = {
     confirmRefund: 'Ja, återbetala och säg upp',
     processingRefund: 'Bearbetar återbetalning…',
     refundFailed: 'Återbetalningen kunde inte behandlas. Försök igen eller kontakta supporten.',
+    refundSuccessTitle: 'Återbetalning bearbetad — {amount} på väg till ditt kort.',
+    refundSuccessBody: 'Din prenumeration har sagts upp. Pengarna kommer vanligtvis in på ditt konto inom 5-10 arbetsdagar beroende på din bank. Du kan fortsätta använda aimily under resten av din provperiod.',
     adminNote: 'Administratörskonto — ingen fakturering.',
     yourData: 'Din data',
     yourDataDesc: 'Din data är din. Ladda ner en JSON-kopia när du vill, eller radera ditt konto och allt vi har om dig permanent.',
