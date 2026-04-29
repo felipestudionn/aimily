@@ -53,6 +53,9 @@ export async function GET() {
         month,
       },
       packBalance: credits?.balance || 0,
+      refundedAt: sub?.refunded_at || null,
+      refundAmountCents: sub?.refund_amount_cents || null,
+      refundCurrency: sub?.refund_currency || null,
     });
   } catch (error) {
     console.error('Subscription fetch error:', error);

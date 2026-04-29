@@ -271,6 +271,7 @@ export const en = {
     refundSuccessBody: 'Your subscription has been canceled. The money typically lands in your bank account in 5-10 business days, depending on your bank. You can keep using aimily for the rest of your trial period.',
     adminNote: 'Administrative account — no billing applies.',
     canceledNote: 'Your subscription has been canceled. You can pick a plan anytime to come back.',
+    canceledWithRefundNote: 'Your refund of {amount} is on its way to your card — typically 5-10 business days. Your subscription has been canceled. Pick a plan anytime to come back.',
     yourData: 'Your Data',
     yourDataDesc: 'You own your data. Download a JSON copy anytime, or permanently delete your account and everything we hold about you.',
     exportData: 'Export Your Data',

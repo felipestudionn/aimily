@@ -273,6 +273,7 @@ export const es: Dictionary = {
     refundSuccessBody: 'Tu suscripción se ha cancelado. El dinero suele aparecer en tu cuenta bancaria en 5-10 días hábiles, según tu banco. Puedes seguir usando aimily durante el tiempo que te queda de prueba.',
     adminNote: 'Cuenta administrativa — sin facturación.',
     canceledNote: 'Tu suscripción se ha cancelado. Puedes elegir un plan cuando quieras para volver.',
+    canceledWithRefundNote: 'Tu reembolso de {amount} está en camino a tu tarjeta — normalmente en 5-10 días hábiles. Tu suscripción se ha cancelado. Puedes elegir un plan cuando quieras para volver.',
     yourData: 'Tus datos',
     yourDataDesc: 'Tus datos son tuyos. Descarga una copia en JSON cuando quieras, o elimina permanentemente tu cuenta y todo lo que guardamos sobre ti.',
     exportData: 'Exportar tus datos',

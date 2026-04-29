@@ -285,7 +285,15 @@ export default function AccountPage() {
                     ) : billingState === 'canceled' ? (
                       <>
                         <p className="text-[13px] text-carbon/70 leading-[1.6] max-w-md">
-                          {t.account.canceledNote}
+                          {subscription?.refundedAt && subscription?.refundAmountCents
+                            ? t.account.canceledWithRefundNote.replace(
+                                '{amount}',
+                                formatRefundAmount(
+                                  subscription.refundAmountCents,
+                                  subscription.refundCurrency || 'eur'
+                                )
+                              )
+                            : t.account.canceledNote}
                         </p>
                         <Link
                           href="/#pricing"

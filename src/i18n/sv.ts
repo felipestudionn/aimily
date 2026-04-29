@@ -267,6 +267,7 @@ export const sv: Dictionary = {
     refundSuccessBody: 'Din prenumeration har sagts upp. Pengarna kommer vanligtvis in på ditt konto inom 5-10 arbetsdagar beroende på din bank. Du kan fortsätta använda aimily under resten av din provperiod.',
     adminNote: 'Administratörskonto — ingen fakturering.',
     canceledNote: 'Din prenumeration har sagts upp. Du kan välja ett abonnemang när som helst för att komma tillbaka.',
+    canceledWithRefundNote: 'Din återbetalning på {amount} är på väg till ditt kort — vanligtvis inom 5-10 arbetsdagar. Din prenumeration har sagts upp. Du kan välja ett abonnemang när som helst för att komma tillbaka.',
     yourData: 'Din data',
     yourDataDesc: 'Din data är din. Ladda ner en JSON-kopia när du vill, eller radera ditt konto och allt vi har om dig permanent.',
     exportData: 'Exportera din data',

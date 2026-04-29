@@ -30,6 +30,12 @@ interface SubscriptionData {
     month: string;
   };
   packBalance: number;
+  // Set when a self-service refund was processed via /api/billing/refund.
+  // /account uses these to show "tu reembolso de €X está en camino" on
+  // canceled subs, so the message survives reloads.
+  refundedAt: string | null;
+  refundAmountCents: number | null;
+  refundCurrency: string | null;
 }
 
 interface SubscriptionContextType {
@@ -71,6 +77,9 @@ const TRIAL_DEFAULTS: SubscriptionData = {
   isAdmin: false,
   usage: { imagery: 0, month: '' },
   packBalance: 0,
+  refundedAt: null,
+  refundAmountCents: null,
+  refundCurrency: null,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);

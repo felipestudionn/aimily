@@ -119,7 +119,7 @@ export async function POST() {
       );
     }
 
-    await stripe.refunds.create(
+    const refund = await stripe.refunds.create(
       paymentIntentId
         ? { payment_intent: paymentIntentId, reason: 'requested_by_customer' }
         : { charge: chargeId!, reason: 'requested_by_customer' }
@@ -137,21 +137,29 @@ export async function POST() {
       prorate: false,
     });
 
-    // Mirror locally so the UI updates without waiting for the webhook
+    // Mirror locally so the UI updates without waiting for the webhook.
+    // Persist refund metadata so /account can show "tu reembolso de €X
+    // está en camino" even after a hard reload — the canceledNote alone
+    // doesn't tell the user that money is on its way back.
+    const refundedAmount = refund.amount ?? invoice.amount_paid;
+    const refundedCurrency = (refund.currency ?? invoice.currency).toLowerCase();
     await supabaseAdmin
       .from('subscriptions')
       .update({
         status: 'canceled',
         plan: 'trial',
         cancel_at_period_end: false,
+        refunded_at: new Date().toISOString(),
+        refund_amount_cents: refundedAmount,
+        refund_currency: refundedCurrency,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id);
 
     return NextResponse.json({
       ok: true,
-      refunded: invoice.amount_paid,
-      currency: invoice.currency,
+      refunded: refundedAmount,
+      currency: refundedCurrency,
     });
   } catch (error) {
     console.error('Refund error:', error);

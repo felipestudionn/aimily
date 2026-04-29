@@ -273,6 +273,7 @@ export const it: Dictionary = {
     refundSuccessBody: 'Il tuo abbonamento è stato cancellato. Il denaro arriva tipicamente sul tuo conto in 5-10 giorni lavorativi, a seconda della tua banca. Puoi continuare a usare aimily per il resto del periodo di prova.',
     adminNote: 'Account amministrativo — nessuna fatturazione.',
     canceledNote: 'Il tuo abbonamento è stato cancellato. Puoi scegliere un piano quando vuoi per tornare.',
+    canceledWithRefundNote: 'Il tuo rimborso di {amount} è in arrivo sulla tua carta — tipicamente in 5-10 giorni lavorativi. Il tuo abbonamento è stato cancellato. Puoi scegliere un piano quando vuoi per tornare.',
     yourData: 'I tuoi dati',
     yourDataDesc: 'I tuoi dati sono tuoi. Scarica una copia JSON quando vuoi, oppure elimina definitivamente il tuo account e tutto ciò che conserviamo su di te.',
     exportData: 'Esporta i Tuoi Dati',

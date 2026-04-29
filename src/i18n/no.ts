@@ -267,6 +267,7 @@ export const no: Dictionary = {
     refundSuccessBody: 'Abonnementet ditt har blitt avsluttet. Pengene kommer vanligvis inn på kontoen din innen 5-10 virkedager, avhengig av banken din. Du kan fortsette å bruke aimily i resten av prøveperioden.',
     adminNote: 'Administratorkonto — ingen fakturering.',
     canceledNote: 'Abonnementet ditt har blitt avsluttet. Du kan velge et abonnement når som helst for å komme tilbake.',
+    canceledWithRefundNote: 'Refusjonen din på {amount} er på vei tilbake til kortet ditt — vanligvis innen 5-10 virkedager. Abonnementet ditt har blitt avsluttet. Du kan velge et abonnement når som helst for å komme tilbake.',
     yourData: 'Dataene dine',
     yourDataDesc: 'Dataene dine er dine. Last ned en JSON-kopi når du vil, eller slett kontoen din og alt vi har om deg permanent.',
     exportData: 'Eksporter dataene dine',
