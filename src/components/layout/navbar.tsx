@@ -2,12 +2,88 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { LogOut, Zap, User, FolderOpen, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/i18n";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { track } from "@/lib/posthog";
+
+/* ── Avatar dropdown (desktop only) ── */
+function AvatarMenu({ email, onSignOut, isDark }: { email: string; onSignOut: () => void; isDark?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const t = useTranslation();
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [open]);
+
+  const buttonClass = isDark
+    ? "bg-crema/15 text-crema/70 hover:bg-crema/25"
+    : "bg-carbon text-crema hover:bg-carbon/80";
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-medium transition-colors ${buttonClass}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-label={t.common.account}
+      >
+        {email.charAt(0).toUpperCase()}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-[14px] shadow-[0_12px_40px_rgba(0,0,0,0.08)] border border-carbon/[0.06] overflow-hidden z-50">
+          <div className="px-4 pt-4 pb-3 border-b border-carbon/[0.06]">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-carbon/40 font-medium">{t.common.signedInAs}</p>
+            <p className="text-[13px] text-carbon font-medium truncate mt-0.5">{email}</p>
+          </div>
+          <div className="py-1">
+            <Link
+              href="/my-collections"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-carbon hover:bg-carbon/[0.04] transition-colors"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-carbon/55" />
+              {t.common.myCollections}
+            </Link>
+            <Link
+              href="/account"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-carbon hover:bg-carbon/[0.04] transition-colors"
+            >
+              <User className="h-3.5 w-3.5 text-carbon/55" />
+              {t.common.account}
+            </Link>
+          </div>
+          <div className="border-t border-carbon/[0.06] py-1">
+            <button
+              onClick={() => { setOpen(false); onSignOut(); }}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-carbon hover:bg-carbon/[0.04] transition-colors"
+            >
+              <LogOut className="h-3.5 w-3.5 text-carbon/55" />
+              {t.common.signOut}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ── Inline editable collection name ── */
 function CollectionNameBreadcrumb({ name, collectionId, isDark, onRename }: {
@@ -91,10 +167,17 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const { user, signOut } = useAuth();
   const t = useTranslation();
+  const router = useRouter();
 
   const openAuth = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
     setShowAuthModal(true);
+  };
+
+  const handleSignOut = async () => {
+    track('sign_out');
+    await signOut();
+    router.push('/');
   };
 
   // Workspace navbar — persistent header, shifts right for sidebar
@@ -116,15 +199,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
           <div className="flex items-center gap-3">
             <NotificationBell />
             {user && (
-              <Link
-                href="/account"
-                className={`w-8 h-8 rounded-full flex items-center justify-center type-label hover:opacity-80 transition-all ${
-                  isDark ? 'bg-crema/15 text-crema/70' : 'bg-carbon text-crema'
-                }`}
-                title={t.common.account}
-              >
-                {user.email?.charAt(0).toUpperCase()}
-              </Link>
+              <AvatarMenu email={user.email || ''} onSignOut={handleSignOut} isDark={isDark} />
             )}
           </div>
         </div>
@@ -158,13 +233,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
             {user ? (
               <>
                 <NotificationBell />
-                <Link
-                  href="/account"
-                  className="w-8 h-8 rounded-full bg-carbon flex items-center justify-center text-crema text-[11px] font-medium hover:bg-carbon/80 transition-colors"
-                  title={t.common.account}
-                >
-                  {user.email?.charAt(0).toUpperCase()}
-                </Link>
+                <AvatarMenu email={user.email || ''} onSignOut={handleSignOut} />
               </>
             ) : (
               <>
@@ -229,7 +298,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
                 <Link href="/account" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
                   <User className="h-4 w-4" /> {t.common.account}
                 </Link>
-                <Link href="/pricing" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
+                <Link href="/#pricing" className="flex items-center gap-2 py-2 text-base font-medium text-texto transition-colors hover:text-texto/70" onClick={() => setMobileMenuOpen(false)}>
                   <Zap className="h-4 w-4" /> {t.common.pricing}
                 </Link>
               </>
