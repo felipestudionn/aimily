@@ -262,6 +262,7 @@ export const pt: Dictionary = {
     creditsAdded: 'Aimily Credits adicionados à sua conta.',
     checkoutCanceled: 'Compra cancelada. Sua conta segue como estava.',
     refundNote: 'Precisa de reembolso ou tem dúvida de faturamento? Escreva para nós em',
+    adminNote: 'Conta administrativa — sem faturamento.',
     yourData: 'Seus dados',
     yourDataDesc: 'Seus dados são seus. Baixe uma cópia em JSON quando quiser, ou exclua permanentemente sua conta e tudo o que guardamos sobre você.',
     exportData: 'Exportar seus dados',

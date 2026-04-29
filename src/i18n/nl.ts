@@ -262,6 +262,7 @@ export const nl: Dictionary = {
     creditsAdded: 'Aimily Credits toegevoegd aan je account.',
     checkoutCanceled: 'Aankoop geannuleerd. Je account blijft ongewijzigd.',
     refundNote: 'Heb je een terugbetaling nodig of een factureringsvraag? Schrijf ons op',
+    adminNote: 'Beheerdersaccount — geen facturering.',
     yourData: 'Jouw gegevens',
     yourDataDesc: 'Jouw gegevens zijn van jou. Download op elk moment een JSON-kopie, of verwijder je account en alles wat we over je bewaren permanent.',
     exportData: 'Uw gegevens exporteren',

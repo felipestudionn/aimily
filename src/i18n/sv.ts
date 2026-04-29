@@ -256,6 +256,7 @@ export const sv: Dictionary = {
     creditsAdded: 'Aimily Credits tillagda i ditt konto.',
     checkoutCanceled: 'Köp avbrutet. Ditt konto är som tidigare.',
     refundNote: 'Behöver du återbetalning eller har en fakturafråga? Skriv till oss på',
+    adminNote: 'Administratörskonto — ingen fakturering.',
     yourData: 'Din data',
     yourDataDesc: 'Din data är din. Ladda ner en JSON-kopia när du vill, eller radera ditt konto och allt vi har om dig permanent.',
     exportData: 'Exportera din data',

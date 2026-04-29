@@ -256,6 +256,7 @@ export const no: Dictionary = {
     creditsAdded: 'Aimily Credits lagt til kontoen din.',
     checkoutCanceled: 'Kjøp avbrutt. Kontoen din er som før.',
     refundNote: 'Trenger du refusjon eller har et faktureringsspørsmål? Skriv til oss på',
+    adminNote: 'Administratorkonto — ingen fakturering.',
     yourData: 'Dataene dine',
     yourDataDesc: 'Dataene dine er dine. Last ned en JSON-kopi når du vil, eller slett kontoen din og alt vi har om deg permanent.',
     exportData: 'Eksporter dataene dine',

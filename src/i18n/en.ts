@@ -260,6 +260,7 @@ export const en = {
     creditsAdded: 'Aimily Credits added to your account.',
     checkoutCanceled: 'Checkout canceled. Your account stays as it was.',
     refundNote: 'Need a refund or have a billing question? Write to us at',
+    adminNote: 'Administrative account — no billing applies.',
     yourData: 'Your Data',
     yourDataDesc: 'You own your data. Download a JSON copy anytime, or permanently delete your account and everything we hold about you.',
     exportData: 'Export Your Data',

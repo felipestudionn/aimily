@@ -262,6 +262,7 @@ export const de: Dictionary = {
     creditsAdded: 'Aimily Credits zu Ihrem Konto hinzugefügt.',
     checkoutCanceled: 'Bezahlvorgang abgebrochen. Ihr Konto bleibt unverändert.',
     refundNote: 'Erstattung benötigt oder Frage zur Abrechnung? Schreiben Sie uns an',
+    adminNote: 'Administrator-Konto — keine Abrechnung.',
     yourData: 'Ihre Daten',
     yourDataDesc: 'Ihre Daten gehören Ihnen. Laden Sie jederzeit eine JSON-Kopie herunter oder löschen Sie Ihr Konto und alles, was wir über Sie speichern, dauerhaft.',
     exportData: 'Ihre Daten exportieren',

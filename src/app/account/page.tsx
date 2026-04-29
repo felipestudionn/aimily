@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -9,7 +10,7 @@ import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { Navbar } from '@/components/layout/navbar';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
-import { track, Events } from '@/lib/posthog';
+import { track } from '@/lib/posthog';
 
 const SUPPORT_EMAIL = 'hello@aimily.app';
 
@@ -119,6 +120,15 @@ export default function AccountPage() {
     ? new Date(user.created_at).toLocaleDateString(dateFmtLocale, { year: 'numeric', month: 'long', day: 'numeric' })
     : '—';
 
+  // Billing CTA: depends on the user's billing state.
+  //   - admin            → no button + admin note (no Stripe customer exists)
+  //   - trial / no sub   → "Ver planes" → /#pricing (no Stripe customer yet)
+  //   - paid sub         → "Gestionar suscripción" → Stripe Customer Portal
+  const billingState: 'admin' | 'no-subscription' | 'has-subscription' =
+    subscription?.isAdmin ? 'admin'
+    : (planKey === 'trial' || !subscription?.currentPeriodEnd) ? 'no-subscription'
+    : 'has-subscription';
+
   return (
     <>
       <Navbar />
@@ -206,19 +216,37 @@ export default function AccountPage() {
                     </div>
                   </dl>
                   <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <p className="text-[12px] text-carbon/45 leading-[1.6] max-w-sm">
-                      {t.account.refundNote}{' '}
-                      <a href={`mailto:${SUPPORT_EMAIL}`} className="text-carbon underline underline-offset-2 hover:text-carbon/70">
-                        {SUPPORT_EMAIL}
-                      </a>
-                    </p>
-                    <button
-                      onClick={openPortal}
-                      className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
-                    >
-                      {t.account.manageSubscription}
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
+                    {billingState === 'admin' ? (
+                      <p className="text-[12px] text-carbon/45 leading-[1.6]">
+                        {t.account.adminNote}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-[12px] text-carbon/45 leading-[1.6] max-w-sm">
+                          {t.account.refundNote}{' '}
+                          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-carbon underline underline-offset-2 hover:text-carbon/70">
+                            {SUPPORT_EMAIL}
+                          </a>
+                        </p>
+                        {billingState === 'has-subscription' ? (
+                          <button
+                            onClick={openPortal}
+                            className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                          >
+                            {t.account.manageSubscription}
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <Link
+                            href="/#pricing"
+                            className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
+                          >
+                            {t.billing.seePlans}
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </Link>
+                        )}
+                      </>
+                    )}
                   </div>
                 </>
               )}
