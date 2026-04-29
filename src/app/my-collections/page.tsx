@@ -476,54 +476,24 @@ function NewCollectionTile({ onClick, t }: { onClick: () => void; t: Record<stri
 function EmptyState({ t }: { t: Record<string, string> }) {
   return (
     <div className="flex items-center justify-center min-h-[70vh] pt-6">
-      <div className="w-full max-w-3xl mx-auto text-center">
+      <div className="w-full max-w-2xl mx-auto text-center">
         <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
           {t.yourWorkspace || 'Your workspace'}
         </p>
         <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
           {t.firstCollectionAwaits || 'Your first collection awaits'}
         </h1>
-        <p className="text-[14px] text-carbon/50 max-w-[520px] mx-auto leading-relaxed mb-10">
+        <p className="text-[14px] text-carbon/50 max-w-[480px] mx-auto leading-relaxed mb-10">
           {t.firstCollectionDesc || 'Plan your timeline, design your products, and launch with confidence.'}
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto text-left">
-          <Link
-            href="/new-collection"
-            className="group bg-white rounded-[20px] p-10 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-          >
-            <div className="w-12 h-12 rounded-full bg-carbon flex items-center justify-center mb-6">
-              <LayoutGrid className="h-4.5 w-4.5 text-white" />
-            </div>
-            <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-2">
-              {t.buildStepByStep || 'Build step by step'}
-            </h3>
-            <p className="text-[13px] text-carbon/50 leading-relaxed mb-6">
-              {t.buildStepByStepDesc || 'Create your collection from scratch with aimily guiding you through each phase.'}
-            </p>
-            <span className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold group-hover:bg-carbon/90 transition-colors">
-              {t.start || 'Start'} <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-            </span>
-          </Link>
-
-          <Link
-            href="/brief-to-collection"
-            className="group bg-white rounded-[20px] p-10 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-          >
-            <div className="w-12 h-12 rounded-full bg-carbon/[0.05] flex items-center justify-center mb-6">
-              <Zap className="h-4.5 w-4.5 text-carbon/60" />
-            </div>
-            <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-2">
-              {t.tellYourVision || 'Tell me your vision'}
-            </h3>
-            <p className="text-[13px] text-carbon/50 leading-relaxed mb-6">
-              {t.tellYourVisionDesc || 'Describe your idea and aimily builds a complete collection proposal for you to refine.'}
-            </p>
-            <span className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full border border-carbon/[0.15] text-carbon text-[12px] font-semibold group-hover:bg-carbon/[0.04] transition-colors">
-              {t.start || 'Start'} <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-            </span>
-          </Link>
-        </div>
+        <Link
+          href="/new-collection"
+          className="inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-[14px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-all hover:scale-[1.02] active:scale-[0.99] shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
+        >
+          {t.createFirstCollection || t.start || 'Create your first collection'}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     </div>
   );
@@ -531,7 +501,6 @@ function EmptyState({ t }: { t: Record<string, string> }) {
 
 function NewCollectionModal({ t, onClose }: { t: ReturnType<typeof useTranslation>; onClose: () => void }) {
   const c = t.collections as Record<string, string>;
-  const brief = (t as unknown as { briefToCollection?: Record<string, string> }).briefToCollection || {};
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6" style={{ animation: 'fadeIn 0.3s ease-out forwards' }}>
       <div className="absolute inset-0 bg-carbon/70 backdrop-blur-sm" onClick={onClose} />
@@ -544,58 +513,24 @@ function NewCollectionModal({ t, onClose }: { t: ReturnType<typeof useTranslatio
           <X className="h-4 w-4" />
         </button>
 
-        <div className="bg-shade rounded-[20px] p-10 md:p-12">
-          <div className="text-center mb-8">
-            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
-              {c.newCollection || 'New collection'}
-            </p>
-            <h2 className="text-[32px] md:text-[38px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-              {c.howToStart || 'How do you want to start?'}
-            </h2>
-            <p className="text-[14px] text-carbon/50 tracking-[-0.01em] mt-3 max-w-[520px] mx-auto leading-relaxed">
-              {c.howToStartDesc || 'Two paths into aimily. Both lead to a real, launch-ready collection.'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link
-              href="/new-collection"
-              onClick={onClose}
-              className="group bg-white rounded-[20px] p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-            >
-              <div className="w-11 h-11 rounded-full bg-carbon flex items-center justify-center mb-5">
-                <LayoutGrid className="h-4 w-4 text-white" />
-              </div>
-              <h3 className="text-[18px] font-semibold text-carbon tracking-[-0.03em] mb-2">
-                {c.buildStepByStep || 'Build step by step'}
-              </h3>
-              <p className="text-[12px] text-carbon/55 leading-relaxed mb-6">
-                {c.buildStepByStepDesc || 'Create your collection from scratch with aimily guiding you through each phase.'}
-              </p>
-              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-carbon text-white text-[11px] font-semibold group-hover:bg-carbon/90 transition-colors">
-                {c.start || 'Start'} <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Link>
-
-            <Link
-              href="/brief-to-collection"
-              onClick={onClose}
-              className="group bg-white rounded-[20px] p-8 transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
-            >
-              <div className="w-11 h-11 rounded-full bg-carbon/[0.05] flex items-center justify-center mb-5">
-                <Zap className="h-4 w-4 text-carbon/60" />
-              </div>
-              <h3 className="text-[18px] font-semibold text-carbon tracking-[-0.03em] mb-2">
-                {brief.tellYourIdea || c.tellYourVision || 'Tell me your vision'}
-              </h3>
-              <p className="text-[12px] text-carbon/55 leading-relaxed mb-6">
-                {brief.modeDesc || c.tellYourVisionDesc || 'Describe your idea and aimily builds a complete collection proposal for you to refine.'}
-              </p>
-              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-carbon/[0.15] text-carbon text-[11px] font-semibold group-hover:bg-carbon/[0.04] transition-colors">
-                {c.start || 'Start'} <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-              </span>
-            </Link>
-          </div>
+        <div className="bg-shade rounded-[20px] p-10 md:p-12 text-center">
+          <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
+            {c.newCollection || 'New collection'}
+          </p>
+          <h2 className="text-[32px] md:text-[38px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
+            {c.startAnother || 'Start another collection'}
+          </h2>
+          <p className="text-[14px] text-carbon/50 tracking-[-0.01em] max-w-[480px] mx-auto leading-relaxed mb-8">
+            {c.startAnotherDesc || 'Pick a launch date and step inside. Everything else flows from there.'}
+          </p>
+          <Link
+            href="/new-collection"
+            onClick={onClose}
+            className="inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-[14px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-all hover:scale-[1.02] active:scale-[0.99]"
+          >
+            {c.start || 'Start'}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </div>

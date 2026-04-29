@@ -18,13 +18,31 @@ export async function POST(
     const { authorized, error: ownerError } = await verifyCollectionOwnership(user.id, planId);
     if (!authorized) return ownerError;
 
-    // Update the collection plan with the user_id
+    // Optional: rename / re-describe the collection from inline edits.
+    // Body is optional — if absent, this just touches updated_at.
+    let name: string | undefined;
+    let description: string | undefined;
+    try {
+      const body = await req.json();
+      if (typeof body?.name === 'string') {
+        const trimmed = body.name.trim();
+        if (trimmed.length > 0 && trimmed.length <= 120) name = trimmed;
+      }
+      if (typeof body?.description === 'string') description = body.description.slice(0, 600);
+    } catch {
+      // No body — that's fine, this becomes a touch.
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      user_id: user.id,
+      updated_at: new Date().toISOString(),
+    };
+    if (name !== undefined) updatePayload.name = name;
+    if (description !== undefined) updatePayload.description = description;
+
     const { data, error } = await supabaseAdmin
       .from('collection_plans')
-      .update({
-        user_id: user.id,
-        updated_at: new Date().toISOString()
-      })
+      .update(updatePayload)
       .eq('id', planId)
       .select()
       .single();

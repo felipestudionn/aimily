@@ -1,417 +1,252 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+/* ═══════════════════════════════════════════════════════════════════════
+   /new-collection — single-screen, single-decision entry to the tool.
+
+   1. Land → see the 40-week timeline visualised as 4 colored bands.
+   2. Adjust launch date inline (only required field).
+   3. Click "Empezar" → bands morph (Framer Motion `layoutId`) into the
+      4 block cards of the Collection Overview.
+   4. After morph, navigate to /collection/[id]. Same 4 cards, same
+      colors, same positions — the user has already arrived.
+
+   We never ask for: collection name, season, brief, or anything else.
+   The collection is created with a placeholder name ("Sin título · SS27"
+   auto-derived from the launch date). Everything else flows from the
+   Collection Overview blocks themselves.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { motion, AnimatePresence, LayoutGroup } from 'motion/react';
+import { ArrowRight, Loader2, X, Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
-import {
-  DEFAULT_MILESTONES,
-  PHASES,
-  PHASE_ORDER,
-  getMilestoneDate,
-  getMilestoneEndDate,
-} from '@/lib/timeline-template';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
-import {
-  ArrowRight,
-  ArrowLeft,
-  Loader2,
-  ChevronDown,
-  ChevronRight,
-} from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { TimelinePreview } from '@/components/new-collection/TimelinePreview';
 import { track, Events } from '@/lib/posthog';
 
-/* ═══════════════════════════════════════════════════════════
-   DYNAMIC SEASONS — generate from current date + 2 years
-   ═══════════════════════════════════════════════════════════ */
-
-function generateSeasons(): { id: string; label: string; launch: string }[] {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const seasons: { id: string; label: string; launch: string }[] = [];
-
-  for (let year = currentYear; year <= currentYear + 2; year++) {
-    if (year > currentYear || currentMonth < 6) {
-      seasons.push({
-        id: `SS${String(year).slice(2)}`,
-        label: `SS ${String(year).slice(2)}`,
-        launch: `${year}-02-01`,
-      });
-    }
-    seasons.push({
-      id: `FW${String(year).slice(2)}`,
-      label: `FW ${String(year).slice(2)}`,
-      launch: `${year}-09-01`,
-    });
-  }
-
-  return seasons.filter((s) => new Date(s.launch) > now);
+/** Default launch ≈ 6 months from today, snapped to the 1st of the month. */
+function defaultLaunchDate(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 6);
+  d.setDate(1);
+  return d.toISOString().slice(0, 10);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   HELPERS
-   ═══════════════════════════════════════════════════════════ */
-
-function formatShort(date: Date, locale: string) {
-  return date.toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', { month: 'short', day: 'numeric' });
+/** Derive SS/FW season label from launch date. SS = Feb–Jul, FW = Aug–Jan. */
+function deriveSeason(iso: string): string {
+  const d = new Date(iso);
+  const month = d.getMonth(); // 0 = Jan
+  const isFW = month >= 7 || month === 0; // Aug–Jan → FW of that year
+  const yearTwoDigit = String(d.getFullYear()).slice(2);
+  return `${isFW ? 'FW' : 'SS'}${yearTwoDigit}`;
 }
 
-function formatLong(date: Date, locale: string) {
-  return date.toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+/** Default placeholder name. The user can rename inline later. */
+function defaultName(season: string, untitledLabel: string): string {
+  return `${untitledLabel} · ${season}`;
 }
 
-function weeksFromNow(dateStr: string) {
-  const diff = new Date(dateStr).getTime() - Date.now();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24 * 7));
-}
+type View = 'pick-date' | 'creating' | 'morphing';
 
-/* ═══════════════════════════════════════════════════════════
-   COMPONENT
-   ═══════════════════════════════════════════════════════════ */
-
-export default function NewCollectionPage() {
-  const { user, loading: authLoading } = useAuth();
+function NewCollectionFlow() {
   const router = useRouter();
-  const [showAuth, setShowAuth] = useState(false);
+  const { user, loading: authLoading } = useAuth();
   const t = useTranslation();
   const { language } = useLanguage();
 
-  // ── Setup state ──
-  const [step, setStep] = useState(0);
-  const [name, setName] = useState('');
-  const [season, setSeason] = useState('');
-  const [launchDate, setLaunchDate] = useState('');
-  const [creating, setCreating] = useState(false);
-  const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
+  const [view, setView] = useState<View>('pick-date');
+  const [launchDate, setLaunchDate] = useState(defaultLaunchDate());
+  const [showAuth, setShowAuth] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // ── Dynamic data ──
-  const SEASONS = useMemo(generateSeasons, []);
+  const season = useMemo(() => deriveSeason(launchDate), [launchDate]);
 
-  /* Step layout: 0 name, 1 season, 2 launch date, 3 summary = 4 total */
-  const TOTAL_STEPS = 4;
+  const nc = (t as Record<string, Record<string, string>>).newCollection || {};
+  const untitledLabel = nc.untitled || 'Sin título';
+  const headline = nc.headline || 'Cuándo lanzas.';
+  const subheadline = nc.subheadline || 'Lo demás ya lo construimos juntos.';
+  const launchLabel = nc.launchLabel || 'Lanzamiento';
+  const startCta = nc.start || 'Empezar';
+  const cancel = nc.cancel || 'Cancelar';
+  const creatingCopy = nc.creating || 'Preparando tu colección…';
 
-  const next = useCallback(() => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1)), []);
-  const back = useCallback(() => setStep((s) => Math.max(s - 1, 0)), []);
+  // Open the auth modal if the user lands here unauthenticated.
+  useEffect(() => {
+    if (!authLoading && !user) setShowAuth(true);
+  }, [authLoading, user]);
 
-  const togglePhaseExpand = useCallback((phaseId: string) => {
-    setExpandedPhases((prev) => {
-      const n = new Set(prev);
-      if (n.has(phaseId)) n.delete(phaseId); else n.add(phaseId);
-      return n;
-    });
-  }, []);
-
-  const canAdvance = useMemo(() => {
-    if (step === 0) return name.trim().length > 0;
-    if (step === 2) return launchDate.length > 0;
-    return true;
-  }, [step, name, launchDate]);
-
-  // Step 1 (season) is auto-advance
-  const isAutoAdvanceStep = step === 1;
-  const isSummaryStep = step === TOTAL_STEPS - 1;
-
-  const earliestDate = useMemo(() => {
-    if (!launchDate) return null;
-    const maxWeeks = Math.max(...DEFAULT_MILESTONES.map((m) => m.startWeeksBefore));
-    return getMilestoneDate(launchDate, maxWeeks);
-  }, [launchDate]);
-
-  /* ── Create collection — all milestones start as pending ── */
-  const handleCreate = async () => {
-    if (!user) { setShowAuth(true); return; }
-    setCreating(true);
-
-    const milestones = DEFAULT_MILESTONES.map((m) => ({
-      ...m,
-      status: 'pending' as const,
-    }));
+  const handleStart = useCallback(async () => {
+    if (!user) {
+      setShowAuth(true);
+      return;
+    }
+    setError(null);
+    setView('creating');
 
     try {
+      track(Events.COLLECTION_CREATED, { source: 'new-collection-disruptive' });
       const res = await fetch('/api/planner/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
+          name: defaultName(season, untitledLabel),
           season,
-          setup_data: {},
-          user_id: user.id,
           launch_date: launchDate,
-          milestones,
+          setup_data: {},
         }),
       });
-      const data = await res.json();
-      if (data.id) {
-        track(Events.COLLECTION_CREATED, { season, launchDate });
-        router.push(`/collection/${data.id}`);
+
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'create_failed');
       }
-    } catch (error) {
-      console.error('Error creating collection:', error);
-      setCreating(false);
+
+      const plan = await res.json();
+
+      // Trigger the morph: bands → cards, then route to the real overview.
+      setView('morphing');
+      // Spring animation runs ~1s. Give a beat at the landed state, then route.
+      setTimeout(() => {
+        router.push(`/collection/${plan.id}`);
+      }, 1100);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'create_failed');
+      setView('pick-date');
     }
-  };
+  }, [user, launchDate, season, untitledLabel, router]);
 
-  /* ═══════════════════════════════════════════════════════════
-     RENDER STEPS
-     ═══════════════════════════════════════════════════════════ */
-
-  const renderName = () => (
-    <div className="flex flex-col items-center animate-fade-in-up">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.nameYourCollection}</h1>
-      <p className="text-texto/40 text-sm mb-14">{t.newCollection.nameInspiration}</p>
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={t.newCollection.namePlaceholder}
-        className="w-full max-w-md text-center text-2xl font-light text-texto bg-transparent border-b-2 border-gris/30 focus:border-carbon outline-none pb-3 placeholder:text-texto/20 transition-colors"
-        autoFocus
-        onKeyDown={(e) => e.key === 'Enter' && canAdvance && next()}
-      />
-    </div>
-  );
-
-  const renderSeason = () => (
-    <div className="flex flex-col items-center animate-fade-in-up">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.whichSeason}</h1>
-      <p className="text-texto/40 text-sm mb-14">{t.newCollection.selectTargetSeason}</p>
-      <div className="grid grid-cols-3 gap-3 w-full max-w-sm">
-        {SEASONS.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => { setSeason(s.id); if (!launchDate) setLaunchDate(s.launch); next(); }}
-            className={`py-5 text-sm font-medium tracking-[0.15em] uppercase transition-all ${season === s.id ? 'bg-carbon text-crema' : 'border border-gris/30 text-texto hover:border-carbon'}`}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderLaunchDate = () => (
-    <div className="flex flex-col items-center animate-fade-in-up">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.whenLaunch}</h1>
-      <p className="text-texto/40 text-sm mb-14">{t.newCollection.calendarCountsBack}</p>
-      <input
-        type="date"
-        value={launchDate}
-        onChange={(e) => setLaunchDate(e.target.value)}
-        className="text-center text-xl font-light text-texto border border-gris/30 focus:border-carbon outline-none px-8 py-4 bg-transparent transition-colors"
-      />
-      {launchDate && (
-        <div className="mt-6 space-y-1 text-center">
-          <p className="text-texto/30 text-sm">{weeksFromNow(launchDate)} {t.newCollection.weeksFromToday}</p>
-          {earliestDate && (
-            <p className="text-texto/30 text-sm">
-              {t.newCollection.workStartsAround}{' '}
-              <span className="text-texto/50 font-medium">
-                {formatLong(earliestDate, language)}
-              </span>
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderSummary = () => (
-    <div className="flex flex-col items-center animate-fade-in-up w-full max-w-lg mx-auto">
-      <h1 className="text-3xl font-light text-texto tracking-tight mb-2">{t.newCollection.yourCollectionPlan}</h1>
-      <p className="text-texto/40 text-sm mb-4">{t.newCollection.reviewBeforeCreating}</p>
-
-      {/* Setup summary */}
-      <div className="w-full space-y-0 mb-8">
-        {[
-          [t.newCollection.nameLabel, name],
-          [t.newCollection.seasonLabel, season],
-          [t.newCollection.launchLabel, formatLong(new Date(launchDate), language)],
-        ].map(([label, value]) => (
-          <div key={label} className="flex justify-between py-3 border-b border-gris/15">
-            <span className="text-xs text-texto/30 uppercase tracking-[0.15em]">{label}</span>
-            <span className="text-sm text-texto font-medium">{value}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Earliest start */}
-      {earliestDate && (
-        <div className="w-full text-center mb-8">
-          <p className="text-xs text-texto/30 uppercase tracking-[0.15em] mb-1">{t.newCollection.workStarts}</p>
-          <p className="text-sm text-texto font-medium">
-            {formatLong(earliestDate, language)}
-          </p>
-        </div>
-      )}
-
-      {/* Timeline overview — expandable phases (read-only) */}
-      <div className="w-full space-y-1 mb-10">
-        {PHASE_ORDER.map((phaseId) => {
-          const phase = PHASES[phaseId];
-          const milestones = DEFAULT_MILESTONES.filter((m) => m.phase === phaseId);
-          const isExpanded = expandedPhases.has(phaseId);
-
-          return (
-            <div key={phaseId} className="border border-gris/15">
-              <button
-                onClick={() => togglePhaseExpand(phaseId)}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gris/5 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  {isExpanded ? (
-                    <ChevronDown className="h-3.5 w-3.5 text-texto/25" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 text-texto/25" />
-                  )}
-                  <span className="text-sm text-texto font-medium">{language === 'es' ? phase.nameEs || phase.name : phase.name}</span>
-                </div>
-                <span className="text-xs text-texto/30">{milestones.length} {t.newCollection.milestones}</span>
-              </button>
-
-              {isExpanded && (
-                <div className="border-t border-gris/10 px-4 py-2 space-y-1">
-                  {milestones.map((m) => {
-                    const startDate = getMilestoneDate(launchDate, m.startWeeksBefore);
-                    const endDate = getMilestoneEndDate(launchDate, m.startWeeksBefore, m.durationWeeks);
-
-                    return (
-                      <div key={m.id} className="flex items-center gap-3 py-2">
-                        <div className="w-2 h-2 rounded-full bg-gris/30 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-texto">{language === 'es' ? m.nameEs || m.name : m.name}</p>
-                        </div>
-                        <p className="text-[10px] text-texto/20 flex-shrink-0">
-                          {formatShort(startDate, language)} — {formatShort(endDate, language)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Create button */}
-      <button
-        onClick={handleCreate}
-        disabled={creating}
-        className="inline-flex items-center gap-3 px-12 py-4 bg-carbon text-crema text-sm font-medium tracking-[0.15em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-50"
-      >
-        {creating ? (
-          <><Loader2 className="h-4 w-4 animate-spin" />{t.newCollection.creating}</>
-        ) : (
-          <><span>{t.newCollection.createCollection}</span><ArrowRight className="h-4 w-4" /></>
-        )}
-      </button>
-    </div>
-  );
-
-  /* ═══════════════════════════════════════════════════════════
-     STEP ROUTER
-     ═══════════════════════════════════════════════════════════ */
-
-  const renderStep = () => {
-    if (step === 0) return renderName();
-    if (step === 1) return renderSeason();
-    if (step === 2) return renderLaunchDate();
-    if (step === 3) return renderSummary();
-    return null;
-  };
-
-  /* ═══════════════════════════════════════════════════════════
-     LOADING
-     ═══════════════════════════════════════════════════════════ */
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-crema flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-carbon/40" />
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════════════
-     MAIN LAYOUT
-     ═══════════════════════════════════════════════════════════ */
+  const onLaunchDateChange = useCallback((iso: string) => {
+    if (!iso) return;
+    // Reject dates in the past
+    if (new Date(iso).getTime() <= Date.now()) return;
+    setLaunchDate(iso);
+  }, []);
 
   return (
-    <SubscriptionGate>
-    <div className="min-h-screen bg-crema flex flex-col">
-      {/* Top bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-crema">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex h-20 items-center justify-between">
-            <Image
-              src="/images/aimily-logo-black.png"
-              alt="aimily"
-              width={120}
-              height={30}
-              className="object-contain h-6 w-auto"
-            />
-            <button
-              onClick={() => router.push('/my-collections')}
-              className="text-xs text-texto/30 hover:text-texto transition-colors uppercase tracking-[0.15em]"
-            >
-              {t.common.cancel}
-            </button>
-          </div>
-          {/* Progress bar */}
-          <div className="h-px bg-gris/20">
-            <div
-              className="h-px bg-carbon transition-all duration-700 ease-out"
-              style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
-            />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-shade flex flex-col">
+      {/* ── Top bar ── */}
+      <header className="flex items-center justify-between px-6 md:px-10 lg:px-14 py-6">
+        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">aimily</span>
+        <button
+          onClick={() => router.push('/my-collections')}
+          className="flex items-center gap-2 text-[12px] tracking-[0.16em] uppercase text-carbon/40 hover:text-carbon transition-colors"
+          aria-label={cancel}
+        >
+          {cancel}
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </header>
 
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-6 pt-28 pb-32">
-        <div className="w-full max-w-2xl" key={step}>
-          {renderStep()}
-        </div>
-      </div>
+      {/* ── Main canvas ── */}
+      <main className="flex-1 flex items-center justify-center px-4 md:px-10 lg:px-14 pb-12">
+        <LayoutGroup>
+          <div className="w-full max-w-[1100px] mx-auto">
+            <AnimatePresence mode="wait">
+              {/* Headline appears in pick-date and morphing, fades during creating */}
+              {(view === 'pick-date' || view === 'morphing') && (
+                <motion.header
+                  key="headline"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+                  className="text-center mb-10 md:mb-14"
+                >
+                  <h1 className="text-[40px] md:text-[56px] font-semibold text-carbon tracking-[-0.04em] leading-[1.05]">
+                    {headline}
+                  </h1>
+                  <p className="mt-3 text-[16px] md:text-[18px] text-carbon/55 italic tracking-[-0.01em]">
+                    {subheadline}
+                  </p>
+                </motion.header>
+              )}
+            </AnimatePresence>
 
-      {/* Footer nav — only for non-auto-advance setup steps */}
-      {!isAutoAdvanceStep && !isSummaryStep && (
-        <div className="fixed bottom-0 left-0 right-0 bg-crema pb-10 pt-6">
-          <div className="max-w-2xl mx-auto px-6 flex items-center justify-between">
-            {step > 0 ? (
-              <button onClick={back} className="inline-flex items-center gap-2 text-sm text-texto/30 hover:text-texto transition-colors">
-                <ArrowLeft className="h-4 w-4" />{t.common.back}
-              </button>
-            ) : <div />}
-            <button
-              onClick={next}
-              disabled={!canAdvance}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-carbon text-crema text-sm font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-20"
-            >
-              {t.newCollection.next}<ArrowRight className="h-4 w-4" />
-            </button>
+            {/* The bands → cards (always rendered to keep layoutId stable) */}
+            <div className="mb-10">
+              <TimelinePreview
+                launchDate={launchDate}
+                language={language}
+                asCards={view === 'morphing'}
+              />
+            </div>
+
+            {/* Date picker chip + CTA — only visible in pick-date */}
+            <AnimatePresence>
+              {view === 'pick-date' && (
+                <motion.div
+                  key="controls"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+                  className="flex flex-col items-center gap-8"
+                >
+                  <label className="flex items-center gap-3 px-5 py-3 bg-white rounded-full border border-carbon/[0.08] text-[14px] text-carbon shadow-[0_2px_10px_rgba(0,0,0,0.03)]">
+                    <Calendar className="h-4 w-4 text-carbon/50" />
+                    <span className="text-carbon/50">{launchLabel}:</span>
+                    <input
+                      type="date"
+                      value={launchDate}
+                      onChange={(e) => onLaunchDateChange(e.target.value)}
+                      min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                      className="bg-transparent border-0 outline-none font-medium text-carbon text-[14px] cursor-pointer"
+                    />
+                  </label>
+
+                  <button
+                    onClick={handleStart}
+                    className="inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-[14px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-all hover:scale-[1.02] active:scale-[0.99] shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
+                  >
+                    {startCta}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+
+                  {error && (
+                    <p className="text-[13px] text-[#A0463C]" role="alert">
+                      {error}
+                    </p>
+                  )}
+                </motion.div>
+              )}
+
+              {(view === 'creating' || view === 'morphing') && (
+                <motion.div
+                  key="creating"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center justify-center gap-3 text-[13px] text-carbon/50 mt-6"
+                >
+                  {view === 'creating' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{creatingCopy}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </div>
-      )}
+        </LayoutGroup>
+      </main>
 
-      {/* Back button for summary step */}
-      {isSummaryStep && (
-        <div className="fixed bottom-0 left-0 right-0 bg-crema pb-10 pt-6">
-          <div className="max-w-2xl mx-auto px-6">
-            <button onClick={back} className="inline-flex items-center gap-2 text-sm text-texto/30 hover:text-texto transition-colors">
-              <ArrowLeft className="h-4 w-4" />{t.common.back}
-            </button>
-          </div>
-        </div>
-      )}
+      <AuthModal
+        isOpen={showAuth}
+        defaultMode="signup"
+        onClose={() => setShowAuth(false)}
+        onSuccess={() => setShowAuth(false)}
+      />
 
-      {/* Auth modal */}
-      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} onSuccess={handleCreate} defaultMode="signup" />
     </div>
+  );
+}
+
+export default function NewCollectionPage() {
+  return (
+    <SubscriptionGate>
+      <NewCollectionFlow />
     </SubscriptionGate>
   );
 }

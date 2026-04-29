@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowRight, Check, ArrowLeft, Pencil } from 'lucide-react';
+import { motion, LayoutGroup } from 'motion/react';
 import type { TimelinePhase, TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
 import { computeWizardState } from '@/lib/wizard-phases';
@@ -171,20 +172,81 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   }, [router, collectionId]);
 
   const activeBlock = expandedBlock ? BLOCK_DEFS.find(b => b.phase === expandedBlock) : null;
+  const isUntitled = /^Sin título|^Untitled/i.test(plan.name);
+  const [titleDraft, setTitleDraft] = useState(plan.name);
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  // Keep titleDraft in sync if plan.name changes externally (e.g., refetch).
+  useEffect(() => {
+    setTitleDraft(plan.name);
+  }, [plan.name]);
+
+  const commitTitle = useCallback(async () => {
+    const next = titleDraft.trim();
+    if (next.length === 0 || next === plan.name) {
+      setTitleDraft(plan.name);
+      return;
+    }
+    setSavingTitle(true);
+    try {
+      await fetch(`/api/collection-plans/${collectionId}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: next }),
+      });
+      // Optimistic — the value is already shown.
+    } catch {
+      setTitleDraft(plan.name);
+    } finally {
+      setSavingTitle(false);
+    }
+  }, [titleDraft, plan.name, collectionId]);
 
   return (
     <div className="min-h-[80vh]">
       <div className="px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-16">
 
-        {/* ── Title — collection name at top level, block name when drilled ── */}
+        {/* ── Title — inline-editable when collection is still "Sin título" ── */}
         <div className="text-center mb-10">
-          <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-            {activeBlock ? activeBlock.title : plan.name}
-          </h1>
-          {activeBlock && (
-            <p className="text-[13px] font-medium text-carbon/40 tracking-[-0.01em] mt-2">
-              {plan.name}
-            </p>
+          {activeBlock ? (
+            <>
+              <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+                {activeBlock.title}
+              </h1>
+              <p className="text-[13px] font-medium text-carbon/40 tracking-[-0.01em] mt-2">
+                {titleDraft}
+              </p>
+            </>
+          ) : isUntitled ? (
+            <input
+              type="text"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                if (e.key === 'Escape') {
+                  setTitleDraft(plan.name);
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              maxLength={120}
+              autoFocus
+              disabled={savingTitle}
+              aria-label="Collection name"
+              className="text-center w-full max-w-[820px] mx-auto bg-transparent border-0 border-b border-carbon/[0.10] focus:border-carbon/40 outline-none text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] placeholder:text-carbon/30 transition-colors py-1"
+            />
+          ) : (
+            <h1
+              onDoubleClick={() => {
+                // Allow re-rename via double click on the title.
+                setTitleDraft(plan.name);
+              }}
+              title="Double-click to rename"
+              className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] cursor-text"
+            >
+              {titleDraft}
+            </h1>
           )}
         </div>
 
@@ -206,7 +268,8 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
             animating ? 'opacity-0 scale-[0.96] translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}>
             {!expandedBlock ? (
-              /* ═══ TOP LEVEL — 4 block cards ═══ */
+              /* ═══ TOP LEVEL — 4 block cards (with shared layoutId for /new-collection morph) ═══ */
+              <LayoutGroup>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {BLOCK_DEFS.map((block) => {
                   const progress = allBlockProgress[block.phase] || 0;
@@ -215,8 +278,10 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                   const blockIndex = BLOCK_DEFS.indexOf(block) + 1;
 
                   return (
-                    <button
+                    <motion.button
                       key={block.phase}
+                      layoutId={`block-${block.phase}`}
+                      transition={{ type: 'spring', stiffness: 220, damping: 32, mass: 0.9 }}
                       onClick={() => handleBlockClick(block.phase)}
                       className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
                     >
@@ -254,10 +319,11 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                           style={{ width: `${progress}%` }}
                         />
                       </div>
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
+              </LayoutGroup>
             ) : activeBlock ? (
               /* ═══ SUB-LEVEL — 5 mini-block cards inside a block (matches sidebar 4×5) ═══ */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">

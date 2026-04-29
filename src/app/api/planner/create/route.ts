@@ -11,9 +11,9 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const {
-      name,
+      name: providedName,
       description,
-      season,
+      season: providedSeason,
       location,
       setup_data,
       launch_date,
@@ -22,12 +22,18 @@ export async function POST(req: NextRequest) {
 
     const user_id = user.id;
 
-    if (!name) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 },
-      );
-    }
+    // Disruptive entry: the only required field is launch_date. Name and
+    // season are auto-derived if absent — the user names the collection
+    // inline once inside the tool.
+    const launchIso = launch_date || '2027-02-01';
+    const launchDateObj = new Date(launchIso);
+    const seasonAuto = (() => {
+      const m = launchDateObj.getMonth();
+      const isFW = m >= 7 || m === 0;
+      return `${isFW ? 'FW' : 'SS'}${String(launchDateObj.getFullYear()).slice(2)}`;
+    })();
+    const season = providedSeason || seasonAuto;
+    const name = providedName?.trim() || `Sin título · ${season}`;
 
     // Check collection limit
     {
@@ -86,17 +92,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Use wizard-provided launch_date and milestones, or fall back to defaults
-    const finalLaunchDate = launch_date || '2027-02-01';
+    // Reuse the launchIso computed above. Milestones either come from
+    // a wizard payload (legacy) or get auto-generated from the template.
     const finalMilestones = customMilestones
       ? customMilestones
-      : createDefaultTimeline(name, season || 'SS27', finalLaunchDate).milestones;
+      : createDefaultTimeline(name, season, launchIso).milestones;
 
     const { error: timelineError } = await supabaseAdmin
       .from('collection_timelines')
       .insert({
         collection_plan_id: data.id,
-        launch_date: finalLaunchDate,
+        launch_date: launchIso,
         milestones: finalMilestones,
       });
 
