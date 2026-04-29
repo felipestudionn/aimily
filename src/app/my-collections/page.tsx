@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,7 +64,6 @@ interface CollectionWithProgress extends CollectionPlan {
 export default function MyCollectionsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
   const t = useTranslation();
   const { language } = useLanguage();
@@ -81,10 +80,14 @@ export default function MyCollectionsPage() {
     }
   }, [user, authLoading, router]);
 
-  // Stripe return handler — show feedback and refresh subscription state
+  // Stripe return handler — show feedback and refresh subscription state.
+  // Read window.location.search directly instead of useSearchParams() to
+  // avoid the suspense-boundary requirement on prerender. This effect
+  // only runs client-side post-mount, so window is always defined.
   useEffect(() => {
-    const billing = searchParams.get('billing');
-    const credits = searchParams.get('credits');
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get('billing');
+    const credits = params.get('credits');
     if (!billing && !credits) return;
 
     if (billing === 'success') {
@@ -103,7 +106,7 @@ export default function MyCollectionsPage() {
     url.searchParams.delete('credits');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     if (user) {
