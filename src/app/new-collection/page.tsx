@@ -147,13 +147,14 @@ function NewCollectionFlow() {
     setLaunchDate(iso);
   }, []);
 
-  // ─── Once we've created, render the actual tool (WorkspaceShell + Overview).
-  // The bands → cards morph happens within the shared LayoutGroup because
-  // both TimelinePreview (band layoutId) and CollectionOverview (card
-  // layoutId) declare the same `block-${phase}` ids. ────────────────────
-  if (view === 'overview' && created) {
-    return (
-      <LayoutGroup>
+  // ─── ONE outer <LayoutGroup> wrapping BOTH views. Framer Motion only
+  // matches `layoutId` between elements in the same group, so we render
+  // pick-date and overview as siblings (one always conditional) inside
+  // the same group node. That's what makes the bands physically morph
+  // into the four block cards instead of remounting fresh. ──────────────
+  return (
+    <LayoutGroup>
+      {view === 'overview' && created ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -174,13 +175,7 @@ function NewCollectionFlow() {
             />
           </WorkspaceShell>
         </motion.div>
-      </LayoutGroup>
-    );
-  }
-
-  // ─── Pick-date view: the disruptive first canvas. ──────────────────────
-  return (
-    <LayoutGroup>
+      ) : (
       <div className="min-h-screen bg-shade flex flex-col">
         <header className="flex items-center justify-between px-6 md:px-10 lg:px-14 py-6">
           <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">aimily</span>
@@ -276,6 +271,7 @@ function NewCollectionFlow() {
           onSuccess={() => setShowAuth(false)}
         />
       </div>
+      )}
     </LayoutGroup>
   );
 }
