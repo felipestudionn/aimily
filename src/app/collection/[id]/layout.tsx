@@ -1,6 +1,8 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createClient } from '@/lib/supabase/server';
+import { checkTeamPermission } from '@/lib/team-permissions';
 import { migrateLegacyMilestones } from '@/lib/timeline-template';
 import { CollectionHubShell } from './CollectionHubShell';
 
@@ -43,6 +45,23 @@ const getCollectionWithTimeline = (id: string) =>
 
 export default async function CollectionHubLayout({ children, params }: LayoutProps) {
   const { id } = await params;
+
+  // Auth + ownership gate: middleware already requires auth for any /collection
+  // path, but the layout reads collection data with supabaseAdmin (RLS bypass)
+  // so we MUST also verify the caller owns (or has team access to) the plan.
+  // Otherwise any logged-in user could load /collection/<other-user-uuid>/...
+  // and read brand DNA, SKUs, financials, presentation overrides, etc.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/');
+
+  const access = await checkTeamPermission({
+    userId: user.id,
+    collectionPlanId: id,
+    permission: 'view_all',
+  });
+  if (!access.allowed) notFound();
+
   const data = await getCollectionWithTimeline(id);
 
   if (!data) notFound();
