@@ -83,10 +83,10 @@ function BlockHeading({
       <Reveal delay={400}>
         <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl border-t ${isDark ? 'border-crema/[0.08]' : 'border-carbon/[0.08]'} pt-8`}>
           <div>
-            <div className={`text-[12px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+            <div className={`text-[12px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
               {beforeAimily}
             </div>
-            <p className={`text-[15px] leading-[1.5] tracking-[-0.01em] italic font-light ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
+            <p className={`text-[17px] leading-[1.5] tracking-[-0.01em] italic ${isDark ? 'text-crema/80' : 'text-carbon/80'}`}>
               {before}
             </p>
           </div>
@@ -94,7 +94,7 @@ function BlockHeading({
             <div className={`text-[12px] tracking-[0.3em] uppercase font-medium mb-3 ${isDark ? 'text-crema' : 'text-carbon'}`}>
               {withAimily}
             </div>
-            <p className={`text-[18px] md:text-[20px] leading-[1.45] tracking-[-0.015em] ${isDark ? 'text-crema' : 'text-carbon'}`}>
+            <p className={`text-[17px] leading-[1.5] tracking-[-0.01em] ${isDark ? 'text-crema' : 'text-carbon'}`}>
               {after}
             </p>
           </div>
