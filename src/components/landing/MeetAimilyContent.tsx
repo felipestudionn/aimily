@@ -197,13 +197,13 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
 
             <Reveal delay={500}>
               <div>
-                <div className="text-[12px] tracking-[0.3em] uppercase text-crema/65 font-medium mb-4">
+                <div className="text-[12px] tracking-[0.3em] uppercase text-crema font-medium mb-4">
                   {h.silogism.aimilyDate}
                 </div>
-                <p className="text-[18px] md:text-[22px] font-light leading-[1.5] tracking-[-0.01em] text-crema">
+                <p className="text-[22px] md:text-[28px] font-light leading-[1.4] tracking-[-0.015em] text-crema">
                   {h.silogism.aimilyText}
                 </p>
-                <p className="mt-5 text-[14px] text-crema/75 leading-[1.65] tracking-[-0.01em]">
+                <p className="mt-6 text-[15px] text-crema/75 leading-[1.65] tracking-[-0.01em]">
                   {h.silogism.aimilyCaption}
                 </p>
               </div>
