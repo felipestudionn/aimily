@@ -1319,7 +1319,9 @@ export function WizardSidebar({
 
               // Per-phase accent for the sidebar pill — same colour the
               // user saw on the launch canvas and on the dashboard cards.
-              const phaseAccent = PHASES[block.id]?.color || '#B6C8C7';
+              // Apply ~50% alpha so the pill feels intuited rather than
+              // a vivid block of paint (matches the dashboard tinting).
+              const phaseAccent = (PHASES[block.id]?.color || '#B6C8C7') + '80';
 
               const handleBlockNav = (e: React.MouseEvent) => {
                 if (allLocked) { e.preventDefault(); return; }

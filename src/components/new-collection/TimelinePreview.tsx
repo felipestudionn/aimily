@@ -105,7 +105,9 @@ export function TimelinePreview({ launchDate, language, asCards = false }: Timel
                 mass: 0.9,
               }}
               style={{
-                backgroundColor: phase.color,
+                // Tint over bg-shade — ~50% alpha so the band feels
+                // intuited, not a vivid block of paint.
+                backgroundColor: phase.color + '80',
                 ...(asCards ? {} : { flexBasis: `${widthPct}%`, flexGrow: 0, flexShrink: 0 }),
               }}
               className={

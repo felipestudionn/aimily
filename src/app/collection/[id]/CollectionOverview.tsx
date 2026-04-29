@@ -279,12 +279,14 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
 
                   // Block accent. All four are pale earth-tones now, so
                   // they share the same carbon text + carbon CTA scheme.
-                  // Only the background color shifts per phase.
+                  // The `80` alpha suffix (~50% opacity) is what makes
+                  // the colour feel "intuited" over bg-shade rather than
+                  // a vivid block of paint.
                   const accentBg = ({
-                    creative: '#B6C8C7',     // sea-foam
-                    planning: '#C5CAA8',     // sage (lightened moss)
-                    development: '#D8BAA0',  // pale clay
-                    go_to_market: '#FFF4CE', // citronella
+                    creative: '#B6C8C780',     // sea-foam @ 50%
+                    planning: '#C5CAA880',     // sage @ 50%
+                    development: '#D8BAA080',  // pale clay @ 50%
+                    go_to_market: '#FFF4CE80', // citronella @ 50%
                   } as const)[block.phase];
 
                   return (
