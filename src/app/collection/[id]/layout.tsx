@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase/server';
@@ -53,7 +53,10 @@ export default async function CollectionHubLayout({ children, params }: LayoutPr
   // and read brand DNA, SKUs, financials, presentation overrides, etc.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/');
+  // No session OR not the owner / no team access → 404. We deliberately
+  // hide both cases as the same response: no information about whether
+  // the resource exists is leaked to a non-owner.
+  if (!user) notFound();
 
   const access = await checkTeamPermission({
     userId: user.id,
