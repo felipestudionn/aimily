@@ -74,7 +74,10 @@ export async function GET(request: NextRequest) {
           console.error('[auth/callback] welcome email error:', err);
           // Never block signup on email error
         }
-        return NextResponse.redirect(`${origin}/my-collections`);
+        // Pass signup=1 so the client-side analytics handler can fire
+        // SIGNUP_COMPLETED. The query is stripped from the URL after
+        // the toast/track effect runs.
+        return NextResponse.redirect(`${origin}/my-collections?signup=1`);
       }
 
       // Default: redirect to next param or my-collections

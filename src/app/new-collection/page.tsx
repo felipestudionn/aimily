@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { track, Events } from '@/lib/posthog';
 
 /* ═══════════════════════════════════════════════════════════
    DYNAMIC SEASONS — generate from current date + 2 years
@@ -144,7 +145,10 @@ export default function NewCollectionPage() {
         }),
       });
       const data = await res.json();
-      if (data.id) router.push(`/collection/${data.id}`);
+      if (data.id) {
+        track(Events.COLLECTION_CREATED, { season, launchDate });
+        router.push(`/collection/${data.id}`);
+      }
     } catch (error) {
       console.error('Error creating collection:', error);
       setCreating(false);

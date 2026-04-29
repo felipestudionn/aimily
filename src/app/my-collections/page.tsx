@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
+import { track, Events } from '@/lib/posthog';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
 import { TosGate } from '@/components/legal/TosGate';
@@ -88,10 +89,16 @@ export default function MyCollectionsPage() {
     const params = new URLSearchParams(window.location.search);
     const billing = params.get('billing');
     const credits = params.get('credits');
-    if (!billing && !credits) return;
+    const signup = params.get('signup');
+    if (!billing && !credits && !signup) return;
+
+    if (signup === '1') {
+      track(Events.SIGNUP_COMPLETED);
+    }
 
     if (billing === 'success') {
       toast(t.account.subscriptionActivated, 'success', 5000);
+      track(Events.SUBSCRIPTION_ACTIVATED);
       refreshSubscription();
     } else if (credits === 'success') {
       toast(t.account.creditsAdded, 'success', 5000);
@@ -104,6 +111,7 @@ export default function MyCollectionsPage() {
     const url = new URL(window.location.href);
     url.searchParams.delete('billing');
     url.searchParams.delete('credits');
+    url.searchParams.delete('signup');
     window.history.replaceState({}, '', url.pathname + url.search + url.hash);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
