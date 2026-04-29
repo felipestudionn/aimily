@@ -261,7 +261,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
           {activeBlock ? (
             <>
               <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-                {activeBlock.title}
+                {localizedBlock(activeBlock.phase).title}
               </h1>
               <p className="text-[13px] font-medium text-carbon/40 tracking-[-0.01em] mt-2">
                 {titleDraft}
