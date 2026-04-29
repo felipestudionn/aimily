@@ -62,6 +62,15 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   const periodStart = itemAny?.current_period_start ?? subAny.current_period_start;
   const periodEnd = itemAny?.current_period_end ?? subAny.current_period_end;
 
+  // When a subscription transitions back to active/trialing, any
+  // refund-in-flight metadata from a *previous* (refunded) sub on the
+  // same customer is stale. Clear it so /account doesn't render
+  // "tu reembolso de €X está en camino" on a healthy paid sub, and so
+  // a future cancel of this new sub doesn't surface the old refund's
+  // amount. Invariant enforced: an active/trialing row has null refund
+  // fields.
+  const isActiveSub = status === 'active' || status === 'trialing';
+
   const { error } = await supabaseAdmin
     .from('subscriptions')
     .update({
@@ -75,6 +84,11 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
         ? new Date(periodEnd * 1000).toISOString()
         : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
+      ...(isActiveSub ? {
+        refunded_at: null,
+        refund_amount_cents: null,
+        refund_currency: null,
+      } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_customer_id', customerId);
@@ -116,6 +130,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }
 
   // Subscription checkout — ensure subscription row has customer ID
+  // and reset any stale refund metadata from a previous refunded sub.
   await supabaseAdmin
     .from('subscriptions')
     .upsert({
@@ -123,6 +138,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripe_customer_id: customerId,
       plan: session.metadata?.plan || 'starter',
       status: 'active',
+      refunded_at: null,
+      refund_amount_cents: null,
+      refund_currency: null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
 }

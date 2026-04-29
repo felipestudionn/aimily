@@ -172,8 +172,14 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
       body: JSON.stringify({ plan: targetPlan, annual }),
     });
 
-    const { url } = await res.json();
-    if (url) window.location.href = url;
+    const data = await res.json();
+    // Server blocks double-subscription: redirect to Customer Portal so
+    // Stripe handles plan changes with proration.
+    if (res.status === 409 && data.portalRequired) {
+      await openPortal();
+      return;
+    }
+    if (data.url) window.location.href = data.url;
   };
 
   const buyCreditPack = async (pack: 'pack_50' | 'pack_250' | 'pack_1000') => {

@@ -291,6 +291,7 @@ export type HomeDict = {
     ctaSubscribe: string;
     ctaContact: string;
     ctaCurrent: string;
+    ctaChangePlan: string;
     h: {
       starter1: string; starter2: string; starter3: string; starter4: string;
       pro1: string; pro2: string; pro3: string; pro4: string;
@@ -574,6 +575,7 @@ const en: HomeDict = {
     ctaSubscribe: 'Subscribe',
     ctaContact: 'Contact sales',
     ctaCurrent: 'Current plan',
+    ctaChangePlan: 'Change plan',
     h: {
       starter1: 'Unlimited brands & collections',
       starter2: 'All 28 aimily models',
@@ -869,6 +871,7 @@ const es: HomeDict = {
     ctaSubscribe: 'Suscribirse',
     ctaContact: 'Contactar ventas',
     ctaCurrent: 'Plan actual',
+    ctaChangePlan: 'Cambiar plan',
     h: {
       starter1: 'Marcas y colecciones ilimitadas',
       starter2: 'Los 28 modelos aimily',
@@ -1161,6 +1164,7 @@ const fr: HomeDict = {
     ctaSubscribe: 'S’abonner',
     ctaContact: 'Contacter les ventes',
     ctaCurrent: 'Plan actuel',
+    ctaChangePlan: 'Changer de plan',
     h: {
       starter1: 'Marques et collections illimitées',
       starter2: 'Les 28 modèles aimily',
@@ -1453,6 +1457,7 @@ const it: HomeDict = {
     ctaSubscribe: 'Abbonati',
     ctaContact: 'Contatta vendite',
     ctaCurrent: 'Piano attuale',
+    ctaChangePlan: 'Cambia piano',
     h: {
       starter1: 'Brand e collezioni illimitati',
       starter2: 'I 28 modelli aimily',
@@ -1745,6 +1750,7 @@ const de: HomeDict = {
     ctaSubscribe: 'Abonnieren',
     ctaContact: 'Vertrieb kontaktieren',
     ctaCurrent: 'Aktueller Plan',
+    ctaChangePlan: 'Plan ändern',
     h: {
       starter1: 'Unbegrenzte Marken & Kollektionen',
       starter2: 'Alle 28 aimily-Modelle',
@@ -2037,6 +2043,7 @@ const pt: HomeDict = {
     ctaSubscribe: 'Assinar',
     ctaContact: 'Contactar vendas',
     ctaCurrent: 'Plano atual',
+    ctaChangePlan: 'Mudar plano',
     h: {
       starter1: 'Marcas e coleções ilimitadas',
       starter2: 'Os 28 modelos aimily',
@@ -2329,6 +2336,7 @@ const nl: HomeDict = {
     ctaSubscribe: 'Abonneren',
     ctaContact: 'Sales contacteren',
     ctaCurrent: 'Huidig plan',
+    ctaChangePlan: 'Plan wijzigen',
     h: {
       starter1: 'Onbeperkte merken & collecties',
       starter2: 'Alle 28 aimily-modellen',
@@ -2621,6 +2629,7 @@ const sv: HomeDict = {
     ctaSubscribe: 'Prenumerera',
     ctaContact: 'Kontakta sälj',
     ctaCurrent: 'Aktuell plan',
+    ctaChangePlan: 'Byt plan',
     h: {
       starter1: 'Obegränsade märken & kollektioner',
       starter2: 'Alla 28 aimily-modeller',
@@ -2913,6 +2922,7 @@ const no: HomeDict = {
     ctaSubscribe: 'Abonner',
     ctaContact: 'Kontakt salg',
     ctaCurrent: 'Gjeldende plan',
+    ctaChangePlan: 'Bytt plan',
     h: {
       starter1: 'Ubegrensede merker & kolleksjoner',
       starter2: 'Alle 28 aimily-modeller',

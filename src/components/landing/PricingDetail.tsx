@@ -92,6 +92,15 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
     }
     if (!user) { openAuth(); return; }
     if (planId === subscription?.plan) return;
+    // Has-subscription users changing plan: route through Customer Portal
+    // so Stripe handles proration. Avoids creating a parallel sub that
+    // would double-bill the customer.
+    if (isPaid && subscription?.plan !== planId) {
+      setLoadingPlan(planId);
+      try { await openPortal(); }
+      finally { setLoadingPlan(null); }
+      return;
+    }
     setLoadingPlan(planId);
     try { await checkoutPlan(planId, annual); }
     finally { setLoadingPlan(null); }
@@ -220,17 +229,18 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
 
                 {(() => {
                   // CTA copy depends on context:
-                  //   - enterprise plan      → Contact sales
-                  //   - this is current plan → Current plan (disabled)
-                  //   - logged in (trial/paid + not this plan) → Subscribe (no "free" promise — they already passed signup)
-                  //   - anonymous            → Start free (signup CTA)
+                  //   - enterprise plan       → Contact sales
+                  //   - this is current plan  → Current plan (disabled)
+                  //   - paid user, other plan → Change plan (opens Stripe Portal so Stripe handles proration)
+                  //   - logged in trial       → Subscribe
+                  //   - anonymous             → Start free (signup CTA)
                   const isEnterprise = plan.id === 'enterprise';
                   const ctaLabel = isEnterprise
                     ? p.ctaContact
                     : isCurrent
                       ? p.ctaCurrent
                       : user
-                        ? p.ctaSubscribe
+                        ? (isPaid ? p.ctaChangePlan : p.ctaSubscribe)
                         : p.ctaStart;
                   return (
                     <button

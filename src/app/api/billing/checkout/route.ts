@@ -16,9 +16,32 @@ export async function POST(req: NextRequest) {
     // Get or create Stripe customer
     const { data: existingSub } = await supabaseAdmin
       .from('subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, stripe_subscription_id, status')
       .eq('user_id', user.id)
       .single();
+
+    // Guard against double-billing: if the user already has a live
+    // Stripe subscription (active / trialing / past_due / unpaid /
+    // incomplete), creating a second checkout session would result in
+    // two parallel subscriptions on the same customer. Subscription
+    // changes must go through the Customer Portal so Stripe handles
+    // proration. Credit-pack purchases are exempt — they're one-time
+    // payments that stack on top of any plan.
+    const liveSubStates = ['active', 'trialing', 'past_due', 'unpaid', 'incomplete'];
+    if (
+      !body.pack &&
+      existingSub?.stripe_subscription_id &&
+      liveSubStates.includes(existingSub.status as string)
+    ) {
+      return NextResponse.json(
+        {
+          error: 'has_active_subscription',
+          message: 'You already have a subscription. Use "Manage Subscription" to change plan.',
+          portalRequired: true,
+        },
+        { status: 409 },
+      );
+    }
 
     let customerId = existingSub?.stripe_customer_id;
 
