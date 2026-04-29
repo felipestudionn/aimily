@@ -27,7 +27,8 @@ function mapSubscriptionPlan(priceId: string): string {
 
 async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
-  const priceId = subscription.items.data[0]?.price.id;
+  const item = subscription.items.data[0];
+  const priceId = item?.price.id;
   const plan = mapSubscriptionPlan(priceId);
 
   // Map Stripe status to our status
@@ -43,8 +44,15 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
   };
   const status = statusMap[subscription.status] || 'active';
 
+  // Stripe API 2025+ moved current_period_start/end from the subscription
+  // root onto each subscription item. Read from the item, fall back to
+  // the legacy root for older API versions.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sub = subscription as any;
+  const itemAny = item as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const subAny = subscription as any;
+  const periodStart = itemAny?.current_period_start ?? subAny.current_period_start;
+  const periodEnd = itemAny?.current_period_end ?? subAny.current_period_end;
 
   const { error } = await supabaseAdmin
     .from('subscriptions')
@@ -52,11 +60,11 @@ async function handleSubscriptionEvent(subscription: Stripe.Subscription) {
       stripe_subscription_id: subscription.id,
       plan,
       status,
-      current_period_start: sub.current_period_start
-        ? new Date(sub.current_period_start * 1000).toISOString()
+      current_period_start: periodStart
+        ? new Date(periodStart * 1000).toISOString()
         : null,
-      current_period_end: sub.current_period_end
-        ? new Date(sub.current_period_end * 1000).toISOString()
+      current_period_end: periodEnd
+        ? new Date(periodEnd * 1000).toISOString()
         : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
       updated_at: new Date().toISOString(),
