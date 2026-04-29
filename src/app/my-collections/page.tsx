@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Navbar } from '@/components/layout/navbar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useToast } from '@/components/ui/toast';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
@@ -62,9 +64,12 @@ interface CollectionWithProgress extends CollectionPlan {
 export default function MyCollectionsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const t = useTranslation();
   const { language } = useLanguage();
+  const { toast } = useToast();
+  const { refresh: refreshSubscription } = useSubscription();
   const [collections, setCollections] = useState<CollectionPlan[]>([]);
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [skuCounts, setSkuCounts] = useState<Map<string, number>>(new Map());
@@ -75,6 +80,30 @@ export default function MyCollectionsPage() {
       router.push('/');
     }
   }, [user, authLoading, router]);
+
+  // Stripe return handler — show feedback and refresh subscription state
+  useEffect(() => {
+    const billing = searchParams.get('billing');
+    const credits = searchParams.get('credits');
+    if (!billing && !credits) return;
+
+    if (billing === 'success') {
+      toast(t.account.subscriptionActivated, 'success', 5000);
+      refreshSubscription();
+    } else if (credits === 'success') {
+      toast(t.account.creditsAdded, 'success', 5000);
+      refreshSubscription();
+    } else if (billing === 'canceled' || credits === 'canceled') {
+      toast(t.account.checkoutCanceled, 'info', 4000);
+    }
+
+    // Strip the query param without adding to history
+    const url = new URL(window.location.href);
+    url.searchParams.delete('billing');
+    url.searchParams.delete('credits');
+    window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     if (user) {

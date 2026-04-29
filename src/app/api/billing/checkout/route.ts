@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         payment_method_types: ['card'],
         line_items: [{ price: packConfig.stripePriceId, quantity: 1 }],
         success_url: `${req.nextUrl.origin}/my-collections?credits=success`,
-        cancel_url: `${req.nextUrl.origin}/pricing?credits=canceled`,
+        cancel_url: `${req.nextUrl.origin}/?credits=canceled#pricing`,
         metadata: {
           supabase_user_id: user.id,
           pack: body.pack,
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${req.nextUrl.origin}/my-collections?billing=success`,
-      cancel_url: `${req.nextUrl.origin}/pricing?billing=canceled`,
+      cancel_url: `${req.nextUrl.origin}/?billing=canceled#pricing`,
       metadata: {
         supabase_user_id: user.id,
         plan,
