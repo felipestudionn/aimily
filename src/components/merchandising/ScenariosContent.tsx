@@ -1,4 +1,5 @@
 'use client';
+import { useTranslation } from '@/i18n';
 
 import { useState } from 'react';
 import { Sparkles, Loader2, Check, RefreshCw, Users, DollarSign, Calendar, Target } from 'lucide-react';
@@ -96,6 +97,7 @@ function ScenarioCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const t = useTranslation();
   return (
     <button
       type="button"
@@ -129,7 +131,7 @@ function ScenarioCard({
         <div className="flex items-start gap-2">
           <DollarSign className="h-3.5 w-3.5 text-carbon/35 mt-0.5 shrink-0" />
           <div>
-            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">Investment</div>
+            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">{(t.fieldLabels as Record<string, string>)?.investment || "Investment"}</div>
             <div className="text-[18px] font-semibold text-carbon tracking-[-0.02em] leading-tight">
               €{(scenario.financials.totalInvestment / 1000).toFixed(0)}K
             </div>
@@ -147,7 +149,7 @@ function ScenarioCard({
         <div className="flex items-start gap-2">
           <Calendar className="h-3.5 w-3.5 text-carbon/35 mt-0.5 shrink-0" />
           <div>
-            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">Price</div>
+            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">{(t.fieldLabels as Record<string, string>)?.price || "Price"}</div>
             <div className="text-[18px] font-semibold text-carbon tracking-[-0.02em] leading-tight">
               €{scenario.priceArchitecture.min}–{scenario.priceArchitecture.max}
             </div>
@@ -156,7 +158,7 @@ function ScenarioCard({
       </div>
 
       <div className="pt-4 border-t border-carbon/[0.06]">
-        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-2">Families</div>
+        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-2">{(t.fieldLabels as Record<string, string>)?.families || "Families"}</div>
         <div className="flex flex-wrap gap-1.5">
           {scenario.families.map((f, i) => (
             <span key={i} className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-carbon/[0.04] text-[11px] text-carbon/70">
@@ -168,7 +170,7 @@ function ScenarioCard({
       </div>
 
       <div className="mt-auto pt-4">
-        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-1.5">Best for</div>
+        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.bestFor || "Best for"}</div>
         <p className="text-[12px] text-carbon/55 leading-relaxed">{scenario.bestFor}</p>
       </div>
     </button>
@@ -178,6 +180,7 @@ function ScenarioCard({
 /* ═══ Main ═══ */
 
 export function ScenariosContent({ mode, data, onChange, collectionContext, language = 'en' }: Props) {
+  const t = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -341,7 +344,7 @@ export function ScenariosContent({ mode, data, onChange, collectionContext, lang
       {loading && (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-carbon/40" />
-          <p className="text-[13px] text-carbon/50">Reading your CIS and building 3 strategic scenarios…</p>
+          <p className="text-[13px] text-carbon/50">{(t.scenarios as Record<string, string>)?.buildingScenarios || "Reading your CIS and building 3 strategic scenarios…"}</p>
         </div>
       )}
 
@@ -355,7 +358,7 @@ export function ScenariosContent({ mode, data, onChange, collectionContext, lang
         <div className="flex flex-col gap-6">
           {data.marketInsights?.marketOpportunity && (
             <div className="bg-carbon/[0.02] border border-carbon/[0.06] rounded-[14px] p-5 max-w-[900px] mx-auto text-center">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">Market opportunity</div>
+              <div className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-2">{(t.fieldLabels as Record<string, string>)?.marketOpportunity || "Market opportunity"}</div>
               <p className="text-[14px] text-carbon/70 leading-relaxed italic">
                 {data.marketInsights.marketOpportunity}
               </p>

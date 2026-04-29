@@ -1036,7 +1036,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
       <div className="bg-white border border-carbon/[0.06]">
         <div className="px-6 sm:px-8 py-5 flex items-center justify-between gap-4 flex-wrap border-b border-carbon/[0.04]">
           <div className="flex items-center gap-3 flex-wrap">
-            <p className="text-[13px] font-semibold tracking-[0.12em] uppercase text-carbon/70 whitespace-nowrap">Range Plan</p>
+            <p className="text-[13px] font-semibold tracking-[0.12em] uppercase text-carbon/70 whitespace-nowrap">{(t.fieldLabels as Record<string, string>)?.rangePlan || "Range Plan"}</p>
             <button onClick={() => setShowAddForm(!showAddForm)} className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors whitespace-nowrap">
               <Plus className="h-3 w-3" /> Add SKU
             </button>
@@ -1204,13 +1204,13 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                         <table className="w-full text-sm">
                           <thead>
                             <tr>
-                              <th className="text-left py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Product</th>
-                              <th className="text-left py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Type</th>
+                              <th className="text-left py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">{(t.fieldLabels as Record<string, string>)?.product || "Product"}</th>
+                              <th className="text-left py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">{(t.fieldLabels as Record<string, string>)?.type || "Type"}</th>
                               <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">COGS</th>
                               <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">PVP</th>
-                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Units</th>
-                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Sales</th>
-                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">Margin</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">{(t.fieldLabels as Record<string, string>)?.units || "Units"}</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">{(t.fieldLabels as Record<string, string>)?.sales || "Sales"}</th>
+                              <th className="text-right py-1.5 px-2 text-[11px] font-medium tracking-[0.06em] uppercase text-carbon/50">{(t.fieldLabels as Record<string, string>)?.margin || "Margin"}</th>
                               <th className="w-8"></th>
                             </tr>
                           </thead>
@@ -1326,16 +1326,16 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                         <p className="text-[14px] font-semibold text-carbon">€{sku.cost}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
+                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">{(t.fieldLabels as Record<string, string>)?.units || "Units"}</p>
                         <p className="text-[14px] font-semibold text-carbon">{sku.buy_units}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
+                        <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">{(t.fieldLabels as Record<string, string>)?.margin || "Margin"}</p>
                         <p className="text-[14px] font-semibold text-carbon">{Math.round(sku.margin)}%</p>
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-carbon/[0.06] flex items-center justify-between">
-                      <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Next step</span>
+                      <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">{(t.fieldLabels as Record<string, string>)?.nextStep || "Next step"}</span>
                       <span className="text-[11px] font-semibold text-carbon tracking-[-0.01em]">{ctaText}</span>
                     </div>
                   </div>
@@ -1497,11 +1497,11 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                           <p className="text-[15px] font-semibold text-carbon">€{sku.cost}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Units</p>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">{(t.fieldLabels as Record<string, string>)?.units || "Units"}</p>
                           <p className="text-[15px] font-semibold text-carbon">{sku.buy_units}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">Margin</p>
+                          <p className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold mb-0.5">{(t.fieldLabels as Record<string, string>)?.margin || "Margin"}</p>
                           <p className="text-[15px] font-semibold text-carbon">{Math.round(sku.margin)}%</p>
                         </div>
                       </div>
@@ -1683,6 +1683,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 /* ── Pipeline View ── */
 /* ═══ ORDERS VIEW — Approved SKUs grouped by factory ═══ */
 function OrdersView({ skus, collectionPlanId, onSkuClick }: { skus: SKU[]; collectionPlanId: string; onSkuClick: (sku: SKU) => void }) {
+  const t = useTranslation();
   const approvedSkus = skus.filter(s => s.production_approved);
 
   if (approvedSkus.length === 0) {
@@ -1776,7 +1777,7 @@ function OrdersView({ skus, collectionPlanId, onSkuClick }: { skus: SKU[]; colle
               <table className="w-full text-[12px]">
                 <thead>
                   <tr>
-                    <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Product</th>
+                    <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">{(t.fieldLabels as Record<string, string>)?.product || "Product"}</th>
                     <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Family</th>
                     <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Quantity</th>
                     <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Unit Cost</th>

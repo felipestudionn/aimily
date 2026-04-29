@@ -1,4 +1,5 @@
 'use client';
+import { useTranslation } from '@/i18n';
 
 import { useEffect, useMemo } from 'react';
 import { EditorialText } from './EditorialText';
@@ -67,6 +68,7 @@ export function BrandBoardCanvas({
   onTaglineChange,
   moodboardImages = [],
 }: Props) {
+  const t = useTranslation();
   const activeFont = useMemo(() => typographyFont.trim().split(/[,\n]/)[0].trim(), [typographyFont]);
   const fontStack = activeFont ? `"${activeFont}", ui-serif, Georgia, serif` : 'ui-serif, Georgia, serif';
 
@@ -105,7 +107,7 @@ export function BrandBoardCanvas({
             <input
               value={brandName}
               onChange={(e) => onBrandNameChange(e.target.value)}
-              placeholder="Brand"
+              placeholder={(t.brandBoard as Record<string, string>)?.brandPlaceholder || "Brand"}
               className="bg-transparent border-0 outline-none text-white text-[64px] md:text-[84px] font-semibold tracking-[-0.045em] leading-[0.9] placeholder:text-white/30 text-center drop-shadow-[0_2px_14px_rgba(0,0,0,0.3)] w-full"
               style={{ fontFamily: fontStack }}
             />
@@ -113,7 +115,7 @@ export function BrandBoardCanvas({
               <input
                 value={tagline}
                 onChange={(e) => onTaglineChange?.(e.target.value)}
-                placeholder="Tagline"
+                placeholder={(t.brandBoard as Record<string, string>)?.taglinePlaceholder || "Tagline"}
                 className="bg-transparent border-0 outline-none text-white/90 text-[10px] tracking-[0.4em] uppercase font-medium text-center placeholder:text-white/30 w-full max-w-[380px] drop-shadow-[0_1px_4px_rgba(0,0,0,0.2)]"
               />
             )}
@@ -125,7 +127,7 @@ export function BrandBoardCanvas({
           className="col-span-7 row-span-4 relative rounded-[12px] overflow-hidden flex items-center justify-center"
           style={{ backgroundColor: logoBg }}
         >
-          <SectionLabel className="absolute top-3 left-4">Logo</SectionLabel>
+          <SectionLabel className="absolute top-3 left-4">{(t.brandBoard as Record<string, string>)?.logo || "Logo"}</SectionLabel>
           <span
             className="text-[48px] font-semibold tracking-[-0.04em] text-carbon leading-[0.9]"
             style={{ fontFamily: fontStack }}
@@ -137,7 +139,7 @@ export function BrandBoardCanvas({
           className="col-span-5 row-span-4 relative rounded-[12px] overflow-hidden flex items-center justify-center"
           style={{ backgroundColor: submarkBg }}
         >
-          <SectionLabel className="absolute top-3 left-4 text-white/70">Icon</SectionLabel>
+          <SectionLabel className="absolute top-3 left-4 text-white/70">{(t.brandBoard as Record<string, string>)?.icon || "Icon"}</SectionLabel>
           <div className="w-20 h-20 rounded-full border-[3px] border-white/90 flex items-center justify-center">
             <div className="w-8 h-8 rounded-full bg-white/90" />
           </div>
@@ -145,7 +147,7 @@ export function BrandBoardCanvas({
 
         {/* ═══ ROW 3: Palette 5 + Font 4 + Mockup 3 (3 cols asymmetric) · 4 rows (~140px) ═══ */}
         <div className="col-span-5 row-span-4 relative rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] p-4 flex flex-col">
-          <SectionLabel>Colour Palette</SectionLabel>
+          <SectionLabel>{(t.brandBoard as Record<string, string>)?.colourPalette || "Colour Palette"}</SectionLabel>
           <div className="flex-1 flex items-center justify-around gap-1 pt-2">
             {palette.slice(0, 5).map((c, i) => (
               <div key={i} className="flex flex-col items-center gap-1.5">
@@ -175,11 +177,11 @@ export function BrandBoardCanvas({
 
         <div className="col-span-4 row-span-4 relative rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] p-4 flex flex-col">
           <div className="flex items-center justify-between">
-            <SectionLabel>Font</SectionLabel>
+            <SectionLabel>{(t.brandBoard as Record<string, string>)?.font || "Font"}</SectionLabel>
             <input
               value={typographyFont}
               onChange={(e) => onTypographyFontChange(e.target.value)}
-              placeholder="Font name…"
+              placeholder={(t.brandBoard as Record<string, string>)?.fontNamePlaceholder || "Font name…"}
               className="px-2 py-0.5 text-[9px] text-carbon bg-white rounded-full border border-carbon/[0.08] outline-none placeholder:text-carbon/30 w-28 focus:border-carbon/30"
             />
           </div>
@@ -209,9 +211,9 @@ export function BrandBoardCanvas({
 
         {/* ═══ ROW 4: Voice&Tone 8 + Mockup 4 (asymmetric) · 5 rows (~170px) ═══ */}
         <div className="col-span-8 row-span-5 relative rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] p-4 flex flex-col gap-2">
-          <SectionLabel>Voice &amp; Tone</SectionLabel>
+          <SectionLabel>{(t.brandBoard as Record<string, string>)?.voiceAndTone || "Voice & Tone"}</SectionLabel>
           <div className="flex-1 overflow-hidden">
-            <EditorialText value={tone} onChange={onToneChange} placeholder="Brand voice & tone — click to edit…" size="md" />
+            <EditorialText value={tone} onChange={onToneChange} placeholder={(t.brandBoard as Record<string, string>)?.voicePlaceholder || "Brand voice & tone — click to edit…"} size="md" />
           </div>
         </div>
 
@@ -219,7 +221,7 @@ export function BrandBoardCanvas({
 
         {/* ═══ ROW 5: Typography specimen 8 + Mockup 4 (asymmetric) · 6 rows (~200px) ═══ */}
         <div className="col-span-8 row-span-6 relative rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] p-4 flex flex-col gap-2 overflow-hidden">
-          <SectionLabel>Typography Specimen</SectionLabel>
+          <SectionLabel>{(t.brandBoard as Record<string, string>)?.typographySpecimen || "Typography Specimen"}</SectionLabel>
           <div className="flex-1 flex gap-6 items-center" style={{ fontFamily: fontStack }}>
             <span className="text-[120px] leading-[0.85] tracking-[-0.045em] font-medium text-carbon select-none shrink-0">Aa</span>
             <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -243,13 +245,13 @@ export function BrandBoardCanvas({
 
         {/* ═══ ROW 6: Visual Identity FULL · 7 rows (~235px) ═══ */}
         <div className="col-span-12 row-span-7 relative rounded-[12px] bg-carbon/[0.02] border border-carbon/[0.06] p-4 flex flex-col gap-2 overflow-hidden">
-          <SectionLabel>Visual Identity</SectionLabel>
+          <SectionLabel>{(t.brandBoard as Record<string, string>)?.visualIdentity || "Visual Identity"}</SectionLabel>
           <div className="grid grid-cols-[1fr_320px] gap-4 flex-1 overflow-hidden">
             <div className="overflow-hidden">
               <EditorialText
                 value={style}
                 onChange={onStyleChange}
-                placeholder="How does this brand look? Photography, treatment, spacing…"
+                placeholder={(t.brandBoard as Record<string, string>)?.visualIdentityPlaceholder || "How does this brand look? Photography, treatment, spacing…"}
                 size="md"
               />
             </div>
@@ -261,7 +263,7 @@ export function BrandBoardCanvas({
                     <img src={url} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-[8px] tracking-[0.2em] uppercase text-carbon/25 font-semibold">Mood</span>
+                      <span className="text-[8px] tracking-[0.2em] uppercase text-carbon/25 font-semibold">{(t.fieldLabels as Record<string, string>)?.mood || "Mood"}</span>
                     </div>
                   )}
                 </div>

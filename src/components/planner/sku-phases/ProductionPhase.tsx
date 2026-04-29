@@ -370,7 +370,7 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
                   <div key={idx} className="flex items-center gap-2.5 py-2 px-3 bg-carbon/[0.01] border border-carbon/[0.04]">
                     {item.ok ? <Check className="h-4 w-4 text-[#2d6a4f]" /> : <AlertCircle className="h-4 w-4 text-carbon/20" />}
                     <span className={`text-[12px] ${item.ok ? 'text-carbon' : 'text-carbon/35'}`}>{item.label}</span>
-                    {item.ok && <span className="ml-auto text-[10px] font-medium tracking-[0.06em] uppercase text-[#2d6a4f]/70">Approved</span>}
+                    {item.ok && <span className="ml-auto text-[10px] font-medium tracking-[0.06em] uppercase text-[#2d6a4f]/70">{(t.status as Record<string, string>)?.approved || "Approved"}</span>}
                   </div>
                 ))}
               </div>
@@ -381,26 +381,26 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
                   <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/50">{stepLabel('orderSummary') || 'Order Summary'}</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Factory</p>
+                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.factory || "Factory"}</p>
                       <p className="text-[13px] text-carbon mt-0.5">{pd.factory_name || sku.sourcing_data?.factory || '—'}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Quantity</p>
+                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.quantity || "Quantity"}</p>
                       <p className="text-[13px] text-carbon mt-0.5">{(pd.order_quantity || sku.buy_units).toLocaleString()} units</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Unit Cost</p>
+                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.unitCost || "Unit Cost"}</p>
                       <p className="text-[13px] text-carbon mt-0.5">€{pd.unit_cost_final || sku.cost}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Total</p>
+                      <p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.total || "Total"}</p>
                       <p className="text-[13px] font-medium text-carbon mt-0.5">€{((pd.order_quantity || sku.buy_units) * (pd.unit_cost_final || sku.cost)).toLocaleString()}</p>
                     </div>
                   </div>
                   {(pd.payment_terms || pd.shipping_method || pd.target_delivery_date) && (
                     <div className="grid grid-cols-3 gap-3 pt-2 border-t border-carbon/[0.04]">
-                      {pd.target_delivery_date && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Delivery</p><p className="text-[12px] text-carbon mt-0.5">{pd.target_delivery_date}</p></div>}
-                      {pd.payment_terms && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Payment</p><p className="text-[12px] text-carbon mt-0.5">{pd.payment_terms}</p></div>}
+                      {pd.target_delivery_date && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.delivery || "Delivery"}</p><p className="text-[12px] text-carbon mt-0.5">{pd.target_delivery_date}</p></div>}
+                      {pd.payment_terms && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.payment || "Payment"}</p><p className="text-[12px] text-carbon mt-0.5">{pd.payment_terms}</p></div>}
                       {pd.shipping_method && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Shipping</p><p className="text-[12px] text-carbon mt-0.5">{pd.shipping_method}</p></div>}
                     </div>
                   )}

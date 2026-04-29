@@ -52,15 +52,15 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDele
             <div className="bg-carbon/[0.02] rounded-[16px] p-5 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Name</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.name || "Name"}</p>
                   <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.name}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Family</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.family || "Family"}</p>
                   <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.family}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Category</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.category || "Category"}</p>
                   <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{categoryLabel}</p>
                 </div>
                 <div>
@@ -78,11 +78,11 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDele
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Segmentation</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.segmentation || "Segmentation"}</p>
                   <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.type === 'IMAGEN' ? 'Image' : sku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">Drop</p>
+                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.drop || "Drop"}</p>
                   <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">Drop {sku.drop_number}</p>
                 </div>
               </div>
