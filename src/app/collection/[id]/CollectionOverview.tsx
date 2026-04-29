@@ -9,6 +9,7 @@ import type { CollectionPlan } from '@/types/planner';
 import { computeWizardState } from '@/lib/wizard-phases';
 import { useRouter } from 'next/navigation';
 import { useWorkspaceNavigationOptional } from '@/components/workspace/workspace-context';
+import { useTranslation } from '@/i18n';
 
 /* ═══════════════════════════════════════════════════════════
    Block & sub-block definitions
@@ -113,6 +114,38 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const [animating, setAnimating] = useState(false);
   const [exitingSubIdx, setExitingSubIdx] = useState<number | null>(null);
   const workspaceNav = useWorkspaceNavigationOptional();
+  const t = useTranslation();
+  const ov = t.overview as Record<string, string>;
+
+  // Localised title + description for each top-level block card. Fallback
+  // to the English BLOCK_DEFS values so we don't render `undefined` when
+  // a key is missing in a given locale.
+  const localizedBlock = (phase: TimelinePhase): { title: string; description: string } => {
+    const block = BLOCK_DEFS.find((b) => b.phase === phase)!;
+    const titleKey = ({
+      creative: 'block01Title',
+      planning: 'block02Title',
+      development: 'block03Title',
+      go_to_market: 'block04Title',
+    } as const)[phase];
+    const descKey = ({
+      creative: 'block01Desc',
+      planning: 'block02Desc',
+      development: 'block03Desc',
+      go_to_market: 'block04Desc',
+    } as const)[phase];
+    return {
+      title: ov[titleKey] || block.title,
+      description: ov[descKey] || block.description,
+    };
+  };
+
+  const ctaCopy = (state: 'completed' | 'continue' | 'start') =>
+    ({
+      completed: ov.completed || 'Completed',
+      continue: ov.ctaContinue || 'Continue',
+      start: ov.start || 'Start',
+    })[state];
 
   // Open block sub-dashboard when ?block= param is present
   useEffect(() => {
@@ -305,11 +338,11 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       </div>
 
                       <h3 className="text-[24px] md:text-[28px] font-semibold tracking-[-0.03em] leading-[1.15] mb-5 text-carbon">
-                        {block.title}
+                        {localizedBlock(block.phase).title}
                       </h3>
 
                       <p className="text-[14px] leading-[1.7] tracking-[-0.02em] text-carbon/60">
-                        {block.description}
+                        {localizedBlock(block.phase).description}
                       </p>
 
                       <div className="flex-1" />
@@ -320,7 +353,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                             ? 'border border-carbon/[0.20] text-carbon group-hover:bg-carbon/[0.05]'
                             : 'bg-carbon text-crema group-hover:bg-carbon/90'
                         }`}>
-                          {isComplete ? 'Completed' : isStarted ? 'Continue' : 'Start'}
+                          {ctaCopy(isComplete ? 'completed' : isStarted ? 'continue' : 'start')}
                           {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
                           {isComplete && <Check className="h-3.5 w-3.5" />}
                         </div>

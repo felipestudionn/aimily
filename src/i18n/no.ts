@@ -365,6 +365,15 @@ export const no: Dictionary = {
     launchGrowth: 'Lansering og vekst',
     openBuilder: 'Åpne Builder',
     completed: 'Fullført',
+    block01Title: 'Kreativ Retning og Merkevare',
+    block01Desc: 'Visjon, research og merkevareidentitet for kolleksjonen din.',
+    block02Title: 'Merchandising og Planlegging',
+    block02Desc: 'Innkjøpsstrategi, sortiment, kanaler og budsjett.',
+    block03Title: 'Design og Utvikling',
+    block03Desc: 'Skisse, tech pack, prototype, produksjon og endelig utvalg.',
+    block04Title: 'Markedsføring og Salg',
+    block04Desc: 'Lanseringsplan, innhold, kommunikasjon og kommersiell prestasjon.',
+    ctaContinue: 'Fortsett',
   },
 
   // ─── Collection Sidebar ───

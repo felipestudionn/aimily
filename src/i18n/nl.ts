@@ -373,6 +373,15 @@ export const nl: Dictionary = {
     launchGrowth: 'Lancering & groei',
     openBuilder: 'Open Builder',
     completed: 'Voltooid',
+    block01Title: 'Creatieve Directie en Merk',
+    block01Desc: 'Visie, onderzoek en merkidentiteit voor je collectie.',
+    block02Title: 'Merchandising en Planning',
+    block02Desc: 'Inkoopstrategie, assortiment, kanalen en budget.',
+    block03Title: 'Design en Ontwikkeling',
+    block03Desc: 'Schets, tech pack, prototype, productie en eindselectie.',
+    block04Title: 'Marketing en Verkoop',
+    block04Desc: 'Lanceringsplan, content, communicatie en commerciële prestatie.',
+    ctaContinue: 'Doorgaan',
   },
 
   // ─── Collection Sidebar ───

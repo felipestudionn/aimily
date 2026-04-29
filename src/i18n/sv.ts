@@ -365,6 +365,15 @@ export const sv: Dictionary = {
     launchGrowth: 'Lansering & tillväxt',
     openBuilder: 'Öppna Builder',
     completed: 'Slutförd',
+    block01Title: 'Kreativ Riktning och Varumärke',
+    block01Desc: 'Vision, research och varumärkesidentitet för din kollektion.',
+    block02Title: 'Merchandising och Planering',
+    block02Desc: 'Inköpsstrategi, sortiment, kanaler och budget.',
+    block03Title: 'Design och Utveckling',
+    block03Desc: 'Skiss, tech pack, prototyp, produktion och slutligt urval.',
+    block04Title: 'Marknadsföring och Försäljning',
+    block04Desc: 'Lanseringsplan, innehåll, kommunikation och kommersiell prestanda.',
+    ctaContinue: 'Fortsätt',
   },
 
   // ─── Collection Sidebar ───

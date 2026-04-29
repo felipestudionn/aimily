@@ -371,6 +371,15 @@ export const en = {
     launchGrowth: 'Launch & Growth',
     openBuilder: 'Open Builder',
     completed: 'Completed',
+    block01Title: 'Creative Direction & Brand',
+    block01Desc: 'Vision, research, and brand identity for your collection.',
+    block02Title: 'Merchandising & Planning',
+    block02Desc: 'Buying strategy, assortment, channels, and budget.',
+    block03Title: 'Design & Development',
+    block03Desc: 'Sketch, tech pack, prototype, produce, and select your collection.',
+    block04Title: 'Marketing & Sales',
+    block04Desc: 'Launch plan, content, communications, and commercial performance.',
+    ctaContinue: 'Continue',
   },
 
   // ─── Collection Sidebar ───

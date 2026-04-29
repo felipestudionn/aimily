@@ -373,6 +373,15 @@ export const fr: Dictionary = {
     launchGrowth: 'Lancement & Croissance',
     openBuilder: 'Ouvrir le Builder',
     completed: 'Terminé',
+    block01Title: 'Direction Créative et Marque',
+    block01Desc: 'Vision, recherche et identité de marque pour ta collection.',
+    block02Title: 'Merchandising et Planification',
+    block02Desc: 'Stratégie d\'achat, assortiment, canaux et budget.',
+    block03Title: 'Design et Développement',
+    block03Desc: 'Croquis, fiche technique, prototype, production et sélection finale.',
+    block04Title: 'Marketing et Ventes',
+    block04Desc: 'Plan de lancement, contenu, communications et performance commerciale.',
+    ctaContinue: 'Continuer',
   },
 
   // ─── Barre latérale de la Collection ───

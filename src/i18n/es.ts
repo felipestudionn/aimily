@@ -373,6 +373,15 @@ export const es: Dictionary = {
     launchGrowth: 'Lanzamiento y Crecimiento',
     openBuilder: 'Abrir Builder',
     completed: 'Completado',
+    block01Title: 'Dirección Creativa y Marca',
+    block01Desc: 'Visión, investigación e identidad de marca para tu colección.',
+    block02Title: 'Merchandising y Planificación',
+    block02Desc: 'Estrategia de compra, surtido, canales y presupuesto.',
+    block03Title: 'Diseño y Desarrollo',
+    block03Desc: 'Boceto, ficha técnica, prototipo, producción y selección final.',
+    block04Title: 'Marketing y Ventas',
+    block04Desc: 'Plan de lanzamiento, contenido, comunicaciones y rendimiento comercial.',
+    ctaContinue: 'Continuar',
   },
 
   // ─── Sidebar de la Colección ───
