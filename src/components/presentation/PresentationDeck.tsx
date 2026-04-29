@@ -368,10 +368,10 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
               type="button"
               onClick={() => setEditMode(true)}
               className="inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border border-white/15 bg-white/10 hover:bg-white/15 text-white transition-colors"
-              title="Edit slide text"
+              title={tr.editTooltip}
             >
               <Pencil className="w-3.5 h-3.5" strokeWidth={2} />
-              <span>Edit</span>
+              <span>{tr.editButton}</span>
             </button>
           )}
           {!readOnly && editMode && (
@@ -381,17 +381,17 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                 onClick={() => { discardDrafts(); setEditMode(false); }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] border border-white/15 bg-white/5 hover:bg-white/10 text-white/70 transition-colors"
               >
-                Done
+                {tr.doneButton}
               </button>
               <button
                 type="button"
                 onClick={saveDrafts}
                 disabled={saving || !hasDrafts}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] bg-citronella text-carbon hover:bg-citronella/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                title={hasDrafts ? 'Save edits to this deck' : 'No changes to save'}
+                title={hasDrafts ? tr.saveTooltip : tr.noChanges}
               >
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
-                {saving ? 'Saving…' : 'Save edits'}
+                {saving ? tr.saving : tr.saveEdits}
               </button>
             </>
           )}
@@ -405,10 +405,10 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                 aria-haspopup="dialog"
                 aria-expanded={promoteConfirmOpen}
                 className="inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border border-citronella/40 bg-citronella/15 hover:bg-citronella/25 text-citronella transition-colors disabled:opacity-60"
-                title="Promote this edit into your Workspace — AI and Workspace will use this text going forward"
+                title={tr.promoteTooltip}
               >
                 {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <ArrowUpCircle className="w-3.5 h-3.5" strokeWidth={2} />}
-                <span>Promote</span>
+                <span>{tr.promote}</span>
               </button>
               <FloatingPanel
                 anchorRef={promoteRef}
@@ -418,10 +418,10 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                 className="bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] p-4"
               >
                 <div className="text-[10px] tracking-[0.24em] uppercase text-carbon/55 font-semibold mb-2">
-                  Promote to Workspace
+                  {tr.promoteHeading}
                 </div>
                 <p className="text-[12px] text-carbon/70 leading-relaxed mb-3">
-                  This will copy your slide edit into the collection data. Workspace views and AI suggestions will use this text going forward. The original content is preserved in your decision history.
+                  {tr.promoteIntro}
                 </p>
                 {promoteError && <div className="text-[12px] text-error mb-3">{promoteError}</div>}
                 <div className="flex items-center gap-2 justify-end">
@@ -431,7 +431,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                     disabled={promoting}
                     className="inline-flex items-center px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors disabled:opacity-60"
                   >
-                    Cancel
+                    {tr.cancel}
                   </button>
                   <button
                     type="button"
@@ -440,7 +440,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-60"
                   >
                     {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} /> : <Check className="w-3.5 h-3.5" strokeWidth={2.5} />}
-                    {promoting ? 'Promoting…' : 'Promote'}
+                    {promoting ? tr.promoting : tr.promote}
                   </button>
                 </div>
               </FloatingPanel>
@@ -459,10 +459,10 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
                     ? 'bg-white/20 border-white/30 text-white'
                     : 'bg-white/10 hover:bg-white/15 border-white/15 text-white'
                 }`}
-                title="Create a public share link"
+                title={tr.shareTooltip}
               >
                 <Share2 className="w-3.5 h-3.5" strokeWidth={2} />
-                <span>Share</span>
+                <span>{tr.share}</span>
               </button>
               <FloatingPanel
                 anchorRef={shareRef}
@@ -600,14 +600,14 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
             onClick={downloadPdf}
             disabled={exporting}
             className="inline-flex items-center gap-2 pl-3 pr-4 py-2 rounded-full backdrop-blur-md text-[12px] font-semibold tracking-[-0.01em] border border-white/15 bg-white/10 hover:bg-white/15 text-white transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            title={exportError ?? 'Download PDF'}
+            title={exportError ?? tr.downloadPdf}
           >
             {exporting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={2} />
             ) : (
               <Download className="w-3.5 h-3.5" strokeWidth={2} />
             )}
-            <span>{exporting ? 'Generating…' : 'PDF'}</span>
+            <span>{exporting ? tr.generating : tr.pdfLabel}</span>
           </button>
           {!readOnly && !editMode && <ThemePicker current={theme} onChange={onThemeChange} />}
           {isSlidePlaceholder && (
@@ -673,7 +673,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
               type="button"
               onClick={() => onIndexChange(0)}
               className="group/tick flex-1 py-2"
-              title="Cover"
+              title={tr.coverLabel}
             >
               <div
                 className={`h-1 rounded-full transition-all ${

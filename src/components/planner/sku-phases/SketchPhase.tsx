@@ -708,7 +708,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           className="flex-1 text-[13px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:border-carbon/[0.12] focus:outline-none" />
                         <select value={cw.status} onClick={e => e.stopPropagation()} onChange={(e) => updateColorway(cw.id, { status: e.target.value as SkuColorway['status'] })}
                           className="text-[9px] font-medium uppercase bg-transparent border border-carbon/[0.06] px-1.5 py-0.5 text-carbon/45 focus:outline-none">
-                          <option value="proposed">Proposed</option><option value="sampled">Sampled</option><option value="approved">Approved</option><option value="production">Production</option>
+                          <option value="proposed">{(t.status as Record<string, string>)?.proposed || 'Proposed'}</option><option value="sampled">{(t.status as Record<string, string>)?.sampled || 'Sampled'}</option><option value="approved">{(t.status as Record<string, string>)?.approved || 'Approved'}</option><option value="production">{(t.status as Record<string, string>)?.production || 'Production'}</option>
                         </select>
                         <button onClick={(e) => { e.stopPropagation(); deleteColorway(cw.id); }} className="text-carbon/15 hover:text-[#A0463C]/50"><Trash2 className="h-3 w-3" /></button>
                         <Check className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180 text-carbon/30' : 'rotate-0 text-carbon/10'}`} />
@@ -718,7 +718,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           <div className="grid grid-cols-[1fr_44px_120px_1fr] gap-x-3 gap-y-0 mb-1">
                             <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zoneLabel') || 'Zone'}</span>
                             <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('colorLabel') || 'Color'}</span>
-                            <span className="text-[8px] text-carbon/20 uppercase tracking-wider">Pantone</span>
+                            <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{(t.fieldLabels as Record<string, string>)?.pantone || 'Pantone'}</span>
                             <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('notesLabel') || 'Notes'}</span>
                           </div>
                           {zones.map((z, zi) => (
