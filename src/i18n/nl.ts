@@ -932,7 +932,7 @@ export const nl: Dictionary = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'Wanneer lanceer je.',
+    headline: 'De dag dat het in de winkel ligt.',
     subheadline: 'De rest bouwen we samen.',
     launchLabel: 'Lancering',
     start: 'Beginnen',

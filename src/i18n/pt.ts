@@ -926,7 +926,7 @@ export const pt: Dictionary = {
 
   // ─── Nova Coleção ───
   newCollection: {
-    headline: 'Quando lanças.',
+    headline: 'O dia em que chega à loja.',
     subheadline: 'O resto construímos juntos.',
     launchLabel: 'Lançamento',
     start: 'Começar',

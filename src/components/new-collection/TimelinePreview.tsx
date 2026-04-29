@@ -49,7 +49,7 @@ const PHASE_BLOCK_NUMBER: Record<TimelinePhase, string> = {
 const PHASE_TEXT_ON_ACCENT: Record<TimelinePhase, string> = {
   creative: 'text-carbon',      // sea-foam (pale)
   planning: 'text-white',       // moss (dark)
-  development: 'text-white',    // midnight (dark)
+  development: 'text-white',    // clay (mid-dark warm tan)
   go_to_market: 'text-carbon',  // citronella (pale)
 };
 

@@ -34,11 +34,12 @@ module.exports = {
         success: "#2d6a4f",
         warning: "#c77000",
         /* ─── Aimily accent palette (2026-04-15) ─── */
-        "sea-foam": "#B6C8C7",      /* cool, airy — accent 1 */
-        linen: "#F1EFED",           /* warm off-white — accent 2 / surface */
-        moss: "#808368",            /* earthy green — accent 3 */
-        citronella: "#FFF4CE",      /* soft yellow — accent 4 / highlight */
-        midnight: "#001519",        /* deep blue-black — accent 5 / dominant */
+        "sea-foam": "#B6C8C7",      /* Sea Foam — cool, airy (Block 01 Creative) */
+        linen: "#F1EFED",           /* Linen — warm off-white / surface */
+        moss: "#808368",            /* Moss — earthy green (Block 02 Merchandising) */
+        clay: "#B0856A",            /* Clay — warm tan (Block 03 Design & Development) */
+        citronella: "#FFF4CE",      /* Citronella — soft yellow (Block 04 Marketing & Sales) */
+        midnight: "#001519",        /* Midnight — deep accent for surfaces / non-block use */
         /* ─── shadcn/ui semantic tokens ─── */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

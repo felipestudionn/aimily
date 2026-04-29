@@ -932,7 +932,7 @@ export const de: Dictionary = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'Wann startest du.',
+    headline: 'Der Tag, an dem es im Laden steht.',
     subheadline: 'Den Rest bauen wir gemeinsam.',
     launchLabel: 'Launch',
     start: 'Starten',

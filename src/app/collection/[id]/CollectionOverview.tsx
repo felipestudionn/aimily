@@ -277,14 +277,28 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                   const isStarted = progress > 0;
                   const blockIndex = BLOCK_DEFS.indexOf(block) + 1;
 
+                  // Block accent — same palette as the launch-canvas bands.
+                  const accentColor = ({
+                    creative: '#B6C8C7',     // sea-foam
+                    planning: '#808368',     // moss
+                    development: '#B0856A',  // clay
+                    go_to_market: '#FFF4CE', // citronella
+                  } as const)[block.phase];
+
                   return (
                     <motion.button
                       key={block.phase}
                       layoutId={`block-${block.phase}`}
                       transition={{ type: 'spring', stiffness: 220, damping: 32, mass: 0.9 }}
                       onClick={() => handleBlockClick(block.phase)}
-                      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+                      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left overflow-hidden"
                     >
+                      {/* Top ribbon — identifies the block by accent color. */}
+                      <span
+                        aria-hidden="true"
+                        className="absolute top-0 left-0 right-0 h-[6px] rounded-t-[20px]"
+                        style={{ backgroundColor: accentColor }}
+                      />
                       <div className="mb-10">
                         <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
                           0{blockIndex}.

@@ -891,7 +891,7 @@ export const sv: Dictionary = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'När släpper du.',
+    headline: 'Dagen den landar i butik.',
     subheadline: 'Resten bygger vi tillsammans.',
     launchLabel: 'Lansering',
     start: 'Starta',

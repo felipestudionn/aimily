@@ -932,7 +932,7 @@ export const fr: Dictionary = {
 
   // ─── Nouvelle Collection ───
   newCollection: {
-    headline: 'Quand sortez-vous.',
+    headline: 'Le jour où ça arrive en boutique.',
     subheadline: 'On construit le reste ensemble.',
     launchLabel: 'Lancement',
     start: 'Commencer',

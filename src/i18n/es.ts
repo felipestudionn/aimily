@@ -926,7 +926,7 @@ export const es: Dictionary = {
 
   // ─── Nueva Colección ───
   newCollection: {
-    headline: 'Cuándo lanzas.',
+    headline: 'El día que aterriza en tienda.',
     subheadline: 'Lo demás ya lo construimos juntos.',
     launchLabel: 'Lanzamiento',
     start: 'Empezar',

@@ -931,7 +931,7 @@ export const en = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'When do you launch.',
+    headline: 'The day it lands in store.',
     subheadline: 'We build the rest together.',
     launchLabel: 'Launch',
     start: 'Start',

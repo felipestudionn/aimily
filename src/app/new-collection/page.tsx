@@ -123,7 +123,7 @@ function NewCollectionFlow() {
   return (
     <div className="min-h-screen bg-shade flex flex-col">
       <header className="flex items-center justify-between px-6 md:px-10 lg:px-14 py-6">
-        <span className="text-[18px] font-semibold text-carbon tracking-[-0.02em]">aimily</span>
+        <span className="text-[18px] font-normal text-carbon tracking-[-0.02em]">aimily</span>
         <button
           onClick={() => router.push('/my-collections')}
           className="flex items-center gap-2 text-[12px] tracking-[0.16em] uppercase text-carbon/40 hover:text-carbon transition-colors"

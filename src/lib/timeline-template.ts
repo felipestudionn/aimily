@@ -31,7 +31,7 @@ export const PHASES: Record<TimelinePhase, PhaseInfo> = {
     id: 'development',
     name: 'Design & Development',
     nameEs: 'Diseño y Desarrollo',
-    color: '#001519',
+    color: '#B0856A',
     bgColor: '#E6E9EA',
     icon: '✏',
   },
@@ -195,35 +195,35 @@ export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   // ══════════════════════════════════════════════════════════
 
   // — Design —
-  { id: 'dd-1', phase: 'development', name: 'SketchFlow / Technical Sketches', nameEs: 'SketchFlow / Bocetos técnicos', responsible: 'US', startWeeksBefore: 38, durationWeeks: 3, color: '#001519' },
-  { id: 'dd-2', phase: 'development', name: 'Launch Last / Define Forms', nameEs: 'Definición de hormas', responsible: 'US', startWeeksBefore: 35, durationWeeks: 4, color: '#001519' },
-  { id: 'dd-3', phase: 'development', name: 'Design Shot 1', nameEs: 'Diseño ronda 1', responsible: 'US', startWeeksBefore: 31, durationWeeks: 2, color: '#001519' },
-  { id: 'dd-4', phase: 'development', name: 'Design Shot 2', nameEs: 'Diseño ronda 2', responsible: 'US', startWeeksBefore: 29, durationWeeks: 1.5, color: '#001519' },
-  { id: 'dd-5', phase: 'development', name: 'Paper Pattern Development', nameEs: 'Desarrollo de patronaje', responsible: 'US', startWeeksBefore: 29, durationWeeks: 1.5, color: '#001519' },
-  { id: 'dd-6', phase: 'development', name: 'Colorways Development', nameEs: 'Desarrollo de colorways', responsible: 'US', startWeeksBefore: 27.5, durationWeeks: 2, color: '#001519' },
+  { id: 'dd-1', phase: 'development', name: 'SketchFlow / Technical Sketches', nameEs: 'SketchFlow / Bocetos técnicos', responsible: 'US', startWeeksBefore: 38, durationWeeks: 3, color: '#B0856A' },
+  { id: 'dd-2', phase: 'development', name: 'Launch Last / Define Forms', nameEs: 'Definición de hormas', responsible: 'US', startWeeksBefore: 35, durationWeeks: 4, color: '#B0856A' },
+  { id: 'dd-3', phase: 'development', name: 'Design Shot 1', nameEs: 'Diseño ronda 1', responsible: 'US', startWeeksBefore: 31, durationWeeks: 2, color: '#B0856A' },
+  { id: 'dd-4', phase: 'development', name: 'Design Shot 2', nameEs: 'Diseño ronda 2', responsible: 'US', startWeeksBefore: 29, durationWeeks: 1.5, color: '#B0856A' },
+  { id: 'dd-5', phase: 'development', name: 'Paper Pattern Development', nameEs: 'Desarrollo de patronaje', responsible: 'US', startWeeksBefore: 29, durationWeeks: 1.5, color: '#B0856A' },
+  { id: 'dd-6', phase: 'development', name: 'Colorways Development', nameEs: 'Desarrollo de colorways', responsible: 'US', startWeeksBefore: 27.5, durationWeeks: 2, color: '#B0856A' },
 
   // — Tech Pack v1 (initial specs sent to factory before proto) —
-  { id: 'dd-19', phase: 'development', name: 'Initial Tech Pack', nameEs: 'Tech pack inicial', responsible: 'US', startWeeksBefore: 30, durationWeeks: 2, color: '#001519' },
+  { id: 'dd-19', phase: 'development', name: 'Initial Tech Pack', nameEs: 'Tech pack inicial', responsible: 'US', startWeeksBefore: 30, durationWeeks: 2, color: '#B0856A' },
 
   // — Prototyping —
-  { id: 'dd-7', phase: 'development', name: 'White Proto Development', nameEs: 'Desarrollo de proto blanco', responsible: 'FACTORY', startWeeksBefore: 28, durationWeeks: 7, color: '#001519' },
-  { id: 'dd-8', phase: 'development', name: 'White Proto Delivery', nameEs: 'Entrega de proto blanco', responsible: 'FACTORY', startWeeksBefore: 21, durationWeeks: 1, color: '#001519' },
-  { id: 'dd-9', phase: 'development', name: 'White Proto Rectification', nameEs: 'Rectificación de proto blanco', responsible: 'US', startWeeksBefore: 20, durationWeeks: 4, color: '#001519' },
+  { id: 'dd-7', phase: 'development', name: 'White Proto Development', nameEs: 'Desarrollo de proto blanco', responsible: 'FACTORY', startWeeksBefore: 28, durationWeeks: 7, color: '#B0856A' },
+  { id: 'dd-8', phase: 'development', name: 'White Proto Delivery', nameEs: 'Entrega de proto blanco', responsible: 'FACTORY', startWeeksBefore: 21, durationWeeks: 1, color: '#B0856A' },
+  { id: 'dd-9', phase: 'development', name: 'White Proto Rectification', nameEs: 'Rectificación de proto blanco', responsible: 'US', startWeeksBefore: 20, durationWeeks: 4, color: '#B0856A' },
 
   // — Tech Pack v2 (final tech pack post-rectification, ready for sampling) —
-  { id: 'dd-10', phase: 'development', name: 'Tech Pack Finalization', nameEs: 'Finalización del tech pack', responsible: 'US', startWeeksBefore: 16, durationWeeks: 4, color: '#001519' },
+  { id: 'dd-10', phase: 'development', name: 'Tech Pack Finalization', nameEs: 'Finalización del tech pack', responsible: 'US', startWeeksBefore: 16, durationWeeks: 4, color: '#B0856A' },
 
   // — Sampling —
-  { id: 'dd-11', phase: 'development', name: 'Color Samples Development', nameEs: 'Desarrollo de muestras de color', responsible: 'FACTORY', startWeeksBefore: 19, durationWeeks: 6, color: '#001519' },
-  { id: 'dd-12', phase: 'development', name: 'Fitting Samples Development', nameEs: 'Desarrollo de muestras de fitting', responsible: 'FACTORY', startWeeksBefore: 14, durationWeeks: 3, color: '#001519' },
-  { id: 'dd-13', phase: 'development', name: 'Fitting Samples Confirmation', nameEs: 'Confirmación de muestras de fitting', responsible: 'US', startWeeksBefore: 13, durationWeeks: 3, color: '#001519' },
-  { id: 'dd-14', phase: 'development', name: 'Collection Completed', nameEs: 'Colección completada', responsible: 'ALL', startWeeksBefore: 10, durationWeeks: 0.5, color: '#001519' },
+  { id: 'dd-11', phase: 'development', name: 'Color Samples Development', nameEs: 'Desarrollo de muestras de color', responsible: 'FACTORY', startWeeksBefore: 19, durationWeeks: 6, color: '#B0856A' },
+  { id: 'dd-12', phase: 'development', name: 'Fitting Samples Development', nameEs: 'Desarrollo de muestras de fitting', responsible: 'FACTORY', startWeeksBefore: 14, durationWeeks: 3, color: '#B0856A' },
+  { id: 'dd-13', phase: 'development', name: 'Fitting Samples Confirmation', nameEs: 'Confirmación de muestras de fitting', responsible: 'US', startWeeksBefore: 13, durationWeeks: 3, color: '#B0856A' },
+  { id: 'dd-14', phase: 'development', name: 'Collection Completed', nameEs: 'Colección completada', responsible: 'ALL', startWeeksBefore: 10, durationWeeks: 0.5, color: '#B0856A' },
 
   // — Production —
-  { id: 'dd-15', phase: 'development', name: 'Production Order', nameEs: 'Orden de producción', responsible: 'US', startWeeksBefore: 10, durationWeeks: 1, color: '#001519' },
-  { id: 'dd-16', phase: 'development', name: 'Production Timeline', nameEs: 'Timeline de producción en fábrica', responsible: 'FACTORY', startWeeksBefore: 9, durationWeeks: 6, color: '#001519' },
-  { id: 'dd-17', phase: 'development', name: 'Quality Control', nameEs: 'Control de calidad', responsible: 'FACTORY', startWeeksBefore: 3, durationWeeks: 1, color: '#001519' },
-  { id: 'dd-18', phase: 'development', name: 'Production Delivery & Logistics', nameEs: 'Entrega de producción y logística', responsible: 'FACTORY', startWeeksBefore: 2, durationWeeks: 1, color: '#001519' },
+  { id: 'dd-15', phase: 'development', name: 'Production Order', nameEs: 'Orden de producción', responsible: 'US', startWeeksBefore: 10, durationWeeks: 1, color: '#B0856A' },
+  { id: 'dd-16', phase: 'development', name: 'Production Timeline', nameEs: 'Timeline de producción en fábrica', responsible: 'FACTORY', startWeeksBefore: 9, durationWeeks: 6, color: '#B0856A' },
+  { id: 'dd-17', phase: 'development', name: 'Quality Control', nameEs: 'Control de calidad', responsible: 'FACTORY', startWeeksBefore: 3, durationWeeks: 1, color: '#B0856A' },
+  { id: 'dd-18', phase: 'development', name: 'Production Delivery & Logistics', nameEs: 'Entrega de producción y logística', responsible: 'FACTORY', startWeeksBefore: 2, durationWeeks: 1, color: '#B0856A' },
 
   // ══════════════════════════════════════════════════════════
   // BLOCK 4: MARKETING & DIGITAL (equipo marketing)

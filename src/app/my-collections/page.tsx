@@ -236,7 +236,6 @@ export default function MyCollectionsPage() {
     return { totalOverdue, totalUpcoming, avgProgress, nextLaunch, totalRevenue };
   }, [enrichedCollections]);
 
-  const [showNewModal, setShowNewModal] = useState(false);
 
   if (authLoading || !user) {
     return (
@@ -294,13 +293,13 @@ export default function MyCollectionsPage() {
                       {subtitle}
                     </p>
                   </div>
-                  <button
-                    onClick={() => setShowNewModal(true)}
+                  <Link
+                    href="/new-collection"
                     className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
                     {c.newCollection || 'New collection'}
-                  </button>
+                  </Link>
                 </div>
 
                 {/* ── Collection cards grid ── */}
@@ -315,15 +314,12 @@ export default function MyCollectionsPage() {
                       t={c}
                     />
                   ))}
-                  <NewCollectionTile onClick={() => setShowNewModal(true)} t={c} />
+                  <NewCollectionTile t={c} />
                 </div>
               </div>
             )}
           </div>
         </main>
-
-        {/* ── New collection modal ── */}
-        {showNewModal && <NewCollectionModal t={t} onClose={() => setShowNewModal(false)} />}
       </div>
     </SubscriptionGate>
   );
@@ -454,10 +450,10 @@ function CollectionCard({ collection, idx, onDelete, language, t }: {
   );
 }
 
-function NewCollectionTile({ onClick, t }: { onClick: () => void; t: Record<string, string> }) {
+function NewCollectionTile({ t }: { t: Record<string, string> }) {
   return (
-    <button
-      onClick={onClick}
+    <Link
+      href="/new-collection"
       className="group relative bg-white rounded-[20px] border border-dashed border-carbon/[0.15] flex flex-col items-center justify-center p-8 transition-all duration-300 hover:border-carbon/40 hover:bg-white/60 hover:scale-[1.02]"
     >
       <div className="w-14 h-14 rounded-full bg-carbon/[0.04] flex items-center justify-center mb-5 group-hover:bg-carbon group-hover:text-white transition-colors">
@@ -469,7 +465,7 @@ function NewCollectionTile({ onClick, t }: { onClick: () => void; t: Record<stri
       <p className="text-[12px] text-carbon/50 text-center max-w-[220px] leading-relaxed">
         {t.newCollectionHint || 'Start from scratch or let aimily draft one from your brief.'}
       </p>
-    </button>
+    </Link>
   );
 }
 
@@ -499,40 +495,3 @@ function EmptyState({ t }: { t: Record<string, string> }) {
   );
 }
 
-function NewCollectionModal({ t, onClose }: { t: ReturnType<typeof useTranslation>; onClose: () => void }) {
-  const c = t.collections as Record<string, string>;
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6" style={{ animation: 'fadeIn 0.3s ease-out forwards' }}>
-      <div className="absolute inset-0 bg-carbon/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-3xl" style={{ animation: 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
-        <button
-          onClick={onClose}
-          className="absolute -top-12 right-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-colors"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="bg-shade rounded-[20px] p-10 md:p-12 text-center">
-          <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
-            {c.newCollection || 'New collection'}
-          </p>
-          <h2 className="text-[32px] md:text-[38px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
-            {c.startAnother || 'Start another collection'}
-          </h2>
-          <p className="text-[14px] text-carbon/50 tracking-[-0.01em] max-w-[480px] mx-auto leading-relaxed mb-8">
-            {c.startAnotherDesc || 'Pick a launch date and step inside. Everything else flows from there.'}
-          </p>
-          <Link
-            href="/new-collection"
-            onClick={onClose}
-            className="inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-[14px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-all hover:scale-[1.02] active:scale-[0.99]"
-          >
-            {c.start || 'Start'}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
