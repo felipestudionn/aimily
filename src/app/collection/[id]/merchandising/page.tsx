@@ -439,7 +439,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                     <div key={si} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
                       <span className="text-[14px] text-foreground/60 flex-1 min-w-0 truncate">{sub.name}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Label className="text-[11px] text-muted-foreground">Min</Label>
+                        <Label className="text-[11px] text-muted-foreground">{(t.common as Record<string, string>).min || "Min"}</Label>
                         <Input
                           type="number"
                           value={sub.minPrice || ''}
@@ -450,7 +450,7 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                       </div>
                       <Separator orientation="vertical" className="h-4" />
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Label className="text-[11px] text-muted-foreground">Max</Label>
+                        <Label className="text-[11px] text-muted-foreground">{(t.common as Record<string, string>).max || "Max"}</Label>
                         <Input
                           type="number"
                           value={sub.maxPrice || ''}
@@ -553,12 +553,12 @@ function PricingContent({ mode, data, onChange, collectionContext, familiesData 
                           <div className="flex items-center gap-3">
                             <span className="text-[14px] text-foreground/60 flex-1 min-w-0 truncate" title={sub.name}>{sub.name}</span>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <Label className="text-[11px] text-muted-foreground">Min</Label>
+                              <Label className="text-[11px] text-muted-foreground">{(t.common as Record<string, string>).min || "Min"}</Label>
                               <Input type="number" value={sub.minPrice || ''} onChange={(e) => updatePrice(fi, si, 'minPrice', Number(e.target.value))} className="w-20 h-8 rounded-lg text-sm text-center" placeholder="€" />
                             </div>
                             <Separator orientation="vertical" className="h-4" />
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <Label className="text-[11px] text-muted-foreground">Max</Label>
+                              <Label className="text-[11px] text-muted-foreground">{(t.common as Record<string, string>).max || "Max"}</Label>
                               <Input type="number" value={sub.maxPrice || ''} onChange={(e) => updatePrice(fi, si, 'maxPrice', Number(e.target.value))} className="w-20 h-8 rounded-lg text-sm text-center" placeholder="€" />
                             </div>
                           </div>
@@ -641,7 +641,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
           <Card className={`rounded-[16px] transition-all ${dtc.enabled ? 'border-primary/20 bg-primary/[0.02]' : ''}`}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="dtc-switch" className="text-[15px] font-medium cursor-pointer">Direct to Consumer</Label>
+                <Label htmlFor="dtc-switch" className="text-[15px] font-medium cursor-pointer">{(t.merch as Record<string, string>)?.directToConsumer || "Direct to Consumer"}</Label>
                 <Switch id="dtc-switch" checked={dtc.enabled} onCheckedChange={toggleDtc} />
               </div>
               {dtc.enabled && (
@@ -669,7 +669,7 @@ function ChannelsContent({ mode, data, onChange, collectionContext }: {
           <Card className={`rounded-[16px] transition-all ${wholesale.enabled ? 'border-primary/20 bg-primary/[0.02]' : ''}`}>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="ws-switch" className="text-[15px] font-medium cursor-pointer">Wholesale</Label>
+                <Label htmlFor="ws-switch" className="text-[15px] font-medium cursor-pointer">{(t.merch as Record<string, string>)?.wholesale || "Wholesale"}</Label>
                 <Switch id="ws-switch" checked={wholesale.enabled} onCheckedChange={toggleWholesale} />
               </div>
               {wholesale.enabled && (

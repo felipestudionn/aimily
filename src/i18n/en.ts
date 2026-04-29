@@ -1,6 +1,8 @@
 export const en = {
   // ─── Common / shared ───
   common: {
+    max: 'Max',
+    min: 'Min',
     discover: 'Discover',
     howAimilyWorks: 'How aimily works',
     contact: 'Contact',
@@ -18,6 +20,7 @@ export const en = {
     myCollections: 'My Collections',
     continue: 'Continue',
     cancel: 'Cancel',
+    notesLabel: 'Notes',
     save: 'Save',
     delete: 'Delete',
     loading: 'Loading...',
@@ -138,6 +141,12 @@ export const en = {
   },
 
   // ─── Cookie Consent ───
+  // ─── Merch (i18n batch P1) ───
+  merch: {
+    wholesale: 'Wholesale',
+    directToConsumer: 'Direct to Consumer',
+  },
+
   cookie: {
     message: 'We use essential cookies to keep you signed in and functional cookies to improve your experience.',
     cookiePolicy: 'Cookie Policy',
@@ -1978,7 +1987,7 @@ export const en = {
     launchDesc: 'Pre-launch checklist, go-live tracker, launch day ops, and post-launch analytics.',
     noTasksYet: 'No tasks yet',
     tasks: 'tasks',
-    done: 'done',
+    done: 'Done',
     daysToLaunch: 'days to launch',
     countdown: 'Countdown',
     days: 'days',

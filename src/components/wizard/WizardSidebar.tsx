@@ -983,7 +983,7 @@ export function WizardSidebar({
                   </div>
                   <div className="text-[12px] text-carbon/50 bg-carbon/[0.03] px-4 py-2.5 rounded-[12px] tracking-[-0.01em]">{formatDate(sd)} → {formatDate(ed)}</div>
                   <div>
-                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">Notas</label>
+                    <label className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{(t.common as Record<string, string>)?.notesLabel || 'Notas'}</label>
                     <textarea rows={2} value={editValues.notes} onChange={(e) => setEditValues(v => ({ ...v, notes: e.target.value }))} className="w-full mt-2 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed" placeholder={calT.notesPlaceholder} />
                   </div>
                 </div>

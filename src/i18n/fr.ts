@@ -3,6 +3,8 @@ import type { Dictionary } from './en';
 export const fr: Dictionary = {
   // ─── Commun / partagé ───
   common: {
+    max: 'Max',
+    min: 'Min',
     discover: 'Découvrir',
     howAimilyWorks: 'Comment aimily fonctionne',
     contact: 'Contact',
@@ -20,6 +22,7 @@ export const fr: Dictionary = {
     myCollections: 'Mes Collections',
     continue: 'Continuer',
     cancel: 'Annuler',
+    notesLabel: 'Notes',
     save: 'Enregistrer',
     delete: 'Supprimer',
     loading: 'Chargement...',
@@ -140,6 +143,12 @@ export const fr: Dictionary = {
   },
 
   // ─── Consentement aux cookies ───
+  // ─── Merch (i18n batch P1) ───
+  merch: {
+    wholesale: 'Vente en Gros',
+    directToConsumer: 'Vente Directe au Consommateur',
+  },
+
   cookie: {
     message: 'Nous utilisons des cookies essentiels pour maintenir votre connexion et des cookies fonctionnels pour améliorer votre expérience.',
     cookiePolicy: 'Politique de cookies',
@@ -1928,7 +1937,7 @@ export const fr: Dictionary = {
     launchDesc: 'Checklist pré-lancement, suivi de mise en ligne, opérations jour J et analytiques post-lancement.',
     noTasksYet: 'Aucune tâche pour le moment',
     tasks: 'tâches',
-    done: 'terminé',
+    done: 'Terminé',
     daysToLaunch: 'jours avant le lancement',
     countdown: 'Compte à rebours',
     days: 'jours',

@@ -3,6 +3,8 @@ import type { Dictionary } from './en';
 export const sv: Dictionary = {
   // ─── Common / shared ───
   common: {
+    max: 'Max',
+    min: 'Min',
     discover: 'Utforska',
     howAimilyWorks: 'Hur aimily fungerar',
     contact: 'Kontakt',
@@ -20,6 +22,7 @@ export const sv: Dictionary = {
     myCollections: 'Mina kollektioner',
     continue: 'Fortsätt',
     cancel: 'Avbryt',
+    notesLabel: 'Anteckningar',
     save: 'Spara',
     delete: 'Radera',
     loading: 'Laddar...',
@@ -136,6 +139,12 @@ export const sv: Dictionary = {
   },
 
   // ─── Cookie Consent ───
+  // ─── Merch (i18n batch P1) ───
+  merch: {
+    wholesale: 'Grossist',
+    directToConsumer: 'Direkt till Konsument',
+  },
+
   cookie: {
     message: 'Vi använder nödvändiga cookies för att hålla dig inloggad och funktionella cookies för att förbättra din upplevelse.',
     cookiePolicy: 'Cookiepolicy',
@@ -1838,7 +1847,7 @@ export const sv: Dictionary = {
     launchDesc: 'Checklista inför lansering, go-live-spårning, lanseringsdagens drift och efterlanseringsanalys.',
     noTasksYet: 'Inga uppgifter ännu',
     tasks: 'uppgifter',
-    done: 'klart',
+    done: 'Klar',
     daysToLaunch: 'dagar till lansering',
     countdown: 'Nedräkning',
     days: 'dagar',
