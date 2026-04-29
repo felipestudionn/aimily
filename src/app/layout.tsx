@@ -24,10 +24,10 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.aimily.app'),
   title: {
-    default: 'aimily — fashion collection platform',
+    default: 'aimily — the AI assistant Miranda would have hired',
     template: '%s · aimily',
   },
-  description: 'Plan, design, render and launch fashion collections. AI-powered. Same top-quality models on every plan. 14-day free trial.',
+  description: 'One platform takes a fashion idea from the spark of a moodboard to a sold-out launch. Brand DNA, range plan, tech packs, campaigns — every block, connected. 14-day free trial.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

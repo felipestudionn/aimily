@@ -2,12 +2,14 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
 
-// Page routes that don't require authentication (exact match)
+// Page routes that don't require authentication (exact match).
+// Note: /discover, /how-it-works, /meet-aimily, /pricing were retired
+// 2026-04-28; they now 308-redirect to / via next.config.js (the redirect
+// is processed before this middleware, so listing them here is not needed).
 const publicPageRoutes = [
   '/',
-  '/discover',
   '/contact',
-  '/pricing',
+  '/trust',
   '/terms',
   '/privacy',
   '/cookies',
@@ -15,10 +17,7 @@ const publicPageRoutes = [
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/confirm',
-  '/meet-aimily',
-  '/how-it-works',
   '/video-reel',
-  '/trust',
 ];
 
 // Page routes that don't require auth (prefix match). Used by:

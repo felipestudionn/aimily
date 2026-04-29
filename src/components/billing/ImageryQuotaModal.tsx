@@ -72,7 +72,7 @@ export function ImageryQuotaModal({ open, onClose }: ImageryQuotaModalProps) {
               {next.imagery === -1 ? 'Unlimited imagery' : `${next.imagery.toLocaleString()} imagery / month`} · activated instantly
             </p>
             <button
-              onClick={() => router.push('/pricing')}
+              onClick={() => router.push('/account')}
               className="w-full py-2.5 px-4 bg-carbon text-white rounded-md text-sm font-medium hover:bg-carbon/90 transition-colors flex items-center justify-center gap-2"
             >
               View plans <ArrowRight className="w-4 h-4" />

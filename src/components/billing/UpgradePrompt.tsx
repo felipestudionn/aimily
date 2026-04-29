@@ -48,7 +48,7 @@ export function UpgradePrompt({ feature }: UpgradePromptProps) {
           )}
 
           <button
-            onClick={() => router.push('/pricing')}
+            onClick={() => router.push('/account')}
             className="inline-flex items-center gap-2 bg-white text-[#282A29] px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/90 transition-colors"
           >
             {isTrial ? 'View plans' : 'Upgrade'}
