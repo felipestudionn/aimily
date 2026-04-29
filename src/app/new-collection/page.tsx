@@ -56,17 +56,24 @@ function NewCollectionFlow() {
 
   const [view, setView] = useState<View>('pick-date');
   const [launchDate, setLaunchDate] = useState(defaultLaunchDate());
+  const [name, setName] = useState('');
+  const [skipNaming, setSkipNaming] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
   const season = useMemo(() => deriveSeason(launchDate), [launchDate]);
+  const trimmedName = name.trim();
+  const canStart = trimmedName.length > 0 || skipNaming;
 
   const nc = (t as Record<string, Record<string, string>>).newCollection || {};
   const untitledLabel = nc.untitled || 'Sin título';
-  const headline = nc.headline || 'Cuándo lanzas.';
+  const headline = nc.headline || 'El día del lanzamiento de la colección.';
   const subheadline = nc.subheadline || 'Lo demás ya lo construimos juntos.';
   const launchLabel = nc.launchLabel || 'Lanzamiento';
+  const namePlaceholder = nc.namePlaceholder || 'Cómo se llama tu colección';
+  const skipNamingCta = nc.skipNaming || 'Aún no tengo título — ponedlo después';
+  const namingSkipped = nc.namingSkipped || 'La nombras dentro';
   const startCta = nc.start || 'Empezar';
   const cancel = nc.cancel || 'Cancelar';
   const creatingCopy = nc.creating || 'Preparando tu colección…';
@@ -80,16 +87,26 @@ function NewCollectionFlow() {
       setShowAuth(true);
       return;
     }
+    if (!canStart) return;
     setError(null);
     setCreating(true);
 
+    // If the user typed a title, use it. Otherwise (only when they
+    // explicitly opted out of naming) fall back to "Sin título · SS27".
+    const finalName = trimmedName.length > 0
+      ? trimmedName
+      : defaultName(season, untitledLabel);
+
     try {
-      track(Events.COLLECTION_CREATED, { source: 'new-collection-disruptive' });
+      track(Events.COLLECTION_CREATED, {
+        source: 'new-collection-disruptive',
+        named_at_creation: trimmedName.length > 0,
+      });
       const res = await fetch('/api/planner/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: defaultName(season, untitledLabel),
+          name: finalName,
           season,
           launch_date: launchDate,
           setup_data: {},
@@ -112,7 +129,7 @@ function NewCollectionFlow() {
       setError(e instanceof Error ? e.message : 'create_failed');
       setCreating(false);
     }
-  }, [user, launchDate, season, untitledLabel, router]);
+  }, [user, canStart, trimmedName, launchDate, season, untitledLabel, router]);
 
   const onLaunchDateChange = useCallback((iso: string) => {
     if (!iso) return;
@@ -154,6 +171,41 @@ function NewCollectionFlow() {
                 </p>
               </div>
 
+              {/* Name field — first creative moment. The user writes a
+                  title before doing anything else; if they truly don't
+                  have one yet they tap "skip" below to fall back to the
+                  default placeholder. */}
+              <div className="flex flex-col items-center gap-2 mb-10">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={namePlaceholder}
+                  maxLength={120}
+                  autoFocus
+                  disabled={creating || skipNaming}
+                  className="w-full max-w-[640px] text-center bg-transparent border-0 border-b border-carbon/[0.10] focus:border-carbon/40 outline-none text-[28px] md:text-[34px] font-medium text-carbon tracking-[-0.02em] leading-[1.2] placeholder:text-carbon/30 transition-colors py-2 disabled:opacity-50"
+                />
+                {trimmedName.length === 0 && !skipNaming && (
+                  <button
+                    type="button"
+                    onClick={() => setSkipNaming(true)}
+                    className="text-[12px] text-carbon/40 hover:text-carbon/70 italic tracking-[-0.01em] transition-colors mt-2"
+                  >
+                    {skipNamingCta}
+                  </button>
+                )}
+                {skipNaming && (
+                  <button
+                    type="button"
+                    onClick={() => setSkipNaming(false)}
+                    className="text-[12px] text-carbon/40 hover:text-carbon/70 italic tracking-[-0.01em] transition-colors mt-2"
+                  >
+                    {namingSkipped}
+                  </button>
+                )}
+              </div>
+
               <div className="mb-10">
                 <TimelinePreview launchDate={launchDate} language={language} asCards={false} />
               </div>
@@ -174,8 +226,8 @@ function NewCollectionFlow() {
 
                 <button
                   onClick={handleStart}
-                  disabled={creating}
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-[14px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-all hover:scale-[1.02] active:scale-[0.99] shadow-[0_4px_14px_rgba(0,0,0,0.08)] disabled:opacity-60"
+                  disabled={creating || !canStart}
+                  className="inline-flex items-center justify-center gap-2 rounded-full px-9 py-4 text-[14px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-all hover:scale-[1.02] active:scale-[0.99] shadow-[0_4px_14px_rgba(0,0,0,0.08)] disabled:opacity-30 disabled:hover:scale-100"
                 >
                   {creating ? (
                     <>

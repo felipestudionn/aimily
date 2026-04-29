@@ -926,7 +926,7 @@ export const pt: Dictionary = {
 
   // ─── Nova Coleção ───
   newCollection: {
-    headline: 'O dia em que chega à loja.',
+    headline: 'O dia do lançamento da coleção.',
     subheadline: 'O resto construímos juntos.',
     launchLabel: 'Lançamento',
     start: 'Começar',
@@ -943,7 +943,9 @@ export const pt: Dictionary = {
     createAndContinue: 'Criar e continuar',
     nameYourCollection: 'Nomeie sua coleção',
     nameInspiration: 'Dê um nome que te inspire',
-    namePlaceholder: 'ex. Essenciais Verão 2027',
+    namePlaceholder: 'Como se chama a tua coleção',
+    skipNaming: 'Ainda sem título — nomeio depois',
+    namingSkipped: 'Melhor nomeio agora',
     whichSeason: 'Qual temporada?',
     selectTargetSeason: 'Selecione a temporada-alvo',
     whenLaunch: 'Quando você lança?',

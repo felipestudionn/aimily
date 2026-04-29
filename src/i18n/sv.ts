@@ -891,7 +891,7 @@ export const sv: Dictionary = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'Dagen den landar i butik.',
+    headline: 'Kollektionens lanseringsdag.',
     subheadline: 'Resten bygger vi tillsammans.',
     launchLabel: 'Lansering',
     start: 'Starta',
@@ -908,7 +908,9 @@ export const sv: Dictionary = {
     createAndContinue: 'Skapa & fortsätt',
     nameYourCollection: 'Namnge din kollektion',
     nameInspiration: 'Ge den ett namn som inspirerar dig',
-    namePlaceholder: 'T.ex. Summer Essentials 2027',
+    namePlaceholder: 'Vad heter din kollektion',
+    skipNaming: 'Ingen titel ännu — namnger det senare',
+    namingSkipped: 'Låt mig namnge det nu',
     whichSeason: 'Vilken säsong?',
     selectTargetSeason: 'Välj målsäsong',
     whenLaunch: 'När lanserar du?',

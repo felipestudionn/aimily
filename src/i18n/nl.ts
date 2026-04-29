@@ -932,7 +932,7 @@ export const nl: Dictionary = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'De dag dat het in de winkel ligt.',
+    headline: 'De lanceringsdag van de collectie.',
     subheadline: 'De rest bouwen we samen.',
     launchLabel: 'Lancering',
     start: 'Beginnen',
@@ -949,7 +949,9 @@ export const nl: Dictionary = {
     createAndContinue: 'Aanmaken & verder',
     nameYourCollection: 'Geef uw collectie een naam',
     nameInspiration: 'Geef het een inspirerende naam',
-    namePlaceholder: 'bijv. Zomer Essentials 2027',
+    namePlaceholder: 'Hoe heet je collectie',
+    skipNaming: 'Nog geen titel — benoem het later',
+    namingSkipped: 'Laat me het toch nu benoemen',
     whichSeason: 'Welk seizoen?',
     selectTargetSeason: 'Selecteer het doelseizoen',
     whenLaunch: 'Wanneer is de lancering?',

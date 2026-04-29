@@ -891,7 +891,7 @@ export const no: Dictionary = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'Dagen den lander i butikk.',
+    headline: 'Lanseringsdagen for kolleksjonen.',
     subheadline: 'Resten bygger vi sammen.',
     launchLabel: 'Lansering',
     start: 'Start',
@@ -908,7 +908,9 @@ export const no: Dictionary = {
     createAndContinue: 'Opprett og fortsett',
     nameYourCollection: 'Gi kolleksjonen et navn',
     nameInspiration: 'Gi den et navn som inspirerer deg',
-    namePlaceholder: 'f.eks. Sommeressentials 2027',
+    namePlaceholder: 'Hva heter kolleksjonen din',
+    skipNaming: 'Ingen tittel ennå — gir den navn senere',
+    namingSkipped: 'La meg gi den navn nå',
     whichSeason: 'Hvilken sesong?',
     selectTargetSeason: 'Velg målsesongen',
     whenLaunch: 'Når lanserer du?',

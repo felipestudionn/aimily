@@ -931,7 +931,7 @@ export const en = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'The day it lands in store.',
+    headline: 'Your collection\'s launch day.',
     subheadline: 'We build the rest together.',
     launchLabel: 'Launch',
     start: 'Start',
@@ -948,7 +948,9 @@ export const en = {
     createAndContinue: 'Create & Continue',
     nameYourCollection: 'Name your collection',
     nameInspiration: 'Give it a name that inspires you',
-    namePlaceholder: 'e.g. Summer Essentials 2027',
+    namePlaceholder: 'What\'s your collection called',
+    skipNaming: 'I don\'t have a title yet — name it later',
+    namingSkipped: 'Actually, let me name it now',
     whichSeason: 'Which season?',
     selectTargetSeason: 'Select the target season',
     whenLaunch: 'When do you launch?',

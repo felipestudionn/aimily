@@ -932,7 +932,7 @@ export const de: Dictionary = {
 
   // ─── New Collection ───
   newCollection: {
-    headline: 'Der Tag, an dem es im Laden steht.',
+    headline: 'Der Tag, an dem die Kollektion startet.',
     subheadline: 'Den Rest bauen wir gemeinsam.',
     launchLabel: 'Launch',
     start: 'Starten',
@@ -949,7 +949,9 @@ export const de: Dictionary = {
     createAndContinue: 'Erstellen & Weiter',
     nameYourCollection: 'Benennen Sie Ihre Kollektion',
     nameInspiration: 'Geben Sie ihr einen inspirierenden Namen',
-    namePlaceholder: 'z. B. Sommer Essentials 2027',
+    namePlaceholder: 'Wie heißt deine Kollektion',
+    skipNaming: 'Noch kein Titel — später benennen',
+    namingSkipped: 'Doch jetzt benennen',
     whichSeason: 'Welche Saison?',
     selectTargetSeason: 'Wählen Sie die Zielsaison',
     whenLaunch: 'Wann ist der Launch?',

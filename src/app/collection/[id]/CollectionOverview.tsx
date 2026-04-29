@@ -268,7 +268,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
             animating ? 'opacity-0 scale-[0.96] translate-y-4' : 'opacity-100 scale-100 translate-y-0'
           }`}>
             {!expandedBlock ? (
-              /* ═══ TOP LEVEL — 4 block cards (with shared layoutId for /new-collection morph) ═══ */
+              /* ═══ TOP LEVEL — 4 block cards, full-card colored per phase accent ═══ */
               <LayoutGroup>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {BLOCK_DEFS.map((block) => {
@@ -277,12 +277,36 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                   const isStarted = progress > 0;
                   const blockIndex = BLOCK_DEFS.indexOf(block) + 1;
 
-                  // Block accent — same palette as the launch-canvas bands.
-                  const accentColor = ({
-                    creative: '#B6C8C7',     // sea-foam
-                    planning: '#808368',     // moss
-                    development: '#B0856A',  // clay
-                    go_to_market: '#FFF4CE', // citronella
+                  // Each phase paints the entire card. Pale accents
+                  // (sea-foam, citronella) need carbon text + carbon CTA;
+                  // dark accents (moss, clay) need white text + inverted
+                  // white CTA. Computed inline rather than tokenised so
+                  // it's easy to tweak per accent without touching CSS.
+                  const scheme = ({
+                    creative: {
+                      bg: '#B6C8C7', isPale: true,
+                      ghost: 'text-carbon/[0.10]', body: 'text-carbon', muted: 'text-carbon/55',
+                      ctaBg: 'bg-carbon', ctaText: 'text-white',
+                      track: 'bg-carbon/[0.10]', fill: 'bg-carbon/45',
+                    },
+                    planning: {
+                      bg: '#808368', isPale: false,
+                      ghost: 'text-white/[0.15]', body: 'text-white', muted: 'text-white/70',
+                      ctaBg: 'bg-white', ctaText: 'text-carbon',
+                      track: 'bg-white/15', fill: 'bg-white/65',
+                    },
+                    development: {
+                      bg: '#B0856A', isPale: false,
+                      ghost: 'text-white/[0.15]', body: 'text-white', muted: 'text-white/75',
+                      ctaBg: 'bg-white', ctaText: 'text-carbon',
+                      track: 'bg-white/15', fill: 'bg-white/65',
+                    },
+                    go_to_market: {
+                      bg: '#FFF4CE', isPale: true,
+                      ghost: 'text-carbon/[0.10]', body: 'text-carbon', muted: 'text-carbon/55',
+                      ctaBg: 'bg-carbon', ctaText: 'text-white',
+                      track: 'bg-carbon/[0.10]', fill: 'bg-carbon/45',
+                    },
                   } as const)[block.phase];
 
                   return (
@@ -291,25 +315,20 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       layoutId={`block-${block.phase}`}
                       transition={{ type: 'spring', stiffness: 220, damping: 32, mass: 0.9 }}
                       onClick={() => handleBlockClick(block.phase)}
-                      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left overflow-hidden"
+                      style={{ backgroundColor: scheme.bg }}
+                      className="group relative rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.10)] text-left overflow-hidden"
                     >
-                      {/* Top ribbon — identifies the block by accent color. */}
-                      <span
-                        aria-hidden="true"
-                        className="absolute top-0 left-0 right-0 h-[6px] rounded-t-[20px]"
-                        style={{ backgroundColor: accentColor }}
-                      />
                       <div className="mb-10">
-                        <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                        <span className={`text-[72px] font-bold leading-none tracking-[-0.04em] ${scheme.ghost}`}>
                           0{blockIndex}.
                         </span>
                       </div>
 
-                      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+                      <h3 className={`text-[24px] md:text-[28px] font-semibold tracking-[-0.03em] leading-[1.15] mb-5 ${scheme.body}`}>
                         {block.title}
                       </h3>
 
-                      <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                      <p className={`text-[14px] leading-[1.7] tracking-[-0.02em] ${scheme.muted}`}>
                         {block.description}
                       </p>
 
@@ -318,8 +337,8 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       <div className="flex justify-center mt-10">
                         <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
                           isComplete
-                            ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
-                            : 'bg-carbon text-white group-hover:bg-carbon/90'
+                            ? `border ${scheme.isPale ? 'border-carbon/[0.20] text-carbon' : 'border-white/30 text-white'} group-hover:opacity-80`
+                            : `${scheme.ctaBg} ${scheme.ctaText} group-hover:opacity-90`
                         }`}>
                           {isComplete ? 'Completed' : isStarted ? 'Continue' : 'Start'}
                           {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
@@ -327,9 +346,9 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                         </div>
                       </div>
 
-                      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+                      <div className={`mt-4 mx-auto w-[120px] h-[6px] rounded-full overflow-hidden ${scheme.track}`}>
                         <div
-                          className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
+                          className={`h-full rounded-full ${scheme.fill} transition-all duration-1000 ease-out`}
                           style={{ width: `${progress}%` }}
                         />
                       </div>
