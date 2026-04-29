@@ -12,8 +12,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
 import { track, Events } from '@/lib/posthog';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
-import { OnboardingModal } from '@/components/onboarding/OnboardingModal';
-import { TosGate } from '@/components/legal/TosGate';
 import {
   Plus,
   Loader2,
@@ -273,8 +271,6 @@ export default function MyCollectionsPage() {
     <SubscriptionGate>
       <div className="min-h-screen bg-shade">
         <Navbar />
-        <OnboardingModal />
-        <TosGate />
 
         <main className="pt-24 pb-20 px-6 md:px-10 lg:px-14">
           <div className="max-w-[1440px] mx-auto">
