@@ -20,8 +20,7 @@ import SubscriptionGate from '@/components/billing/SubscriptionGate';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TimelinePreview } from '@/components/new-collection/TimelinePreview';
-import { CollectionOverview } from '@/app/collection/[id]/CollectionOverview';
-import { WorkspaceShell } from '@/components/workspace/WorkspaceShell';
+import { OverviewLanding } from '@/components/new-collection/OverviewLanding';
 import { createDefaultTimeline } from '@/lib/timeline-template';
 import type { TimelineMilestone } from '@/types/timeline';
 import type { CollectionPlan } from '@/types/planner';
@@ -155,26 +154,11 @@ function NewCollectionFlow() {
   return (
     <LayoutGroup>
       {view === 'overview' && created ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
-          <WorkspaceShell
-            collectionId={created.plan.id}
-            collectionName={created.plan.name}
-            season={season}
-            milestones={created.timeline.milestones}
-            launchDate={launchDate}
-            skuCount={0}
-          >
-            <CollectionOverview
-              plan={created.plan}
-              timeline={created.timeline}
-              skuCount={0}
-            />
-          </WorkspaceShell>
-        </motion.div>
+        <OverviewLanding
+          plan={created.plan}
+          season={season}
+          language={language}
+        />
       ) : (
       <div className="min-h-screen bg-shade flex flex-col">
         <header className="flex items-center justify-between px-6 md:px-10 lg:px-14 py-6">
