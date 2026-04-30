@@ -207,17 +207,23 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     return res.ok ? (await res.json()).result : null;
   }, [language, collectionPlanId]);
 
-  // ── Auto-detect product zones when the user enters the colorways step ──
-  // Idempotent: only fires once per SKU per session, and only when there's a
-  // sketch + product info to seed the call. The user can edit/add/delete
-  // zones afterwards from the UI.
+  // ── Background zone detection ──
+  // Fires as soon as we have a sketch + product info, regardless of which
+  // sub-step the user is on. This way the zones are usually already detected
+  // by the time the user clicks into Colorways — no waiting.
+  // Guarded by a ref to avoid re-firing on every state change (the previous
+  // useEffect was caught in a loop because setDetectingZones(true) was in
+  // the deps array, cancelling the in-flight call before it returned).
+  const zoneDetectInflightFor = React.useRef<string | null>(null);
   useEffect(() => {
-    if (activeStep !== 1) return;
-    if (detectedZones || detectingZones) return;
+    if (!sku.sketch_url) return;
     if (!sku.name && !sku.family) return;
+    if (detectedZones && detectedZones.length > 0) return;
+    if (zoneDetectInflightFor.current === sku.id) return;
+    zoneDetectInflightFor.current = sku.id;
     let cancelled = false;
+    setDetectingZones(true);
     (async () => {
-      setDetectingZones(true);
       try {
         const res = await fetch('/api/ai/zones/detect', {
           method: 'POST',
@@ -232,6 +238,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         const json = await res.json();
         if (!cancelled && Array.isArray(json.zones) && json.zones.length > 0) {
           setDetectedZones(json.zones);
+        } else if (!cancelled) {
+          throw new Error('empty zones response');
         }
       } catch {
         // Fallback: use the hardcoded category template so the step is still usable.
@@ -246,11 +254,15 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           setDetectedZones(fallback);
         }
       } finally {
-        if (!cancelled) setDetectingZones(false);
+        if (!cancelled) {
+          setDetectingZones(false);
+          zoneDetectInflightFor.current = null;
+        }
       }
     })();
     return () => { cancelled = true; };
-  }, [activeStep, sku.id, sku.name, sku.family, sku.category, detectedZones, detectingZones]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sku.id, sku.sketch_url, sku.name, sku.family, sku.category]);
 
   return (
     <div className="h-full flex flex-col gap-4">
@@ -309,8 +321,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         </div>
       )}
 
-      {/* ── Mode selector ── */}
-      {activeStep < 3 && (
+      {/* ── Mode selector ── (hidden on Colorways: that step has its own
+           Sanzo Wada / Your Colors picker, two pickers would be confusing). */}
+      {activeStep < 3 && activeStep !== 1 && (
         <SegmentedPill
           options={[
             { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Manual' },
