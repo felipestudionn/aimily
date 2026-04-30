@@ -3023,7 +3023,11 @@ export const sv: Dictionary = {
     zoneAssignments: 'Zontilldelning',
     noColorwaysReturned: 'Inga colorways returnerades — försök igen',
     failedColorways: 'Misslyckades att generera colorways',
-    },
+    recolorizeFailed: 'Färgläggning misslyckades',
+    recolorizeNoImage: 'Ingen bild returnerades',
+    noPreviewYet: 'Ingen förhandsvisning',
+    retry: 'Försök igen',
+        },
   trust: {
     navLabel: 'Förtroende',
     heroTitle: 'En fantastisk assistent avslöjar aldrig dina hemligheter',

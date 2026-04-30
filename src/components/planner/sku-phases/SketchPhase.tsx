@@ -604,9 +604,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           // Colorize a single proposal against the current sketch using its
           // zoneAssignments (zone → hex). Used both for initial generation and
           // for the "Re-colorize" button after editing a hex on a card.
+          // We do NOT clear colorizedUrl up-front: if the call fails the user
+          // keeps seeing the previous render instead of an empty placeholder.
           const colorizeOne = async (idx: number, cw: AiColorway) => {
             if (!sku.sketch_url) return;
-            setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: true, colorizedUrl: null } : p) || null);
+            setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: true } : p) || null);
             try {
               const zone_colors = (cw.zoneAssignments || []).map(za => ({ zone: za.zoneName, hex: za.hex }));
               const res = await fetch('/api/ai/colorize-sketch', {
@@ -623,18 +625,30 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   collectionPlanId,
                 }),
               });
-              if (res.ok) {
-                const { imageUrl } = await res.json();
-                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizedUrl: imageUrl, colorizing: false } : p) || null);
-              } else {
+              if (!res.ok) {
+                const errPayload = await res.json().catch(() => ({}));
+                const reason = (errPayload?.error as string) || `HTTP ${res.status}`;
                 setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
+                toast(`${stepLabel('recolorizeFailed') || 'Re-colorize failed'}: ${reason}`, 'error');
+                return;
               }
-            } catch {
+              const { imageUrl } = await res.json();
+              if (!imageUrl) {
+                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
+                toast(stepLabel('recolorizeNoImage') || 'Re-colorize returned no image', 'error');
+                return;
+              }
+              setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizedUrl: imageUrl, colorizing: false } : p) || null);
+            } catch (err) {
+              console.error('[Recolorize]', err);
               setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
+              toast(stepLabel('recolorizeFailed') || 'Re-colorize failed', 'error');
             }
           };
 
           const colorizeAll = async (proposals: AiColorway[]) => {
+            // Initial colorize (after Propose): clear any stale image, mark
+            // colorizing so the placeholder spinner shows up.
             const next = proposals.map(p => ({ ...p, colorizedUrl: null, colorizing: !!sku.sketch_url }));
             setAiColorways(next);
             if (!sku.sketch_url) return;
@@ -834,12 +848,22 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   return (
                   <div key={idx} className="border border-carbon/[0.06] bg-white overflow-hidden">
                     <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden relative">
-                      {cw.colorizedUrl ? (
+                      {cw.colorizedUrl && (
                         <img src={cw.colorizedUrl} alt={cw.name} className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
-                          <span className="text-[9px] text-carbon/20">{stepLabel('colorizing') || 'Colorizing...'}</span>
+                      )}
+                      {cw.colorizing && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/70 backdrop-blur-[1px]">
+                          <Loader2 className="h-4 w-4 animate-spin text-carbon/35" />
+                          <span className="text-[9px] text-carbon/40">{stepLabel('colorizing') || 'Colorizing…'}</span>
+                        </div>
+                      )}
+                      {!cw.colorizedUrl && !cw.colorizing && (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-2 px-3 text-center">
+                          <span className="text-[9px] text-carbon/35">{stepLabel('noPreviewYet') || 'No preview yet'}</span>
+                          <button onClick={() => colorizeOne(idx, cw)} disabled={!sku.sketch_url}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.12] text-carbon/55 hover:bg-carbon/[0.03] disabled:opacity-30">
+                            <RefreshCw className="h-3 w-3" /> {stepLabel('retry') || 'Retry'}
+                          </button>
                         </div>
                       )}
                     </div>

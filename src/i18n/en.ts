@@ -3204,7 +3204,11 @@ export const en = {
     zoneAssignments: 'Zone assignments',
     noColorwaysReturned: 'No colorways returned — try again',
     failedColorways: 'Failed to generate colorways',
-    },
+    recolorizeFailed: 'Re-colorize failed',
+    recolorizeNoImage: 'Re-colorize returned no image',
+    noPreviewYet: 'No preview yet',
+    retry: 'Retry',
+        },
   trust: {
     navLabel: 'Trust',
     heroTitle: 'A great assistant never reveals your secrets',

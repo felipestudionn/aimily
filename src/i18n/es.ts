@@ -3172,7 +3172,11 @@ export const es: Dictionary = {
     zoneAssignments: 'Asignación por zonas',
     noColorwaysReturned: 'No se devolvieron colorways — inténtalo de nuevo',
     failedColorways: 'Error al generar colorways',
-    },
+    recolorizeFailed: 'Falló al re-colorear',
+    recolorizeNoImage: 'No se devolvió imagen al re-colorear',
+    noPreviewYet: 'Aún sin vista previa',
+    retry: 'Reintentar',
+        },
   trust: {
     navLabel: 'Confianza',
     heroTitle: 'Una gran asistente nunca revela tus secretos',

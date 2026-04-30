@@ -3119,7 +3119,11 @@ export const pt: Dictionary = {
     zoneAssignments: 'Atribuição por zonas',
     noColorwaysReturned: 'Nenhum colorway devolvido — tenta novamente',
     failedColorways: 'Falhou ao gerar colorways',
-    },
+    recolorizeFailed: 'Falhou ao re-colorir',
+    recolorizeNoImage: 'Sem imagem devolvida',
+    noPreviewYet: 'Sem pré-visualização',
+    retry: 'Tentar novamente',
+        },
   trust: {
     navLabel: 'Confiança',
     heroTitle: 'Uma grande assistente nunca revela os seus segredos',

@@ -3023,7 +3023,11 @@ export const no: Dictionary = {
     zoneAssignments: 'Sonetildeling',
     noColorwaysReturned: 'Ingen colorways returnert — prøv igjen',
     failedColorways: 'Klarte ikke å generere colorways',
-    },
+    recolorizeFailed: 'Fargelegging mislyktes',
+    recolorizeNoImage: 'Ingen bilde returnert',
+    noPreviewYet: 'Ingen forhåndsvisning',
+    retry: 'Prøv igjen',
+        },
   trust: {
     navLabel: 'Tillit',
     heroTitle: 'En fantastisk assistent avslører aldri hemmelighetene dine',

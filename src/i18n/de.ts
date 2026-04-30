@@ -3138,7 +3138,11 @@ export const de: Dictionary = {
     zoneAssignments: 'Zonenzuordnung',
     noColorwaysReturned: 'Keine Colorways zurückgegeben — versuche es erneut',
     failedColorways: 'Fehler beim Erzeugen der Colorways',
-    },
+    recolorizeFailed: 'Neue Kolorierung fehlgeschlagen',
+    recolorizeNoImage: 'Keine Bildantwort erhalten',
+    noPreviewYet: 'Noch keine Vorschau',
+    retry: 'Erneut versuchen',
+        },
   trust: {
     navLabel: 'Vertrauen',
     heroTitle: 'Eine großartige Assistentin verrät niemals deine Geheimnisse',

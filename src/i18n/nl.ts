@@ -3137,7 +3137,11 @@ export const nl: Dictionary = {
     zoneAssignments: 'Zone-toewijzing',
     noColorwaysReturned: 'Geen colorways teruggegeven — probeer opnieuw',
     failedColorways: 'Genereren van colorways mislukt',
-    },
+    recolorizeFailed: 'Opnieuw inkleuren mislukt',
+    recolorizeNoImage: 'Geen afbeelding teruggegeven',
+    noPreviewYet: 'Nog geen voorbeeld',
+    retry: 'Opnieuw proberen',
+        },
   trust: {
     navLabel: 'Vertrouwen',
     heroTitle: 'Een geweldige assistent onthult nooit jouw geheimen',
