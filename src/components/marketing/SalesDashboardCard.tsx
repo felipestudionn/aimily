@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
-  TrendingUp,
-  ChevronLeft,
   Package,
   DollarSign,
   Calendar,
@@ -11,27 +9,29 @@ import {
   Layers,
   Target,
   Percent,
+  TrendingUp,
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useSkus, type SKU } from '@/hooks/useSkus';
-import { useStories, type Story } from '@/hooks/useStories';
-import { useDrops, type Drop } from '@/hooks/useDrops';
+import { useStories } from '@/hooks/useStories';
+import { useDrops } from '@/hooks/useDrops';
 import { useTranslation } from '@/i18n';
 
-/* ── Props ── */
+/* ═══════════════════════════════════════════════════════════
+   Sales Dashboard — gold-standard hub for commercial KPIs.
+   Renders inline inside the sidebar-driven page shell.
+   ═══════════════════════════════════════════════════════════ */
 
 interface SalesDashboardCardProps {
   collectionPlanId: string;
 }
 
-/* ── Component ── */
-
 export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps) {
   const t = useTranslation();
+  const m = (t as unknown as { marketingPage?: Record<string, string> }).marketingPage || {};
   const { skus, loading: skusLoading } = useSkus(collectionPlanId);
   const { stories, loading: storiesLoading } = useStories(collectionPlanId);
   const { drops, loading: dropsLoading } = useDrops(collectionPlanId);
-  const [expanded, setExpanded] = useState(false);
 
   /* ── KPIs ── */
   const kpis = useMemo(() => {
@@ -72,26 +72,29 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
     }
 
     let cumulative = 0;
-    return months.map(month => {
+    return months.map((month) => {
       let monthlySales = 0;
       const monthStart = month.date;
       const monthEnd = new Date(monthStart);
       monthEnd.setMonth(monthEnd.getMonth() + 1);
 
-      drops.forEach(drop => {
+      drops.forEach((drop) => {
         const dropStart = new Date(drop.launch_date);
         const dropEnd = new Date(dropStart);
         dropEnd.setDate(dropEnd.getDate() + (drop.weeks_active || 8) * 7);
 
         if (dropStart < monthEnd && dropEnd > monthStart) {
-          const dropSkus = skus.filter(s => s.drop_number === drop.drop_number);
+          const dropSkus = skus.filter((s) => s.drop_number === drop.drop_number);
           const dropRevenue = dropSkus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
           const weeksActive = drop.weeks_active || 8;
           const weeklyRate = dropRevenue / weeksActive;
 
           const overlapStart = new Date(Math.max(dropStart.getTime(), monthStart.getTime()));
           const overlapEnd = new Date(Math.min(dropEnd.getTime(), monthEnd.getTime()));
-          const overlapWeeks = Math.max(0, (overlapEnd.getTime() - overlapStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+          const overlapWeeks = Math.max(
+            0,
+            (overlapEnd.getTime() - overlapStart.getTime()) / (7 * 24 * 60 * 60 * 1000),
+          );
 
           monthlySales += weeklyRate * overlapWeeks;
         }
@@ -108,14 +111,14 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
 
   /* ── Stories with commercial data ── */
   const storiesWithCommercial = useMemo(() => {
-    return stories.map(story => {
-      const storySkus = skus.filter(s => (s as SKU & { story_id?: string }).story_id === story.id);
+    return stories.map((story) => {
+      const storySkus = skus.filter((s) => (s as SKU & { story_id?: string }).story_id === story.id);
       const totalRevenue = storySkus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
       const totalUnits = storySkus.reduce((sum, s) => sum + s.buy_units, 0);
       const avgPvp = storySkus.length ? storySkus.reduce((sum, s) => sum + s.pvp, 0) / storySkus.length : 0;
       const avgMargin = storySkus.length ? storySkus.reduce((sum, s) => sum + s.margin, 0) / storySkus.length : 0;
-      const dropNumbers = Array.from(new Set(storySkus.map(s => s.drop_number)));
-      const assignedDrops = drops.filter(d => dropNumbers.includes(d.drop_number));
+      const dropNumbers = Array.from(new Set(storySkus.map((s) => s.drop_number)));
+      const assignedDrops = drops.filter((d) => dropNumbers.includes(d.drop_number));
 
       return {
         ...story,
@@ -131,218 +134,199 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
 
   /* ── Drops with revenue ── */
   const dropsWithRevenue = useMemo(() => {
-    return drops.map(drop => {
-      const dropSkus = skus.filter(s => s.drop_number === drop.drop_number);
-      const revenue = dropSkus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
-      const units = dropSkus.reduce((sum, s) => sum + s.buy_units, 0);
-      return { ...drop, revenue: Math.round(revenue), units, skuCount: dropSkus.length };
-    }).sort((a, b) => new Date(a.launch_date).getTime() - new Date(b.launch_date).getTime());
+    return drops
+      .map((drop) => {
+        const dropSkus = skus.filter((s) => s.drop_number === drop.drop_number);
+        const revenue = dropSkus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
+        const units = dropSkus.reduce((sum, s) => sum + s.buy_units, 0);
+        return { ...drop, revenue: Math.round(revenue), units, skuCount: dropSkus.length };
+      })
+      .sort((a, b) => new Date(a.launch_date).getTime() - new Date(b.launch_date).getTime());
   }, [drops, skus]);
 
   const loading = skusLoading || storiesLoading || dropsLoading;
 
   const formatCurrency = (n: number) => {
-    if (n >= 1000000) return `€${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
     if (n >= 1000) return `€${(n / 1000).toFixed(0)}K`;
     return `€${n}`;
   };
 
-  /* ── Collapsed card ── */
-  if (!expanded) {
+  if (loading && !kpis) {
     return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="group relative bg-white p-10 lg:p-12 border border-carbon/[0.06] flex flex-col min-h-[340px] hover:shadow-lg transition-all duration-300 text-left w-full"
-      >
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
-            <TrendingUp className="h-5 w-5 text-carbon/40 group-hover:text-carbon/70 transition-colors" />
-          </div>
-          <div>
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              {t.marketingPage.salesLabel || 'SALES'}
-            </p>
-            <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              {t.marketingPage.salesTitle || 'Sales Dashboard'}
-            </h3>
-          </div>
-        </div>
-        <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          {t.marketingPage.salesDesc || 'Revenue forecasting, drop planning, and commercial KPIs for your collection.'}
+      <div className="bg-white rounded-[20px] p-10 text-center">
+        <p className="text-[13px] text-carbon/40">
+          {(t as unknown as { common?: { loading?: string } }).common?.loading || 'Loading…'}
         </p>
-
-        <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
-          {loading ? (
-            <p className="text-xs text-carbon/30">{t.common?.loading || 'Loading...'}</p>
-          ) : kpis ? (
-            <div className="flex items-center gap-6">
-              <div>
-                <span className="text-2xl font-light text-carbon">{formatCurrency(kpis.totalRevenue)}</span>
-                <span className="text-xs text-carbon/40 ml-2">{t.marketingPage.revenueTarget || 'revenue target'}</span>
-              </div>
-              <div className="text-xs text-carbon/30">
-                {kpis.dropCount} drops · {kpis.skuCount} SKUs
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noSalesData || 'No sales data yet'}</p>
-          )}
-        </div>
-
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
-          {t.marketingPage.open || 'OPEN'}
-        </div>
-      </button>
+      </div>
     );
   }
 
-  /* ── Expanded view ── */
-  return (
-    <div className="fixed inset-0 z-50 bg-crema overflow-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-crema/95 backdrop-blur border-b border-carbon/[0.06]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => setExpanded(false)}
-            className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {t.marketingPage.backToCreation || 'Back'}
-          </button>
-          <div className="text-center">
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-              {t.marketingPage.salesLabel || 'SALES'}
-            </p>
-            <h2 className="text-lg font-light text-carbon tracking-tight">
-              {t.marketingPage.salesTitle || 'Sales Dashboard'}
-            </h2>
-          </div>
-          <div className="w-32" />
+  if (!kpis) {
+    return (
+      <div className="bg-white rounded-[20px] p-12 md:p-16 text-center">
+        <div className="w-14 h-14 rounded-full bg-carbon/[0.04] flex items-center justify-center mx-auto mb-5">
+          <TrendingUp className="h-6 w-6 text-carbon/25" strokeWidth={1.75} />
         </div>
+        <p className="text-[14px] text-carbon/55 max-w-md mx-auto leading-relaxed">
+          {m.noSalesData || 'Create SKUs in the Merchandising block to see sales data here.'}
+        </p>
+      </div>
+    );
+  }
+
+  const kpiTiles = [
+    { icon: DollarSign, label: m.kpiRevenue || 'Revenue', value: formatCurrency(kpis.totalRevenue) },
+    { icon: Package, label: m.kpiUnits || 'Units', value: kpis.totalUnits.toLocaleString() },
+    { icon: DollarSign, label: m.kpiAvgPrice || 'Avg PVP', value: `€${kpis.avgPvp}` },
+    { icon: Percent, label: m.kpiMargin || 'Margin', value: `${kpis.avgMargin}%` },
+    { icon: Layers, label: 'SKUs', value: String(kpis.skuCount) },
+    { icon: BarChart3, label: m.kpiStories || 'Stories', value: String(kpis.storyCount) },
+    { icon: Calendar, label: m.kpiDrops || 'Drops', value: String(kpis.dropCount) },
+    { icon: Target, label: m.kpiSellThrough || 'Sell-through', value: `${kpis.avgSellThrough}%` },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* ═══ KPI tiles ═══ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        {kpiTiles.map(({ icon: Icon, label, value }) => (
+          <div key={label} className="bg-white rounded-[16px] p-4">
+            <div className="flex items-center gap-2 mb-2.5">
+              <Icon className="h-3.5 w-3.5 text-carbon/30" strokeWidth={1.75} />
+              <span className="text-[9px] font-semibold tracking-[0.1em] uppercase text-carbon/35">
+                {label}
+              </span>
+            </div>
+            <p className="text-[20px] font-semibold text-carbon tracking-[-0.02em] leading-none">
+              {value}
+            </p>
+          </div>
+        ))}
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* ═══ KPI BAR ═══ */}
-        {kpis && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            {[
-              { icon: DollarSign, label: t.marketingPage.kpiRevenue || 'Revenue', value: formatCurrency(kpis.totalRevenue) },
-              { icon: Package, label: t.marketingPage.kpiUnits || 'Units', value: kpis.totalUnits.toLocaleString() },
-              { icon: DollarSign, label: t.marketingPage.kpiAvgPrice || 'Avg PVP', value: `€${kpis.avgPvp}` },
-              { icon: Percent, label: t.marketingPage.kpiMargin || 'Margin', value: `${kpis.avgMargin}%` },
-              { icon: Layers, label: 'SKUs', value: String(kpis.skuCount) },
-              { icon: BarChart3, label: t.marketingPage.kpiStories || 'Stories', value: String(kpis.storyCount) },
-              { icon: Calendar, label: 'Drops', value: String(kpis.dropCount) },
-              { icon: Target, label: t.marketingPage.kpiSellThrough || 'Sell-through', value: `${kpis.avgSellThrough}%` },
-            ].map(({ icon: Icon, label, value }) => (
-              <div key={label} className="bg-white border border-carbon/[0.06] rounded-[20px] p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon className="h-3.5 w-3.5 text-carbon/25" />
-                  <span className="text-[9px] font-medium tracking-[0.12em] uppercase text-carbon/30">{label}</span>
+      {/* ═══ Revenue curve ═══ */}
+      {revenueCurve.length > 0 && (
+        <div className="bg-white rounded-[20px] p-6 md:p-8">
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45 mb-5">
+            {m.revenueCurve || 'Revenue Curve'}
+          </p>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueCurve} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#999' }} axisLine={false} tickLine={false} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#999' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v)}
+                />
+                <Tooltip
+                  formatter={(value: number) => [`€${value.toLocaleString()}`, '']}
+                  contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 12 }}
+                />
+                <Area type="monotone" dataKey="revenue" stroke="#2C2C2C" fill="#2C2C2C" fillOpacity={0.08} strokeWidth={2} name="Monthly" />
+                <Area type="monotone" dataKey="cumulative" stroke="#D8BAA0" fill="#D8BAA0" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="4 4" name="Cumulative" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Stories — commercial overview ═══ */}
+      {storiesWithCommercial.length > 0 && (
+        <div className="bg-white rounded-[20px] p-6 md:p-8">
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45 mb-5">
+            {m.storiesCommercial || 'Stories — Commercial overview'}
+          </p>
+          <div className="space-y-2.5">
+            {storiesWithCommercial.map((story) => (
+              <div
+                key={story.id}
+                className="rounded-[14px] bg-carbon/[0.02] hover:bg-carbon/[0.04] transition-colors p-4 flex items-center justify-between gap-4"
+              >
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[14px] font-semibold text-carbon tracking-[-0.01em] mb-1.5 truncate">
+                    {story.name}
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-carbon/45">
+                    <span>{story.skuCount} SKUs</span>
+                    <span>·</span>
+                    <span>{formatCurrency(story.totalRevenue)}</span>
+                    <span>·</span>
+                    <span>{story.totalUnits} units</span>
+                    <span>·</span>
+                    <span>€{story.avgPvp} {m.kpiAvgPrice?.toLowerCase() || 'avg'}</span>
+                    <span>·</span>
+                    <span>{story.avgMargin}% margin</span>
+                  </div>
                 </div>
-                <p className="text-lg font-light text-carbon">{value}</p>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {story.assignedDrops.length > 0 ? (
+                    story.assignedDrops.map((drop) => (
+                      <span
+                        key={drop.id}
+                        className="px-3 py-1 rounded-full bg-carbon/[0.06] text-[10px] font-semibold text-carbon/65 tracking-[-0.01em]"
+                      >
+                        {drop.name}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[10px] italic text-carbon/30">
+                      {m.noDrop || 'No drop assigned'}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ═══ REVENUE CURVE ═══ */}
-        {revenueCurve.length > 0 && (
-          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
-              {t.marketingPage.revenueCurve || 'Revenue Curve'}
-            </p>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueCurve} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#999' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#999' }} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
-                  <Tooltip
-                    formatter={(value: number) => [`€${value.toLocaleString()}`, '']}
-                    contentStyle={{ fontSize: 12, border: '1px solid #e5e5e5', borderRadius: 0 }}
-                  />
-                  <Area type="monotone" dataKey="revenue" stroke="#2C2C2C" fill="#2C2C2C" fillOpacity={0.08} strokeWidth={2} name="Monthly" />
-                  <Area type="monotone" dataKey="cumulative" stroke="#D4A574" fill="#D4A574" fillOpacity={0.05} strokeWidth={1.5} strokeDasharray="4 4" name="Cumulative" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ STORIES WITH COMMERCIAL DATA ═══ */}
-        {storiesWithCommercial.length > 0 && (
-          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
-              {t.marketingPage.storiesCommercial || 'Stories — Commercial Overview'}
-            </p>
-            <div className="space-y-3">
-              {storiesWithCommercial.map(story => (
-                <div key={story.id} className="border border-carbon/[0.06] p-4 flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-light text-carbon tracking-tight">{story.name}</h4>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-[10px] text-carbon/30">{story.skuCount} SKUs</span>
-                      <span className="text-[10px] text-carbon/30">{formatCurrency(story.totalRevenue)}</span>
-                      <span className="text-[10px] text-carbon/30">{story.totalUnits} units</span>
-                      <span className="text-[10px] text-carbon/30">€{story.avgPvp} avg</span>
-                      <span className="text-[10px] text-carbon/30">{story.avgMargin}% margin</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {story.assignedDrops.length > 0 ? (
-                      story.assignedDrops.map(drop => (
-                        <span key={drop.id} className="text-[9px] font-medium tracking-[0.1em] uppercase bg-carbon/[0.04] text-carbon/40 px-2 py-0.5">
-                          {drop.name}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-[9px] italic text-carbon/20">{t.marketingPage.noDrop || 'No drop assigned'}</span>
-                    )}
+      {/* ═══ Drop calendar ═══ */}
+      {dropsWithRevenue.length > 0 && (
+        <div className="bg-white rounded-[20px] p-6 md:p-8">
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45 mb-5">
+            {m.dropCalendar || 'Drop calendar'}
+          </p>
+          <div className="space-y-2.5">
+            {dropsWithRevenue.map((drop) => (
+              <div
+                key={drop.id}
+                className="rounded-[14px] bg-carbon/[0.02] hover:bg-carbon/[0.04] transition-colors p-4 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-2.5 h-2.5 rounded-full bg-carbon flex-shrink-0" />
+                  <div className="min-w-0">
+                    <h4 className="text-[14px] font-semibold text-carbon tracking-[-0.01em] truncate">
+                      {drop.name}
+                    </h4>
+                    <p className="text-[11px] text-carbon/45 mt-0.5 truncate">
+                      {new Date(drop.launch_date).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                      {' · '}
+                      {drop.weeks_active}w active
+                      {drop.channels?.length ? ` · ${drop.channels.join(' + ')}` : ''}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ═══ DROPS TIMELINE ═══ */}
-        {dropsWithRevenue.length > 0 && (
-          <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-6">
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-4">
-              {t.marketingPage.dropCalendar || 'Drop Calendar'}
-            </p>
-            <div className="space-y-3">
-              {dropsWithRevenue.map(drop => (
-                <div key={drop.id} className="border border-carbon/[0.06] p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-2 h-2 bg-carbon rounded-full flex-shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-light text-carbon">{drop.name}</h4>
-                      <p className="text-[10px] text-carbon/30">
-                        {new Date(drop.launch_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        {' · '}{drop.weeks_active}w active
-                        {' · '}{drop.channels?.join(' + ')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-light text-carbon">{formatCurrency(drop.revenue)}</p>
-                    <p className="text-[10px] text-carbon/30">{drop.units} units · {drop.skuCount} SKUs</p>
-                  </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[14px] font-semibold text-carbon tracking-[-0.01em]">
+                    {formatCurrency(drop.revenue)}
+                  </p>
+                  <p className="text-[11px] text-carbon/45 mt-0.5">
+                    {drop.units} units · {drop.skuCount} SKUs
+                  </p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && !kpis && (
-          <div className="text-center py-20 text-carbon/25 text-sm font-light">
-            {t.marketingPage.noSalesData || 'Create SKUs in the Merchandising block to see sales data here.'}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
