@@ -34,19 +34,14 @@ function defaultLaunchDate(): string {
 }
 
 /**
- * Derive SS/FW season label from launch date using fashion industry
- * convention:
- *   • Feb–Jul launch → SS of that calendar year (e.g. "SS27").
+ * Derive SS/FW season label from launch date.
+ *   • Jan–Jul launch → SS of that calendar year (e.g. "SS27").
  *   • Aug–Dec launch → FW of that calendar year (e.g. "FW26").
- *   • Jan launch    → FW of the *previous* year — that's the tail of the
- *                     prior FW capsule still selling through, not the
- *                     start of a new one.
  */
 function deriveSeason(iso: string): string {
   const d = new Date(iso);
   const month = d.getMonth(); // 0 = Jan
   const year = d.getFullYear();
-  if (month === 0) return `FW${String(year - 1).slice(2)}`;
   if (month >= 7) return `FW${String(year).slice(2)}`;
   return `SS${String(year).slice(2)}`;
 }
