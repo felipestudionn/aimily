@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import {
   PenTool,
-  ChevronLeft,
   Plus,
   Trash2,
   Edit3,
@@ -70,7 +69,6 @@ const EMAIL_TYPE_IDS: EmailTemplateType[] = ['launch', 'welcome', 'cart_abandonm
 export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardProps) {
   const t = useTranslation();
   const { language } = useLanguage();
-  const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<ContentStrategyTab>('pillars-voice');
 
   const emailTypeLabel = (id: EmailTemplateType): string => {
@@ -459,109 +457,31 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
     });
   };
 
-  /* ── Collapsed card ── */
-
-  if (!expanded) {
-    const totalItems = pillars.length + socialTemplates.length + emailTemplates.length;
-    return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="group relative bg-white p-10 lg:p-12 border border-carbon/[0.06] flex flex-col min-h-[340px] hover:shadow-lg transition-all duration-300 text-left w-full"
-      >
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
-            <PenTool className="h-5 w-5 text-carbon/40 group-hover:text-carbon/70 transition-colors" />
-          </div>
-          <div>
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              {t.marketingPage.contentStrategyLabel}
-            </p>
-            <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              {t.marketingPage.contentStrategyTitle}
-            </h3>
-          </div>
-        </div>
-        <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          {t.marketingPage.contentStrategyDesc}
-        </p>
-
-        <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
-          {pillarsLoading ? (
-            <p className="text-xs text-carbon/30">{t.marketingPage.loading}</p>
-          ) : totalItems === 0 ? (
-            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noContentYet}</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {pillars.map(p => (
-                <span key={p.id} className="text-[11px] tracking-[0.05em] uppercase bg-carbon/[0.04] text-carbon/50 px-3 py-1">
-                  {p.name}
-                </span>
-              ))}
-              {voiceConfig && (
-                <span className="text-[11px] tracking-[0.05em] italic text-carbon/30">
-                  {t.marketingPage.voiceInlineLabel}: {voiceConfig.personality?.slice(0, 30)}
-                </span>
-              )}
-              {socialTemplates.length > 0 && (
-                <span className="text-[11px] text-carbon/30">{socialTemplates.length} {t.marketingPage.socialInline}</span>
-              )}
-              {emailTemplates.length > 0 && (
-                <span className="text-[11px] text-carbon/30">{emailTemplates.length} {t.marketingPage.emailInline}</span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
-          {t.marketingPage.open}
-        </div>
-      </button>
-    );
-  }
-
-  /* ── Expanded full-screen view ── */
+  /* ── Render: tabs + tab content (page header is owned by parent) ── */
 
   return (
-    <div className="fixed inset-0 z-50 bg-crema overflow-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-crema/95 backdrop-blur border-b border-carbon/[0.06]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button
-            onClick={() => setExpanded(false)}
-            className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {t.marketingPage.backToCreation}
-          </button>
-          <div className="text-center">
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-              {t.marketingPage.contentStrategyLabel}
-            </p>
-            <h2 className="text-lg font-light text-carbon tracking-tight">{t.marketingPage.contentStrategyTitle}</h2>
-          </div>
-          <div className="w-32" />
-        </div>
-
-        {/* Tabs */}
-        <div className="max-w-6xl mx-auto px-6 pb-3 flex gap-1 overflow-x-auto">
-          {TAB_KEYS.map(tab => (
+    <div className="space-y-5">
+      {/* Sticky tab bar */}
+      <div className="sticky top-20 z-10 bg-shade/85 backdrop-blur-sm -mx-2 px-2 py-2 rounded-[16px]">
+        <div className="flex gap-1.5 overflow-x-auto">
+          {TAB_KEYS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border transition-colors whitespace-nowrap ${
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-carbon text-white border-carbon'
-                  : 'bg-white text-carbon/50 border-carbon/[0.06] hover:text-carbon/80'
+                  ? 'bg-carbon text-white shadow-[0_4px_16px_rgba(0,0,0,0.08)]'
+                  : 'bg-white text-carbon/55 hover:text-carbon hover:bg-white/80'
               }`}
             >
-              <tab.Icon className="h-3.5 w-3.5" />
+              <tab.Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
               {t.marketingPage[tab.labelKey]}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="bg-white rounded-[20px] p-6 md:p-8 min-h-[500px]">
 
         {/* ═══════ TAB: PILLARS & VOICE ═══════ */}
         {activeTab === 'pillars-voice' && (
@@ -575,7 +495,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                 value={userDirection}
                 onChange={e => setUserDirection(e.target.value)}
                 placeholder={t.marketingPage.strategyDirectionPlaceholder}
-                className="w-full h-24 bg-white border border-carbon/[0.06] px-4 py-3 text-sm font-light text-carbon placeholder:text-carbon/25 focus:outline-none focus:border-carbon/20 resize-none"
+                className="w-full h-24 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[12px] px-4 py-3 text-sm text-carbon placeholder:text-carbon/30 focus:outline-none focus:border-carbon/20 transition-colors resize-none"
               />
               <button
                 onClick={handleGeneratePillarsVoice}
@@ -603,14 +523,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               {pillarsLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
               <div className="space-y-3">
                 {pillars.map(pillar => (
-                  <div key={pillar.id} className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
+                  <div key={pillar.id} className="rounded-[14px] bg-carbon/[0.02] p-5">
                     {editingPillarId === pillar.id ? (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <input
                             value={editPillarForm.name ?? ''}
                             onChange={e => setEditPillarForm({ ...editPillarForm, name: e.target.value })}
-                            className="text-base font-light text-carbon tracking-tight bg-transparent border-b border-carbon/10 focus:border-carbon/30 outline-none w-full mr-4"
+                            className="text-[14px] font-semibold text-carbon tracking-[-0.01em] bg-transparent border-b border-carbon/10 focus:border-carbon/30 outline-none w-full mr-4"
                             placeholder={t.marketingPage.pillarNamePlaceholder}
                           />
                           <div className="flex gap-2 flex-shrink-0">
@@ -621,20 +541,20 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                         <textarea
                           value={editPillarForm.description ?? ''}
                           onChange={e => setEditPillarForm({ ...editPillarForm, description: e.target.value })}
-                          className="w-full h-16 text-sm font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none"
+                          className="w-full h-16 text-sm font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors resize-none"
                           placeholder={t.marketingPage.descriptionPlaceholder}
                         />
                         <input
                           value={(editPillarForm.examples ?? []).join(', ')}
                           onChange={e => setEditPillarForm({ ...editPillarForm, examples: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                          className="w-full text-xs font-light text-carbon/50 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none"
+                          className="w-full text-xs font-light text-carbon/50 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors"
                           placeholder={t.marketingPage.examplesPlaceholder}
                         />
                       </div>
                     ) : (
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="text-base font-light text-carbon tracking-tight">{pillar.name}</h4>
+                          <h4 className="text-[14px] font-semibold text-carbon tracking-[-0.01em]">{pillar.name}</h4>
                           {pillar.description && <p className="text-sm font-light text-carbon/50 mt-1">{pillar.description}</p>}
                           {pillar.examples?.length ? (
                             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -674,22 +594,22 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               {voiceLoading && <p className="text-xs text-carbon/30">{t.common.loading}</p>}
 
               {editingVoice ? (
-                <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5 space-y-3">
+                <div className="rounded-[14px] bg-carbon/[0.02] p-5 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <input value={voiceForm.personality ?? ''} onChange={e => setVoiceForm({ ...voiceForm, personality: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.personalityPlaceholder} />
-                    <input value={voiceForm.tone ?? ''} onChange={e => setVoiceForm({ ...voiceForm, tone: e.target.value })} className="text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.tonePlaceholderField} />
+                    <input value={voiceForm.personality ?? ''} onChange={e => setVoiceForm({ ...voiceForm, personality: e.target.value })} className="text-sm font-light text-carbon bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.personalityPlaceholder} />
+                    <input value={voiceForm.tone ?? ''} onChange={e => setVoiceForm({ ...voiceForm, tone: e.target.value })} className="text-sm font-light text-carbon bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.tonePlaceholderField} />
                   </div>
-                  <input value={(voiceForm.do_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, do_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.doRulesPlaceholder} />
-                  <input value={(voiceForm.dont_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, dont_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.dontRulesPlaceholder} />
-                  <input value={(voiceForm.vocabulary ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.vocabularyPlaceholder} />
-                  <textarea value={voiceForm.example_caption ?? ''} onChange={e => setVoiceForm({ ...voiceForm, example_caption: e.target.value })} className="w-full h-16 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder={t.marketingPage.exampleCaptionPlaceholder} />
+                  <input value={(voiceForm.do_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, do_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.doRulesPlaceholder} />
+                  <input value={(voiceForm.dont_rules ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, dont_rules: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.dontRulesPlaceholder} />
+                  <input value={(voiceForm.vocabulary ?? []).join(', ')} onChange={e => setVoiceForm({ ...voiceForm, vocabulary: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} className="w-full text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.vocabularyPlaceholder} />
+                  <textarea value={voiceForm.example_caption ?? ''} onChange={e => setVoiceForm({ ...voiceForm, example_caption: e.target.value })} className="w-full h-16 text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors resize-none" placeholder={t.marketingPage.exampleCaptionPlaceholder} />
                   <div className="flex gap-2">
-                    <button onClick={() => { saveVoiceConfig(voiceForm); setEditingVoice(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white hover:bg-carbon/90"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
-                    <button onClick={() => setEditingVoice(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50 hover:text-carbon/80">{t.common.cancel}</button>
+                    <button onClick={() => { saveVoiceConfig(voiceForm); setEditingVoice(false); }} className="flex items-center gap-2 px-4 py-2 text-[12px] font-semibold tracking-[-0.01em] bg-carbon text-white rounded-full hover:bg-carbon/90 transition-colors hover:bg-carbon/90"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
+                    <button onClick={() => setEditingVoice(false)} className="px-4 py-2 text-[12px] font-semibold tracking-[-0.01em] border border-carbon/[0.12] text-carbon/55 rounded-full hover:border-carbon/30 transition-colors hover:text-carbon/80">{t.common.cancel}</button>
                   </div>
                 </div>
               ) : voiceConfig ? (
-                <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5 space-y-3">
+                <div className="rounded-[14px] bg-carbon/[0.02] p-5 space-y-3">
                   {voiceConfig.personality && <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.personalityHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.personality}</p></div>}
                   {voiceConfig.tone && <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.toneHeading}</p><p className="text-sm font-light text-carbon/70">{voiceConfig.tone}</p></div>}
                   {voiceConfig.do_rules?.length ? <div><p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/25 mb-1">{t.marketingPage.doHeading}</p><div className="flex flex-wrap gap-1.5">{voiceConfig.do_rules.map((r, i) => <span key={i} className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5">{r}</span>)}</div></div> : null}
@@ -715,14 +635,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
-                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
+                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 text-sm text-carbon focus:outline-none focus:border-carbon/20 transition-colors">
                   <option value="">{t.marketingPage.allStoriesOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
                 <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
-                <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
+                <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 text-sm text-carbon focus:outline-none focus:border-carbon/20 transition-colors">
                   <option value="">{t.marketingPage.selectSkuPlaceholder}</option>
                   {skus.map(s => <option key={s.id} value={s.id}>{s.name} — {s.family}</option>)}
                 </select>
@@ -788,7 +708,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.story}</p>
-                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
+                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 text-sm text-carbon focus:outline-none focus:border-carbon/20 transition-colors">
                   <option value="">{t.marketingPage.generalNoStoryOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -877,7 +797,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
-                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
+                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 text-sm text-carbon focus:outline-none focus:border-carbon/20 transition-colors">
                   <option value="">{t.marketingPage.generalOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
@@ -984,14 +904,14 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.storyOptionalHeading}</p>
-                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
+                <select value={selectedStoryId || ''} onChange={e => setSelectedStoryId(e.target.value || null)} className="w-full bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 text-sm text-carbon focus:outline-none focus:border-carbon/20 transition-colors">
                   <option value="">{t.marketingPage.allStoriesOption}</option>
                   {stories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div>
                 <p className="text-[10px] font-medium tracking-[-0.01em] uppercase text-carbon/30 mb-2">{t.marketingPage.skuHeading}</p>
-                <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-white border border-carbon/[0.06] px-3 py-2 text-sm font-light text-carbon focus:outline-none">
+                <select value={selectedSkuId || ''} onChange={e => setSelectedSkuId(e.target.value || null)} className="w-full bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 text-sm text-carbon focus:outline-none focus:border-carbon/20 transition-colors">
                   <option value="">{t.marketingPage.selectSkuPlaceholder}</option>
                   {skus.map(s => <option key={s.id} value={s.id}>{s.name} — {s.family}</option>)}
                 </select>
@@ -1035,10 +955,10 @@ function ProductCopyRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU
   const sku = skus.find(s => s.id === copy.sku_id);
   const meta = copy.metadata as { description?: string; features?: string[]; care?: string } | null;
   return (
-    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
+    <div className="rounded-[14px] bg-carbon/[0.02] p-5">
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h4 className="text-base font-light text-carbon tracking-tight">{copy.title}</h4>
+          <h4 className="text-[14px] font-semibold text-carbon tracking-[-0.01em]">{copy.title}</h4>
           <p className="text-[10px] text-carbon/25">{sku?.name || t.marketingPage.unknownSku} — {copy.model_used}</p>
         </div>
         <button onClick={onDelete} className="p-1.5 text-carbon/25 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -1058,11 +978,11 @@ function SocialTemplateRow({ template, stories, onDelete }: { template: SocialTe
   const t = useTranslation();
   const story = stories.find(s => s.id === template.story_id);
   return (
-    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
+    <div className="rounded-[14px] bg-carbon/[0.02] p-5">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon/[0.04] text-carbon/40 px-2 py-0.5">{template.type.replace('_', ' ')}</span>
-          <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">{template.platform}</span>
+          <span className="text-[9px] font-semibold tracking-[0.08em] uppercase bg-carbon/[0.06] text-carbon/55 px-2.5 py-0.5 rounded-full">{template.type.replace('_', ' ')}</span>
+          <span className="text-[9px] font-semibold tracking-[0.08em] uppercase text-carbon/40">{template.platform}</span>
           {story && <span className="text-[10px] italic text-carbon/25">{story.name}</span>}
         </div>
         <button onClick={onDelete} className="p-1.5 text-carbon/25 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -1132,7 +1052,7 @@ function EmailSequenceGroup({
               </span>
             )}
           </div>
-          <h5 className="text-base font-light text-carbon tracking-tight truncate">{name}</h5>
+          <h5 className="text-[14px] font-semibold text-carbon tracking-[-0.01em] truncate">{name}</h5>
           {trigger && (
             <p className="text-[11px] font-light text-carbon/45 mt-1">
               <span className="text-carbon/30 uppercase tracking-[0.08em] text-[10px]">{t.marketingPage.emailSequenceTriggerLabel}:</span>{' '}
@@ -1215,10 +1135,10 @@ function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template:
   const [form, setForm] = useState(template);
 
   return (
-    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
+    <div className="rounded-[14px] bg-carbon/[0.02] p-5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-medium tracking-[0.1em] uppercase bg-carbon/[0.04] text-carbon/40 px-2 py-0.5">{template.email_type.replace('_', ' ')}</span>
+          <span className="text-[9px] font-semibold tracking-[0.08em] uppercase bg-carbon/[0.06] text-carbon/55 px-2.5 py-0.5 rounded-full">{template.email_type.replace('_', ' ')}</span>
           {story && <span className="text-[10px] italic text-carbon/25">{story.name}</span>}
           {template.status && <span className={`text-[10px] px-2 py-0.5 ${template.status === 'draft' ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700'}`}>{template.status}</span>}
         </div>
@@ -1230,24 +1150,24 @@ function EmailTemplateRow({ template, stories, onDelete, onUpdate }: { template:
 
       {editing ? (
         <div className="space-y-2">
-          <input value={form.subject_line ?? ''} onChange={e => setForm({ ...form, subject_line: e.target.value })} className="w-full text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.subjectLinePlaceholder} />
-          <input value={form.preview_text ?? ''} onChange={e => setForm({ ...form, preview_text: e.target.value })} className="w-full text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.previewTextPlaceholder} />
-          <input value={form.heading ?? ''} onChange={e => setForm({ ...form, heading: e.target.value })} className="w-full text-sm font-light text-carbon bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.headingPlaceholder} />
-          <textarea value={form.body ?? ''} onChange={e => setForm({ ...form, body: e.target.value })} className="w-full h-24 text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none resize-none" placeholder={t.marketingPage.bodyPlaceholder} />
+          <input value={form.subject_line ?? ''} onChange={e => setForm({ ...form, subject_line: e.target.value })} className="w-full text-sm font-light text-carbon bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.subjectLinePlaceholder} />
+          <input value={form.preview_text ?? ''} onChange={e => setForm({ ...form, preview_text: e.target.value })} className="w-full text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.previewTextPlaceholder} />
+          <input value={form.heading ?? ''} onChange={e => setForm({ ...form, heading: e.target.value })} className="w-full text-sm font-light text-carbon bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.headingPlaceholder} />
+          <textarea value={form.body ?? ''} onChange={e => setForm({ ...form, body: e.target.value })} className="w-full h-24 text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors resize-none" placeholder={t.marketingPage.bodyPlaceholder} />
           <div className="grid grid-cols-2 gap-2">
-            <input value={form.cta_text ?? ''} onChange={e => setForm({ ...form, cta_text: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.ctaTextPlaceholder} />
-            <input value={form.cta_url ?? ''} onChange={e => setForm({ ...form, cta_url: e.target.value })} className="text-xs font-light text-carbon/60 bg-transparent border border-carbon/[0.06] px-3 py-2 focus:outline-none" placeholder={t.marketingPage.ctaUrlPlaceholder} />
+            <input value={form.cta_text ?? ''} onChange={e => setForm({ ...form, cta_text: e.target.value })} className="text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.ctaTextPlaceholder} />
+            <input value={form.cta_url ?? ''} onChange={e => setForm({ ...form, cta_url: e.target.value })} className="text-xs font-light text-carbon/60 bg-carbon/[0.03] border border-carbon/[0.06] rounded-[10px] px-3 py-2 focus:outline-none focus:border-carbon/20 transition-colors" placeholder={t.marketingPage.ctaUrlPlaceholder} />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => { onUpdate(template.id, form); setEditing(false); }} className="flex items-center gap-2 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] bg-carbon text-white"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
-            <button onClick={() => setEditing(false)} className="px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] border border-carbon/[0.06] text-carbon/50">{t.common.cancel}</button>
+            <button onClick={() => { onUpdate(template.id, form); setEditing(false); }} className="flex items-center gap-2 px-4 py-2 text-[12px] font-semibold tracking-[-0.01em] bg-carbon text-white rounded-full hover:bg-carbon/90 transition-colors"><Check className="h-3.5 w-3.5" /> {t.common.save}</button>
+            <button onClick={() => setEditing(false)} className="px-4 py-2 text-[12px] font-semibold tracking-[-0.01em] border border-carbon/[0.12] text-carbon/55 rounded-full hover:border-carbon/30 transition-colors">{t.common.cancel}</button>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
-          {template.subject_line && <div><p className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/25">{t.marketingPage.subjectHeading}</p><p className="text-sm font-light text-carbon/70">{template.subject_line}</p></div>}
+          {template.subject_line && <div><p className="text-[9px] font-semibold tracking-[0.08em] uppercase text-carbon/40">{t.marketingPage.subjectHeading}</p><p className="text-sm font-light text-carbon/70">{template.subject_line}</p></div>}
           {template.preview_text && <p className="text-xs font-light text-carbon/40 italic">{template.preview_text}</p>}
-          {template.heading && <p className="text-base font-light text-carbon tracking-tight">{template.heading}</p>}
+          {template.heading && <p className="text-[14px] font-semibold text-carbon tracking-[-0.01em]">{template.heading}</p>}
           {template.body && <p className="text-sm font-light text-carbon/60 leading-relaxed whitespace-pre-wrap">{template.body}</p>}
           {template.cta_text && (
             <div className="inline-block bg-carbon/[0.06] px-4 py-2 text-[11px] font-medium uppercase tracking-[0.08em] text-carbon/60">
@@ -1265,10 +1185,10 @@ function SeoRow({ copy, skus, onDelete }: { copy: ProductCopy; skus: SKU[]; onDe
   const sku = skus.find(s => s.id === copy.sku_id);
   const meta = copy.metadata as { meta_title?: string; meta_description?: string; alt_text?: string; keywords?: string[]; og_title?: string; og_description?: string } | null;
   return (
-    <div className="bg-white border border-carbon/[0.06] rounded-[20px] p-5">
+    <div className="rounded-[14px] bg-carbon/[0.02] p-5">
       <div className="flex items-start justify-between mb-2">
         <div>
-          <h4 className="text-base font-light text-carbon tracking-tight">{meta?.meta_title || copy.title}</h4>
+          <h4 className="text-[14px] font-semibold text-carbon tracking-[-0.01em]">{meta?.meta_title || copy.title}</h4>
           <p className="text-[10px] text-carbon/25">{sku?.name || t.marketingPage.unknownSku}</p>
         </div>
         <button onClick={onDelete} className="p-1.5 text-carbon/25 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
