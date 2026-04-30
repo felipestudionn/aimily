@@ -26,49 +26,27 @@ interface Props {
   editing?: EditingContext;
 }
 
-const NARRATIVE_PLACEHOLDERS: Record<string, { lead: string; body: string; attribution: string }> = {
-  consumer: {
-    lead: 'She is 24, lives between cities, and reads culture more than trend reports.',
-    body: 'Our consumer treats each drop as a statement piece rather than a wardrobe filler. She values scarcity, craftsmanship, and the community of people wearing the same pieces — but refuses anything that looks mass-produced.',
-    attribution: 'Consumer archetype · Primary segment',
-  },
-  'brand-identity': {
-    lead: 'A brand built at the seam between craft and rebellion.',
-    body: 'The aesthetic is disciplined: neutral tones, architectural silhouettes, and deliberate imperfections borrowed from atelier floors. The voice is short, physical, unafraid. The product speaks before the logo does.',
-    attribution: 'Brand DNA · Core positioning',
-  },
-  'buying-strategy': {
-    lead: 'Three drops a season, each telling a chapter of the collection story.',
-    body: 'Narrow and deep over broad and shallow: 28 styles across three families, staggered across eight weeks. Core programs anchor the top of funnel; seasonal captures convert the followers we earn along the way.',
-    attribution: 'Buying strategy · Season blueprint',
-  },
-  'tech-pack': {
-    lead: 'Specs that a factory can build without a phone call.',
-    body: 'Every silhouette carries pattern measurements, materials BOM, stitch density, labelling, and packaging. One-page-per-SKU format, bilingual EN/IT, always synced with the sample status so production never works from stale data.',
-    attribution: 'Tech pack · Production-ready',
-  },
-  communications: {
-    lead: 'Short sentences. Heavy with meaning.',
-    body: 'Copy across site, email, and social shares the same cadence: declarative, uncluttered, and physically specific. We name the material, the city, the process. We never reach for adjectives when a noun does the work.',
-    attribution: 'Voice & tone · Communications spine',
-  },
-};
-
-const FALLBACK = {
-  lead: 'The narrative for this mini-block lands here once it\'s finalised.',
-  body: 'This template renders story-driven slides with a lead sentence, supporting paragraph, and an editorial image panel. Real content flows in from the Collection Intelligence System when the mini-block is filled.',
-  attribution: `${''} · Draft`,
+/* Empty-state attribution per slide — purely the slide category, not a
+   fabricated quote. Used when the user hasn't typed anything yet. */
+const EMPTY_ATTRIBUTION: Record<string, string> = {
+  consumer: 'Consumer profile',
+  'brand-identity': 'Brand DNA',
+  'brand-logo': 'Logo',
+  'brand-voice': 'Voice & tone',
+  'buying-strategy': 'Buying strategy',
+  'tech-pack': 'Tech pack',
+  communications: 'Communications',
 };
 
 export function NarrativePortraitTemplate({ slide, meta, title, data: cisData, editing }: Props) {
-  const placeholder = NARRATIVE_PLACEHOLDERS[slide.id] ?? FALLBACK;
-  /* Prefer draft (what user is typing) → committed CIS/override → placeholder.
-     Drafts win so the screen reflects typing without a round-trip. */
-  const data = {
-    lead: editing?.drafts.lead ?? cisData?.lead ?? placeholder.lead,
-    body: editing?.drafts.body ?? cisData?.body ?? placeholder.body,
-    attribution: cisData?.attribution ?? placeholder.attribution,
-  };
+  /* Drafts (live editor) → committed CIS/override → empty.
+     We DO NOT fabricate a lead/body when the user hasn't recorded one;
+     instead the slide renders an explicit empty-state placeholder. */
+  const lead = editing?.drafts.lead ?? cisData?.lead ?? '';
+  const body = editing?.drafts.body ?? cisData?.body ?? '';
+  const attribution = cisData?.attribution ?? EMPTY_ATTRIBUTION[slide.id] ?? '';
+  const data = { lead, body, attribution };
+  const hasNarrative = !!(lead || body);
   const isLeadOverride = !!editing?.slideOverrides.lead;
   const isBodyOverride = !!editing?.slideOverrides.body;
 
@@ -159,6 +137,8 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData, e
         </div>
 
         <div>
+          {hasNarrative ? (
+          <>
           <EditableText
             as="p"
             value={data.lead}
@@ -207,6 +187,39 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData, e
           >
             {data.body}
           </EditableText>
+          </>
+          ) : (
+            /* Empty state — no narrative saved. We surface where the
+               user should go to fill it in, but render no fabricated
+               text in either lead or body. The right pane is left
+               quiet on purpose. */
+            <div className="space-y-3">
+              <p
+                style={{
+                  fontFamily: 'var(--p-mono-font)',
+                  fontSize: '10px',
+                  letterSpacing: '0.24em',
+                  color: 'var(--p-mute)',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Awaiting your text
+              </p>
+              <p
+                style={{
+                  fontFamily: 'var(--p-body-font)',
+                  fontSize: 'clamp(14px, 1.1vw, 17px)',
+                  lineHeight: 1.55,
+                  color: 'var(--p-mute)',
+                  letterSpacing: 'var(--p-body-tracking)',
+                  margin: 0,
+                  maxWidth: '95%',
+                }}
+              >
+                {emptyHintFor(slide.id)}
+              </p>
+            </div>
+          )}
         </div>
 
         <div
@@ -223,6 +236,29 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData, e
       </div>
     </div>
   );
+}
+
+/* Per-slide empty hint pointing the user to the right Workspace block.
+   No marketing copy, just a literal where-to-go. */
+function emptyHintFor(slideId: string): string {
+  switch (slideId) {
+    case 'consumer':
+      return 'Open Creative · Consumer Definition to populate this slide.';
+    case 'brand-identity':
+      return 'Open Creative · Brand Identity to populate this slide.';
+    case 'brand-logo':
+      return 'Upload a logo in Creative · Brand Identity to populate this slide.';
+    case 'brand-voice':
+      return 'Open Creative · Brand Identity → Voice & Tone to populate this slide.';
+    case 'tech-pack':
+      return 'Open Design & Development · Tech Pack to populate this slide.';
+    case 'buying-strategy':
+      return 'Open Merchandising · Buying Strategy to populate this slide.';
+    case 'communications':
+      return 'Open Marketing · Communications to populate this slide.';
+    default:
+      return 'Open the corresponding workspace block to populate this slide.';
+  }
 }
 
 /* ─── Visual panel — three modes ──────────────────────────────────────

@@ -246,10 +246,29 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   // narrative image hydration (consumer/brand/communications) and they're
   // also re-read further down for moodboard/distribution/financial — Supabase
   // caches but a single round-trip is cleaner.
+  // Workspace shape (verified against creative/page.tsx + BrandBoardCanvas):
+  //   blockData.moodboard.data.images   → string[] of moodboard image URLs.
+  //   blockData['brand-dna'].data       → { brandName, colors[], colorPalette[],
+  //                                         tone, typography, style, ... }
+  // Past versions of this loader assumed brand-identity / logoUrl /
+  // paletteHex / typographyName fields that DON'T exist in the workspace —
+  // that mismatch is what caused the Palette slide to render the template's
+  // hard-coded fallback swatches.
+  type ColorEntry = { hex: string; name?: string; role?: string };
   type CreativeWS = {
     blockData?: {
       moodboard?: { data?: { images?: string[] } };
-      'brand-identity'?: { data?: { logoUrl?: string; iconUrl?: string; paletteHex?: string[]; typographyName?: string } };
+      'brand-dna'?: {
+        data?: {
+          brandName?: string;
+          colors?: string[];
+          colorPalette?: ColorEntry[];
+          tone?: string;
+          typography?: string;
+          style?: string;
+          logoUrl?: string; // not currently saved by the canvas; kept optional for future
+        };
+      };
     };
   };
   const { data: creativeWsRow } = await supabaseAdmin
@@ -260,7 +279,31 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     .maybeSingle();
   const creativeWs = (creativeWsRow?.data || {}) as CreativeWS;
   const moodboardImages = creativeWs.blockData?.moodboard?.data?.images ?? [];
-  const brandBoard = creativeWs.blockData?.['brand-identity']?.data ?? {};
+  const brandData = creativeWs.blockData?.['brand-dna']?.data ?? {};
+
+  // Normalise the palette: prefer the new colorPalette[] entries, fall
+  // back to parsing the legacy colors[] strings ("#HEX (Name)").
+  const paletteEntries: ColorEntry[] = (() => {
+    if (Array.isArray(brandData.colorPalette) && brandData.colorPalette.length > 0) {
+      return brandData.colorPalette;
+    }
+    if (Array.isArray(brandData.colors)) {
+      return brandData.colors
+        .map((raw) => {
+          const str = String(raw).trim();
+          const hexMatch = str.match(/#?([A-Fa-f0-9]{6})/);
+          if (!hexMatch) return null;
+          const nameMatch = str.match(/\(([^)]+)\)/);
+          return {
+            hex: `#${hexMatch[1].toUpperCase()}`,
+            name: nameMatch ? nameMatch[1] : undefined,
+          } as ColorEntry;
+        })
+        .filter((x): x is ColorEntry => !!x);
+    }
+    return [];
+  })();
+  const paletteHex = paletteEntries.map((c) => c.hex);
 
   // Latest editorial generation for this collection — used as the visual
   // anchor on the communications slide (the editorial is the brand voice
@@ -292,17 +335,20 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
 
   const brandSplit = extractLeadBody(ctx.brandDNA);
   if (brandSplit.lead || brandSplit.body) {
-    // Brand identity prefers logo+typography composition; falls back to
-    // palette swatch grid; final fallback is the legacy placeholder.
+    // Brand identity narrative reads from CIS brand DNA. Visual anchor:
+    // logo image when present (workspace doesn't currently save one, so
+    // this is normally absent); else the palette swatch grid the user
+    // saved; else nothing — the template renders an honest empty state.
     const brandImages: string[] = [];
-    if (brandBoard.logoUrl) brandImages.push(brandBoard.logoUrl);
-    if (brandBoard.iconUrl && brandBoard.iconUrl !== brandBoard.logoUrl) brandImages.push(brandBoard.iconUrl);
+    if (brandData.logoUrl) brandImages.push(brandData.logoUrl);
+    const hasLogo = brandImages.length > 0;
+    const hasPalette = paletteHex.length > 0;
     data.narratives['brand-identity'] = {
       ...brandSplit,
       attribution: 'Brand DNA · Core positioning',
-      images: brandImages.length > 0 ? brandImages : undefined,
-      paletteHex: (brandBoard.paletteHex && brandBoard.paletteHex.length > 0) ? brandBoard.paletteHex : undefined,
-      imageMode: brandImages.length > 0 ? 'single' : (brandBoard.paletteHex?.length ? 'palette' : 'auto'),
+      images: hasLogo ? brandImages : undefined,
+      paletteHex: hasPalette ? paletteHex : undefined,
+      imageMode: hasLogo ? 'single' : (hasPalette ? 'palette' : 'auto'),
     };
     data.hasAnyData = true;
   }
@@ -342,18 +388,20 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       undefined,
   })).filter((t) => !!t.url) as { family: string; url: string }[];
 
-  // Tech-pack — derive from productCategory + existingSkus count.
-  // Visual anchor: the first SKU's 3D render (most polished) as a single
-  // hero — production-ready vibe.
+  // Tech-pack — narrative composed strictly from CIS facts. We do NOT
+  // invent a quotable lead sentence; the slide either renders the user's
+  // own data or shows the empty state. The body is just structured facts
+  // (category + first 3 SKUs), not a marketing tagline.
   if (ctx.productCategory || ctx.existingSkus) {
     const parts: string[] = [];
     if (ctx.productCategory) parts.push(`Category: ${ctx.productCategory}`);
-    if (ctx.existingSkus) parts.push(ctx.existingSkus.split('\n').slice(0, 3).join(' · '));
+    if (ctx.existingSkus) {
+      parts.push(ctx.existingSkus.split('\n').filter((l) => l.trim()).slice(0, 3).join(' · '));
+    }
     if (parts.length) {
       data.narratives['tech-pack'] = {
-        lead: 'Specs that a factory can build without a phone call.',
         body: parts.join(' · '),
-        attribution: 'Tech pack · Production-ready',
+        attribution: 'Tech pack',
         images: skuThumbs[0]?.url ? [skuThumbs[0].url] : undefined,
         imageMode: 'single',
         imageCaption: skuThumbs[0] ? `${skuThumbs[0].family.toUpperCase()} · LEAD STYLE` : undefined,
@@ -362,30 +410,13 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     }
   }
 
-  // Buying strategy — derive from drops / sales target.
-  // Visual anchor: family representatives as a 2x2 mosaic (one per family).
-  if (ctx.drops || ctx.salesTarget) {
-    const parts: string[] = [];
-    if (ctx.drops) parts.push(`Drop cadence: ${ctx.drops.split('\n').length} drops planned.`);
-    if (ctx.salesTarget) parts.push(`Revenue target ${ctx.salesTarget}.`);
-    // One thumb per family, up to 4 — gives the buyer a sense of breadth.
-    const seenFamilies = new Set<string>();
-    const familyMosaic: string[] = [];
-    for (const s of skuThumbs) {
-      if (seenFamilies.has(s.family)) continue;
-      seenFamilies.add(s.family);
-      familyMosaic.push(s.url);
-      if (familyMosaic.length >= 4) break;
-    }
-    data.narratives['buying-strategy'] = {
-      lead: 'Narrow and deep over broad and shallow.',
-      body: parts.join(' ') || undefined,
-      attribution: 'Buying strategy · Season blueprint',
-      images: familyMosaic.length > 0 ? familyMosaic : undefined,
-      imageMode: 'mosaic',
-    };
-    data.hasAnyData = true;
-  }
+  // Buying strategy — narrative is intentionally NOT auto-composed.
+  // CIS does not store a "thesis" string for this mini-block, and the
+  // Phase 1 attempt that tried to write one ("Narrow and deep over broad
+  // and shallow") was hard-coded marketing copy, not the user's words.
+  // The slide now renders the deck-override text once the user types it,
+  // or the empty-state placeholder otherwise. The dedicated
+  // buying-scenarios slide carries the structural comparison.
 
   // ─── Stats (EditorialStat) ──────────────────────────────────────
 
@@ -977,52 +1008,62 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   }
 
   // ─── Brand expansions: brand-logo, brand-palette, brand-voice ──
-  // brand-identity (DNA narrative) was already populated above. The
-  // three new sub-slides each get their own data path so the user
-  // can edit / promote them independently.
+  // We ONLY emit data when the user has actually saved something. No
+  // synthetic copy ("The mark.", "A logo is a promise…", a stock pangram
+  // for the typography sample, etc.). When data is missing, the slide
+  // renders an explicit empty state pointing the user back to Creative.
   {
-    // brand-logo: full-bleed single image (logo OR icon).
-    if (brandBoard.logoUrl || brandBoard.iconUrl) {
+    // brand-logo: only when the user has uploaded a logo image. The
+    // BrandBoardCanvas does not currently save a logoUrl field, so this
+    // is normally empty until that affordance ships.
+    if (brandData.logoUrl) {
       data.narratives['brand-logo'] = {
-        lead: 'The mark.',
-        body: 'A logo is a promise compressed to a glyph. This one carries the season.',
-        attribution: 'Logo · Visual identity',
-        images: [brandBoard.logoUrl ?? brandBoard.iconUrl] as string[],
+        attribution: 'Logo',
+        images: [brandData.logoUrl],
         imageMode: 'single',
       };
       data.hasAnyData = true;
     }
 
-    // brand-palette: palette + typography specimen via the dedicated
-    // template. Pulls hex array + typography name from the brand board.
-    if ((brandBoard.paletteHex && brandBoard.paletteHex.length > 0) || brandBoard.typographyName) {
-      const swatches = (brandBoard.paletteHex ?? []).slice(0, 5).map((hex, i) => ({
-        hex,
-        role: ['Identity', 'Ground', 'Accent', 'Neutral', 'Mute'][i] ?? `Color ${i + 1}`,
+    // brand-palette: only when palette swatches OR typography are saved.
+    // The "sample" sentence is INTENTIONALLY left undefined — we don't
+    // want a stock pangram pretending to be the user's voice.
+    if (paletteEntries.length > 0 || brandData.typography) {
+      const swatches = paletteEntries.slice(0, 5).map((c) => ({
+        hex: c.hex,
+        role: c.name || c.role || undefined,
       }));
       data.palettes['brand-palette'] = {
-        caption: 'Color and type — the visual grammar that holds every touchpoint together.',
+        caption:
+          paletteEntries.length > 0 && brandData.typography
+            ? 'Color and typography saved in Brand Identity.'
+            : paletteEntries.length > 0
+              ? `${paletteEntries.length} colors saved in Brand Identity.`
+              : 'Typography saved in Brand Identity.',
         swatches: swatches.length > 0 ? swatches : undefined,
-        typography: {
-          displayName: brandBoard.typographyName,
-          sample:
-            'The quick brown fox jumps over the lazy dog — the cadence at which body copy carries the brand voice.',
-        },
+        typography: brandData.typography
+          ? { displayName: brandData.typography }
+          : undefined,
       };
       data.hasAnyData = true;
     }
 
-    // brand-voice: narrative anchored to the latest editorial when
-    // present (voice given a face), otherwise leans on the moodboard.
-    const voiceImages = editorialUrl ? [editorialUrl] : moodboardImages.slice(0, 4);
+    // brand-voice: ONLY when CIS has a brand voice text. No fabricated
+    // lead or attribution beyond a simple label.
     if (ctx.brandVoice) {
-      data.narratives['brand-voice'] = {
-        ...extractLeadBody(ctx.brandVoice),
-        attribution: 'Voice · How the brand speaks',
-        images: voiceImages.length > 0 ? voiceImages : undefined,
-        imageMode: editorialUrl ? 'single' : 'mosaic',
-      };
-      data.hasAnyData = true;
+      const voiceSplit2 = extractLeadBody(ctx.brandVoice);
+      if (voiceSplit2.lead || voiceSplit2.body) {
+        const voiceImages = editorialUrl
+          ? [editorialUrl]
+          : moodboardImages.slice(0, 4);
+        data.narratives['brand-voice'] = {
+          ...voiceSplit2,
+          attribution: 'Voice & tone',
+          images: voiceImages.length > 0 ? voiceImages : undefined,
+          imageMode: editorialUrl ? 'single' : 'mosaic',
+        };
+        data.hasAnyData = true;
+      }
     }
   }
 

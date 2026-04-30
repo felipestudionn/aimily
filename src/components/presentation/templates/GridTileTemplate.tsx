@@ -34,73 +34,20 @@ interface Tile {
   value?: string;
 }
 
-const GRID_PLACEHOLDERS: Record<string, { tiles: Tile[]; caption: string }> = {
-  moodboard: {
-    caption: 'Six anchors framing the collection\'s visual voice.',
-    tiles: [
-      { eyebrow: 'Texture', label: 'Raw Canvas', value: '01' },
-      { eyebrow: 'Form', label: 'Split-Toe Low-Top', value: '02' },
-      { eyebrow: 'Color', label: 'Oxidized Ivory', value: '03' },
-      { eyebrow: 'Atmosphere', label: 'Atelier Floor', value: '04' },
-      { eyebrow: 'Motion', label: 'Static Portrait', value: '05' },
-      { eyebrow: 'Era', label: '2004 · Antwerp', value: '06' },
-    ],
-  },
-  'assortment-pricing': {
-    caption: 'Four product families carrying the range.',
-    tiles: [
-      { eyebrow: 'Family A', label: 'Sneakers', value: '€340' },
-      { eyebrow: 'Family B', label: 'Loafers', value: '€420' },
-      { eyebrow: 'Family C', label: 'Boots', value: '€510' },
-      { eyebrow: 'Family D', label: 'Sandals', value: '€280' },
-      { eyebrow: 'Accessories', label: 'Bags', value: '€190' },
-      { eyebrow: 'Accessories', label: 'Small Leather', value: '€80' },
-    ],
-  },
-  'sketch-color': {
-    caption: 'Opening round of sketches and colorway decisions.',
-    tiles: [
-      { eyebrow: 'SKU 01', label: 'Split-Toe · Ivory', value: 'R1' },
-      { eyebrow: 'SKU 02', label: 'Split-Toe · Black', value: 'R1' },
-      { eyebrow: 'SKU 03', label: 'Loafer · Brown', value: 'R1' },
-      { eyebrow: 'SKU 04', label: 'Loafer · Black', value: 'R1' },
-      { eyebrow: 'SKU 05', label: 'Boot · Ivory', value: 'R2' },
-      { eyebrow: 'SKU 06', label: 'Boot · Black', value: 'R2' },
-    ],
-  },
-  'content-studio': {
-    caption: 'Six content pillars feeding every channel.',
-    tiles: [
-      { eyebrow: 'Editorial', label: 'Still Life', value: '24' },
-      { eyebrow: 'Editorial', label: 'On-Model', value: '18' },
-      { eyebrow: 'Campaign', label: 'Hero Film', value: '2' },
-      { eyebrow: 'Social', label: 'Reels', value: '12' },
-      { eyebrow: 'Social', label: 'Stories', value: '36' },
-      { eyebrow: 'Email', label: 'Drops', value: '8' },
-    ],
-  },
-};
-
-const FALLBACK = {
-  caption: 'Tiles populate from the Collection Intelligence System once this mini-block is filled.',
-  tiles: Array.from({ length: 6 }, (_, i) => ({
-    eyebrow: `Slot ${String(i + 1).padStart(2, '0')}`,
-    label: '—',
-    value: '',
-  })),
-};
+/* No tile placeholders. We do NOT invent product families, SKU names,
+   moodboard keywords, or content stats — those would lie about the
+   user's actual collection. When neither images nor tiles arrive from
+   the loader, the slide renders a literal "open Workspace · X" empty
+   state. */
 
 export function GridTileTemplate({ slide, meta, title, data: cisData, editing }: Props) {
   const tr = useTranslation().presentation;
-  const placeholder = GRID_PLACEHOLDERS[slide.id] ?? FALLBACK;
-  /* Photo mode: when the loader supplied images (e.g. moodboard with
-     uploaded references), render a photo mosaic instead of label tiles. */
+  /* Photo mode: when the loader supplied images, render a photo mosaic. */
   const images = cisData?.images ?? [];
   const photoMode = images.length > 0;
-  /* Apply any live drafts on top of cisData (which already carries
-     committed overrides from the loader). Drafts keep the canvas in
-     sync while the user is typing, before Save. */
-  const baseTiles = (cisData?.tiles && cisData.tiles.length > 0) ? cisData.tiles : placeholder.tiles;
+  /* Tile mode (only when CIS supplied real tiles). Drafts win over
+     committed values so the screen reflects typing live. */
+  const baseTiles = cisData?.tiles ?? [];
   const tilesWithDrafts = baseTiles.map((t, i) => {
     if (!editing?.drafts) return t;
     const d = editing.drafts;
@@ -112,14 +59,12 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
     };
     return next;
   });
-  /* Caption is editable via the `caption` override key. Drafts apply
-     live; the Promote flow reads the final override value to write to
-     CIS (`creative.moodboard.curated_narrative` for moodboard). */
   const captionDraft = editing?.drafts?.caption;
   const data = {
-    caption: captionDraft ?? cisData?.caption ?? placeholder.caption,
+    caption: captionDraft ?? cisData?.caption ?? '',
     tiles: tilesWithDrafts,
   };
+  const hasContent = photoMode || tilesWithDrafts.length > 0;
 
   return (
     <div
@@ -238,8 +183,48 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
         );
       })()}
 
+      {/* Empty state — no images, no tiles. We do NOT invent placeholder
+          tiles ("Sneakers · €340", "Split-Toe Low-Top", etc.) because
+          they would impersonate real product data. */}
+      {!hasContent && (
+        <div
+          className="flex-1 flex items-center justify-center"
+          style={{
+            border: '1px dashed var(--p-border)',
+            borderRadius: 'var(--p-radius)',
+          }}
+        >
+          <div className="text-center max-w-md px-6">
+            <div
+              style={{
+                fontFamily: 'var(--p-mono-font)',
+                fontSize: '10px',
+                letterSpacing: '0.24em',
+                color: 'var(--p-mute)',
+                textTransform: 'uppercase',
+                marginBottom: '12px',
+              }}
+            >
+              Awaiting your data
+            </div>
+            <p
+              style={{
+                fontFamily: 'var(--p-body-font)',
+                fontSize: '14px',
+                lineHeight: 1.5,
+                color: 'var(--p-mute)',
+                letterSpacing: 'var(--p-body-tracking)',
+                margin: 0,
+              }}
+            >
+              {gridEmptyHint(slide.id)}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 3×2 tile grid — label mode, used when no uploaded images. */}
-      {!photoMode && <div className="flex-1 grid grid-cols-3 gap-4">
+      {!photoMode && tilesWithDrafts.length > 0 && <div className="flex-1 grid grid-cols-3 gap-4">
         {data.tiles.map((tile, i) => (
           <div
             key={i}
@@ -351,4 +336,25 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
       </div>
     </div>
   );
+}
+
+/* Per-slide empty hint pointing the user to the right Workspace block.
+   No marketing copy, just literal where-to-go. */
+function gridEmptyHint(slideId: string): string {
+  switch (slideId) {
+    case 'moodboard':
+      return 'Open Creative · Moodboard to add reference images.';
+    case 'assortment-pricing':
+      return 'Open Merchandising · Assortment & Pricing to add SKUs.';
+    case 'sketch-color':
+      return 'Open Design & Development · Sketch & Color to add SKUs.';
+    case 'colorways':
+      return 'Approve colorways in Design & Development to populate this slide.';
+    case 'content-studio':
+      return 'Open Marketing · Content Studio to add content pillars.';
+    case 'buying-drops':
+      return 'Open Merchandising · Buying Strategy to schedule drops.';
+    default:
+      return 'Open the corresponding Workspace block to populate this slide.';
+  }
 }

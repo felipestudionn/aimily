@@ -31,84 +31,28 @@ interface Props {
   editing?: EditingContext;
 }
 
-/* Placeholder copy per mini-block. F2 will replace via CIS. Keeping
-   them editorial-plausible so the slide reads well even empty. */
-const STAT_PLACEHOLDERS: Record<string, { value: string; caption: string; narrative: string; support: { value: string; label: string }[] }> = {
-  'market-research': {
-    value: '$47.2B',
-    caption: 'Global streetwear market by 2028',
-    narrative: 'Consumer appetite for limited-edition drops is accelerating — a 14% YoY growth outpacing traditional ready-to-wear.',
-    support: [
-      { value: '68%', label: 'Gen Z drop awareness' },
-      { value: '2.4×', label: 'resale premium avg.' },
-      { value: '142', label: 'competitor drops tracked' },
-    ],
-  },
-  distribution: {
-    value: '42 / 58',
-    caption: 'Wholesale vs. DTC split',
-    narrative: 'Balanced distribution with a slight lean toward direct — giving us margin headroom while keeping brand-builder retail partners.',
-    support: [
-      { value: '14', label: 'wholesale doors' },
-      { value: '3', label: 'DTC channels' },
-      { value: '7', label: 'priority markets' },
-    ],
-  },
-  'financial-plan': {
-    value: '62%',
-    caption: 'Target gross margin',
-    narrative: 'Healthy margin architecture: premium positioning absorbs cost inflation while leaving room for marketing spend at launch.',
-    support: [
-      { value: '€1.8M', label: 'total revenue target' },
-      { value: '€680K', label: 'COGS budget' },
-      { value: '€240K', label: 'marketing envelope' },
-    ],
-  },
-  'sales-dashboard': {
-    value: '84%',
-    caption: 'Sell-through at week 6',
-    narrative: 'Core drops outperforming forecast — momentum is strong enough to unlock the second shipment without markdown.',
-    support: [
-      { value: '€412K', label: 'revenue to date' },
-      { value: '1,240', label: 'units sold' },
-      { value: '4.1', label: 'avg. basket size' },
-    ],
-  },
-};
-
-const FALLBACK = {
-  value: '—',
-  caption: 'Key metric',
-  narrative: 'Once this mini-block is complete, the headline number surfaces here alongside a short narrative bridge.',
-  support: [
-    { value: '—', label: 'Supporting metric' },
-    { value: '—', label: 'Supporting metric' },
-    { value: '—', label: 'Supporting metric' },
-  ],
-};
+/* No placeholder data is ever rendered for stat slides. If the loader
+   doesn't supply a real value/narrative, we route to the WIP overlay
+   (status === 'pending'). NEVER fabricate market sizes, sell-through
+   percentages, revenue numbers, or any other stat — those would lie to
+   the buyer reading the deck. */
 
 export function EditorialStatTemplate({ slide, meta, title, data: real, editing }: Props) {
   const tr = useTranslation().presentation;
   const narrativeDraft = editing?.drafts?.narrative;
 
-  /* Work-in-Progress mode: the loader knows there's a structural
-     source for this slide but the data isn't populated yet. Render an
-     explicit placeholder instead of editorial sample numbers. */
-  const wip = real?.status === 'pending';
+  /* Work-in-Progress mode covers two cases: loader sets status='pending'
+     explicitly, OR no real data was supplied at all. Either way we route
+     to the WIP overlay and NEVER render fabricated values/narratives. */
+  const hasReal = !!(real && real.status !== 'pending' && (real.value || real.narrative));
+  const wip = !hasReal;
 
-  /* Prefer real CIS-derived data. Fall back to editorial placeholder
-     when the slide hasn't been composed yet (keeps the deck readable
-     during demos with partial CIS coverage). Live narrative drafts
-     win so the user sees typed text while editing. */
-  const base = real && !wip && (real.value || real.narrative)
-    ? {
-        value: real.value ?? '—',
-        caption: real.caption ?? '',
-        narrative: real.narrative ?? '',
-        support: real.support ?? [],
-      }
-    : (STAT_PLACEHOLDERS[slide.id] ?? FALLBACK);
-  const data = { ...base, narrative: narrativeDraft ?? base.narrative };
+  const data = {
+    value: real?.value ?? '—',
+    caption: real?.caption ?? '',
+    narrative: narrativeDraft ?? real?.narrative ?? '',
+    support: real?.support ?? [],
+  };
 
   /* ─── WIP rendering (dedicated layout) ────────────────────────── */
   if (wip) {

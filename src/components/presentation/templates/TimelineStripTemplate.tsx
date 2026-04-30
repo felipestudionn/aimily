@@ -34,55 +34,15 @@ interface Milestone {
   status: 'done' | 'current' | 'next';
 }
 
-const TIMELINE_PLACEHOLDERS: Record<string, { lead: string; milestones: Milestone[] }> = {
-  prototyping: {
-    lead: 'Five weeks from first white proto to production-ready pattern.',
-    milestones: [
-      { date: 'WK 28', label: 'White proto start', status: 'done' },
-      { date: 'WK 29', label: 'Pattern development', status: 'done' },
-      { date: 'WK 30', label: 'First delivery', status: 'current' },
-      { date: 'WK 31', label: 'Rectifications', status: 'next' },
-      { date: 'WK 32', label: 'Final proto', status: 'next' },
-    ],
-  },
-  production: {
-    lead: 'Ten weeks from production order to warehouse arrival.',
-    milestones: [
-      { date: 'WK 10', label: 'Production order', status: 'done' },
-      { date: 'WK 8', label: 'Bulk fabric', status: 'done' },
-      { date: 'WK 6', label: 'Cutting & sewing', status: 'current' },
-      { date: 'WK 3', label: 'Quality control', status: 'next' },
-      { date: 'WK 1', label: 'Warehouse in', status: 'next' },
-    ],
-  },
-  'gtm-launch': {
-    lead: 'Eight-week go-to-market runway before the public drop.',
-    milestones: [
-      { date: 'T-8', label: 'Teaser wave', status: 'done' },
-      { date: 'T-4', label: 'Editor preview', status: 'done' },
-      { date: 'T-2', label: 'Retailer loadout', status: 'current' },
-      { date: 'T-1', label: 'Press embargo', status: 'next' },
-      { date: 'T-0', label: 'Public launch', status: 'next' },
-    ],
-  },
-};
-
-const FALLBACK = {
-  lead: 'Milestones populate from the Collection Intelligence System when the timeline is defined.',
-  milestones: Array.from({ length: 5 }, (_, i) => ({
-    date: `M${i + 1}`,
-    label: '—',
-    status: i < 2 ? 'done' as const : i === 2 ? 'current' as const : 'next' as const,
-  })),
-};
+/* No fabricated milestones. We refuse to invent dates / labels — those
+   are real production commitments and inventing them in a deck shown to
+   buyers is unacceptable. When the loader returns no milestones, the
+   slide renders an explicit empty state. */
 
 export function TimelineStripTemplate({ slide, meta, title, data: cisData, editing }: Props) {
   const tr = useTranslation().presentation;
-  const placeholder = TIMELINE_PLACEHOLDERS[slide.id] ?? FALLBACK;
-  const baseLead = cisData?.lead ?? placeholder.lead;
-  const baseMilestones = (cisData?.milestones && cisData.milestones.length > 0)
-    ? cisData.milestones
-    : placeholder.milestones;
+  const baseLead = cisData?.lead ?? '';
+  const baseMilestones = cisData?.milestones ?? [];
   /* Apply live drafts over CIS/placeholder for real-time typing. */
   const drafts = editing?.drafts ?? {};
   const validStatus = (s: string): s is Milestone['status'] =>
@@ -142,7 +102,8 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData, editi
         </h2>
       </div>
 
-      {/* Lead sentence */}
+      {/* Lead sentence (only when there is real text or an active edit) */}
+      {(data.lead || editing?.editMode) && (
       <div style={{ margin: '0 0 56px 0', maxWidth: '70%' }}>
         <EditableText
           as="p"
@@ -165,8 +126,45 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData, editi
           {data.lead}
         </EditableText>
       </div>
+      )}
 
       {/* Timeline — flex distributes evenly */}
+      {data.milestones.length === 0 ? (
+        <div
+          className="flex-1 flex items-center justify-center"
+          style={{
+            border: '1px dashed var(--p-border)',
+            borderRadius: 'var(--p-radius)',
+          }}
+        >
+          <div className="text-center max-w-md px-6">
+            <div
+              style={{
+                fontFamily: 'var(--p-mono-font)',
+                fontSize: '10px',
+                letterSpacing: '0.24em',
+                color: 'var(--p-mute)',
+                textTransform: 'uppercase',
+                marginBottom: '12px',
+              }}
+            >
+              Awaiting your timeline
+            </div>
+            <p
+              style={{
+                fontFamily: 'var(--p-body-font)',
+                fontSize: '14px',
+                lineHeight: 1.5,
+                color: 'var(--p-mute)',
+                letterSpacing: 'var(--p-body-tracking)',
+                margin: 0,
+              }}
+            >
+              Open Calendar to schedule the milestones for this phase. They&rsquo;ll appear here automatically.
+            </p>
+          </div>
+        </div>
+      ) : (
       <div className="flex-1 flex items-center">
         <div className="relative w-full">
           {/* Baseline */}
@@ -261,6 +259,7 @@ export function TimelineStripTemplate({ slide, meta, title, data: cisData, editi
           </div>
         </div>
       </div>
+      )}
 
       {/* Footer */}
       <div className="mt-6 flex items-center justify-between">
