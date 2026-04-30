@@ -1273,6 +1273,12 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 const displayImage = sku.production_sample_url || protoImg || sku.render_url || sku.sketch_url || sku.reference_image_url;
                 const renderImage = (sku.render_urls as Record<string, string>)?.['3d'] || (sku.render_urls as Record<string, string>)?.['preview'];
                 const showRender = aiViewSkus.has(sku.id) && renderImage;
+                // Reference images are user-uploaded inspiration shots (editorial framing) — they
+                // look right with object-cover. Everything else (3D render, sketch, proto, sample)
+                // is a product photo on white that we MUST show whole; object-contain keeps the
+                // shoe visible in full instead of cropping the bottom off.
+                const displayIsReference = !!displayImage && displayImage === sku.reference_image_url;
+                const displayFit = displayIsReference ? 'object-cover' : 'object-contain';
                 // Phase progress
                 const phaseProgress: Record<string, number> = {
                   range_plan: 0, sketch: 25, prototyping: 50, production: 75, completed: 100,
@@ -1354,9 +1360,9 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   {/* Visual zone — CLEAN. Only the image. No overlays, no pills, no CTA. */}
                   <div className="aspect-[4/5] bg-white relative overflow-hidden">
                     {showRender ? (
-                      <img src={renderImage} alt={sku.name} className="absolute inset-0 w-full h-full object-cover" />
+                      <img src={renderImage} alt={sku.name} className="absolute inset-0 w-full h-full object-contain" />
                     ) : displayImage ? (
-                      <img src={displayImage as string} alt={sku.name} className="absolute inset-0 w-full h-full object-cover" />
+                      <img src={displayImage as string} alt={sku.name} className={`absolute inset-0 w-full h-full ${displayFit}`} />
                     ) : (
                       <>
                         {/* Empty cover — quiet canvas, no text. Name + phase live in the footer. */}
@@ -1468,7 +1474,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       <div className="flex gap-3">
                         <div className="w-[72px] h-[90px] rounded-[12px] overflow-hidden bg-gradient-to-br from-carbon/[0.04] to-carbon/[0.01] shrink-0 flex items-center justify-center border border-carbon/[0.05]">
                           {displayImage ? (
-                            <img src={displayImage as string} alt="" className="w-full h-full object-cover" />
+                            <img src={displayImage as string} alt="" className={`w-full h-full ${displayFit}`} />
                           ) : (
                             <span className="text-[10px] font-medium text-carbon/40 text-center px-1 leading-tight line-clamp-3">{sku.name}</span>
                           )}
