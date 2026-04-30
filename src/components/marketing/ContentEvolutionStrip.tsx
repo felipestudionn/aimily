@@ -544,9 +544,11 @@ function Gallery({
 
   // Portrait / editorial layouts ─────────────────────────────────────────
   if (items.length === 1) {
+    // Hero size scales up to ~720px on wide screens — closer to the 1024px
+    // source resolution so the GPT Image 1.5 detail isn't downsampled away.
     return (
       <div className="flex justify-center">
-        <div className="w-full max-w-[480px]">
+        <div className="w-full max-w-[720px]">
           <Tile
             item={items[0]}
             aspectCls="aspect-[3/4]"
