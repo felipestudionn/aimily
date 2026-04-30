@@ -322,17 +322,19 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
         >
           {meta.collectionName}{meta.season ? ` · ${meta.season}` : ''}
         </span>
-        <span
-          style={{
-            fontFamily: 'var(--p-mono-font)',
-            fontSize: '11px',
-            letterSpacing: '0.18em',
-            color: 'var(--p-mute)',
-            textTransform: 'uppercase',
-          }}
-        >
-          {String((data.tiles.length || 6)).padStart(2, '0')} {tr.tplTiles}
-        </span>
+        {data.tiles.length > 0 && (
+          <span
+            style={{
+              fontFamily: 'var(--p-mono-font)',
+              fontSize: '11px',
+              letterSpacing: '0.18em',
+              color: 'var(--p-mute)',
+              textTransform: 'uppercase',
+            }}
+          >
+            {String(data.tiles.length).padStart(2, '0')} {tr.tplTiles}
+          </span>
+        )}
       </div>
     </div>
   );

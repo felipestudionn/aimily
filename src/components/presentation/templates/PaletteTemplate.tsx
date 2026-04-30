@@ -248,7 +248,10 @@ export function PaletteTemplate({ slide, meta, title, data }: Props) {
               </span>
               <div
                 style={{
-                  fontFamily: 'var(--p-display-font)',
+                  // Render the actual brand display font (Inter, Playfair, etc.)
+                  // with theme display tokens as fallback if the brand font isn't
+                  // among the 11 Google Fonts pre-loaded.
+                  fontFamily: `'${typo.displayName}', var(--p-display-font)`,
                   textTransform: 'var(--p-display-case)' as const,
                   fontWeight: 'var(--p-display-weight)',
                   letterSpacing: 'var(--p-display-tracking)',

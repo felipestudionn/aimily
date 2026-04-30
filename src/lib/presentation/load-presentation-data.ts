@@ -346,19 +346,16 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     data.hasAnyData = true;
   }
 
-  // Brand identity narrative — prefer CIS (it's the canonical "brand
-  // DNA" if the user has recorded it there), fall back to the workspace
-  // _brief or personality fields. Visual anchor: visualIdentityImages
-  // mosaic when present, else logo (rare), else palette swatch grid.
+  // Brand identity narrative — read DIRECTLY from the workspace blockData.
+  // We do NOT fall back to ctx.brandDNA because loadFullContext concatenates
+  // multiple fields (tone, typography, keywords) into that string, which
+  // contaminated the brand-identity slide body and made it duplicate the
+  // voice-and-tone slide. The workspace _brief/personality/style fields
+  // are the canonical brand-identity source for THIS slide.
   {
-    const cisBrandSplit = extractLeadBody(ctx.brandDNA);
     const wsBrandText =
       brandData._brief || brandData.personality || brandData.style || '';
-    const wsBrandSplit = wsBrandText ? extractLeadBody(wsBrandText) : {};
-    const brandSplit =
-      cisBrandSplit.lead || cisBrandSplit.body
-        ? cisBrandSplit
-        : wsBrandSplit;
+    const brandSplit = wsBrandText ? extractLeadBody(wsBrandText) : {};
 
     if (brandSplit.lead || brandSplit.body) {
       const visualImages = brandData.visualIdentityImages ?? [];
@@ -428,7 +425,20 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   // (category + first 3 SKUs), not a marketing tagline.
   if (ctx.productCategory || ctx.existingSkus) {
     const parts: string[] = [];
-    if (ctx.productCategory) parts.push(`Category: ${ctx.productCategory}`);
+    if (ctx.productCategory) {
+      // Map Spanish category labels (saved verbatim in BD) to English
+      // for the English-rendered deck. Falls back to the raw value
+      // (title-cased) when no mapping exists.
+      const CATEGORY_LABELS: Record<string, string> = {
+        CALZADO: 'Footwear',
+        ROPA: 'Apparel',
+        ACCESORIOS: 'Accessories',
+      };
+      const cat =
+        CATEGORY_LABELS[ctx.productCategory.toUpperCase()] ??
+        ctx.productCategory.charAt(0) + ctx.productCategory.slice(1).toLowerCase();
+      parts.push(`Category: ${cat}`);
+    }
     if (ctx.existingSkus) {
       parts.push(ctx.existingSkus.split('\n').filter((l) => l.trim()).slice(0, 3).join(' · '));
     }
@@ -551,10 +561,18 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       sale_percentage?: number;
     }>;
     if (f.length > 0) {
-      const totalRevenue = f.reduce((s, sku) => s + ((sku.expected_sales ?? 0) * (sku.pvp ?? 0)), 0);
-      const totalUnits = f.reduce((s, sku) => s + (sku.buy_units ?? 0), 0);
+      // CRITICAL: in collection_skus, `expected_sales` is stored as REVENUE
+      // in euros (see brief/create/route.ts: expected_sales = buy_units ×
+      // sale_percentage/100 × pvp). It is NOT a unit count. So the deck's
+      // total revenue is sum(expected_sales) directly. Multiplying by pvp
+      // again doubles the units and produces an inflated €4.5M instead of
+      // the real €143K for SLAIZ.
+      const totalRevenue = f.reduce((s, sku) => s + (sku.expected_sales ?? 0), 0);
+      const totalBuyUnits = f.reduce((s, sku) => s + (sku.buy_units ?? 0), 0);
       const avgPvp = f.reduce((s, sku) => s + (sku.pvp ?? 0), 0) / f.length;
       const avgSellThrough = f.reduce((s, sku) => s + (sku.sale_percentage ?? 0), 0) / f.length;
+      // Units we expect to actually sell across the season.
+      const unitsSoldForecast = Math.round(totalBuyUnits * (avgSellThrough / 100));
       const fmt = (n: number) => {
         if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
         if (n >= 1000) return `€${Math.round(n / 1000)}K`;
@@ -563,12 +581,17 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       data.stats['sales-dashboard'] = {
         status: 'ready',
         value: fmt(totalRevenue),
-        caption: 'Forecast revenue · Pre-launch projection',
-        narrative: `Composed from ${f.length} SKUs across the planned drops. ${
-          totalUnits > 0 ? `${totalUnits.toLocaleString()} units at €${Math.round(avgPvp)} average PVP. ` : ''
-        }Reaches the target if sell-through holds the ${Math.round(avgSellThrough)}% baseline assumed in the buying strategy.`,
+        // SKU-level forecast: the headline number is what the SKUs as
+        // currently sized add up to. Distinct from Financial Plan, which
+        // shows the selected scenario's commercial target.
+        caption: 'SKU-level revenue forecast · Pre-launch projection',
+        narrative: `Aggregated from ${f.length} SKUs across the planned drops. ${
+          totalBuyUnits > 0
+            ? `${totalBuyUnits.toLocaleString()} units to be produced; ${unitsSoldForecast.toLocaleString()} units expected to sell at €${Math.round(avgPvp)} average PVP. `
+            : ''
+        }Holds the ${Math.round(avgSellThrough)}% sell-through assumed per SKU. Year-1 commercial target lives in the Financial Plan slide.`,
         support: [
-          { value: totalUnits.toLocaleString(), label: 'units forecast' },
+          { value: unitsSoldForecast.toLocaleString(), label: 'units to sell' },
           { value: `€${Math.round(avgPvp)}`, label: 'avg PVP' },
           { value: `${Math.round(avgSellThrough)}%`, label: 'sell-through target' },
         ],
@@ -684,7 +707,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   {
     const { data: skuRows } = await supabaseAdmin
       .from('collection_skus')
-      .select('name, family, subcategory, pvp, category, sketch_url, render_url, render_urls, reference_image_url, production_sample_url')
+      .select('name, family, pvp, category, sketch_url, render_url, render_urls, reference_image_url, production_sample_url')
       .eq('collection_plan_id', collectionPlanId)
       .limit(40);
     if (skuRows?.length) {
@@ -716,7 +739,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       }
       const tiles = reps.map(({ family, row }) => ({
         eyebrow: family,
-        label: row.subcategory || row.name || family,
+        label: row.name || family,
         value: row.pvp ? `€${row.pvp}` : undefined,
       }));
       const images = reps.map(({ row }) => pickThumb(row)).filter(Boolean) as string[];
@@ -739,7 +762,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   {
     const { data: skuRows } = await supabaseAdmin
       .from('collection_skus')
-      .select('name, family, subcategory, sketch_url, render_url, render_urls, reference_image_url, production_sample_url')
+      .select('name, family, sketch_url, render_url, render_urls, reference_image_url, production_sample_url')
       .eq('collection_plan_id', collectionPlanId)
       .order('created_at', { ascending: true })
       .limit(6);
@@ -765,7 +788,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         caption: 'Opening round of sketches.',
         tiles: skuRows.map((s, i) => ({
           eyebrow: `SKU ${String(i + 1).padStart(2, '0')}`,
-          label: s.subcategory || s.name || s.family,
+          label: s.name || s.family,
           value: `R${Math.floor(i / 3) + 1}`,
         })),
         // Photo mode when at least 4 SKUs have a real image — keeps the
@@ -861,9 +884,12 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       const all = (timelineRow.milestones as Array<{ id: string; phase: string; name: string; status: string; startWeeksBefore: number }>) ?? [];
       const mkStatus = (s: string): 'done' | 'current' | 'next' => s === 'completed' ? 'done' : s === 'in-progress' ? 'current' : 'next';
 
-      // Prototyping: phase=development, dd-7 through dd-10 (proto cycle + tech pack)
+      // Prototyping: dd-7..dd-10 + dd-19. We sort by startWeeksBefore DESC
+      // so the timeline reads in real chronological order (countdown to launch:
+      // larger week-before number = earlier in the calendar).
       const protoIds = ['dd-7', 'dd-8', 'dd-9', 'dd-19', 'dd-10'];
-      const protoMs = protoIds.map(id => all.find(m => m.id === id)).filter(Boolean) as typeof all;
+      const protoMs = (protoIds.map(id => all.find(m => m.id === id)).filter(Boolean) as typeof all)
+        .sort((a, b) => b.startWeeksBefore - a.startWeeksBefore);
       if (protoMs.length) {
         data.timelines.prototyping = {
           lead: 'White proto → rectifications → final tech pack.',
@@ -876,9 +902,10 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         data.hasAnyData = true;
       }
 
-      // Production: phase=development, dd-11 through dd-15 (samples + production)
+      // Production: dd-11..dd-15. Same DESC sort defensively.
       const prodIds = ['dd-11', 'dd-12', 'dd-13', 'dd-14', 'dd-15'];
-      const prodMs = prodIds.map(id => all.find(m => m.id === id)).filter(Boolean) as typeof all;
+      const prodMs = (prodIds.map(id => all.find(m => m.id === id)).filter(Boolean) as typeof all)
+        .sort((a, b) => b.startWeeksBefore - a.startWeeksBefore);
       if (prodMs.length) {
         data.timelines.production = {
           lead: 'Bulk fabric → cutting & sewing → warehouse.',
@@ -950,11 +977,15 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         data.hasAnyData = true;
       }
 
-      // Final Selection: only production_approved (with graceful fallback
-      // to the full set when nothing is approved yet — better than empty).
+      // Final Selection: ONLY production_approved SKUs.
+      // We DO NOT fall back to the full set anymore — that made this slide
+      // visually identical to Collection Builder for any pre-approval
+      // collection, which lied about the production-approval state. When
+      // approved is empty, we emit nothing here so the template renders
+      // the contextual empty state ("No styles approved yet — approve in
+      // Production to lock the lineup").
       const approvedRows = rows.filter((s) => s.production_approved === true);
-      const finalRows = approvedRows.length > 0 ? approvedRows : rows;
-      const finalItems = finalRows
+      const finalItems = approvedRows
         .map((s) => ({
           url: pickThumb(s),
           family: s.family || undefined,
@@ -966,14 +997,11 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         .slice(0, 12);
       if (finalItems.length > 0) {
         data.ranges['final-selection'] = {
-          caption:
-            approvedRows.length > 0
-              ? `${approvedRows.length} styles approved for production.`
-              : `Working selection. Approve in Production to lock the lineup.`,
+          caption: `${approvedRows.length} styles approved for production.`,
           items: finalItems,
           stats: {
-            total: finalRows.length,
-            families: new Set(finalRows.map((s) => s.family || 'Other')).size,
+            total: approvedRows.length,
+            families: new Set(approvedRows.map((s) => s.family || 'Other')).size,
             drops,
           },
         };
@@ -1210,8 +1238,7 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
               .eq('collection_plan_id', collectionPlanId)
             ).data?.map((r) => r.id as string) || []
           : []),
-      )
-      .limit(12);
+      );
 
     if (colorwayRows && colorwayRows.length > 0) {
       type CW = {
@@ -1220,16 +1247,44 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         zones?: { zone: string; hex: string }[];
         status?: string;
       };
-      const tiles = (colorwayRows as CW[]).slice(0, 6).map((cw) => ({
+      // Dedupe by (name + hex_primary) — multiple SKUs can share the same
+      // colorway (e.g. "Burnt Sienna Route" applied to 3 SKUs is ONE
+      // colorway story, not three identical tiles). Also drop unnamed
+      // placeholder rows ("Colorway 1", "Untitled", empty) so the slide
+      // only shows colorways the user actually authored.
+      const seen = new Set<string>();
+      const isPlaceholder = (n?: string) =>
+        !n || /^untitled$/i.test(n.trim()) || /^colorway\s*\d+$/i.test(n.trim());
+      const unique: CW[] = [];
+      for (const cw of colorwayRows as CW[]) {
+        if (isPlaceholder(cw.name)) continue;
+        const key = `${(cw.name || '').toLowerCase().trim()}|${(cw.hex_primary || '').toLowerCase()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(cw);
+      }
+      // Sort: approved first, then proposed; alphabetical within each.
+      const statusRank = (s?: string) =>
+        s === 'approved' ? 0 : s === 'proposed' ? 1 : 2;
+      unique.sort((a, b) => {
+        const r = statusRank(a.status) - statusRank(b.status);
+        return r !== 0 ? r : (a.name || '').localeCompare(b.name || '');
+      });
+      const tiles = unique.slice(0, 6).map((cw) => ({
         eyebrow: cw.status?.toUpperCase() || 'COLORWAY',
         label: cw.name || 'Untitled',
         value: cw.hex_primary?.toUpperCase() || undefined,
       }));
-      data.grids['colorways'] = {
-        caption: `${colorwayRows.length} colorways across the season. Each one a complete world.`,
-        tiles,
-      };
-      data.hasAnyData = true;
+      if (tiles.length > 0) {
+        data.grids['colorways'] = {
+          caption:
+            unique.length === 1
+              ? '1 colorway across the season.'
+              : `${unique.length} colorways across the season. Each one a complete world.`,
+          tiles,
+        };
+        data.hasAnyData = true;
+      }
     }
 
     // Material zones — pick the lead SKU (first with material_zones data

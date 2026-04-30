@@ -91,7 +91,8 @@ export function RangeWallTemplate({ slide, meta, title, data }: Props) {
           </div>
         ) : (
           /* Fallback: empty wall message — shouldn't happen if loader
-             guards on items.length > 0, but renders gracefully anyway. */
+             guards on items.length > 0, but renders gracefully anyway.
+             Copy is contextual per slide so Brand Models doesn't say "No SKUs". */
           <div
             className="flex-1 flex items-center justify-center"
             style={{
@@ -108,7 +109,15 @@ export function RangeWallTemplate({ slide, meta, title, data }: Props) {
                 textTransform: 'uppercase',
               }}
             >
-              No SKUs added yet
+              {slide.id === 'content-models'
+                ? 'No models cast yet'
+                : slide.id === 'content-editorial'
+                  ? 'No editorials produced yet'
+                  : slide.id === 'content-still-life'
+                    ? 'No still life shots yet'
+                    : slide.id === 'final-selection'
+                      ? 'No styles approved yet — approve in Production to lock the lineup'
+                      : 'No SKUs added yet'}
             </span>
           </div>
         )}
