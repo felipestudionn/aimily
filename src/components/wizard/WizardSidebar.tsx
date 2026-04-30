@@ -1106,54 +1106,74 @@ export function WizardSidebar({
           </button>
           <div className="border-t border-carbon/[0.08] mb-5" />
 
-          {SIDEBAR_BLOCKS.map((block, bIdx) => (
-            <div key={block.id} className="mb-5">
-              <div className="px-4 py-2.5 rounded-full bg-carbon/[0.04] mb-3 flex items-center justify-between gap-3">
-                <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">
-                  {labelOf(block.labelKey)}
-                </span>
-                <span className="inline-flex items-center justify-center h-6 min-w-6 text-[13px] font-bold tracking-[-0.01em] text-carbon/35 tabular-nums shrink-0">
-                  {bIdx + 1}
-                </span>
+          {/* Presentation sidebar iterates over SPINE directly (30 slides
+              after the Phase 4 expansion) — sub-slides like brand-logo,
+              brand-palette, buying-scenarios etc. don't exist in
+              SIDEBAR_BLOCKS but are real entries in SPINE. We group by
+              block.blockIndex so the visual hierarchy matches the
+              4-block product spine. The numbering follows microIndex.
+              Sub-slides under the same microIndex render with a sub-
+              numbering (4.1.a, 4.1.b…) using the in-block sub-index. */}
+          {SIDEBAR_BLOCKS.map((sidebarBlock, bIdx) => {
+            const blockSpine = SPINE.filter((s) => s.blockIndex === bIdx + 1);
+            // Track per-microIndex sub-index so multi-slide mini-blocks
+            // get suffixed labels (4.1.a, 4.1.b, etc.). Single-slide
+            // mini-blocks just show "4.1".
+            const microCounts: Record<number, number> = {};
+            for (const s of blockSpine) {
+              microCounts[s.microIndex] = (microCounts[s.microIndex] ?? 0) + 1;
+            }
+            const microSeen: Record<number, number> = {};
+            return (
+              <div key={sidebarBlock.id} className="mb-5">
+                <div className="px-4 py-2.5 rounded-full bg-carbon/[0.04] mb-3 flex items-center justify-between gap-3">
+                  <span className="text-[15px] font-bold tracking-[-0.01em] text-carbon truncate">
+                    {labelOf(sidebarBlock.labelKey)}
+                  </span>
+                  <span className="inline-flex items-center justify-center h-6 min-w-6 text-[13px] font-bold tracking-[-0.01em] text-carbon/35 tabular-nums shrink-0">
+                    {bIdx + 1}
+                  </span>
+                </div>
+                <div className="ml-1 pl-5 border-l border-carbon/[0.15]">
+                  {blockSpine.map((spineSlide) => {
+                    const slideIdx = SPINE.indexOf(spineSlide) + 1; // +1 for cover
+                    const isActive = presentationIndex === slideIdx;
+                    const total = microCounts[spineSlide.microIndex];
+                    microSeen[spineSlide.microIndex] = (microSeen[spineSlide.microIndex] ?? 0) + 1;
+                    const subPos = microSeen[spineSlide.microIndex];
+                    const numberLabel =
+                      total > 1
+                        ? `${bIdx + 1}.${spineSlide.microIndex}.${String.fromCharCode(96 + subPos)}` // a/b/c…
+                        : `${bIdx + 1}.${spineSlide.microIndex}`;
+                    const hasOverride = !!presentationData?.overrides[spineSlide.id];
+                    return (
+                      <button
+                        key={spineSlide.id}
+                        type="button"
+                        onClick={() => setPresentationIndex(slideIdx)}
+                        className={`w-full flex items-center gap-3 py-1.5 px-3 -mx-3 rounded-[10px] transition-all ${
+                          isActive ? 'bg-carbon text-white' : 'text-carbon hover:bg-carbon/[0.04]'
+                        }`}
+                      >
+                        <span className={`text-[14px] truncate flex-1 text-left ${isActive ? 'font-semibold' : 'font-normal'}`}>
+                          {presentationTitles[spineSlide.titleKey] ?? spineSlide.titleKey}
+                        </span>
+                        {hasOverride && (
+                          <span
+                            className="h-1.5 w-1.5 rounded-full shrink-0 bg-citronella"
+                            title="Edited · differs from the auto-generated content"
+                          />
+                        )}
+                        <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${isActive ? 'text-white/55' : 'text-carbon/35'}`}>
+                          {numberLabel}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="ml-1 pl-5 border-l border-carbon/[0.15]">
-                {block.subItems.map((sub, sIdx) => {
-                  /* Cover occupies slot 0, so mini-block indices shift by +1. */
-                  const slideIdx = bIdx * 5 + sIdx + 1;
-                  const isActive = presentationIndex === slideIdx;
-                  /* SPINE[slideIdx - 1].id gives the canonical slide id
-                     (differs from sub.id in some blocks, e.g. sidebar
-                     'scenarios' → spine 'buying-strategy'). Used to
-                     check if the slide has deck overrides applied. */
-                  const spineSlideId = SPINE[slideIdx - 1]?.id;
-                  const hasOverride = !!spineSlideId && !!presentationData?.overrides[spineSlideId];
-                  return (
-                    <button
-                      key={sub.id}
-                      type="button"
-                      onClick={() => setPresentationIndex(slideIdx)}
-                      className={`w-full flex items-center gap-3 py-1.5 px-3 -mx-3 rounded-[10px] transition-all ${
-                        isActive ? 'bg-carbon text-white' : 'text-carbon hover:bg-carbon/[0.04]'
-                      }`}
-                    >
-                      <span className={`text-[14px] truncate flex-1 text-left ${isActive ? 'font-semibold' : 'font-normal'}`}>
-                        {labelOf(sub.labelKey)}
-                      </span>
-                      {hasOverride && (
-                        <span
-                          className="h-1.5 w-1.5 rounded-full shrink-0 bg-citronella"
-                          title="Edited · differs from the auto-generated content"
-                        />
-                      )}
-                      <span className={`text-[11px] font-semibold tabular-nums shrink-0 ${isActive ? 'text-white/55' : 'text-carbon/35'}`}>
-                        {bIdx + 1}.{sIdx + 1}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

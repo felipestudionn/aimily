@@ -20,6 +20,11 @@ import { EditorialStatTemplate } from '@/components/presentation/templates/Edito
 import { NarrativePortraitTemplate } from '@/components/presentation/templates/NarrativePortraitTemplate';
 import { GridTileTemplate } from '@/components/presentation/templates/GridTileTemplate';
 import { TimelineStripTemplate } from '@/components/presentation/templates/TimelineStripTemplate';
+import { RangeWallTemplate } from '@/components/presentation/templates/RangeWallTemplate';
+import { ChannelMapTemplate } from '@/components/presentation/templates/ChannelMapTemplate';
+import { PaletteTemplate } from '@/components/presentation/templates/PaletteTemplate';
+import { ScenarioCompareTemplate } from '@/components/presentation/templates/ScenarioCompareTemplate';
+import { MaterialZonesTemplate } from '@/components/presentation/templates/MaterialZonesTemplate';
 import { PlaceholderTemplate } from '@/components/presentation/templates/PlaceholderTemplate';
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 
@@ -42,13 +47,23 @@ function renderSlide(slide: MicroBlockSlide, meta: DeckMeta, title: string, data
     case 'hero':
       return <HeroTemplate slide={slide} meta={meta} title={title} />;
     case 'editorial-stat':
-      return <EditorialStatTemplate slide={slide} meta={meta} title={title} />;
+      return <EditorialStatTemplate slide={slide} meta={meta} title={title} data={data.stats[slide.id]} />;
     case 'narrative-portrait':
       return <NarrativePortraitTemplate slide={slide} meta={meta} title={title} data={data.narratives[slide.id]} />;
     case 'grid-tile':
       return <GridTileTemplate slide={slide} meta={meta} title={title} data={data.grids[slide.id]} />;
     case 'timeline-strip':
       return <TimelineStripTemplate slide={slide} meta={meta} title={title} data={data.timelines[slide.id]} />;
+    case 'range-wall':
+      return <RangeWallTemplate slide={slide} meta={meta} title={title} data={data.ranges[slide.id]} />;
+    case 'channel-map':
+      return <ChannelMapTemplate slide={slide} meta={meta} title={title} data={data.channels[slide.id]} />;
+    case 'palette':
+      return <PaletteTemplate slide={slide} meta={meta} title={title} data={data.palettes[slide.id]} />;
+    case 'scenario-compare':
+      return <ScenarioCompareTemplate slide={slide} meta={meta} title={title} data={data.scenarioCompares[slide.id]} />;
+    case 'material-zones':
+      return <MaterialZonesTemplate slide={slide} meta={meta} title={title} data={data.materialZones[slide.id]} />;
     default:
       return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;
   }
