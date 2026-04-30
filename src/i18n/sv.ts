@@ -3027,7 +3027,10 @@ export const sv: Dictionary = {
     recolorizeNoImage: 'Ingen bild returnerades',
     noPreviewYet: 'Ingen förhandsvisning',
     retry: 'Försök igen',
-        },
+    colorizeFailed: 'Färgläggning misslyckades',
+    colorizeFailedHeading: 'Vissa förslag kunde inte färgläggas',
+    recolorizeAll: 'Färglägg alla igen',
+                },
   trust: {
     navLabel: 'Förtroende',
     heroTitle: 'En fantastisk assistent avslöjar aldrig dina hemligheter',

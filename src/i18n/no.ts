@@ -3027,7 +3027,10 @@ export const no: Dictionary = {
     recolorizeNoImage: 'Ingen bilde returnert',
     noPreviewYet: 'Ingen forhåndsvisning',
     retry: 'Prøv igjen',
-        },
+    colorizeFailed: 'Fargelegging mislyktes',
+    colorizeFailedHeading: 'Noen forslag kunne ikke fargelegges',
+    recolorizeAll: 'Fargelegg alle på nytt',
+                },
   trust: {
     navLabel: 'Tillit',
     heroTitle: 'En fantastisk assistent avslører aldri hemmelighetene dine',

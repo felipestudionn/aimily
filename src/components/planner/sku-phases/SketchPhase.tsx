@@ -87,6 +87,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     zoneAssignments: ZoneAssignment[];
     colorizedUrl?: string | null;
     colorizing?: boolean;
+    lastError?: string;
   };
   type DetectedZone = {
     id: string;
@@ -100,6 +101,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [detectingZones, setDetectingZones] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'wada' | 'manual'>('wada');
   const [seedColors, setSeedColors] = useState<[string, string, string]>(['#B22222', '#F5F0E6', '#2B2B2B']);
+  // When colorize calls fail (OpenAI 5xx, network, etc.), the per-card placeholder
+  // is not always enough. Track the most recent error globally so we can show a
+  // persistent banner above the grid until the user retries successfully.
+  const [colorizeError, setColorizeError] = useState<string | null>(null);
+  // Dedupe simultaneous toast spam when 4 parallel colorize calls all fail.
+  const lastToastAtRef = React.useRef<number>(0);
 
 
   // Zone Editor (no state needed — renders immediately when sketch exists)
@@ -606,9 +613,20 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           // for the "Re-colorize" button after editing a hex on a card.
           // We do NOT clear colorizedUrl up-front: if the call fails the user
           // keeps seeing the previous render instead of an empty placeholder.
+          const reportColorizeError = (reason: string) => {
+            setColorizeError(reason);
+            // Only show one toast per ~2s window, no matter how many parallel
+            // colorize calls all fail at once.
+            const now = Date.now();
+            if (now - lastToastAtRef.current > 2000) {
+              lastToastAtRef.current = now;
+              toast(`${stepLabel('colorizeFailed') || 'Colorize failed'}: ${reason}`, 'error');
+            }
+          };
+
           const colorizeOne = async (idx: number, cw: AiColorway) => {
             if (!sku.sketch_url) return;
-            setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: true } : p) || null);
+            setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: true, lastError: undefined } : p) || null);
             try {
               const zone_colors = (cw.zoneAssignments || []).map(za => ({ zone: za.zoneName, hex: za.hex }));
               const res = await fetch('/api/ai/colorize-sketch', {
@@ -628,22 +646,32 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               if (!res.ok) {
                 const errPayload = await res.json().catch(() => ({}));
                 const reason = (errPayload?.error as string) || `HTTP ${res.status}`;
-                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
-                toast(`${stepLabel('recolorizeFailed') || 'Re-colorize failed'}: ${reason}`, 'error');
+                console.error('[Colorize]', res.status, errPayload);
+                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false, lastError: reason } : p) || null);
+                reportColorizeError(reason);
                 return;
               }
               const { imageUrl } = await res.json();
               if (!imageUrl) {
-                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
-                toast(stepLabel('recolorizeNoImage') || 'Re-colorize returned no image', 'error');
+                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false, lastError: 'no image returned' } : p) || null);
+                reportColorizeError(stepLabel('recolorizeNoImage') || 'No image returned');
                 return;
               }
-              setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizedUrl: imageUrl, colorizing: false } : p) || null);
+              setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizedUrl: imageUrl, colorizing: false, lastError: undefined } : p) || null);
+              // If everything finally went through, clear the global banner.
+              setColorizeError(null);
             } catch (err) {
-              console.error('[Recolorize]', err);
-              setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
-              toast(stepLabel('recolorizeFailed') || 'Re-colorize failed', 'error');
+              console.error('[Colorize]', err);
+              const reason = err instanceof Error ? err.message : 'network error';
+              setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false, lastError: reason } : p) || null);
+              reportColorizeError(reason);
             }
+          };
+
+          const recolorizeAll = async () => {
+            if (!aiColorways || !sku.sketch_url) return;
+            setColorizeError(null);
+            await Promise.all(aiColorways.slice(0, 4).map((p, i) => colorizeOne(i, p)));
           };
 
           const colorizeAll = async (proposals: AiColorway[]) => {
@@ -840,6 +868,23 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
+            {/* ── Global colorize error banner ── */}
+            {colorizeError && aiColorways && (
+              <div className="flex items-start gap-3 px-4 py-3 rounded-[10px] border border-[#A0463C]/30 bg-[#A0463C]/[0.04]">
+                <X className="h-3.5 w-3.5 text-[#A0463C] shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-[#A0463C] mb-0.5">
+                    {stepLabel('colorizeFailedHeading') || 'Colorize failed'}
+                  </p>
+                  <p className="text-[10px] text-carbon/60 leading-relaxed font-mono">{colorizeError}</p>
+                </div>
+                <button onClick={recolorizeAll}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-semibold tracking-[-0.01em] bg-carbon text-crema hover:bg-carbon/90">
+                  <RefreshCw className="h-3 w-3" /> {stepLabel('recolorizeAll') || 'Re-colorize all'}
+                </button>
+              </div>
+            )}
+
             {/* ── Colorized proposals grid — zone-aware, per-card editable ── */}
             {aiColorways && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -860,6 +905,9 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       {!cw.colorizedUrl && !cw.colorizing && (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-2 px-3 text-center">
                           <span className="text-[9px] text-carbon/35">{stepLabel('noPreviewYet') || 'No preview yet'}</span>
+                          {cw.lastError && (
+                            <span className="text-[9px] font-mono text-[#A0463C]/70 line-clamp-2 max-w-[90%]">{cw.lastError}</span>
+                          )}
                           <button onClick={() => colorizeOne(idx, cw)} disabled={!sku.sketch_url}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.12] text-carbon/55 hover:bg-carbon/[0.03] disabled:opacity-30">
                             <RefreshCw className="h-3 w-3" /> {stepLabel('retry') || 'Retry'}

@@ -3208,7 +3208,10 @@ export const en = {
     recolorizeNoImage: 'Re-colorize returned no image',
     noPreviewYet: 'No preview yet',
     retry: 'Retry',
-        },
+    colorizeFailed: 'Colorize failed',
+    colorizeFailedHeading: 'Some proposals couldn’t be colorized',
+    recolorizeAll: 'Re-colorize all',
+                },
   trust: {
     navLabel: 'Trust',
     heroTitle: 'A great assistant never reveals your secrets',

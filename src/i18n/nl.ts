@@ -3141,7 +3141,10 @@ export const nl: Dictionary = {
     recolorizeNoImage: 'Geen afbeelding teruggegeven',
     noPreviewYet: 'Nog geen voorbeeld',
     retry: 'Opnieuw proberen',
-        },
+    colorizeFailed: 'Inkleuren mislukt',
+    colorizeFailedHeading: 'Sommige voorstellen konden niet worden ingekleurd',
+    recolorizeAll: 'Alles opnieuw inkleuren',
+                },
   trust: {
     navLabel: 'Vertrouwen',
     heroTitle: 'Een geweldige assistent onthult nooit jouw geheimen',

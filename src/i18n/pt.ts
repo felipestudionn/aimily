@@ -3123,7 +3123,10 @@ export const pt: Dictionary = {
     recolorizeNoImage: 'Sem imagem devolvida',
     noPreviewYet: 'Sem pré-visualização',
     retry: 'Tentar novamente',
-        },
+    colorizeFailed: 'Falhou ao colorir',
+    colorizeFailedHeading: 'Algumas propostas não puderam ser coloridas',
+    recolorizeAll: 'Re-colorir todas',
+                },
   trust: {
     navLabel: 'Confiança',
     heroTitle: 'Uma grande assistente nunca revela os seus segredos',

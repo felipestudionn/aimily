@@ -3142,7 +3142,10 @@ export const fr: Dictionary = {
     recolorizeNoImage: 'Aucune image renvoyée',
     noPreviewYet: 'Pas encore d’aperçu',
     retry: 'Réessayer',
-        },
+    colorizeFailed: 'Échec de coloration',
+    colorizeFailedHeading: 'Certaines propositions n’ont pas pu être colorées',
+    recolorizeAll: 'Tout recoloriser',
+                },
   trust: {
     navLabel: 'Confiance',
     heroTitle: 'Une grande assistante ne révèle jamais vos secrets',
