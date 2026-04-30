@@ -520,49 +520,152 @@ function Gallery({
   onToggleFavorite: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const aspectCls = aspect === 'portrait' ? 'aspect-[3/4]' : 'aspect-square';
-  const colsCls =
-    aspect === 'portrait'
-      ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
-      : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5';
+  if (items.length === 0) return null;
 
-  return (
-    <div className={`grid ${colsCls} gap-2.5`}>
-      {items.map((item) => (
-        <div
-          key={item.key}
-          className={`group relative ${aspectCls} bg-white rounded-[12px] overflow-hidden`}
-        >
-          <button onClick={() => onLightbox(item.url)} className="w-full h-full">
-            {/* object-contain so the editorial isn't beheaded: gpt-image-1.5
-                returns 2:3 (1024×1536) but our editorial gallery frame is 3:4.
-                With cover the head + shoes get cropped; with contain we get
-                a thin sliver of white air top/bottom and the full shot. */}
-            <img src={item.url} alt="" className="w-full h-full object-contain" />
-          </button>
-          <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => onToggleFavorite(item.genId)}
-              className={`w-7 h-7 rounded-full bg-white/95 backdrop-blur flex items-center justify-center transition-colors ${
-                item.isFav ? 'text-[#FFC107]' : 'text-carbon/40 hover:text-carbon'
-              }`}
-              aria-label="Favorite"
-            >
-              <Star
-                className={`h-3.5 w-3.5 ${item.isFav ? 'fill-[#FFC107]' : ''}`}
-                strokeWidth={2}
-              />
-            </button>
-            <button
-              onClick={() => onDelete(item.genId)}
-              className="w-7 h-7 rounded-full bg-white/95 backdrop-blur flex items-center justify-center text-carbon/40 hover:text-[#A0463C] transition-colors"
-              aria-label="Delete"
-            >
-              <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-            </button>
-          </div>
+  // Editorial gallery (portrait) gets a magazine-style layout: a single
+  // big hero shot for 1 image, an even split for 2, and a hero+thumbs
+  // composition for 3+. Square (still life) keeps the simpler grid.
+  if (aspect === 'square') {
+    return (
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+        {items.map((item) => (
+          <Tile
+            key={item.key}
+            item={item}
+            aspectCls="aspect-square"
+            onLightbox={onLightbox}
+            onToggleFavorite={onToggleFavorite}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // Portrait / editorial layouts ─────────────────────────────────────────
+  if (items.length === 1) {
+    return (
+      <div className="flex justify-center">
+        <div className="w-full max-w-[480px]">
+          <Tile
+            item={items[0]}
+            aspectCls="aspect-[3/4]"
+            big
+            onLightbox={onLightbox}
+            onToggleFavorite={onToggleFavorite}
+            onDelete={onDelete}
+          />
         </div>
-      ))}
+      </div>
+    );
+  }
+
+  if (items.length === 2) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {items.map((item) => (
+          <Tile
+            key={item.key}
+            item={item}
+            aspectCls="aspect-[3/4]"
+            big
+            onLightbox={onLightbox}
+            onToggleFavorite={onToggleFavorite}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  // 3+ → hero (latest) + thumbnail strip on the right.
+  const [hero, ...rest] = items;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="md:col-span-2">
+        <Tile
+          item={hero}
+          aspectCls="aspect-[3/4]"
+          big
+          onLightbox={onLightbox}
+          onToggleFavorite={onToggleFavorite}
+          onDelete={onDelete}
+        />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-1 gap-3 content-start">
+        {rest.slice(0, 4).map((item) => (
+          <Tile
+            key={item.key}
+            item={item}
+            aspectCls="aspect-[3/4]"
+            onLightbox={onLightbox}
+            onToggleFavorite={onToggleFavorite}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Tile({
+  item,
+  aspectCls,
+  big = false,
+  onLightbox,
+  onToggleFavorite,
+  onDelete,
+}: {
+  item: { genId: string; url: string; isFav: boolean; key: string };
+  aspectCls: string;
+  big?: boolean;
+  onLightbox: (url: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div
+      className={`group relative ${aspectCls} bg-white rounded-[16px] overflow-hidden ${
+        big
+          ? 'shadow-[0_8px_32px_rgba(0,0,0,0.06)] hover:shadow-[0_24px_64px_rgba(0,0,0,0.12)] hover:scale-[1.01]'
+          : 'shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:scale-[1.02]'
+      } transition-all duration-300`}
+    >
+      <button
+        onClick={() => onLightbox(item.url)}
+        className="w-full h-full bg-white flex items-center justify-center"
+      >
+        {/* object-contain so 2:3 sources from gpt-image-1.5 keep head + shoes
+            visible (a hair of white air top/bottom rather than a crop). */}
+        <img src={item.url} alt="" className="w-full h-full object-contain" />
+      </button>
+      <div
+        className={`absolute top-2.5 right-2.5 flex gap-1.5 transition-opacity ${
+          big ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
+      >
+        <button
+          onClick={() => onToggleFavorite(item.genId)}
+          className={`${big ? 'w-9 h-9' : 'w-7 h-7'} rounded-full bg-white/95 backdrop-blur shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex items-center justify-center transition-colors ${
+            item.isFav ? 'text-[#FFC107]' : 'text-carbon/45 hover:text-carbon'
+          }`}
+          aria-label="Favorite"
+        >
+          <Star
+            className={`${big ? 'h-4 w-4' : 'h-3.5 w-3.5'} ${
+              item.isFav ? 'fill-[#FFC107]' : ''
+            }`}
+            strokeWidth={2}
+          />
+        </button>
+        <button
+          onClick={() => onDelete(item.genId)}
+          className={`${big ? 'w-9 h-9' : 'w-7 h-7'} rounded-full bg-white/95 backdrop-blur shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex items-center justify-center text-carbon/45 hover:text-[#A0463C] transition-colors`}
+          aria-label="Delete"
+        >
+          <Trash2 className={`${big ? 'h-4 w-4' : 'h-3.5 w-3.5'}`} strokeWidth={2} />
+        </button>
+      </div>
     </div>
   );
 }
