@@ -560,7 +560,17 @@ export const nl: Dictionary = {
     finalSelectionUnits: 'Goedgekeurde eenheden',
     finalSelectionFamilies: 'Families',
     finalSelectionPending: 'Wacht op beoordeling',
-  },
+    brandLogo: 'Merkteken',
+    brandPalette: 'Palet en Typografie',
+    brandVoice: 'Stem en Toon',
+    buyingScenarios: 'Drie Scenario\'s',
+    buyingDrops: 'Drop-architectuur',
+    colorways: 'Kleurverhalen',
+    materialZones: 'Materiaalzones',
+    contentModels: 'Merkmodellen',
+    contentEditorial: 'Editorial',
+    contentStillLife: 'Stilleven',
+    },
 
   // ─── Creative Block ───
   creative: {

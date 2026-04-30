@@ -60,6 +60,9 @@ import {
 
 type SidebarLabelKey =
   | 'creativeDirection' | 'consumer' | 'moodboard' | 'moodboardResearch' | 'marketResearch' | 'brandIdentity' | 'creativeOverview'
+  /* Presentation-only sub-slides (no sidebar entry, but they need a title in titles map) */
+  | 'brandLogo' | 'brandPalette' | 'brandVoice' | 'buyingScenarios' | 'buyingDrops'
+  | 'colorways' | 'materialZones' | 'contentModels' | 'contentEditorial' | 'contentStillLife'
   | 'merchandisingPlanning' | 'buyingStrategy' | 'assortmentPricing' | 'familiesPricing' | 'distribution' | 'channelsMarkets' | 'financialPlan' | 'budgetFinancials' | 'collectionBuilder'
   | 'designDevelopment' | 'sketchColor' | 'techPack' | 'prototyping' | 'production' | 'finalSelection'
   | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'pointOfSale'

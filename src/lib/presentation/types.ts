@@ -64,13 +64,19 @@ export interface Theme {
 
 export type MicroBlockId =
   /* Block 1 — Creative & Brand */
-  | 'consumer' | 'moodboard' | 'market-research' | 'brand-identity' | 'creative-overview'
+  | 'consumer' | 'moodboard' | 'market-research'
+  | 'brand-identity' | 'brand-logo' | 'brand-palette' | 'brand-voice'
+  | 'creative-overview'
   /* Block 2 — Merchandising */
-  | 'buying-strategy' | 'assortment-pricing' | 'distribution' | 'financial-plan' | 'collection-builder'
+  | 'buying-strategy' | 'buying-scenarios' | 'buying-drops'
+  | 'assortment-pricing' | 'distribution' | 'financial-plan' | 'collection-builder'
   /* Block 3 — Design & Development */
-  | 'sketch-color' | 'tech-pack' | 'prototyping' | 'production' | 'final-selection'
+  | 'sketch-color' | 'colorways' | 'material-zones'
+  | 'tech-pack' | 'prototyping' | 'production' | 'final-selection'
   /* Block 4 — Marketing & Sales */
-  | 'gtm-launch' | 'content-studio' | 'communications' | 'sales-dashboard' | 'point-of-sale';
+  | 'gtm-launch'
+  | 'content-studio' | 'content-models' | 'content-editorial' | 'content-still-life'
+  | 'communications' | 'sales-dashboard' | 'point-of-sale';
 
 export type TemplateId =
   | 'cover'             // Brand-hero opening slide (Presentation's slide 0)
@@ -81,6 +87,9 @@ export type TemplateId =
   | 'timeline-strip'    // Horizontal timeline of milestones
   | 'range-wall'        // Magazine-spread photo wall of the full SKU range
   | 'channel-map'       // Distribution / Point of Sale visualisation
+  | 'palette'           // Color palette + typography specimen
+  | 'scenario-compare'  // 3-column scenario comparison (Buying Strategy)
+  | 'material-zones'    // Sketch + zone-by-zone material BOM
   | 'placeholder';      // Skeleton until per-mini-block design lands
 
 export interface MicroBlockSlide {

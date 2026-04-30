@@ -78,6 +78,42 @@ export interface RangeWallSlideData {
   stats?: { total: number; families: number; drops?: number; revenue?: string };
 }
 
+export interface PaletteSlideData {
+  caption?: string;
+  swatches?: { hex: string; role?: string }[];
+  typography?: {
+    displayName?: string;
+    bodyName?: string;
+    sample?: string;
+    weight?: string;
+    tracking?: string;
+  };
+}
+
+export interface ScenarioCompareSlideData {
+  caption?: string;
+  selectedId?: string;
+  scenarios?: {
+    id: string;
+    name: string;
+    description?: string;
+    skuCount?: number;
+    families?: { name: string; count: number }[];
+    investment?: string;
+    revenue?: string;
+    margin?: string;
+    role?: string;
+  }[];
+}
+
+export interface MaterialZonesSlideData {
+  caption?: string;
+  sketchUrl?: string;
+  productName?: string;
+  family?: string;
+  rows?: { zone: string; hex?: string; material?: string; supplier?: string }[];
+}
+
 export interface ChannelMapSlideData {
   caption?: string;
   /** Web store status — connected/coming. */
@@ -98,6 +134,9 @@ export interface PresentationData {
   timelines: Record<string, TimelineSlideData>;
   ranges: Record<string, RangeWallSlideData>;
   channels: Record<string, ChannelMapSlideData>;
+  palettes: Record<string, PaletteSlideData>;
+  scenarioCompares: Record<string, ScenarioCompareSlideData>;
+  materialZones: Record<string, MaterialZonesSlideData>;
   /* Per-slide field override map. Populated from
      presentation_deck_overrides. UI uses these to (a) mark slides with
      edits (gold dot in sidebar) and (b) show "Revert to original"
@@ -195,6 +234,9 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     timelines: {},
     ranges: {},
     channels: {},
+    palettes: {},
+    scenarioCompares: {},
+    materialZones: {},
     overrides: {},
     hasAnyData: false,
   };
@@ -929,6 +971,340 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
           region: m.region,
           opportunity: m.opportunity,
         })),
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // ─── Brand expansions: brand-logo, brand-palette, brand-voice ──
+  // brand-identity (DNA narrative) was already populated above. The
+  // three new sub-slides each get their own data path so the user
+  // can edit / promote them independently.
+  {
+    // brand-logo: full-bleed single image (logo OR icon).
+    if (brandBoard.logoUrl || brandBoard.iconUrl) {
+      data.narratives['brand-logo'] = {
+        lead: 'The mark.',
+        body: 'A logo is a promise compressed to a glyph. This one carries the season.',
+        attribution: 'Logo · Visual identity',
+        images: [brandBoard.logoUrl ?? brandBoard.iconUrl] as string[],
+        imageMode: 'single',
+      };
+      data.hasAnyData = true;
+    }
+
+    // brand-palette: palette + typography specimen via the dedicated
+    // template. Pulls hex array + typography name from the brand board.
+    if ((brandBoard.paletteHex && brandBoard.paletteHex.length > 0) || brandBoard.typographyName) {
+      const swatches = (brandBoard.paletteHex ?? []).slice(0, 5).map((hex, i) => ({
+        hex,
+        role: ['Identity', 'Ground', 'Accent', 'Neutral', 'Mute'][i] ?? `Color ${i + 1}`,
+      }));
+      data.palettes['brand-palette'] = {
+        caption: 'Color and type — the visual grammar that holds every touchpoint together.',
+        swatches: swatches.length > 0 ? swatches : undefined,
+        typography: {
+          displayName: brandBoard.typographyName,
+          sample:
+            'The quick brown fox jumps over the lazy dog — the cadence at which body copy carries the brand voice.',
+        },
+      };
+      data.hasAnyData = true;
+    }
+
+    // brand-voice: narrative anchored to the latest editorial when
+    // present (voice given a face), otherwise leans on the moodboard.
+    const voiceImages = editorialUrl ? [editorialUrl] : moodboardImages.slice(0, 4);
+    if (ctx.brandVoice) {
+      data.narratives['brand-voice'] = {
+        ...extractLeadBody(ctx.brandVoice),
+        attribution: 'Voice · How the brand speaks',
+        images: voiceImages.length > 0 ? voiceImages : undefined,
+        imageMode: editorialUrl ? 'single' : 'mosaic',
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // ─── Buying Strategy expansions: scenarios + drops ─────────────────
+  {
+    // Scenarios — read from collection_decisions / merchandising workspace.
+    // The Buying Strategy module saves the full set of generated scenarios
+    // plus the selected one. Shape is { scenarios: [...], selectedId }.
+    const { data: merchRow } = await supabaseAdmin
+      .from('collection_workspace_data')
+      .select('data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('workspace', 'merchandising')
+      .maybeSingle();
+    type ScenarioRaw = {
+      id: string;
+      name: string;
+      description?: string;
+      skuCount?: number;
+      families?: { name: string; count: number }[];
+      financials?: { totalInvestment?: number; firstYearSalesTarget?: number; targetMargin?: number };
+      commercialRole?: string;
+      bestFor?: string;
+    };
+    const merch = (merchRow?.data || {}) as {
+      cardData?: {
+        scenarios?: { data?: { scenarios?: ScenarioRaw[]; selectedId?: string | null } };
+      };
+    };
+    const stored = merch.cardData?.scenarios?.data;
+    const rawScenarios = stored?.scenarios ?? [];
+    if (rawScenarios.length > 0) {
+      const fmt = (n?: number) => {
+        if (n === undefined) return undefined;
+        if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
+        if (n >= 1000) return `€${Math.round(n / 1000)}K`;
+        return `€${Math.round(n)}`;
+      };
+      data.scenarioCompares['buying-scenarios'] = {
+        caption: 'Three paths through the season. Same brand, different bets on breadth and depth.',
+        selectedId: stored?.selectedId ?? undefined,
+        scenarios: rawScenarios.slice(0, 3).map((sc) => ({
+          id: sc.id,
+          name: sc.name,
+          description: sc.description || sc.bestFor,
+          skuCount: sc.skuCount,
+          families: sc.families,
+          investment: fmt(sc.financials?.totalInvestment),
+          revenue: fmt(sc.financials?.firstYearSalesTarget),
+          margin:
+            typeof sc.financials?.targetMargin === 'number'
+              ? `${Math.round(sc.financials.targetMargin)}%`
+              : undefined,
+          role: sc.commercialRole,
+        })),
+      };
+      data.hasAnyData = true;
+    }
+
+    // Drop architecture — drops as grid tiles (date · channels · share).
+    if (ctx.drops) {
+      const dropLines = ctx.drops.split('\n').map((s) => s.trim()).filter(Boolean);
+      const dropTiles = dropLines.slice(0, 6).map((line, i) => {
+        const m = line.match(/^(.+?)\s*\((\d{4}-\d{2}-\d{2})\)(?:\s*[—-]\s*(.+))?$/);
+        const name = m?.[1]?.trim() ?? line;
+        const date = m?.[2];
+        const detail = m?.[3]?.trim() ?? '';
+        const dateLabel = date
+          ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
+          : '';
+        return {
+          eyebrow: `Drop ${String(i + 1).padStart(2, '0')}`,
+          label: name.length > 28 ? `${name.slice(0, 28)}…` : name,
+          value: dateLabel || (detail.length > 0 ? detail.slice(0, 18) : undefined),
+        };
+      });
+      if (dropTiles.length > 0) {
+        data.grids['buying-drops'] = {
+          caption: `${dropLines.length} drops sequenced across the season. Each one tells the next chapter.`,
+          tiles: dropTiles,
+        };
+        data.hasAnyData = true;
+      }
+    }
+  }
+
+  // ─── Sketch & Color expansions: colorways + material-zones ─────────
+  {
+    // Colorways — fetch the actual rows from sku_colorways for the SKUs
+    // in this collection. Each colorway gets one tile with the primary
+    // hex as the "value" badge and zones[].hex as a mini-strip.
+    const { data: colorwayRows } = await supabaseAdmin
+      .from('sku_colorways')
+      .select('id, sku_id, name, hex_primary, hex_secondary, hex_accent, zones, status')
+      .in(
+        'sku_id',
+        (skuThumbs.length > 0
+          ? (await supabaseAdmin
+              .from('collection_skus')
+              .select('id')
+              .eq('collection_plan_id', collectionPlanId)
+            ).data?.map((r) => r.id as string) || []
+          : []),
+      )
+      .limit(12);
+
+    if (colorwayRows && colorwayRows.length > 0) {
+      type CW = {
+        name?: string;
+        hex_primary?: string;
+        zones?: { zone: string; hex: string }[];
+        status?: string;
+      };
+      const tiles = (colorwayRows as CW[]).slice(0, 6).map((cw) => ({
+        eyebrow: cw.status?.toUpperCase() || 'COLORWAY',
+        label: cw.name || 'Untitled',
+        value: cw.hex_primary?.toUpperCase() || undefined,
+      }));
+      data.grids['colorways'] = {
+        caption: `${colorwayRows.length} colorways across the season. Each one a complete world.`,
+        tiles,
+      };
+      data.hasAnyData = true;
+    }
+
+    // Material zones — pick the lead SKU (first with material_zones data
+    // populated, otherwise just the first with a sketch) and render its
+    // zone breakdown alongside the colorway hex when present.
+    const { data: mzSkuRows } = await supabaseAdmin
+      .from('collection_skus')
+      .select('id, name, family, sketch_url, render_url, render_urls, material_zones')
+      .eq('collection_plan_id', collectionPlanId)
+      .order('created_at', { ascending: true })
+      .limit(20);
+    type MzSku = {
+      id: string;
+      name?: string;
+      family?: string;
+      sketch_url?: string;
+      render_url?: string;
+      render_urls?: Record<string, string>;
+      material_zones?: { zone: string; material?: string; supplier?: string }[];
+    };
+    const lead = (mzSkuRows as MzSku[] | null)?.find(
+      (s) => Array.isArray(s.material_zones) && s.material_zones.length > 0,
+    ) ?? (mzSkuRows as MzSku[] | null)?.find((s) => s.sketch_url || s.render_urls?.['3d'] || s.render_url);
+    if (lead) {
+      // Pull the lead SKU's first colorway to attach hex per zone.
+      const { data: leadCw } = await supabaseAdmin
+        .from('sku_colorways')
+        .select('zones')
+        .eq('sku_id', lead.id)
+        .limit(1)
+        .maybeSingle();
+      const cwZones = ((leadCw?.zones as { zone: string; hex: string }[] | null) ?? []) as {
+        zone: string;
+        hex: string;
+      }[];
+      const hexByZone = new Map(cwZones.map((z) => [z.zone, z.hex]));
+      const mzList = (lead.material_zones ?? []) as { zone: string; material?: string; supplier?: string }[];
+      const baseRows = mzList.length > 0
+        ? mzList
+        : cwZones.map((z) => ({ zone: z.zone })); // fallback to colorway zones
+      const rows = baseRows.slice(0, 9).map((r) => ({
+        zone: r.zone,
+        hex: hexByZone.get(r.zone),
+        material: (r as { material?: string }).material,
+        supplier: (r as { supplier?: string }).supplier,
+      }));
+      data.materialZones['material-zones'] = {
+        caption: 'Each zone, each material, each supplier — the brief that bridges design and the factory.',
+        sketchUrl: lead.render_urls?.['3d'] || lead.render_url || lead.sketch_url || undefined,
+        productName: lead.name,
+        family: lead.family,
+        rows: rows.length > 0 ? rows : undefined,
+      };
+      data.hasAnyData = true;
+    }
+  }
+
+  // ─── Content Studio expansions: models, editorial wall, still life ─
+  {
+    // Models — aimily models that have been associated with this
+    // collection's editorial generations. We surface every distinct
+    // model whose face has appeared in a generated editorial.
+    const { data: editorialGens } = await supabaseAdmin
+      .from('ai_generations')
+      .select('input_data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('generation_type', 'editorial')
+      .eq('status', 'completed');
+    const modelIds = new Set<string>();
+    for (const row of editorialGens ?? []) {
+      const id = (row.input_data as { model_id?: string } | null)?.model_id;
+      if (id) modelIds.add(id);
+    }
+    if (modelIds.size > 0) {
+      const { data: models } = await supabaseAdmin
+        .from('aimily_models')
+        .select('id, name, headshot_url, gender, archetype')
+        .in('id', Array.from(modelIds))
+        .limit(12);
+      const items = (models ?? [])
+        .map((m) => ({
+          url: (m.headshot_url as string) || undefined,
+          name: m.name as string | undefined,
+          family: ((m.archetype as string) || (m.gender as string) || undefined),
+        }))
+        .filter((x) => !!x.url) as { url: string; name?: string; family?: string }[];
+      if (items.length > 0) {
+        data.ranges['content-models'] = {
+          caption: `${items.length} aimily models cast for this collection. Every face, every shoot.`,
+          items,
+          stats: {
+            total: items.length,
+            families: new Set(items.map((i) => i.family || 'Unisex')).size,
+          },
+        };
+        data.hasAnyData = true;
+      }
+    }
+
+    // Editorial wall — full-bleed photo wall of all editorial outputs
+    // for this collection, as a dedicated slide (different from the
+    // smaller content-studio grid).
+    const { data: editorialAllRows } = await supabaseAdmin
+      .from('ai_generations')
+      .select('output_data, input_data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('generation_type', 'editorial')
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    const editorialItems: { url: string; name?: string }[] = [];
+    for (const row of editorialAllRows ?? []) {
+      const imgs = (row.output_data as { images?: { url: string }[] } | null)?.images ?? [];
+      const skuName = (row.input_data as { sku_name?: string } | null)?.sku_name;
+      for (const img of imgs) {
+        if (img.url && editorialItems.length < 12) {
+          editorialItems.push({ url: img.url, name: skuName });
+        }
+      }
+    }
+    if (editorialItems.length > 0) {
+      data.ranges['content-editorial'] = {
+        caption: 'The collection in editorial form. Every shoot from the studio.',
+        items: editorialItems,
+        stats: {
+          total: editorialItems.length,
+          families: 1,
+        },
+      };
+      data.hasAnyData = true;
+    }
+
+    // Still life — same shape as editorial but for product-only shots.
+    const { data: stillLifeRows } = await supabaseAdmin
+      .from('ai_generations')
+      .select('output_data, input_data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('generation_type', 'still_life')
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    const stillItems: { url: string; name?: string }[] = [];
+    for (const row of stillLifeRows ?? []) {
+      const imgs = (row.output_data as { images?: { url: string }[] } | null)?.images ?? [];
+      const skuName = (row.input_data as { sku_name?: string } | null)?.sku_name;
+      for (const img of imgs) {
+        if (img.url && stillItems.length < 12) {
+          stillItems.push({ url: img.url, name: skuName });
+        }
+      }
+    }
+    if (stillItems.length > 0) {
+      data.ranges['content-still-life'] = {
+        caption: 'Studio-still product photography — every angle, every detail.',
+        items: stillItems,
+        stats: {
+          total: stillItems.length,
+          families: 1,
+        },
       };
       data.hasAnyData = true;
     }

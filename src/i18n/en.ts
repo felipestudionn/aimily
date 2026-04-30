@@ -558,7 +558,17 @@ export const en = {
     finalSelectionUnits: 'Approved units',
     finalSelectionFamilies: 'Families',
     finalSelectionPending: 'Pending review',
-  },
+    brandLogo: 'Brand Mark',
+    brandPalette: 'Palette & Type',
+    brandVoice: 'Voice & Tone',
+    buyingScenarios: 'Three Scenarios',
+    buyingDrops: 'Drop Architecture',
+    colorways: 'Color Stories',
+    materialZones: 'Material Zones',
+    contentModels: 'Brand Models',
+    contentEditorial: 'Editorial',
+    contentStillLife: 'Still Life',
+    },
 
   // ─── Creative Block ───
   creative: {

@@ -560,7 +560,17 @@ export const pt: Dictionary = {
     finalSelectionUnits: 'Unidades aprovadas',
     finalSelectionFamilies: 'Famílias',
     finalSelectionPending: 'Pendentes de revisão',
-  },
+    brandLogo: 'Marca',
+    brandPalette: 'Paleta e Tipografia',
+    brandVoice: 'Voz e Tom',
+    buyingScenarios: 'Três Cenários',
+    buyingDrops: 'Arquitetura de Drops',
+    colorways: 'Histórias de Cor',
+    materialZones: 'Zonas de Materiais',
+    contentModels: 'Modelos da Marca',
+    contentEditorial: 'Editorial',
+    contentStillLife: 'Natureza Morta',
+    },
 
   // ─── Bloco Criativo ───
   creative: {

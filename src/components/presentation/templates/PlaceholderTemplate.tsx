@@ -23,6 +23,9 @@ const TEMPLATE_DESCRIPTIONS: Record<TemplateId, string> = {
   'timeline-strip':       'Horizontal milestone timeline',
   'range-wall':           'Photo wall of the SKU range',
   'channel-map':          'Distribution channels + markets',
+  'palette':              'Color palette + typography specimen',
+  'scenario-compare':     'Side-by-side scenario comparison',
+  'material-zones':       'Sketch + zone-by-zone material BOM',
   'placeholder':          'Skeleton pending design pass',
 };
 

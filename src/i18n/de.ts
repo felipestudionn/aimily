@@ -560,7 +560,17 @@ export const de: Dictionary = {
     finalSelectionUnits: 'Genehmigte Einheiten',
     finalSelectionFamilies: 'Familien',
     finalSelectionPending: 'Zur Prüfung ausstehend',
-  },
+    brandLogo: 'Markenzeichen',
+    brandPalette: 'Palette und Typografie',
+    brandVoice: 'Stimme und Ton',
+    buyingScenarios: 'Drei Szenarien',
+    buyingDrops: 'Drop-Architektur',
+    colorways: 'Farbgeschichten',
+    materialZones: 'Materialzonen',
+    contentModels: 'Markenmodelle',
+    contentEditorial: 'Editorial',
+    contentStillLife: 'Stillleben',
+    },
 
   // ─── Creative Block ───
   creative: {

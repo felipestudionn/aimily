@@ -560,7 +560,17 @@ export const it: Dictionary = {
     finalSelectionUnits: 'Unità approvate',
     finalSelectionFamilies: 'Famiglie',
     finalSelectionPending: 'In attesa di revisione',
-  },
+    brandLogo: 'Marchio',
+    brandPalette: 'Palette e Tipografia',
+    brandVoice: 'Voce e Tono',
+    buyingScenarios: 'Tre Scenari',
+    buyingDrops: 'Architettura dei Drop',
+    colorways: 'Storie di Colore',
+    materialZones: 'Zone Materiali',
+    contentModels: 'Modelle del Brand',
+    contentEditorial: 'Editoriale',
+    contentStillLife: 'Natura Morta',
+    },
 
   // ─── Creative Block ───
   creative: {

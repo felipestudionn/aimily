@@ -21,6 +21,9 @@ import { GridTileTemplate } from './templates/GridTileTemplate';
 import { TimelineStripTemplate } from './templates/TimelineStripTemplate';
 import { RangeWallTemplate } from './templates/RangeWallTemplate';
 import { ChannelMapTemplate } from './templates/ChannelMapTemplate';
+import { PaletteTemplate } from './templates/PaletteTemplate';
+import { ScenarioCompareTemplate } from './templates/ScenarioCompareTemplate';
+import { MaterialZonesTemplate } from './templates/MaterialZonesTemplate';
 
 export interface EditingContext {
   editMode: boolean;
@@ -70,6 +73,12 @@ export function SlideRenderer({ slide, meta, title, coverSubtitle, data, editing
       return <RangeWallTemplate slide={slide} meta={meta} title={title} data={data?.ranges[slide.id]} />;
     case 'channel-map':
       return <ChannelMapTemplate slide={slide} meta={meta} title={title} data={data?.channels[slide.id]} />;
+    case 'palette':
+      return <PaletteTemplate slide={slide} meta={meta} title={title} data={data?.palettes[slide.id]} />;
+    case 'scenario-compare':
+      return <ScenarioCompareTemplate slide={slide} meta={meta} title={title} data={data?.scenarioCompares[slide.id]} />;
+    case 'material-zones':
+      return <MaterialZonesTemplate slide={slide} meta={meta} title={title} data={data?.materialZones[slide.id]} />;
     case 'placeholder':
     default:
       return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;

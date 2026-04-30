@@ -552,7 +552,17 @@ export const no: Dictionary = {
     finalSelectionUnits: 'Godkjente enheter',
     finalSelectionFamilies: 'Familier',
     finalSelectionPending: 'Venter på gjennomgang',
-  },
+    brandLogo: 'Merkevare',
+    brandPalette: 'Palett og Typografi',
+    brandVoice: 'Stemme og Tone',
+    buyingScenarios: 'Tre Scenarier',
+    buyingDrops: 'Drop-arkitektur',
+    colorways: 'Fargehistorier',
+    materialZones: 'Materialsoner',
+    contentModels: 'Merkemodeller',
+    contentEditorial: 'Editorial',
+    contentStillLife: 'Stilleben',
+    },
 
   // ─── Creative Block ───
   creative: {
