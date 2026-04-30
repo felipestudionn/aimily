@@ -105,8 +105,19 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
 
     if (!res.ok) {
       const errText = await res.text();
-      console.error('[Colorize] OpenAI error:', res.status, errText.slice(0, 300));
-      return NextResponse.json({ error: `OpenAI error: ${res.status}` }, { status: 502 });
+      console.error('[Colorize] OpenAI error:', res.status, errText);
+      console.error('[Colorize] Prompt was:', prompt.slice(0, 500));
+      console.error('[Colorize] Zone colors:', JSON.stringify(zone_colors));
+      // Extract the actual OpenAI error message so the frontend can show it.
+      let openAiMessage = errText.slice(0, 300);
+      try {
+        const parsed = JSON.parse(errText);
+        openAiMessage = (parsed?.error?.message as string) || (parsed?.error?.code as string) || openAiMessage;
+      } catch { /* errText was not JSON, use raw text */ }
+      return NextResponse.json(
+        { error: `OpenAI ${res.status}: ${openAiMessage}` },
+        { status: 502 },
+      );
     }
 
     const data = await res.json();
