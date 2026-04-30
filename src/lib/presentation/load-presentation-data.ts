@@ -427,15 +427,49 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     }
   }
 
-  // Sales Dashboard — structurally wired; waits for post-launch sales
-  // data. When that pipeline is available, swap this block to query
-  // the sales metrics table. Until then, the slide renders an
-  // explicit Work-in-Progress card (driven by status === 'pending').
+  // Sales Dashboard — pre-launch we have a FORECAST (compose KPIs from
+  // SKU expected_sales × pvp), post-launch we'd swap to real sales rows.
+  // The Sales Dashboard card in the workspace already does this exact
+  // computation; we mirror it here so the deck stays in sync.
   {
-    // Placeholder read path — any future sales_metrics / drops revenue
-    // source plugs in here. For now we always emit 'pending' so every
-    // collection's deck surfaces the WIP state consistently.
-    data.stats['sales-dashboard'] = { status: 'pending' };
+    const { data: forecastSkus } = await supabaseAdmin
+      .from('collection_skus')
+      .select('expected_sales, pvp, buy_units, margin, sale_percentage')
+      .eq('collection_plan_id', collectionPlanId);
+    const f = (forecastSkus ?? []) as Array<{
+      expected_sales?: number;
+      pvp?: number;
+      buy_units?: number;
+      margin?: number;
+      sale_percentage?: number;
+    }>;
+    if (f.length > 0) {
+      const totalRevenue = f.reduce((s, sku) => s + ((sku.expected_sales ?? 0) * (sku.pvp ?? 0)), 0);
+      const totalUnits = f.reduce((s, sku) => s + (sku.buy_units ?? 0), 0);
+      const avgPvp = f.reduce((s, sku) => s + (sku.pvp ?? 0), 0) / f.length;
+      const avgSellThrough = f.reduce((s, sku) => s + (sku.sale_percentage ?? 0), 0) / f.length;
+      const fmt = (n: number) => {
+        if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
+        if (n >= 1000) return `€${Math.round(n / 1000)}K`;
+        return `€${Math.round(n)}`;
+      };
+      data.stats['sales-dashboard'] = {
+        status: 'ready',
+        value: fmt(totalRevenue),
+        caption: 'Forecast revenue · Pre-launch projection',
+        narrative: `Composed from ${f.length} SKUs across the planned drops. ${
+          totalUnits > 0 ? `${totalUnits.toLocaleString()} units at €${Math.round(avgPvp)} average PVP. ` : ''
+        }Reaches the target if sell-through holds the ${Math.round(avgSellThrough)}% baseline assumed in the buying strategy.`,
+        support: [
+          { value: totalUnits.toLocaleString(), label: 'units forecast' },
+          { value: `€${Math.round(avgPvp)}`, label: 'avg PVP' },
+          { value: `${Math.round(avgSellThrough)}%`, label: 'sell-through target' },
+        ],
+      };
+      data.hasAnyData = true;
+    } else {
+      data.stats['sales-dashboard'] = { status: 'pending' };
+    }
   }
 
   // Financial Plan — compose from selected scenario + user assumptions.
