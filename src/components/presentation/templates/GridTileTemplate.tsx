@@ -181,17 +181,25 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
         </div>
       </div>
 
-      {/* Photo mosaic (moodboard w/ uploads) — 4×2 grid of cover-fitted
-          images. Fills exactly the available slide area; no overflow.
-          `minHeight: 0` on the grid + cells keeps the row-track from
-          ballooning to the intrinsic image height. Falls back to the
-          tile grid below when no images. */}
-      {photoMode && (
+      {/* Photo mosaic — adaptive grid based on image count to avoid
+          empty cells. 1-2 → 2×1 hero strip. 3-4 → 2×2. 5-6 → 3×2.
+          7+ → 4×2 capped at 8. `minHeight: 0` on the grid + cells keeps
+          rows from ballooning to intrinsic image heights. */}
+      {photoMode && (() => {
+        const n = Math.min(images.length, 8);
+        // Tailwind safelist via static mapping — string interpolation gets
+        // tree-shaken at build time, so we have to enumerate the variants.
+        const layout =
+          n <= 2 ? { cls: 'grid grid-cols-2 grid-rows-1 gap-3', total: n } :
+          n <= 4 ? { cls: 'grid grid-cols-2 grid-rows-2 gap-3', total: 4 } :
+          n <= 6 ? { cls: 'grid grid-cols-3 grid-rows-2 gap-3', total: 6 } :
+                   { cls: 'grid grid-cols-4 grid-rows-2 gap-3', total: 8 };
+        return (
         <div
-          className="grid grid-cols-4 grid-rows-2 gap-3"
+          className={layout.cls}
           style={{ flex: '1 1 0', minHeight: 0 }}
         >
-          {Array.from({ length: 8 }).map((_, i) => {
+          {Array.from({ length: layout.total }).map((_, i) => {
             const src = images[i];
             const cell = (
               <div
@@ -227,7 +235,8 @@ export function GridTileTemplate({ slide, meta, title, data: cisData, editing }:
             return cell;
           })}
         </div>
-      )}
+        );
+      })()}
 
       {/* 3×2 tile grid — label mode, used when no uploaded images. */}
       {!photoMode && <div className="flex-1 grid grid-cols-3 gap-4">

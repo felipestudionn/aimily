@@ -20,6 +20,18 @@ export interface NarrativeSlideData {
   lead?: string;
   body?: string;
   attribution?: string;
+  /** Real visuals to render in the LEFT image panel. When present + non-empty
+   *  the template paints a magazine-style image instead of the legacy mute
+   *  placeholder. 1 image → full-bleed; 2-4 → mosaic; >4 capped at 4. */
+  images?: string[];
+  /** Optional alternate visual modes for slides that aren't best served by a
+   *  photo: 'palette' renders a hex swatch grid (brand-identity), 'single'
+   *  forces a hero image even with multiple sources. Default: auto. */
+  imageMode?: 'auto' | 'palette' | 'single' | 'mosaic';
+  /** Hex values for 'palette' mode — drives Brand Identity's left panel. */
+  paletteHex?: string[];
+  /** Optional caption shown over the image (used for product captions etc). */
+  imageCaption?: string;
 }
 
 export interface CoverSlideData {
@@ -164,34 +176,109 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   };
 
   // ─── Narrative templates ─────────────────────────────────────────
+  // Pre-fetch the creative + marketing workspaces once. We need them for
+  // narrative image hydration (consumer/brand/communications) and they're
+  // also re-read further down for moodboard/distribution/financial — Supabase
+  // caches but a single round-trip is cleaner.
+  type CreativeWS = {
+    blockData?: {
+      moodboard?: { data?: { images?: string[] } };
+      'brand-identity'?: { data?: { logoUrl?: string; iconUrl?: string; paletteHex?: string[]; typographyName?: string } };
+    };
+  };
+  const { data: creativeWsRow } = await supabaseAdmin
+    .from('collection_workspace_data')
+    .select('data')
+    .eq('collection_plan_id', collectionPlanId)
+    .eq('workspace', 'creative')
+    .maybeSingle();
+  const creativeWs = (creativeWsRow?.data || {}) as CreativeWS;
+  const moodboardImages = creativeWs.blockData?.moodboard?.data?.images ?? [];
+  const brandBoard = creativeWs.blockData?.['brand-identity']?.data ?? {};
+
+  // Latest editorial generation for this collection — used as the visual
+  // anchor on the communications slide (the editorial is the brand voice
+  // made photographic).
+  const { data: latestEditorial } = await supabaseAdmin
+    .from('ai_generations')
+    .select('output_data')
+    .eq('collection_plan_id', collectionPlanId)
+    .eq('generation_type', 'editorial')
+    .eq('status', 'completed')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const editorialUrl = (latestEditorial?.output_data as { images?: { url: string }[] } | null)?.images?.[0]?.url;
+
   const consumerSplit = extractLeadBody(ctx.consumer);
   if (consumerSplit.lead || consumerSplit.body) {
+    // Consumer slide gets a 2x2 mosaic from the moodboard — those images
+    // were curated to evoke the consumer mindset, so they're the right
+    // visual anchor here. Falls back gracefully when no moodboard.
     data.narratives.consumer = {
       ...consumerSplit,
       attribution: 'Consumer archetype · From your research',
+      images: moodboardImages.slice(0, 4),
+      imageMode: 'mosaic',
     };
     data.hasAnyData = true;
   }
 
   const brandSplit = extractLeadBody(ctx.brandDNA);
   if (brandSplit.lead || brandSplit.body) {
+    // Brand identity prefers logo+typography composition; falls back to
+    // palette swatch grid; final fallback is the legacy placeholder.
+    const brandImages: string[] = [];
+    if (brandBoard.logoUrl) brandImages.push(brandBoard.logoUrl);
+    if (brandBoard.iconUrl && brandBoard.iconUrl !== brandBoard.logoUrl) brandImages.push(brandBoard.iconUrl);
     data.narratives['brand-identity'] = {
       ...brandSplit,
       attribution: 'Brand DNA · Core positioning',
+      images: brandImages.length > 0 ? brandImages : undefined,
+      paletteHex: (brandBoard.paletteHex && brandBoard.paletteHex.length > 0) ? brandBoard.paletteHex : undefined,
+      imageMode: brandImages.length > 0 ? 'single' : (brandBoard.paletteHex?.length ? 'palette' : 'auto'),
     };
     data.hasAnyData = true;
   }
 
   const voiceSplit = extractLeadBody(ctx.brandVoice);
   if (voiceSplit.lead || voiceSplit.body) {
+    // Communications slide pulls the latest editorial — the brand voice
+    // made visual. If none yet, falls back to a moodboard mosaic.
+    const commsImages = editorialUrl
+      ? [editorialUrl]
+      : moodboardImages.slice(0, 4);
     data.narratives.communications = {
       ...voiceSplit,
       attribution: 'Voice & tone · Communications spine',
+      images: commsImages.length > 0 ? commsImages : undefined,
+      imageMode: editorialUrl ? 'single' : 'mosaic',
     };
     data.hasAnyData = true;
   }
 
-  // Tech-pack — derive from productCategory + existingSkus count
+  // SKU thumbnails fetched once — needed for tech-pack (single hero) and
+  // buying-strategy (mosaic of family representatives) narrative slides.
+  const { data: thumbSkuRows } = await supabaseAdmin
+    .from('collection_skus')
+    .select('id, name, family, sketch_url, render_url, render_urls, reference_image_url, production_sample_url')
+    .eq('collection_plan_id', collectionPlanId)
+    .order('created_at', { ascending: true })
+    .limit(20);
+  const skuThumbs = (thumbSkuRows ?? []).map((s) => ({
+    family: (s as { family?: string }).family || 'Other',
+    url:
+      ((s as { render_urls?: Record<string, string> }).render_urls?.['3d'] as string | undefined) ||
+      (s as { render_url?: string }).render_url ||
+      (s as { sketch_url?: string }).sketch_url ||
+      (s as { production_sample_url?: string }).production_sample_url ||
+      (s as { reference_image_url?: string }).reference_image_url ||
+      undefined,
+  })).filter((t) => !!t.url) as { family: string; url: string }[];
+
+  // Tech-pack — derive from productCategory + existingSkus count.
+  // Visual anchor: the first SKU's 3D render (most polished) as a single
+  // hero — production-ready vibe.
   if (ctx.productCategory || ctx.existingSkus) {
     const parts: string[] = [];
     if (ctx.productCategory) parts.push(`Category: ${ctx.productCategory}`);
@@ -201,20 +288,35 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         lead: 'Specs that a factory can build without a phone call.',
         body: parts.join(' · '),
         attribution: 'Tech pack · Production-ready',
+        images: skuThumbs[0]?.url ? [skuThumbs[0].url] : undefined,
+        imageMode: 'single',
+        imageCaption: skuThumbs[0] ? `${skuThumbs[0].family.toUpperCase()} · LEAD STYLE` : undefined,
       };
       data.hasAnyData = true;
     }
   }
 
-  // Buying strategy — derive from drops / sales target
+  // Buying strategy — derive from drops / sales target.
+  // Visual anchor: family representatives as a 2x2 mosaic (one per family).
   if (ctx.drops || ctx.salesTarget) {
     const parts: string[] = [];
     if (ctx.drops) parts.push(`Drop cadence: ${ctx.drops.split('\n').length} drops planned.`);
     if (ctx.salesTarget) parts.push(`Revenue target ${ctx.salesTarget}.`);
+    // One thumb per family, up to 4 — gives the buyer a sense of breadth.
+    const seenFamilies = new Set<string>();
+    const familyMosaic: string[] = [];
+    for (const s of skuThumbs) {
+      if (seenFamilies.has(s.family)) continue;
+      seenFamilies.add(s.family);
+      familyMosaic.push(s.url);
+      if (familyMosaic.length >= 4) break;
+    }
     data.narratives['buying-strategy'] = {
       lead: 'Narrow and deep over broad and shallow.',
       body: parts.join(' ') || undefined,
       attribution: 'Buying strategy · Season blueprint',
+      images: familyMosaic.length > 0 ? familyMosaic : undefined,
+      imageMode: 'mosaic',
     };
     data.hasAnyData = true;
   }
@@ -410,50 +512,90 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     }
   }
 
-  // Assortment & pricing — collection SKUs grouped by family
+  // Assortment & pricing — collection SKUs grouped by family.
+  // Photo mode: when SKUs have a 3D render or sketch, show the family
+  // representative as a real image (mosaic 3x2). Tiles stay as fallback
+  // when the user hasn't generated visuals yet.
   {
     const { data: skuRows } = await supabaseAdmin
       .from('collection_skus')
-      .select('name, family, subcategory, pvp, category')
+      .select('name, family, subcategory, pvp, category, sketch_url, render_url, render_urls, reference_image_url, production_sample_url')
       .eq('collection_plan_id', collectionPlanId)
-      .limit(24);
+      .limit(40);
     if (skuRows?.length) {
-      // Group by family, pick cheapest + most expensive per family, up to 6 tiles
-      const byFamily: Record<string, typeof skuRows> = {};
-      for (const s of skuRows) {
+      type SkuRow = (typeof skuRows)[number] & {
+        render_urls?: Record<string, string>;
+        sketch_url?: string;
+        render_url?: string;
+        reference_image_url?: string;
+        production_sample_url?: string;
+      };
+      const pickThumb = (s: SkuRow): string | undefined =>
+        s.render_urls?.['3d'] ||
+        s.render_url ||
+        s.sketch_url ||
+        s.production_sample_url ||
+        s.reference_image_url ||
+        undefined;
+      const byFamily: Record<string, SkuRow[]> = {};
+      for (const s of skuRows as SkuRow[]) {
         const key = s.family || 'Other';
         (byFamily[key] ||= []).push(s);
       }
-      const tiles: { eyebrow: string; label: string; value?: string }[] = [];
+      const reps: { family: string; row: SkuRow }[] = [];
       for (const [family, rows] of Object.entries(byFamily)) {
-        if (tiles.length >= 6) break;
-        const sorted = [...rows].sort((a, b) => (a.pvp ?? 0) - (b.pvp ?? 0));
-        const rep = sorted[Math.floor(sorted.length / 2)];
-        tiles.push({
-          eyebrow: family,
-          label: rep.subcategory || rep.name || family,
-          value: rep.pvp ? `€${rep.pvp}` : undefined,
-        });
+        if (reps.length >= 6) break;
+        const withImage = rows.find((r) => pickThumb(r));
+        const rep = withImage || [...rows].sort((a, b) => (a.pvp ?? 0) - (b.pvp ?? 0))[Math.floor(rows.length / 2)];
+        reps.push({ family, row: rep });
       }
+      const tiles = reps.map(({ family, row }) => ({
+        eyebrow: family,
+        label: row.subcategory || row.name || family,
+        value: row.pvp ? `€${row.pvp}` : undefined,
+      }));
+      const images = reps.map(({ row }) => pickThumb(row)).filter(Boolean) as string[];
       if (tiles.length) {
         data.grids['assortment-pricing'] = {
           caption: `${skuRows.length} SKUs across ${Object.keys(byFamily).length} families.`,
           tiles,
+          // Only flip into photo mode when EVERY representative has an
+          // image — otherwise the grid mixes photos and empty cells.
+          images: images.length === reps.length ? images : undefined,
         };
         data.hasAnyData = true;
       }
     }
   }
 
-  // Sketch & Color — first 6 SKUs as the design starting lineup
+  // Sketch & Color — first 6 SKUs as the design starting lineup.
+  // Photo mode whenever the SKUs have a sketch or render — that's
+  // the literal subject of this slide.
   {
     const { data: skuRows } = await supabaseAdmin
       .from('collection_skus')
-      .select('name, family, subcategory')
+      .select('name, family, subcategory, sketch_url, render_url, render_urls, reference_image_url, production_sample_url')
       .eq('collection_plan_id', collectionPlanId)
       .order('created_at', { ascending: true })
       .limit(6);
     if (skuRows?.length) {
+      type SkuRow = (typeof skuRows)[number] & {
+        render_urls?: Record<string, string>;
+        sketch_url?: string;
+        render_url?: string;
+        reference_image_url?: string;
+        production_sample_url?: string;
+      };
+      const pickThumb = (s: SkuRow): string | undefined =>
+        s.render_urls?.['3d'] ||
+        s.render_url ||
+        s.sketch_url ||
+        s.production_sample_url ||
+        s.reference_image_url ||
+        undefined;
+      const images = (skuRows as SkuRow[])
+        .map((s) => pickThumb(s))
+        .filter(Boolean) as string[];
       data.grids['sketch-color'] = {
         caption: 'Opening round of sketches.',
         tiles: skuRows.map((s, i) => ({
@@ -461,25 +603,56 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
           label: s.subcategory || s.name || s.family,
           value: `R${Math.floor(i / 3) + 1}`,
         })),
+        // Photo mode when at least 4 SKUs have a real image — keeps the
+        // mosaic uniform. Below that, fall back to the textual tiles.
+        images: images.length >= 4 ? images.slice(0, 6) : undefined,
       };
       data.hasAnyData = true;
     }
   }
 
-  // Content studio — content pillars as tiles
-  if (ctx.contentPillars) {
-    const pillars = ctx.contentPillars.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 6);
-    if (pillars.length) {
+  // Content studio — content pillars as tiles, plus the latest editorials
+  // generated for this collection as a real photo mosaic when present.
+  {
+    // Editorial photo wall: pull the most recent 6 editorial images
+    // across all SKUs. This is the single most valuable visual the user
+    // produces — putting it in the deck is non-negotiable.
+    const { data: editorialRows } = await supabaseAdmin
+      .from('ai_generations')
+      .select('output_data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('generation_type', 'editorial')
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    const editorialImages: string[] = [];
+    for (const row of editorialRows ?? []) {
+      const imgs = (row.output_data as { images?: { url: string }[] } | null)?.images ?? [];
+      for (const img of imgs) {
+        if (img.url && editorialImages.length < 6) editorialImages.push(img.url);
+      }
+    }
+
+    const pillars = ctx.contentPillars
+      ? ctx.contentPillars.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 6)
+      : [];
+
+    if (pillars.length || editorialImages.length) {
       data.grids['content-studio'] = {
-        caption: `${pillars.length} content pillars feeding every channel.`,
-        tiles: pillars.map((p, i) => {
-          const [name, desc] = p.split(':').map(s => s?.trim() ?? '');
-          return {
-            eyebrow: String(i + 1).padStart(2, '0'),
-            label: name,
-            value: desc ? desc.slice(0, 3) : undefined,
-          };
-        }),
+        caption: editorialImages.length
+          ? `${editorialImages.length} editorial${editorialImages.length === 1 ? '' : 's'} produced · ${pillars.length} content pillars`
+          : `${pillars.length} content pillars feeding every channel.`,
+        tiles: pillars.length
+          ? pillars.map((p, i) => {
+              const [name, desc] = p.split(':').map((s) => s?.trim() ?? '');
+              return {
+                eyebrow: String(i + 1).padStart(2, '0'),
+                label: name,
+                value: desc ? desc.slice(0, 3) : undefined,
+              };
+            })
+          : undefined,
+        images: editorialImages.length >= 3 ? editorialImages : undefined,
       };
       data.hasAnyData = true;
     }

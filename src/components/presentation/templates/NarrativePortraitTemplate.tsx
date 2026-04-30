@@ -77,39 +77,47 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData, e
       className="w-full h-full flex"
       style={{ background: 'var(--p-bg)', color: 'var(--p-fg)' }}
     >
-      {/* LEFT — image panel (placeholder until F2 serves real visuals) */}
+      {/* LEFT — visual panel. Renders one of three modes:
+            • Photo mode (default): cisData.images[] painted as a hero or
+              2-4 mosaic. Used by consumer / buying-strategy / tech-pack /
+              communications when real assets exist.
+            • Palette mode: paletteHex[] swatch grid. Used by brand-identity
+              when the user has saved palette colors but no logo image.
+            • Placeholder: theme-tinted frame (legacy fallback).
+          We always overlay the attribution at the bottom. */}
       <div
         className="w-1/2 relative flex flex-col justify-between"
         style={{
           background: 'var(--p-surface)',
-          padding: 'clamp(32px, 3.5vw, 56px)',
           borderRight: '1px solid var(--p-border)',
         }}
       >
-        {/* Visual placeholder — theme-tinted frame */}
+        <NarrativeVisual
+          slideId={slide.id}
+          images={cisData?.images}
+          imageMode={cisData?.imageMode}
+          paletteHex={cisData?.paletteHex}
+          caption={cisData?.imageCaption}
+        />
+        {/* Attribution is anchored bottom-left over a soft gradient so it
+            stays legible whether the panel is a photo or a fallback. */}
         <div
-          className="absolute inset-8 flex items-center justify-center"
+          className="absolute bottom-0 left-0 right-0 px-8 py-5 pointer-events-none"
           style={{
-            border: '1px solid var(--p-border)',
-            borderRadius: 'var(--p-radius)',
+            background:
+              'linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0))',
           }}
         >
-          <div className="text-center" style={{ fontFamily: 'var(--p-mono-font)', color: 'var(--p-mute)' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '0.28em', textTransform: 'uppercase', marginBottom: '8px' }}>
-              Visual
-            </div>
-            <div style={{ fontSize: '13px' }}>{slide.id}.portrait</div>
-          </div>
-        </div>
-        {/* Bottom caption */}
-        <div className="relative mt-auto pt-6">
           <span
             style={{
               fontFamily: 'var(--p-mono-font)',
               fontSize: '10px',
               letterSpacing: '0.24em',
-              color: 'var(--p-mute)',
+              color: cisData?.images?.length ? '#fff' : 'var(--p-mute)',
               textTransform: 'uppercase',
+              textShadow: cisData?.images?.length
+                ? '0 1px 2px rgba(0,0,0,0.4)'
+                : 'none',
             }}
           >
             {data.attribution}
@@ -215,4 +223,133 @@ export function NarrativePortraitTemplate({ slide, meta, title, data: cisData, e
       </div>
     </div>
   );
+}
+
+/* ─── Visual panel — three modes ──────────────────────────────────────
+   1) photo (default when images[]): hero or 2-4 mosaic, full-bleed.
+   2) palette: hex swatch grid for brand-identity when no logo.
+   3) placeholder: theme-tinted frame (legacy fallback).
+   The component is intentionally local — it depends on slide-side
+   styling tokens that the rest of the template owns. */
+function NarrativeVisual({
+  slideId,
+  images,
+  imageMode = 'auto',
+  paletteHex,
+  caption,
+}: {
+  slideId: string;
+  images?: string[];
+  imageMode?: 'auto' | 'palette' | 'single' | 'mosaic';
+  paletteHex?: string[];
+  caption?: string;
+}) {
+  const hasImages = !!(images && images.length > 0);
+  const hasPalette = !!(paletteHex && paletteHex.length > 0);
+
+  // Palette mode (brand-identity primary use case)
+  if ((imageMode === 'palette' || (!hasImages && hasPalette)) && hasPalette) {
+    const swatches = paletteHex!.slice(0, 6);
+    return (
+      <div className="absolute inset-0 grid grid-cols-2 grid-rows-3 gap-px" style={{ background: 'var(--p-border)' }}>
+        {swatches.map((hex, i) => (
+          <div key={i} className="relative" style={{ background: hex }}>
+            <span
+              className="absolute bottom-3 left-3"
+              style={{
+                fontFamily: 'var(--p-mono-font)',
+                fontSize: '10px',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: contrastFor(hex),
+                textShadow: '0 1px 2px rgba(0,0,0,0.25)',
+              }}
+            >
+              {hex.toUpperCase()}
+            </span>
+          </div>
+        ))}
+        {/* If user only saved 1-5 hex, fill remaining cells with surface tint */}
+        {Array.from({ length: Math.max(0, 6 - swatches.length) }).map((_, i) => (
+          <div key={`pad-${i}`} style={{ background: 'var(--p-surface)' }} />
+        ))}
+      </div>
+    );
+  }
+
+  // Photo mode
+  if (hasImages) {
+    const list = images!.slice(0, 4);
+    if (imageMode === 'single' || list.length === 1) {
+      return (
+        <div className="absolute inset-0">
+          <img
+            src={list[0]}
+            alt={`${slideId} portrait`}
+            className="w-full h-full object-cover"
+          />
+          {caption && (
+            <span
+              className="absolute top-5 right-5 px-3 py-1.5 rounded-full"
+              style={{
+                fontFamily: 'var(--p-mono-font)',
+                fontSize: '10px',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                background: 'rgba(255,255,255,0.85)',
+                color: 'var(--p-fg)',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              {caption}
+            </span>
+          )}
+        </div>
+      );
+    }
+    // Mosaic 2×2 (or 1×N if fewer)
+    const cols = list.length === 2 ? 'grid-cols-1' : 'grid-cols-2';
+    const rows = list.length <= 2 ? 'grid-rows-2' : 'grid-rows-2';
+    return (
+      <div className={`absolute inset-0 grid ${cols} ${rows} gap-px`} style={{ background: 'var(--p-border)' }}>
+        {list.map((src, i) => (
+          <div key={i} className="relative overflow-hidden">
+            <img src={src} alt="" className="w-full h-full object-cover" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Placeholder fallback (legacy)
+  return (
+    <div
+      className="absolute inset-8 flex items-center justify-center"
+      style={{
+        border: '1px solid var(--p-border)',
+        borderRadius: 'var(--p-radius)',
+      }}
+    >
+      <div className="text-center" style={{ fontFamily: 'var(--p-mono-font)', color: 'var(--p-mute)' }}>
+        <div style={{ fontSize: '10px', letterSpacing: '0.28em', textTransform: 'uppercase', marginBottom: '8px' }}>
+          Visual
+        </div>
+        <div style={{ fontSize: '13px' }}>{slideId}.portrait</div>
+      </div>
+    </div>
+  );
+}
+
+/* Choose dark/light text for a hex background by relative luminance.
+   Matches the WCAG formula closely enough for swatch labels. */
+function contrastFor(hex: string): string {
+  const m = hex.match(/^#?([0-9a-f]{6})$/i);
+  if (!m) return '#fff';
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  // Approx perceptual luminance (sRGB)
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.55 ? '#1a1a1a' : '#fafafa';
 }
