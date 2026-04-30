@@ -108,12 +108,27 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
       console.error('[Colorize] OpenAI error:', res.status, errText);
       console.error('[Colorize] Prompt was:', prompt.slice(0, 500));
       console.error('[Colorize] Zone colors:', JSON.stringify(zone_colors));
-      // Extract the actual OpenAI error message so the frontend can show it.
       let openAiMessage = errText.slice(0, 300);
       try {
         const parsed = JSON.parse(errText);
         openAiMessage = (parsed?.error?.message as string) || (parsed?.error?.code as string) || openAiMessage;
       } catch { /* errText was not JSON, use raw text */ }
+
+      // Recognise the platform-billing failure mode and surface a clean,
+      // actionable message instead of the raw OpenAI string. This is NOT
+      // the user's Aimily quota — it's our OpenAI org's monthly budget
+      // ceiling, which only the workspace admin can raise.
+      const lower = openAiMessage.toLowerCase();
+      if (lower.includes('billing hard limit') || lower.includes('hard limit has been reached') || lower.includes('quota')) {
+        return NextResponse.json(
+          {
+            error: 'Image generation is temporarily unavailable. Aimily’s image provider has reached its monthly budget — admin needs to raise the limit. This is not your account.',
+            code: 'provider_billing_limit',
+          },
+          { status: 503 },
+        );
+      }
+
       return NextResponse.json(
         { error: `OpenAI ${res.status}: ${openAiMessage}` },
         { status: 502 },
