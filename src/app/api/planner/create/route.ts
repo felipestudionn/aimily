@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     const launchDateObj = new Date(launchIso);
     const seasonAuto = (() => {
       const m = launchDateObj.getMonth();
-      const isFW = m >= 7 || m === 0;
+      const isFW = m >= 7;
       return `${isFW ? 'FW' : 'SS'}${String(launchDateObj.getFullYear()).slice(2)}`;
     })();
     const season = providedSeason || seasonAuto;

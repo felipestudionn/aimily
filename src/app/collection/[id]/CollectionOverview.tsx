@@ -296,15 +296,10 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] cursor-text"
             >
               {titleDraft}
+              {plan.season && (
+                <span className="text-carbon/35"> · {plan.season}</span>
+              )}
             </h1>
-          )}
-          {/* Season chip — derived from launch date at create-time, persisted in BD. */}
-          {plan.season && !activeBlock && (
-            <div className="mt-3 flex justify-center">
-              <span className="inline-flex items-center px-3 py-1 rounded-full bg-carbon/[0.04] text-[11px] font-semibold tracking-[0.18em] uppercase text-carbon/55">
-                {plan.season}
-              </span>
-            </div>
           )}
         </div>
 
