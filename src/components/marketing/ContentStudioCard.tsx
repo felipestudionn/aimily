@@ -1,30 +1,28 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import {
-  Palette,
-  ChevronLeft,
-  Search,
-  Camera,
-  Loader2,
-  X,
-} from 'lucide-react';
+import { Search, Camera, X } from 'lucide-react';
 import { useSkus, type SKU } from '@/hooks/useSkus';
 import { useStories } from '@/hooks/useStories';
 import { useAiGenerations } from '@/hooks/useAiGenerations';
 import { useTranslation } from '@/i18n';
 import { ContentEvolutionStrip } from './ContentEvolutionStrip';
 
-/* ── Props ── */
+/* ═══════════════════════════════════════════════════════════
+   Content Studio — gold-standard hub for per-SKU visual content
+   pipeline. Two-column layout: SKU library on the left, content
+   detail on the right. Renders inside the sidebar-driven page
+   shell (no internal modal / back button — the page header is
+   provided by MarketingCreationScreen).
+   ═══════════════════════════════════════════════════════════ */
 
 interface ContentStudioCardProps {
   collectionPlanId: string;
 }
 
-/* ── Component ── */
-
 export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) {
   const t = useTranslation();
+  const m = (t as unknown as { marketingPage?: Record<string, string> }).marketingPage || {};
   const { skus, loading: skusLoading } = useSkus(collectionPlanId);
   const { stories } = useStories(collectionPlanId);
   const {
@@ -35,7 +33,6 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
     refetch: refetchGenerations,
   } = useAiGenerations(collectionPlanId);
 
-  const [expanded, setExpanded] = useState(false);
   const [selectedSkuId, setSelectedSkuId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
@@ -59,8 +56,12 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
     return result;
   }, [skus, categoryFilter, searchQuery]);
 
-  const selectedSku = selectedSkuId
-    ? skus.find((s) => s.id === selectedSkuId)
+  // Auto-select the first SKU in the list once the data lands so the user
+  // doesn't see an empty right pane on entry.
+  const effectiveSelectedSkuId =
+    selectedSkuId ?? (filteredSkus[0]?.id || null);
+  const selectedSku = effectiveSelectedSkuId
+    ? skus.find((s) => s.id === effectiveSelectedSkuId) || null
     : null;
 
   const categories = useMemo(() => {
@@ -68,30 +69,13 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
     return cats.sort();
   }, [skus]);
 
-  // Content stats
-  const contentStats = useMemo(() => {
-    const visual = generations.filter(
-      (g) =>
-        ['product_render', 'still_life', 'editorial', 'tryon', 'video'].includes(g.generation_type) &&
-        g.status === 'completed'
-    );
-    return {
-      total: visual.length,
-      ecommerce: visual.filter((g) => g.generation_type === 'product_render').length,
-      stillLife: visual.filter((g) => g.generation_type === 'still_life').length,
-      editorial: visual.filter((g) => g.generation_type === 'editorial').length,
-      video: visual.filter((g) => g.generation_type === 'video').length,
-    };
-  }, [generations]);
-
-  // Get story name for a SKU
   const storyNameForSku = (sku: SKU) => {
     const storyId = (sku as SKU & { story_id?: string }).story_id;
     if (!storyId) return null;
     return stories.find((s) => s.id === storyId)?.name || null;
   };
 
-  // Per-SKU content level status dots
+  // 4-level content readiness used to render the dot strip on each SKU card.
   const skuContentStatus = (sku: SKU) => {
     const has3d = !!sku.render_urls?.['3d'];
     const skuGens = generations.filter(
@@ -119,232 +103,236 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
 
   const loading = skusLoading || gensLoading;
 
-  /* ── Collapsed card ── */
-  if (!expanded) {
-    return (
-      <button
-        onClick={() => setExpanded(true)}
-        className="group relative bg-white p-10 lg:p-12 border border-carbon/[0.06] flex flex-col min-h-[340px] hover:shadow-lg transition-all duration-300 text-left w-full"
-      >
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
-            <Palette className="h-5 w-5 text-carbon/40 group-hover:text-carbon/70 transition-colors" />
-          </div>
-          <div>
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25 mb-1">
-              {t.marketingPage.contentStudioLabel || 'CONTENT'}
-            </p>
-            <h3 className="text-xl md:text-2xl font-light text-carbon tracking-tight leading-[1.15]">
-              {t.marketingPage.contentStudioTitle || 'Content Studio'}
-            </h3>
-          </div>
-        </div>
-        <p className="text-sm font-light text-carbon/45 leading-relaxed flex-1">
-          {t.marketingPage.contentStudioDesc || 'Visual content pipeline per SKU: e-commerce packshots, still life, editorial lookbook, and campaign shoots.'}
-        </p>
-
-        <div className="mt-6 pt-6 border-t border-carbon/[0.06]">
-          {loading ? (
-            <p className="text-xs text-carbon/30">{t.common?.loading || 'Loading...'}</p>
-          ) : contentStats.total > 0 ? (
-            <div className="flex items-center gap-4">
-              <span className="text-2xl font-light text-carbon">{contentStats.total}</span>
-              <span className="text-xs text-carbon/40">{t.marketingPage.assetsCreated || 'assets created'}</span>
-            </div>
-          ) : (
-            <p className="text-xs text-carbon/20 tracking-wide">{t.marketingPage.noContentYet || 'No content yet'}</p>
-          )}
-        </div>
-
-        <div className="mt-6 flex items-center justify-center gap-2 bg-carbon text-white rounded-full py-2.5 px-6 text-[11px] font-medium uppercase tracking-[-0.01em] group-hover:bg-carbon/90 transition-colors">
-          {t.marketingPage.open || 'OPEN'}
-        </div>
-      </button>
-    );
-  }
-
-  /* ── Expanded view ── */
   return (
-    <div className="fixed inset-0 z-50 bg-crema overflow-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-crema/95 backdrop-blur border-b border-carbon/[0.06]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div className="space-y-5">
+      {/* Error banner */}
+      {errorMessage && (
+        <div className="flex items-center justify-between gap-4 px-5 py-4 rounded-[16px] bg-[#A0463C]/[0.04] border border-[#A0463C]/20">
+          <span className="text-[12px] text-[#A0463C] font-medium">{errorMessage}</span>
           <button
-            onClick={() => setExpanded(false)}
-            className="flex items-center gap-2 text-sm font-light text-carbon/60 hover:text-carbon transition-colors"
+            onClick={() => setErrorMessage(null)}
+            className="text-[#A0463C]/60 hover:text-[#A0463C] transition-colors"
+            aria-label="Dismiss"
           >
-            <ChevronLeft className="h-4 w-4" />
-            {t.marketingPage.backToCreation || 'Back'}
+            <X className="h-4 w-4" />
           </button>
-          <div className="text-center">
-            <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-carbon/25">
-              {t.marketingPage.contentStudioLabel || 'CONTENT'}
-            </p>
-            <h2 className="text-lg font-light text-carbon tracking-tight">
-              {t.marketingPage.contentStudioTitle || 'Content Studio'}
-            </h2>
-          </div>
-          <div className="w-32" />
         </div>
-      </div>
+      )}
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Error banner */}
-        {errorMessage && (
-          <div className="mb-6 bg-amber-50 border border-amber-200/60 text-amber-900 px-4 py-3 text-xs font-light flex items-center justify-between">
-            <span>{errorMessage}</span>
-            <button onClick={() => setErrorMessage(null)} className="text-amber-900/60 hover:text-amber-900 text-[10px] uppercase tracking-[0.1em]">×</button>
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 items-start">
+        {/* ═══ SKU Library (left) ═══ */}
+        <aside className="bg-white rounded-[20px] p-5 space-y-4 sticky top-24 max-h-[calc(100vh-140px)] overflow-hidden flex flex-col">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-carbon/30 pointer-events-none" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={m.searchSkus || 'Search SKUs…'}
+              className="w-full pl-11 pr-4 py-3 text-[13px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:outline-none focus:border-carbon/20 transition-colors placeholder:text-carbon/30"
+            />
           </div>
-        )}
 
-        <div className="flex gap-6">
-          {/* ── SKU List (left sidebar) ── */}
-          <div className="w-72 flex-shrink-0">
-            {/* Search */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-carbon/25" />
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t.marketingPage.searchSkus || 'Search SKUs...'}
-                className="w-full pl-9 pr-3 py-2 text-xs font-light text-carbon bg-white border border-carbon/[0.06] focus:outline-none focus:border-carbon/20"
-              />
-            </div>
-
-            {/* Category filter */}
-            <div className="flex gap-1 mb-3 flex-wrap">
+          {/* Category pills */}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setCategoryFilter('ALL')}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
+                categoryFilter === 'ALL'
+                  ? 'bg-carbon text-white'
+                  : 'bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08]'
+              }`}
+            >
+              {(t as unknown as { common?: { all?: string } }).common?.all || 'All'}
+            </button>
+            {categories.map((cat) => (
               <button
-                onClick={() => setCategoryFilter('ALL')}
-                className={`px-2 py-1 text-[9px] font-medium uppercase tracking-[0.08em] border transition-colors ${
-                  categoryFilter === 'ALL'
-                    ? 'bg-carbon text-white border-carbon'
-                    : 'bg-white text-carbon/40 border-carbon/[0.06] hover:text-carbon/70'
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-[-0.01em] transition-colors ${
+                  categoryFilter === cat
+                    ? 'bg-carbon text-white'
+                    : 'bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08]'
                 }`}
               >
-                {t.common?.all || 'All'}
+                {cat}
               </button>
-              {categories.map((cat) => (
+            ))}
+          </div>
+
+          {/* SKU list */}
+          <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 space-y-1.5 pb-1">
+            {loading && filteredSkus.length === 0 && (
+              <p className="text-[12px] text-carbon/30 text-center py-8">
+                {(t as unknown as { common?: { loading?: string } }).common?.loading || 'Loading…'}
+              </p>
+            )}
+            {!loading && filteredSkus.length === 0 && (
+              <p className="text-[12px] text-carbon/30 italic text-center py-8">
+                {m.noSkusFound || 'No SKUs match your filters'}
+              </p>
+            )}
+            {filteredSkus.map((sku) => {
+              const status = skuContentStatus(sku);
+              const storyName = storyNameForSku(sku);
+              const isSelected = effectiveSelectedSkuId === sku.id;
+              const thumb =
+                sku.render_urls?.['3d'] ||
+                sku.render_url ||
+                sku.reference_image_url;
+
+              return (
                 <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`px-2 py-1 text-[9px] font-medium uppercase tracking-[0.08em] border transition-colors ${
-                    categoryFilter === cat
-                      ? 'bg-carbon text-white border-carbon'
-                      : 'bg-white text-carbon/40 border-carbon/[0.06] hover:text-carbon/70'
+                  key={sku.id}
+                  onClick={() => setSelectedSkuId(sku.id)}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-[14px] text-left transition-all ${
+                    isSelected
+                      ? 'bg-carbon text-white'
+                      : 'bg-transparent hover:bg-carbon/[0.04] text-carbon'
                   }`}
                 >
-                  {cat}
-                </button>
-              ))}
-            </div>
+                  {/* Thumbnail */}
+                  <div className={`relative w-12 h-12 rounded-[10px] overflow-hidden flex-shrink-0 ${
+                    isSelected ? 'bg-white/10' : 'bg-carbon/[0.04]'
+                  }`}>
+                    {thumb ? (
+                      <img src={thumb} alt={sku.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Camera className={`absolute inset-0 m-auto h-4 w-4 ${isSelected ? 'text-white/30' : 'text-carbon/15'}`} />
+                    )}
+                  </div>
 
-            {/* SKU list */}
-            <div className="space-y-1 max-h-[calc(100vh-250px)] overflow-y-auto">
-              {filteredSkus.map((sku) => {
-                const status = skuContentStatus(sku);
-                const storyName = storyNameForSku(sku);
-                const isSelected = selectedSkuId === sku.id;
-                const thumb = sku.render_urls?.['3d'] || sku.render_url || sku.reference_image_url;
-
-                return (
-                  <button
-                    key={sku.id}
-                    onClick={() => setSelectedSkuId(sku.id)}
-                    className={`w-full flex items-center gap-3 p-2.5 border transition-all text-left ${
-                      isSelected
-                        ? 'bg-carbon/[0.04] border-carbon/20'
-                        : 'bg-white border-carbon/[0.06] hover:border-carbon/15'
-                    }`}
-                  >
-                    {/* Thumbnail */}
-                    <div className="w-10 h-10 bg-carbon/[0.03] border border-carbon/[0.04] flex-shrink-0 overflow-hidden">
-                      {thumb ? (
-                        <img src={thumb} alt={sku.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <Camera className="w-full h-full p-2 text-carbon/10" />
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[12px] font-semibold tracking-[-0.01em] truncate ${
+                      isSelected ? 'text-white' : 'text-carbon'
+                    }`}>
+                      {sku.name}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className={`text-[9px] font-medium tracking-[0.08em] uppercase ${
+                        isSelected ? 'text-white/60' : 'text-carbon/40'
+                      }`}>
+                        {sku.category}
+                      </span>
+                      {storyName && (
+                        <span className={`text-[9px] truncate italic ${
+                          isSelected ? 'text-white/45' : 'text-carbon/30'
+                        }`}>
+                          {storyName}
+                        </span>
                       )}
                     </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-light text-carbon truncate">{sku.name}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[8px] text-carbon/25 uppercase tracking-wider">{sku.category}</span>
-                        {storyName && (
-                          <span className="text-[8px] text-carbon/20 italic truncate">{storyName}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Status dots (4 levels) */}
-                    <div className="flex gap-0.5 flex-shrink-0">
-                      <div className={`w-1.5 h-1.5 rounded-full ${status.ecommerce ? 'bg-carbon' : 'bg-carbon/10'}`} />
-                      <div className={`w-1.5 h-1.5 rounded-full ${status.stillLife ? 'bg-carbon' : 'bg-carbon/10'}`} />
-                      <div className={`w-1.5 h-1.5 rounded-full ${status.editorial ? 'bg-carbon' : 'bg-carbon/10'}`} />
-                      <div className={`w-1.5 h-1.5 rounded-full ${status.campaign ? 'bg-carbon' : 'bg-carbon/10'}`} />
-                    </div>
-                  </button>
-                );
-              })}
-
-              {filteredSkus.length === 0 && !loading && (
-                <p className="text-xs text-carbon/20 italic text-center py-8">
-                  {t.marketingPage.noSkusFound || 'No SKUs found'}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* ── Content area (right) ── */}
-          <div className="flex-1 min-w-0">
-            {selectedSku ? (
-              <div className="space-y-4">
-                {/* SKU header */}
-                <div className="flex items-center gap-4 mb-2">
-                  {selectedSku.render_urls?.['3d'] && (
-                    <div className="w-16 h-16 bg-white border border-carbon/[0.06] overflow-hidden flex-shrink-0">
-                      <img src={selectedSku.render_urls['3d']} alt="" className="w-full h-full object-contain" />
-                    </div>
-                  )}
-                  <div>
-                    <h3 className="text-lg font-light text-carbon tracking-tight">{selectedSku.name}</h3>
-                    <p className="text-[10px] text-carbon/30 uppercase tracking-wider">
-                      {selectedSku.category} · {selectedSku.family} · €{selectedSku.pvp}
-                    </p>
                   </div>
-                </div>
 
-                {/* Evolution Strip */}
-                <ContentEvolutionStrip
-                  sku={selectedSku}
-                  collectionPlanId={collectionPlanId}
-                  generations={generations}
-                  onToggleFavorite={handleToggleFavorite}
-                  onDeleteGeneration={handleDeleteGeneration}
-                  onLightbox={setLightboxUrl}
-                  onError={setErrorMessage}
-                  onRefetchGenerations={refetchGenerations}
-                />
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full min-h-[400px] text-carbon/20 text-sm font-light">
-                {t.marketingPage.selectSkuPrompt || 'Select a SKU from the list to view its content pipeline'}
-              </div>
-            )}
+                  {/* 4-level status dots */}
+                  <div className="flex gap-1 flex-shrink-0">
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      status.ecommerce
+                        ? (isSelected ? 'bg-white' : 'bg-carbon')
+                        : (isSelected ? 'bg-white/20' : 'bg-carbon/15')
+                    }`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      status.stillLife
+                        ? (isSelected ? 'bg-white' : 'bg-carbon')
+                        : (isSelected ? 'bg-white/20' : 'bg-carbon/15')
+                    }`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      status.editorial
+                        ? (isSelected ? 'bg-white' : 'bg-carbon')
+                        : (isSelected ? 'bg-white/20' : 'bg-carbon/15')
+                    }`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      status.campaign
+                        ? (isSelected ? 'bg-white' : 'bg-carbon')
+                        : (isSelected ? 'bg-white/20' : 'bg-carbon/15')
+                    }`} />
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        </div>
+        </aside>
+
+        {/* ═══ Detail (right) ═══ */}
+        <section className="bg-white rounded-[20px] p-8 md:p-10 min-h-[600px]">
+          {selectedSku ? (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex items-center gap-5 pb-6 border-b border-carbon/[0.06]">
+                {selectedSku.render_urls?.['3d'] ? (
+                  <div className="w-20 h-20 rounded-[14px] bg-carbon/[0.04] overflow-hidden flex-shrink-0">
+                    <img
+                      src={selectedSku.render_urls['3d']}
+                      alt={selectedSku.name}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 rounded-[14px] bg-carbon/[0.04] flex items-center justify-center flex-shrink-0">
+                    <Camera className="h-7 w-7 text-carbon/15" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-tight truncate">
+                    {selectedSku.name}
+                  </h2>
+                  <p className="text-[12px] text-carbon/45 tracking-[-0.01em] mt-1">
+                    <span className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/35">
+                      {selectedSku.category}
+                    </span>
+                    {' · '}
+                    {selectedSku.family}
+                    {selectedSku.pvp ? ` · €${selectedSku.pvp}` : ''}
+                  </p>
+                </div>
+              </div>
+
+              {/* Content evolution strip */}
+              <ContentEvolutionStrip
+                sku={selectedSku}
+                collectionPlanId={collectionPlanId}
+                generations={generations}
+                onToggleFavorite={handleToggleFavorite}
+                onDeleteGeneration={handleDeleteGeneration}
+                onLightbox={setLightboxUrl}
+                onError={setErrorMessage}
+                onRefetchGenerations={refetchGenerations}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[500px] text-center">
+              <div className="w-16 h-16 rounded-full bg-carbon/[0.04] flex items-center justify-center mb-5">
+                <Camera className="h-7 w-7 text-carbon/25" />
+              </div>
+              <p className="text-[14px] text-carbon/45 max-w-[340px] leading-relaxed">
+                {m.selectSkuPrompt ||
+                  'Select a SKU from the library to view its visual content pipeline.'}
+              </p>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* Lightbox */}
       {lightboxUrl && (
         <div
-          className="fixed inset-0 z-[60] bg-carbon/80 flex items-center justify-center p-8"
+          className="fixed inset-0 z-[60] bg-carbon/85 backdrop-blur-sm flex items-center justify-center p-8"
           onClick={() => setLightboxUrl(null)}
         >
-          <button onClick={() => setLightboxUrl(null)} className="absolute top-6 right-6 text-white/80 hover:text-white">
-            <X className="h-6 w-6" />
+          <button
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
           </button>
-          <img src={lightboxUrl} alt="Preview" className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} />
+          <img
+            src={lightboxUrl}
+            alt="Preview"
+            className="max-w-full max-h-full object-contain rounded-[12px]"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
