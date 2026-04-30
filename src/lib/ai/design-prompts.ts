@@ -82,7 +82,44 @@ Return:
       };
 
     case 'color-suggest': {
-      const sanzoContext = formatPalettesForPrompt(8);
+      // Two seeds:
+      //   - "manual" : user picked 3 hex anchors → palette must be built around them.
+      //   - "wada"   : no user input → fall back to the Sanzo Wada dictionary.
+      const seedColorsRaw = (input.manualSeedColors as string | undefined)?.trim() || '';
+      const isManualSeed = seedColorsRaw.length > 0;
+
+      // input.zones arrives as a JSON-serialised list (the design-generate API
+      // collapses inputs to Record<string, string>). Parse defensively.
+      let zonesList: { id?: string; name: string; semanticRole?: string; description?: string }[] = [];
+      try {
+        const raw = (input.zones as string | undefined) || '';
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) zonesList = parsed;
+        }
+      } catch { /* zones optional — fall through to instruction-only */ }
+
+      const zonesBlock = zonesList.length
+        ? zonesList
+            .map((z, i) =>
+              `  ${i + 1}. ${z.name}${z.semanticRole ? ` [${z.semanticRole}]` : ''}${
+                z.description ? ` — ${z.description}` : ''
+              }`,
+            )
+            .join('\n')
+        : '  (no zones provided — return one entry per major part of this product)';
+
+      const seedBlock = isManualSeed
+        ? `THE USER HAS LOCKED THESE THREE COLORS AS THE PALETTE FOUNDATION:
+${seedColorsRaw}
+
+You MUST build all 4 proposals around these exact hex values. Each proposal uses these 3 colors as anchors — you decide how to distribute them across the zones above (which one becomes the identity, which the structural ground, which the accent), and you may add neutral support colors (white, off-white, black, cream) where the product needs more than 3 distinct zones. Do NOT substitute the anchor hex values; they are non-negotiable. Do NOT pull from Sanzo Wada — the user has already picked the palette.`
+        : `THE PALETTE FOUNDATION IS SANZO WADA:
+
+${formatPalettesForPrompt(8)}
+
+Base each of the 4 proposals on a different Wada palette above, adapting hex values for material feasibility while preserving the HARMONY of the original combination.`;
+
       return {
         temperature: 0.75,
         system: `${PERSONAS.designConsultant}
@@ -95,38 +132,41 @@ The user needs colorway options for a specific product:
 - Design direction: ${input.designDirection || 'not specified'}
 - Season: ${input.season || 'current season'}
 
-${sanzoContext}
+PRODUCT ZONES TO COLOR (assign one hex per zone, every zone in every proposal):
+${zonesBlock}
 
-YOUR TASK: Generate 4 colorway proposals. Each colorway has EXACTLY 3 colors for the product zones.
+${seedBlock}
 
-COLOR STRUCTURE PER COLORWAY:
-• Color 1 (UPPER/BODY) — the dominant identity color. This defines the product's character.
-• Color 2 (MIDSOLE/STRUCTURAL) — must contrast with the upper. Use lighter or neutral tones: white, cream, bone, gum, light gray. This grounds the product visually.
-• Color 3 (ACCENTS/DETAILS) — tongue, heel counter, lining, branding. Creates the "pop" or the tonal story.
+YOUR TASK: Generate 4 colorway proposals. Each proposal must include a hex value for EVERY zone listed above — do not skip zones, do not collapse them.
 
 MANDATORY RULES:
-1. SANZO WADA INSPIRED — Base each proposal on one of the reference palettes above, adapting it to the product. You may adjust hex values to better fit the material/product, but keep the HARMONY of the original Wada combination.
-2. MIDSOLE MUST CONTRAST — Color 2 (midsole/structural zone) must be clearly lighter or darker than Color 1. NEVER the same tone as the upper. Preferred midsole colors: white (#FFFFFF), cream (#F5F0E6), bone (#E8DFD0), gum (#D4C9B0), black (#2B2B2B).
-3. VISUAL DIVERSITY — The 4 proposals must cover different moods: one warm/earthy, one cool/modern, one bold/statement, one neutral/commercial.
-4. EACH COLORWAY MUST LOOK BEAUTIFUL WHEN COLORIZED ON A SKETCH — imagine how it will render: if all 3 colors are dark, the sketch will be a dark blob. Avoid this.
-5. PRODUCTION FEASIBILITY — Hex codes that translate to real dyeable/achievable colors on the specified material.
+1. ZONE-BY-ZONE MAPPING — For every zone, return its assigned hex AND a 4–10 word rationale explaining why that color fits that specific zone (e.g. "echoes the upper for monochrome calm", "neutral ground for the bold vamp"). The rationale is what proves you actually thought about each zone.
+2. SEMANTIC LOGIC — Respect the role tag on each zone. Identity zones get the dominant color. Structural zones contrast with identity. Accents pop. Neutral zones recede. Hardware reads metallic or matches branding.
+3. ${isManualSeed ? 'USER-LOCKED HEX — The 3 anchor colors above must each appear in every proposal. The proposal is a different *distribution* of the same locked palette across zones, not a different palette.' : 'WADA HARMONY — Each proposal pulls from a different Wada palette above. Preserve that palette’s harmony when adapting.'}
+4. PRINTABLE ON A SKETCH — Imagine the result colorized on a black-and-white drawing. If three adjacent zones share the same hex the sketch becomes mush. Vary tone across adjacent zones.
+5. VISUAL DIVERSITY ACROSS PROPOSALS — The 4 proposals must feel meaningfully different from each other (mood, distribution, contrast). Not 4 variants of the same combo.
+6. PRODUCTION FEASIBILITY — Hex codes must translate to real dyeable colors on the implied material.
 
 ${QUALITY_GATES.designSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Return:
+Return ONLY valid JSON, no preamble:
 {
   "colorways": [
     {
-      "name": "Colorway Name (2-3 words, evocative — Wada-inspired naming style)",
-      "colors": ["#hex_upper", "#hex_midsole", "#hex_accent"],
-      "description": "20-35 words: the color story inspired by Wada's harmony principles — why these colors together, what world they evoke",
-      "primary": "#hex_dominant_color",
-      "commercialRole": "core" or "seasonal" or "statement" or "versatile"
+      "name": "Colorway Name (2-3 words, evocative)",
+      "description": "20-35 words: the color story — why these colors together, what world they evoke",
+      "primary": "#hex_dominant",
+      "commercialRole": "core" | "seasonal" | "statement" | "versatile",
+      "zoneAssignments": [
+        { "zoneName": "exact zone name from list above", "hex": "#XXXXXX", "rationale": "4-10 words why this color on this zone" }
+      ]
     }
   ]
-}`,
+}
+
+The "zoneAssignments" array MUST contain one entry per zone listed above, in the same order. No exceptions.`,
       };
     }
 

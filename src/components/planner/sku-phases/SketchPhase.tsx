@@ -74,7 +74,32 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [sketchTopView, setSketchTopView] = useState<string | null>(sku.sketch_top_url || null);
   const firstCwId = colorways.filter(c => c.sku_id === sku.id)[0]?.id || null;
   const [expandedCw, setExpandedCw] = useState<string | null>(firstCwId);
-  const [aiColorways, setAiColorways] = useState<{ name: string; colors: string[]; description: string; primary: string; commercialRole: string }[] | null>(null);
+
+  // ── Color step v2: zone-aware proposals ──
+  // Each proposal carries an explicit zoneAssignments map (zoneName → hex) that
+  // the AI returned. The frontend distributes them 1:1 (no % 3 modulus).
+  type ZoneAssignment = { zoneName: string; hex: string; rationale?: string };
+  type AiColorway = {
+    name: string;
+    description: string;
+    primary: string;
+    commercialRole: string;
+    zoneAssignments: ZoneAssignment[];
+    colorizedUrl?: string | null;
+    colorizing?: boolean;
+  };
+  type DetectedZone = {
+    id: string;
+    name: string;
+    defaultHex: string;
+    semanticRole: 'identity' | 'structural' | 'accent' | 'neutral' | 'hardware';
+    description: string;
+  };
+  const [aiColorways, setAiColorways] = useState<AiColorway[] | null>(null);
+  const [detectedZones, setDetectedZones] = useState<DetectedZone[] | null>(null);
+  const [detectingZones, setDetectingZones] = useState(false);
+  const [paletteMode, setPaletteMode] = useState<'wada' | 'manual'>('wada');
+  const [seedColors, setSeedColors] = useState<[string, string, string]>(['#B22222', '#F5F0E6', '#2B2B2B']);
 
 
   // Zone Editor (no state needed — renders immediately when sketch exists)
@@ -177,10 +202,55 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const callDesignAI = useCallback(async (type: string, input: Record<string, string>) => {
     const res = await fetch('/api/ai/design-generate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, input, language }),
+      body: JSON.stringify({ type, input, language, collectionPlanId }),
     });
     return res.ok ? (await res.json()).result : null;
-  }, [language]);
+  }, [language, collectionPlanId]);
+
+  // ── Auto-detect product zones when the user enters the colorways step ──
+  // Idempotent: only fires once per SKU per session, and only when there's a
+  // sketch + product info to seed the call. The user can edit/add/delete
+  // zones afterwards from the UI.
+  useEffect(() => {
+    if (activeStep !== 1) return;
+    if (detectedZones || detectingZones) return;
+    if (!sku.name && !sku.family) return;
+    let cancelled = false;
+    (async () => {
+      setDetectingZones(true);
+      try {
+        const res = await fetch('/api/ai/zones/detect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productName: sku.name,
+            family: sku.family,
+            category: sku.category,
+          }),
+        });
+        if (!res.ok) throw new Error('zones detect failed');
+        const json = await res.json();
+        if (!cancelled && Array.isArray(json.zones) && json.zones.length > 0) {
+          setDetectedZones(json.zones);
+        }
+      } catch {
+        // Fallback: use the hardcoded category template so the step is still usable.
+        if (!cancelled) {
+          const fallback = getDefaultZones(sku.category).map((z, i) => ({
+            id: `zone-${i}`,
+            name: z.zone,
+            defaultHex: z.defaultHex,
+            semanticRole: (i === 0 ? 'identity' : i < 3 ? 'structural' : 'accent') as DetectedZone['semanticRole'],
+            description: z.description,
+          }));
+          setDetectedZones(fallback);
+        }
+      } finally {
+        if (!cancelled) setDetectingZones(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeStep, sku.id, sku.name, sku.family, sku.category, detectedZones, detectingZones]);
 
   return (
     <div className="h-full flex flex-col gap-4">
@@ -512,46 +582,109 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             updateColorway(cwId, { zones } as Partial<SkuColorway>);
           };
 
-          // Colorize function — shared between manual description and AI proposals
-          const colorizeProposals = async (colorways: any[]) => {
-            const proposals = colorways.map((cw: any) => ({ ...cw, colorizedUrl: null }));
-            setAiColorways(proposals);
+          // Effective zone list for proposals: prefer AI-detected, fall back to category template.
+          const effectiveZones: { name: string; hex: string; semanticRole?: string; description?: string }[] =
+            (detectedZones && detectedZones.length > 0)
+              ? detectedZones.map(z => ({ name: z.name, hex: z.defaultHex, semanticRole: z.semanticRole, description: z.description }))
+              : defaultZones.map(z => ({ name: z.zone, hex: z.defaultHex, description: z.description }));
 
-            if (sku.sketch_url) {
-              const promises = proposals.slice(0, 4).map(async (cw: any, i: number) => {
-                try {
-                  const zoneColors = defaultZones.map((z, zi) => ({ zone: z.zone, hex: cw.colors[zi % cw.colors.length] || z.defaultHex }));
-                  const res = await fetch('/api/ai/colorize-sketch', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      sketch_url: sku.sketch_url,
-                      colorway_name: cw.name,
-                      color_description: cw.description,
-                      zone_colors: zoneColors,
-                      category: sku.category,
-                      product_name: sku.name,
-                      family: sku.family,
-                      collectionPlanId,
-                    }),
-                  });
-                  if (res.ok) {
-                    const { imageUrl } = await res.json();
-                    if (imageUrl) {
-                      setAiColorways(prev => prev?.map((p: any, pi: number) => pi === i ? { ...p, colorizedUrl: imageUrl } : p) || null);
-                    }
-                  }
-                } catch { /* colorization failed — show swatches only */ }
+          // Colorize a single proposal against the current sketch using its
+          // zoneAssignments (zone → hex). Used both for initial generation and
+          // for the "Re-colorize" button after editing a hex on a card.
+          const colorizeOne = async (idx: number, cw: AiColorway) => {
+            if (!sku.sketch_url) return;
+            setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: true, colorizedUrl: null } : p) || null);
+            try {
+              const zone_colors = (cw.zoneAssignments || []).map(za => ({ zone: za.zoneName, hex: za.hex }));
+              const res = await fetch('/api/ai/colorize-sketch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  sketch_url: sku.sketch_url,
+                  colorway_name: cw.name,
+                  color_description: cw.description,
+                  zone_colors,
+                  category: sku.category,
+                  product_name: sku.name,
+                  family: sku.family,
+                  collectionPlanId,
+                }),
               });
-              await Promise.all(promises);
+              if (res.ok) {
+                const { imageUrl } = await res.json();
+                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizedUrl: imageUrl, colorizing: false } : p) || null);
+              } else {
+                setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
+              }
+            } catch {
+              setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizing: false } : p) || null);
+            }
+          };
+
+          const colorizeAll = async (proposals: AiColorway[]) => {
+            const next = proposals.map(p => ({ ...p, colorizedUrl: null, colorizing: !!sku.sketch_url }));
+            setAiColorways(next);
+            if (!sku.sketch_url) return;
+            await Promise.all(next.slice(0, 4).map((p, i) => colorizeOne(i, p)));
+          };
+
+          // Edit a single zone's hex on a single proposal (before Accept).
+          const updateProposalZoneHex = (idx: number, zoneName: string, hex: string) => {
+            setAiColorways(prev => prev?.map((p, pi) => {
+              if (pi !== idx) return p;
+              const zoneAssignments = (p.zoneAssignments || []).map(za => za.zoneName === zoneName ? { ...za, hex } : za);
+              return { ...p, zoneAssignments };
+            }) || null);
+          };
+
+          // Detected-zone management (Confirm Zones bar) — rename / add / delete.
+          const renameDetectedZone = (id: string, name: string) => {
+            setDetectedZones(prev => prev?.map(z => z.id === id ? { ...z, name } : z) || null);
+          };
+          const removeDetectedZone = (id: string) => {
+            setDetectedZones(prev => prev?.filter(z => z.id !== id) || null);
+          };
+          const addDetectedZone = () => {
+            setDetectedZones(prev => [
+              ...(prev || []),
+              { id: `custom-${Date.now()}`, name: 'New zone', defaultHex: '#808080', semanticRole: 'accent', description: '' },
+            ]);
+          };
+
+          const launchGenerate = async () => {
+            const zonesPayload = effectiveZones.map(z => ({ name: z.name, semanticRole: z.semanticRole, description: z.description }));
+            const input: Record<string, string> = {
+              productType: sku.category,
+              family: sku.family,
+              concept: sku.notes || '',
+              designDirection: notes || sku.notes || '',
+              zones: JSON.stringify(zonesPayload),
+            };
+            if (paletteMode === 'manual') {
+              input.manualSeedColors = seedColors.join(', ');
+            }
+            setGenerating(true);
+            try {
+              const result = await callDesignAI('color-suggest', input);
+              if (result?.colorways && result.colorways.length > 0) {
+                setGenerating(false);
+                await colorizeAll(result.colorways as AiColorway[]);
+              } else {
+                toast(stepLabel('noColorwaysReturned') || 'No colorways returned — try again', 'warning');
+                setGenerating(false);
+              }
+            } catch (err) {
+              console.error('[ColorGenerate]', err);
+              toast(stepLabel('failedColorways') || 'Failed to generate colorways', 'error');
+              setGenerating(false);
             }
           };
 
           return (
-          <div className="space-y-4">
-            {/* Sketch + color direction */}
+          <div className="space-y-5">
+            {/* ── Sketch + Confirm zones panel ── */}
             <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-start">
-              {/* Sketch preview — prominent */}
+              {/* Sketch preview */}
               {sku.sketch_url ? (
                 <div className="space-y-1.5">
                   <p className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('currentSketch') || 'Sketch'}</p>
@@ -565,81 +698,110 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 </div>
               )}
 
-              {/* Color input */}
-              <div className="space-y-3">
-                {mode === 'free' ? (
-                  /* MANUAL: describe colors → AI generates 4 options */
-                  <div className="space-y-3">
-                    <p className="text-[11px] text-carbon/40 leading-relaxed">
-                      {'Describe the colors you want for this product. Aimily will generate 4 colorized versions of your sketch based on your description.'}
+              {/* Right column: Confirm zones + Path picker + Generate */}
+              <div className="space-y-5">
+                {/* ── Confirm zones (always visible — auto-detected, editable) ── */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/45">
+                      {stepLabel('confirmZones') || 'Zones detected for this product'}
                     </p>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      onBlur={() => { if (notes !== (sku.notes || '')) onUpdate({ notes }); }}
-                      placeholder={'e.g. "Black leather upper with white midsole and red accents on the tongue"'}
-                      className="w-full h-20 p-3 bg-white border border-carbon/[0.06] text-[12px] font-light text-carbon resize-none focus:outline-none focus:border-carbon/[0.12]"
-                    />
-                    <button onClick={async () => {
-                    if (!notes.trim()) {
-                      toast(stepLabel('describeFirst') || 'Describe the colors you want first', 'warning');
-                      return;
-                    }
-                    setGenerating(true);
-                    try {
-                      const result = await callDesignAI('color-suggest', {
-                        productType: sku.category, family: sku.family,
-                        concept: notes,
-                        designDirection: notes,
-                      });
-                      if (result?.colorways && result.colorways.length > 0) {
-                        // Show cards immediately, colorize in background
-                        setGenerating(false);
-                        colorizeProposals(result.colorways);
-                      } else {
-                        toast('No colorways returned — try a more detailed description', 'warning');
-                        setGenerating(false);
-                      }
-                    } catch (err) {
-                      console.error('[ManualColor]', err);
-                      toast('Failed to generate colorways', 'error');
-                      setGenerating(false);
-                    }
-                  }} disabled={generating || !notes.trim()}
-                    className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-30 self-end">
-                    {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {stepLabel('generateColors') || 'Generate'}
-                  </button>
-                  </div>
-                ) : (
-                  /* AI: auto-propose colorways freely */
-                  <div className="space-y-3">
-                    {!aiColorways && !generating && (
-                      <>
-                        <p className="text-[11px] text-carbon/40 leading-relaxed">
-                          {stepLabel('aiColorProposalDesc') || 'Aimily will propose colorway combinations inspired by Sanzo Wada and colorize your sketch with each one.'}
-                        </p>
-                        <button onClick={async () => {
-                          setGenerating(true);
-                          try {
-                            const result = await callDesignAI('color-suggest', { productType: sku.category, family: sku.family, concept: sku.notes || '' });
-                            if (result?.colorways) {
-                              setGenerating(false);
-                              colorizeProposals(result.colorways);
-                            } else {
-                              setGenerating(false);
-                            }
-                          } catch {
-                            setGenerating(false);
-                          }
-                        }} disabled={generating} className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.08] text-carbon/50 text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30">
-                          <Sparkles className="h-3 w-3" />
-                          {stepLabel('proposeColorways') || 'Propose Colorways'}
-                        </button>
-                      </>
+                    {detectingZones && (
+                      <span className="flex items-center gap-1.5 text-[10px] text-carbon/35">
+                        <Loader2 className="h-3 w-3 animate-spin" /> {stepLabel('detectingZones') || 'Detecting…'}
+                      </span>
                     )}
                   </div>
-                )}
+                  {!detectingZones && effectiveZones.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {(detectedZones || []).map(z => (
+                        <span key={z.id}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-carbon/[0.04] text-[11px] text-carbon/70">
+                          <input
+                            value={z.name}
+                            onChange={(e) => renameDetectedZone(z.id, e.target.value)}
+                            className="bg-transparent text-[11px] focus:outline-none w-auto"
+                            style={{ width: `${Math.max(z.name.length, 4) * 7}px` }}
+                          />
+                          <span className="text-[8px] text-carbon/30 uppercase tracking-wider">{z.semanticRole}</span>
+                          <button onClick={() => removeDetectedZone(z.id)} className="text-carbon/20 hover:text-[#A0463C]/60">
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      ))}
+                      <button onClick={addDetectedZone}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-dashed border-carbon/[0.15] text-[11px] text-carbon/40 hover:border-carbon/35 hover:text-carbon/70">
+                        <Plus className="h-2.5 w-2.5" /> {stepLabel('addZone') || 'Add zone'}
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-carbon/35 leading-relaxed">
+                    {stepLabel('zonesHelp') || 'These are the parts the AI will color. Rename or remove anything that doesn’t apply to your product.'}
+                  </p>
+                </div>
+
+                {/* ── Path picker: Sanzo Wada vs Your colors ── */}
+                <div className="space-y-3">
+                  <SegmentedPill
+                    options={[
+                      { id: 'wada', label: stepLabel('pathWada') || 'Sanzo Wada inspiration' },
+                      { id: 'manual', label: stepLabel('pathManual') || 'Your colors' },
+                    ]}
+                    value={paletteMode}
+                    onChange={(v) => setPaletteMode(v as 'wada' | 'manual')}
+                  />
+
+                  {paletteMode === 'wada' ? (
+                    <p className="text-[11px] text-carbon/40 leading-relaxed">
+                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose 4 colorway combinations inspired by Sanzo Wada and colorize your sketch with each one.'}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-[11px] text-carbon/40 leading-relaxed">
+                        {stepLabel('manualSeedDesc') || 'Pick 3 colors. Aimily will generate 4 colorways using exactly these hex values, distributing them across the zones above.'}
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['primary', 'secondary', 'tertiary'] as const).map((label, i) => (
+                          <div key={label} className="space-y-1">
+                            <p className="text-[9px] tracking-[0.1em] uppercase text-carbon/35">
+                              {stepLabel(`seed${label.charAt(0).toUpperCase() + label.slice(1)}`) || label}
+                            </p>
+                            <div className="relative h-10 rounded-[8px] border border-carbon/[0.08] overflow-hidden cursor-pointer"
+                              style={{ backgroundColor: seedColors[i] }}>
+                              <input type="color" value={seedColors[i]}
+                                onChange={(e) => {
+                                  const next = [...seedColors] as [string, string, string];
+                                  next[i] = e.target.value;
+                                  setSeedColors(next);
+                                }}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                            </div>
+                            <input type="text" value={seedColors[i]}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) {
+                                  const next = [...seedColors] as [string, string, string];
+                                  next[i] = v;
+                                  setSeedColors(next);
+                                }
+                              }}
+                              className="w-full text-[10px] font-mono text-carbon/55 bg-transparent border-b border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.20]"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={launchGenerate}
+                    disabled={generating || effectiveZones.length === 0}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-30">
+                    {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {aiColorways
+                      ? (stepLabel('regenerateColorways') || 'Regenerate proposals')
+                      : (stepLabel('proposeColorways') || 'Generate proposals')}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -651,14 +813,16 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* ── Colorized proposals grid — SAME for both modes ── */}
+            {/* ── Colorized proposals grid — zone-aware, per-card editable ── */}
             {aiColorways && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {aiColorways.map((cw, idx) => (
+                {aiColorways.map((cw, idx) => {
+                  const za = cw.zoneAssignments || [];
+                  return (
                   <div key={idx} className="border border-carbon/[0.06] bg-white overflow-hidden">
-                    <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden">
-                      {(cw as any).colorizedUrl ? (
-                        <img src={(cw as any).colorizedUrl} alt={cw.name} className="w-full h-full object-contain" />
+                    <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden relative">
+                      {cw.colorizedUrl ? (
+                        <img src={cw.colorizedUrl} alt={cw.name} className="w-full h-full object-contain" />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin text-carbon/15" />
@@ -666,28 +830,70 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         </div>
                       )}
                     </div>
-                    <div className="p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[12px] font-light text-carbon">{cw.name}</p>
-                        <div className="flex gap-0.5 shrink-0">{cw.colors.map((hex: string, i: number) => <div key={i} className="w-5 h-5 border border-carbon/[0.06]" style={{ backgroundColor: hex }} />)}</div>
+                    <div className="p-3 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[12px] font-medium text-carbon truncate">{cw.name}</p>
+                        <span className="shrink-0 text-[8px] text-carbon/20 uppercase tracking-wider">{cw.commercialRole}</span>
                       </div>
-                      <p className="text-[10px] text-carbon/35 leading-relaxed">{cw.description}</p>
-                      <span className="text-[8px] text-carbon/20 uppercase tracking-wider block">{cw.commercialRole}</span>
-                      <button onClick={async () => {
-                        const zones = defaultZones.map((z, i) => ({ zone: z.zone, hex: cw.colors[i % cw.colors.length] || z.defaultHex }));
-                        await addColorway({ sku_id: sku.id, name: cw.name, hex_primary: cw.primary, hex_secondary: cw.colors[1] || null as unknown as string, hex_accent: cw.colors[2] || null as unknown as string, pantone_primary: null as unknown as string, pantone_secondary: null as unknown as string, material_swatch_url: null as unknown as string, status: 'proposed', position: skuColorways.length, zones } as Omit<SkuColorway, 'id' | 'created_at'>);
-                        // Save colorized image as render_url for Tech Pack
-                        if ((cw as any).colorizedUrl) {
-                          await onUpdate({ render_url: (cw as any).colorizedUrl } as Partial<SKU>);
-                        }
-                        toast(stepLabel('colorwayAccepted') || `${cw.name} added`, 'success');
-                      }}
-                        className="w-full px-3 py-2 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors text-center">
-                        {stepLabel('accept') || 'Accept'} {cw.name}
-                      </button>
+                      <p className="text-[10px] text-carbon/45 leading-relaxed">{cw.description}</p>
+
+                      {/* Zone → hex table (the visibility Felipe asked for) */}
+                      {za.length > 0 && (
+                        <div className="space-y-1 pt-2 border-t border-carbon/[0.04]">
+                          <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-1">
+                            {stepLabel('zoneAssignments') || 'Zone assignments'}
+                          </p>
+                          {za.map((z, zi) => (
+                            <div key={zi} className="flex items-center gap-2 text-[10px]">
+                              <div className="relative w-5 h-5 rounded-[4px] border border-carbon/[0.08] cursor-pointer hover:ring-1 hover:ring-carbon/30 shrink-0"
+                                style={{ backgroundColor: z.hex }}>
+                                <input type="color" value={z.hex}
+                                  onChange={(e) => updateProposalZoneHex(idx, z.zoneName, e.target.value)}
+                                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                              </div>
+                              <span className="text-carbon/70 font-medium shrink-0 w-[80px] truncate">{z.zoneName}</span>
+                              <span className="text-carbon/30 font-mono text-[9px] shrink-0">{z.hex.toUpperCase()}</span>
+                              {z.rationale && <span className="text-carbon/40 italic truncate">— {z.rationale}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => colorizeOne(idx, cw)}
+                          disabled={cw.colorizing || !sku.sketch_url}
+                          title={stepLabel('recolorizeTooltip') || 'Re-colorize this card with the current colors'}
+                          className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/55 hover:bg-carbon/[0.03] transition-colors disabled:opacity-30">
+                          {cw.colorizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                          {stepLabel('recolorize') || 'Re-colorize'}
+                        </button>
+                        <button onClick={async () => {
+                          const zonesForSave: ColorwayZone[] = za.map(z => ({ zone: z.zoneName, hex: z.hex, notes: z.rationale }));
+                          await addColorway({
+                            sku_id: sku.id,
+                            name: cw.name,
+                            hex_primary: cw.primary || za[0]?.hex || '#000000',
+                            hex_secondary: za[1]?.hex || (null as unknown as string),
+                            hex_accent: za[2]?.hex || (null as unknown as string),
+                            pantone_primary: null as unknown as string,
+                            pantone_secondary: null as unknown as string,
+                            material_swatch_url: null as unknown as string,
+                            status: 'proposed',
+                            position: skuColorways.length,
+                            zones: zonesForSave,
+                          } as Omit<SkuColorway, 'id' | 'created_at'>);
+                          if (cw.colorizedUrl) await onUpdate({ render_url: cw.colorizedUrl } as Partial<SKU>);
+                          toast(stepLabel('colorwayAccepted') || `${cw.name} added`, 'success');
+                        }}
+                          className="flex-1 px-3 py-2 text-[9px] font-medium tracking-[0.08em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors text-center">
+                          {stepLabel('accept') || 'Accept'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
