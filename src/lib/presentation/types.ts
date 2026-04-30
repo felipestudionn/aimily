@@ -79,6 +79,8 @@ export type TemplateId =
   | 'narrative-portrait'// Story-driven, image + paragraph
   | 'grid-tile'         // Multi-tile (SKUs, looks, drops)
   | 'timeline-strip'    // Horizontal timeline of milestones
+  | 'range-wall'        // Magazine-spread photo wall of the full SKU range
+  | 'channel-map'       // Distribution / Point of Sale visualisation
   | 'placeholder';      // Skeleton until per-mini-block design lands
 
 export interface MicroBlockSlide {

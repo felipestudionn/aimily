@@ -21,6 +21,8 @@ const TEMPLATE_DESCRIPTIONS: Record<TemplateId, string> = {
   'narrative-portrait':   'Story-driven — image + paragraph',
   'grid-tile':            'Multi-tile (SKUs, looks, drops)',
   'timeline-strip':       'Horizontal milestone timeline',
+  'range-wall':           'Photo wall of the SKU range',
+  'channel-map':          'Distribution channels + markets',
   'placeholder':          'Skeleton pending design pass',
 };
 

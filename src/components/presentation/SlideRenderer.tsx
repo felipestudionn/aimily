@@ -19,6 +19,8 @@ import { EditorialStatTemplate } from './templates/EditorialStatTemplate';
 import { NarrativePortraitTemplate } from './templates/NarrativePortraitTemplate';
 import { GridTileTemplate } from './templates/GridTileTemplate';
 import { TimelineStripTemplate } from './templates/TimelineStripTemplate';
+import { RangeWallTemplate } from './templates/RangeWallTemplate';
+import { ChannelMapTemplate } from './templates/ChannelMapTemplate';
 
 export interface EditingContext {
   editMode: boolean;
@@ -64,6 +66,10 @@ export function SlideRenderer({ slide, meta, title, coverSubtitle, data, editing
       return <GridTileTemplate slide={slide} meta={meta} title={title} data={data?.grids[slide.id]} editing={editing} />;
     case 'timeline-strip':
       return <TimelineStripTemplate slide={slide} meta={meta} title={title} data={data?.timelines[slide.id]} editing={editing} />;
+    case 'range-wall':
+      return <RangeWallTemplate slide={slide} meta={meta} title={title} data={data?.ranges[slide.id]} />;
+    case 'channel-map':
+      return <ChannelMapTemplate slide={slide} meta={meta} title={title} data={data?.channels[slide.id]} />;
     case 'placeholder':
     default:
       return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;

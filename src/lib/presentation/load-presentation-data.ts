@@ -70,12 +70,34 @@ export interface TimelineSlideData {
   milestones?: { date: string; label: string; status: 'done' | 'current' | 'next' }[];
 }
 
+export interface RangeWallSlideData {
+  caption?: string;
+  /** SKU thumbnails to render as a photo wall (up to 12). */
+  items?: { url: string; family?: string; name?: string; pvp?: number }[];
+  /** Aggregated stats shown in the corner — total SKUs, families, drops. */
+  stats?: { total: number; families: number; drops?: number; revenue?: string };
+}
+
+export interface ChannelMapSlideData {
+  caption?: string;
+  /** Web store status — connected/coming. */
+  webStore?: { status: 'live' | 'coming'; provider?: string };
+  /** DTC channels: digital + physical flags. */
+  dtc?: { enabled: boolean; digital: boolean; physical: boolean };
+  /** Wholesale channels + order count. */
+  wholesale?: { enabled: boolean; ordersCount: number; valueLabel?: string };
+  /** Top markets — name + region + opportunity tag. */
+  markets?: { name: string; region?: string; opportunity?: 'high' | 'medium' | 'low' }[];
+}
+
 export interface PresentationData {
   cover: CoverSlideData;
   narratives: Record<string, NarrativeSlideData>;  // keyed by slide id
   stats: Record<string, StatSlideData>;
   grids: Record<string, GridSlideData>;
   timelines: Record<string, TimelineSlideData>;
+  ranges: Record<string, RangeWallSlideData>;
+  channels: Record<string, ChannelMapSlideData>;
   /* Per-slide field override map. Populated from
      presentation_deck_overrides. UI uses these to (a) mark slides with
      edits (gold dot in sidebar) and (b) show "Revert to original"
@@ -171,6 +193,8 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     stats: {},
     grids: {},
     timelines: {},
+    ranges: {},
+    channels: {},
     overrides: {},
     hasAnyData: false,
   };
@@ -725,6 +749,154 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
         };
         data.hasAnyData = true;
       }
+    }
+  }
+
+  // ─── Range Wall slides (collection-builder + final-selection) ──
+  // Photo wall of the user's actual collection. Builder slide takes ALL
+  // SKUs in the collection; Final Selection takes only those marked
+  // production_approved (or falls back to the full set if approval is
+  // not yet flagged — this avoids a blank slide pre-launch).
+  {
+    const { data: allSkus } = await supabaseAdmin
+      .from('collection_skus')
+      .select('id, name, family, pvp, sketch_url, render_url, render_urls, reference_image_url, production_sample_url, production_approved')
+      .eq('collection_plan_id', collectionPlanId)
+      .order('drop_number', { ascending: true })
+      .order('created_at', { ascending: true });
+    type SkuRow = NonNullable<typeof allSkus>[number] & {
+      render_urls?: Record<string, string>;
+      production_sample_url?: string | null;
+      sketch_url?: string | null;
+      render_url?: string | null;
+      reference_image_url?: string | null;
+      production_approved?: boolean | null;
+    };
+    const pickThumb = (s: SkuRow): string | undefined =>
+      s.render_urls?.['3d'] ||
+      s.render_url ||
+      s.sketch_url ||
+      s.production_sample_url ||
+      s.reference_image_url ||
+      undefined;
+
+    if (allSkus && allSkus.length > 0) {
+      const rows = allSkus as SkuRow[];
+      const families = new Set(rows.map((s) => s.family || 'Other'));
+      const drops = ctx.drops ? ctx.drops.split('\n').filter((l) => l.trim()).length : undefined;
+
+      // Collection Builder: 12 best thumbs across the whole collection
+      const builderItems = rows
+        .map((s) => ({
+          url: pickThumb(s),
+          family: s.family || undefined,
+          name: s.name || undefined,
+          pvp: typeof s.pvp === 'number' ? s.pvp : undefined,
+        }))
+        .filter((x) => typeof x.url === 'string')
+        .map((x) => ({ url: x.url as string, family: x.family, name: x.name, pvp: x.pvp }))
+        .slice(0, 12);
+      if (builderItems.length > 0) {
+        data.ranges['collection-builder'] = {
+          caption: `Every style, every drop. The full season at a glance.`,
+          items: builderItems,
+          stats: {
+            total: rows.length,
+            families: families.size,
+            drops,
+          },
+        };
+        data.hasAnyData = true;
+      }
+
+      // Final Selection: only production_approved (with graceful fallback
+      // to the full set when nothing is approved yet — better than empty).
+      const approvedRows = rows.filter((s) => s.production_approved === true);
+      const finalRows = approvedRows.length > 0 ? approvedRows : rows;
+      const finalItems = finalRows
+        .map((s) => ({
+          url: pickThumb(s),
+          family: s.family || undefined,
+          name: s.name || undefined,
+          pvp: typeof s.pvp === 'number' ? s.pvp : undefined,
+        }))
+        .filter((x) => typeof x.url === 'string')
+        .map((x) => ({ url: x.url as string, family: x.family, name: x.name, pvp: x.pvp }))
+        .slice(0, 12);
+      if (finalItems.length > 0) {
+        data.ranges['final-selection'] = {
+          caption:
+            approvedRows.length > 0
+              ? `${approvedRows.length} styles approved for production.`
+              : `Working selection. Approve in Production to lock the lineup.`,
+          items: finalItems,
+          stats: {
+            total: finalRows.length,
+            families: new Set(finalRows.map((s) => s.family || 'Other')).size,
+            drops,
+          },
+        };
+        data.hasAnyData = true;
+      }
+    }
+  }
+
+  // ─── Channel Map (point-of-sale) ───────────────────────────────────
+  // Reads the merchandising workspace channels card + wholesale orders
+  // count. Web store is hard-coded to 'coming' until the integration
+  // ships; flip to 'live' when we wire Shopify/woo.
+  {
+    const { data: merchRow } = await supabaseAdmin
+      .from('collection_workspace_data')
+      .select('data')
+      .eq('collection_plan_id', collectionPlanId)
+      .eq('workspace', 'merchandising')
+      .maybeSingle();
+    type ChannelCfg = { enabled?: boolean; digital?: boolean; physical?: boolean };
+    type Market = { name: string; region?: string; opportunity?: 'high' | 'medium' | 'low'; selected?: boolean };
+    const merch = (merchRow?.data || {}) as {
+      cardData?: { channels?: { data?: { dtc?: ChannelCfg; wholesale?: ChannelCfg; markets?: Market[] } } };
+    };
+    const channels = merch.cardData?.channels?.data || {};
+    const dtcCfg = channels.dtc;
+    const wholesaleCfg = channels.wholesale;
+    const markets = (channels.markets || []).filter((m) => m.selected !== false);
+
+    const { data: orderRows, count: orderCount } = await supabaseAdmin
+      .from('wholesale_orders')
+      .select('id, total_value', { count: 'exact' })
+      .eq('collection_plan_id', collectionPlanId);
+    const totalWholesaleValue =
+      orderRows?.reduce((sum, o) => sum + ((o.total_value as number) || 0), 0) ?? 0;
+
+    const formatMoney = (n: number) => {
+      if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
+      if (n >= 1000) return `€${Math.round(n / 1000)}K`;
+      return `€${n}`;
+    };
+
+    const hasAnyChannel =
+      !!dtcCfg?.enabled || !!wholesaleCfg?.enabled || markets.length > 0 || (orderCount ?? 0) > 0;
+
+    if (hasAnyChannel) {
+      data.channels['point-of-sale'] = {
+        caption: 'How the collection reaches buyers — channels, markets, and active orders.',
+        webStore: { status: 'coming', provider: 'Shopify integration · Q3' },
+        dtc: dtcCfg
+          ? { enabled: !!dtcCfg.enabled, digital: !!dtcCfg.digital, physical: !!dtcCfg.physical }
+          : undefined,
+        wholesale: {
+          enabled: !!wholesaleCfg?.enabled,
+          ordersCount: orderCount ?? 0,
+          valueLabel: totalWholesaleValue > 0 ? formatMoney(totalWholesaleValue) : undefined,
+        },
+        markets: markets.map((m) => ({
+          name: m.name,
+          region: m.region,
+          opportunity: m.opportunity,
+        })),
+      };
+      data.hasAnyData = true;
     }
   }
 
