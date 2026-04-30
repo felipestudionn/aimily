@@ -254,6 +254,15 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
   // paletteHex / typographyName fields that DON'T exist in the workspace —
   // that mismatch is what caused the Palette slide to render the template's
   // hard-coded fallback swatches.
+  // Verified shape of blockData['brand-dna'].data on SS27 SLAIZ:
+  //   brandName, _brief, personality, tone, style, keywords[], toneKeywords[],
+  //   colors[] (legacy "#HEX (name)" strings),
+  //   colorPalette[] (current shape: { hex, name, role }),
+  //   typographyFont (e.g. "Inter"),
+  //   typographyMood (longer descriptive paragraph),
+  //   visualIdentityImages[] (Freepik URLs from the AI brand pipeline),
+  //   doNot[] (explicit don't-rules), accentColor, primaryColor, secondaryColor.
+  // We treat anything that isn't here as missing — never invent.
   type ColorEntry = { hex: string; name?: string; role?: string };
   type CreativeWS = {
     blockData?: {
@@ -261,12 +270,16 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       'brand-dna'?: {
         data?: {
           brandName?: string;
+          _brief?: string;
+          personality?: string;
+          tone?: string;
+          style?: string;
           colors?: string[];
           colorPalette?: ColorEntry[];
-          tone?: string;
-          typography?: string;
-          style?: string;
-          logoUrl?: string; // not currently saved by the canvas; kept optional for future
+          typographyFont?: string;
+          typographyMood?: string;
+          visualIdentityImages?: string[];
+          logoUrl?: string; // canvas doesn't currently expose this — kept for future
         };
       };
     };
@@ -333,24 +346,45 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     data.hasAnyData = true;
   }
 
-  const brandSplit = extractLeadBody(ctx.brandDNA);
-  if (brandSplit.lead || brandSplit.body) {
-    // Brand identity narrative reads from CIS brand DNA. Visual anchor:
-    // logo image when present (workspace doesn't currently save one, so
-    // this is normally absent); else the palette swatch grid the user
-    // saved; else nothing — the template renders an honest empty state.
-    const brandImages: string[] = [];
-    if (brandData.logoUrl) brandImages.push(brandData.logoUrl);
-    const hasLogo = brandImages.length > 0;
-    const hasPalette = paletteHex.length > 0;
-    data.narratives['brand-identity'] = {
-      ...brandSplit,
-      attribution: 'Brand DNA · Core positioning',
-      images: hasLogo ? brandImages : undefined,
-      paletteHex: hasPalette ? paletteHex : undefined,
-      imageMode: hasLogo ? 'single' : (hasPalette ? 'palette' : 'auto'),
-    };
-    data.hasAnyData = true;
+  // Brand identity narrative — prefer CIS (it's the canonical "brand
+  // DNA" if the user has recorded it there), fall back to the workspace
+  // _brief or personality fields. Visual anchor: visualIdentityImages
+  // mosaic when present, else logo (rare), else palette swatch grid.
+  {
+    const cisBrandSplit = extractLeadBody(ctx.brandDNA);
+    const wsBrandText =
+      brandData._brief || brandData.personality || brandData.style || '';
+    const wsBrandSplit = wsBrandText ? extractLeadBody(wsBrandText) : {};
+    const brandSplit =
+      cisBrandSplit.lead || cisBrandSplit.body
+        ? cisBrandSplit
+        : wsBrandSplit;
+
+    if (brandSplit.lead || brandSplit.body) {
+      const visualImages = brandData.visualIdentityImages ?? [];
+      const brandImages: string[] = brandData.logoUrl ? [brandData.logoUrl] : [];
+      const hasLogo = brandImages.length > 0;
+      const hasVisuals = visualImages.length > 0;
+      const hasPalette = paletteHex.length > 0;
+      data.narratives['brand-identity'] = {
+        ...brandSplit,
+        attribution: 'Brand DNA',
+        images: hasLogo
+          ? brandImages
+          : hasVisuals
+            ? visualImages.slice(0, 4)
+            : undefined,
+        paletteHex: !hasLogo && !hasVisuals && hasPalette ? paletteHex : undefined,
+        imageMode: hasLogo
+          ? 'single'
+          : hasVisuals
+            ? 'mosaic'
+            : hasPalette
+              ? 'palette'
+              : 'auto',
+      };
+      data.hasAnyData = true;
+    }
   }
 
   const voiceSplit = extractLeadBody(ctx.brandVoice);
@@ -1028,36 +1062,45 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     // brand-palette: only when palette swatches OR typography are saved.
     // The "sample" sentence is INTENTIONALLY left undefined — we don't
     // want a stock pangram pretending to be the user's voice.
-    if (paletteEntries.length > 0 || brandData.typography) {
+    const typoName = brandData.typographyFont || undefined;
+    if (paletteEntries.length > 0 || typoName) {
       const swatches = paletteEntries.slice(0, 5).map((c) => ({
         hex: c.hex,
-        role: c.name || c.role || undefined,
+        // Strip leading "primary —" / "accent —" prefixes from the saved
+        // descriptive name so the swatch label reads cleanly. Falls back
+        // to the structured role when the descriptive name is empty.
+        role: (c.name?.split(' — ')[0]?.trim()) || c.role || undefined,
       }));
       data.palettes['brand-palette'] = {
         caption:
-          paletteEntries.length > 0 && brandData.typography
+          paletteEntries.length > 0 && typoName
             ? 'Color and typography saved in Brand Identity.'
             : paletteEntries.length > 0
               ? `${paletteEntries.length} colors saved in Brand Identity.`
               : 'Typography saved in Brand Identity.',
         swatches: swatches.length > 0 ? swatches : undefined,
-        typography: brandData.typography
-          ? { displayName: brandData.typography }
-          : undefined,
+        typography: typoName ? { displayName: typoName } : undefined,
       };
       data.hasAnyData = true;
     }
 
-    // brand-voice: ONLY when CIS has a brand voice text. No fabricated
-    // lead or attribution beyond a simple label.
-    if (ctx.brandVoice) {
-      const voiceSplit2 = extractLeadBody(ctx.brandVoice);
-      if (voiceSplit2.lead || voiceSplit2.body) {
+    // brand-voice: prefer CIS brandVoice, fall back to the workspace
+    // tone field (verified present on SS27 SLAIZ as a long descriptive
+    // paragraph that IS the brand voice).
+    {
+      const cisVoiceSplit = extractLeadBody(ctx.brandVoice);
+      const wsVoice = brandData.tone || '';
+      const wsVoiceSplit = wsVoice ? extractLeadBody(wsVoice) : {};
+      const voiceSplit =
+        cisVoiceSplit.lead || cisVoiceSplit.body
+          ? cisVoiceSplit
+          : wsVoiceSplit;
+      if (voiceSplit.lead || voiceSplit.body) {
         const voiceImages = editorialUrl
           ? [editorialUrl]
           : moodboardImages.slice(0, 4);
         data.narratives['brand-voice'] = {
-          ...voiceSplit2,
+          ...voiceSplit,
           attribution: 'Voice & tone',
           images: voiceImages.length > 0 ? voiceImages : undefined,
           imageMode: editorialUrl ? 'single' : 'mosaic',
