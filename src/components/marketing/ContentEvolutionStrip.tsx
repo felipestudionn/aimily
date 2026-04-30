@@ -534,7 +534,11 @@ function Gallery({
           className={`group relative ${aspectCls} bg-white rounded-[12px] overflow-hidden`}
         >
           <button onClick={() => onLightbox(item.url)} className="w-full h-full">
-            <img src={item.url} alt="" className="w-full h-full object-cover" />
+            {/* object-contain so the editorial isn't beheaded: gpt-image-1.5
+                returns 2:3 (1024×1536) but our editorial gallery frame is 3:4.
+                With cover the head + shoes get cropped; with contain we get
+                a thin sliver of white air top/bottom and the full shot. */}
+            <img src={item.url} alt="" className="w-full h-full object-contain" />
           </button>
           <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button

@@ -65,6 +65,12 @@ async function createAndPoll(
     body: JSON.stringify({
       prompt,
       reference_images: referenceImages,
+      // Editorial fashion convention: 3:4 portrait. Without this, Gemini
+      // 2.5 Flash Image defaults to a near-square crop that decapitates
+      // the model and chops off the shoes — exactly what we don't want
+      // for a head-to-toe editorial. If Freepik's wrapper ever stops
+      // forwarding this field the worst case is the previous behaviour.
+      aspect_ratio: 'portrait_3_4',
     }),
   });
 
