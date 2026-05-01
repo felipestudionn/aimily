@@ -65,16 +65,30 @@ export async function POST(req: NextRequest) {
       if (flat.brandDNA) body._brandDNA = flat.brandDNA;
     }
 
-    const priceValues = skus.map((s: { pvp?: number }) => s.pvp || 0);
+    /* Guard against empty/missing skus — without this, Math.min(...[])
+       returns Infinity and division by zero produces NaN, both of which
+       end up in the prompt and crash the LLM call with confusing errors. */
+    const safeSkus: Array<{
+      name: string; family?: string; pvp?: number; type?: string;
+      drop_number?: number; expected_sales?: number;
+    }> = Array.isArray(skus) ? skus : [];
+    if (safeSkus.length === 0) {
+      return NextResponse.json(
+        { error: 'No SKUs in this collection yet. Add at least one SKU before generating a GTM plan.' },
+        { status: 400 },
+      );
+    }
+
+    const priceValues = safeSkus.map((s) => s.pvp || 0);
     const priceMin = Math.min(...priceValues);
     const priceMax = Math.max(...priceValues);
-    const priceAvg = Math.round(priceValues.reduce((a: number, b: number) => a + b, 0) / priceValues.length);
+    const priceAvg = Math.round(priceValues.reduce((a, b) => a + b, 0) / priceValues.length);
 
     const storiesBlock = (stories || []).map((s: { name: string; narrative?: string; mood?: string[]; hero_sku_id?: string; sku_ids?: string[] }) =>
       `Story "${s.name}": ${s.narrative || 'No narrative'} — Mood: ${(s.mood || []).join(', ')}, Hero: ${s.hero_sku_id || 'N/A'}\n  SKUs: ${(s.sku_ids || []).join(', ')}`
     ).join('\n');
 
-    const skusBlock = skus.map((s: { name: string; family?: string; pvp?: number; type?: string; drop_number?: number; expected_sales?: number }) =>
+    const skusBlock = safeSkus.map((s) =>
       `- ${s.name} (${s.family || 'N/A'}): €${s.pvp}, type=${s.type || 'REVENUE'}, drop=${s.drop_number || '?'}, sales=€${s.expected_sales || 0}`
     ).join('\n');
 
@@ -82,7 +96,7 @@ export async function POST(req: NextRequest) {
     if (mode === 'asistido') {
       userInput = `MODE: ASSISTED — User wants ${desiredDrops} drops.
 ${specificDates ? `Specific dates the user wants: ${specificDates}` : 'No specific dates — suggest optimal timing.'}
-Distribute ALL ${skus.length} SKUs across ${desiredDrops} drops, aligning with stories where possible.`;
+Distribute ALL ${safeSkus.length} SKUs across ${desiredDrops} drops, aligning with stories where possible.`;
     } else {
       userInput = `MODE: FULL PROPOSAL — Generate the complete GTM plan.
 Launch date: ${launchDate}

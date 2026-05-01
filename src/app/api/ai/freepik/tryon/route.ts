@@ -8,6 +8,10 @@ import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
+/* Same long-poll constraint as still-life. */
+export const runtime = 'nodejs';
+export const maxDuration = 120;
+
 /* ═══════════════════════════════════════════════════════════════
    Virtual Try-On — Freepik Nano Banana (multi-reference)
    (Gemini 2.5 Flash Image Preview)

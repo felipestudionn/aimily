@@ -8,6 +8,13 @@ import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
+/* Freepik image generation polls ~60s. Vercel default Function timeout
+   on Hobby is 10s, on Pro 60s — without an explicit maxDuration the
+   request gets killed mid-poll. Node runtime is required by `sharp`
+   and the Freepik SDK. */
+export const runtime = 'nodejs';
+export const maxDuration = 120;
+
 /* ═══════════════════════════════════════════════════════════════
    Still Life — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
 

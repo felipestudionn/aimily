@@ -90,7 +90,13 @@ export async function DELETE(
     // 1. Clean up Storage files
     // List all files under {collection_id}/ prefix
     const storagePaths: string[] = [];
-    const assetTypes = ['moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model'];
+    /* Keep this list in sync with everything that ever calls persistAsset
+       — leftover folders create orphaned public storage after a
+       collection is deleted. */
+    const assetTypes = [
+      'moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model',
+      'still_life', 'editorial', 'tech_pack', 'material_swatch', 'callout',
+    ];
 
     await Promise.all(
       assetTypes.map(async (type) => {

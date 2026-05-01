@@ -80,9 +80,12 @@ export async function POST(req: NextRequest) {
     // C2 — atom repurpose mode. Uses the calendar_atom_repurpose prompt
     // from the registry with its own shape (atoms[], not calendar_entries[]).
     if (mode === 'atom_repurpose') {
+      /* Read from `body` to pick up server-side enrichment from
+         loadFullContext above; the destructured consts captured the
+         original (possibly empty) payload. */
       const flatCtx = {
-        brand_name: brandName || 'Brand',
-        brand_voice_summary: brandVoiceSummary || '',
+        brand_name: body.brandName || 'Brand',
+        brand_voice_summary: body.brandVoiceSummary || '',
         pillar_type: pillarType || 'photo_set',
         pillar_description: pillarDescription || '',
         pillar_notes: pillarNotes || '',

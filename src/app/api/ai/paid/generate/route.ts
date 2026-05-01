@@ -78,9 +78,13 @@ export async function POST(req: NextRequest) {
     const perfSummary = await buildPerformanceContext(collectionPlanId);
     const perfBlock = formatPerformanceContextForPrompt(perfSummary);
 
+    /* Read from `body` rather than the destructured consts so we pick up
+       the server-side enrichment from `loadFullContext()` above (which
+       wrote into body.brandName / body.consumerDemographics). The consts
+       captured the original — possibly empty — request payload. */
     const templateContext: Record<string, unknown> = {
-      brand_name: brandName || 'Brand',
-      consumer_demographics: consumerDemographics || 'N/A',
+      brand_name: body.brandName || 'Brand',
+      consumer_demographics: body.consumerDemographics || 'N/A',
       consumer_psychographics: consumerPsychographics || 'N/A',
       consumer_lifestyle: consumerLifestyle || 'N/A',
       markets: markets || 'N/A',

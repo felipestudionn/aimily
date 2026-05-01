@@ -194,7 +194,10 @@ export async function buildPromptContext(
       .select('id')
       .eq('collection_plan_id', collectionPlanId),
     supabase
-      .from('email_templates')
+      // The actual table is `email_templates_content`. The shorter
+      // name was a stale alias that returned 0 silently and made the
+      // launch / post-launch readiness checks underestimate content.
+      .from('email_templates_content')
       .select('id')
       .eq('collection_plan_id', collectionPlanId),
     supabase
