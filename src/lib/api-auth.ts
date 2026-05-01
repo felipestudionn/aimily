@@ -45,7 +45,15 @@ export async function verifyCollectionOwnership(
  * Imagery quota check — only paid AI image/video generations consume quota.
  * Text generations (Claude Haiku, Gemini Flash, Perplexity) are unlimited.
  *
- * Flow: plan limit first, then top-up Aimily Credits pack balance, then deny.
+ * Atomic: delegates the read+write to the `consume_imagery_units` Postgres
+ * RPC, which holds row locks on `ai_usage` and `imagery_credits` for the
+ * duration of the transaction. Two concurrent requests cannot both pass
+ * the check, and the two-table update can never end up half-applied.
+ *
+ * Returned `planConsumed` and `packConsumed` MUST be passed to
+ * `refundImageryUnits()` if the downstream provider call fails — that
+ * gives the customer back exactly what was taken, no more, no less.
+ *
  * `units` lets multi-image endpoints count more than 1 (brand-references = 4,
  * Kling video = 5).
  */
@@ -54,99 +62,110 @@ export async function checkImageryUsage(
   userEmail: string,
   units: number = 1,
 ) {
-  // Admin bypass
+  // Admin bypass — no quota, no record.
   if (ADMIN_EMAILS.includes(userEmail)) {
-    return { allowed: true as const, current: 0, limit: -1, packBalance: 0 };
+    return { allowed: true as const, current: 0, limit: -1, packBalance: 0, planConsumed: 0, packConsumed: 0 };
   }
 
-  // Get subscription
+  // Get subscription state. Auth gates (trial expiry, subscription status)
+  // run in JS because they're pure data reads with no race window worth
+  // pushing into the RPC. Quota math is what needs the lock.
   const { data: sub } = await supabaseAdmin
     .from('subscriptions')
     .select('plan, status, trial_ends_at, is_admin')
     .eq('user_id', userId)
     .single();
 
-  // Admin flag bypass
   if (sub?.is_admin) {
-    return { allowed: true as const, current: 0, limit: -1, packBalance: 0 };
+    return { allowed: true as const, current: 0, limit: -1, packBalance: 0, planConsumed: 0, packConsumed: 0 };
   }
 
-  // Check trial expiration
   if (sub?.plan === 'trial' && sub?.trial_ends_at) {
     if (new Date(sub.trial_ends_at) < new Date()) {
       return { allowed: false as const, reason: 'trial_expired' as const, current: 0, limit: 0, packBalance: 0 };
     }
   }
 
-  // Check subscription status
   if (sub?.status === 'canceled' || sub?.status === 'unpaid') {
     return { allowed: false as const, reason: 'subscription_inactive' as const, current: 0, limit: 0, packBalance: 0 };
   }
 
-  // Get plan limits
   const plan = (sub?.plan || 'trial') as PlanId;
   const planLimits = getPlanLimits(plan);
   const limit = planLimits.imageryGenerations;
 
-  // Unlimited (Enterprise / admin)
-  if (limit === -1) {
-    return { allowed: true as const, current: 0, limit: -1, packBalance: 0 };
+  const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('consume_imagery_units', {
+    p_user_id: userId,
+    p_units: units,
+    p_plan_limit: limit,
+  });
+
+  if (rpcError || !rpcData) {
+    console.error('[imagery-quota] consume RPC failed:', rpcError);
+    /* Fail closed: deny rather than risk silent over-consumption.
+       Surfaces as 402 to the user; ops sees the RPC error in logs. */
+    return { allowed: false as const, reason: 'limit_reached' as const, current: 0, limit, packBalance: 0 };
   }
 
-  // Read current month usage
-  const month = new Date().toISOString().slice(0, 7);
-  const { data: usage } = await supabaseAdmin
-    .from('ai_usage')
-    .select('imagery_count')
-    .eq('user_id', userId)
-    .eq('month', month)
-    .single();
-  const current = usage?.imagery_count || 0;
+  const result = rpcData as {
+    allowed: boolean;
+    reason?: string;
+    plan_consumed?: number;
+    pack_consumed?: number;
+    current?: number;
+    limit?: number;
+    pack_balance?: number;
+  };
 
-  // Read Aimily Credits pack balance (top-ups, no expiry)
-  const { data: credits } = await supabaseAdmin
-    .from('imagery_credits')
-    .select('balance')
-    .eq('user_id', userId)
-    .single();
-  const packBalance = credits?.balance || 0;
-
-  const planRemaining = Math.max(0, limit - current);
-  const totalRemaining = planRemaining + packBalance;
-
-  if (totalRemaining < units) {
-    return { allowed: false as const, reason: 'limit_reached' as const, current, limit, packBalance };
-  }
-
-  // Consume plan first, then dip into packs
-  const consumeFromPlan = Math.min(units, planRemaining);
-  const consumeFromPacks = units - consumeFromPlan;
-
-  if (consumeFromPlan > 0) {
-    await supabaseAdmin.from('ai_usage').upsert({
-      user_id: userId,
-      month,
-      imagery_count: current + consumeFromPlan,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,month' });
-  }
-
-  if (consumeFromPacks > 0) {
-    await supabaseAdmin
-      .from('imagery_credits')
-      .update({
-        balance: packBalance - consumeFromPacks,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId);
+  if (!result.allowed) {
+    return {
+      allowed: false as const,
+      reason: (result.reason as 'limit_reached') || 'limit_reached',
+      current: result.current ?? 0,
+      limit: result.limit ?? limit,
+      packBalance: result.pack_balance ?? 0,
+    };
   }
 
   return {
     allowed: true as const,
-    current: current + consumeFromPlan,
-    limit,
-    packBalance: packBalance - consumeFromPacks,
+    current: result.current ?? 0,
+    limit: result.limit ?? limit,
+    packBalance: result.pack_balance ?? 0,
+    planConsumed: result.plan_consumed ?? 0,
+    packConsumed: result.pack_consumed ?? 0,
   };
+}
+
+/**
+ * Refund the exact units that `checkImageryUsage` took, in case the
+ * downstream provider call (Freepik, OpenAI, Anthropic) failed and the
+ * user never received their imagery.
+ *
+ * Pass the `planConsumed` and `packConsumed` values returned by the
+ * earlier `checkImageryUsage` call. Pure no-op if both are zero (admin /
+ * unlimited / quota-denied paths set them to 0).
+ *
+ * Fire-and-forget is fine because failure to refund only delays the
+ * eventual reconciliation — but try to await when you can so the request
+ * doesn't return before the credit is back in the customer's account.
+ */
+export async function refundImageryUnits(
+  userId: string,
+  planConsumed: number,
+  packConsumed: number,
+) {
+  if ((planConsumed || 0) <= 0 && (packConsumed || 0) <= 0) return;
+
+  const { error } = await supabaseAdmin.rpc('refund_imagery_units', {
+    p_user_id: userId,
+    p_plan_consumed: planConsumed || 0,
+    p_pack_consumed: packConsumed || 0,
+  });
+
+  if (error) {
+    console.error('[imagery-quota] refund RPC failed:', error, { userId, planConsumed, packConsumed });
+  }
 }
 
 /**

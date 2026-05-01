@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
   checkImageryUsage,
+  refundImageryUnits,
   usageDeniedResponse,
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
@@ -348,9 +349,16 @@ function buildPrompt(params: {
 }
 
 export async function POST(req: NextRequest) {
+  /* Declared in the function scope so the catch block can refund the
+     exact split that was consumed inside try. Defaults to 0 so an
+     early failure (auth, bad input) is a no-op refund. */
+  let userId: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   try {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
+    userId = user!.id;
 
     if (!FREEPIK_API_KEY) {
       return NextResponse.json(
@@ -387,6 +395,10 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkImageryUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+    /* Track the exact split that was consumed so the catch block can
+       refund the customer if Freepik fails downstream. */
+    planConsumed = usage.planConsumed ?? 0;
+    packConsumed = usage.packConsumed ?? 0;
 
     // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
     let enrichedStory: StoryContext | undefined = story_context;
@@ -434,6 +446,7 @@ export async function POST(req: NextRequest) {
 
     const generatedUrl = await createAndPoll(prompt, [product_image_url]);
     if (!generatedUrl) {
+      await refundImageryUnits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'Still life generation failed' },
         { status: 502 }
@@ -472,6 +485,10 @@ export async function POST(req: NextRequest) {
       provider: 'freepik-nano-banana',
     });
   } catch (error) {
+    /* Provider failed after we already deducted. Refund whatever was
+       taken; if the user was admin / unlimited the consumed values are
+       0 and the refund is a cheap no-op. */
+    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Still Life] Error:', error);
     const message =
       error instanceof Error ? error.message : 'Still life generation failed';

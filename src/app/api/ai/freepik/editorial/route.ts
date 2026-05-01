@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
   checkImageryUsage,
+  refundImageryUnits,
   usageDeniedResponse,
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
@@ -361,9 +362,13 @@ function buildPrompt(params: {
 }
 
 export async function POST(req: NextRequest) {
+  let userId: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   try {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
+    userId = user!.id;
 
     if (!FREEPIK_API_KEY) {
       return NextResponse.json(
@@ -415,6 +420,8 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkImageryUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+    planConsumed = usage.planConsumed ?? 0;
+    packConsumed = usage.packConsumed ?? 0;
 
     // When the user selects an aimily model, we use the model's metadata
     // to override the model_directives (complexion/hair/etc) so the prompt
@@ -654,6 +661,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!generatedUrl) {
+      await refundImageryUnits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'Editorial generation failed' },
         { status: 502 }
@@ -692,6 +700,7 @@ export async function POST(req: NextRequest) {
       provider: providerUsed,
     });
   } catch (error) {
+    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Editorial] Error:', error);
     const message =
       error instanceof Error ? error.message : 'Editorial generation failed';

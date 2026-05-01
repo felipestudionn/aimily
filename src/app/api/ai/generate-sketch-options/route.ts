@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkImageryUsage, refundImageryUnits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 import sharp from 'sharp';
 
@@ -94,12 +94,18 @@ RULES:
 ${IP_CLAUSE}`;
 
 export async function POST(req: NextRequest) {
+  let userId: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   try {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
+    userId = user.id;
 
     const usage = await checkImageryUsage(user.id, user.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+    planConsumed = usage.planConsumed ?? 0;
+    packConsumed = usage.packConsumed ?? 0;
 
     const body = await req.json();
 
@@ -142,6 +148,7 @@ export async function POST(req: NextRequest) {
       const topImage = topResult.status === 'fulfilled' ? topResult.value : null;
 
       if (!sideImage && !topImage) {
+        await refundImageryUnits(userId, planConsumed, packConsumed);
         const err = sideResult.status === 'rejected' ? String(sideResult.reason) : 'Both views failed';
         return NextResponse.json({ error: err }, { status: 500 });
       }
@@ -168,6 +175,7 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch (error) {
+    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('Sketch error:', error);
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed' }, { status: 500 });
   }

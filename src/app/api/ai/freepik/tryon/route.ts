@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
   checkImageryUsage,
+  refundImageryUnits,
   usageDeniedResponse,
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
@@ -96,9 +97,14 @@ function buildPrompt(params: {
 }
 
 export async function POST(req: NextRequest) {
+  /* Function-scope so the catch can refund whatever was consumed. */
+  let userId: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   try {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
+    userId = user!.id;
 
     if (!FREEPIK_API_KEY) {
       return NextResponse.json(
@@ -136,6 +142,8 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkImageryUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+    planConsumed = usage.planConsumed ?? 0;
+    packConsumed = usage.packConsumed ?? 0;
 
     // ═══ SERVER-SIDE: Load FULL context from CIS + Creative + Brief ═══
     let enrichedProductName: string = product_name || 'fashion product';
@@ -167,6 +175,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     if (!generatedUrl) {
+      await refundImageryUnits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'Try-on generation failed' },
         { status: 502 }
@@ -204,6 +213,7 @@ export async function POST(req: NextRequest) {
       provider: 'freepik-nano-banana',
     });
   } catch (error) {
+    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Try-On] Error:', error);
     const message =
       error instanceof Error ? error.message : 'Try-on generation failed';

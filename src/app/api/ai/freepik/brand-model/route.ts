@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getAuthenticatedUser,
   checkImageryUsage,
+  refundImageryUnits,
   usageDeniedResponse,
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
@@ -133,9 +134,13 @@ async function createAndPoll(
 }
 
 export async function POST(req: NextRequest) {
+  let userId: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   try {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
+    userId = user!.id;
 
     if (!FREEPIK_API_KEY) {
       return NextResponse.json(
@@ -161,12 +166,15 @@ export async function POST(req: NextRequest) {
 
     const usage = await checkImageryUsage(user!.id, user!.email!);
     if (!usage.allowed) return usageDeniedResponse(usage);
+    planConsumed = usage.planConsumed ?? 0;
+    packConsumed = usage.packConsumed ?? 0;
 
     const prompt = buildPrompt(modelInput);
     const referenceImages = reference_image_url ? [reference_image_url] : [];
 
     const generatedUrl = await createAndPoll(prompt, referenceImages);
     if (!generatedUrl) {
+      await refundImageryUnits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'Brand model generation failed' },
         { status: 502 }
@@ -204,6 +212,7 @@ export async function POST(req: NextRequest) {
       provider: 'freepik-nano-banana',
     });
   } catch (error) {
+    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Brand Model] Error:', error);
     const message =
       error instanceof Error ? error.message : 'Brand model generation failed';

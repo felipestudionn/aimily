@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkImageryUsage, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkImageryUsage, refundImageryUnits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { loadFullContext } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -189,9 +189,13 @@ function buildPrompt(ctx: EnrichedCtx, scene: Scene): string {
 }
 
 export async function POST(req: NextRequest) {
+  let userId: string | undefined;
+  let planConsumed = 0;
+  let packConsumed = 0;
   try {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
+    userId = user!.id;
 
     if (!FREEPIK_API_KEY) {
       return NextResponse.json({ error: 'FREEPIK_API_KEY not configured' }, { status: 500 });
@@ -209,6 +213,8 @@ export async function POST(req: NextRequest) {
     // 4× Freepik Mystic per call → counts as 4 imagery units
     const usage = await checkImageryUsage(user!.id, user!.email!, 4);
     if (!usage.allowed) return usageDeniedResponse(usage);
+    planConsumed = usage.planConsumed ?? 0;
+    packConsumed = usage.packConsumed ?? 0;
 
     const ctx: EnrichedCtx = {
       brandName,
@@ -256,14 +262,28 @@ export async function POST(req: NextRequest) {
       .filter((u): u is string => !!u);
 
     if (images.length === 0) {
+      await refundImageryUnits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'All visual reference generations failed' },
         { status: 502 },
       );
     }
 
+    /* Partial success: some scenes failed but at least one succeeded.
+       Refund proportionally — the user got what they got, but we don't
+       want to charge them for the missing ones. */
+    if (images.length < SCENES.length) {
+      const failed = SCENES.length - images.length;
+      const refundPlan = Math.min(planConsumed, failed);
+      const refundPack = Math.min(packConsumed, Math.max(0, failed - refundPlan));
+      if (refundPlan > 0 || refundPack > 0) {
+        await refundImageryUnits(userId, refundPlan, refundPack);
+      }
+    }
+
     return NextResponse.json({ images, provider: 'freepik-mystic' });
   } catch (error) {
+    if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Visual Refs] Error:', error);
     const message = error instanceof Error ? error.message : 'Visual references generation failed';
     return NextResponse.json({ error: message }, { status: 500 });
