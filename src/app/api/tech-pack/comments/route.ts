@@ -7,26 +7,26 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/api-auth';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import type { TeamPermission } from '@/lib/team-permissions';
 
 const VALID_BLOCKS = new Set([
   'header', 'drawings', 'measurements', 'bom', 'grading', 'factory', 'general',
 ]);
 
-async function ensureOwnership(userId: string, skuId: string): Promise<string | null> {
+/* Resolve the collection behind a SKU and gate via the team-aware
+   permission helper. Same shape return + 404 on miss as the other
+   tech-pack routes. */
+async function gateBySku(userId: string, skuId: string, permission: TeamPermission): Promise<string | null> {
   const { data: sku } = await supabaseAdmin
     .from('collection_skus')
     .select('collection_plan_id')
     .eq('id', skuId)
     .maybeSingle();
   if (!sku) return null;
-  const { data: plan } = await supabaseAdmin
-    .from('collection_plans')
-    .select('user_id')
-    .eq('id', sku.collection_plan_id)
-    .maybeSingle();
-  if (!plan || plan.user_id !== userId) return null;
+  const check = await verifyCollectionOwnership(userId, sku.collection_plan_id, permission);
+  if (!check.authorized) return null;
   return sku.collection_plan_id;
 }
 
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
   const skuId = req.nextUrl.searchParams.get('skuId');
   if (!skuId) return NextResponse.json({ error: 'Missing skuId' }, { status: 400 });
-  const collectionPlanId = await ensureOwnership(user!.id, skuId);
+  const collectionPlanId = await gateBySku(user!.id, skuId, 'view_all');
   if (!collectionPlanId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const { data } = await supabaseAdmin
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   if (!body.skuId || !body.block || !VALID_BLOCKS.has(body.block) || !body.body?.trim()) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   }
-  const collectionPlanId = await ensureOwnership(user!.id, body.skuId);
+  const collectionPlanId = await gateBySku(user!.id, body.skuId, 'edit_design');
   if (!collectionPlanId) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const authorName = user!.email?.split('@')[0] || null;
@@ -105,7 +105,7 @@ export async function PATCH(req: NextRequest) {
     .eq('id', body.id)
     .maybeSingle();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const ok = await ensureOwnership(user!.id, existing.sku_id);
+  const ok = await gateBySku(user!.id, existing.sku_id, 'edit_design');
   if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   await supabaseAdmin
@@ -127,7 +127,7 @@ export async function DELETE(req: NextRequest) {
     .eq('id', id)
     .maybeSingle();
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const ok = await ensureOwnership(user!.id, existing.sku_id);
+  const ok = await gateBySku(user!.id, existing.sku_id, 'edit_design');
   if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   await supabaseAdmin.from('tech_pack_comments').delete().eq('id', id);

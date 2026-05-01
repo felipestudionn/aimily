@@ -9,7 +9,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { loadFullContext } from '@/lib/ai/load-full-context';
@@ -18,15 +18,19 @@ export const runtime = 'nodejs';
 
 type Scope = 'measurements' | 'bom' | 'both';
 
-async function ensureOwnership(userId: string, skuId: string) {
+/* Pull the SKU + plan context the AI prompt needs, then gate via the
+   team-aware ownership helper so collaborators with `edit_design` can
+   trigger generations on the same collection. */
+async function gateAndLoadSku(userId: string, skuId: string) {
   const { data: sku } = await supabaseAdmin
     .from('collection_skus')
     .select('*, collection_plans!inner(user_id, name, season)')
     .eq('id', skuId)
     .maybeSingle();
   if (!sku) return null;
+  const check = await verifyCollectionOwnership(userId, sku.collection_plan_id, 'edit_design');
+  if (!check.authorized) return null;
   const plan = sku.collection_plans as { user_id: string; name: string; season: string };
-  if (plan.user_id !== userId) return null;
   return { sku, plan };
 }
 
@@ -43,7 +47,7 @@ export async function POST(req: NextRequest) {
   const scope: Scope = body.scope || 'both';
   if (!skuId) return NextResponse.json({ error: 'Missing skuId' }, { status: 400 });
 
-  const check = await ensureOwnership(user.id, skuId);
+  const check = await gateAndLoadSku(user.id, skuId);
   if (!check) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const { sku, plan } = check;
 

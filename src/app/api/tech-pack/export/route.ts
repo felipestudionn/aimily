@@ -6,7 +6,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/api-auth';
+import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { signTechPackToken } from '@/lib/tech-pack/export-token';
 
@@ -43,12 +43,12 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (!sku) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const { data: plan } = await supabaseAdmin
-    .from('collection_plans')
-    .select('user_id')
-    .eq('id', sku.collection_plan_id)
-    .maybeSingle();
-  if (!plan || plan.user_id !== user!.id) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  /* Team-aware: owners and any seat with `edit_design` can request an
+     export. The signed token below still binds to user!.id so the
+     internal export route renders the asset on behalf of the requester
+     (the page only checks signature integrity, not the user role). */
+  const ownership = await verifyCollectionOwnership(user!.id, sku.collection_plan_id, 'edit_design');
+  if (!ownership.authorized) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const token = signTechPackToken({
     collectionId: sku.collection_plan_id,

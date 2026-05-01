@@ -12,6 +12,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifyTechPackToken } from '@/lib/tech-pack/export-token';
 import { TechPackExportSheet } from '@/components/tech-pack/TechPackExportSheet';
 import { getTechPackExportStrings } from '@/i18n/tech-pack-export';
+import { checkTeamPermission } from '@/lib/team-permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,18 @@ export default async function TechPackExportPage({ params, searchParams }: PageP
     .select('id, name, season, user_id')
     .eq('id', sku.collection_plan_id)
     .maybeSingle();
-  if (!plan || plan.user_id !== payload.userId) notFound();
+  if (!plan) notFound();
+
+  /* Team-aware: owners and any seat with `edit_design` can render this
+     page. The signed token has already proven the request comes from
+     our PDF API; we still re-check permissions because tokens live for
+     5 minutes and a seat could have been revoked in between. */
+  const allowed = await checkTeamPermission({
+    userId: payload.userId,
+    collectionPlanId: plan.id,
+    permission: 'edit_design',
+  });
+  if (!allowed.allowed) notFound();
 
   const { data: techPackData } = await supabaseAdmin
     .from('tech_pack_data')
