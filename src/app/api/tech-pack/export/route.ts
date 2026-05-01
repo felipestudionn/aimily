@@ -56,8 +56,9 @@ export async function POST(req: NextRequest) {
     skuId: sku.id,
   });
 
+  const userLanguage = (user!.user_metadata?.language as string | undefined) || 'en';
   const baseUrl = getBaseUrl(req);
-  const exportUrl = `${baseUrl}/tech-pack/export/${sku.id}?token=${encodeURIComponent(token)}`;
+  const exportUrl = `${baseUrl}/tech-pack/export/${sku.id}?token=${encodeURIComponent(token)}&locale=${encodeURIComponent(userLanguage)}`;
 
   const chromiumMod = (await import('@sparticuz/chromium-min')) as unknown as {
     default?: {

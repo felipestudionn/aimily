@@ -11,17 +11,18 @@ import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifyTechPackToken } from '@/lib/tech-pack/export-token';
 import { TechPackExportSheet } from '@/components/tech-pack/TechPackExportSheet';
+import { getTechPackExportStrings } from '@/i18n/tech-pack-export';
 
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ skuId: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; locale?: string }>;
 }
 
 export default async function TechPackExportPage({ params, searchParams }: PageProps) {
   const { skuId } = await params;
-  const { token } = await searchParams;
+  const { token, locale } = await searchParams;
   if (!token) notFound();
 
   const payload = verifyTechPackToken(token);
@@ -53,13 +54,16 @@ export default async function TechPackExportPage({ params, searchParams }: PageP
     .eq('sku_id', skuId)
     .order('created_at', { ascending: true });
 
+  const collectionFallback = getTechPackExportStrings(locale).collectionDefault;
+
   return (
     <TechPackExportSheet
-      collectionName={plan.name || 'Collection'}
+      collectionName={plan.name || collectionFallback}
       season={plan.season || ''}
       sku={sku}
       data={techPackData ?? null}
       comments={comments ?? []}
+      locale={locale}
     />
   );
 }

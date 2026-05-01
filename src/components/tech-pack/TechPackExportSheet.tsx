@@ -9,6 +9,7 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import type { SKU } from '@/hooks/useSkus';
+import { getTechPackExportStrings, getIntlLocale } from '@/i18n/tech-pack-export';
 
 interface Comment {
   id: string;
@@ -40,20 +41,23 @@ interface Props {
   sku: SKU;
   data: TechPackData | null;
   comments: Comment[];
+  locale?: string;
 }
 
-function fmtDate(iso: string): string {
-  try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+function fmtDate(iso: string, locale: string): string {
+  try { return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' }); }
   catch { return iso; }
 }
 
-export function TechPackExportSheet({ collectionName, season, sku, data, comments }: Props) {
+export function TechPackExportSheet({ collectionName, season, sku, data, comments, locale }: Props) {
+  const t = getTechPackExportStrings(locale);
+  const intlLocale = getIntlLocale(locale);
   const drawings = data?.drawings || {};
   const urlA = drawings.viewA || sku.sketch_url;
   const urlB = drawings.viewB || sku.sketch_top_url;
   const isFootwear = sku.category === 'CALZADO';
-  const labelA = isFootwear ? 'Side view' : 'Front view';
-  const labelB = isFootwear ? 'Top-down view' : 'Back view';
+  const labelA = isFootwear ? t.sideView : t.frontView;
+  const labelB = isFootwear ? t.topDownView : t.backView;
   const callouts = drawings.callouts || [];
 
   const measurementRows = data?.measurements?.rows || [];
@@ -61,17 +65,17 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
   const materialZones = data?.materials?.zones || [];
   const factoryBody = (data?.factory_notes?.body as string) || '';
 
-  const typeLabel = sku.type === 'IMAGEN' ? 'Image' : sku.type === 'REVENUE' ? 'Revenue' : 'Entry';
-  const categoryLabel = sku.category === 'CALZADO' ? 'Footwear' : sku.category === 'ROPA' ? 'Apparel' : 'Accessories';
+  const typeLabel = sku.type === 'IMAGEN' ? t.typeImage : sku.type === 'REVENUE' ? t.typeRevenue : t.typeEntry;
+  const categoryLabel = sku.category === 'CALZADO' ? t.categoryFootwear : sku.category === 'ROPA' ? t.categoryApparel : t.categoryAccessories;
   const headerFields = [
-    { label: 'Style', value: sku.name },
-    { label: 'Family', value: sku.family },
-    { label: 'Category', value: categoryLabel },
-    { label: 'Season', value: season || '—' },
-    { label: 'Drop', value: `Drop ${sku.drop_number}` },
-    { label: 'Segment', value: typeLabel },
-    { label: 'PVP', value: `€${sku.pvp}` },
-    { label: 'COGS', value: `€${sku.cost}` },
+    { label: t.styleField, value: sku.name },
+    { label: t.familyField, value: sku.family },
+    { label: t.categoryField, value: categoryLabel },
+    { label: t.seasonField, value: season || '—' },
+    { label: t.dropField, value: `${t.dropField} ${sku.drop_number}` },
+    { label: t.segmentField, value: typeLabel },
+    { label: t.pvpField, value: `€${sku.pvp}` },
+    { label: t.cogsField, value: `€${sku.cost}` },
   ];
 
   /* Pins grouped by drawing slot for numbering */
@@ -106,7 +110,7 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <p className="tp-eyebrow" style={{ margin: 0, marginBottom: 6 }}>Tech pack · {collectionName}</p>
+          <p className="tp-eyebrow" style={{ margin: 0, marginBottom: 6 }}>{t.techPack} · {collectionName}</p>
           <h1 style={{ margin: 0, fontSize: 44, fontWeight: 500, letterSpacing: '-0.03em', lineHeight: 1.05 }}>
             {sku.name}
           </h1>
@@ -126,27 +130,25 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
 
       {/* Technical Drawings */}
       <div className="tp-section">
-        <p className="tp-eyebrow">Technical drawings</p>
+        <p className="tp-eyebrow">{t.technicalDrawings}</p>
         <p style={{ fontSize: 12, color: '#777', margin: '6px 0 18px 0' }}>
-          {isFootwear
-            ? 'Side and top-down views — pin-annotated for factory execution.'
-            : 'Front and back views — pin-annotated for factory execution.'}
+          {isFootwear ? t.drawingsHelpFootwear : t.drawingsHelpApparel}
         </p>
         <div className="tp-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-          <DrawingSlot url={urlA} label={labelA} pins={pinsBySlot.viewA || []} />
-          <DrawingSlot url={urlB} label={labelB} pins={pinsBySlot.viewB || []} />
+          <DrawingSlot url={urlA} label={labelA} pins={pinsBySlot.viewA || []} noDrawingLabel={t.noDrawing} />
+          <DrawingSlot url={urlB} label={labelB} pins={pinsBySlot.viewB || []} noDrawingLabel={t.noDrawing} />
         </div>
 
         {/* Pin legend */}
         {(pinsBySlot.viewA?.length || pinsBySlot.viewB?.length) ? (
           <div style={{ marginTop: 20 }}>
-            <p className="tp-eyebrow" style={{ marginBottom: 8 }}>Pin notes</p>
+            <p className="tp-eyebrow" style={{ marginBottom: 8 }}>{t.pinNotes}</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {([['viewA', labelA], ['viewB', labelB]] as [string, string][]).map(([slot, slotLabel]) => (
                 <div key={slot}>
                   <p style={{ fontSize: 11, fontWeight: 600, color: '#666', marginBottom: 6 }}>{slotLabel}</p>
                   {(pinsBySlot[slot] || []).length === 0 ? (
-                    <p style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>No pins.</p>
+                    <p style={{ fontSize: 11, color: '#aaa', fontStyle: 'italic' }}>{t.noPins}</p>
                   ) : (
                     <ol style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }}>
                       {(pinsBySlot[slot] || []).map(p => (
@@ -169,14 +171,14 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
 
         {callouts.length > 0 && (
           <div style={{ marginTop: 20 }}>
-            <p className="tp-eyebrow" style={{ marginBottom: 8 }}>Construction callouts</p>
+            <p className="tp-eyebrow" style={{ marginBottom: 8 }}>{t.constructionCallouts}</p>
             <div className="tp-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
               {callouts.map((c, i) => (
                 <div key={i} style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #eee' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={c.url} alt={c.label || 'callout'} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', display: 'block' }} />
+                  <img src={c.url} alt={c.label || t.detail.toLowerCase()} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', display: 'block' }} />
                   <div style={{ padding: '6px 10px', fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#666', borderTop: '1px solid #eee', background: '#fafafa' }}>
-                    {c.label || `Detail ${i + 1}`}
+                    {c.label || `${t.detail} ${i + 1}`}
                   </div>
                 </div>
               ))}
@@ -188,7 +190,7 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
       {/* Material swatches */}
       {materialZones.length > 0 && (
         <div className="tp-section">
-          <p className="tp-eyebrow">Material swatches</p>
+          <p className="tp-eyebrow">{t.materialSwatches}</p>
           <div className="tp-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginTop: 12 }}>
             {materialZones.map((z, i) => (
               <div key={i} style={{ border: '1px solid #eee', borderRadius: 10, overflow: 'hidden' }}>
@@ -199,7 +201,7 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
                   )}
                 </div>
                 <div style={{ padding: 10, fontSize: 11 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 2 }}>{z.name || `Zone ${i + 1}`}</div>
+                  <div style={{ fontWeight: 600, marginBottom: 2 }}>{z.name || `${t.zone} ${i + 1}`}</div>
                   {z.pantone && <div style={{ fontFamily: 'monospace', color: '#555' }}>{z.pantone}</div>}
                   {z.supplier && <div style={{ color: '#777' }}>{z.supplier}</div>}
                   {z.notes && <div style={{ color: '#999', marginTop: 4 }}>{z.notes}</div>}
@@ -213,11 +215,11 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
       {/* Measurements */}
       {measurementRows.length > 0 && (
         <div className="tp-section">
-          <p className="tp-eyebrow">Measurements</p>
+          <p className="tp-eyebrow">{t.measurements}</p>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #ddd' }}>
-                <th style={{ textAlign: 'left', padding: '8px 0', fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#666', fontWeight: 700 }}>Point</th>
+                <th style={{ textAlign: 'left', padding: '8px 0', fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#666', fontWeight: 700 }}>{t.point}</th>
                 {['XS', 'S', 'M', 'L', 'XL'].map(s => (
                   <th key={s} style={{ textAlign: 'center', padding: 8, fontSize: 10, letterSpacing: '0.15em', color: '#666', fontWeight: 700 }}>{s}</th>
                 ))}
@@ -243,11 +245,11 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
       {/* BOM */}
       {bomLines.length > 0 && (
         <div className="tp-section">
-          <p className="tp-eyebrow">Bill of Materials</p>
+          <p className="tp-eyebrow">{t.billOfMaterials}</p>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 12 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #ddd' }}>
-                {['Type', 'Material', 'Qty', 'Unit', 'Supplier', 'Cost'].map(h => (
+                {[t.bomType, t.bomMaterial, t.bomQty, t.bomUnit, t.bomSupplier, t.bomCost].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: 8, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#666', fontWeight: 700 }}>{h}</th>
                 ))}
               </tr>
@@ -268,7 +270,7 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
       {/* Factory notes */}
       {factoryBody && (
         <div className="tp-section">
-          <p className="tp-eyebrow">Factory notes</p>
+          <p className="tp-eyebrow">{t.factoryNotes}</p>
           <p style={{ fontSize: 13, color: '#333', lineHeight: 1.6, marginTop: 10, whiteSpace: 'pre-wrap' }}>{factoryBody}</p>
         </div>
       )}
@@ -276,13 +278,13 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
       {/* Block comments */}
       {blockComments.length > 0 && (
         <div className="tp-section">
-          <p className="tp-eyebrow">Comments</p>
+          <p className="tp-eyebrow">{t.comments}</p>
           <div style={{ marginTop: 10 }}>
             {blockComments.map(c => (
               <div key={c.id} style={{ padding: '10px 0', borderBottom: '1px solid #f0f0f0' }}>
                 <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 600, color: '#333' }}>{c.author_name || 'user'}</span>
-                  {' · '}{fmtDate(c.created_at)}
+                  <span style={{ fontWeight: 600, color: '#333' }}>{c.author_name || t.user}</span>
+                  {' · '}{fmtDate(c.created_at, intlLocale)}
                   {' · '}<span style={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 9, fontWeight: 700 }}>{c.block}</span>
                 </div>
                 <p style={{ fontSize: 13, color: '#222', lineHeight: 1.5, margin: 0, whiteSpace: 'pre-wrap' }}>{c.body}</p>
@@ -295,7 +297,7 @@ export function TechPackExportSheet({ collectionName, season, sku, data, comment
   );
 }
 
-function DrawingSlot({ url, label, pins }: { url?: string; label: string; pins: (Comment & { pinNumber: number })[] }) {
+function DrawingSlot({ url, label, pins, noDrawingLabel }: { url?: string; label: string; pins: (Comment & { pinNumber: number })[]; noDrawingLabel: string }) {
   return (
     <div style={{ position: 'relative', aspectRatio: '4 / 5', background: '#fdfdfc', border: '1px solid #eee', borderRadius: 10, overflow: 'hidden' }}>
       {url ? (
@@ -323,7 +325,7 @@ function DrawingSlot({ url, label, pins }: { url?: string; label: string; pins: 
         </>
       ) : (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.2em' }}>
-          No drawing
+          {noDrawingLabel}
         </div>
       )}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '6px 12px', background: 'rgba(255,255,255,0.95)', borderTop: '1px solid #eee', fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', fontWeight: 700, color: '#555' }}>
