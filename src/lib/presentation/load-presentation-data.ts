@@ -670,15 +670,27 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
       data.hasAnyData = true;
     } else {
       const moodTiles: { eyebrow: string; label: string; value?: string }[] = [];
-      if (ctx.moodboard) {
-        const kwMatch = ctx.moodboard.match(/Keywords:\s*(.+)/);
-        if (kwMatch) {
-          kwMatch[1].split(/[,·]/).map(k => k.trim()).filter(Boolean).slice(0, 3).forEach((kw, i) => {
-            moodTiles.push({ eyebrow: ['Texture', 'Form', 'Atmosphere'][i] ?? 'Signal', label: kw });
-          });
-        }
+
+      // ctx.moodboard can arrive as either a flat string ("Keywords: a, b, c\n…")
+      // when compiled from the AI brand-DNA pipeline, or as a structured object
+      // {keywords: string[], trend_signals: string[]} when stored directly from
+      // moodboard_analysis. Handle both — and ignore anything else so a malformed
+      // record never crashes the deck.
+      const mb: unknown = ctx.moodboard;
+      let mbKeywords: string[] = [];
+      if (typeof mb === 'string') {
+        const kwMatch = mb.match(/Keywords:\s*(.+)/);
+        if (kwMatch) mbKeywords = kwMatch[1].split(/[,·]/).map(k => k.trim()).filter(Boolean);
+      } else if (mb && typeof mb === 'object' && Array.isArray((mb as { keywords?: unknown }).keywords)) {
+        mbKeywords = ((mb as { keywords: unknown[] }).keywords)
+          .map(k => String(k).trim())
+          .filter(Boolean);
       }
-      if (ctx.trends) {
+      mbKeywords.slice(0, 3).forEach((kw, i) => {
+        moodTiles.push({ eyebrow: ['Texture', 'Form', 'Atmosphere'][i] ?? 'Signal', label: kw });
+      });
+
+      if (typeof ctx.trends === 'string' && ctx.trends) {
         ctx.trends.split(/\n{1,2}/).map(s => s.trim()).filter(Boolean).slice(0, 6 - moodTiles.length).forEach((line, i) => {
           const m = line.match(/^(.+?)(?:\s*\((.+?)\))?(?::\s*(.+))?$/);
           const label = m?.[1]?.trim() ?? line;
