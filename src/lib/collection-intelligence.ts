@@ -153,11 +153,21 @@ export async function recordDecision(params: RecordDecisionParams): Promise<void
  * Record multiple decisions in one batch. Used when a single user action
  * produces multiple decisions (e.g., saving a brand profile updates
  * brand_name + tagline + brand_story + voice + target in one save).
+ *
+ * Sequential by design: recordDecision for the same (domain, subdomain,
+ * key) reads the current row, marks it superseded and inserts a new
+ * version. Running the batch with Promise.all let two same-key decisions
+ * race the read+supersede+insert path and either drop a version or
+ * trip the partial unique index added in
+ * `collection_decisions_unique_current_per_key`. We're trading the
+ * micro-batch latency win for correctness.
  */
 export async function recordDecisions(
   decisions: RecordDecisionParams[]
 ): Promise<void> {
-  await Promise.all(decisions.map(recordDecision));
+  for (const decision of decisions) {
+    await recordDecision(decision);
+  }
 }
 
 // ─── Read decisions ───
