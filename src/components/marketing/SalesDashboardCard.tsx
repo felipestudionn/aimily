@@ -36,7 +36,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
   /* ── KPIs ── */
   const kpis = useMemo(() => {
     if (!skus.length) return null;
-    const totalRevenue = skus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
+    const totalRevenue = skus.reduce((sum, s) => sum + (s.expected_sales), 0);
     const totalUnits = skus.reduce((sum, s) => sum + s.buy_units, 0);
     const avgPvp = skus.reduce((sum, s) => sum + s.pvp, 0) / skus.length;
     const avgMargin = skus.reduce((sum, s) => sum + s.margin, 0) / skus.length;
@@ -85,7 +85,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
 
         if (dropStart < monthEnd && dropEnd > monthStart) {
           const dropSkus = skus.filter((s) => s.drop_number === drop.drop_number);
-          const dropRevenue = dropSkus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
+          const dropRevenue = dropSkus.reduce((sum, s) => sum + (s.expected_sales), 0);
           const weeksActive = drop.weeks_active || 8;
           const weeklyRate = dropRevenue / weeksActive;
 
@@ -113,7 +113,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
   const storiesWithCommercial = useMemo(() => {
     return stories.map((story) => {
       const storySkus = skus.filter((s) => (s as SKU & { story_id?: string }).story_id === story.id);
-      const totalRevenue = storySkus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
+      const totalRevenue = storySkus.reduce((sum, s) => sum + (s.expected_sales), 0);
       const totalUnits = storySkus.reduce((sum, s) => sum + s.buy_units, 0);
       const avgPvp = storySkus.length ? storySkus.reduce((sum, s) => sum + s.pvp, 0) / storySkus.length : 0;
       const avgMargin = storySkus.length ? storySkus.reduce((sum, s) => sum + s.margin, 0) / storySkus.length : 0;
@@ -137,7 +137,7 @@ export function SalesDashboardCard({ collectionPlanId }: SalesDashboardCardProps
     return drops
       .map((drop) => {
         const dropSkus = skus.filter((s) => s.drop_number === drop.drop_number);
-        const revenue = dropSkus.reduce((sum, s) => sum + (s.expected_sales * s.pvp), 0);
+        const revenue = dropSkus.reduce((sum, s) => sum + (s.expected_sales), 0);
         const units = dropSkus.reduce((sum, s) => sum + s.buy_units, 0);
         return { ...drop, revenue: Math.round(revenue), units, skuCount: dropSkus.length };
       })
