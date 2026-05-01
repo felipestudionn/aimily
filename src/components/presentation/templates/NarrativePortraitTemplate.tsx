@@ -9,6 +9,8 @@
    RIGHT. All typography and palette theme-tokenised.
    ═══════════════════════════════════════════════════════════════════ */
 
+'use client';
+
 import type { MicroBlockSlide, DeckMeta } from '@/lib/presentation/types';
 import type { NarrativeSlideData } from '@/lib/presentation/load-presentation-data';
 import { EditableText } from '../EditableText';
