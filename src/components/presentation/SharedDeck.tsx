@@ -33,7 +33,7 @@ export function SharedDeck({ meta, collectionId, themeId, coverSubtitle, titles,
   const noOpExit = () => {};
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full relative">
       <PresentationDeck
         meta={meta}
         collectionId={collectionId}
@@ -47,6 +47,36 @@ export function SharedDeck({ meta, collectionId, themeId, coverSubtitle, titles,
         onExit={noOpExit}
         readOnly
       />
+      {/*
+        Legal disclaimer overlay on every shared deck. Same posture as
+        the Notes & Disclaimers slide that ships in the PDF export, but
+        compact for live viewing — small enough to ignore, large enough
+        to spot. Required because shared decks circulate publicly and
+        may name third-party brands as inspiration. Trademarks remain
+        with their owners; AI content needs human review before commercial use.
+      */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 12,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontSize: '10px',
+          letterSpacing: '0.04em',
+          color: 'rgba(255,255,255,0.55)',
+          background: 'rgba(10,10,10,0.55)',
+          backdropFilter: 'blur(6px)',
+          padding: '6px 14px',
+          borderRadius: '999px',
+          pointerEvents: 'none',
+          zIndex: 50,
+          maxWidth: '90vw',
+          textAlign: 'center',
+        }}
+      >
+        Working draft &middot; brand references are inspiration, not endorsements &middot;
+        AI content requires brand-owner review &middot; aimily
+      </div>
     </div>
   );
 }
