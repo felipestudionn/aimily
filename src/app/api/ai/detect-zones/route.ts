@@ -33,9 +33,14 @@ export async function POST(req: NextRequest) {
         // Raw base64
         base64 = image_url;
       } else {
-        // Fetch from URL
-        const res = await fetch(image_url);
+        /* SSRF guard before downloading user-supplied URL. */
+        const { ensureSafeExternalUrl } = await import('@/lib/url-allowlist');
+        await ensureSafeExternalUrl(image_url);
+        const res = await fetch(image_url, { signal: AbortSignal.timeout(20_000) });
         const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.byteLength > 50 * 1024 * 1024) {
+          throw new Error('Source image too large (max 50MB)');
+        }
         base64 = buf.toString('base64');
       }
     }

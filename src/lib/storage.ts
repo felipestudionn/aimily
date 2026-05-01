@@ -133,6 +133,9 @@ export async function uploadToStorage(
 
 /**
  * Upload from an external URL (e.g. FAL CDN) — downloads and re-uploads to Supabase.
+ * The source URL is validated against the SSRF allowlist first, so the user
+ * can't ask us to download from internal hosts or the cloud metadata service.
+ * Also enforces a 50 MB hard cap to stop someone making us pull a 5 GB file.
  */
 export async function uploadFromUrl(
   collectionPlanId: string,
@@ -140,13 +143,31 @@ export async function uploadFromUrl(
   sourceUrl: string,
   fileName?: string
 ): Promise<UploadResult> {
-  const response = await fetch(sourceUrl);
+  const { ensureSafeExternalUrl } = await import('@/lib/url-allowlist');
+  await ensureSafeExternalUrl(sourceUrl);
+
+  const response = await fetch(sourceUrl, {
+    /* 30s ceiling so a slow source can't tie up the function for the
+       full 5-minute Vercel max. */
+    signal: AbortSignal.timeout(30_000),
+  });
   if (!response.ok) {
     throw new Error(`Failed to fetch source image: ${response.status}`);
   }
 
+  const contentLengthHeader = response.headers.get('content-length');
+  const declaredSize = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+  const MAX_BYTES = 50 * 1024 * 1024;
+  if (declaredSize > MAX_BYTES) {
+    throw new Error(`Source file too large: ${declaredSize} bytes (max ${MAX_BYTES})`);
+  }
+
   const contentType = response.headers.get('content-type') || 'image/png';
-  const buffer = Buffer.from(await response.arrayBuffer());
+  const arrayBuffer = await response.arrayBuffer();
+  if (arrayBuffer.byteLength > MAX_BYTES) {
+    throw new Error(`Source file too large after download: ${arrayBuffer.byteLength} bytes`);
+  }
+  const buffer = Buffer.from(arrayBuffer);
   const ext = contentType.split('/')[1]?.split(';')[0] || 'png';
   const name = fileName || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 

@@ -81,8 +81,15 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
     } else if (sketch_url.length > 500 && !sketch_url.startsWith('http')) {
       sketchBase64 = sketch_url;
     } else {
-      const imgRes = await fetch(sketch_url);
+      /* SSRF guard — sketch_url is user-supplied, must not point at
+         private IPs / cloud metadata / internal Vercel hosts. */
+      const { ensureSafeExternalUrl } = await import('@/lib/url-allowlist');
+      await ensureSafeExternalUrl(sketch_url);
+      const imgRes = await fetch(sketch_url, { signal: AbortSignal.timeout(20_000) });
       const buf = Buffer.from(await imgRes.arrayBuffer());
+      if (buf.byteLength > 50 * 1024 * 1024) {
+        throw new Error('Source sketch too large (max 50MB)');
+      }
       sketchBase64 = buf.toString('base64');
     }
 
