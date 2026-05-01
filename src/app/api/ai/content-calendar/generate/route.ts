@@ -118,46 +118,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });
     }
 
-    const dropsBlock = (drops || []).map((d: { name: string; launch_date: string; story_alignment?: string }) =>
-      `- ${d.name}: launches ${d.launch_date}, story "${d.story_alignment || 'N/A'}"`
-    ).join('\n');
-
-    const actionsBlock = (commercialActions || []).map((a: { name: string; type: string; date: string }) =>
-      `- ${a.name} (${a.type}): ${a.date}`
-    ).join('\n');
-
-    const storiesBlock = (stories || []).map((s: { name: string; mood?: string }) =>
-      `- "${s.name}": ${s.mood || 'N/A'}`
-    ).join('\n');
-
-    let userInput = '';
-    if (mode === 'asistido') {
-      userInput = `MODE: ASSISTED — Generate a content calendar aligned with the GTM drops below.
-${userDirection ? `USER DIRECTION: ${userDirection}` : ''}
-Use the drops as anchor points. Create teasing content 2-3 weeks before each drop, launch day content, and sustain content after.`;
-    } else {
-      userInput = `MODE: FULL PROPOSAL — Generate a complete editorial content calendar.
-CALENDAR PERIOD: ${startDate} to ${endDate}
-ACTIVE PLATFORMS: ${platforms || 'instagram, tiktok, email'}
-Create a comprehensive content plan covering the full period.`;
-    }
-
     // C7 — perf signals from previous favorited generations
     const perfSummary = await buildPerformanceContext(collectionPlanId);
     const perfBlock = formatPerformanceContextForPrompt(perfSummary);
 
-    const userPrompt = `${MARKETING_PROMPTS.calendar_generate.system}
+    /* Render the calendar_generate.user template via renderPrompt so
+       every {{placeholder}} (brand_name, brand_voice_summary, drops
+       #each, commercial_actions #each, stories #each, start/end_date,
+       user_direction #if) is filled from the same flat context. The
+       previous implementation glued strings by hand and re-injected the
+       SYSTEM prompt as the user message — every template placeholder
+       was silently dropped. */
+    const flatCtx: Record<string, unknown> = {
+      brand_name: body.brandName || 'Brand',
+      brand_voice_summary: body.brandVoiceSummary || '',
+      content_pillars_list: body.contentPillarsList || '',
+      active_platforms: platforms || 'instagram, tiktok, email',
+      drops: (drops || []).map((d: { name: string; launch_date: string; story_alignment?: string }) => ({
+        name: d.name,
+        launch_date: d.launch_date,
+        story_alignment: d.story_alignment || 'N/A',
+      })),
+      commercial_actions: (commercialActions || []).map((a: { name: string; type: string; date: string }) => ({
+        name: a.name,
+        type: a.type,
+        date: a.date,
+      })),
+      stories: (stories || []).map((s: { name: string; mood?: string }) => ({
+        name: s.name,
+        mood: s.mood || 'N/A',
+      })),
+      start_date: startDate || '',
+      end_date: endDate || '',
+      user_direction: mode === 'asistido' ? (userDirection || '') : '',
+    };
 
-GTM TIMELINE:
-${dropsBlock || 'No drops defined yet.'}
+    const modeDirective = mode === 'asistido'
+      ? `MODE: ASSISTED — anchor the calendar on the GTM drops above. Build teasing content 2-3 weeks before each drop, launch-day content, and sustain content after.`
+      : `MODE: FULL PROPOSAL — build a comprehensive editorial calendar covering the full period regardless of how many drops are defined.`;
 
-COMMERCIAL ACTIONS:
-${actionsBlock || 'No commercial actions defined yet.'}
+    const userPrompt = `${renderPrompt(MARKETING_PROMPTS.calendar_generate.user, flatCtx)}
 
-STORIES:
-${storiesBlock || 'No stories defined yet.'}
-
-${userInput}${perfBlock ? `\n\n${perfBlock}` : ''}`;
+${modeDirective}${perfBlock ? `\n\n${perfBlock}` : ''}`;
 
     const { data, model, fallback } = await generateJSON({
       system: MARKETING_PROMPTS.calendar_generate.system,

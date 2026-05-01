@@ -128,6 +128,19 @@ function mapCreativeWorkspace(
       value: style,
       tags: ['affects_photography', 'affects_web', 'affects_content'],
     });
+    /* Mirror style into the marketing voice personality slot too. The
+       Brand DNA UI only exposes one free-text field for
+       brand essence today, so the same string drives both visual
+       direction and the {{brand_voice_personality}} placeholder used
+       by marketing prompts. When a dedicated personality field ships
+       in the UI it can override this without losing the visual link. */
+    decisions.push({
+      ...base,
+      domain: 'marketing', subdomain: 'voice', key: 'personality',
+      value: style,
+      sourcePhase: 'marketing',
+      tags: ['affects_content', 'affects_seo'],
+    });
   }
   const typography = s(brandDna.typography);
   if (typography) {
@@ -161,19 +174,19 @@ function mapCreativeWorkspace(
         ...base,
         domain: 'creative', subdomain: 'target', key: 'demographics',
         value: allDescs.join('\n\n'),
-        tags: ['affects_content', 'affects_pricing', 'affects_channels'],
+        tags: ['affects_content', 'affects_pricing', 'affects_channels', 'affects_seo'],
       });
       decisions.push({
         ...base,
         domain: 'creative', subdomain: 'target', key: 'psychographics',
         value: allDescs.join('\n\n'),
-        tags: ['affects_content'],
+        tags: ['affects_content', 'affects_seo'],
       });
       decisions.push({
         ...base,
         domain: 'creative', subdomain: 'target', key: 'lifestyle',
         value: allDescs.join('\n\n'),
-        tags: ['affects_content', 'affects_photography'],
+        tags: ['affects_content', 'affects_photography', 'affects_seo'],
       });
     }
   }
@@ -195,7 +208,7 @@ function mapCreativeWorkspace(
       ...base,
       domain: 'creative', subdomain: 'identity', key: 'collection_vibe',
       value: vibeFull,
-      tags: ['affects_content', 'affects_photography'],
+      tags: ['affects_content', 'affects_photography', 'affects_seo'],
     });
   }
 
@@ -222,7 +235,7 @@ function mapCreativeWorkspace(
       ...base,
       domain: 'creative', subdomain: 'inspiration', key: 'moodboard_analysis',
       value: moodboardText,
-      tags: ['affects_photography', 'affects_content'],
+      tags: ['affects_photography', 'affects_content', 'affects_seo'],
     });
   }
 

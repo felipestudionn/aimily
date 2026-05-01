@@ -222,7 +222,14 @@ const PRESETS: Record<string, { domains?: string[]; tags?: string[] }> = {
     tags: ['affects_content'],
   },
   seo_prompt: {
+    /* SEO needs the full brand surface: name, vibe, consumer, moodboard,
+       trend keywords. Filtering by `affects_seo` alone left the prompt
+       with brand_name + trends only — without consumer or vibe the
+       generated SEO copy was generic and missed the brand voice. The
+       Creative domain is added wholesale; tags pick up anything outside
+       Creative that opts in (e.g. selected merchandising families). */
     tags: ['affects_seo'],
+    domains: ['creative'],
   },
   story_generation: {
     domains: ['creative', 'merchandising', 'design'],
@@ -337,14 +344,22 @@ export async function compilePromptContext(
   // Voice
   ctx.brand_voice_personality = get('marketing', 'voice', 'personality') || '';
   ctx.brand_voice_tone = get('marketing', 'voice', 'tone') || '';
+  const valuesRaw = get('marketing', 'voice', 'values');
+  ctx.brand_values = Array.isArray(valuesRaw)
+    ? (valuesRaw as string[]).join(', ')
+    : (typeof valuesRaw === 'string' ? valuesRaw : '');
   const doRules = get('marketing', 'voice', 'do_rules');
   const dontRules = get('marketing', 'voice', 'dont_rules');
   const vocabulary = get('marketing', 'voice', 'vocabulary');
   ctx.brand_voice_keywords = Array.isArray(vocabulary) ? (vocabulary as string[]).join(', ') : '';
   ctx.brand_voice_donot = Array.isArray(dontRules) ? (dontRules as string[]).join(', ') : '';
+  /* Build a do_rules alias too — referenced by some downstream prompt
+     templates as `brand_voice_do`. */
+  ctx.brand_voice_do = Array.isArray(doRules) ? (doRules as string[]).join(', ') : '';
   ctx.brand_voice_summary = [
     ctx.brand_voice_personality,
     ctx.brand_voice_tone ? `Tone: ${ctx.brand_voice_tone}` : '',
+    ctx.brand_values ? `Values: ${ctx.brand_values}` : '',
   ].filter(Boolean).join('. ');
 
   // Design

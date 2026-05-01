@@ -206,6 +206,35 @@ export async function buildPromptContext(
       .eq('collection_plan_id', collectionPlanId),
   ]);
 
+  /* Surface query failures. The 11 reads run in parallel and used to
+     silently fall back to empty values when a table got renamed,
+     RLS got tightened, or the planner shape changed — every prompt
+     placeholder downstream rendered as `undefined` with no signal.
+     Now critical tables (the plan and its SKUs) throw, and everything
+     else logs + continues so an empty stories table doesn't kill the
+     marketing prompt for a freshly-created collection. */
+  if (planRes.error) {
+    throw new Error(`buildPromptContext: collection_plans query failed: ${planRes.error.message}`);
+  }
+  if (skusRes.error) {
+    throw new Error(`buildPromptContext: collection_skus query failed: ${skusRes.error.message}`);
+  }
+  for (const [label, res] of [
+    ['collection_stories', storiesRes],
+    ['content_pillars', pillarsRes],
+    ['brand_voice_config', voiceRes],
+    ['drops', dropsRes],
+    ['commercial_actions', actionsRes],
+    ['ai_generations', generationsRes],
+    ['product_copy', copyRes],
+    ['email_templates_content', emailTemplatesRes],
+    ['content_calendar', calendarRes],
+  ] as const) {
+    if (res.error && res.error.code !== 'PGRST116') {
+      console.error(`[buildPromptContext] ${label} query failed (continuing with empty data):`, res.error);
+    }
+  }
+
   const plan = planRes.data;
   const setupData = plan?.setup_data ?? {};
 
