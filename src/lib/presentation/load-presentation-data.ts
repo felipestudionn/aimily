@@ -332,7 +332,17 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     .maybeSingle();
   const editorialUrl = (latestEditorial?.output_data as { images?: { url: string }[] } | null)?.images?.[0]?.url;
 
-  const consumerSplit = extractLeadBody(ctx.consumer);
+  // Some installs stored consumer fields (demographics/psychographics) as
+  // structured JSONB rather than free text — load-full-context joins them
+  // verbatim so we get "[object Object]" in the narrative. Strip those
+  // tokens and collapse the surrounding whitespace before extracting the
+  // lead/body. The string-typed fields (lifestyle, persona narrative) are
+  // preserved untouched.
+  const consumerClean =
+    typeof ctx.consumer === 'string'
+      ? ctx.consumer.replace(/\[object Object\]/g, '').replace(/\n{2,}/g, '\n').trim()
+      : ctx.consumer;
+  const consumerSplit = extractLeadBody(consumerClean);
   if (consumerSplit.lead || consumerSplit.body) {
     // Consumer slide gets a 2x2 mosaic from the moodboard — those images
     // were curated to evoke the consumer mindset, so they're the right
