@@ -1,7 +1,9 @@
 /**
  * Supabase Storage utilities for collection assets.
  *
- * Bucket: collection-assets (public)
+ * Bucket: collection-assets (private — flipped 2026-05-01)
+ * Reads use 1-year signed URLs (createSignedUrl). The bucket was migrated
+ * from public to private to stop drop designs leaking via guessable URLs.
  * Path convention: {collection_plan_id}/{asset_type}/{filename}
  *
  * Asset types:
@@ -24,6 +26,22 @@
 import { supabaseAdmin } from './supabase-admin';
 
 const BUCKET = 'collection-assets';
+/* 1-year TTL for signed read URLs. The bucket is private (see header
+   comment); we hand out long-lived signed URLs so the existing
+   `<img src=...>` consumers continue to work without an extra
+   round-trip. Refresh strategy is documented in
+   scripts/migrate-storage-to-private.ts. */
+const SIGNED_URL_TTL_SECONDS = 365 * 24 * 3600;
+
+async function signStoragePath(storagePath: string): Promise<string> {
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+  if (error || !data?.signedUrl) {
+    throw new Error(`Failed to sign storage URL for ${storagePath}: ${error?.message ?? 'no signedUrl'}`);
+  }
+  return data.signedUrl;
+}
 
 export type AssetType =
   | 'moodboard'
@@ -121,13 +139,14 @@ export async function uploadToStorage(
     throw new Error(`Storage upload failed: ${error.message}`);
   }
 
-  const { data: urlData } = supabaseAdmin.storage
-    .from(BUCKET)
-    .getPublicUrl(storagePath);
+  /* Bucket is private. Hand back a 1-year signed URL so existing
+     <img src=…> consumers keep working — `publicUrl` field name kept
+     for backwards compatibility with every caller in the app. */
+  const signedUrl = await signStoragePath(storagePath);
 
   return {
     storagePath,
-    publicUrl: urlData.publicUrl,
+    publicUrl: signedUrl,
   };
 }
 
