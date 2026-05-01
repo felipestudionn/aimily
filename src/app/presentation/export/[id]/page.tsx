@@ -52,17 +52,18 @@ const DEFAULT_SUBTITLE = 'A collection presentation';
    element tree. */
 function renderSlide(slide: MicroBlockSlide, meta: DeckMeta, title: string, data: Awaited<ReturnType<typeof loadPresentationData>>): React.ReactNode {
   type AnyProps = Record<string, unknown>;
+  type AnyTemplate = (p: AnyProps) => React.ReactNode;
   const Templates = {
-    hero: HeroTemplate as (p: AnyProps) => React.ReactNode,
-    'editorial-stat': EditorialStatTemplate as (p: AnyProps) => React.ReactNode,
-    'narrative-portrait': NarrativePortraitTemplate as (p: AnyProps) => React.ReactNode,
-    'grid-tile': GridTileTemplate as (p: AnyProps) => React.ReactNode,
-    'timeline-strip': TimelineStripTemplate as (p: AnyProps) => React.ReactNode,
-    'range-wall': RangeWallTemplate as (p: AnyProps) => React.ReactNode,
-    'channel-map': ChannelMapTemplate as (p: AnyProps) => React.ReactNode,
-    palette: PaletteTemplate as (p: AnyProps) => React.ReactNode,
-    'scenario-compare': ScenarioCompareTemplate as (p: AnyProps) => React.ReactNode,
-    'material-zones': MaterialZonesTemplate as (p: AnyProps) => React.ReactNode,
+    hero: HeroTemplate as unknown as AnyTemplate,
+    'editorial-stat': EditorialStatTemplate as unknown as AnyTemplate,
+    'narrative-portrait': NarrativePortraitTemplate as unknown as AnyTemplate,
+    'grid-tile': GridTileTemplate as unknown as AnyTemplate,
+    'timeline-strip': TimelineStripTemplate as unknown as AnyTemplate,
+    'range-wall': RangeWallTemplate as unknown as AnyTemplate,
+    'channel-map': ChannelMapTemplate as unknown as AnyTemplate,
+    palette: PaletteTemplate as unknown as AnyTemplate,
+    'scenario-compare': ScenarioCompareTemplate as unknown as AnyTemplate,
+    'material-zones': MaterialZonesTemplate as unknown as AnyTemplate,
   } as const;
   const propsFor = (): AnyProps => {
     switch (slide.template) {
@@ -169,7 +170,7 @@ export default async function PresentationExportPage({ params, searchParams }: P
   // body lands here instead of bubbling up as a generic Next error page.
   let coverNode: React.ReactNode;
   try {
-    coverNode = (CoverTemplate as (p: { meta: DeckMeta; subtitle: string }) => React.ReactNode)({ meta, subtitle: coverSubtitle });
+    coverNode = (CoverTemplate as unknown as (p: { meta: DeckMeta; subtitle: string }) => React.ReactNode)({ meta, subtitle: coverSubtitle });
   } catch (err) {
     const e = err as Error;
     console.error('[presentation/export] cover threw:', e);
