@@ -9,6 +9,8 @@ import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth'
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateShareToken } from '@/lib/presentation/share-token';
 import { hashSharePassword } from '@/lib/presentation/share-password';
+import { detectBrandNames } from '@/lib/brand-name-detector';
+import { loadPresentationData } from '@/lib/presentation/load-presentation-data';
 
 export const runtime = 'nodejs';
 
@@ -64,7 +66,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to create share' }, { status: 500 });
   }
 
-  return NextResponse.json({ token });
+  /* Sanity-scan the deck payload that's about to go public for
+     mentions of third-party brand names. The legal disclaimer in
+     the share-link footer covers us, but for business-perfect we
+     hand the user a pre-share warning so they can soften the
+     phrasing where it matters. Non-blocking: we still create the
+     share, but the response carries a brandWarnings field the UI
+     surfaces as a heads-up. */
+  let brandWarnings: { brand: string; contextSnippet: string }[] = [];
+  try {
+    const deckData = await loadPresentationData(collectionId);
+    brandWarnings = detectBrandNames(deckData);
+  } catch (err) {
+    console.warn('[api/presentation/share] brand-name scan failed (non-blocking):', err);
+  }
+
+  return NextResponse.json({ token, brandWarnings });
 }
 
 export async function GET(req: NextRequest) {

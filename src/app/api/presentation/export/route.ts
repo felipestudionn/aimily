@@ -11,6 +11,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { signExportToken } from '@/lib/presentation/export-token';
+import { detectBrandNames, buildBrandNamesWarningHeader } from '@/lib/brand-name-detector';
+import { loadPresentationData } from '@/lib/presentation/load-presentation-data';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -151,13 +153,30 @@ export async function POST(req: NextRequest) {
     });
 
     const filename = `presentation-${collectionId.slice(0, 8)}-${Date.now()}.pdf`;
+    /* Sanity-scan the deck for third-party brand mentions and surface
+       hits via a non-blocking response header. The legal disclaimer
+       on the cover slide covers us, but the header lets the UI nudge
+       the user "you mentioned Nike, Vinted, Veja — soften the
+       phrasing if you don't want to read as endorsement". */
+    let brandWarning: string | null = null;
+    try {
+      const deckData = await loadPresentationData(collectionId);
+      brandWarning = buildBrandNamesWarningHeader(detectBrandNames(deckData));
+    } catch (err) {
+      console.warn('[api/presentation/export] brand-name scan failed (non-blocking):', err);
+    }
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Cache-Control': 'no-store',
+    };
+    if (brandWarning) {
+      responseHeaders['X-Brand-Names-Detected'] = brandWarning;
+      responseHeaders['Access-Control-Expose-Headers'] = 'X-Brand-Names-Detected';
+    }
     return new NextResponse(pdfBuffer as unknown as BodyInit, {
       status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'no-store',
-      },
+      headers: responseHeaders,
     });
   } catch (e) {
     console.error('[api/presentation/export] failed:', e);
