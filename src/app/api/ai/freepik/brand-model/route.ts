@@ -7,6 +7,7 @@ import {
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /* Same long-poll constraint as still-life. */
 export const runtime = 'nodejs';
@@ -214,8 +215,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Brand Model] Error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Brand model generation failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

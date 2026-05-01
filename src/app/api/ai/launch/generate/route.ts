@@ -5,6 +5,7 @@ import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { buildPromptContext, renderPrompt } from '@/lib/prompts/prompt-context';
 import { generateJSON } from '@/lib/ai/llm-client';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /**
  * AI Launch Plan Generation
@@ -97,7 +98,10 @@ Channels: ${channels || 'Instagram, TikTok, Email, Website'}`;
     return NextResponse.json({ ...(data as Record<string, unknown>), model, fallback });
   } catch (error) {
     console.error('Launch plan generation error', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

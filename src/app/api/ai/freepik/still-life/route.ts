@@ -8,6 +8,7 @@ import {
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /* Freepik image generation polls ~60s. Vercel default Function timeout
    on Hobby is 10s, on Pro 60s — without an explicit maxDuration the
@@ -485,13 +486,14 @@ export async function POST(req: NextRequest) {
       provider: 'freepik-nano-banana',
     });
   } catch (error) {
-    /* Provider failed after we already deducted. Refund whatever was
-       taken; if the user was admin / unlimited the consumed values are
-       0 and the refund is a cheap no-op. */
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
+    /* Log the raw provider message for ops; surface a friendly,
+       actionable message to the user. */
     console.error('[Still Life] Error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Still life generation failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

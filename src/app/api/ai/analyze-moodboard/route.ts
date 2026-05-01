@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import Anthropic from '@anthropic-ai/sdk';
 import { generateJSON, extractJSON } from '@/lib/ai/llm-client';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -172,9 +173,10 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('[Moodboard] Analysis error:', error);
+    const norm = normalizeAiError(error);
     return NextResponse.json(
-      { error: 'Internal server error', message: error instanceof Error ? error.message : 'Unknown' },
-      { status: 500 }
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
     );
   }
 }

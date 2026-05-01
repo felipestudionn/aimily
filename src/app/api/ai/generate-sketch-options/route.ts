@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkImageryUsage, refundImageryUnits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { persistAsset } from '@/lib/storage';
 import sharp from 'sharp';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /* ═══════════════════════════════════════════════════════════
    Sketch from Reference Photo — OpenAI gpt-image-1
@@ -177,6 +178,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('Sketch error:', error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed' }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

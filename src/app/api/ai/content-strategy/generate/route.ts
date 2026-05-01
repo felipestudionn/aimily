@@ -5,6 +5,7 @@ import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { renderPrompt } from '@/lib/prompts/prompt-context';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 import { enforceHookDiversity } from '@/lib/marketing-validators';
 import {
   buildPerformanceContext,
@@ -413,7 +414,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating content strategy:', error);
-    const message = error instanceof Error ? error.message : 'Failed to generate';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

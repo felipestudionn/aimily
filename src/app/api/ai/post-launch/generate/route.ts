@@ -6,6 +6,7 @@ import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
 import { renderPrompt, buildPromptContext } from '@/lib/prompts/prompt-context';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /**
  * C6 — Post-launch analysis generation.
@@ -123,7 +124,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ result: data, model, fallback });
   } catch (error) {
     console.error('Post-launch analysis error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

@@ -11,6 +11,7 @@ import { compositeModelOntoStyleRef, blurFaceInStyleReference } from '@/lib/face
 import sharp from 'sharp';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /* ═══════════════════════════════════════════════════════════════
    Editorial — Freepik Nano Banana (Gemini 2.5 Flash Image Preview)
@@ -702,9 +703,11 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Editorial] Error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Editorial generation failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }
 

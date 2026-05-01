@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkImageryUsage, refundImageryUnits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { loadFullContext } from '@/lib/ai/load-full-context';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /* ═══════════════════════════════════════════════════════════════
    Brand Visual References — Freepik Mystic (text-to-image)
@@ -285,7 +286,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Visual Refs] Error:', error);
-    const message = error instanceof Error ? error.message : 'Visual references generation failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

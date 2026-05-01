@@ -6,6 +6,7 @@ import {
 } from '@/lib/prompts/sketch-generation';
 import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
 import { extractJSON } from '@/lib/ai/llm-client';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -83,7 +84,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Comment proposal error:', error);
-    const message = error instanceof Error ? error.message : 'Error inesperado';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }

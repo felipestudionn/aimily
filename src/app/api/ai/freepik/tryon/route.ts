@@ -8,6 +8,7 @@ import {
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /* Same long-poll constraint as still-life. */
 export const runtime = 'nodejs';
@@ -215,8 +216,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (userId) await refundImageryUnits(userId, planConsumed, packConsumed);
     console.error('[Try-On] Error:', error);
-    const message =
-      error instanceof Error ? error.message : 'Try-on generation failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const norm = normalizeAiError(error);
+    return NextResponse.json(
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
+    );
   }
 }
