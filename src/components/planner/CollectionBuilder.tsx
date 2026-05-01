@@ -228,7 +228,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
           });
 
           if (!response.ok) {
-            throw new Error(`Generation failed`);
+            throw new Error(t.plannerSections?.generationFailed || 'Generation failed');
           }
 
           const responseData = await response.json();
@@ -501,7 +501,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   const handleGenerateSkus = async () => {
     const remaining = setupData.expectedSkus - skus.length;
     if (remaining <= 0) {
-      alert('You have already reached the expected SKU count');
+      alert(t.plannerSections?.skuLimitReached || 'You have already reached the expected SKU count');
       return;
     }
 
@@ -529,7 +529,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate SKUs');
+        throw new Error(t.plannerSections?.generateSkusFailed || 'Failed to generate SKUs');
       }
 
       const { skus: suggestedSkus } = await response.json();
@@ -562,7 +562,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
       }
     } catch (error) {
       console.error('Error generating SKUs:', error);
-      alert('Error generating SKUs. Please try again.');
+      alert(t.plannerSections?.skuGenerationRetry || 'Error generating SKUs. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -1048,7 +1048,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 try {
                   // Fetch latest creative workspace data
                   const wsRes = await fetch(`/api/workspace-data?planId=${collectionPlanId}&workspace=creative`);
-                  if (!wsRes.ok) throw new Error('Failed to fetch creative data');
+                  if (!wsRes.ok) throw new Error(t.plannerSections?.creativeFetchFailed || 'Failed to fetch creative data');
                   const wsData = await wsRes.json();
                   const blockData = wsData?.data?.blockData || {};
                   const vibe = blockData?.vibe?.data?.vibe || '';
@@ -1056,14 +1056,14 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   const consumer = blockData?.consumer?.data?.profile || '';
 
                   if (!vibe && !brandName) {
-                    alert('No creative direction found. Complete the Creative block first.');
+                    alert(t.plannerSections?.creativeMissing || 'No creative direction found. Complete the Creative block first.');
                     return;
                   }
 
                   // Update SKUs that are still in concept phase (range_plan or sketch)
                   const conceptSkus = skus.filter(s => s.design_phase === 'range_plan' || s.design_phase === 'sketch');
                   if (conceptSkus.length === 0) {
-                    alert('No SKUs in concept phase to update.');
+                    alert(t.plannerSections?.noConceptSkus || 'No SKUs in concept phase to update.');
                     return;
                   }
 
@@ -1094,7 +1094,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
                   window.location.reload();
                 } catch {
-                  alert('Could not refresh creative direction.');
+                  alert(t.plannerSections?.creativeRefreshFailed || 'Could not refresh creative direction.');
                 } finally {
                   btn.innerHTML = origText;
                 }
@@ -1111,7 +1111,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   const res = await fetch(`/api/collection-export?planId=${collectionPlanId}`);
                   if (!res.ok) {
                     const text = await res.text();
-                    alert(`Export error: ${res.status} ${text.slice(0, 100)}`);
+                    alert(`${t.plannerSections?.exportErrorPrefix || 'Export error'}: ${res.status} ${text.slice(0, 100)}`);
                     return;
                   }
                   const blob = await res.blob();
@@ -1124,7 +1124,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   document.body.removeChild(a);
                   URL.revokeObjectURL(url);
                 } catch (err) {
-                  alert(`Export failed: ${err instanceof Error ? err.message : err}`);
+                  alert(`${t.plannerSections?.exportFailedPrefix || 'Export failed'}: ${err instanceof Error ? err.message : err}`);
                 } finally {
                   btn.innerHTML = '<svg class="h-3 w-3" />' + ' Excel';
                 }
@@ -1415,11 +1415,11 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                                 } else {
                                   const err = await res.json().catch(() => ({}));
                                   console.error('[AI Render] Failed:', err);
-                                  alert(`Render failed: ${err.error || 'Unknown error'}`);
+                                  alert(`${t.plannerSections?.renderFailedPrefix || 'Render failed'}: ${err.error || (t.plannerSections?.unknownError || 'Unknown error')}`);
                                 }
                               }).catch((err) => {
                                 console.error('[AI Render] Network error:', err);
-                                alert('Render failed: network error');
+                                alert(t.plannerSections?.renderFailedNetwork || 'Render failed: network error');
                               }).finally(() => {
                                 setRenderingSkus(prev => { const n = new Set(prev); n.delete(sku.id); return n; });
                               });
@@ -1515,7 +1515,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                       {/* Expected sales + Next step, bottom-aligned */}
                       <div className="mt-auto pt-3 border-t border-carbon/[0.06] space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">Expected sales</span>
+                          <span className="text-[9px] text-carbon/40 uppercase tracking-[0.08em] font-semibold">{t.plannerSections?.expectedSales || 'Expected sales'}</span>
                           <span className="text-[16px] font-semibold text-carbon tabular-nums tracking-[-0.02em]">€{Math.round(sku.expected_sales).toLocaleString()}</span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
@@ -1613,7 +1613,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                               setSelectedImports(next);
                             }}
                           >
-                            {colSkus.every(s => selectedImports.has(s.id)) ? 'Deselect all' : 'Select all'}
+                            {colSkus.every(s => selectedImports.has(s.id)) ? (t.plannerSections?.deselectAll || 'Deselect all') : (t.plannerSections?.selectAll || 'Select all')}
                           </Button>
                         </div>
                         <div className="divide-y">
@@ -1716,7 +1716,7 @@ function OrdersView({ skus, collectionPlanId, onSkuClick }: { skus: SKU[]; colle
       const params = new URLSearchParams({ planId: collectionPlanId });
       if (factory && factory !== 'Unassigned') params.set('factory', factory);
       const res = await fetch(`/api/purchase-order?${params}`);
-      if (!res.ok) { alert('Export failed'); return; }
+      if (!res.ok) { alert(t.plannerSections?.exportFailedShort || 'Export failed'); return; }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1726,7 +1726,7 @@ function OrdersView({ skus, collectionPlanId, onSkuClick }: { skus: SKU[]; colle
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch { alert('Export failed'); }
+    } catch { alert(t.plannerSections?.exportFailedShort || 'Export failed'); }
   };
 
   return (
@@ -1743,11 +1743,11 @@ function OrdersView({ skus, collectionPlanId, onSkuClick }: { skus: SKU[]; colle
             <p className="text-xl font-medium text-[#2d6a4f]">{factoryGroups.size}</p>
           </div>
           <div>
-            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">Total Units</p>
+            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">{t.plannerSections?.totalUnitsLabel || 'Total Units'}</p>
             <p className="text-xl font-medium text-[#2d6a4f]">{approvedSkus.reduce((s, sk) => s + ((sk.production_data?.order_quantity as number) || sk.buy_units), 0).toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">Total Cost</p>
+            <p className="text-[10px] text-[#2d6a4f]/60 uppercase tracking-wide font-medium">{t.plannerSections?.totalCostLabel || 'Total Cost'}</p>
             <p className="text-xl font-medium text-[#2d6a4f]">€{approvedSkus.reduce((s, sk) => s + (((sk.production_data?.order_quantity as number) || sk.buy_units) * ((sk.production_data?.unit_cost_final as number) || sk.cost)), 0).toLocaleString()}</p>
           </div>
         </div>
@@ -1786,7 +1786,7 @@ function OrdersView({ skus, collectionPlanId, onSkuClick }: { skus: SKU[]; colle
                     <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">{(t.fieldLabels as Record<string, string>)?.product || "Product"}</th>
                     <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Family</th>
                     <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Quantity</th>
-                    <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Unit Cost</th>
+                    <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">{t.plannerSections?.unitCostLabel || 'Unit Cost'}</th>
                     <th className="text-right py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">Total</th>
                     <th className="text-left py-2 px-4 text-[10px] font-medium tracking-[0.06em] uppercase text-carbon/50">PO #</th>
                   </tr>
