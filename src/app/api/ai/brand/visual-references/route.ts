@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkImageryUsage, refundImageryUnits, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
 import { loadFullContext } from '@/lib/ai/load-full-context';
 import { normalizeAiError } from '@/lib/ai/error-messages';
+import { uploadFromUrl, type AssetType } from '@/lib/storage';
 
 /* ═══════════════════════════════════════════════════════════════
    Brand Visual References — Freepik Mystic (text-to-image)
@@ -258,17 +259,42 @@ export async function POST(req: NextRequest) {
       SCENES.map((scene) => createAndPoll(buildPrompt(ctx, scene))),
     );
 
-    const images = results
+    const ephemeralUrls = results
       .map((r) => (r.status === 'fulfilled' ? r.value : null))
       .filter((u): u is string => !!u);
 
-    if (images.length === 0) {
+    if (ephemeralUrls.length === 0) {
       await refundImageryUnits(userId, planConsumed, packConsumed);
       return NextResponse.json(
         { error: 'All visual reference generations failed' },
         { status: 502 },
       );
     }
+
+    /* Persist the Freepik CDN urls to our private storage bucket so
+       the brand-dna sheet doesn't 403 a month later when the Freepik
+       token expires. Without this step the brandboard images caduce
+       silently and the entire Brand Identity workspace renders broken.
+       Storage is private + signed URL (see src/lib/storage.ts) so the
+       link the user keeps in workspace_data is good for a year. */
+    const persisted = await Promise.all(
+      ephemeralUrls.map(async (url, idx) => {
+        if (!collectionPlanId) return url;
+        try {
+          const upload = await uploadFromUrl(
+            collectionPlanId,
+            'moodboard' as AssetType,
+            url,
+            `brand-visual-${Date.now()}-${idx}.png`,
+          );
+          return upload.publicUrl;
+        } catch (err) {
+          console.warn('[Visual Refs] persist failed, falling back to ephemeral URL:', err);
+          return url;
+        }
+      }),
+    );
+    const images = persisted;
 
     /* Partial success: some scenes failed but at least one succeeded.
        Refund proportionally — the user got what they got, but we don't
