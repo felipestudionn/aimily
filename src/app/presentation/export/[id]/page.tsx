@@ -8,6 +8,7 @@
    Auth: signed short-lived JWT in ?token (see export-token.ts).
    ═══════════════════════════════════════════════════════════════════ */
 
+import * as React from 'react';
 import { notFound } from 'next/navigation';
 import { verifyExportToken } from '@/lib/presentation/export-token';
 import { loadPresentationData } from '@/lib/presentation/load-presentation-data';
@@ -42,39 +43,54 @@ const DEFAULT_SUBTITLE = 'A collection presentation';
 /* Resolve the correct template component per slide — same dispatch as
    the client SlideRenderer, but no null-slide branch because we render
    the cover as its own first entry in the loop below. */
-function renderSlide(slide: MicroBlockSlide, meta: DeckMeta, title: string, data: Awaited<ReturnType<typeof loadPresentationData>>) {
-  try {
+/* Render a single slide and force any synchronous throw inside the template
+   body to surface here. Server components don't have ErrorBoundaries — once
+   React reaches the render phase a throw bubbles up to the page boundary and
+   you get the generic Next "Application error". By INVOKING the template as
+   a function (not via JSX), its body executes inline so we can try/catch the
+   actual computation. The returned JSX is then handed to React as a static
+   element tree. */
+function renderSlide(slide: MicroBlockSlide, meta: DeckMeta, title: string, data: Awaited<ReturnType<typeof loadPresentationData>>): React.ReactNode {
+  type AnyProps = Record<string, unknown>;
+  const Templates = {
+    hero: HeroTemplate as (p: AnyProps) => React.ReactNode,
+    'editorial-stat': EditorialStatTemplate as (p: AnyProps) => React.ReactNode,
+    'narrative-portrait': NarrativePortraitTemplate as (p: AnyProps) => React.ReactNode,
+    'grid-tile': GridTileTemplate as (p: AnyProps) => React.ReactNode,
+    'timeline-strip': TimelineStripTemplate as (p: AnyProps) => React.ReactNode,
+    'range-wall': RangeWallTemplate as (p: AnyProps) => React.ReactNode,
+    'channel-map': ChannelMapTemplate as (p: AnyProps) => React.ReactNode,
+    palette: PaletteTemplate as (p: AnyProps) => React.ReactNode,
+    'scenario-compare': ScenarioCompareTemplate as (p: AnyProps) => React.ReactNode,
+    'material-zones': MaterialZonesTemplate as (p: AnyProps) => React.ReactNode,
+  } as const;
+  const propsFor = (): AnyProps => {
     switch (slide.template) {
-      case 'hero':
-        return <HeroTemplate slide={slide} meta={meta} title={title} />;
-      case 'editorial-stat':
-        return <EditorialStatTemplate slide={slide} meta={meta} title={title} data={data.stats[slide.id]} />;
-      case 'narrative-portrait':
-        return <NarrativePortraitTemplate slide={slide} meta={meta} title={title} data={data.narratives[slide.id]} />;
-      case 'grid-tile':
-        return <GridTileTemplate slide={slide} meta={meta} title={title} data={data.grids[slide.id]} />;
-      case 'timeline-strip':
-        return <TimelineStripTemplate slide={slide} meta={meta} title={title} data={data.timelines[slide.id]} />;
-      case 'range-wall':
-        return <RangeWallTemplate slide={slide} meta={meta} title={title} data={data.ranges[slide.id]} />;
-      case 'channel-map':
-        return <ChannelMapTemplate slide={slide} meta={meta} title={title} data={data.channels[slide.id]} />;
-      case 'palette':
-        return <PaletteTemplate slide={slide} meta={meta} title={title} data={data.palettes[slide.id]} />;
-      case 'scenario-compare':
-        return <ScenarioCompareTemplate slide={slide} meta={meta} title={title} data={data.scenarioCompares[slide.id]} />;
-      case 'material-zones':
-        return <MaterialZonesTemplate slide={slide} meta={meta} title={title} data={data.materialZones[slide.id]} />;
-      default:
-        return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;
+      case 'hero': return { slide, meta, title };
+      case 'editorial-stat': return { slide, meta, title, data: data.stats[slide.id] };
+      case 'narrative-portrait': return { slide, meta, title, data: data.narratives[slide.id] };
+      case 'grid-tile': return { slide, meta, title, data: data.grids[slide.id] };
+      case 'timeline-strip': return { slide, meta, title, data: data.timelines[slide.id] };
+      case 'range-wall': return { slide, meta, title, data: data.ranges[slide.id] };
+      case 'channel-map': return { slide, meta, title, data: data.channels[slide.id] };
+      case 'palette': return { slide, meta, title, data: data.palettes[slide.id] };
+      case 'scenario-compare': return { slide, meta, title, data: data.scenarioCompares[slide.id] };
+      case 'material-zones': return { slide, meta, title, data: data.materialZones[slide.id] };
+      default: return { slide, meta, title };
     }
+  };
+  try {
+    const fn = Templates[slide.template as keyof typeof Templates];
+    if (!fn) return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;
+    return fn(propsFor());
   } catch (err) {
     const e = err as Error;
     console.error(`[presentation/export] slide ${slide.id} (${slide.template}) threw:`, e);
     return (
-      <div data-slide-error data-slide-id={slide.id} style={{ padding: 32, fontFamily: 'monospace', fontSize: 11 }}>
-        <p style={{ color: '#900', fontWeight: 700 }}>SLIDE_RENDER_ERROR · {slide.id} ({slide.template})</p>
-        <p>{e.name}: {e.message}</p>
+      <div data-slide-error data-slide-id={slide.id} style={{ padding: 40, fontFamily: 'monospace', fontSize: 12, background: '#fff' }}>
+        <p style={{ color: '#900', fontWeight: 700, marginBottom: 8 }}>SLIDE_RENDER_ERROR · {slide.id} ({slide.template})</p>
+        <p style={{ marginBottom: 6 }}><b>{e.name}</b>: {e.message}</p>
+        {e.stack ? <pre style={{ whiteSpace: 'pre-wrap', fontSize: 10, color: '#444' }}>{e.stack.split('\n').slice(0, 6).join('\n')}</pre> : null}
       </div>
     );
   }
@@ -149,6 +165,22 @@ export default async function PresentationExportPage({ params, searchParams }: P
     pointOfSale: 'Point of Sale',
   };
 
+  // Render the cover via function call so any throw inside CoverTemplate's
+  // body lands here instead of bubbling up as a generic Next error page.
+  let coverNode: React.ReactNode;
+  try {
+    coverNode = (CoverTemplate as (p: { meta: DeckMeta; subtitle: string }) => React.ReactNode)({ meta, subtitle: coverSubtitle });
+  } catch (err) {
+    const e = err as Error;
+    console.error('[presentation/export] cover threw:', e);
+    coverNode = (
+      <div data-slide-error data-slide-id="cover" style={{ padding: 40, fontFamily: 'monospace', fontSize: 12 }}>
+        <p style={{ color: '#900', fontWeight: 700 }}>COVER_RENDER_ERROR</p>
+        <p>{e.name}: {e.message}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full" style={{ background: '#fff' }}>
       {/* Cover */}
@@ -163,7 +195,7 @@ export default async function PresentationExportPage({ params, searchParams }: P
           overflow: 'hidden',
         }}
       >
-        <CoverTemplate meta={meta} subtitle={coverSubtitle} />
+        {coverNode}
       </div>
 
       {/* 20 mini-block slides */}
