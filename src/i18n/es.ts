@@ -779,6 +779,12 @@ export const es: Dictionary = {
     aiProposalBrandDesc: 'aimily generará 3 propuestas de marca basadas en el contexto de tu colección. Añade un brief opcional para guiar la dirección.',
     optionalBrief: 'Brief (opcional)',
     generateProposals: 'Generar Propuestas',
+    // Misc fallbacks shown in the live UI
+    creativeOverview: 'Resumen Creativo',
+    targetConsumer: 'Consumidor Objetivo',
+    untitledBrand: 'Marca sin título',
+    confirmedAction: 'Confirmado',
+    collectionFallback: 'Colección',
   },
 
   // ─── Selector de idioma ───

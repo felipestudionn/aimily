@@ -757,6 +757,11 @@ export const no: Dictionary = {
     aiProposalBrandDesc: 'aimily will generate 3 brand proposals based on your collection context. Add an optional brief to guide the direction.',
     optionalBrief: 'Brief (optional)',
     generateProposals: 'Generate Proposals',
+    creativeOverview: 'Kreativ oversikt',
+    targetConsumer: 'Målforbruker',
+    untitledBrand: 'Navnløst merke',
+    confirmedAction: 'Bekreftet',
+    collectionFallback: 'Kolleksjon',
   },
 
   // ─── Language Selector ───

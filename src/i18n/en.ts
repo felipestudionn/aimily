@@ -778,6 +778,12 @@ export const en = {
     aiProposalBrandDesc: 'aimily will generate 3 brand proposals based on your collection context. Add an optional brief to guide the direction.',
     optionalBrief: 'Brief (optional)',
     generateProposals: 'Generate Proposals',
+    // Misc fallbacks shown in the live UI
+    creativeOverview: 'Creative Overview',
+    targetConsumer: 'Target Consumer',
+    untitledBrand: 'Untitled Brand',
+    confirmedAction: 'Confirmed',
+    collectionFallback: 'Collection',
   },
 
   // ─── Language Selector ───

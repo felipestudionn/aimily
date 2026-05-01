@@ -2962,8 +2962,8 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     'deep-dive': t.creative.deepDive,
     'live-signals': t.creative.liveSignals,
     'competitors': t.creative.competitors,
-    'research': ((t.sidebar as Record<string, string>)?.marketResearch) || 'Market Research',
-    'synthesis': 'Creative Overview',
+    'research': t.creative.marketResearch,
+    'synthesis': t.creative.creativeOverview,
   };
   const blockDescMap: Record<string, string> = {
     'consumer': t.creative.consumerDesc,
@@ -3024,8 +3024,8 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
         // Extract a meaningful title from the first sentence
         const firstSentence = profile.split(/[.!?]/)[0]?.trim() || '';
         const title = firstSentence.length > 60
-          ? 'Target Consumer'
-          : firstSentence || 'Target Consumer';
+          ? t.creative.targetConsumer
+          : firstSentence || t.creative.targetConsumer;
         updateBlockData(blockId, {
           confirmed: true,
           data: {
@@ -3039,7 +3039,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     }
     updateBlockData(blockId, { confirmed: true });
     handleCollapse();
-  }, [updateBlockData, handleCollapse, blockData, collectionContext]);
+  }, [updateBlockData, handleCollapse, blockData, collectionContext, t.creative.targetConsumer]);
 
   // Hide mode pills for blocks with their own flow (moodboard, brand-dna, all research blocks)
   const researchBlocks = ['global-trends', 'deep-dive', 'live-signals', 'competitors'];
@@ -3060,10 +3060,10 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
         {blockParam ? (
           <div className="text-center mb-12">
             <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
-              {collectionContext.collectionName || 'Collection'}
+              {collectionContext.collectionName || t.creative.collectionFallback}
             </p>
             <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-              {blockNameMap[blockParam] || 'Consumer Definition'}
+              {blockNameMap[blockParam] || t.creative.consumerDefinition}
             </h1>
           </div>
         ) : (
@@ -3178,7 +3178,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                       }`}
                     >
                       <Check className="h-3.5 w-3.5" />
-                      {state.confirmed ? 'Confirmed' : t.creative.confirmContinue}
+                      {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
                     </button>
                   </div>
                 </div>
