@@ -4,6 +4,7 @@ import {
   checkImageryUsage,
   refundImageryUnits,
   usageDeniedResponse,
+  enforceAiUserRateLimit,
 } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { persistAsset } from '@/lib/storage';
@@ -142,6 +143,9 @@ export async function POST(req: NextRequest) {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
     userId = user!.id;
+
+    const rateLimited = enforceAiUserRateLimit(userId, 'video');
+    if (rateLimited) return rateLimited;
 
     if (!FREEPIK_API_KEY) {
       return NextResponse.json(

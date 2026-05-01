@@ -1,7 +1,7 @@
 export const maxDuration = 120;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership, enforceAiUserRateLimit } from '@/lib/api-auth';
 import { generateJSON, generateText, extractJSON } from '@/lib/ai/llm-client';
 import { buildGeneratePrompt } from '@/lib/ai/brief-prompts';
 import { loadFullContext } from '@/lib/ai/load-full-context';
@@ -10,6 +10,9 @@ import { formatCisPrefix } from '@/lib/ai/cis-prefix';
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
+
+  const rateLimited = enforceAiUserRateLimit(user.id, 'text');
+  if (rateLimited) return rateLimited;
 
   const usage = await checkAuthOnly(user.id, user.email || '');
   if (!usage.allowed) return usageDeniedResponse(usage);

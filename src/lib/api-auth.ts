@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { NextResponse } from 'next/server';
 import { ADMIN_EMAILS, getPlanLimits, PlanId } from '@/lib/stripe';
 import { checkTeamPermission, type TeamPermission } from '@/lib/team-permissions';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function getAuthenticatedUser() {
   const supabase = await createClient();
@@ -173,6 +174,43 @@ export async function refundImageryUnits(
  * Will be removed once all endpoints migrate.
  */
 export const checkAIUsage = checkImageryUsage;
+
+/**
+ * Per-user rate limit on AI endpoints. Stops a runaway client (loop in
+ * the browser, debounce regression, scripted abuse) from burning through
+ * imagery quota AND provider credits in seconds.
+ *
+ * The middleware already throttles AI traffic at 30/min/IP, but a
+ * malicious user behind a residential rotating IP would slip past.
+ * This second layer keys off the authenticated user.id so it tracks the
+ * actor regardless of network egress.
+ *
+ * In-memory + per-warm-instance (same caveats as `rateLimit`): not exact
+ * across Fluid replicas, but more than enough to keep cost runaway from
+ * any single account bounded.
+ *
+ * Buckets:
+ *   text  — Claude / Gemini / Perplexity calls (cheap, but Perplexity
+ *           Search costs add up). 30/min.
+ *   image — Freepik / OpenAI image gen. 10/min — quota check still
+ *           enforces monthly cap, this is just the burst limit.
+ *   video — Kling video. 3/min — each call is ~$0.30 and runs 90s.
+ */
+export function enforceAiUserRateLimit(
+  userId: string,
+  bucket: 'text' | 'image' | 'video' = 'text',
+): NextResponse | null {
+  const cfg = bucket === 'video'
+    ? { count: 3, window: 60_000 }
+    : bucket === 'image'
+    ? { count: 10, window: 60_000 }
+    : { count: 30, window: 60_000 };
+  if (rateLimit.allow(`${userId}:ai-${bucket}`, cfg.count, cfg.window)) return null;
+  return NextResponse.json(
+    { error: 'Too many AI requests. Slow down for a moment and try again.' },
+    { status: 429, headers: { 'Retry-After': '30' } },
+  );
+}
 
 /** Auth-only check (no usage tracking) — for status endpoints */
 export async function checkAuthOnly(userId: string, userEmail: string) {
