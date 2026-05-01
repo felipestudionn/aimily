@@ -101,14 +101,26 @@ The 4 big block cards (01 Creative & Brand · 02 Merchandising · 03 Design & De
 ```
 
 **Non-negotiable rules**:
-- Grid: `grid-cols-4 gap-5` (always 4 per row at desktop, even if only 2-3 items use `grid-cols-4` and let the rest stay empty — NEVER 2×2).
-- Card: `bg-white rounded-[20px] p-10 md:p-14 min-h-[500px]` — generous padding, 500px min height, rounded corners.
+- Grid: `grid-cols-4 gap-5` for 4-card layouts; `grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5` for 5-card sub-block layouts. NEVER 2×2.
 - Hover: `hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]` — always this exact lift.
-- Ghost number top: `text-[72px] font-bold text-carbon/[0.05]` — the faded big "01." / "01.1" identifier.
-- Title: `text-[24px] md:text-[28px] font-semibold tracking-[-0.03em] leading-[1.15]` — semibold, never light.
-- Description: `text-[14px] text-carbon/50 leading-[1.7]` — breathing room.
 - CTA pill centered: `rounded-full bg-carbon text-white` (active) or `border text-carbon` (completed). With `ArrowRight` or `Check` icon.
 - Progress bar centered under CTA: `w-[120px] h-[6px] rounded-full bg-carbon/[0.06]` with inner `bg-carbon/30` fill.
+
+**4-card grid (block level)** — designed for 270–380px card width. Use these tokens unchanged:
+- Card: `bg-white rounded-[20px] p-10 md:p-14 min-h-[500px]`
+- Ghost number: `text-[72px] font-bold text-carbon/[0.05]`
+- Title: `text-[24px] md:text-[28px] font-semibold tracking-[-0.03em] leading-[1.15]`
+- Description: `text-[14px] text-carbon/50 leading-[1.7]`
+
+**5-card grid (sub-block level)** — narrower cards force responsive scaling. Custom `3xl: 1920px` breakpoint registers the gold-standard sizing only on monitors ≥1920px. Below that, padding/typography scales DOWN so titles don't clip on a MacBook (1710 viewport produces 212px-wide cards with only 100px usable space at `p-14` — unacceptable). Use these tokens **verbatim**:
+- Card: `bg-white rounded-[20px] p-6 xl:p-8 3xl:p-14 min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px]`
+- Ghost number: `text-[48px] xl:text-[56px] 2xl:text-[60px] 3xl:text-[72px]`
+- Inner mb after ghost: `mb-6 3xl:mb-10`
+- Title: `text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-semibold tracking-[-0.03em] leading-[1.15]` + `mb-4 3xl:mb-6`
+- Description: `text-[12px] xl:text-[13px] 3xl:text-[14px] text-carbon/50 leading-[1.7]`
+- CTA wrapper: `mt-6 3xl:mt-10`
+
+The `3xl: 1920px` breakpoint is registered in `src/styles/globals.css` via `--breakpoint-3xl: 120rem`. At 2560 (Felipe's monitor) `3xl:` is active and the 5-card grid renders identical to the gold standard. At 1710 (MacBook 16") it scales down without clipping titles. This is THE canonical responsive pattern — replicate verbatim, do not invent variations.
 
 **Reference files**: `src/app/collection/[id]/CollectionOverview.tsx` lines 245-295 (block level) and 298-370 (sub-block level).
 

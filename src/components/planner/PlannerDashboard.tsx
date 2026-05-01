@@ -71,7 +71,7 @@ export function PlannerDashboard({ plan, initialPhaseFilter }: PlannerDashboardP
               <Check className="h-7 w-7 text-crema/80" />
             </div>
             <div className="text-[10px] font-medium tracking-[0.4em] uppercase text-crema/30 mb-4" style={{ animation: 'fadeIn 0.6s ease-out 0.8s both' }}>
-              {displayName} · {plan.season}
+              {displayName}{plan.season && !displayName.toUpperCase().includes(plan.season.toUpperCase()) ? ` · ${plan.season}` : ''}
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
               {t.rangePlan.celebrationDraftLabel}<br /><span className="italic">{t.rangePlan.celebrationTitle}</span>.

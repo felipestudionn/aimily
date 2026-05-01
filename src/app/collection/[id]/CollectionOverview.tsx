@@ -296,7 +296,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
               className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] cursor-text"
             >
               {titleDraft}
-              {plan.season && (
+              {plan.season && !titleDraft.toUpperCase().includes(plan.season.toUpperCase()) && (
                 <span className="text-carbon/35"> · {plan.season}</span>
               )}
             </h1>
@@ -435,7 +435,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                     <button
                       key={sub.id}
                       onClick={() => handleSubCardClick(idx, sub.route)}
-                      className={`group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] text-left transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                      className={`group relative bg-white rounded-[20px] p-6 xl:p-8 3xl:p-14 flex flex-col min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px] text-left transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                         exitingSubIdx === null
                           ? 'animate-fade-in-up hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
                           : exitingSubIdx === idx
@@ -444,24 +444,24 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                       }`}
                       style={{ animationDelay: exitingSubIdx === null ? `${idx * 100}ms` : '0ms' }}
                     >
-                      <div className="mb-10">
-                        <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+                      <div className="mb-6 3xl:mb-10">
+                        <span className="text-[48px] xl:text-[56px] 2xl:text-[60px] 3xl:text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
                           {activeBlock.number}.{idx + 1}
                         </span>
                       </div>
 
-                      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-6 whitespace-pre-line">
+                      <h3 className="text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-4 3xl:mb-6 whitespace-pre-line">
                         {localizedSub(sub.id).label}
                       </h3>
 
-                      <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+                      <p className="text-[12px] xl:text-[13px] 3xl:text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
                         {localizedSub(sub.id).description}
                       </p>
 
                       <div className="flex-1" />
 
                       {/* CTA — same system as blocks, outputs always show "Open →" */}
-                      <div className="flex justify-center mt-10">
+                      <div className="flex justify-center mt-6 3xl:mt-10">
                         {sub.isOutput ? (
                           <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white group-hover:bg-carbon/90 transition-all">
                             {ov.openCta || 'Open'}

@@ -18,6 +18,8 @@
   --font-sans: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
   --font-display: var(--font-display), 'Georgia', serif;
 
+  --breakpoint-3xl: 120rem;
+
   --color-crema: #f5f1e8;
   --color-shade: #f3f2f0;
   --color-cream: #f0ede8;
