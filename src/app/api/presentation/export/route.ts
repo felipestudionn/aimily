@@ -108,6 +108,30 @@ export async function POST(req: NextRequest) {
     await page.setViewport({ width: 1600, height: 1131 }); // A4 landscape @ ~137 dpi
     await page.goto(exportUrl, { waitUntil: 'networkidle0', timeout: 45_000 });
 
+    // If the internal /presentation/export/[id] route threw server-side,
+    // Next.js renders an error page ("Application error: a server-side
+    // exception has occurred…"). Puppeteer would happily snapshot that
+    // into a 2-page PDF and the API would return 200 with garbage. Detect
+    // it explicitly and surface the digest + body text so the client gets
+    // an actionable 500 instead of a corrupt PDF.
+    const pageState = await (page as unknown as { evaluate: <T>(fn: () => T) => Promise<T> }).evaluate(() => {
+      const body = document.body?.innerText ?? '';
+      const slideCount = document.querySelectorAll('.pdf-slide').length;
+      return { body: body.slice(0, 1500), slideCount };
+    });
+    if (pageState.slideCount === 0 || /server-side exception/i.test(pageState.body)) {
+      console.error('[api/presentation/export] internal route did not render slides:', pageState);
+      return NextResponse.json(
+        {
+          error: 'Internal export page failed to render',
+          slideCount: pageState.slideCount,
+          bodyExcerpt: pageState.body,
+          exportUrl: exportUrl.replace(/token=[^&]+/, 'token=…'),
+        },
+        { status: 500 },
+      );
+    }
+
     // Wait for Google Fonts to finish downloading + parsing before
     // snapshotting — without this, Chromium may emit the PDF with
     // generic serif/sans fallbacks instead of Playfair, Archivo Black,

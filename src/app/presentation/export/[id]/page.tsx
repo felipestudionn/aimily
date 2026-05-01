@@ -43,29 +43,40 @@ const DEFAULT_SUBTITLE = 'A collection presentation';
    the client SlideRenderer, but no null-slide branch because we render
    the cover as its own first entry in the loop below. */
 function renderSlide(slide: MicroBlockSlide, meta: DeckMeta, title: string, data: Awaited<ReturnType<typeof loadPresentationData>>) {
-  switch (slide.template) {
-    case 'hero':
-      return <HeroTemplate slide={slide} meta={meta} title={title} />;
-    case 'editorial-stat':
-      return <EditorialStatTemplate slide={slide} meta={meta} title={title} data={data.stats[slide.id]} />;
-    case 'narrative-portrait':
-      return <NarrativePortraitTemplate slide={slide} meta={meta} title={title} data={data.narratives[slide.id]} />;
-    case 'grid-tile':
-      return <GridTileTemplate slide={slide} meta={meta} title={title} data={data.grids[slide.id]} />;
-    case 'timeline-strip':
-      return <TimelineStripTemplate slide={slide} meta={meta} title={title} data={data.timelines[slide.id]} />;
-    case 'range-wall':
-      return <RangeWallTemplate slide={slide} meta={meta} title={title} data={data.ranges[slide.id]} />;
-    case 'channel-map':
-      return <ChannelMapTemplate slide={slide} meta={meta} title={title} data={data.channels[slide.id]} />;
-    case 'palette':
-      return <PaletteTemplate slide={slide} meta={meta} title={title} data={data.palettes[slide.id]} />;
-    case 'scenario-compare':
-      return <ScenarioCompareTemplate slide={slide} meta={meta} title={title} data={data.scenarioCompares[slide.id]} />;
-    case 'material-zones':
-      return <MaterialZonesTemplate slide={slide} meta={meta} title={title} data={data.materialZones[slide.id]} />;
-    default:
-      return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;
+  try {
+    switch (slide.template) {
+      case 'hero':
+        return <HeroTemplate slide={slide} meta={meta} title={title} />;
+      case 'editorial-stat':
+        return <EditorialStatTemplate slide={slide} meta={meta} title={title} data={data.stats[slide.id]} />;
+      case 'narrative-portrait':
+        return <NarrativePortraitTemplate slide={slide} meta={meta} title={title} data={data.narratives[slide.id]} />;
+      case 'grid-tile':
+        return <GridTileTemplate slide={slide} meta={meta} title={title} data={data.grids[slide.id]} />;
+      case 'timeline-strip':
+        return <TimelineStripTemplate slide={slide} meta={meta} title={title} data={data.timelines[slide.id]} />;
+      case 'range-wall':
+        return <RangeWallTemplate slide={slide} meta={meta} title={title} data={data.ranges[slide.id]} />;
+      case 'channel-map':
+        return <ChannelMapTemplate slide={slide} meta={meta} title={title} data={data.channels[slide.id]} />;
+      case 'palette':
+        return <PaletteTemplate slide={slide} meta={meta} title={title} data={data.palettes[slide.id]} />;
+      case 'scenario-compare':
+        return <ScenarioCompareTemplate slide={slide} meta={meta} title={title} data={data.scenarioCompares[slide.id]} />;
+      case 'material-zones':
+        return <MaterialZonesTemplate slide={slide} meta={meta} title={title} data={data.materialZones[slide.id]} />;
+      default:
+        return <PlaceholderTemplate slide={slide} meta={meta} title={title} />;
+    }
+  } catch (err) {
+    const e = err as Error;
+    console.error(`[presentation/export] slide ${slide.id} (${slide.template}) threw:`, e);
+    return (
+      <div data-slide-error data-slide-id={slide.id} style={{ padding: 32, fontFamily: 'monospace', fontSize: 11 }}>
+        <p style={{ color: '#900', fontWeight: 700 }}>SLIDE_RENDER_ERROR · {slide.id} ({slide.template})</p>
+        <p>{e.name}: {e.message}</p>
+      </div>
+    );
   }
 }
 
@@ -80,8 +91,23 @@ export default async function PresentationExportPage({ params, searchParams }: P
   const payload = verifyExportToken(token);
   if (!payload || payload.collectionId !== id) notFound();
 
-  // Load the same data the client renders
-  const data = await loadPresentationData(id);
+  // Load the same data the client renders. If the loader throws, render
+  // a structured error page (not Next.js's generic "Application error")
+  // so the API route can extract the actual stack and surface it.
+  let data: Awaited<ReturnType<typeof loadPresentationData>>;
+  try {
+    data = await loadPresentationData(id);
+  } catch (err) {
+    const e = err as Error;
+    console.error('[presentation/export] loadPresentationData threw:', e);
+    return (
+      <div data-export-error style={{ padding: 40, fontFamily: 'monospace', fontSize: 12 }}>
+        <h1>EXPORT_LOAD_ERROR</h1>
+        <p><b>{e.name}</b>: {e.message}</p>
+        <pre style={{ whiteSpace: 'pre-wrap' }}>{e.stack}</pre>
+      </div>
+    );
+  }
   const theme = getTheme(themeId);
 
   // Fetch the English sidebar labels server-side for slide titles.
