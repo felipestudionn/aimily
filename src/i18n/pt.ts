@@ -3457,4 +3457,69 @@ export const pt: Dictionary = {
     emptyBody: "Adicione SKUs no Collection Builder para começar a desenhar silhuetas e colorways aqui.",
   },
 
+  aimilyAssistant: {
+    fab: { label: "Pergunta à Aimily" },
+    title: "Aimily",
+    subtitle: "A tua mentora dentro do produto",
+    placeholder: "Pergunta-me qualquer coisa sobre aimily…",
+    composerHint: "↵ enviar · ⇧↵ nova linha",
+    send: "Enviar",
+    stop: "Parar",
+    close: "Fechar",
+    clearConversation: "Limpar conversa",
+    thinking: "A Aimily está a pensar…",
+    takeMeThere: "Leva-me lá",
+    empty: {
+      title: "Como posso ajudar?",
+      subtitle: "Pergunta-me como funciona a aimily, termos da indústria da moda, ou sobre a tua conta. Estou aqui para te ensinar a plataforma — não para substituir os seus workspaces.",
+      suggestions: {
+        generic: [
+          "O que é a aimily e como está organizada?",
+          "Explica-me um range plan em palavras simples.",
+          "Qual a diferença entre still life, editorial e try-on?",
+        ],
+        creative: [
+          "O que vai em Consumer Definition vs Brand Identity?",
+          "Como o moodboard alimenta o resto da aimily?",
+          "Para que servem as quatro lentes de Market Research?",
+        ],
+        merchandising: [
+          "Como a Buying Strategy decide tudo o resto?",
+          "Explica o sistema REVENUE / IMAGEN / ENTRY.",
+          "O que muda Distribution na minha matemática de preços?",
+        ],
+        design: [
+          "Porque Sketch vem antes de Color no Evolution Strip?",
+          "O que vai num tech pack e porque importa?",
+          "Quando o número de iterações de protótipo é bandeira vermelha?",
+        ],
+        marketing: [
+          "Quais são os quatro níveis em Content Studio?",
+          "Em que o GTM difere de um launch plan?",
+          "Quando o Sales Dashboard acende após o lançamento?",
+        ],
+        calendar: [
+          "Como os milestones se conectam a cada mini-bloco?",
+          "Que deadlines devo vigiar primeiro?",
+          "Como o calendário se relaciona com o cubo de Rubik?",
+        ],
+        presentation: [
+          "Como o deck de Presentation se preenche automaticamente?",
+          "O que faz exactamente Promote to Workspace?",
+          "Posso editar um slide sem partir o meu CIS?",
+        ],
+        account: [
+          "O que inclui cada plano?",
+          "Como funcionam os Aimily Credits?",
+          "Como cancelo ou mudo o meu plano?",
+        ],
+      },
+    },
+    errors: {
+      generic: "Algo correu mal. Tenta de novo ou escreve-nos para hello@aimily.app.",
+      paused: "Em pausa hoje na tua conta — reinicia às 00:00 UTC.",
+      dailyCap: "Limite diário atingido — reinicia às 00:00 UTC.",
+    },
+  },
+
 };

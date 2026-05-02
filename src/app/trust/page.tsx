@@ -33,7 +33,7 @@ export default function TrustPage() {
   const router = useRouter();
   const [authOpen, setAuthOpen] = useState(false);
   const t = useTranslation();
-  const trust = (t as Record<string, Record<string, string>>).trust || {};
+  const trust = (t as unknown as Record<string, Record<string, string>>).trust || {};
 
   if (user) { router.push('/my-collections'); return null; }
 

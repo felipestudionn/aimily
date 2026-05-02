@@ -3475,4 +3475,69 @@ export const nl: Dictionary = {
     emptyBody: "Voeg SKU’s toe in de Collection Builder om hier silhouetten en colorways te gaan tekenen.",
   },
 
+  aimilyAssistant: {
+    fab: { label: "Vraag het Aimily" },
+    title: "Aimily",
+    subtitle: "Jouw mentor in het product",
+    placeholder: "Vraag me alles over aimily…",
+    composerHint: "↵ verzenden · ⇧↵ nieuwe regel",
+    send: "Verzenden",
+    stop: "Stop",
+    close: "Sluiten",
+    clearConversation: "Gesprek wissen",
+    thinking: "Aimily denkt na…",
+    takeMeThere: "Breng me erheen",
+    empty: {
+      title: "Hoe kan ik helpen?",
+      subtitle: "Vraag hoe aimily werkt, termen uit de mode-industrie of over je account. Ik leer je het platform — ik vervang de workspaces niet.",
+      suggestions: {
+        generic: [
+          "Wat is aimily en hoe is het georganiseerd?",
+          "Leg een range plan uit in gewone taal.",
+          "Wat is het verschil tussen still life, editorial en try-on?",
+        ],
+        creative: [
+          "Wat hoort in Consumer Definition vs Brand Identity?",
+          "Hoe voedt het moodboard de rest van aimily?",
+          "Waarvoor dienen de vier lenzen van Market Research?",
+        ],
+        merchandising: [
+          "Hoe bepaalt Buying Strategy al het andere?",
+          "Leg het REVENUE / IMAGEN / ENTRY-tiersysteem uit.",
+          "Wat verandert Distribution aan mijn prijsberekening?",
+        ],
+        design: [
+          "Waarom komt Sketch vóór Color in de Evolution Strip?",
+          "Wat zit er in een tech pack en waarom telt dat?",
+          "Wanneer is het aantal prototype-iteraties een rode vlag?",
+        ],
+        marketing: [
+          "Wat zijn de vier niveaus in Content Studio?",
+          "Hoe verschilt GTM van een launch plan?",
+          "Wanneer licht het Sales Dashboard op na de launch?",
+        ],
+        calendar: [
+          "Hoe verbinden milestones zich met elk mini-blok?",
+          "Welke deadlines moet ik eerst bewaken?",
+          "Hoe verhoudt de kalender zich tot de Rubik’s cube?",
+        ],
+        presentation: [
+          "Hoe wordt het Presentation-deck automatisch gevuld?",
+          "Wat doet Promote to Workspace precies?",
+          "Kan ik een slide bewerken zonder mijn CIS te breken?",
+        ],
+        account: [
+          "Wat zit er in elk plan?",
+          "Hoe werken Aimily Credits?",
+          "Hoe annuleer ik of wissel ik van plan?",
+        ],
+      },
+    },
+    errors: {
+      generic: "Er ging iets mis. Probeer opnieuw of mail hello@aimily.app.",
+      paused: "Vandaag gepauzeerd op je account — reset om 00:00 UTC.",
+      dailyCap: "Daglimiet bereikt — reset om 00:00 UTC.",
+    },
+  },
+
 };

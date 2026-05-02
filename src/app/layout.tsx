@@ -11,6 +11,8 @@ import { GlobalNav } from '@/components/layout/GlobalNav';
 import { ToastProvider } from '@/components/ui/toast';
 import { Analytics } from '@vercel/analytics/react';
 import { cn } from "@/lib/utils";
+import { Suspense } from 'react';
+import { AssistantMount } from '@/components/aimily-assistant/AssistantMount';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -74,6 +76,9 @@ export default function RootLayout({
                 <ServiceWorkerRegistrar />
                 <GlobalNav />
                 <main className="relative min-h-screen">{children}</main>
+                <Suspense fallback={null}>
+                  <AssistantMount />
+                </Suspense>
                 <CookieConsent />
                 <Analytics />
               </ToastProvider>

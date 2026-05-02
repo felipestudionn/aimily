@@ -70,7 +70,7 @@ function NewCollectionFlow() {
   const trimmedName = name.trim();
   const canStart = trimmedName.length > 0 || skipNaming;
 
-  const nc = (t as Record<string, Record<string, string>>).newCollection || {};
+  const nc = (t as unknown as Record<string, Record<string, string>>).newCollection || {};
   const untitledLabel = nc.untitled || 'Sin título';
   const headline = nc.headline || 'El día del lanzamiento de la colección.';
   const subheadline = nc.subheadline || 'Lo demás ya lo construimos juntos.';

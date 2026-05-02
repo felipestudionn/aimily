@@ -3543,6 +3543,71 @@ export const en = {
     emptyBody: "Add SKUs in the Collection Builder to start sketching silhouettes and colorways here.",
   },
 
+  aimilyAssistant: {
+    fab: { label: "Ask Aimily" },
+    title: "Aimily",
+    subtitle: "Your in-product mentor",
+    placeholder: "Ask anything about aimily…",
+    composerHint: "↵ to send · ⇧↵ for newline",
+    send: "Send",
+    stop: "Stop",
+    close: "Close",
+    clearConversation: "Clear conversation",
+    thinking: "Aimily is thinking…",
+    takeMeThere: "Take me there",
+    empty: {
+      title: "How can I help?",
+      subtitle: "Ask about how aimily works, fashion-industry terms, or your account. I am here to teach the platform — not to replace its workspaces.",
+      suggestions: {
+        generic: [
+          "What is aimily and how is it organised?",
+          "Explain a range plan in plain English.",
+          "What is the difference between still life, editorial and try-on?",
+        ],
+        creative: [
+          "What goes in Consumer Definition versus Brand Identity?",
+          "How does the moodboard feed the rest of aimily?",
+          "What are the four lenses of Market Research for?",
+        ],
+        merchandising: [
+          "How does Buying Strategy decide everything else?",
+          "Explain the REVENUE / IMAGEN / ENTRY tier system.",
+          "What does Distribution change about my pricing math?",
+        ],
+        design: [
+          "Why does Sketch precede Color in the Evolution Strip?",
+          "What goes in a tech pack and why does it matter?",
+          "When is a prototype iteration count a red flag?",
+        ],
+        marketing: [
+          "What are the four levels in Content Studio?",
+          "How is GTM different from a launch plan?",
+          "When does the Sales Dashboard light up after launch?",
+        ],
+        calendar: [
+          "How do milestones connect to each mini-block?",
+          "What deadlines should I worry about first?",
+          "How is the calendar related to the Rubik's cube?",
+        ],
+        presentation: [
+          "How is the Presentation deck filled automatically?",
+          "What does Promote to Workspace actually do?",
+          "Can I edit a slide without breaking my CIS?",
+        ],
+        account: [
+          "What is included in each plan?",
+          "How do Aimily Credits work?",
+          "How do I cancel or change my plan?",
+        ],
+      },
+    },
+    errors: {
+      generic: "Something went wrong. Try again, or email hello@aimily.app.",
+      paused: "Paused for today on your account — resets at 00:00 UTC.",
+      dailyCap: "Daily message limit reached — resets at 00:00 UTC.",
+    },
+  },
+
 };
 
 export type Dictionary = typeof en;

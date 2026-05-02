@@ -28,7 +28,7 @@ export function PublicNav({ variant = 'dark', onAuth }: PublicNavProps) {
   const t = useTranslation();
   const { language, setLanguage } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const trust = (t as Record<string, Record<string, string>>).trust || {};
+  const trust = (t as unknown as Record<string, Record<string, string>>).trust || {};
 
   const isDark = variant === 'dark';
   const logo = isDark ? '/images/aimily-logo-white.png' : '/images/aimily-logo-black.png';

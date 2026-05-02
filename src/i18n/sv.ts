@@ -3361,4 +3361,69 @@ export const sv: Dictionary = {
     emptyBody: "Lägg till SKU:er i Collection Builder för att börja skissa silhuetter och colorways här.",
   },
 
+  aimilyAssistant: {
+    fab: { label: "Fråga Aimily" },
+    title: "Aimily",
+    subtitle: "Din mentor i produkten",
+    placeholder: "Fråga mig vad som helst om aimily…",
+    composerHint: "↵ skicka · ⇧↵ ny rad",
+    send: "Skicka",
+    stop: "Stopp",
+    close: "Stäng",
+    clearConversation: "Rensa konversation",
+    thinking: "Aimily tänker…",
+    takeMeThere: "Ta mig dit",
+    empty: {
+      title: "Hur kan jag hjälpa?",
+      subtitle: "Fråga hur aimily fungerar, modetermer eller om ditt konto. Jag är här för att lära dig plattformen — inte för att ersätta dess workspaces.",
+      suggestions: {
+        generic: [
+          "Vad är aimily och hur är det organiserat?",
+          "Förklara en range plan på vanlig svenska.",
+          "Vad är skillnaden mellan still life, editorial och try-on?",
+        ],
+        creative: [
+          "Vad hör till Consumer Definition vs Brand Identity?",
+          "Hur matar moodboarden resten av aimily?",
+          "Vad är de fyra linserna i Market Research till för?",
+        ],
+        merchandising: [
+          "Hur bestämmer Buying Strategy allt annat?",
+          "Förklara tiersystemet REVENUE / IMAGEN / ENTRY.",
+          "Vad ändrar Distribution i min prismatematik?",
+        ],
+        design: [
+          "Varför kommer Sketch före Color i Evolution Strip?",
+          "Vad ingår i ett tech pack och varför spelar det roll?",
+          "När är antalet prototypiterationer en röd flagga?",
+        ],
+        marketing: [
+          "Vilka är de fyra nivåerna i Content Studio?",
+          "Hur skiljer sig GTM från en launch plan?",
+          "När tänds Sales Dashboard efter lansering?",
+        ],
+        calendar: [
+          "Hur kopplas milstolpar till varje mini-block?",
+          "Vilka deadlines ska jag bevaka först?",
+          "Hur hänger kalendern ihop med Rubiks kub?",
+        ],
+        presentation: [
+          "Hur fylls Presentation-decket i automatiskt?",
+          "Vad gör Promote to Workspace exakt?",
+          "Kan jag redigera en slide utan att förstöra mitt CIS?",
+        ],
+        account: [
+          "Vad ingår i varje plan?",
+          "Hur fungerar Aimily Credits?",
+          "Hur säger jag upp eller byter plan?",
+        ],
+      },
+    },
+    errors: {
+      generic: "Något gick fel. Försök igen eller maila hello@aimily.app.",
+      paused: "Pausad idag på ditt konto — återställs 00:00 UTC.",
+      dailyCap: "Dagsgräns nådd — återställs 00:00 UTC.",
+    },
+  },
+
 } as Dictionary;
