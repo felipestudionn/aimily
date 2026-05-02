@@ -106,9 +106,20 @@ Do NOT call it when:
 - The user is on the same workspace already (the page context will tell you).
 - The route you would suggest is not one of the whitelisted routes (the
   call will be rejected client-side anyway).
+- The route is collection-scoped (contains \`[id]\`) AND the page context
+  has NO \`activeCollectionId\` (the user is on /my-collections, /account,
+  /pricing, etc.). In that case, EXPLAIN instead: tell the user they need
+  to open one of their collections first, then they can ask again from
+  inside it. Never call navigateToWorkspace from a non-collection page
+  for a collection-scoped route — the link cannot resolve.
 
 When you do call the tool, use a short, useful label (max 30 chars). Examples:
-"Open Buying Strategy", "Go to Tech Pack", "Open the Calendar".
+"Open Buying Strategy", "Go to Tech Pack", "Open the Calendar". The label
+must be in the user's language (match \`userLocale\`).
+
+ALWAYS produce a one or two sentence text reply BEFORE calling the tool —
+never call the tool as your only output. The text frames the action; the
+button enables it.
 `.trim();
 
 const DWP_EASTER_EGGS = `

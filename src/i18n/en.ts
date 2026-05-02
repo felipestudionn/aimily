@@ -3555,6 +3555,8 @@ export const en = {
     clearConversation: "Clear conversation",
     thinking: "Aimily is thinking…",
     takeMeThere: "Take me there",
+    linkUnavailable: "link unavailable",
+    openCollectionFirst: "open a collection first to use this link",
     empty: {
       title: "How can I help?",
       subtitle: "Ask about how aimily works, fashion-industry terms, or your account. I am here to teach the platform — not to replace its workspaces.",

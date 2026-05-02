@@ -10,6 +10,7 @@
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { isRouteAllowed, resolveRoute } from '@/lib/aimily-assistant/knowledge';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   url: string;
@@ -20,12 +21,13 @@ interface Props {
 
 export function NavigateButton({ url, label, activeCollectionId, onNavigate }: Props) {
   const router = useRouter();
+  const t = useTranslation();
 
   /* Reject early if the model hallucinated a non-whitelisted route. */
   if (!isRouteAllowed(url)) {
     return (
       <span className="inline-flex items-center text-[11px] text-carbon/35 italic">
-        link unavailable
+        {t.aimilyAssistant.linkUnavailable}
       </span>
     );
   }
@@ -34,7 +36,7 @@ export function NavigateButton({ url, label, activeCollectionId, onNavigate }: P
   if (!resolved) {
     return (
       <span className="inline-flex items-center text-[11px] text-carbon/35 italic">
-        open a collection to use this link
+        {t.aimilyAssistant.openCollectionFirst}
       </span>
     );
   }

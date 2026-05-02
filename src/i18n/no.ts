@@ -3373,6 +3373,8 @@ export const no: Dictionary = {
     clearConversation: "Slett samtalen",
     thinking: "Aimily tenker…",
     takeMeThere: "Ta meg dit",
+    linkUnavailable: "lenke ikke tilgjengelig",
+    openCollectionFirst: "åpne først en kolleksjon for å bruke denne lenken",
     empty: {
       title: "Hvordan kan jeg hjelpe?",
       subtitle: "Spør hvordan aimily fungerer, motebransje-termer eller om kontoen din. Jeg er her for å lære deg plattformen — ikke for å erstatte arbeidsflatene.",

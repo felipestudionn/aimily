@@ -3488,6 +3488,8 @@ export const fr: Dictionary = {
     clearConversation: "Effacer la conversation",
     thinking: "Aimily réfléchit…",
     takeMeThere: "M’y emmener",
+    linkUnavailable: "lien indisponible",
+    openCollectionFirst: "ouvre d’abord une collection pour utiliser ce lien",
     empty: {
       title: "Comment puis-je aider ?",
       subtitle: "Pose des questions sur le fonctionnement d’aimily, les termes du secteur mode ou ton compte. Je suis là pour t’apprendre la plateforme — pas pour remplacer ses workspaces.",

@@ -3487,6 +3487,8 @@ export const nl: Dictionary = {
     clearConversation: "Gesprek wissen",
     thinking: "Aimily denkt na…",
     takeMeThere: "Breng me erheen",
+    linkUnavailable: "link niet beschikbaar",
+    openCollectionFirst: "open eerst een collectie om deze link te gebruiken",
     empty: {
       title: "Hoe kan ik helpen?",
       subtitle: "Vraag hoe aimily werkt, termen uit de mode-industrie of over je account. Ik leer je het platform — ik vervang de workspaces niet.",
