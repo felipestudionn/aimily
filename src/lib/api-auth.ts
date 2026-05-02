@@ -189,22 +189,25 @@ export const checkAIUsage = checkImageryUsage;
  * across Fluid replicas, but more than enough to keep cost runaway from
  * any single account bounded.
  *
- * Buckets:
- *   text  — Claude / Gemini / Perplexity calls (cheap, but Perplexity
- *           Search costs add up). 30/min.
- *   image — Freepik / OpenAI image gen. 10/min — quota check still
- *           enforces monthly cap, this is just the burst limit.
- *   video — Kling video. 3/min — each call is ~$0.30 and runs 90s.
+ * Buckets — cost-tier aligned, not arbitrary:
+ *   text       — Claude Haiku / Gemini Flash, single-LLM call. ~$0.001-
+ *                $0.003 per call. 30/min/user. Default.
+ *   heavy-text — Perplexity Search (multi-query, ~$0.005-$0.01 per call)
+ *                OR Claude Sonnet (~$0.003-$0.015 per call). Two-digit
+ *                cents per request, runs longer too. 15/min/user.
+ *   image      — Freepik / OpenAI image gen. 10/min — quota check still
+ *                enforces monthly cap, this is just the burst limit.
+ *   video      — Kling video. 3/min — each call is ~$0.30 and runs 90s.
  */
 export function enforceAiUserRateLimit(
   userId: string,
-  bucket: 'text' | 'image' | 'video' = 'text',
+  bucket: 'text' | 'heavy-text' | 'image' | 'video' = 'text',
 ): NextResponse | null {
-  const cfg = bucket === 'video'
-    ? { count: 3, window: 60_000 }
-    : bucket === 'image'
-    ? { count: 10, window: 60_000 }
-    : { count: 30, window: 60_000 };
+  const cfg =
+    bucket === 'video' ? { count: 3, window: 60_000 } :
+    bucket === 'image' ? { count: 10, window: 60_000 } :
+    bucket === 'heavy-text' ? { count: 15, window: 60_000 } :
+    { count: 30, window: 60_000 };
   if (rateLimit.allow(`${userId}:ai-${bucket}`, cfg.count, cfg.window)) return null;
   return NextResponse.json(
     { error: 'Too many AI requests. Slow down for a moment and try again.' },

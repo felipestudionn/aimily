@@ -12,6 +12,18 @@ const nextConfig = {
       { source: '/how-it-works', destination: '/', permanent: true },
       { source: '/discover', destination: '/', permanent: true },
       { source: '/pricing', destination: '/#pricing', permanent: true },
+      /* Zombie routes from the pre-2026-04-15 cleanup — survived
+         /trends, /categories/*, /svg-test, /analytics, /creative-space.
+         None are linked from the active sidebar; they shipped with
+         hardcoded EN strings and stale data. Redirect to the home
+         to catch any lingering external link instead of letting the
+         page render a stale UI. */
+      { source: '/creative-space', destination: '/my-collections', permanent: true },
+      { source: '/trends', destination: '/my-collections', permanent: true },
+      { source: '/svg-test', destination: '/my-collections', permanent: true },
+      { source: '/analytics', destination: '/my-collections', permanent: true },
+      { source: '/categories', destination: '/my-collections', permanent: true },
+      { source: '/categories/:path*', destination: '/my-collections', permanent: true },
     ];
   },
   async headers() {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, enforceAiUserRateLimit } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { generateJSON } from '@/lib/ai/llm-client';
@@ -298,6 +298,9 @@ export async function POST(req: NextRequest) {
   try {
     const { user, error: authError } = await getAuthenticatedUser();
     if (authError) return authError;
+
+    const rateLimited = enforceAiUserRateLimit(user.id, 'text');
+    if (rateLimited) return rateLimited;
 
     const body: GenerateRequest & { language?: 'en' | 'es' } = await req.json();
     const { collectionPlanId, mode, brandContext, language } = body;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership, enforceAiUserRateLimit } from '@/lib/api-auth';
 import Anthropic from '@anthropic-ai/sdk';
 import { generateJSON, extractJSON } from '@/lib/ai/llm-client';
 import { normalizeAiError } from '@/lib/ai/error-messages';
@@ -99,6 +99,9 @@ CRITICAL: Base analysis on what you ACTUALLY SEE. Generic fashion advice = failu
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
+
+  const rateLimited = enforceAiUserRateLimit(user.id, 'heavy-text');
+  if (rateLimited) return rateLimited;
 
   const usage = await checkAuthOnly(user.id, user.email!);
   if (!usage.allowed) return usageDeniedResponse(usage);

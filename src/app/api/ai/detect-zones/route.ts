@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, enforceAiUserRateLimit } from '@/lib/api-auth';
 import { detectImageZones } from '@/lib/zone-detection';
 
 /* ═══════════════════════════════════════════════════════════
@@ -12,6 +12,9 @@ import { detectImageZones } from '@/lib/zone-detection';
 export async function POST(req: NextRequest) {
   const { user, error } = await getAuthenticatedUser();
   if (error) return error;
+
+  const rateLimited = enforceAiUserRateLimit(user.id, 'text');
+  if (rateLimited) return rateLimited;
 
   const usage = await checkAuthOnly(user.id, user.email!);
   if (!usage.allowed) return usageDeniedResponse(usage);

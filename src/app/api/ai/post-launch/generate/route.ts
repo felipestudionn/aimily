@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse } from '@/lib/api-auth';
+import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, enforceAiUserRateLimit } from '@/lib/api-auth';
 import { checkTeamPermission } from '@/lib/team-permissions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
 import { MARKETING_PROMPTS } from '@/lib/prompts/marketing-prompts';
@@ -27,6 +27,9 @@ import { normalizeAiError } from '@/lib/ai/error-messages';
 export async function POST(req: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser();
   if (authError) return authError;
+
+  const rateLimited = enforceAiUserRateLimit(user.id, 'text');
+  if (rateLimited) return rateLimited;
 
   try {
     const body = await req.json();
