@@ -660,6 +660,44 @@ Los 4 WARN security restantes:
 - `increment_share_views` SECURITY DEFINER ejecutable por authenticated — mismo, intencional.
 - `auth_leaked_password_protection` desactivado — DECISIÓN founder, cero fricción.
 
+## 15. Phase F (2026-05-02) — drive advisors a cero warnings
+
+Tras Phase E + cleanup Ailfred, el advisor seguía con 4 warnings. Felipe pidió cerrar TODO lo que fuera arreglable.
+
+Migración aplicada: `pro_hardening_f_zero_warnings`.
+
+### Cambios
+
+1. **`increment_share_views` REVOKE** — verificado que la única llamada en el código (`src/app/p/[token]/page.tsx:86`) ya pasa por `supabaseAdmin.rpc()` con service_role. Los WARN `anon_security_definer_function_executable` y `authenticated_security_definer_function_executable` pedían exactamente esto: revocar EXECUTE de los roles públicos. Hecho. Service_role y postgres siguen pudiendo invocarla — el page server-side sigue funcionando intacto.
+
+2. **`pg_net` movido del schema `public` al schema `extensions`** — al ser `extrelocatable = false`, requiere DROP + CREATE. La operación se hizo dentro de una migración atómica:
+
+   - Pre-flight check: `net.http_request_queue` vacía, sin responses recientes, ningún cron corriendo.
+   - DROP en cascada: triggers (`subscriptions_notify`, `wholesale_orders_notify`, `audit_log_notify`), funciones (`notify_*`, `check_signup_spike`, `notify_founder`, `invoke_aimily_cron`), 7 jobs `aimily_*` en pg_cron, finalmente la extensión.
+   - `CREATE EXTENSION pg_net WITH SCHEMA extensions;` — la extensión recrea su propio schema `net` con `http_post`/`http_get`/`http_delete` y las tablas de queue.
+   - Todas las funciones recreadas con `SET search_path = public, extensions, vault, pg_catalog` (añadido `extensions` al search path).
+   - Todos los triggers y los 7 cron jobs recreados idénticos al estado pre-migración.
+
+   Verificado post-migración: `notify_founder()` test → request_id=1 → response 204 OK. Email recibido en `hello@aimily.app`. Pipeline intacto.
+
+3. **`mailer_secure_email_change_enabled`** — ya estaba activado en Phase E.
+
+### Estado advisor security final
+
+**0 ERROR + 1 WARN** — y ese WARN es decisión consciente del founder, no un olvido.
+
+| Lint restante | Por qué se queda |
+|---|---|
+| `auth_leaked_password_protection` | Decisión founder 2026-05-02: cero fricción al signup, no checkear contra HaveIBeenPwned. Si en el futuro se quiere activar: 1 toggle vía Management API en `/v1/projects/<ref>/config/auth` con `password_hibp_enabled: true`. |
+
+Comparativa total contra el inicial:
+
+| Tipo | Pre-Phase A | Post-Phase F |
+|---|---|---|
+| Security ERROR | 1 | **0** |
+| Security WARN | 24 | **1** (decisión founder) |
+| Performance lints aimily-core | 200+ | ~0 (todos tocados; el resto son tablas Fred que ya no existen o métricas sin tráfico) |
+
 ---
 
 ## 14. Recursos oficiales
