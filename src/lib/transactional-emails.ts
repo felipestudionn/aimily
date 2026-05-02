@@ -21,14 +21,16 @@ function getResend(): Resend | null {
 export interface WelcomeEmailParams {
   to: string;
   name?: string;
+  /** When set, prepends to the subject. Use for preview/test sends so Felipe can distinguish from real production emails. */
+  _previewSubjectPrefix?: string;
 }
 
-export async function sendWelcomeEmail({ to, name }: WelcomeEmailParams) {
+export async function sendWelcomeEmail({ to, name, _previewSubjectPrefix }: WelcomeEmailParams) {
   const resend = getResend();
   if (!resend) return null;
 
   const firstName = name?.split(' ')[0] || 'there';
-  const subject = "Welcome to aimily — your 14 days start now";
+  const subject = `${_previewSubjectPrefix ?? ''}Welcome to aimily — your 14 days start now`;
 
   const html = `
 <!DOCTYPE html>
@@ -100,16 +102,19 @@ export interface TrialEndingEmailParams {
   to: string;
   name?: string;
   daysLeft: number;
+  /** When set, prepends to the subject. Used by /api/admin/email-preview. */
+  _previewSubjectPrefix?: string;
 }
 
-export async function sendTrialEndingEmail({ to, name, daysLeft }: TrialEndingEmailParams) {
+export async function sendTrialEndingEmail({ to, name, daysLeft, _previewSubjectPrefix }: TrialEndingEmailParams) {
   const resend = getResend();
   if (!resend) return null;
 
   const firstName = name?.split(' ')[0] || 'there';
-  const subject = daysLeft <= 1
+  const baseSubject = daysLeft <= 1
     ? "Your aimily trial ends tomorrow"
     : `Your aimily trial ends in ${daysLeft} days`;
+  const subject = `${_previewSubjectPrefix ?? ''}${baseSubject}`;
 
   const html = `
 <!DOCTYPE html>

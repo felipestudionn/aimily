@@ -12,8 +12,9 @@ export function getStripeServer(): Stripe {
   return _stripe;
 }
 
-// Admin bypass — owner accounts with permanent enterprise access
-export const ADMIN_EMAILS = ['felipe.studionn@gmail.com'];
+// Admin bypass — owner accounts with permanent enterprise access.
+// Single canonical address: hello@aimily.app (Google Workspace inbox).
+export const ADMIN_EMAILS = ['hello@aimily.app'];
 
 export function isAdminUser(email: string | undefined): boolean {
   return ADMIN_EMAILS.includes(email || '');
