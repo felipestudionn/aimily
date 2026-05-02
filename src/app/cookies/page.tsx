@@ -67,8 +67,8 @@ export default function CookiesPage() {
             <h2 className="text-2xl font-semibold mt-8 mb-4">{t.cookiesPage.s8Title}</h2>
             <p>
               {t.cookiesPage.s8Text}{" "}
-              <a href="mailto:studionn.agency@gmail.com" className="text-primary hover:underline">
-                studionn.agency@gmail.com
+              <a href="mailto:hello@aimily.app" className="text-primary hover:underline">
+                hello@aimily.app
               </a>
             </p>
             <p className="mt-2">{t.cookiesPage.s8Company}</p>

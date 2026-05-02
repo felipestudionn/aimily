@@ -862,6 +862,7 @@ SELECT id, status_code FROM net._http_response ORDER BY created DESC LIMIT 1;
 | 20260502091017 | `pro_hardening_g1_wrap_auth_role` | **G.2** — wrap `auth.role()` en `(select auth.role())` |
 | 20260502091127 | `pro_hardening_g2_dedupe_overlapping_policies` | **G.3** — drop policies duplicadas en launch_tasks/paid_campaigns/tech_pack_*/team_members |
 | 20260502091355 | `pro_hardening_g3_drop_legacy_plan_id_column` | **G.4** — fix bug latente collection_skus.plan_id + drop column + idx analyzed_content |
+| 20260502094513 | `slack_direct_alert_pg_net` | **H** — `notify_slack_direct()` SECURITY DEFINER, Vault-backed, ruta Postgres → Slack como respaldo de Vercel |
 
 ### 17.3 Archivos nuevos
 

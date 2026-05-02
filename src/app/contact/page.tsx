@@ -54,12 +54,12 @@ export default function ContactPage() {
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-3 gap-px bg-gris/10">
             <a
-              href="mailto:studionn.agency@gmail.com"
+              href="mailto:hello@aimily.app"
               className="bg-carbon p-10 group hover:bg-carbon/80 transition-colors"
             >
               <Mail className="h-5 w-5 text-gris/40 mb-5 group-hover:text-crema transition-colors" />
               <p className="text-gris/50 text-xs font-medium tracking-[0.2em] uppercase mb-2">{t.contactPage.emailLabel}</p>
-              <p className="text-crema text-sm font-light">studionn.agency@gmail.com</p>
+              <p className="text-crema text-sm font-light">hello@aimily.app</p>
             </a>
             <a
               href="tel:+34646907470"

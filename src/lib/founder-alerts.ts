@@ -1,16 +1,20 @@
 /**
- * Founder alerts — Resend email to hello@aimily.app for high-signal events.
+ * Founder alerts — Resend email + Slack webhook in parallel for high-signal events.
+ *
+ * Why two channels: email arrives in the inbox eventually, Slack hits the
+ * phone instantly. If one fails the other still lands. Both run via
+ * Promise.allSettled so a Slack outage never blocks the email and vice versa.
  *
  * Triggered by:
  *   - Database Webhooks via /api/webhooks/db-event (DB rows changing)
  *   - pg_cron jobs that detect aggregate conditions (10+ signups/hour)
  *   - Application code that wants to surface a one-off event
  *
- * Soft-fails: a missing RESEND_API_KEY logs and returns null, never throws —
- * a webhook handler should never block a database transaction because the
- * notification email failed to send.
+ * Soft-fails on missing env vars (RESEND_API_KEY or SLACK_WEBHOOK_URL):
+ * logs and skips, never throws.
  */
 import { Resend } from 'resend';
+import { sendSlackAlert } from './slack-alerts';
 
 const FROM = 'aimily alerts <hello@aimily.app>';
 const TO = 'hello@aimily.app';
@@ -32,6 +36,11 @@ export interface FounderAlertPayload {
   body: string;
   /** Optional structured data shown in a monospace block at the bottom. */
   data?: Record<string, unknown>;
+  /**
+   * Optional deep-link URL surfaced as "View in aimily" CTA in Slack
+   * (email already includes the data block). Absolute URL on aimily.app.
+   */
+  link?: string;
 }
 
 let _resend: Resend | null | undefined;
@@ -57,7 +66,24 @@ const TYPE_LABEL: Record<FounderAlertType, string> = {
   signup_spike: 'Signup spike',
 };
 
-export async function sendFounderAlert(p: FounderAlertPayload): Promise<{ id: string } | null> {
+/**
+ * Fan out a founder alert to Resend (email) + Slack (webhook) in parallel.
+ * Promise.allSettled so a Slack outage never blocks the email and vice versa.
+ */
+export async function sendFounderAlert(p: FounderAlertPayload): Promise<{ emailId: string | null; slackOk: boolean }> {
+  const [emailResult, slackResult] = await Promise.allSettled([
+    sendEmailAlert(p),
+    sendSlackAlert({ type: p.type, subject: p.subject, body: p.body, data: p.data, link: p.link }),
+  ]);
+
+  const emailId =
+    emailResult.status === 'fulfilled' && emailResult.value ? emailResult.value.id : null;
+  const slackOk = slackResult.status === 'fulfilled' && slackResult.value.ok;
+
+  return { emailId, slackOk };
+}
+
+async function sendEmailAlert(p: FounderAlertPayload): Promise<{ id: string } | null> {
   const resend = getResend();
   if (!resend) return null;
 
@@ -93,7 +119,7 @@ export async function sendFounderAlert(p: FounderAlertPayload): Promise<{ id: st
     });
     return result.data ? { id: result.data.id } : null;
   } catch (e) {
-    console.error('[founder-alerts] send failed', { type: p.type, error: e });
+    console.error('[founder-alerts] resend send failed', { type: p.type, error: e });
     return null;
   }
 }
