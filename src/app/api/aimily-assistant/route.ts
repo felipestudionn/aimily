@@ -261,15 +261,33 @@ export async function POST(req: Request) {
           .eq('id', conversationId!);
 
         /* Record usage + cost. Triggers DB-side kill switch if cumulative
-           daily spend > $5 for this user. */
-        const inputBlock = (usage as { inputTokens?: { total?: number; cacheRead?: number; cacheWrite?: number } }).inputTokens;
-        const inputTotal = typeof inputBlock === 'number' ? inputBlock : (inputBlock?.total ?? 0);
-        const cacheRead = typeof inputBlock === 'object' ? (inputBlock?.cacheRead ?? 0) : 0;
-        const cacheWrite = typeof inputBlock === 'object' ? (inputBlock?.cacheWrite ?? 0) : 0;
-        const outputTokens = (usage as { outputTokens?: number }).outputTokens ?? 0;
+           daily spend > $5 for this user.
+           AI SDK v6 LanguageModelUsage shape (verified against
+           node_modules/ai/dist/index.d.ts):
+             inputTokens: number             // total (includes cached)
+             inputTokenDetails: {
+               noCacheTokens, cacheReadTokens, cacheWriteTokens
+             }
+             outputTokens: number */
+        const u = usage as {
+          inputTokens?: number;
+          inputTokenDetails?: {
+            noCacheTokens?: number;
+            cacheReadTokens?: number;
+            cacheWriteTokens?: number;
+          };
+          outputTokens?: number;
+        };
+        const inputTotal = u.inputTokens ?? 0;
+        const cacheRead = u.inputTokenDetails?.cacheReadTokens ?? 0;
+        const cacheWrite = u.inputTokenDetails?.cacheWriteTokens ?? 0;
+        const noCacheInput =
+          u.inputTokenDetails?.noCacheTokens ??
+          Math.max(0, inputTotal - cacheRead - cacheWrite);
+        const outputTokens = u.outputTokens ?? 0;
 
         const costUsd = estimateCostUsd({
-          inputTokens: Math.max(0, inputTotal - cacheRead - cacheWrite),
+          inputTokens: noCacheInput,
           outputTokens,
           cacheReadTokens: cacheRead,
           cacheWriteTokens: cacheWrite,
@@ -278,7 +296,7 @@ export async function POST(req: Request) {
 
         await supabaseAdmin.rpc('aimily_assistant_record_usage', {
           p_user_id: userId,
-          p_input_tokens: Math.max(0, inputTotal - cacheRead - cacheWrite),
+          p_input_tokens: noCacheInput,
           p_output_tokens: outputTokens,
           p_cache_read_tokens: cacheRead,
           p_cache_write_tokens: cacheWrite,
