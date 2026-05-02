@@ -188,6 +188,29 @@ export default function TrustPage() {
         </div>
       </section>
 
+      {/* ── In-product assistant ── */}
+      <section className="py-20 sm:py-28 px-6 border-t border-crema/[0.06]">
+        <div className="max-w-4xl mx-auto">
+          <p className="text-[12px] font-semibold tracking-[0.3em] uppercase text-crema/65 mb-4">
+            {trust.assistantTitle || 'The in-product assistant'}
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-light text-crema tracking-tight leading-[1.15] mb-4 max-w-2xl">
+            {trust.assistantHeadline || ''}
+          </h2>
+          <p className="text-[13px] font-light text-gris/55 mb-10 max-w-2xl leading-relaxed">
+            {trust.assistantDesc || ''}
+          </p>
+          <ul className="space-y-4 max-w-2xl">
+            {[trust.assistantBullet1, trust.assistantBullet2, trust.assistantBullet3, trust.assistantBullet4].map((bullet, i) => (
+              <li key={i} className="flex gap-3 text-[14px] font-light text-gris/75 leading-relaxed">
+                <span className="text-crema/35 select-none">—</span>
+                <span>{bullet || ''}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
       {/* ── CTA ── */}
       <section className="py-20 sm:py-28 px-6 text-center">
         <div className="max-w-2xl mx-auto">
