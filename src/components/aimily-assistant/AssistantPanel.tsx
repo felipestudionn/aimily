@@ -24,8 +24,68 @@ import { DefaultChatTransport, type UIMessage } from 'ai';
 import { X, Send, Eraser, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { NavigateButton } from './NavigateButton';
 import { useAssistant } from './AssistantContext';
+
+/* Local persistence — keep a single active conversation per user in
+   localStorage so refresh / reopen restores the chat where the user
+   left it. 7-day TTL — beyond that we treat the prior conversation as
+   stale and start fresh (matches the 90-day server-side retention but
+   keeps the UI clean for users who only return occasionally). */
+const STORAGE_VERSION = 'v1';
+const STORAGE_TTL_DAYS = 7;
+
+interface PersistedConversation {
+  conversationId: string;
+  messages: UIMessage[];
+  updatedAt: string; // ISO date
+}
+
+function storageKey(userId: string): string {
+  return `aimily-assistant-active-conversation-${STORAGE_VERSION}-${userId}`;
+}
+
+function loadPersisted(userId: string): PersistedConversation | null {
+  try {
+    const raw = localStorage.getItem(storageKey(userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PersistedConversation;
+    if (!parsed.conversationId || !Array.isArray(parsed.messages) || !parsed.updatedAt) {
+      return null;
+    }
+    const ageDays = (Date.now() - new Date(parsed.updatedAt).getTime()) / 86_400_000;
+    if (ageDays > STORAGE_TTL_DAYS) {
+      localStorage.removeItem(storageKey(userId));
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function savePersisted(userId: string, conversationId: string, messages: UIMessage[]): void {
+  try {
+    const payload: PersistedConversation = {
+      conversationId,
+      messages,
+      updatedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(storageKey(userId), JSON.stringify(payload));
+  } catch {
+    // Quota exceeded or disabled storage — silent fail. Persistence is a
+    // nice-to-have, not a correctness requirement.
+  }
+}
+
+function clearPersisted(userId: string): void {
+  try {
+    localStorage.removeItem(storageKey(userId));
+  } catch {
+    /* noop */
+  }
+}
 
 interface PageContextLite {
   pathname: string;
@@ -45,8 +105,11 @@ export function AssistantPanel({ pageContext }: Props) {
   const onClose = ctx?.close ?? (() => {});
   const t = useTranslation();
   const { language } = useLanguage();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const restoredRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -86,6 +149,31 @@ export function AssistantPanel({ pageContext }: Props) {
       }
     },
   });
+
+  /* Restore the last active conversation from localStorage on first
+     mount once we know who the user is. We restore even when the panel
+     is closed so the moment the user opens it, history is already there. */
+  useEffect(() => {
+    if (!userId || restoredRef.current) return;
+    const persisted = loadPersisted(userId);
+    if (persisted && persisted.messages.length > 0) {
+      setConversationId(persisted.conversationId);
+      setMessages(persisted.messages);
+    }
+    restoredRef.current = true;
+  }, [userId, setMessages]);
+
+  /* Persist on every message change after restore is settled. We skip
+     while streaming to avoid writing partial deltas on every chunk —
+     onFinish at the end of a turn naturally bumps the messages array
+     once and we capture that. */
+  useEffect(() => {
+    if (!userId || !restoredRef.current) return;
+    if (!conversationId) return;
+    if (status === 'streaming' || status === 'submitted') return;
+    if (messages.length === 0) return;
+    savePersisted(userId, conversationId, messages);
+  }, [userId, conversationId, messages, status]);
 
   /* Scroll to bottom whenever new content arrives. */
   useEffect(() => {
@@ -134,6 +222,7 @@ export function AssistantPanel({ pageContext }: Props) {
   const handleClear = () => {
     setMessages([]);
     setConversationId(null);
+    if (userId) clearPersisted(userId);
   };
 
   /* Page-aware suggestions on empty state. Three picks: a how-it-works
