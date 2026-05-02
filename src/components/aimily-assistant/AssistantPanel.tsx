@@ -66,8 +66,23 @@ export function AssistantPanel({ open, onClose, pageContext }: Props) {
     },
   });
 
-  const { messages, sendMessage, status, error, stop, setMessages } = useChat({
+  const { messages, sendMessage, status, error, stop, setMessages, addToolOutput } = useChat({
     transport,
+    /* When the model calls navigateToWorkspace (a client-side tool with no
+       execute), AI SDK requires a matching tool result before the next
+       conversation turn — otherwise the next /api/aimily-assistant POST
+       fails with AI_MissingToolResultsError. We satisfy the contract
+       immediately with a synthetic { acknowledged: true } output. The
+       actual navigation only happens when the user clicks the button. */
+    onToolCall: ({ toolCall }) => {
+      if (toolCall.toolName === 'navigateToWorkspace') {
+        addToolOutput({
+          tool: 'navigateToWorkspace',
+          toolCallId: toolCall.toolCallId,
+          output: { acknowledged: true },
+        });
+      }
+    },
   });
 
   /* Scroll to bottom whenever new content arrives. */

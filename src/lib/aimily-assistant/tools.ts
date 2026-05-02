@@ -35,8 +35,16 @@ export const navigateToWorkspace = tool({
         'Short button label, max 30 chars. Examples: "Open Buying Strategy", "Go to Tech Pack", "Open the Calendar".',
       ),
   }),
+  // Output schema — the client emits a synthetic acknowledgement via
+  // addToolOutput() the moment the tool call arrives. This satisfies the
+  // AI SDK contract that every tool call has a matching tool result, so
+  // the next conversation turn doesn't blow up with AI_MissingToolResultsError.
+  outputSchema: z.object({
+    acknowledged: z.literal(true),
+  }),
   // No `execute` — this is a client-side tool. The AI SDK will stream the
-  // tool call to the client, the client renders the button.
+  // tool call to the client, the client renders the button + auto-emits
+  // the acknowledged output so the conversation can continue cleanly.
 });
 
 /**
