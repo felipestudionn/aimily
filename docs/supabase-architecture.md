@@ -684,18 +684,16 @@ Migración aplicada: `pro_hardening_f_zero_warnings`.
 
 ### Estado advisor security final
 
-**0 ERROR + 1 WARN** — y ese WARN es decisión consciente del founder, no un olvido.
+**0 ERROR + 0 WARN.** Auditoría completamente limpia.
 
-| Lint restante | Por qué se queda |
-|---|---|
-| `auth_leaked_password_protection` | Decisión founder 2026-05-02: cero fricción al signup, no checkear contra HaveIBeenPwned. Si en el futuro se quiere activar: 1 toggle vía Management API en `/v1/projects/<ref>/config/auth` con `password_hibp_enabled: true`. |
+`password_hibp_enabled = true` activado vía Management API tras revisar la práctica de industria (NIST 800-63B, OWASP, default-on en Auth0/Clerk/Microsoft Entra ID/Firebase/Stytch para tier B2B). El check ocurre solo en signup y password change, contra la lista pública de HaveIBeenPwned: si la password del usuario está en un breach conocido, recibe un error y elige otra. Cero fricción para passwords no comprometidas.
 
 Comparativa total contra el inicial:
 
 | Tipo | Pre-Phase A | Post-Phase F |
 |---|---|---|
 | Security ERROR | 1 | **0** |
-| Security WARN | 24 | **1** (decisión founder) |
+| Security WARN | 24 | **0** |
 | Performance lints aimily-core | 200+ | ~0 (todos tocados; el resto son tablas Fred que ya no existen o métricas sin tráfico) |
 
 ---
