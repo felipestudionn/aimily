@@ -2,6 +2,8 @@
 
 > Source of truth for how aimily uses Supabase. Updated 2026-05-02 (Pro upgrade).
 > If you change auth, storage, RLS, rate limiting, or extensions — update this file in the same commit.
+>
+> **Para auditoría/due-diligence/onboarding:** ver primero [`SECURITY-DATABASE-BIBLE.md`](./SECURITY-DATABASE-BIBLE.md), que recoge la sesión Pro hardening 2026-05-02 entera (phases A→F, decisiones founder, advisor evolution, cómo verificar el estado).
 
 ## 0. Resumen ejecutivo (ES)
 
