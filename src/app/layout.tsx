@@ -75,9 +75,10 @@ export default function RootLayout({
                 <ObservabilityBootstrap />
                 <ServiceWorkerRegistrar />
                 <GlobalNav />
-                <main className="relative min-h-screen">{children}</main>
-                <Suspense fallback={null}>
-                  <AssistantMount />
+                <Suspense fallback={<main className="relative min-h-screen">{children}</main>}>
+                  <AssistantMount>
+                    <main className="relative min-h-screen">{children}</main>
+                  </AssistantMount>
                 </Suspense>
                 <CookieConsent />
                 <Analytics />

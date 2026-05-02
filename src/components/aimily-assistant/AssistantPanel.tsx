@@ -21,10 +21,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
-import { X, Send, Sparkles, Eraser, Loader2 } from 'lucide-react';
+import { X, Send, Eraser, Loader2 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { NavigateButton } from './NavigateButton';
+import { useAssistant } from './AssistantContext';
 
 interface PageContextLite {
   pathname: string;
@@ -35,12 +36,13 @@ interface PageContextLite {
 }
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
   pageContext: PageContextLite;
 }
 
-export function AssistantPanel({ open, onClose, pageContext }: Props) {
+export function AssistantPanel({ pageContext }: Props) {
+  const ctx = useAssistant();
+  const open = ctx?.open ?? false;
+  const onClose = ctx?.close ?? (() => {});
   const t = useTranslation();
   const { language } = useLanguage();
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -166,19 +168,14 @@ export function AssistantPanel({ open, onClose, pageContext }: Props) {
           ${open ? 'translate-x-0' : 'translate-x-full pointer-events-none'}
         `}
       >
-        {/* Header */}
+        {/* Header — no icon. Editorial calm: just the name + subtitle. */}
         <header className="flex items-center justify-between px-6 py-5 border-b border-carbon/[0.06]">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-carbon text-white flex items-center justify-center">
-              <Sparkles className="h-3.5 w-3.5" />
+          <div>
+            <div className="text-[14px] font-semibold text-carbon tracking-[-0.02em]">
+              {t.aimilyAssistant.title}
             </div>
-            <div>
-              <div className="text-[14px] font-semibold text-carbon tracking-[-0.02em]">
-                {t.aimilyAssistant.title}
-              </div>
-              <div className="text-[11px] text-carbon/50">
-                {t.aimilyAssistant.subtitle}
-              </div>
+            <div className="text-[11px] text-carbon/50">
+              {t.aimilyAssistant.subtitle}
             </div>
           </div>
           <div className="flex items-center gap-1">

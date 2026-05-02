@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/i18n";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { AssistantHeaderButton } from "@/components/aimily-assistant/AssistantHeaderButton";
 import { track } from "@/lib/posthog";
 
 /* ── Avatar dropdown (desktop only) ── */
@@ -195,8 +196,9 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
         <div className="flex h-16 items-center justify-end px-6 md:px-8">
           {/* Left side intentionally empty — logo + collection name live in sidebar */}
 
-          {/* Right: notifications + avatar */}
+          {/* Right: ask aimily + notifications + avatar */}
           <div className="flex items-center gap-3">
+            <AssistantHeaderButton variant={isDark ? 'dark' : 'light'} />
             <NotificationBell />
             {user && (
               <AvatarMenu email={user.email || ''} onSignOut={handleSignOut} isDark={isDark} />
@@ -232,6 +234,7 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
+                <AssistantHeaderButton variant="light" />
                 <NotificationBell />
                 <AvatarMenu email={user.email || ''} onSignOut={handleSignOut} />
               </>
