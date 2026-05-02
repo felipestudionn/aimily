@@ -566,6 +566,100 @@ Los 1.003 lints de performance que quedan: 896 `multiple_permissive_policies` de
 - **Cross-cloud Storage backup automatizado**: requiere credenciales externas (B2/S3/Vercel Blob). El script manual está listo; cuando haya destino se conecta a un cron.
 - **PITR add-on**: $115/mes adicionales, sin clientes serios no se justifica. Daily DB backups 7 días + papelera Storage 30 días dan ventana de recuperación equivalente para los escenarios actuales.
 
+## 14. Phase E (2026-05-02) — pg_cron + Database Webhooks → hello@aimily.app
+
+### Migración Ailfred completada
+
+El agente Ailfred terminó la migración de todo lo no-aimily al proyecto `ailfred-studionn` (`ixqbcvopjnkrbgzkkall`). Resultado en `sbweszownvspzjfejmfx`:
+
+- 25 tablas Fred dropeadas (tasks, projects, chat_messages, meal_plans, travel_plans, itinerary_items, user_projects, sessions, etc.). Quedan ~60 tablas aimily-real.
+- 3 buckets Storage Fred eliminados (`client-decks`, `rrss-assets`, `reports` — los borré yo via Storage API tras confirmar que estaban vacíos y sin referencias en código aimily).
+- Advisor security: las 4 RLS "always-true" Fred + las 2 listings públicos desaparecieron al borrarse las tablas/buckets.
+
+### Phase E shipped
+
+Migraciones aplicadas:
+
+- `pro_hardening_e_pgcron_and_webhooks` — habilita `pg_cron` 1.6.4 y `pg_net` 0.19.5, crea `notify_founder(event_type, payload)` y los triggers que disparan a `/api/webhooks/db-event`.
+- `pro_hardening_e2_pgcron_schedule_app_jobs` — schedule de los 5 jobs aplicación que vivían en `vercel.json` como pg_cron jobs que POSTean a `/api/cron/*` con bearer pulled del Vault.
+
+### Database Webhooks
+
+Triggers nativos en Postgres → endpoint Vercel → email Resend a `hello@aimily.app`:
+
+| Trigger | Evento | Notifica |
+|---|---|---|
+| `subscriptions_notify` (INSERT/UPDATE) | Cambio de plan o status | "Cliente X acaba de pagar Pro/Pro Max" o "Cliente Y canceló" |
+| `wholesale_orders_notify` (INSERT) | Nuevo pedido B2B | Detalles del pedido + total |
+| `audit_log_notify` (INSERT severity='high') | Evento crítico | Acción + user + mensaje |
+| `aimily_signup_spike_check` (cron horario) | ≥10 signups en 1h | Posible bot/abuso |
+| `aimily_cron_failure_watcher` (cron horario) | Cualquier `aimily_*` cron con 2 fallos seguidos | Job + error |
+
+### Pipeline interno
+
+```
+Postgres trigger
+   ↓ pg_net.http_post() (async, queue en net.http_request_queue)
+   ↓ Header X-DB-Webhook-Secret pulled de Vault
+https://www.aimily.app/api/webhooks/db-event
+   ↓ verifyTimingSafe(secret)
+   ↓ dispatchEvent(type, data)
+src/lib/founder-alerts.ts → Resend → hello@aimily.app
+```
+
+Verificado e2e 2026-05-02: pg_net request_id=2 → response 204 OK → email recibido en bandeja.
+
+### pg_cron jobs activos
+
+| Job | Schedule | Hace |
+|---|---|---|
+| `aimily_signup_spike_check` | `7 * * * *` | Cuenta nuevas auth.users en última hora; si ≥10, alerta. |
+| `aimily_cron_failure_watcher` | `13 * * * *` | Detecta cualquier `aimily_*` con 2 fallos consecutivos en 6h, alerta. |
+| `aimily_collect_tiktok_trends` | `0 6 * * 4` | Reemplaza Vercel cron homónimo. |
+| `aimily_process_city_trends` | `0 7 * * 4` | Reemplaza Vercel cron homónimo. |
+| `aimily_post_launch_analysis` | `0 8 * * *` | Reemplaza Vercel cron homónimo. |
+| `aimily_trial_emails` | `0 9 * * *` | Reemplaza Vercel cron homónimo. |
+| `aimily_cleanup_storage_trash` | `0 4 1 * *` | Reemplaza Vercel cron homónimo (purga `__trash/` > 30 días). |
+
+Observable via SQL: `SELECT * FROM cron.job_run_details ORDER BY start_time DESC LIMIT 50;`
+
+### Vault secrets
+
+Dos secretos guardados en `vault.secrets` (encrypted at rest, leídos por funciones SECURITY DEFINER):
+
+- `cron_secret` — Bearer header que `invoke_aimily_cron(path)` pone al POSTear `/api/cron/*`. Mismo valor que `CRON_SECRET` env en Vercel.
+- `db_webhook_secret` — Header `X-DB-Webhook-Secret` que `notify_founder()` pone al POSTear `/api/webhooks/db-event`. Mismo valor que `DB_WEBHOOK_SECRET` env en Vercel (Production + Development).
+
+### Anti-bot: dominios de email desechables
+
+`src/lib/disposable-email-domains.ts` — blocklist de 60 dominios (mailinator, tempmail, guerrillamail, dispostable, etc.). Validado client-side en `AuthModal.tsx` antes de `signUp()`. i18n key `errDisposableEmail` en los 9 locales.
+
+Decisión founder: NO captcha (UX cutre cuando lo intentamos antes). Defensa-en-profundidad real:
+
+1. Email confirmation obligatoria (`mailer_autoconfirm: false`).
+2. Supabase Auth rate limit interno: 4 emails/hour por IP.
+3. Per-user AI rate limit (text 30/min, image 10/min, video 3/min).
+4. Disposable domain blocklist en signup form.
+5. `aimily_signup_spike_check` cron: aviso a founder si pasa el umbral.
+
+### Auth hardening
+
+- `mailer_secure_email_change_enabled = true` via Management API. Cambiar el email de una cuenta requiere confirmación en ambos correos (viejo + nuevo). Defensa contra account takeover.
+
+### Estado advisors post-Phase E + Ailfred
+
+| Tipo | Inicial | Post C+D | Post E + Ailfred |
+|---|---|---|---|
+| Security ERROR | 1 | 0 | **0** |
+| Security WARN | 24 | 7 | **4** |
+| Performance total | 1.110 | 1.003 | (pendiente re-medir post-Ailfred) |
+
+Los 4 WARN security restantes:
+- `extension_in_public` para `pg_net` — la extensión está registrada en `public` schema, sus objetos viven en `net`. Mover requiere DROP + CREATE (no es relocatable: `extrelocatable = false`), lo que destruiría triggers y queues activos. Aceptable: encapsulación real está en schema `net`, el warning es defensa en profundidad.
+- `increment_share_views` SECURITY DEFINER ejecutable por anon — INTENCIONAL para la página pública `/p/[token]`.
+- `increment_share_views` SECURITY DEFINER ejecutable por authenticated — mismo, intencional.
+- `auth_leaked_password_protection` desactivado — DECISIÓN founder, cero fricción.
+
 ---
 
 ## 14. Recursos oficiales
