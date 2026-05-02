@@ -38,6 +38,7 @@ const publicApiPrefixes = [
   '/api/webhooks/',      // Stripe webhook (verifies signature internally)
   '/api/cron/',          // Cron jobs (verify CRON_SECRET internally)
   '/api/auth/',          // OAuth callbacks (Pinterest, etc.)
+  '/api/chat-faq',       // Public FAQ chat — anyone can ask, per-IP rate limit
 ];
 
 export async function middleware(request: NextRequest) {

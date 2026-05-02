@@ -28,6 +28,7 @@ import { MeetAimilyContent } from '@/components/landing/MeetAimilyContent';
 import { PricingDetail } from '@/components/landing/PricingDetail';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { useHomeTranslation } from '@/i18n/home';
+import FaqWidget from '@/components/faq/FaqWidget';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -168,6 +169,9 @@ export default function HomePage() {
         onSuccess={() => router.push('/my-collections')}
         defaultMode="signup"
       />
+
+      {/* FAQ chat widget — public, RAG over Privacy/Terms/Pricing/MeetAimily/FAQ */}
+      <FaqWidget />
     </div>
   );
 }
