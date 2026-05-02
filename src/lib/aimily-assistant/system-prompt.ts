@@ -114,12 +114,16 @@ Do NOT call it when:
 - The user is on the same workspace already (the page context will tell you).
 - The route you would suggest is not one of the whitelisted routes (the
   call will be rejected client-side anyway).
-- The route is collection-scoped (contains \`[id]\`) AND the page context
-  has NO \`activeCollectionId\` (the user is on /my-collections, /account,
-  /pricing, etc.). In that case, EXPLAIN instead: tell the user they need
-  to open one of their collections first, then they can ask again from
-  inside it. Never call navigateToWorkspace from a non-collection page
-  for a collection-scoped route — the link cannot resolve.
+- The user is OUTSIDE any specific collection (the \`<context>\` envelope
+  on the first user message will say \`whereIs: outside any specific
+  collection ...\`). In that case, EXPLAIN instead: tell the user to open
+  one of their collections first, then they can ask again from inside it.
+  The truthful signal is the \`whereIs:\` line in the context envelope —
+  trust it. Do NOT infer "no collection open" from the absence of a
+  mini-block: a user on the collection overview / calendar / presentation
+  has the collection open without being on a specific mini-block, and the
+  \`whereIs:\` line will say "inside a collection". When it says inside,
+  navigation is fine; when it says outside, do not call the tool.
 
 When you do call the tool, use a short, useful label (max 30 chars). Examples:
 "Open Buying Strategy", "Go to Tech Pack", "Open the Calendar". The label
@@ -309,6 +313,28 @@ export function formatPageContext(ctx: PageContext, userLocale: string): string 
   lines.push(`<context>`);
   lines.push(`userLocale: ${userLocale || 'en'}`);
   lines.push(`pathname: ${ctx.pathname}`);
+
+  /* Explicit, English-prose statement of where the user is. Replaces the
+     prior implicit format that the model could misread (e.g. "no
+     miniBlockId means no collection" — wrong; collection overview has a
+     collectionId without a miniBlockId). */
+  if (ctx.collectionId) {
+    if (ctx.miniBlockId) {
+      lines.push(
+        `whereIs: inside a collection (id ${ctx.collectionId}), currently on mini-block ${ctx.miniBlockId}${ctx.miniBlockTitle ? ` — ${ctx.miniBlockTitle}` : ''}${ctx.blockCoord ? ` (${ctx.blockCoord})` : ''}. The collection IS open; navigateToWorkspace will resolve [id] correctly.`,
+      );
+    } else {
+      lines.push(
+        `whereIs: inside a collection (id ${ctx.collectionId}), on the collection overview / dashboard / calendar / presentation page. The collection IS open. navigateToWorkspace will resolve [id] correctly. The user is NOT on /my-collections.`,
+      );
+    }
+  } else {
+    lines.push(
+      `whereIs: outside any specific collection — on a global page like /my-collections, /account, /pricing, or /trust. There is NO active collection. Do not call navigateToWorkspace for collection-scoped routes (those that contain [id]); explain instead that the user must open a collection first.`,
+    );
+  }
+
+  /* Legacy fields — kept for any future tool that wants the raw IDs. */
   if (ctx.collectionId) lines.push(`activeCollectionId: ${ctx.collectionId}`);
   if (ctx.miniBlockId) {
     lines.push(`currentMiniBlock: ${ctx.miniBlockId}${ctx.miniBlockTitle ? ` (${ctx.miniBlockTitle})` : ''}`);
