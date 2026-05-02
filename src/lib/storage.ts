@@ -43,6 +43,86 @@ async function signStoragePath(storagePath: string): Promise<string> {
   return data.signedUrl;
 }
 
+export interface ThumbnailOptions {
+  /** Target width in pixels, 1–2500. Defaults to 800. */
+  width?: number;
+  /** Target height in pixels, 1–2500. Optional — omit to keep aspect ratio. */
+  height?: number;
+  /** JPEG/WebP quality, 20–100. Defaults to 75 for thumbnails. */
+  quality?: number;
+  /** Resize mode. `cover` (default) crops; `contain` fits inside; `fill` stretches. */
+  resize?: 'cover' | 'contain' | 'fill';
+  /** Seconds until the URL expires. Defaults to 1 hour for thumbnails. */
+  ttlSeconds?: number;
+}
+
+/**
+ * Sign a Storage URL with on-the-fly image transform (Pro feature).
+ * Use this for grid/lookbook/moodboard tiles and any UI that renders
+ * a small version of a 4 MB original — Supabase serves a WebP at the
+ * exact dimensions, dropping bandwidth ~10×.
+ *
+ * Pricing: 100 origin images included in Pro/mo, $5 per 1000 after.
+ * One unique source path counts as one origin image regardless of how
+ * many transform variants we request from it.
+ *
+ * Source: https://supabase.com/docs/guides/storage/serving/image-transformations
+ */
+export async function signThumbnailUrl(
+  storagePath: string,
+  opts: ThumbnailOptions = {},
+): Promise<string> {
+  const ttl = opts.ttlSeconds ?? 3600;
+  const transform: { width: number; height?: number; quality: number; resize: 'cover' | 'contain' | 'fill' } = {
+    width: opts.width ?? 800,
+    quality: opts.quality ?? 75,
+    resize: opts.resize ?? 'cover',
+  };
+  if (opts.height) transform.height = opts.height;
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(storagePath, ttl, { transform });
+  if (error || !data?.signedUrl) {
+    throw new Error(`Failed to sign thumbnail URL for ${storagePath}: ${error?.message ?? 'no signedUrl'}`);
+  }
+  return data.signedUrl;
+}
+
+/**
+ * Sign a short-lived read URL (default 60s) for an asset whose ownership has
+ * already been verified. Use this from the new /api/storage/sign endpoint
+ * when an authenticated UI needs a one-shot URL it can hand to <img> or to
+ * a download client without exposing it for a year.
+ *
+ * For background loaders (CIS prompt context, AI handoff to Freepik) we
+ * keep the long-lived URL on the row — those callers don't have a user
+ * session to mint short URLs against.
+ */
+export async function signShortReadUrl(
+  storagePath: string,
+  ttlSeconds: number = 60,
+  transform?: ThumbnailOptions,
+): Promise<string> {
+  const opts = transform
+    ? {
+        transform: {
+          width: transform.width ?? 1200,
+          ...(transform.height ? { height: transform.height } : {}),
+          quality: transform.quality ?? 85,
+          resize: transform.resize ?? 'cover',
+        },
+      }
+    : undefined;
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUrl(storagePath, ttlSeconds, opts);
+  if (error || !data?.signedUrl) {
+    throw new Error(`Failed to sign short URL for ${storagePath}: ${error?.message ?? 'no signedUrl'}`);
+  }
+  return data.signedUrl;
+}
+
 export type AssetType =
   | 'moodboard'
   | 'render'
@@ -272,10 +352,37 @@ export async function persistAsset(opts: {
 }
 
 /**
- * Delete an asset from storage + database.
+ * Soft-delete an asset.
+ *
+ * Behavior changed 2026-05-02 (Pro hardening D.6): the row is no longer
+ * removed and the Storage object is no longer purged. We mark the row's
+ * `deleted_at` so it stops appearing in the UI, but the bytes survive
+ * in the bucket. The `cleanup-orphan-storage` cron sweeps anything with
+ * `deleted_at < now() - 30 days` once a month, giving a real recovery
+ * window for accidental deletes — Supabase's daily DB backups never
+ * cover Storage objects, so without this we'd lose a customer's images
+ * forever the moment they hit "delete".
+ *
+ * To restore inside the 30-day window: `update collection_assets
+ * set deleted_at = null where id = '...'`. The 1-year signed URL on
+ * `url` is still valid, so the asset reappears immediately.
+ *
+ * Idempotent: re-soft-deleting an already-deleted row is a no-op.
  */
 export async function deleteAsset(assetId: string): Promise<void> {
-  // Get the record to find storage path
+  await supabaseAdmin
+    .from('collection_assets')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', assetId)
+    .is('deleted_at', null);
+}
+
+/**
+ * Hard-delete an asset (row + Storage object). Reserved for the
+ * cleanup-orphan-storage cron and admin-only purge flows. UI code
+ * should call `deleteAsset()` instead.
+ */
+export async function purgeAsset(assetId: string): Promise<void> {
   const { data, error } = await supabaseAdmin
     .from('collection_assets')
     .select('metadata')

@@ -53,10 +53,17 @@ export async function PATCH(
 /**
  * DELETE /api/collections/[id]
  *
- * Enterprise-grade collection deletion:
- * 1. Verify ownership
- * 2. Clean up Storage files (bucket: collection-assets/{id}/*)
- * 3. Delete collection_plans row (CASCADE handles all 27+ related tables)
+ * Enterprise-grade collection deletion (2026-05-02 Pro hardening):
+ * 1. Verify ownership.
+ * 2. Move all Storage files from `{id}/...` to `__trash/{id}/{deletedAt}/...`
+ *    instead of removing them. Supabase Pro daily backups don't cover
+ *    Storage objects, so a hard delete = permanent loss for the customer.
+ *    The /api/cron/cleanup-storage-trash cron sweeps `__trash/` monthly
+ *    for entries older than 30 days.
+ * 3. Delete collection_plans row (CASCADE handles all 27+ related tables).
+ *
+ * Restore (within the 30-day window): copy objects from `__trash/{id}/...`
+ * back to their original path and re-create the collection_plans row.
  */
 export async function DELETE(
   _req: NextRequest,
@@ -87,12 +94,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // 1. Clean up Storage files
-    // List all files under {collection_id}/ prefix
+    // 1. Move Storage files to __trash/{id}/{ts}/ instead of removing.
+    //    Storage isn't covered by Supabase Pro daily backups, so the cron
+    //    is the only recovery path for accidental deletes.
     const storagePaths: string[] = [];
     /* Keep this list in sync with everything that ever calls persistAsset
-       — leftover folders create orphaned public storage after a
-       collection is deleted. */
+       — leftover folders create orphans the trash sweeper has to chase. */
     const assetTypes = [
       'moodboard', 'render', 'lifestyle', 'tryon', 'sketch', 'video', 'model',
       'still_life', 'editorial', 'tech_pack', 'material_swatch', 'callout',
@@ -122,14 +129,27 @@ export async function DELETE(
       }
     }
 
-    if (storagePaths.length > 0) {
-      // Supabase storage remove supports batches
-      const batchSize = 100;
-      for (let i = 0; i < storagePaths.length; i += batchSize) {
-        await supabaseAdmin.storage
-          .from(BUCKET)
-          .remove(storagePaths.slice(i, i + batchSize));
-      }
+    const deletedAtSlug = new Date().toISOString().replace(/[:.]/g, '-');
+    let movedCount = 0;
+    /* Storage `move` is one-at-a-time. With 100s of files this becomes slow
+       sequentially, so dispatch in chunks of 16 in parallel. Failures on
+       individual files are logged but don't block the collection delete —
+       the worst case is the cron picks up a few stragglers later. */
+    for (let i = 0; i < storagePaths.length; i += 16) {
+      const slice = storagePaths.slice(i, i + 16);
+      await Promise.all(
+        slice.map(async (from) => {
+          const to = `__trash/${id}/${deletedAtSlug}/${from.slice(id.length + 1)}`;
+          const { error } = await supabaseAdmin.storage
+            .from(BUCKET)
+            .move(from, to);
+          if (error) {
+            console.error('[collection-delete] failed to move to trash', { from, to, error });
+          } else {
+            movedCount += 1;
+          }
+        })
+      );
     }
 
     // 2. Delete collection_plans row — CASCADE handles all related tables:
@@ -150,7 +170,11 @@ export async function DELETE(
       throw deleteError;
     }
 
-    return NextResponse.json({ success: true, storageFilesCleaned: storagePaths.length });
+    return NextResponse.json({
+      success: true,
+      storageFilesMovedToTrash: movedCount,
+      trashPrefix: `__trash/${id}/${deletedAtSlug}/`,
+    });
   } catch (error) {
     console.error('Error deleting collection:', error);
     return NextResponse.json(

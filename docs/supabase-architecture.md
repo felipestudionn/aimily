@@ -511,22 +511,60 @@ Esto es lo que un cliente percibe diferente entre aimily-Free y aimily-Pro:
 
 ---
 
-## 13. Estado de los items P0/P1 del handoff 2026-05-02
+## 13. Hardening 2026-05-02 — qué se aplicó
 
-| Item | Prioridad | Estado | Bloqueante para 10 clientes |
+Tres migraciones ya están en producción contra `sbweszownvspzjfejmfx`. Se ejecutaron via MCP `apply_migration`, así que están en el historial Supabase.
+
+### Phase A — `pro_hardening_a`
+
+- `storage.buckets`: `reports` y `rrss-assets` puestos a `public=false` (eran Fred-only, pero compartían proyecto con aimily — el linter `public_bucket_allows_listing` pedía cierre y los nuevos clientes no deben verlos abiertos).
+- `public.collection_intelligence` view: `security_invoker = true`. Antes ejecutaba con permisos del creador (postgres), ahora con los del invocador, así RLS de `collection_decisions` aplica de verdad.
+- REVOKE EXECUTE on `add_imagery_credits`, `consume_imagery_units`, `refund_imagery_units`, `handle_new_user_subscription` from `public, anon, authenticated`. Estas RPCs solo se llaman desde rutas server-side con `service_role`. `increment_share_views` se mantiene accesible a `anon` porque la página pública `/p/[token]` la necesita.
+- `search_path = public, pg_catalog` fijado en 7 funciones SECURITY DEFINER y de trigger que no lo tenían (`touch_*`, `increment_share_views`, `handle_new_user_subscription`, `add_imagery_credits`, `update_updated_at_column`).
+
+### Phase C — `pro_hardening_c_rls_initplan_fix`
+
+127 RLS policies sobre 50 tablas aimily-core reescritas. `auth.uid()` envuelto en `(select auth.uid())` para que el optimizer cachee el valor una vez por query. Patrón documentado en https://supabase.com/docs/guides/database/postgres/row-level-security#authuid-performance.
+
+### Phase D — `pro_hardening_d_indexes_and_softdelete`
+
+- 10 índices FK añadidos (`idx_collection_plans_user_id`, `idx_collection_skus_plan_id`, `idx_collection_assets_uploaded_by`, `idx_collection_decisions_supersedes_id`, `idx_brand_profiles_guidelines_asset_id`, `idx_brand_profiles_logo_asset_id`, `idx_presentation_deck_overrides_updated_by`, `idx_team_members_invited_by`, `idx_tech_pack_comments_author_id`, `idx_tech_pack_comments_collection_plan_id`).
+- 3 duplicados borrados: UNIQUE constraints `ai_usage_user_month_unique` y `imagery_credits_user_unique`, índice plain `idx_paid_campaigns_plan`.
+- `collection_assets.deleted_at TIMESTAMPTZ` añadido + índice parcial `idx_collection_assets_active`.
+
+### Cambios de aplicación shipped el mismo día
+
+- `src/lib/storage.ts`:
+  - `signThumbnailUrl(path, opts)` — usa Supabase Image Transformations (Pro) sobre el bucket privado, devuelve WebP firmado al tamaño exacto.
+  - `signShortReadUrl(path, ttl, transform?)` — signed URL TTL configurable (default 60s) con o sin transform, para casos en que NO queremos persistir 1 año.
+  - `deleteAsset()` ahora hace soft-delete (`deleted_at = now()`) y NO borra Storage. Recuperar = `update collection_assets set deleted_at = null where id = '…'`.
+  - `purgeAsset()` separado para hard-delete admin-only.
+- `src/app/api/collections/[id]/route.ts`: el DELETE de colección ya no purga objetos del bucket; los mueve a `__trash/{collection_id}/{ISO_TIMESTAMP}/...` para que el cron mensual los sweepee 30 días después.
+- `src/app/api/storage/sign/route.ts` (nuevo): `GET ?assetId=&w=&h=&q=&ttl=` con `verifyCollectionOwnership`, devuelve signed URL TTL ≤ 1 h. Sustituye el patrón TTL 1 año cuando UI nueva pueda usarlo.
+- `src/app/api/cron/cleanup-storage-trash/route.ts` (nuevo) + entrada en `vercel.json` `0 4 1 * *` (mensual): purga `__trash/` con timestamp > 30 días. Verifica `CRON_SECRET`.
+- `scripts/backup-storage.ts` (nuevo): manual `npx tsx`, descarga todo el bucket a `./.storage-backup/{ts}/` con `manifest.json`. Cross-cloud (B2/S3) deferred — sin credenciales externas no se puede automatizar hoy.
+
+### Advisor delta
+
+| Tipo | Antes | Tras Phase A+C | Tras Phase D |
 |---|---|---|---|
-| Re-firma anual signed URLs | P0 | Sin código (deadline 2027-05-01) | NO (deadline a 365 días) |
-| Storage GC huérfanos | P1 | Sin código | NO (volumen actual irrelevante) |
-| Image Transformations | P1 | Sin código | NO funcionalmente, SÍ para experiencia mobile |
-| Pooler Supavisor config | — | No aplica con SDK actual | NO |
-| pg_cron habilitado | — | No instalado | NO crítico (Vercel Cron cubre lo que hay) |
-| Fix `auth.uid()` en RLS policies | NUEVO P0 | Pendiente | **SÍ — crítico antes de tener clientes con muchos datos** |
-| Fix `function_search_path_mutable` | NUEVO P1 | Pendiente | NO crítico, defensa en profundidad |
-| Revoke EXECUTE en SECURITY DEFINER | NUEVO P0 | Pendiente | **SÍ — defensa en profundidad obligatoria** |
-| Activar Leaked Password Protection | NUEVO P0 | 1 click pendiente | **SÍ — go-to-market mínimo** |
-| Crear índices FK aimily-core | NUEVO P1 | Pendiente | SÍ si las colecciones crecen |
-| Drop duplicate indexes | NUEVO P2 | Pendiente | NO crítico |
-| Recrear `collection_intelligence` con `security_invoker` | NUEVO P0 | Pendiente o desaparece con Fred | Verificar primero |
+| Security ERROR | 1 | 0 | 0 |
+| Security WARN | 24 | 7 | 7 |
+| Performance total | 1.110 | 1.007 | 1.003 |
+| `auth_rls_initplan` | 172 | 45 | 45 |
+| `unindexed_foreign_keys` | 19 | 19 | 10 |
+| `duplicate_index` | 3 | 3 | 0 |
+| `unused_index` | 43 | 43 | 51 (subió porque los 11 nuevos aún no han recibido tráfico) |
+
+Los 7 WARN de seguridad que quedan: 4 RLS "always-true" en tablas Fred (chat_messages, client_decks, itinerary_items, user_projects — caen con migración Ailfred), 2 sobre `increment_share_views` (intencional para anon), 1 Leaked Password Protection (decisión founder: cero fricción al signup).
+
+Los 1.003 lints de performance que quedan: 896 `multiple_permissive_policies` desaparecen con la migración Ailfred (provienen del rol `alfred_app`), 45 `auth_rls_initplan` y 10 `unindexed_foreign_keys` también son Fred, 51 `unused_index` se irán cuando los nuevos índices reciban tráfico real.
+
+### Lo que NO se hizo (deferred)
+
+- **Leaked Password Protection**: founder no quiere fricción al signup.
+- **Cross-cloud Storage backup automatizado**: requiere credenciales externas (B2/S3/Vercel Blob). El script manual está listo; cuando haya destino se conecta a un cron.
+- **PITR add-on**: $115/mes adicionales, sin clientes serios no se justifica. Daily DB backups 7 días + papelera Storage 30 días dan ventana de recuperación equivalente para los escenarios actuales.
 
 ---
 
