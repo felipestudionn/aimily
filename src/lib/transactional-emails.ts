@@ -379,3 +379,249 @@ export async function sendTrialEndingEmail({ to, name, daysLeft, _previewSubject
     return null;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   3. Two days in — gentle nudge if the user hasn't started a collection
+   ────────────────────────────────────────────────────────────────── */
+
+export interface TwoDaysInEmailParams {
+  to: string;
+  name?: string;
+  _previewSubjectPrefix?: string;
+}
+
+export async function sendTwoDaysInEmail({ to, name, _previewSubjectPrefix }: TwoDaysInEmailParams) {
+  const resend = getResend();
+  if (!resend) return null;
+
+  const firstName = name?.split(' ')[0] || 'there';
+  const subject = `${_previewSubjectPrefix ?? ''}Two days in. How's it going?`;
+
+  const bodyHtml = `
+    <p style="font-size:16px;line-height:1.7;color:${COLOR_FG};opacity:0.85;margin:0 0 24px 0;">
+      No pressure — just checking in. I noticed you haven't started a collection yet, and the collection is the door to everything else aimily does. Brand work, range plans, sketches, marketing — they all flow from one collection record.
+    </p>
+
+    <p style="font-size:11px;font-weight:600;letter-spacing:0.25em;text-transform:uppercase;color:${COLOR_FG};opacity:0.55;margin:0 0 18px 0;">Why a collection first</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:rgba(250,239,224,0.04);border-radius:16px;border:1px solid rgba(250,239,224,0.08);">
+      <tr>
+        <td style="padding:24px 28px;">
+          <p style="font-size:14px;line-height:1.7;color:${COLOR_FG};opacity:0.75;margin:0 0 12px 0;">— A season + a name. Two minutes of input.</p>
+          <p style="font-size:14px;line-height:1.7;color:${COLOR_FG};opacity:0.75;margin:0 0 12px 0;">— After that, every block (Brand, Range Plan, Design, Marketing) reads from the same source — you don't repeat yourself.</p>
+          <p style="font-size:14px;line-height:1.7;color:${COLOR_FG};opacity:0.75;margin:0;">— You can rename or delete it later. Nothing is committed.</p>
+        </td>
+      </tr>
+    </table>
+  `;
+
+  const html = wrapEditorialDarkEmail({
+    greeting: `Hi ${firstName},`,
+    headline: 'Two days in.',
+    bodyHtml,
+    ctaLabel: 'Start a collection →',
+    ctaHref: 'https://www.aimily.app/new-collection',
+    personalNote: "If something is in the way — a confusing screen, a missing feature, an idea you can't shape yet — just hit reply. I read everything.",
+    signoff: 'felipe',
+  });
+
+  try {
+    const { data, error } = await resend.emails.send({ from: FROM, to, replyTo: REPLY_TO, subject, html });
+    if (error) {
+      console.error('[email] two-days-in failed:', error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error('[email] two-days-in threw:', err);
+    return null;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   4. Halfway there — mid-trial (Day 7) check-in for everyone
+   ────────────────────────────────────────────────────────────────── */
+
+export interface HalfwayEmailParams {
+  to: string;
+  name?: string;
+  _previewSubjectPrefix?: string;
+}
+
+export async function sendHalfwayEmail({ to, name, _previewSubjectPrefix }: HalfwayEmailParams) {
+  const resend = getResend();
+  if (!resend) return null;
+
+  const firstName = name?.split(' ')[0] || 'there';
+  const subject = `${_previewSubjectPrefix ?? ''}Halfway through your trial.`;
+
+  const featuresHtml = [
+    {
+      eyebrow: 'A',
+      title: 'Aimily Assistant',
+      desc: 'Press ⌘K (Cmd+K on Mac, Ctrl+K on Windows) anywhere inside aimily. The assistant explains how every block works and answers fashion-industry questions — BOM, range plan, tier mix, drop, MOQ. Editorial calm, no AI bro talk.',
+    },
+    {
+      eyebrow: 'B',
+      title: 'Calendar mode',
+      desc: 'Click Calendar in the sidebar. The same 20 slots stretch sideways as a horizontal timeline. Drag, edit milestones, see the full season at once. Click any bar to jump back to its workspace.',
+    },
+    {
+      eyebrow: 'C',
+      title: 'Presentation mode',
+      desc: 'Click Presentation. Twenty-one slides materialise from your Collection Intelligence — auto-filled, ten themes to choose from, exportable to PDF, shareable with a public link. No PowerPoint required.',
+    },
+  ]
+    .map(
+      (f, i, arr) => `
+      <tr>
+        <td style="padding:${i === 0 ? '24px' : '8px'} 28px ${i === arr.length - 1 ? '24px' : '8px'} 28px;">
+          <p style="font-family:Georgia,'Times New Roman',serif;font-size:18px;color:${COLOR_FG};opacity:0.45;letter-spacing:0.05em;margin:0 0 6px 0;">${f.eyebrow}.</p>
+          <p style="font-size:15px;line-height:1.6;color:${COLOR_FG};opacity:0.95;margin:0 0 6px 0;font-weight:500;">${f.title}</p>
+          <p style="font-size:13px;line-height:1.6;color:${COLOR_FG};opacity:0.6;margin:0;">${f.desc}</p>
+        </td>
+      </tr>`,
+    )
+    .join('');
+
+  const bodyHtml = `
+    <p style="font-size:16px;line-height:1.7;color:${COLOR_FG};opacity:0.85;margin:0 0 28px 0;">
+      Seven days in, seven left. Quick recap of three things most people miss in their first week — none of them obvious from the sidebar.
+    </p>
+
+    <p style="font-size:11px;font-weight:600;letter-spacing:0.25em;text-transform:uppercase;color:${COLOR_FG};opacity:0.55;margin:0 0 16px 0;">Hidden corners worth opening</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:rgba(250,239,224,0.04);border-radius:16px;border:1px solid rgba(250,239,224,0.08);">
+      ${featuresHtml}
+    </table>
+  `;
+
+  const html = wrapEditorialDarkEmail({
+    greeting: `Hi ${firstName},`,
+    headline: 'Halfway through.',
+    bodyHtml,
+    ctaLabel: 'Open aimily →',
+    ctaHref: 'https://www.aimily.app/my-collections',
+    personalNote: "Tried any of the three above? Reply and tell me which clicked — your answer is honestly useful for everyone who comes after you.",
+    signoff: 'felipe',
+  });
+
+  try {
+    const { data, error } = await resend.emails.send({ from: FROM, to, replyTo: REPLY_TO, subject, html });
+    if (error) {
+      console.error('[email] halfway failed:', error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error('[email] halfway threw:', err);
+    return null;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   5. Trial expired — Day 14, gentle, "everything is still there"
+   ────────────────────────────────────────────────────────────────── */
+
+export interface TrialExpiredEmailParams {
+  to: string;
+  name?: string;
+  _previewSubjectPrefix?: string;
+}
+
+export async function sendTrialExpiredEmail({ to, name, _previewSubjectPrefix }: TrialExpiredEmailParams) {
+  const resend = getResend();
+  if (!resend) return null;
+
+  const firstName = name?.split(' ')[0] || 'there';
+  const subject = `${_previewSubjectPrefix ?? ''}Your aimily trial ended · everything is still here`;
+
+  // Same three plan cards as the trial-ending email so the user can reactivate
+  // by picking the plan that fits — no pressure, no "limited offer".
+  const planCardsHtml = [
+    {
+      name: 'Starter',
+      eyebrow: 'For first projects',
+      price: '€159',
+      cadence: '/mo · annual',
+      bullets: ['200 imagery generations', '1 seat', 'All four blocks unlocked'],
+    },
+    {
+      name: 'Professional',
+      eyebrow: 'Most chosen',
+      price: '€479',
+      cadence: '/mo · annual',
+      bullets: ['1,000 imagery generations', '5 seats', 'AI video unlocked'],
+    },
+    {
+      name: 'Professional Max',
+      eyebrow: 'For studios',
+      price: '€1,199',
+      cadence: '/mo · annual',
+      bullets: ['3,000 imagery generations', '25 seats', 'API access + SSO'],
+    },
+  ]
+    .map(
+      (plan, i) => `
+      <tr>
+        <td style="padding:${i === 0 ? '0' : '12px'} 0 0 0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:rgba(250,239,224,0.04);border-radius:16px;border:1px solid rgba(250,239,224,0.08);">
+            <tr>
+              <td style="padding:22px 26px;">
+                <p style="font-size:11px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:${COLOR_FG};opacity:0.5;margin:0 0 8px 0;">${plan.eyebrow}</p>
+                <p style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:300;color:${COLOR_FG};letter-spacing:-0.02em;line-height:1.1;margin:0 0 6px 0;">${plan.name}</p>
+                <p style="margin:0 0 12px 0;">
+                  <span style="font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:300;color:${COLOR_FG};letter-spacing:-0.02em;">${plan.price}</span>
+                  <span style="font-size:13px;color:${COLOR_FG};opacity:0.55;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">${plan.cadence}</span>
+                </p>
+                ${plan.bullets
+                  .map(
+                    (b) => `<p style="font-size:13px;line-height:1.6;color:${COLOR_FG};opacity:0.7;margin:0 0 4px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">— ${b}</p>`,
+                  )
+                  .join('')}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>`,
+    )
+    .join('');
+
+  const bodyHtml = `
+    <p style="font-size:16px;line-height:1.7;color:${COLOR_FG};opacity:0.85;margin:0 0 22px 0;">
+      Your 14 days finished today. Nothing of yours has been touched: your collections, your moodboards, your CIS facts, your sketches — all of it is still there waiting, exactly as you left it.
+    </p>
+
+    <p style="font-size:16px;line-height:1.7;color:${COLOR_FG};opacity:0.85;margin:0 0 32px 0;">
+      Pick a plan whenever you're ready and your work picks up where it stopped. No re-import, no setup again, no lost moodboard.
+    </p>
+
+    <p style="font-size:11px;font-weight:600;letter-spacing:0.25em;text-transform:uppercase;color:${COLOR_FG};opacity:0.55;margin:0 0 18px 0;">Three plans · annual price shown</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      ${planCardsHtml}
+    </table>
+  `;
+
+  const html = wrapEditorialDarkEmail({
+    greeting: `Hi ${firstName},`,
+    headline: 'Your trial ended.',
+    bodyHtml,
+    ctaLabel: 'Reactivate aimily →',
+    ctaHref: 'https://www.aimily.app/pricing',
+    personalNote: "Or reply to this email and tell me what you'd want different — what was missing, what was confusing, what you wished it did. I'm building this with you, not at you.",
+    signoff: 'thats-all',
+  });
+
+  try {
+    const { data, error } = await resend.emails.send({ from: FROM, to, replyTo: REPLY_TO, subject, html });
+    if (error) {
+      console.error('[email] trial-expired failed:', error);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.error('[email] trial-expired threw:', err);
+    return null;
+  }
+}

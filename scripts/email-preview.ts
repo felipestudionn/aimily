@@ -36,11 +36,23 @@ function loadEnvLocal(): void {
 }
 loadEnvLocal();
 
-import { sendWelcomeEmail, sendTrialEndingEmail } from '../src/lib/transactional-emails';
+import {
+  sendWelcomeEmail,
+  sendTrialEndingEmail,
+  sendTwoDaysInEmail,
+  sendHalfwayEmail,
+  sendTrialExpiredEmail,
+} from '../src/lib/transactional-emails';
 
-type EmailType = 'welcome' | 'trial-3d' | 'trial-1d';
+type EmailType =
+  | 'welcome'
+  | 'two-days-in'
+  | 'halfway'
+  | 'trial-3d'
+  | 'trial-1d'
+  | 'trial-expired';
 
-const ALL_TYPES: EmailType[] = ['welcome', 'trial-3d', 'trial-1d'];
+const ALL_TYPES: EmailType[] = ['welcome', 'two-days-in', 'halfway', 'trial-3d', 'trial-1d', 'trial-expired'];
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -66,10 +78,16 @@ async function main(): Promise<void> {
       let result: Awaited<ReturnType<typeof sendWelcomeEmail>> | null = null;
       if (type === 'welcome') {
         result = await sendWelcomeEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
+      } else if (type === 'two-days-in') {
+        result = await sendTwoDaysInEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
+      } else if (type === 'halfway') {
+        result = await sendHalfwayEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
       } else if (type === 'trial-3d') {
         result = await sendTrialEndingEmail({ to, name: 'Felipe', daysLeft: 3, _previewSubjectPrefix: '[PREVIEW] ' });
       } else if (type === 'trial-1d') {
         result = await sendTrialEndingEmail({ to, name: 'Felipe', daysLeft: 1, _previewSubjectPrefix: '[PREVIEW] ' });
+      } else if (type === 'trial-expired') {
+        result = await sendTrialExpiredEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
       }
       results.push({ type, ok: !!result, id: (result as { id?: string } | null)?.id });
     } catch (err) {
