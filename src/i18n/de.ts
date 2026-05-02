@@ -95,6 +95,7 @@ export const de: Dictionary = {
     errWeakPassword: 'Das Passwort ist zu schwach. Verwenden Sie mindestens 8 Zeichen mit einer Zahl.',
     errRateLimit: 'Zu viele Versuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.',
     errPasswordMinChars: 'Das Passwort muss mindestens 8 Zeichen lang sein',
+    errDisposableEmail: 'Wegwerf-E-Mail-Adressen sind nicht erlaubt. Verwenden Sie eine echte Adresse.',
     errPasswordNeedNumber: 'Das Passwort muss mindestens 1 Zahl enthalten',
     // Forgot password page
     resetPassword: 'Passwort zurücksetzen',

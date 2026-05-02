@@ -95,6 +95,7 @@ export const fr: Dictionary = {
     errWeakPassword: 'Le mot de passe est trop faible. Utilisez au moins 8 caractères avec un chiffre.',
     errRateLimit: 'Trop de tentatives. Veuillez patienter un instant et réessayer.',
     errPasswordMinChars: 'Le mot de passe doit contenir au moins 8 caractères',
+    errDisposableEmail: 'Les adresses jetables ne sont pas acceptées. Utilisez une adresse que vous pouvez confirmer.',
     errPasswordNeedNumber: 'Le mot de passe doit contenir au moins 1 chiffre',
     // Page de mot de passe oublié
     resetPassword: 'Réinitialiser votre mot de passe',

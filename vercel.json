@@ -1,24 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron/collect-tiktok-trends",
-      "schedule": "0 6 * * 4"
-    },
-    {
-      "path": "/api/cron/process-city-trends",
-      "schedule": "0 7 * * 4"
-    },
-    {
-      "path": "/api/cron/post-launch-analysis",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/trial-emails",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-storage-trash",
-      "schedule": "0 4 1 * *"
-    }
-  ]
+  "_comment": "Vercel Crons retired 2026-05-02 — all 5 jobs now run from pg_cron inside Supabase Pro and POST to /api/cron/* with Bearer cron_secret pulled from Vault. Inspect runs via cron.job_run_details. The aimily_cron_failure_watcher pings hello@aimily.app after two consecutive failures.",
+  "crons": []
 }

@@ -94,6 +94,7 @@ export const sv: Dictionary = {
     errWeakPassword: 'Lösenordet är för svagt. Använd minst 8 tecken med en siffra.',
     errRateLimit: 'För många försök. Vänligen vänta en stund och försök igen.',
     errPasswordMinChars: 'Lösenordet måste vara minst 8 tecken',
+    errDisposableEmail: 'Engångs-e-postadresser är inte tillåtna. Använd en riktig adress.',
     errPasswordNeedNumber: 'Lösenordet måste innehålla minst 1 siffra',
     resetPassword: 'Återställ ditt lösenord',
     resetPasswordDesc: 'Ange din e-postadress så skickar vi en länk för att återställa ditt lösenord.',

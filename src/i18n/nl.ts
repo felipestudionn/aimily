@@ -95,6 +95,7 @@ export const nl: Dictionary = {
     errWeakPassword: 'Het wachtwoord is te zwak. Gebruik minimaal 8 tekens met een cijfer.',
     errRateLimit: 'Te veel pogingen. Wacht even en probeer het opnieuw.',
     errPasswordMinChars: 'Het wachtwoord moet minimaal 8 tekens bevatten',
+    errDisposableEmail: 'Wegwerp-e-mailadressen zijn niet toegestaan. Gebruik een echt adres.',
     errPasswordNeedNumber: 'Het wachtwoord moet minimaal 1 cijfer bevatten',
     // Forgot password page
     resetPassword: 'Wachtwoord resetten',

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/i18n';
+import { validateSignupEmail } from '@/lib/disposable-email-domains';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -71,6 +72,17 @@ export function AuthModal({ isOpen, onClose, onSuccess, defaultMode = 'signin' }
 
     try {
       if (mode === 'signup') {
+        const emailCheck = validateSignupEmail(email);
+        if (!emailCheck.ok) {
+          setError(
+            emailCheck.reason === 'disposable_domain'
+              ? t.auth.errDisposableEmail
+              : t.auth.errInvalidCredentials,
+          );
+          setLoading(false);
+          return;
+        }
+
         const validationError = validatePassword(password);
         if (validationError) {
           setError(validationError);

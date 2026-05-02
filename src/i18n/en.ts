@@ -93,6 +93,7 @@ export const en = {
     errWeakPassword: 'Password is too weak. Use at least 8 characters with a number.',
     errRateLimit: 'Too many attempts. Please wait a moment and try again.',
     errPasswordMinChars: 'Password must be at least 8 characters',
+    errDisposableEmail: 'Disposable email addresses are not accepted. Use a real address you can confirm.',
     errPasswordNeedNumber: 'Password must contain at least 1 number',
     // Forgot password page
     resetPassword: 'Reset your password',

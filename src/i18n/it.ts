@@ -95,6 +95,7 @@ export const it: Dictionary = {
     errWeakPassword: 'La password \u00e8 troppo debole. Usa almeno 8 caratteri con un numero.',
     errRateLimit: 'Troppi tentativi. Attendi un momento e riprova.',
     errPasswordMinChars: 'La password deve contenere almeno 8 caratteri',
+    errDisposableEmail: 'Gli indirizzi email usa e getta non sono accettati. Usa un indirizzo reale.',
     errPasswordNeedNumber: 'La password deve contenere almeno 1 numero',
     // Forgot password page
     resetPassword: 'Reimposta la password',

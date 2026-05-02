@@ -95,6 +95,7 @@ export const pt: Dictionary = {
     errWeakPassword: 'A senha é muito fraca. Use pelo menos 8 caracteres com um número.',
     errRateLimit: 'Muitas tentativas. Aguarde um momento e tente novamente.',
     errPasswordMinChars: 'A senha deve ter pelo menos 8 caracteres',
+    errDisposableEmail: 'Não aceitamos emails descartáveis. Usa um endereço real que possas confirmar.',
     errPasswordNeedNumber: 'A senha deve conter pelo menos 1 número',
     // Página de recuperação de senha
     resetPassword: 'Redefinir senha',

@@ -95,6 +95,7 @@ export const es: Dictionary = {
     errWeakPassword: 'La contraseña es demasiado débil. Usa al menos 8 caracteres con un número.',
     errRateLimit: 'Demasiados intentos. Espera un momento e inténtalo de nuevo.',
     errPasswordMinChars: 'La contraseña debe tener al menos 8 caracteres',
+    errDisposableEmail: 'No aceptamos emails desechables. Usa una dirección real que puedas confirmar.',
     errPasswordNeedNumber: 'La contraseña debe contener al menos 1 número',
     // Página de recuperar contraseña
     resetPassword: 'Restablecer contraseña',

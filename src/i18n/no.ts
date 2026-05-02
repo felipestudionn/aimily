@@ -94,6 +94,7 @@ export const no: Dictionary = {
     errWeakPassword: 'Passordet er for svakt. Bruk minst 8 tegn med et tall.',
     errRateLimit: 'For mange forsøk. Vennligst vent litt og prøv igjen.',
     errPasswordMinChars: 'Passordet må være minst 8 tegn',
+    errDisposableEmail: 'Engangs-e-postadresser er ikke tillatt. Bruk en ekte adresse.',
     errPasswordNeedNumber: 'Passordet må inneholde minst 1 tall',
     resetPassword: 'Tilbakestill passordet ditt',
     resetPasswordDesc: 'Skriv inn e-postadressen din, så sender vi deg en lenke for å tilbakestille passordet.',
