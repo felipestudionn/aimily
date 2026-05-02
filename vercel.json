@@ -1,4 +1,1 @@
-{
-  "_comment": "Vercel Crons retired 2026-05-02 — all 5 jobs now run from pg_cron inside Supabase Pro and POST to /api/cron/* with Bearer cron_secret pulled from Vault. Inspect runs via cron.job_run_details. The aimily_cron_failure_watcher pings hello@aimily.app after two consecutive failures.",
-  "crons": []
-}
+{}
