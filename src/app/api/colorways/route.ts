@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     const { data: skus, error: skuErr } = await supabaseAdmin
       .from('collection_skus')
       .select('id')
-      .eq('plan_id', planId!);
+      .eq('collection_plan_id', planId!);
 
     if (skuErr) {
       return NextResponse.json({ error: skuErr.message }, { status: 500 });

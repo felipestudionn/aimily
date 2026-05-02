@@ -6,21 +6,26 @@
 
 ## 0. Resumen ejecutivo (TL;DR)
 
-En una sesión se llevó la plataforma de **1 ERROR + 24 WARN de seguridad y 1.110 lints de performance** a **0 ERROR + 0 WARN, ~0 lints de performance aimily-core**.
+En la sesión `Pro hardening A→F` (mañana del 2026-05-02) la plataforma pasó de **1 ERROR + 24 WARN seguridad** a **0 ERROR + 0 WARN seguridad**. Performance se atacó parcialmente.
 
-Todos los cambios siguen estándares NIST 800-63B / OWASP / Supabase Pro GA features. Todas las migraciones quedan registradas en el historial Supabase y los cambios de código en `main` con 15 commits trazables. Cero deuda técnica nueva, cero implementaciones a medias.
+En la sesión de seguimiento (tarde del 2026-05-02, "auditoría de auditorías" + Phase G), se cerró el gap real de performance: **0 ERROR, 0 WARN tanto en security como en performance**. Solo quedan INFO informativos (índices sin uso aún + 1 sugerencia de connection pool — ningún blocker).
 
-| | Pre | Post |
-|---|---|---|
-| Security ERROR | 1 | **0** |
-| Security WARN | 24 | **0** |
-| Performance lints aimily-core | ~200 | **~0** (resto son tablas Fred ya borradas o métricas sin tráfico) |
-| Buckets Storage | 4 (2 públicos abiertos) | 1 (privado, con papelera 30 días) |
-| Crons aplicación | 5 en Vercel (sin observability) | 7 en pg_cron (todo dentro de Postgres + monitoring nativo) |
-| Notificaciones críticas al founder | manual o ninguna | automáticas vía Database Webhooks → Resend → `hello@aimily.app` |
-| RLS performance | `auth.uid()` evaluado por fila | `(select auth.uid())` cacheado por query (~100× speedup en colecciones grandes) |
-| Account takeover hardening | email-change con un solo confirm | `mailer_secure_email_change_enabled = true` (doble confirmación) |
-| Password breach detection | desactivado | `password_hibp_enabled = true` (HaveIBeenPwned check en signup) |
+Todos los cambios siguen estándares NIST 800-63B / OWASP / Supabase Pro GA features. Todas las migraciones quedan registradas en el historial Supabase. Cero deuda técnica nueva, cero implementaciones a medias.
+
+| | Pre A→F | Post A→F | Post G |
+|---|---|---|---|
+| Security ERROR | 1 | **0** | **0** |
+| Security WARN | 24 | **0** | **0** |
+| Performance WARN (multiple_permissive) | ~894 | 894 | **0** |
+| Performance WARN (auth_rls_initplan auth.uid) | 172 | 0 | **0** |
+| Performance WARN (auth_rls_initplan auth.role) | — | 44 | **0** |
+| Buckets Storage | 4 (2 públicos abiertos) | 1 (privado, con papelera 30 días) | 1 |
+| Crons aplicación | 5 en Vercel (sin observability) | 7 en pg_cron | 7 |
+| Notificaciones críticas al founder | manual o ninguna | automáticas vía Database Webhooks → Resend → `hello@aimily.app` | automáticas |
+| RLS performance | `auth.uid()` evaluado por fila | `(select auth.uid())` cacheado | `(select auth.uid())` + `(select auth.role())` cacheados, scoped a roles específicos |
+| Account takeover hardening | email-change con un solo confirm | `mailer_secure_email_change_enabled = true` | id |
+| Password breach detection | desactivado | `password_hibp_enabled = true` | id |
+| Bug latente collection_skus | 4 policies user_style atadas a columna `plan_id` 100% NULL → RLS roto vía cliente autenticado | id (no detectado en A→F) | **arreglado en G.3** |
 
 ---
 
@@ -509,7 +514,107 @@ SELECT * FROM mcp_supabase_get_advisors(type='security');
 -- → []
 ```
 
-**0 ERROR + 0 WARN.**
+**0 ERROR + 0 WARN seguridad.** (Performance se cerró en Phase G más tarde — ver §9bis.)
+
+---
+
+## 9bis. Phase G — Drive performance advisor a cero (sesión tarde 2026-05-02)
+
+### 9bis.0 Por qué existió
+
+En la auditoría posterior ("auditoría de auditorías") quedó en evidencia que el TL;DR de Phase A→F decía "performance lints aimily-core ~0" pero el advisor real reportaba **894 multiple_permissive_policies + 44 auth_rls_initplan + 47 INFO**, todos sobre tablas aimily-core. Phase G cerró la deuda con cuatro migraciones programáticas atómicas + un fix de código.
+
+### 9bis.1 Phase G.0 — `DROP ROLE alfred_app`
+
+Migración: `drop_role_alfred_app_post_migration`.
+
+El rol Postgres `alfred_app` sobrevivió a la migración Ailfred (§15) sin tablas que lo justificaran (0 objetos owned, 0 policies con `'alfred_app' = ANY(roles)`), pero conservaba grants masivos (ALL) sobre 40+ tablas aimily-core. Esos grants disparaban el lint multiple_permissive porque el rol `public` (que cubre a `alfred_app`) acumulaba dos policies por cada acción.
+
+Como `postgres` no es superuser en Supabase Pro, `DROP OWNED BY alfred_app` falla. Solución: `REVOKE ALL` sobre tablas/secuencias/funciones/schema (postgres es dueño de los objetos → puede revocar) + `DROP ROLE`. Atómico.
+
+```sql
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM alfred_app;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM alfred_app;
+REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM alfred_app;
+REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM alfred_app;
+REVOKE ALL ON SCHEMA public FROM alfred_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM alfred_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM alfred_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM alfred_app;
+DROP ROLE alfred_app;
+```
+
+Resultado parcial: `multiple_permissive` 894 → 745.
+
+### 9bis.2 Phase G.1 — Scope de policies a rol específico
+
+Migración: `pro_hardening_g_scope_policies_to_specific_role`.
+
+Las 178 policies aimily-core estaban declaradas `TO public` (rol genérico que cubre `anon`, `authenticated`, `service_role`). Para `anon` ambas devuelven false (no es service_role ni tiene uid), pero el linter las cuenta como dos policies permisivas.
+
+Migración programática que itera `pg_policies` y reescribe cada una con el rol concreto:
+- `qual` contiene `auth.role()` Y `'service_role'` → `TO service_role`
+- `qual` o `with_check` contiene `auth.uid()` → `TO authenticated`
+- `qual = 'true'` (catálogos públicos: `aimily_models`, `city_trends_*`, `raw_content`, `reports`, `signals`, `tiktok_hashtag_trends`) → no tocar
+
+Total reescritas: **127 user_style + 44 service_role_style = 171 policies**.
+
+Resultado parcial: `multiple_permissive` 745 → 11.
+
+### 9bis.3 Phase G.2 — Wrap de `auth.role()`
+
+Migración: `pro_hardening_g1_wrap_auth_role`.
+
+Phase C original solo envolvió `auth.uid()` en `(select auth.uid())`. El mismo patrón InitPlan aplica a `auth.role()` y la versión bare era el origen de los 44 `auth_rls_initplan` restantes.
+
+Migración programática regex-replace de `auth.role()` → `(select auth.role())` sobre todas las policies aimily.
+
+Resultado: `auth_rls_initplan` 44 → **0**.
+
+### 9bis.4 Phase G.3 — Dedupe de policies solapadas
+
+Migración: `pro_hardening_g2_dedupe_overlapping_policies`.
+
+Después de G.1 quedaron 11 `multiple_permissive` que no eran residuos sino solapamientos legítimos dentro de aimily:
+
+| Tabla | Solapamiento | Fix |
+|---|---|---|
+| `launch_tasks` (4) | Policy `ALL` con qual idéntico al de las 4 específicas (DELETE/INSERT/SELECT/UPDATE) | Drop la `ALL` |
+| `paid_campaigns` (4) | id | id |
+| `tech_pack_comments` (1) | `_owner_all` cubre SELECT, `_owner_select` redundante | Drop `_owner_select` |
+| `tech_pack_data` (1) | id | id |
+| `team_members` (1) | "Owners manage team" (ALL) + "Users see own team memberships" (SELECT) — lógica diferente real | Refactor: una sola `SELECT` con `OR` que cubre ambos casos + tres policies separadas owner-only para INSERT/UPDATE/DELETE |
+
+Resultado: `multiple_permissive` 11 → **0**.
+
+### 9bis.5 Phase G.4 — Drop columna legacy + bug latente de seguridad
+
+Migración: `pro_hardening_g3_drop_legacy_plan_id_column` + commit fix `src/app/api/colorways/route.ts`.
+
+Hallazgo crítico: las 4 policies user_style de `collection_skus` ("Users can {delete,insert,update,view} skus of their plans") estaban escritas contra la columna legacy `plan_id`, **100% NULL en producción** (verificado: 0/42 rows con valor; 42/42 rows tienen `collection_plan_id` poblado). Resultado: cualquier acceso a `collection_skus` desde cliente autenticado vía RLS devolvía `[]`.
+
+La app no se enteró porque casi todas las lecturas/escrituras van por `supabaseAdmin` (service_role), pero al menos un fallback en `src/app/collection/[id]/merchandising/page.tsx:862` ya estaba roto silenciosamente. Y `src/app/api/colorways/route.ts:55` también leía la columna muerta — devolvía 0 rows en su path "fetch all colorways for a collection".
+
+Fix:
+1. Recrear las 4 policies user_style usando `collection_plan_id` (la columna real).
+2. `ALTER TABLE collection_skus DROP COLUMN plan_id` (también borra el FK `collection_skus_plan_id_fkey`).
+3. Edit `src/app/api/colorways/route.ts:55` `plan_id` → `collection_plan_id`.
+4. Como bonus: `CREATE INDEX idx_analyzed_content_raw_content_id` (cierra el último INFO unindexed_foreign_keys).
+
+Resultado: `unindexed_foreign_keys` 2 → 0 (los 2 que quedaban se cerraron). Bug latente de seguridad cerrado.
+
+### 9bis.6 Estado final advisor
+
+```sql
+SELECT * FROM mcp_supabase_get_advisors(type='security');     -- → []
+SELECT * FROM mcp_supabase_get_advisors(type='performance');  -- → 47 INFO únicamente
+```
+
+47 INFO restantes:
+- 46 `unused_index` — índices que nunca han sido tocados (ningún tráfico de producción aún). Los más recientes son los que Phase D creó. Auto-resolución cuando llegue tráfico real, o auditoría manual post-launch.
+- 1 `auth_db_connections_absolute` — sugerencia de Supabase para usar % en vez de número absoluto en Auth pool. Irrelevante con instance pequeña actual.
+
+**Cero ERROR. Cero WARN. Punto.**
 
 ---
 
@@ -752,6 +857,11 @@ SELECT id, status_code FROM net._http_response ORDER BY created DESC LIMIT 1;
 | 20260502082112 | `temp_allow_delete_for_cleanup` | (Ailfred — staging cleanup) |
 | 20260502082208 | `cleanup_storage_policies` | (Ailfred — drop policies de buckets Fred) |
 | 20260502084228 | `pro_hardening_f_zero_warnings` | **F** — REVOKE increment_share_views + pg_net → extensions |
+| 20260502090307 | `drop_role_alfred_app_post_migration` | **G.0** — REVOKE ALL en aimily-core + DROP ROLE alfred_app residual |
+| 20260502090917 | `pro_hardening_g_scope_policies_to_specific_role` | **G.1** — 171 policies aimily reescritas TO authenticated/service_role |
+| 20260502091017 | `pro_hardening_g1_wrap_auth_role` | **G.2** — wrap `auth.role()` en `(select auth.role())` |
+| 20260502091127 | `pro_hardening_g2_dedupe_overlapping_policies` | **G.3** — drop policies duplicadas en launch_tasks/paid_campaigns/tech_pack_*/team_members |
+| 20260502091355 | `pro_hardening_g3_drop_legacy_plan_id_column` | **G.4** — fix bug latente collection_skus.plan_id + drop column + idx analyzed_content |
 
 ### 17.3 Archivos nuevos
 
