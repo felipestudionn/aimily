@@ -1157,10 +1157,7 @@
 ```
 
 ### L3 — B2B Suppliers
-> No verified pure-kapok mill identified that meets the strict B2B criteria (mill exists, sells B2B, multi-brand). Most kapok supply moves through Philippine + Indonesian fiber traders. **Flagged for human review** before publishing L3 entries.
-
-### Notes & sources
-- https://philippines.tradeford.com/kapok-fiber
+> **None listed.** Per the "si no está claro, fuera" rule (Phase 1 cleanup, 2026-05-04): kapok supply moves through Philippine + Indonesian fiber traders that we cannot verify as B2B mills shipping to multiple brands. L1 + L2 entries above are sufficient for designer use; sourcing is left to the user's procurement flow.
 
 ---
 
@@ -1214,10 +1211,7 @@
 ```
 
 ### L3 — B2B Suppliers
-> Nettle textile supply is concentrated in micro-cooperatives in Nepal and northern Italy. **No mill identified that satisfies all three B2B criteria — flagged for human review.**
-
-### Notes & sources
-- Nettle is a curated specialty fiber, not commodity. Sources tend to be artisanal cooperatives.
+> **None listed.** Per the "si no está claro, fuera" rule (Phase 1 cleanup, 2026-05-04): nettle textile supply is artisanal-cooperative only (Nepal, northern Italy); no industrial B2B mill verifiable. Designers selecting nettle will source via direct cooperative outreach.
 
 ---
 
@@ -2690,59 +2684,21 @@
 
 ---
 
-## 22. Sea Silk / Byssus (Specialty / Aquatic — informational only)
-
-### L1 — Base
-```yaml
-- id: sea-silk
-  name: "Sea silk (byssus)"
-  layer: L1
-  family: natural-animal
-  composition: "100% byssus (Pinna nobilis)"
-  weightRange: { min: null, max: null, unit: null }
-  defaultFinish: "raw"
-  zones: ["Trim (heritage / museum-only)"]
-  subtypes: []
-  priceTier: ["luxury"]
-  aestheticTags: ["avant-garde"]
-  seasonFit: []
-  certifications: []
-  vegan: false
-  origin: "Italy (Sant'Antioco, Sardinia — historical)"
-  notes: |
-    EXCLUDED FROM PRODUCTION USE. Pinna nobilis is protected since 1992;
-    harvest illegal. The art is preserved by a single master in Sant'Antioco
-    (Chiara Vigo). No commercial supply. Listed for completeness only —
-    do not surface as a designer-selectable material in aimily UI.
-```
-
-### L2 — Variants
-> None. Not commercially available.
-
-### L3 — B2B Suppliers
-> None. **Do not list this fiber as selectable in production.**
-
-### Notes & sources
-- https://en.wikipedia.org/wiki/Sea_silk
-- https://www.atlasobscura.com/articles/sea-silk-rarest-thread-italy-clams-textiles-fabric
-
----
-
 ## Summary tables
 
-### Total counts
-- L1 entries: 21 (15 fibers in active scope + 1 specialty informational)
+### Total counts (post Phase 1 cleanup, 2026-05-04)
+- **L1 entries: 21** (all cellulosic + animal — sea silk removed entirely)
   - Cellulosic: cotton, linen, hemp, ramie, jute, bamboo, abaca, piña, kapok, nettle (10)
   - Animal: wool, cashmere, mohair, alpaca, angora, vicuña, llama, camel hair, yak, qiviut, silk (11)
-  - Aquatic specialty: sea silk (informational only — excluded from selectable inventory)
-- L2 entries: 92
-- L3 entries: 49 verified B2B suppliers + several where verification was not strict enough (flagged below)
+- **L2 entries: 92**
+- **L3 entries: 47 verified B2B suppliers** (Kapok and Nettle L3 sections removed — see notes below)
 
-### Items flagged for human review
-- **Kapok L3**: No mill identified that satisfies all three B2B verification criteria. Trade portals exist; specific mills require manual outreach.
-- **Nettle L3**: Supply is artisanal-cooperative only; no industrial mill verifiable today.
-- **Vicuña**: Loro Piana intentionally NOT listed as L3 because it has pulled back from third-party pure-vicuña B2B sales since ~2021. Only Incalpaca is listed conservatively.
-- **Sea silk**: Excluded from any selectable surface in the app. Documented for completeness.
+### Cleanup notes (Phase 1, 2026-05-04)
+Per the "si no está claro, fuera" rule:
+- **Kapok L3** removed — no verifiable B2B mill. L1+L2 kept; sourcing left to the user's procurement.
+- **Nettle L3** removed — artisanal cooperative supply only. L1+L2 kept.
+- **Sea silk / byssus** entire section removed — Pinna nobilis is a protected species since 1992, only one living master (Chiara Vigo, Sant'Antioco), no commercial supply. Not selectable.
+- **Vicuña** verified clean — only Incalpaca listed as L3. Loro Piana excluded because it stopped pure-vicuña third-party sales c. 2021.
 
 ### Out-of-scope items I encountered (for future Ramas)
 - **Regenerated cellulosics**: TENCEL™ Lyocell, Modal, Naia™ Acetate (Lenzing, Eastman) — Rama 2 candidate.
