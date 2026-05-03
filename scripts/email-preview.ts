@@ -4,11 +4,15 @@
  * customer or trial cycle.
  *
  * Usage:
- *   npx tsx scripts/email-preview.ts                       # → hello@aimily.app, all 3 (existing)
- *   npx tsx scripts/email-preview.ts hello@aimily.app      # → custom recipient
- *   npx tsx scripts/email-preview.ts hello@aimily.app welcome trial-3d trial-1d   # subset
+ *   npx tsx scripts/email-preview.ts                                # all 6 to hello@aimily.app, EN
+ *   npx tsx scripts/email-preview.ts hello@aimily.app               # all 6, EN
+ *   npx tsx scripts/email-preview.ts hello@aimily.app --locale=es   # all 6 in Spanish
+ *   npx tsx scripts/email-preview.ts hello@aimily.app welcome trial-3d
+ *   npx tsx scripts/email-preview.ts hello@aimily.app welcome --locale=fr
+ *   npx tsx scripts/email-preview.ts hello@aimily.app --locale=de --types=welcome,halfway
  *
- * Subjects are prefixed with "[PREVIEW] " to keep them out of any production funnel.
+ * Subjects are prefixed with "[PREVIEW {LOCALE}] " to keep them out of any
+ * production funnel and identifiable by language at a glance.
  *
  * Loads .env.local automatically via dotenv so RESEND_API_KEY is read.
  */
@@ -52,15 +56,61 @@ type EmailType =
   | 'trial-1d'
   | 'trial-expired';
 
+type Locale = 'en' | 'es' | 'fr' | 'it' | 'de' | 'pt' | 'nl' | 'sv' | 'no';
+
 const ALL_TYPES: EmailType[] = ['welcome', 'two-days-in', 'halfway', 'trial-3d', 'trial-1d', 'trial-expired'];
+const ALL_LOCALES: Locale[] = ['en', 'es', 'fr', 'it', 'de', 'pt', 'nl', 'sv', 'no'];
+
+interface ParsedArgs {
+  to: string;
+  types: EmailType[];
+  locales: Locale[];
+}
+
+function parseArgs(argv: string[]): ParsedArgs {
+  const flags: Record<string, string> = {};
+  const positional: string[] = [];
+
+  for (const arg of argv) {
+    if (arg.startsWith('--')) {
+      const eq = arg.indexOf('=');
+      if (eq < 0) continue;
+      const key = arg.slice(2, eq);
+      const value = arg.slice(eq + 1);
+      flags[key] = value;
+    } else {
+      positional.push(arg);
+    }
+  }
+
+  const to = positional[0] || 'hello@aimily.app';
+
+  // Types: prefer --types flag, fall back to positional rest, fall back to ALL.
+  let types: EmailType[];
+  if (flags.types) {
+    types = flags.types.split(',').map((s) => s.trim()) as EmailType[];
+  } else if (positional.length > 1) {
+    types = positional.slice(1) as EmailType[];
+  } else {
+    types = ALL_TYPES;
+  }
+  types = types.filter((t): t is EmailType => ALL_TYPES.includes(t as EmailType));
+
+  // Locales: --locale=es (single) OR --locales=en,es,fr (multiple) OR default 'en'.
+  let locales: Locale[] = ['en'];
+  if (flags.locales) {
+    locales = flags.locales.split(',').map((s) => s.trim()) as Locale[];
+  } else if (flags.locale) {
+    locales = [flags.locale] as Locale[];
+  }
+  locales = locales.filter((l): l is Locale => ALL_LOCALES.includes(l as Locale));
+  if (locales.length === 0) locales = ['en'];
+
+  return { to, types, locales };
+}
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const to = args[0] || 'hello@aimily.app';
-  const types: EmailType[] =
-    args.length > 1
-      ? (args.slice(1) as EmailType[]).filter((t): t is EmailType => ALL_TYPES.includes(t as EmailType))
-      : ALL_TYPES;
+  const { to, types, locales } = parseArgs(process.argv.slice(2));
 
   if (!process.env.RESEND_API_KEY) {
     // eslint-disable-next-line no-console
@@ -69,29 +119,39 @@ async function main(): Promise<void> {
   }
 
   // eslint-disable-next-line no-console
-  console.log(`Sending ${types.length} preview emails to ${to}...`);
+  console.log(
+    `Sending ${types.length * locales.length} preview emails to ${to} ` +
+      `(${types.length} types × ${locales.length} locale${locales.length > 1 ? 's' : ''}: ${locales.join(',')})...`,
+  );
 
-  const results: Array<{ type: EmailType; ok: boolean; id?: string; error?: string }> = [];
+  const results: Array<{ type: EmailType; locale: Locale; ok: boolean; id?: string; error?: string }> = [];
 
-  for (const type of types) {
-    try {
-      let result: Awaited<ReturnType<typeof sendWelcomeEmail>> | null = null;
-      if (type === 'welcome') {
-        result = await sendWelcomeEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
-      } else if (type === 'two-days-in') {
-        result = await sendTwoDaysInEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
-      } else if (type === 'halfway') {
-        result = await sendHalfwayEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
-      } else if (type === 'trial-3d') {
-        result = await sendTrialEndingEmail({ to, name: 'Felipe', daysLeft: 3, _previewSubjectPrefix: '[PREVIEW] ' });
-      } else if (type === 'trial-1d') {
-        result = await sendTrialEndingEmail({ to, name: 'Felipe', daysLeft: 1, _previewSubjectPrefix: '[PREVIEW] ' });
-      } else if (type === 'trial-expired') {
-        result = await sendTrialExpiredEmail({ to, name: 'Felipe', _previewSubjectPrefix: '[PREVIEW] ' });
+  for (const locale of locales) {
+    const prefix = `[PREVIEW ${locale.toUpperCase()}] `;
+    for (const type of types) {
+      try {
+        let result: { id?: string } | null = null;
+        if (type === 'welcome') {
+          result = await sendWelcomeEmail({ to, name: 'Felipe', locale, _previewSubjectPrefix: prefix });
+        } else if (type === 'two-days-in') {
+          result = await sendTwoDaysInEmail({ to, name: 'Felipe', locale, _previewSubjectPrefix: prefix });
+        } else if (type === 'halfway') {
+          result = await sendHalfwayEmail({ to, name: 'Felipe', locale, _previewSubjectPrefix: prefix });
+        } else if (type === 'trial-3d') {
+          result = await sendTrialEndingEmail({ to, name: 'Felipe', daysLeft: 3, locale, _previewSubjectPrefix: prefix });
+        } else if (type === 'trial-1d') {
+          result = await sendTrialEndingEmail({ to, name: 'Felipe', daysLeft: 1, locale, _previewSubjectPrefix: prefix });
+        } else if (type === 'trial-expired') {
+          result = await sendTrialExpiredEmail({ to, name: 'Felipe', locale, _previewSubjectPrefix: prefix });
+        }
+        results.push({ type, locale, ok: !!result, id: result?.id });
+      } catch (err) {
+        results.push({ type, locale, ok: false, error: err instanceof Error ? err.message : String(err) });
       }
-      results.push({ type, ok: !!result, id: (result as { id?: string } | null)?.id });
-    } catch (err) {
-      results.push({ type, ok: false, error: err instanceof Error ? err.message : String(err) });
+      // Resend free tier caps at 5 requests/sec. Pace at ~4/s so a multi-
+      // locale preview run (e.g. 6 types × 9 locales = 54 emails) never
+      // trips the rate limiter.
+      await new Promise((r) => setTimeout(r, 250));
     }
   }
 

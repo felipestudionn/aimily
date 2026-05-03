@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
               await sendWelcomeEmail({
                 to: user.email,
                 name: (user.user_metadata?.full_name as string | undefined) || undefined,
+                locale: (user.user_metadata?.language as string | undefined) || null,
               });
               await supabaseAdmin
                 .from('subscriptions')

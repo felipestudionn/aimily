@@ -3652,6 +3652,120 @@ export const en = {
     },
   },
 
+  emails: {
+    // Strings shared across every transactional email
+    common: {
+      fallbackName: "there",
+      signoffFelipe: "Felipe",
+      signoffFounder: "Founder, aimily",
+      signoffThatsAll: "That's all.",
+      studiONN: "Built by StudioNN — a fashion agency, not a startup that heard about fashion.",
+    },
+
+    // 1. Welcome — Day 0 (signup confirmation)
+    welcome: {
+      subject: "Welcome to aimily — your 14 days start now",
+      headline: "Welcome to aimily.",
+      greeting: "Hi {name},",
+      intro: "You just got 14 days of full access to the platform we built for fashion brands at <strong>StudioNN</strong>. Same models, same quality, no card required.",
+      eyebrowSteps: "Three things to try first",
+      step1Title: "Start a collection",
+      step1Desc: "Pick a season, name your idea. The brief takes ~2 min.",
+      step2Title: "Drop a moodboard",
+      step2Desc: "Paste 4–6 references. The AI extracts colours, materials, mood.",
+      step3Title: "Generate your first sketch",
+      step3Desc: "Click any product, upload a photo, let aimily turn it into a fashion flat.",
+      ctaLabel: "Open aimily →",
+      personalNote: "Stuck? Reply to this email. Felipe (founder) will personally help you out — that's how we run things.",
+    },
+
+    // 2. Trial ending — fires at T-3 days and T-1 day
+    trialEnding: {
+      subject1d: "Your aimily trial ends tomorrow",
+      subjectNd: "Your aimily trial ends in {n} days",
+      headline1d: "Your trial ends tomorrow.",
+      headlineNd: "{n} days left in your trial.",
+      intro: "Quick heads-up: your aimily trial expires soon. Pick the plan that fits where you are right now — they all use the same top-quality models, so you're not trading capability for price.",
+      eyebrowPlans: "Three plans · annual price shown",
+      cadenceAnnual: "/mo · annual",
+      creditsHint: "Need a one-off boost without changing plan? Aimily Credit packs (€29 / €119 / €399) top up imagery for the busy month and don't expire while you're subscribed.",
+      ctaLabel: "Choose a plan →",
+    },
+
+    // 3. Two days in — gentle nudge if no collection started
+    twoDaysIn: {
+      subject: "Two days in. How's it going?",
+      headline: "Two days in.",
+      intro: "No pressure — just checking in. I noticed you haven't started a collection yet, and the collection is the door to everything else aimily does. Brand work, range plans, sketches, marketing — they all flow from one collection record.",
+      eyebrow: "Why a collection first",
+      bullet1: "A season + a name. Two minutes of input.",
+      bullet2: "After that, every block (Brand, Range Plan, Design, Marketing) reads from the same source — you don't repeat yourself.",
+      bullet3: "You can rename or delete it later. Nothing is committed.",
+      ctaLabel: "Start a collection →",
+      personalNote: "If something is in the way — a confusing screen, a missing feature, an idea you can't shape yet — just hit reply. I read everything.",
+    },
+
+    // 4. Halfway there — Day 7 mid-trial check-in
+    halfway: {
+      subject: "Halfway through your trial.",
+      headline: "Halfway through.",
+      intro: "Seven days in, seven left. Quick recap of three things most people miss in their first week — none of them obvious from the sidebar.",
+      eyebrow: "Hidden corners worth opening",
+      featureATitle: "Aimily Assistant",
+      featureADesc: "Press ⌘K (Cmd+K on Mac, Ctrl+K on Windows) anywhere inside aimily. The assistant explains how every block works and answers fashion-industry questions — BOM, range plan, tier mix, drop, MOQ. Editorial calm, no AI bro talk.",
+      featureBTitle: "Calendar mode",
+      featureBDesc: "Click Calendar in the sidebar. The same 20 slots stretch sideways as a horizontal timeline. Drag, edit milestones, see the full season at once. Click any bar to jump back to its workspace.",
+      featureCTitle: "Presentation mode",
+      featureCDesc: "Click Presentation. Twenty-one slides materialise from your Collection Intelligence — auto-filled, ten themes to choose from, exportable to PDF, shareable with a public link. No PowerPoint required.",
+      ctaLabel: "Open aimily →",
+      personalNote: "Tried any of the three above? Reply and tell me which clicked — your answer is honestly useful for everyone who comes after you.",
+    },
+
+    // 5. Trial expired — Day 14, gentle "everything is still here"
+    trialExpired: {
+      subject: "Your aimily trial ended · everything is still here",
+      headline: "Your trial ended.",
+      intro1: "Your 14 days finished today. Nothing of yours has been touched: your collections, your moodboards, your CIS facts, your sketches — all of it is still there waiting, exactly as you left it.",
+      intro2: "Pick a plan whenever you're ready and your work picks up where it stopped. No re-import, no setup again, no lost moodboard.",
+      eyebrowPlans: "Three plans · annual price shown",
+      cadenceAnnual: "/mo · annual",
+      ctaLabel: "Reactivate aimily →",
+      personalNote: "Or reply to this email and tell me what you'd want different — what was missing, what was confusing, what you wished it did. I'm building this with you, not at you.",
+    },
+
+    // The three plan cards used by trialEnding + trialExpired. Plan names
+    // and prices are global; bullets are translated per locale.
+    plans: {
+      starter: {
+        name: "Starter",
+        eyebrow: "For first projects",
+        price: "€159",
+        monthly: "or €199 monthly",
+        bullet1: "200 imagery generations",
+        bullet2: "1 seat",
+        bullet3: "All four blocks unlocked",
+      },
+      professional: {
+        name: "Professional",
+        eyebrow: "Most chosen",
+        price: "€479",
+        monthly: "or €599 monthly",
+        bullet1: "1,000 imagery generations",
+        bullet2: "5 seats",
+        bullet3: "AI video unlocked",
+      },
+      professionalMax: {
+        name: "Professional Max",
+        eyebrow: "For studios",
+        price: "€1,199",
+        monthly: "or €1,499 monthly",
+        bullet1: "3,000 imagery generations",
+        bullet2: "25 seats",
+        bullet3: "API access + SSO",
+      },
+    },
+  },
+
   aimilyAssistant: {
     fab: { label: "Ask Aimily" },
     title: "Aimily",
