@@ -51,8 +51,8 @@ type CommentBlock =
   | 'factory' | 'general' | 'materials';
 
 interface MeasurementRow { point: string; xs: string; s: string; m: string; l: string; xl: string }
-interface BomLine { type: string; material: string; qty: string; unit: string; supplier: string; cost: string }
-interface MaterialZone { name: string; pantone: string; supplier: string; swatchUrl: string; notes: string }
+interface BomLine { type: string; material: string; qty: string; unit: string; supplier: string; cost: string; material_id?: string }
+interface MaterialZone { name: string; pantone: string; supplier: string; swatchUrl: string; notes: string; material_id?: string }
 interface Callout { url: string; label: string }
 
 interface TechPackDataRow {
@@ -1191,6 +1191,10 @@ function BomTable({ lines, onChange, saving, tp, onGenerate, generating, skuCate
     next[idx] = {
       ...next[idx],
       material: value,
+      // Capture the catalog link when picked from the library so the
+      // compliance engine, vendor portal and reports can dereference
+      // it without fuzzy match. Cleared when user types free text.
+      material_id: picked?.id,
       // Auto-fill supplier when L3 mill picked AND supplier still empty
       supplier:
         next[idx].supplier ||

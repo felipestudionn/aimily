@@ -29,6 +29,12 @@ export interface BomLine {
   unit: string;
   supplier: string;
   cost: string; // EUR per `unit`
+  /**
+   * Catalog link — set when the material was picked from the Materials
+   * Library combobox (vs free text). Used by compliance, costing, and
+   * vendor portal to dereference catalog entries without fuzzy match.
+   */
+  material_id?: string;
 }
 
 export interface CostBreakdownInput {
