@@ -57,15 +57,24 @@ interface Callout { url: string; label: string }
 
 interface TechPackDataRow {
   header?: Record<string, string>;
-  /* Drawings — two category-aware flat-sketch slots. viewA/viewB
-     are optional overrides; when absent, the component falls back to
-     the SKU's existing sketch URLs (generated during Sketch & Color),
-     so the factory-ready tech pack auto-prefills with whatever the
-     designer already drew. */
+  /* Drawings — multi-slot. viewA/viewB are the two canonical slots
+     that stay backwards-compatible with the original 2-view layout
+     (and with PDF export + vendor portal consumers). viewC–viewG are
+     optional additional slots a designer can add for front/back/
+     side/3-quarter/interior/exploded/detail. extraSlots[] tracks
+     which optional slots are active and what label they carry.
+     Pin comments anchor to slot strings (already free-form) so this
+     extension needs no migration on tech_pack_comments. */
   drawings?: {
     viewA?: string;
     viewB?: string;
+    viewC?: string;
+    viewD?: string;
+    viewE?: string;
+    viewF?: string;
+    viewG?: string;
     callouts?: Callout[];
+    extraSlots?: Array<{ slot: 'viewC' | 'viewD' | 'viewE' | 'viewF' | 'viewG'; label: string }>;
   };
   materials?: { zones?: MaterialZone[] };
   measurements?: { rows?: MeasurementRow[]; notes?: string };
@@ -576,9 +585,10 @@ function TechnicalDrawings({
   const [openPinId, setOpenPinId] = useState<string | null>(null);
 
   /* Labels adapt to the product category. Slot ids stay generic
-     (viewA/viewB) so comments and uploads don't need remapping if
+     (viewA-viewG) so comments and uploads don't need remapping if
      the category changes later. */
-  const slots: { id: 'viewA' | 'viewB'; label: string }[] =
+  type Slot = 'viewA' | 'viewB' | 'viewC' | 'viewD' | 'viewE' | 'viewF' | 'viewG';
+  const baseSlots: { id: Slot; label: string }[] =
     category === 'CALZADO'
       ? [
           { id: 'viewA', label: tp.drawingSide || 'Side view' },
@@ -588,28 +598,62 @@ function TechnicalDrawings({
           { id: 'viewA', label: tp.drawingFront || 'Front view' },
           { id: 'viewB', label: tp.drawingBack || 'Back view' },
         ];
+  const extraSlots = drawings?.extraSlots ?? [];
+  const slots: { id: Slot; label: string }[] = [
+    ...baseSlots,
+    ...extraSlots.map((s) => ({ id: s.slot as Slot, label: s.label })),
+  ];
   const callouts: Callout[] = drawings?.callouts ?? [];
 
-  /* URL resolution per slot: explicit override → SKU fallback. */
-  const urlFor = (slot: 'viewA' | 'viewB'): string | undefined => {
+  // Slots a designer can add (front/back/side covered by base; the
+  // remaining 5 round out the 7-slot multi-view goal).
+  const ADDABLE_SLOT_OPTIONS: Array<{ id: 'viewC' | 'viewD' | 'viewE' | 'viewF' | 'viewG'; label: string }> = [
+    { id: 'viewC', label: 'Three-quarter view' },
+    { id: 'viewD', label: 'Interior view' },
+    { id: 'viewE', label: 'Exploded view' },
+    { id: 'viewF', label: 'Detail view' },
+    { id: 'viewG', label: 'Custom view' },
+  ];
+  const usedExtraIds = new Set(extraSlots.map((s) => s.slot));
+  const availableSlots = ADDABLE_SLOT_OPTIONS.filter((o) => !usedExtraIds.has(o.id));
+
+  /* URL resolution per slot: explicit override → SKU fallback (only
+     for the two base slots — extras have no SKU fallback). */
+  const urlFor = (slot: Slot): string | undefined => {
     const override = drawings?.[slot];
     if (override) return override;
-    return slot === 'viewA' ? fallbackA : fallbackB;
+    if (slot === 'viewA') return fallbackA;
+    if (slot === 'viewB') return fallbackB;
+    return undefined;
   };
-  const hasOverride = (slot: 'viewA' | 'viewB'): boolean => !!drawings?.[slot];
-  const isFromSku = (slot: 'viewA' | 'viewB'): boolean => !hasOverride(slot) && !!urlFor(slot);
+  const hasOverride = (slot: Slot): boolean => !!drawings?.[slot];
+  const isFromSku = (slot: Slot): boolean => !hasOverride(slot) && !!urlFor(slot);
 
-  const handleUpload = async (slot: 'viewA' | 'viewB', file: File) => {
+  const handleUpload = async (slot: Slot, file: File) => {
     setUploadingSlot(slot);
     const url = await uploadImage(collectionPlanId, 'tech_pack', file, `${slot}.${file.name.split('.').pop()}`);
     setUploadingSlot(null);
     if (url) onChange({ ...drawings, [slot]: url });
   };
 
-  /* Remove just clears the override — the slot falls back to the
-     SKU's flat sketch automatically. */
-  const handleRemove = (slot: 'viewA' | 'viewB') => {
+  /* Remove behaviour:
+     - base slots (viewA/viewB) clear the override → fall back to SKU sketch
+     - extra slots (viewC+) clear the override AND drop from extraSlots
+       so the slot disappears entirely. */
+  const handleRemove = (slot: Slot) => {
+    const isExtra = slot !== 'viewA' && slot !== 'viewB';
     const next = { ...drawings, [slot]: undefined };
+    if (isExtra) {
+      next.extraSlots = (drawings?.extraSlots ?? []).filter((s) => s.slot !== slot);
+    }
+    onChange(next);
+  };
+
+  const handleAddSlot = (slot: 'viewC' | 'viewD' | 'viewE' | 'viewF' | 'viewG', label: string) => {
+    const next = {
+      ...drawings,
+      extraSlots: [...(drawings?.extraSlots ?? []), { slot, label }],
+    };
     onChange(next);
   };
 
@@ -709,6 +753,27 @@ function TechnicalDrawings({
           />
         ))}
       </div>
+
+      {/* Add view — up to 7 slots total (2 base + 5 optional). The
+          designer picks which kind of view is being added; pins
+          anchor on the slot id (e.g. 'viewC') so the comments table
+          needs no new fields. */}
+      {availableSlots.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/45">Add view</span>
+          {availableSlots.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => handleAddSlot(opt.id, opt.label)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-carbon/[0.04] text-carbon/65 text-[11px] font-semibold hover:bg-carbon/[0.08] transition-colors"
+            >
+              <Plus className="h-3 w-3" strokeWidth={2.5} />
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Callouts row */}
       {callouts.length > 0 && (
