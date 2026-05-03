@@ -33,11 +33,11 @@ import type { PantoneColor, PantoneMatch, PantoneFamily } from './types';
  *
  * Returns empty array if hex is malformed.
  */
-export function closestPantone(hex: string, limit = 5): PantoneMatch[] {
+export function closestPantone(hex: string, limit = 5, catalog: PantoneColor[] = PANTONE_CATALOG): PantoneMatch[] {
   const targetLab = hexToLab(hex);
   if (!targetLab) return [];
 
-  return PANTONE_CATALOG
+  return catalog
     .map((c) => ({ ...c, delta: deltaE2000(targetLab, c.lab) }))
     .sort((a, b) => a.delta - b.delta)
     .slice(0, limit);
@@ -50,11 +50,11 @@ export function closestPantone(hex: string, limit = 5): PantoneMatch[] {
  * for typeahead in the picker. Returns full catalog entries (no
  * scoring) — caller decides ordering.
  */
-export function searchPantone(query: string, limit = 30): PantoneColor[] {
+export function searchPantone(query: string, limit = 30, catalog: PantoneColor[] = PANTONE_CATALOG): PantoneColor[] {
   const q = query.trim().toLowerCase();
-  if (q.length === 0) return PANTONE_CATALOG.slice(0, limit);
+  if (q.length === 0) return catalog.slice(0, limit);
 
-  return PANTONE_CATALOG
+  return catalog
     .filter((c) => {
       const haystack = `${c.code} ${c.name} ${c.family}`.toLowerCase();
       return haystack.includes(q);
