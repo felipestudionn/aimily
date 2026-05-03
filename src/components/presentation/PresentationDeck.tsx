@@ -106,7 +106,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
 
       const password = sharePasswordOn ? sharePassword.trim() : '';
       if (sharePasswordOn && password.length < 4) {
-        throw new Error('Password must be at least 4 characters');
+        throw new Error(tr.sharePasswordTooShort);
       }
 
       const res = await fetch('/api/presentation/share', {
@@ -129,7 +129,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
       setShareUrl(`${origin}/p/${j.token}`);
       setSharesVersion(v => v + 1);
     } catch (e) {
-      setShareError(e instanceof Error ? e.message : 'Failed to create share');
+      setShareError(e instanceof Error ? e.message : tr.shareCreateFailed);
     } finally {
       setShareLoading(false);
     }
@@ -235,7 +235,7 @@ export function PresentationDeck({ meta, collectionId, titles, coverSubtitle, da
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : 'Export failed');
+      setExportError(e instanceof Error ? e.message : tr.shareExportFailed);
     } finally {
       setExporting(false);
     }

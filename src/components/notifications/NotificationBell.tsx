@@ -6,11 +6,13 @@ import { Bell, X, AlertTriangle, Clock, Rocket, CheckCheck } from 'lucide-react'
 import { useNotifications, type AppNotification } from '@/hooks/useNotifications';
 import { useTranslation } from '@/i18n';
 
+// Editorial palette — terracotta for urgency, carbon at varying opacity for
+// the calm states. No bright SaaS reds/blues — those break the brand.
 const TYPE_CONFIG: Record<AppNotification['type'], { icon: React.ElementType; color: string; bgColor: string }> = {
-  overdue: { icon: AlertTriangle, color: '#EF4444', bgColor: '#FEE2E2' },
-  due_soon: { icon: Clock, color: '#F59E0B', bgColor: '#FEF3C7' },
-  launch_approaching: { icon: Rocket, color: '#3B82F6', bgColor: '#DBEAFE' },
-  in_progress: { icon: Clock, color: '#8B5CF6', bgColor: '#EDE9FE' },
+  overdue: { icon: AlertTriangle, color: '#A0463C', bgColor: 'rgba(160,70,60,0.08)' },
+  due_soon: { icon: Clock, color: 'rgba(0,0,0,0.7)', bgColor: 'rgba(0,0,0,0.04)' },
+  launch_approaching: { icon: Rocket, color: 'rgba(0,0,0,0.7)', bgColor: 'rgba(0,0,0,0.04)' },
+  in_progress: { icon: Clock, color: 'rgba(0,0,0,0.55)', bgColor: 'rgba(0,0,0,0.03)' },
 };
 
 export function NotificationBell() {
@@ -32,29 +34,30 @@ export function NotificationBell() {
 
   return (
     <div ref={ref} className="relative">
-      {/* Bell Button */}
+      {/* Bell button — editorial pill, matches AssistantHeaderButton */}
       <button
         onClick={() => setOpen(!open)}
-        className="relative inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/50 hover:bg-white/80 transition-colors"
+        className="relative inline-flex items-center justify-center w-9 h-9 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] transition-colors"
         title={t.misc.notifications}
+        aria-label={t.misc.notifications}
       >
-        <Bell className="h-4 w-4 text-gray-700" />
+        <Bell className="h-4 w-4 text-carbon/65" strokeWidth={1.75} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none px-1">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-[#A0463C] text-white text-[10px] font-semibold leading-none px-1">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* Dropdown Panel */}
+      {/* Dropdown panel — editorial shell */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-96 max-h-[28rem] bg-white shadow-xl border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 top-full mt-2 w-[400px] max-h-[28rem] bg-white rounded-[16px] shadow-[0_24px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] overflow-hidden z-50 animate-fade-in">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-carbon/[0.06]">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-gray-900 text-sm">{t.misc.notifications}</h3>
+              <h3 className="text-[13px] font-semibold tracking-[-0.01em] text-carbon">{t.misc.notifications}</h3>
               {unreadCount > 0 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-carbon/[0.06] text-carbon/70 font-semibold tabular-nums">
                   {unreadCount}
                 </span>
               )}
@@ -62,55 +65,56 @@ export function NotificationBell() {
             {notifications.length > 0 && (
               <button
                 onClick={dismissAll}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                className="flex items-center gap-1 text-[11px] text-carbon/55 hover:text-carbon transition-colors"
               >
-                <CheckCheck className="h-3 w-3" />
+                <CheckCheck className="h-3 w-3" strokeWidth={1.75} />
                 {t.misc.clearAll}
               </button>
             )}
           </div>
 
-          {/* Notification List */}
+          {/* Notification list */}
           <div className="overflow-y-auto max-h-[22rem]">
             {loading && notifications.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-400">{t.misc.loadingEllipsis}</div>
+              <div className="py-10 text-center text-[13px] text-carbon/35">{t.misc.loadingEllipsis}</div>
             ) : notifications.length === 0 ? (
-              <div className="py-8 text-center">
-                <Bell className="h-8 w-8 mx-auto text-gray-200 mb-2" />
-                <p className="text-sm text-gray-400">{t.misc.allCaughtUp}</p>
-                <p className="text-xs text-gray-300 mt-0.5">{t.misc.allCaughtUpDesc}</p>
+              <div className="py-12 text-center px-6">
+                <Bell className="h-8 w-8 mx-auto text-carbon/15 mb-3" strokeWidth={1.5} />
+                <p className="text-[13px] text-carbon/55">{t.misc.allCaughtUp}</p>
+                <p className="text-[11px] text-carbon/30 mt-1">{t.misc.allCaughtUpDesc}</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-carbon/[0.04]">
                 {notifications.map((notif) => {
                   const config = TYPE_CONFIG[notif.type];
                   const Icon = config.icon;
                   return (
                     <div
                       key={notif.id}
-                      className="group flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                      className="group flex items-start gap-3 px-5 py-3.5 hover:bg-carbon/[0.02] transition-colors"
                     >
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                        className="w-8 h-8 rounded-[10px] flex items-center justify-center flex-shrink-0 mt-0.5"
                         style={{ backgroundColor: config.bgColor }}
                       >
-                        <Icon className="h-4 w-4" style={{ color: config.color }} />
+                        <Icon className="h-4 w-4" strokeWidth={1.75} style={{ color: config.color }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <Link
                           href={`/collection/${notif.collection_id}`}
                           onClick={() => setOpen(false)}
-                          className="text-sm font-medium text-gray-900 hover:text-blue-600 line-clamp-1"
+                          className="text-[13px] font-medium text-carbon hover:text-carbon/70 line-clamp-1 tracking-[-0.01em]"
                         >
                           {notif.title}
                         </Link>
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{notif.body}</p>
+                        <p className="text-[11px] text-carbon/55 mt-0.5 line-clamp-1 leading-[1.45]">{notif.body}</p>
                       </div>
                       <button
                         onClick={() => dismiss(notif.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded-md"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-carbon/[0.05] rounded-full"
+                        aria-label={t.common.delete}
                       >
-                        <X className="h-3 w-3 text-gray-400" />
+                        <X className="h-3 w-3 text-carbon/45" strokeWidth={1.75} />
                       </button>
                     </div>
                   );
