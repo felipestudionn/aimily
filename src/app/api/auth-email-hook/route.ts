@@ -149,6 +149,35 @@ export async function POST(req: NextRequest) {
 
   if (!verifyStandardWebhook(rawBody, req.headers, secret)) {
     console.error('[auth-email-hook] signature verification failed');
+    // TEMP DEBUG — remove once verified
+    if (req.headers.get('x-debug-hook') === '1') {
+      const id = req.headers.get('svix-id') || req.headers.get('webhook-id');
+      const ts = req.headers.get('svix-timestamp') || req.headers.get('webhook-timestamp');
+      const sigHeader = req.headers.get('svix-signature') || req.headers.get('webhook-signature');
+      const rawSecret = secret.startsWith('v1,whsec_') ? secret.slice('v1,whsec_'.length) : secret;
+      let computed = 'no-bytes';
+      try {
+        const sb = Buffer.from(rawSecret, 'base64');
+        computed = createHmac('sha256', sb).update(`${id}.${ts}.${rawBody}`).digest('base64');
+      } catch (e) {
+        computed = String(e);
+      }
+      return NextResponse.json({
+        error: { message: 'Invalid signature' },
+        debug: {
+          haveId: !!id,
+          haveTs: !!ts,
+          haveSig: !!sigHeader,
+          secretPrefix: secret.slice(0, 12),
+          rawSecretLen: rawSecret.length,
+          rawSecretFirst4: rawSecret.slice(0, 4),
+          rawSecretLast4: rawSecret.slice(-4),
+          bodyLen: rawBody.length,
+          expected: computed,
+          received: sigHeader,
+        },
+      }, { status: 401 });
+    }
     return NextResponse.json(
       { error: { message: 'Invalid signature' } },
       { status: 401 },
