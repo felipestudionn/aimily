@@ -2920,6 +2920,7 @@ export const sv: Dictionary = {
     addZone: 'Lägg till zon',
     bomDesc: 'tilldela material till varje zon',
     materialLabel: 'Material',
+    materialPlaceholder: 't.ex. Italienskt linne 230gsm',
     compositionLabel: 'Sammansättning',
     weightLabel: 'Vikt',
     finishLabel: 'Ytbehandling',

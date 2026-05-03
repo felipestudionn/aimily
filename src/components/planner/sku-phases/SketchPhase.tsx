@@ -15,6 +15,9 @@ import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { getDefaultZones } from '@/lib/product-zones';
+import { MaterialCombobox } from '@/components/materials/MaterialCombobox';
+import { PantonePicker } from '@/components/materials/PantonePicker';
+import type { Zone } from '@/lib/materials-library';
 import type { FooterAction } from '../SkuDetailView';
 
 type InputMode = 'free' | 'ai';
@@ -29,7 +32,7 @@ const STEPS = [
 interface SketchPhaseProps {
   sku: SKU;
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
-  onImageUpload: (file: File, field: 'sketch_url' | 'reference_image_url') => void;
+  onImageUpload: (file: File, field: 'sketch_url' | 'sketch_top_url' | 'reference_image_url') => void;
   uploading: string | null;
   onFooterAction?: (action: FooterAction | null) => void;
   onAdvancePhase?: () => void;
@@ -55,7 +58,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   } | null>(null);
 
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
-  const materials = (designData.patterns[sku.id] || []) as { name: string; url: string; fileType: string; gradingNotes: string }[];
+  // The "Materials" sub-step is considered filled when at least one zone has a
+  // material assigned. This used to read from designData.patterns[sku.id],
+  // which conflated the patterns workspace (reserved for Phase 6 Pattern
+  // Library) with materials state. Source of truth is sku.material_zones.
+  const filledMaterialZones = (sku.material_zones || []).filter(z => z?.material);
 
   const evolutionStepMap: Record<string, number> = { sketch: 0, colorways: 1, render3d: 3 };
   const [activeStep, setActiveStep] = useState(() => evolutionStep ? (evolutionStepMap[evolutionStep] ?? 0) : 0);
@@ -117,7 +124,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     const s = new Set<number>();
     if (sku.sketch_url) s.add(0);
     if (skuColorways.length > 0) s.add(1);
-    if (materials.length > 0) s.add(2);
+    if (filledMaterialZones.length > 0) s.add(2);
     return s;
   });
 
@@ -356,7 +363,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 <div className="shrink-0">
                   <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
                     placeholder={stepLabel('uploadReference') || 'Ref'}
-                    onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
+                    onUpload={(file) => onImageUpload(file, 'reference_image_url')}
                     onRemove={() => {}} aspectClass="w-12 h-12" />
                 </div>
               )}
@@ -459,7 +466,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
                           <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
                             {stepLabel('replace') || 'Replace'}
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_url'); }} />
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_top_url'); }} />
                           </label>
                         </div>
                       )}
@@ -467,7 +474,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   ) : mode === 'free' ? (
                     <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_top_url'}
                       placeholder={stepLabel('uploadTopSketch') || 'Upload top-down sketch'}
-                      onUpload={(file) => onImageUpload(file, 'sketch_url')}
+                      onUpload={(file) => onImageUpload(file, 'sketch_top_url')}
                       onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[50vh]" />
                   ) : (
                     <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[50vh] flex items-center justify-center">
@@ -1021,8 +1028,14 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                                 <input type="color" value={z.hex} onChange={(e) => updateZone(cw.id, zi, 'hex', e.target.value)}
                                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                               </div>
-                              <input value={z.pantone || ''} onChange={(e) => updateZone(cw.id, zi, 'pantone', e.target.value)}
-                                placeholder="e.g. 19-4052 TCX" className="text-[10px] text-carbon/40 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                              <PantonePicker
+                                value={z.pantone || ''}
+                                onChange={(code) => updateZone(cw.id, zi, 'pantone', code)}
+                                onHexChange={(hex) => updateZone(cw.id, zi, 'hex', hex)}
+                                targetHex={z.hex}
+                                size="compact"
+                                placeholder="19-4052 TCX"
+                              />
                               <input value={z.notes || ''} onChange={(e) => updateZone(cw.id, zi, 'notes', e.target.value)}
                                 placeholder="DTM, contrast, etc." className="text-[10px] text-carbon/30 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
                               <button onClick={() => removeZoneFromCw(cw.id, zi)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>
@@ -1179,8 +1192,21 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         <div>{hex ? <div className="w-4 h-4 border border-carbon/[0.08]" style={{ backgroundColor: hex }} /> : <div className="w-4 h-4 border border-dashed border-carbon/[0.06]" />}</div>
                         <input value={mz.zone} onChange={(e) => updateMatZone(idx, 'zone', e.target.value)}
                           className="text-[11px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.12]" />
-                        <input value={mz.material} onChange={(e) => updateMatZone(idx, 'material', e.target.value)}
-                          placeholder="e.g. Nubuck leather" className="text-[11px] text-carbon/50 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                        <MaterialCombobox
+                          value={mz.material}
+                          onChange={(val, picked) => {
+                            updateMatZone(idx, 'material', val);
+                            // Auto-fill finish from picked material's defaultFinish
+                            // when the user hasn't already typed one. Reduces busywork.
+                            if (picked?.defaultFinish && !mz.finish) {
+                              updateMatZone(idx, 'finish', picked.defaultFinish);
+                            }
+                          }}
+                          category={sku.category}
+                          zone={mz.zone as Zone}
+                          size="compact"
+                          placeholder={stepLabel('materialPlaceholder') || 'e.g. Italian linen 230gsm'}
+                        />
                         <input value={mz.finish || ''} onChange={(e) => updateMatZone(idx, 'finish', e.target.value)}
                           placeholder="Tumbled, Matte..." className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
                         <button onClick={() => removeMatZone(idx)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>

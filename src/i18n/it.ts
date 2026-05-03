@@ -3034,6 +3034,7 @@ export const it: Dictionary = {
     addZone: 'Aggiungi zona',
     bomDesc: 'assegna materiali a ogni zona',
     materialLabel: 'Materiale',
+    materialPlaceholder: 'es. Lino italiano 230gsm',
     compositionLabel: 'Composizione',
     weightLabel: 'Peso',
     finishLabel: 'Finitura',

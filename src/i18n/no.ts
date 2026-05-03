@@ -2920,6 +2920,7 @@ export const no: Dictionary = {
     addZone: 'Legg til sone',
     bomDesc: 'tilordne materialer til hver sone',
     materialLabel: 'Materiale',
+    materialPlaceholder: 'f.eks. italiensk lin 230gsm',
     compositionLabel: 'Sammensetning',
     weightLabel: 'Vekt',
     finishLabel: 'Finish',
