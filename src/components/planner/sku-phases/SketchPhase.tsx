@@ -29,7 +29,7 @@ const STEPS = [
 interface SketchPhaseProps {
   sku: SKU;
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
-  onImageUpload: (file: File, field: 'sketch_url' | 'reference_image_url') => void;
+  onImageUpload: (file: File, field: 'sketch_url' | 'sketch_top_url' | 'reference_image_url') => void;
   uploading: string | null;
   onFooterAction?: (action: FooterAction | null) => void;
   onAdvancePhase?: () => void;
@@ -356,7 +356,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 <div className="shrink-0">
                   <ImageUploadArea imageUrl={undefined} uploading={uploading === 'reference_image_url'}
                     placeholder={stepLabel('uploadReference') || 'Ref'}
-                    onUpload={(file) => onImageUpload(file, 'reference_image_url' as 'sketch_url')}
+                    onUpload={(file) => onImageUpload(file, 'reference_image_url')}
                     onRemove={() => {}} aspectClass="w-12 h-12" />
                 </div>
               )}
@@ -459,7 +459,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
                           <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
                             {stepLabel('replace') || 'Replace'}
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_url'); }} />
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_top_url'); }} />
                           </label>
                         </div>
                       )}
@@ -467,7 +467,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   ) : mode === 'free' ? (
                     <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_top_url'}
                       placeholder={stepLabel('uploadTopSketch') || 'Upload top-down sketch'}
-                      onUpload={(file) => onImageUpload(file, 'sketch_url')}
+                      onUpload={(file) => onImageUpload(file, 'sketch_top_url')}
                       onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[50vh]" />
                   ) : (
                     <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[50vh] flex items-center justify-center">
