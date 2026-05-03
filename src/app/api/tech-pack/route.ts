@@ -8,6 +8,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { TeamPermission } from '@/lib/team-permissions';
+import {
+  recalculateCostBreakdown,
+  type BomLine,
+  type CostBreakdown,
+} from '@/lib/costing/landed-cost';
 
 const VALID_SECTIONS = new Set([
   'header', 'drawings', 'measurements', 'bom', 'grading', 'factory_notes', 'materials',
@@ -79,5 +84,63 @@ export async function PATCH(req: NextRequest) {
       });
   }
 
+  // Phase 2 — BOM-driven costing engine.
+  // When the BOM section is saved, recompute cost_breakdown from the new
+  // lines + the previously-stored factor inputs, and (if source_of_truth
+  // is 'bom') sync sku.cost so Range Plan / Production / exports stay
+  // consistent with the canonical landed cost number.
+  if (body.section === 'bom') {
+    const bomLines = (body.data as { lines?: BomLine[] }).lines ?? [];
+    const updatedBreakdown = await recomputeAndSyncCost(body.skuId, bomLines);
+    return NextResponse.json({ ok: true, costBreakdown: updatedBreakdown });
+  }
+
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * Recompute the SKU's landed-cost breakdown from the latest BOM lines and
+ * the factor inputs already stored on the SKU. Writes cost_breakdown back
+ * and (when source_of_truth='bom') syncs sku.cost so downstream consumers
+ * never drift. Returns the new breakdown so the caller can hand it to the
+ * client without an extra round-trip.
+ */
+async function recomputeAndSyncCost(
+  skuId: string,
+  bomLines: BomLine[],
+): Promise<CostBreakdown | null> {
+  const { data: sku } = await supabaseAdmin
+    .from('collection_skus')
+    .select('id, pvp, cost_breakdown')
+    .eq('id', skuId)
+    .maybeSingle();
+  if (!sku) return null;
+
+  const prev = (sku.cost_breakdown ?? {}) as Partial<CostBreakdown>;
+  const breakdown = recalculateCostBreakdown({
+    bomLines,
+    manualMaterialOverride: prev.materials?.manual_override ?? null,
+    materialSourceOfTruth: prev.materials?.source_of_truth ?? 'bom',
+    factoryRate: prev.labor?.factory_rate ?? 0,
+    laborHours: prev.labor?.hours ?? 0,
+    overheadPct: prev.overhead_pct ?? 0,
+    freightOrigin: prev.freight?.origin ?? '',
+    freightDestination: prev.freight?.destination ?? '',
+    freightMethod: prev.freight?.method ?? 'sea',
+    freightTotal: prev.freight?.total ?? 0,
+    dutiesPct: prev.duties_pct ?? 0,
+    targetMarginPct: prev.target_margin_pct ?? 0,
+    pvp: typeof sku.pvp === 'number' ? sku.pvp : 0,
+  });
+  // Preserve the AI suggestions panel if it was already populated — the
+  // suggest-substitutions endpoint owns that field, not this engine.
+  breakdown.ai_suggestions = prev.ai_suggestions ?? [];
+
+  const updates: Record<string, unknown> = { cost_breakdown: breakdown };
+  if (breakdown.materials.source_of_truth === 'bom' && breakdown.total_landed > 0) {
+    updates.cost = breakdown.total_landed;
+  }
+
+  await supabaseAdmin.from('collection_skus').update(updates).eq('id', skuId);
+  return breakdown;
 }
