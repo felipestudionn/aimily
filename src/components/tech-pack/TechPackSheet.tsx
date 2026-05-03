@@ -31,6 +31,8 @@ import {
 import type { SKU } from '@/hooks/useSkus';
 import { useTranslation } from '@/i18n';
 import { PantonePicker } from '@/components/materials/PantonePicker';
+import { MaterialCombobox } from '@/components/materials/MaterialCombobox';
+import type { Zone } from '@/lib/materials-library';
 
 type Section =
   | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
@@ -394,6 +396,7 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               tp={tp}
               onGenerate={() => aiGenerate('bom')}
               generating={aiBusyScope === 'bom' || aiBusyScope === 'both'}
+              skuCategory={sku.category}
             />
           </div>
 
@@ -1110,17 +1113,41 @@ function MeasurementsTable({ rows, notes, onChange, saving, tp, onGenerate, gene
 }
 
 /* ── BOM table ───────────────────────────────────────────────────── */
-function BomTable({ lines, onChange, saving, tp, onGenerate, generating }: {
+function BomTable({ lines, onChange, saving, tp, onGenerate, generating, skuCategory }: {
   lines: BomLine[];
   onChange: (lines: BomLine[]) => void;
   saving?: boolean;
   tp: Record<string, string>;
   onGenerate?: () => void;
   generating?: boolean;
+  skuCategory: SKU['category'];
 }) {
   const update = (idx: number, key: keyof BomLine, value: string) => {
     const next = [...lines];
     next[idx] = { ...next[idx], [key]: value };
+    onChange(next);
+  };
+  const updateMaterial = (idx: number, value: string, picked: import('@/lib/materials-library').Material | null) => {
+    const next = [...lines];
+    next[idx] = {
+      ...next[idx],
+      material: value,
+      // Auto-fill supplier when L3 mill picked AND supplier still empty
+      supplier:
+        next[idx].supplier ||
+        (picked?.layer === 'L3' && picked.name) ||
+        (picked?.supplier?.origin) ||
+        '',
+      // Auto-fill unit from material composition cogsHint when present
+      unit:
+        next[idx].unit ||
+        (picked?.cogsHint?.unit) ||
+        '',
+      // Auto-fill cost from cogs hint when empty
+      cost:
+        next[idx].cost ||
+        (picked?.cogsHint?.value ? String(picked.cogsHint.value) : ''),
+    };
     onChange(next);
   };
   const add = () => onChange([...lines, { type: '', material: '', qty: '', unit: '', supplier: '', cost: '' }]);
@@ -1165,12 +1192,23 @@ function BomTable({ lines, onChange, saving, tp, onGenerate, generating }: {
               <tr key={i} className="border-b border-carbon/[0.04]">
                 {cols.map(c => (
                   <td key={c.key} className="py-1.5 px-1">
-                    <input
-                      value={line[c.key]}
-                      onChange={(e) => update(i, c.key, e.target.value)}
-                      placeholder="—"
-                      className="w-full bg-transparent text-[13px] text-carbon focus:outline-none focus:ring-1 focus:ring-carbon/10 rounded px-2 py-1"
-                    />
+                    {c.key === 'material' ? (
+                      <MaterialCombobox
+                        value={line.material}
+                        onChange={(val, picked) => updateMaterial(i, val, picked)}
+                        category={skuCategory}
+                        zone={(line.type || undefined) as Zone | undefined}
+                        size="compact"
+                        placeholder="—"
+                      />
+                    ) : (
+                      <input
+                        value={line[c.key]}
+                        onChange={(e) => update(i, c.key, e.target.value)}
+                        placeholder="—"
+                        className="w-full bg-transparent text-[13px] text-carbon focus:outline-none focus:ring-1 focus:ring-carbon/10 rounded px-2 py-1"
+                      />
+                    )}
                   </td>
                 ))}
                 <td className="py-1.5 pl-1">
