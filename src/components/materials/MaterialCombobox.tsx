@@ -360,6 +360,7 @@ function familyDisplayLabel(family: Material['family']): string {
     'sole-foam': 'Sole · Foam',
     'sole-leather': 'Sole · Leather',
     'sole-textile': 'Sole · Textile',
+    'footwear-upper': 'Footwear · Upper',
     'accessory-chain': 'Chain',
     'accessory-cord': 'Cord',
     'accessory-decoration': 'Decoration',

@@ -97,23 +97,40 @@ export const RAMAS: RamaMeta[] = [
   },
 ];
 
-// Catalog imports — added as each rama lands in TypeScript:
+// Catalog imports — all 8 ramas wired (Phase 1 catalog complete).
 import { rama1 } from './rama-1';
-// import { rama2 } from './rama-2';
-// import { rama3 } from './rama-3';
-// import { rama4 } from './rama-4';
-// import { rama5 } from './rama-5';
-// import { rama6 } from './rama-6';
-// import { rama7 } from './rama-7';
-// import { rama8 } from './rama-8';
+import { rama2 } from './rama-2';
+import { rama3 } from './rama-3';
+import { rama4 } from './rama-4';
+import { rama5 } from './rama-5';
+import { rama6 } from './rama-6';
+import { rama7 } from './rama-7';
+import { rama8 } from './rama-8';
 
 /**
- * Aggregate catalog. Populated as each rama is shipped. Order doesn't
- * matter for correctness — the rankMaterials engine handles relevance
- * regardless. Tests + the Combobox depend on this shape (Material[]).
+ * Aggregate catalog. All 8 ramas registered. Order doesn't matter for
+ * correctness — the rankMaterials engine handles relevance regardless.
+ * Combobox + tests depend on this shape (Material[]).
+ *
+ * Total entries (Phase 1 cleanup, 2026-05-04):
+ *   Rama 1 — Natural fibers              ~181
+ *   Rama 2 — Regenerated fibers           ~93
+ *   Rama 3 — Synthetic + performance     ~166
+ *   Rama 4 — Leather + plant-leather alt ~141
+ *   Rama 5 — Hardware closures           ~122
+ *   Rama 6 — Linings + interfacings      ~135
+ *   Rama 7 — Footwear components          ~53
+ *   Rama 8 — Accessory specifics          ~72
+ *   ───────
+ *   Total: ~963 verified entries
  */
 export const CATALOG: Material[] = [
   ...rama1,
-  // ...rama2, ...rama3, ...rama4,
-  // ...rama5, ...rama6, ...rama7, ...rama8,
+  ...rama2,
+  ...rama3,
+  ...rama4,
+  ...rama5,
+  ...rama6,
+  ...rama7,
+  ...rama8,
 ];

@@ -81,6 +81,7 @@ export type MaterialFamily =
   | 'sole-foam'               // EVA, PU, cork foam
   | 'sole-leather'            // stacked leather sole
   | 'sole-textile'            // jute, raffia
+  | 'footwear-upper'          // engineered knit, sock, raffia, wicker, ballistic, mesh, canvas duck
   | 'accessory-chain'
   | 'accessory-cord'          // webbing, drawstring
   | 'accessory-decoration';   // sequins, beads, feathers, crystals
@@ -125,9 +126,12 @@ export type Certification =
   | 'European-Flax'                                   // CELC — Confédération Européenne du Lin et du Chanvre
   | 'Masters-of-Linen'                                // CELC premium European linen mark
   | 'LWG'                                             // Leather Working Group
+  | 'OEKO-TEX-Leather'                                // OEKO-TEX Leather Standard
+  | 'Leather-Standard'                                // Generic Leather Standard mark
   | 'REACH'                                           // EU chemical safety
   | 'ECARF'                                           // allergy-friendly
-  | 'B-Corp';
+  | 'B-Corp'
+  | 'bluesign';                                       // performance / synthetic textile cert (added Rama 3)
 
 // ─── Layers ───────────────────────────────────────────────────────────────
 
@@ -138,7 +142,7 @@ export type Layer = 'L1' | 'L2' | 'L3';
 export interface WeightRange {
   min: number | null;
   max: number | null;
-  unit: 'gsm' | 'oz' | 'mm' | 'momme' | null;
+  unit: 'gsm' | 'oz' | 'oz/yd2' | 'mm' | 'momme' | 'denier' | 'gauge' | 'micron' | null;
 }
 
 // ─── Cost hint ────────────────────────────────────────────────────────────
