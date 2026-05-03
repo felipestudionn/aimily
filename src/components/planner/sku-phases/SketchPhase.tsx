@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { getDefaultZones } from '@/lib/product-zones';
 import { MaterialCombobox } from '@/components/materials/MaterialCombobox';
+import { PantonePicker } from '@/components/materials/PantonePicker';
 import type { Zone } from '@/lib/materials-library';
 import type { FooterAction } from '../SkuDetailView';
 
@@ -1027,8 +1028,14 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                                 <input type="color" value={z.hex} onChange={(e) => updateZone(cw.id, zi, 'hex', e.target.value)}
                                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                               </div>
-                              <input value={z.pantone || ''} onChange={(e) => updateZone(cw.id, zi, 'pantone', e.target.value)}
-                                placeholder="e.g. 19-4052 TCX" className="text-[10px] text-carbon/40 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                              <PantonePicker
+                                value={z.pantone || ''}
+                                onChange={(code) => updateZone(cw.id, zi, 'pantone', code)}
+                                onHexChange={(hex) => updateZone(cw.id, zi, 'hex', hex)}
+                                targetHex={z.hex}
+                                size="compact"
+                                placeholder="19-4052 TCX"
+                              />
                               <input value={z.notes || ''} onChange={(e) => updateZone(cw.id, zi, 'notes', e.target.value)}
                                 placeholder="DTM, contrast, etc." className="text-[10px] text-carbon/30 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
                               <button onClick={() => removeZoneFromCw(cw.id, zi)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>
