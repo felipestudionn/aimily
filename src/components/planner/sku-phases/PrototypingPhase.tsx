@@ -10,6 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { SKU, ProtoIteration } from '@/hooks/useSkus';
 import { ImageUploadArea } from './shared';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
+import { SampleChainView } from './SampleChainView';
 
 interface PrototypingPhaseProps {
   sku: SKU;
@@ -20,7 +21,8 @@ interface PrototypingPhaseProps {
 
 const STEPS = [
   { id: 'sourcing', label: 'Sourcing', icon: Factory },
-  { id: 'tracking', label: 'Proto Tracking', icon: Camera },
+  { id: 'sample_chain', label: 'Sample Chain', icon: ArrowLeftRight },
+  { id: 'tracking', label: 'Quick Notes', icon: Camera },
 ];
 
 type InputMode = 'free' | 'ai';
@@ -31,14 +33,18 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
   const iterations = sku.proto_iterations || [];
 
   const [activeStep, setActiveStep] = useState(() => {
-    // Start at tracking if sourcing is filled
+    // Start at Sample Chain (step 1) if sourcing is filled — it's the
+    // primary working step in the prototyping phase post-Phase 4.
     if (sku.sourcing_data?.factory || sku.sourcing_data?.origin) return 1;
     return 0;
   });
-  const [modes, setModes] = useState<Record<string, InputMode>>({ sourcing: 'free', tracking: 'free' });
+  const [modes, setModes] = useState<Record<string, InputMode>>({ sourcing: 'free', sample_chain: 'free', tracking: 'free' });
 
   const confirmedSteps = new Set<string>();
   if (sku.sourcing_data?.factory || sku.sourcing_data?.origin) confirmedSteps.add('sourcing');
+  // sample_chain confirmation comes from the sample_reviews table — we
+  // don't have it sync'd into the SKU object, so we leave it unmarked.
+  // Visual confirmation lives inside the SampleChainView.
   if (iterations.length > 0) confirmedSteps.add('tracking');
 
   const mode = modes[STEPS[activeStep]?.id] || 'free';
@@ -102,15 +108,31 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
             </div>
           )}
 
-          {/* Step 1: Proto Tracking */}
+          {/* Step 1: Sample Chain — Phase 4 PLM parity */}
           {activeStep === 1 && (
             <div className="space-y-4">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/50 mb-2">
-                  {stepLabel('protoTrackingStep') || 'Proto Tracking'}
+                  Sample Chain
                 </p>
                 <p className="text-[12px] text-carbon/50 mb-4">
-                  {stepLabel('protoTrackingStepDesc') || 'Track prototype iterations, upload photos, and review against your design.'}
+                  4-stage factory review chain (white proto → color → fitting → production sample).
+                  AI photo comparison vs the approved sketch and 3D render flags deviations automatically.
+                </p>
+              </div>
+              <SampleChainView skuId={sku.id} collectionPlanId={sku.collection_plan_id} />
+            </div>
+          )}
+
+          {/* Step 2: Quick Notes — legacy proto_iterations free-form jotting */}
+          {activeStep === 2 && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/50 mb-2">
+                  {stepLabel('protoTrackingStep') || 'Quick Notes'}
+                </p>
+                <p className="text-[12px] text-carbon/50 mb-4">
+                  Free-form iteration notes. Use Sample Chain for the structured factory review.
                 </p>
               </div>
 
