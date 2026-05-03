@@ -97,17 +97,23 @@ export const RAMAS: RamaMeta[] = [
   },
 ];
 
-// Catalog imports land here as each rama is converted to TS:
-// import { rama1 } from './rama-1-natural-fibers';
-// import { rama2 } from './rama-2-regenerated-fibers';
-// ...
+// Catalog imports — added as each rama lands in TypeScript:
+import { rama1 } from './rama-1';
+// import { rama2 } from './rama-2';
+// import { rama3 } from './rama-3';
+// import { rama4 } from './rama-4';
+// import { rama5 } from './rama-5';
+// import { rama6 } from './rama-6';
+// import { rama7 } from './rama-7';
+// import { rama8 } from './rama-8';
 
 /**
- * Aggregate catalog. Currently empty — populated as each rama is shipped.
- * Tests + the Combobox component depend on this shape (Material[]) so the
- * placeholder can be merged safely before the data arrives.
+ * Aggregate catalog. Populated as each rama is shipped. Order doesn't
+ * matter for correctness — the rankMaterials engine handles relevance
+ * regardless. Tests + the Combobox depend on this shape (Material[]).
  */
 export const CATALOG: Material[] = [
-  // ...rama1, ...rama2, ...rama3, ...rama4,
+  ...rama1,
+  // ...rama2, ...rama3, ...rama4,
   // ...rama5, ...rama6, ...rama7, ...rama8,
 ];
