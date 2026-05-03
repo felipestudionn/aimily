@@ -55,7 +55,11 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   } | null>(null);
 
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
-  const materials = (designData.patterns[sku.id] || []) as { name: string; url: string; fileType: string; gradingNotes: string }[];
+  // The "Materials" sub-step is considered filled when at least one zone has a
+  // material assigned. This used to read from designData.patterns[sku.id],
+  // which conflated the patterns workspace (reserved for Phase 6 Pattern
+  // Library) with materials state. Source of truth is sku.material_zones.
+  const filledMaterialZones = (sku.material_zones || []).filter(z => z?.material);
 
   const evolutionStepMap: Record<string, number> = { sketch: 0, colorways: 1, render3d: 3 };
   const [activeStep, setActiveStep] = useState(() => evolutionStep ? (evolutionStepMap[evolutionStep] ?? 0) : 0);
@@ -117,7 +121,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     const s = new Set<number>();
     if (sku.sketch_url) s.add(0);
     if (skuColorways.length > 0) s.add(1);
-    if (materials.length > 0) s.add(2);
+    if (filledMaterialZones.length > 0) s.add(2);
     return s;
   });
 
