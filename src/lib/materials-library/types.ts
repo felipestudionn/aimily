@@ -114,6 +114,10 @@ export type Certification =
   | 'Woolmark'                                       // Australian Wool Innovation
   | 'ZQ-Merino'                                      // New Zealand Merino Co. program
   | 'NATIVA'                                         // Chargeurs Luxury Materials wool program
+  | 'SFA-Cashmere'                                   // Sustainable Fibre Alliance Cashmere Standard
+  | 'Good-Cashmere'                                  // The Good Cashmere Standard (Aid by Trade Foundation)
+  | 'RMS'                                            // Responsible Mohair Standard
+  | 'RAS'                                            // Responsible Alpaca Standard
   | 'FSC' | 'Canopy'                                  // forest certifications for cellulosics
   | 'WISICA'                                          // Sea Island cotton authority
   | 'Supima'                                          // Pima cotton trademark
