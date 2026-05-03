@@ -9,6 +9,7 @@ import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth'
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { submitForReview } from '@/lib/tech-pack/revisions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
+import { sendApprovalNotification } from '@/lib/approval-emails';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -46,6 +47,17 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     entityType: 'tech_pack_revision',
     entityId: id,
     metadata: { skuId: rev.sku_id, version: rev.version },
+  });
+
+  // Notify reviewers — best-effort, never block the response.
+  void sendApprovalNotification({
+    collectionPlanId: rev.collection_plan_id,
+    skuId: rev.sku_id,
+    revisionId: id,
+    version: updated.version,
+    stage: 'design_review',
+    triggeredBy: user!.id,
+    triggeredByName: user!.user_metadata?.full_name ?? user!.email ?? null,
   });
 
   return NextResponse.json({ revision: updated });
