@@ -124,7 +124,13 @@ import { rama8 } from './rama-8';
  *   ───────
  *   Total: ~963 verified entries
  */
-export const CATALOG: Material[] = [
+import { annotateRslFlags } from './rsl-annotations';
+
+// Phase 7 — module-init RSL annotation. The catalog is built once per
+// JS load; annotating in place here keeps the rama files clean and
+// gives the compliance engine catalog-level 'violation' findings on
+// known-flagged families/names.
+export const CATALOG: Material[] = annotateRslFlags([
   ...rama1,
   ...rama2,
   ...rama3,
@@ -133,4 +139,4 @@ export const CATALOG: Material[] = [
   ...rama6,
   ...rama7,
   ...rama8,
-];
+]);

@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { sendVendorInvitationEmail } from '@/lib/vendor-emails';
 
 interface CreateBody {
   collection_plan_id: string;
@@ -91,7 +92,26 @@ export async function POST(req: NextRequest) {
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Token only returned on creation — store securely on the user side
-  // (we show it once + ship via email in a follow-up enhancement).
+  // Email the vendor with the share link — best-effort, never block the
+  // response if Resend is misconfigured.
+  void (async () => {
+    const { data: collection } = await supabaseAdmin
+      .from('collection_plans')
+      .select('name')
+      .eq('id', body.collection_plan_id)
+      .maybeSingle();
+    const origin = req.nextUrl.origin;
+    await sendVendorInvitationEmail({
+      to: body.vendor_email,
+      vendorName: body.vendor_name ?? null,
+      collectionName: collection?.name ?? 'Collection',
+      shareUrl: `${origin}/vendor/${token}`,
+      expiresAt: expiresAt,
+      invitedByName: user!.user_metadata?.full_name ?? user!.email ?? null,
+    });
+  })();
+
+  // Token only returned on creation — also stored client-side via the
+  // /api response so the user can copy it directly from the UI.
   return NextResponse.json({ invitation: data, token });
 }
