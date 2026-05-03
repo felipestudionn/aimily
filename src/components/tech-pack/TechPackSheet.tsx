@@ -36,6 +36,7 @@ import type { Zone } from '@/lib/materials-library';
 import { CostingPanel } from '@/components/tech-pack/CostingPanel';
 import type { CostBreakdown } from '@/lib/costing/landed-cost';
 import { RevisionPill } from '@/components/tech-pack/RevisionPill';
+import { CompliancePill } from '@/components/tech-pack/CompliancePill';
 
 type Section =
   | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
@@ -508,7 +509,10 @@ function HeaderBlock({ sku, collectionName, season, tp, revisionRefreshKey }: {
             {sku.name}
           </h1>
         </div>
-        <RevisionPill skuId={sku.id} fallback={tp.version || 'v1.0'} refreshKey={revisionRefreshKey} />
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <CompliancePill skuId={sku.id} refreshKey={revisionRefreshKey} />
+          <RevisionPill skuId={sku.id} fallback={tp.version || 'v1.0'} refreshKey={revisionRefreshKey} />
+        </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         {fields.map((f) => (

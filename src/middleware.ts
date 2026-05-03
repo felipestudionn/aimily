@@ -31,6 +31,7 @@ const publicPagePrefixes = [
   '/p/',
   '/presentation/export/',
   '/tech-pack/export/',
+  '/vendor/',  // Phase 5 vendor portal (token-gated read-only access)
 ];
 
 // API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
@@ -40,6 +41,8 @@ const publicApiPrefixes = [
   '/api/auth/',              // OAuth callbacks (Pinterest, etc.)
   '/api/auth-email-hook',    // Supabase Send Email Hook (HMAC-SHA256 signature)
   '/api/chat-faq',           // Public FAQ chat — anyone can ask, per-IP rate limit
+  '/api/vendor-portal/',     // Phase 5 vendor portal (token-validated internally)
+  '/api/ai/translate',       // Phase 5 vendor translation (token-validated internally)
 ];
 
 export async function middleware(request: NextRequest) {
