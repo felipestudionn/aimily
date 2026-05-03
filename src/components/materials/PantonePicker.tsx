@@ -63,16 +63,44 @@ export function PantonePicker({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const currentColor = value ? PANTONE_BY_CODE[value] : undefined;
+  // Phase 7 — hydrate from SQL on mount so the picker sees all 2,317
+  // TCX entries instead of only the 87 bundled ones. Falls back to the
+  // bundled catalog if the fetch fails (offline, auth lapsed).
+  const [hydratedCatalog, setHydratedCatalog] = useState<PantoneColor[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/pantone/colors', { cache: 'no-cache' });
+        if (!res.ok || cancelled) return;
+        const j = (await res.json()) as { colors: PantoneColor[] };
+        if (Array.isArray(j.colors) && j.colors.length > 0) setHydratedCatalog(j.colors);
+      } catch {
+        // Network failure: stick with the bundled catalog.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const catalog = hydratedCatalog ?? PANTONE_CATALOG;
+  const byCode = useMemo<Record<string, PantoneColor>>(() => {
+    if (!hydratedCatalog) return PANTONE_BY_CODE;
+    const m: Record<string, PantoneColor> = {};
+    for (const c of hydratedCatalog) m[c.code] = c;
+    return m;
+  }, [hydratedCatalog]);
+  const currentColor = value ? byCode[value] : undefined;
 
   const list = useMemo(() => {
     if (activeFamily === 'closest' && targetHex) {
-      return closestPantone(targetHex, 12).map((m) => m as PantoneColor);
+      return closestPantone(targetHex, 12, catalog).map((m) => m as PantoneColor);
     }
-    if (query.trim()) return searchPantone(query, 60);
-    if (activeFamily === 'all') return PANTONE_CATALOG;
-    return PANTONE_CATALOG.filter((c) => c.family === activeFamily);
-  }, [query, activeFamily, targetHex]);
+    if (query.trim()) return searchPantone(query, 60, catalog);
+    if (activeFamily === 'all') return catalog;
+    return catalog.filter((c) => c.family === activeFamily);
+  }, [query, activeFamily, targetHex, catalog]);
 
   // Click outside to close
   useEffect(() => {
