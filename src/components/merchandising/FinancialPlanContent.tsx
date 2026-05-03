@@ -51,7 +51,9 @@ interface Props {
 }
 
 export function FinancialPlanContent({ mode, data, onChange, collectionContext, language = 'en' }: Props) {
-  const fp = useTranslation().financialPlan;
+  const fullT = useTranslation();
+  const fp = fullT.financialPlan;
+  const tc = fullT.common;
   const [sources, setSources] = useState<FinancialPlanSources | null>(null);
   const [loadingSources, setLoadingSources] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -150,7 +152,7 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
         generatedBy: 'ai',
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
+      setError(e instanceof Error ? e.message : tc.unknownError);
     } finally {
       setGenerating(false);
     }
@@ -176,7 +178,7 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
         }),
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unknown error');
+      setError(e instanceof Error ? e.message : tc.unknownError);
     }
   };
 

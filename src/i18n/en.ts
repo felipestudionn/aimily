@@ -56,6 +56,11 @@ export const en = {
     noResults: 'No results found',
     tryAgain: 'Please try again',
     unexpectedError: 'An unexpected error occurred',
+    unknownError: 'Unknown error',
+    networkError: 'Network error',
+    failedToLoad: 'Could not load',
+    failedToSave: 'Could not save',
+    failedToGenerate: 'Could not generate',
     toggleMenu: 'Toggle Menu',
     studioNNProduct: 'aimily is a product by StudioNN Agency S.L.',
   },
@@ -292,6 +297,12 @@ export const en = {
     deleteModalNoData: 'No SKUs or milestones yet',
     deleteModalConfirm: 'Move to trash',
     deleteModalCancel: 'Keep it',
+    toastDeletedTitle: 'Sent to trash',
+    toastDeletedDesc: 'Permanently deleted in 30 days.',
+    toastUndoButton: 'Undo',
+    toastRestored: 'Restored',
+    toastDeleteFailed: "Couldn't delete — try again.",
+    toastRestoreFailed: "Couldn't restore — the trash window may have expired.",
     howToStart: 'How do you want to start?',
     buildStepByStep: 'Build step by step',
     buildStepByStepDesc: 'Create your collection from scratch with Aimily guiding you through each phase.',
@@ -3744,6 +3755,62 @@ export const en = {
 
     // The three plan cards used by trialEnding + trialExpired. Plan names
     // and prices are global; bullets are translated per locale.
+    // Auth-flow emails — fired by Supabase Auth via the Send Email Hook.
+    // Locale resolved from user.user_metadata.language; falls back to EN
+    // for confirmSignup (user hasn't picked a locale yet at signup time).
+    auth: {
+      common: {
+        fallbackLink: "If the button doesn't work, paste this into your browser:",
+      },
+      confirmSignup: {
+        subject: "Confirm your aimily address",
+        headline: "Confirm your address.",
+        intro: "One quick click and your 14-day trial begins.",
+        detail: "We sent this to {email}. Confirming verifies the address is yours and unlocks the platform.",
+        cta: "Confirm my email",
+        footer: "Didn't sign up? You can ignore this email.",
+      },
+      recovery: {
+        subject: "Reset your aimily password",
+        headline: "Reset your password.",
+        intro: "Click below to set a new one for {email}.",
+        detail: "The link is valid for one hour. Your existing password keeps working until you finish the reset.",
+        cta: "Reset password",
+        footer: "If you didn't request this, you can safely ignore the email.",
+      },
+      magicLink: {
+        subject: "Your aimily sign-in link",
+        headline: "Your sign-in link.",
+        intro: "Click below to sign in as {email}. No password needed.",
+        detail: "The link is valid for one hour and can only be used once.",
+        cta: "Sign in",
+        footer: "Didn't request this link? You can safely ignore the email.",
+      },
+      emailChange: {
+        subject: "Confirm your new aimily email",
+        headline: "Confirm your new address.",
+        intro: "You asked to switch the email on your aimily account from {email} to {newEmail}.",
+        detail: "Click below to confirm the change. Until you do, your existing email stays on the account.",
+        cta: "Confirm new email",
+        footer: "If you didn't request this change, ignore the email and consider rotating your password.",
+      },
+      reauthentication: {
+        subject: "Your aimily verification code",
+        headline: "Verification code.",
+        intro: "Use this code to confirm a sensitive action on your aimily account.",
+        detail: "The code is valid for one hour. Paste it back into the aimily window that asked for it.",
+        footer: "If this wasn't you, ignore the email and rotate your password to be safe.",
+      },
+      invite: {
+        subject: "You've been invited to aimily",
+        headline: "You're invited.",
+        intro: "Someone added {email} to their aimily workspace. Accept to start collaborating on the collection.",
+        detail: "aimily is the platform StudioNN built for fashion brands — same models, same quality, no setup work for you. Accepting takes one click.",
+        cta: "Accept invitation",
+        footer: "Didn't expect this invite? You can safely ignore the email.",
+      },
+    },
+
     plans: {
       starter: {
         name: "Starter",

@@ -11,11 +11,13 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const excludePlanId = searchParams.get('excludePlanId');
 
-    // Get all collection plans for this user
+    // Get all collection plans for this user (live only — trashed
+    // collections shouldn't show up as carry-over candidates).
     const { data: plans, error: plansError } = await supabaseAdmin
       .from('collection_plans')
       .select('id, name, season')
       .eq('user_id', user.id)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (plansError) {

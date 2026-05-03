@@ -11,9 +11,14 @@ breaks the brand.
 |------|------------------|---------------|
 | `confirm-signup.html` | Confirm signup | First email after signup, before they hit `/welcome` |
 | `recovery.html` | Reset password | When the user requests a password reset |
+| `magic-link.html` | Magic link | Passwordless sign-in flow |
+| `email-change.html` | Email change | When a user changes their account email |
+| `reauthentication.html` | Reauthentication | Code-based confirmation for sensitive actions |
+| `invite.html` | Invite user | Team/workspace invitations sent from `inviteUserByEmail` |
 
-Both templates use Supabase's `{{ .ConfirmationURL }}` and `{{ .Email }}`
-variables and follow the same structure as the in-app transactional emails.
+Each template uses the relevant Supabase variables (`{{ .ConfirmationURL }}`,
+`{{ .Email }}`, `{{ .NewEmail }}`, `{{ .Token }}`) and shares the editorial
+dark shell with the in-app transactional emails in `src/lib/transactional-emails.ts`.
 
 ## How to apply
 
@@ -55,11 +60,39 @@ trial funnel emails.
 | `{{ .Token }}` | Raw OTP / token (not used here, link-only flows) |
 | `{{ .SiteURL }}` | The site URL configured in Auth settings |
 
-## Future templates to override
+## Optional: i18n via Send Email Hook
 
-- **Magic link** — when we add passwordless login
-- **Email change** — when a user changes their address
-- **Reauthentication** — for sensitive operations
-- **Invite** — if we ship team invites by email
+The static templates above ship in English only because the Supabase
+dashboard doesn't support per-locale template selection. If you want the
+trial-funnel quality of i18n on these too — recovery, magic link, email
+change, reauth, invite all delivered in `user.user_metadata.language` —
+flip the **Send Email Hook**:
 
-Same shell, same Felipe voice. Reuse the existing files as a starting point.
+1. **Generate a webhook secret**
+   In Supabase Dashboard → Auth → Hooks → Send Email, click "Enable Send
+   Email Hook" and pick **HTTP**. Copy the generated `v1,whsec_...` secret.
+
+2. **Add it to Vercel + .env.local**
+   ```
+   SUPABASE_AUTH_HOOK_SECRET=v1,whsec_xxx...
+   ```
+   Make sure `RESEND_API_KEY` is also present.
+
+3. **Set the hook URL**
+   `https://www.aimily.app/api/auth-email-hook`
+
+4. **Save**. Supabase now POSTs to our endpoint every time it would have
+   sent an Auth email. We render the localized editorial email via
+   `src/lib/auth-email-renderer.ts` (using `getEmailDict(locale)` from
+   `src/lib/email-i18n.ts`) and ship through Resend. Same shell, same
+   Felipe voice, locale picked from `user.user_metadata.language`.
+
+If the env var is missing or the signature fails, the hook returns 500
+and Supabase falls back to the static templates above (still editorial,
+still EN). Either way the user gets an email.
+
+**Confirm signup** is the one exception worth knowing: the user hasn't
+picked a language yet at signup time, so even with the hook live, that
+specific email lands in EN. Recovery, magic link, email change, reauth
+and invite all respect the user's language because they fire AFTER
+`/welcome` set `user_metadata.language`.

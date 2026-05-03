@@ -74,6 +74,11 @@ export default function MyCollectionsPage() {
   const [skuCounts, setSkuCounts] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<CollectionWithProgress | null>(null);
+  const [undoToast, setUndoToast] = useState<{
+    collection: CollectionPlan;
+    name: string;
+    timeoutId: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -150,6 +155,7 @@ export default function MyCollectionsPage() {
           .from('collection_plans')
           .select('*')
           .eq('user_id', user.id)
+          .is('deleted_at', null)
           .order('updated_at', { ascending: false }),
         supabase
           .from('collection_timelines')
@@ -191,18 +197,57 @@ export default function MyCollectionsPage() {
 
   const performDelete = async () => {
     if (!deleteTarget) return;
-    const id = deleteTarget.id;
+    const target = deleteTarget;
+    setDeleteTarget(null);
+
+    // Capture the row + name before we lose them on optimistic remove.
+    const rowSnapshot = collections.find((c) => c.id === target.id);
+    if (!rowSnapshot) return;
+
     try {
-      const res = await fetch(`/api/collections/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/collections/${target.id}`, { method: 'DELETE' });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to delete');
       }
-      setCollections((prev) => prev.filter((c) => c.id !== id));
-      setDeleteTarget(null);
+
+      // Optimistic remove from the visible list.
+      setCollections((prev) => prev.filter((c) => c.id !== target.id));
+
+      // Cancel any previous toast (e.g. user deletes two in a row).
+      if (undoToast?.timeoutId) {
+        window.clearTimeout(undoToast.timeoutId);
+      }
+
+      // Set up the new undo toast with a 10-second auto-dismiss.
+      const timeoutId = window.setTimeout(() => {
+        setUndoToast(null);
+      }, 10_000);
+      setUndoToast({ collection: rowSnapshot, name: target.name, timeoutId });
     } catch (error) {
       console.error('Error deleting collection:', error);
-      setDeleteTarget(null);
+      toast(t.collections.toastDeleteFailed || 'Could not delete', 'error', 4000);
+    }
+  };
+
+  const handleUndoDelete = async () => {
+    if (!undoToast) return;
+    const { collection, timeoutId } = undoToast;
+    window.clearTimeout(timeoutId);
+    setUndoToast(null);
+
+    try {
+      const res = await fetch(`/api/collections/${collection.id}/restore`, { method: 'POST' });
+      if (!res.ok) {
+        throw new Error('Restore failed');
+      }
+      // Re-insert the collection at the top of the list (its updated_at
+      // was just touched on restore, so it would be top-most anyway).
+      setCollections((prev) => [collection, ...prev]);
+      toast(t.collections.toastRestored || 'Restored', 'success', 2500);
+    } catch (error) {
+      console.error('Error restoring collection:', error);
+      toast(t.collections.toastRestoreFailed || 'Could not restore', 'error', 4000);
     }
   };
 
@@ -352,6 +397,30 @@ export default function MyCollectionsPage() {
         skuCount={deleteTarget?.skuCount}
         milestoneCount={deleteTarget?.timeline?.milestones.length}
       />
+
+      {/* Undo toast — bottom-centered, single-line. Auto-dismisses at 10s. */}
+      {undoToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] animate-fade-in"
+        >
+          <div className="flex items-center gap-4 bg-carbon text-crema rounded-full pl-5 pr-2 py-2 shadow-[0_12px_32px_rgba(0,0,0,0.18)]">
+            <span className="text-[13px] tracking-[-0.01em]">
+              <span className="font-medium">{t.collections.toastDeletedTitle}</span>
+              <span className="text-crema/55"> · </span>
+              <span className="text-crema/65">{t.collections.toastDeletedDesc}</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleUndoDelete}
+              className="px-4 py-1.5 rounded-full bg-crema/[0.10] hover:bg-crema/[0.18] text-[12px] font-semibold tracking-[-0.01em] transition-colors"
+            >
+              {t.collections.toastUndoButton}
+            </button>
+          </div>
+        </div>
+      )}
     </SubscriptionGate>
   );
 }

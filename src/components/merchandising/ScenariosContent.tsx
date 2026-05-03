@@ -236,8 +236,8 @@ export function ScenariosContent({ mode, data, onChange, collectionContext, lang
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Network error' }));
-        setError(err.error || 'Failed to generate scenarios');
+        const err = await res.json().catch(() => ({ error: t.common.networkError }));
+        setError(err.error || t.common.failedToGenerate);
         return;
       }
       const { result } = await res.json();
@@ -250,7 +250,7 @@ export function ScenariosContent({ mode, data, onChange, collectionContext, lang
         selectedScenarioId: null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : t.common.unknownError);
     } finally {
       setLoading(false);
     }

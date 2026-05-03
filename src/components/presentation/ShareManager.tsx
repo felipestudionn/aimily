@@ -43,7 +43,9 @@ function fmtDate(iso: string | null, never: string): string {
 }
 
 export function ShareManager({ collectionId, refreshKey }: Props) {
-  const tr = useTranslation().presentation;
+  const fullT = useTranslation();
+  const tr = fullT.presentation;
+  const tc = fullT.common;
   const [shares, setShares] = useState<ShareRow[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export function ShareManager({ collectionId, refreshKey }: Props) {
       const j = await res.json();
       setShares((j.shares || []) as ShareRow[]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load');
+      setError(e instanceof Error ? e.message : tc.failedToLoad);
     } finally {
       setLoading(false);
     }

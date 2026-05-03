@@ -60,12 +60,30 @@ async function main(): Promise<void> {
 
   const confirmHtml = readTemplate('confirm-signup.html');
   const recoveryHtml = readTemplate('recovery.html');
+  const magicLinkHtml = readTemplate('magic-link.html');
+  const emailChangeHtml = readTemplate('email-change.html');
+  const reauthHtml = readTemplate('reauthentication.html');
+  const inviteHtml = readTemplate('invite.html');
 
   const body = {
+    // Confirm signup
     mailer_subjects_confirmation: 'Confirm your aimily address',
     mailer_templates_confirmation_content: confirmHtml,
+    // Recovery (password reset)
     mailer_subjects_recovery: 'Reset your aimily password',
     mailer_templates_recovery_content: recoveryHtml,
+    // Magic link (passwordless sign-in)
+    mailer_subjects_magic_link: 'Your aimily sign-in link',
+    mailer_templates_magic_link_content: magicLinkHtml,
+    // Email change confirmation
+    mailer_subjects_email_change: 'Confirm your new aimily email',
+    mailer_templates_email_change_content: emailChangeHtml,
+    // Reauthentication (sensitive action confirmation, code-based)
+    mailer_subjects_reauthentication: 'Your aimily verification code',
+    mailer_templates_reauthentication_content: reauthHtml,
+    // Invite (team / workspace invitations)
+    mailer_subjects_invite: "You've been invited to aimily",
+    mailer_templates_invite_content: inviteHtml,
   };
 
   // eslint-disable-next-line no-console
@@ -93,7 +111,19 @@ async function main(): Promise<void> {
   // eslint-disable-next-line no-console
   console.log('Auth config updated successfully.');
   // eslint-disable-next-line no-console
-  console.log('Subjects:', body.mailer_subjects_confirmation, '|', body.mailer_subjects_recovery);
+  console.log('Subjects:');
+  // eslint-disable-next-line no-console
+  console.log('  · confirm:    ', body.mailer_subjects_confirmation);
+  // eslint-disable-next-line no-console
+  console.log('  · recovery:   ', body.mailer_subjects_recovery);
+  // eslint-disable-next-line no-console
+  console.log('  · magic link: ', body.mailer_subjects_magic_link);
+  // eslint-disable-next-line no-console
+  console.log('  · email chg:  ', body.mailer_subjects_email_change);
+  // eslint-disable-next-line no-console
+  console.log('  · reauth:     ', body.mailer_subjects_reauthentication);
+  // eslint-disable-next-line no-console
+  console.log('  · invite:     ', body.mailer_subjects_invite);
   // eslint-disable-next-line no-console
   console.log('Server response keys:', Object.keys(data).slice(0, 10).join(', '));
 }
