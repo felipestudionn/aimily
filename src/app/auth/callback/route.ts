@@ -74,10 +74,12 @@ export async function GET(request: NextRequest) {
           console.error('[auth/callback] welcome email error:', err);
           // Never block signup on email error
         }
-        // Pass signup=1 so the client-side analytics handler can fire
-        // SIGNUP_COMPLETED. The query is stripped from the URL after
-        // the toast/track effect runs.
-        return NextResponse.redirect(`${origin}/my-collections?signup=1`);
+        // Brand-new signup → run the /welcome onboarding (language picker
+        // + product editorial). signup=1 still rides along so PostHog
+        // SIGNUP_COMPLETED fires when the user lands on /my-collections
+        // after finishing onboarding (the param is forwarded by the
+        // /api/onboarding/complete redirect destination).
+        return NextResponse.redirect(`${origin}/welcome?signup=1`);
       }
 
       // Default: redirect to next param or my-collections

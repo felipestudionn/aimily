@@ -3483,6 +3483,106 @@ export const fr: Dictionary = {
     emptyBody: "Ajoute des SKUs dans le Collection Builder pour commencer à dessiner silhouettes et colorways ici.",
   },
 
+  welcome: {
+    language: {
+      headline: "Comment veux-tu qu'aimily te parle ?",
+      subtitle: "Tu peux le changer à tout moment depuis ton compte.",
+      detected: "Détecté depuis ton navigateur.",
+      languageNames: {
+        en: "English",
+        es: "Español",
+        fr: "Français",
+        it: "Italiano",
+        de: "Deutsch",
+        pt: "Português",
+        nl: "Nederlands",
+        sv: "Svenska",
+        no: "Norsk",
+      },
+    },
+
+    everything: {
+      greeting: "Bonjour {name},",
+      greetingFallback: "Bienvenue,",
+      headline: "Tout ce que tu vas trouver à l'intérieur.",
+      subtitle: "Quatre blocs. Trois modes. Conçu pour que tu puisses sortir une saison seul, ou faire appel à l'IA seulement quand cela aide. Tout est éditable, à tout moment.",
+
+      blocks: {
+        one: {
+          eyebrow: "01 — Direction Créative",
+          title: "Brief, vision et identité de marque, tout connecté.",
+          bullets: [
+            "Définition du Consommateur — pour qui tu dessines, tracé depuis une psychographie réelle, pas un template de persona générique",
+            "Moodboard avec extraction visuelle — colle 4–6 références et aimily en extrait couleurs, matières, silhouettes et mood",
+            "Recherche de Marché en quatre angles — concurrents directs, références aspirationnelles, tendances macro et l'espace blanc entre les deux",
+            "Identité de Marque — voix, valeurs, archétype, références, ADN visuel",
+            "Creative Overview — un brand board synthétisé par l'IA à partir de tout ce qui précède, réécrit en un clic et réutilisé comme contexte par chaque prompt en aval",
+          ],
+        },
+        two: {
+          eyebrow: "02 — Merchandising et Planification",
+          title: "Les chiffres derrière la saison, avant de croquer une seule pièce.",
+          bullets: [
+            "Buying Strategy — le mix de tiers REVENUE / IMAGE / ENTRY, redistribution d'unités, mathématique des prix",
+            "Assortment & Pricing — familles de produits, sous-catégories, PVC min/max, cibles de COGS et de marge par ligne",
+            "Distribution — canaux (DTC, wholesale, marketplace) et marchés cibles, par famille",
+            "Plan Financier — composition par scénarios avec sell-through, AOV, marge, calendrier de drops — change un input et la saison se recompose seule",
+            "Collection Builder — chaque SKU vit ici : à la main, généré par l'IA, édite chaque ligne, verrouille la sélection, exporte en Excel",
+          ],
+        },
+        three: {
+          eyebrow: "03 — Design et Développement",
+          title: "D'une photo de référence au sol de l'usine.",
+          bullets: [
+            "Sketch — transforme une photo de référence en flat de mode en quelques secondes, puis affine la silhouette",
+            "Couleur & Matières — palette par famille, allocation de matière, rendu IA de chaque SKU dans le coloris choisi",
+            "Tech Pack — fiche dédiée par SKU avec mesures, BOM, commentaires pin sur la pièce style Hatch, annuaire de fournisseurs et d'usines, export PDF A3 paysage",
+            "Prototypage — itérations d'échantillon trackées par SKU, photos et notes par tour, alerte rouge quand le compteur d'itérations dérape",
+            "Production — POs aux usines, statut, dates, fenêtres d'expédition",
+            "Final Selection — verrouille la sélection de la saison et pousse les SKUs verrouillés au marketing automatiquement",
+          ],
+        },
+        four: {
+          eyebrow: "04 — Marketing et Ventes",
+          title: "Lance la saison, vends-la, raconte l'histoire.",
+          bullets: [
+            "GTM & Launch Plan — rollout par phases par drop, canal par canal, avec les dates que le calendrier connaît déjà",
+            "Content Studio — pipeline visuel à quatre niveaux par SKU : e-commerce, still life, éditorial, vidéo de campagne. Rendu IA, try-on IA, campagne IA",
+            "Aimily Model Roster — 28 mannequins IA maison (14 femmes, 14 hommes) prêts pour éditorial, try-on et lookbook — sans agence, sans booking",
+            "Communications — copy, templates sociaux, séquences email, guard de voix de marque, drafts SEO, tout lisant ton Identité de Marque",
+            "Tableau de bord des Ventes — KPIs en temps réel, courbe de revenus, performance drop par drop, vue commerciale par histoire",
+            "Point de Vente — CRUD de commandes wholesale aujourd'hui, boutique en ligne connectée à Shopify en route",
+          ],
+        },
+      },
+
+      modes: {
+        eyebrow: "Trois modes, mêmes données",
+        items: [
+          { name: "Work", desc: "Bloc par bloc, avec édition en profondeur sur chaque champ. La vue détaillée." },
+          { name: "Calendar", desc: "Quarante-cinq jalons sur toute la saison, glissés latéralement comme une timeline horizontale. Mêmes données, vue temporelle. Clique sur n'importe quelle barre pour revenir à son workspace." },
+          { name: "Presentation", desc: "Vingt et une slides montées automatiquement à partir de ta Collection Intelligence. Dix thèmes, export PDF, lien public, édition inline. Promeus une édition de slide au workspace et l'IA commence à utiliser ton copy édité." },
+        ],
+      },
+
+      workingStyle: {
+        eyebrow: "Tu travailles à ta manière",
+        items: [
+          { name: "Toi", desc: "Chaque champ est éditable. Écris ce que tu sais, saute ce que tu ne sais pas. Le manuel est citoyen de première classe, pas le fallback." },
+          { name: "Assisté par IA", desc: "Génère un brouillon, accepte ce qui marche, réécris le reste. Pas d'enfermement, pas de nom de fournisseur sur les outputs." },
+          { name: "Hybride", desc: "La plupart des studios mélangent. IA pour l'ennuyeux, ton jugement sur les décisions qui comptent vraiment." },
+        ],
+      },
+
+      cta: "Créer ma première collection",
+      skip: "Passer — je verrai plus tard",
+    },
+
+    progress: {
+      step: "Étape {n} sur {total}",
+    },
+  },
+
   aimilyAssistant: {
     fab: { label: "Demander à Aimily" },
     title: "Aimily",

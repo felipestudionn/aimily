@@ -3464,6 +3464,106 @@ export const pt: Dictionary = {
     emptyBody: "Adicione SKUs no Collection Builder para começar a desenhar silhuetas e colorways aqui.",
   },
 
+  welcome: {
+    language: {
+      headline: "Como preferes que a aimily te fale?",
+      subtitle: "Podes mudar isto em qualquer momento na tua conta.",
+      detected: "Detetado do teu navegador.",
+      languageNames: {
+        en: "English",
+        es: "Español",
+        fr: "Français",
+        it: "Italiano",
+        de: "Deutsch",
+        pt: "Português",
+        nl: "Nederlands",
+        sv: "Svenska",
+        no: "Norsk",
+      },
+    },
+
+    everything: {
+      greeting: "Olá {name},",
+      greetingFallback: "Bem-vindo,",
+      headline: "Tudo o que vais encontrar aqui dentro.",
+      subtitle: "Quatro blocos. Três modos. Pensado para que possas tirar uma temporada sozinho, ou apoiar-te na IA só quando isso ajudar. Tudo é editável, sempre.",
+
+      blocks: {
+        one: {
+          eyebrow: "01 — Direção Criativa",
+          title: "Brief, visão e identidade de marca, tudo conectado.",
+          bullets: [
+            "Definição de Consumidor — para quem desenhas, mapeado a partir de psicografia real e não de um template genérico de persona",
+            "Moodboard com extração visual — cola 4–6 referências e a aimily extrai cores, materiais, silhuetas e mood",
+            "Investigação de Mercado em quatro lentes — concorrentes diretos, referências aspiracionais, tendências macro e o espaço em branco entre elas",
+            "Identidade de Marca — voz, valores, arquétipo, referências, ADN visual",
+            "Creative Overview — um brand board sintetizado pela IA a partir de tudo o anterior, reescrevível com um clique e reutilizado como contexto por cada prompt a jusante",
+          ],
+        },
+        two: {
+          eyebrow: "02 — Merchandising e Planeamento",
+          title: "Os números por trás da temporada, antes de esboçar uma única peça.",
+          bullets: [
+            "Buying Strategy — o mix de tiers REVENUE / IMAGEM / ENTRY, redistribuição de unidades, matemática de preço",
+            "Assortment & Pricing — famílias de produto, subcategorias, PVP mín/máx, alvos de COGS e margem por linha",
+            "Distribuição — canais (DTC, wholesale, marketplace) e mercados-alvo, por família",
+            "Plano Financeiro — composição por cenários com sell-through, AOV, margem, calendário de drops — muda um input e a temporada recompõe-se sozinha",
+            "Collection Builder — cada SKU vive aqui: à mão, gerado por IA, edita cada linha, tranca a seleção, exporta para Excel",
+          ],
+        },
+        three: {
+          eyebrow: "03 — Design e Desenvolvimento",
+          title: "De uma única foto de referência ao chão da fábrica.",
+          bullets: [
+            "Esboço — transforma uma foto de referência num flat de moda em segundos e depois refina a silhueta",
+            "Cor & Materiais — paleta por família, atribuição de material, render IA de cada SKU no colorway escolhido",
+            "Tech Pack — ficha dedicada por SKU com medidas, BOM, comentários pin sobre a peça ao estilo Hatch, diretório de fornecedores e fábricas, exportável para PDF A3",
+            "Prototipagem — iterações de amostra rastreadas por SKU, fotos e notas por ronda, alerta vermelho quando a contagem de iterações descontrola",
+            "Produção — POs às fábricas, estado, datas, janelas de envio",
+            "Final Selection — tranca o range da temporada e empurra os SKUs trancados para o marketing automaticamente",
+          ],
+        },
+        four: {
+          eyebrow: "04 — Marketing e Vendas",
+          title: "Lança a temporada, vende-a, conta a história.",
+          bullets: [
+            "GTM & Launch Plan — rollout por fases por drop, canal a canal, com as datas que o calendário já conhece",
+            "Content Studio — pipeline visual de quatro níveis por SKU: e-commerce, still life, editorial, vídeo de campanha. Render IA, try-on IA, campanha IA",
+            "Aimily Model Roster — 28 modelos IA da casa (14 mulheres, 14 homens) prontos para editorial, try-on e lookbook — sem agência, sem booking",
+            "Comunicações — copy, templates sociais, sequências de email, guard de voz de marca, drafts SEO, tudo a ler da tua Identidade de Marca",
+            "Dashboard de Vendas — KPIs em tempo real, curva de receitas, performance drop a drop, vista comercial por história",
+            "Ponto de Venda — CRUD de encomendas wholesale hoje, loja online ligada ao Shopify a caminho",
+          ],
+        },
+      },
+
+      modes: {
+        eyebrow: "Três modos, os mesmos dados",
+        items: [
+          { name: "Work", desc: "Bloco a bloco, com edição profunda em cada campo. A vista de detalhe." },
+          { name: "Calendar", desc: "Quarenta e cinco marcos ao longo da temporada, arrastáveis como timeline horizontal. Os mesmos dados, vista temporal. Clica em qualquer barra para voltar ao seu workspace." },
+          { name: "Presentation", desc: "Vinte e um slides montados sozinhos a partir da tua Collection Intelligence. Dez temas, exportável para PDF, link público, edição inline. Promove uma edição de slide ao workspace e a IA começa a usar o teu copy editado." },
+        ],
+      },
+
+      workingStyle: {
+        eyebrow: "Trabalhas à tua maneira",
+        items: [
+          { name: "Tu", desc: "Cada campo é editável. Escreve o que sabes, salta o que não sabes. Manual é cidadão de primeira classe, não o fallback." },
+          { name: "Assistido por IA", desc: "Gera um rascunho, aceita o que funciona, reescreve o resto. Sem amarras, sem nome do provider nos outputs." },
+          { name: "Híbrido", desc: "A maioria dos estúdios mistura. IA para o aborrecido, critério teu nas decisões que de facto importam." },
+        ],
+      },
+
+      cta: "Criar a tua primeira coleção",
+      skip: "Saltar — faço depois",
+    },
+
+    progress: {
+      step: "Passo {n} de {total}",
+    },
+  },
+
   aimilyAssistant: {
     fab: { label: "Pergunta à Aimily" },
     title: "Aimily",

@@ -3482,6 +3482,106 @@ export const nl: Dictionary = {
     emptyBody: "Voeg SKU’s toe in de Collection Builder om hier silhouetten en colorways te gaan tekenen.",
   },
 
+  welcome: {
+    language: {
+      headline: "Hoe wil je dat aimily met je praat?",
+      subtitle: "Je kunt dit altijd aanpassen in je account.",
+      detected: "Gedetecteerd uit je browser.",
+      languageNames: {
+        en: "English",
+        es: "Español",
+        fr: "Français",
+        it: "Italiano",
+        de: "Deutsch",
+        pt: "Português",
+        nl: "Nederlands",
+        sv: "Svenska",
+        no: "Norsk",
+      },
+    },
+
+    everything: {
+      greeting: "Hoi {name},",
+      greetingFallback: "Welkom,",
+      headline: "Alles wat je hier binnen vindt.",
+      subtitle: "Vier blokken. Drie modi. Gebouwd zodat je een seizoen alleen kunt draaien — of AI er alleen bij haalt waar het echt helpt. Alles is altijd te bewerken.",
+
+      blocks: {
+        one: {
+          eyebrow: "01 — Creative Direction",
+          title: "Brief, visie en merkidentiteit, alles met elkaar verbonden.",
+          bullets: [
+            "Consumentdefinitie — voor wie je ontwerpt, in kaart gebracht vanuit echte psychografie in plaats van een generiek persona-template",
+            "Moodboard met visuele extractie — plak 4–6 referenties en aimily haalt kleuren, materialen, silhouetten en mood eruit",
+            "Marktonderzoek in vier lenzen — directe concurrenten, aspirational referenties, macro-trends en de white space ertussen",
+            "Merkidentiteit — stem, waarden, archetype, referenties, visuele DNA",
+            "Creative Overview — een brand board, door AI gesynthetiseerd uit alles hierboven, met één klik herschrijfbaar en hergebruikt als context door elke downstream prompt",
+          ],
+        },
+        two: {
+          eyebrow: "02 — Merchandising & Planning",
+          title: "De cijfers achter het seizoen, voor je een enkel stuk schetst.",
+          bullets: [
+            "Buying Strategy — de REVENUE / IMAGE / ENTRY tier-mix, herverdeling van eenheden, prijspunt-rekenkunde",
+            "Assortment & Pricing — productfamilies, subcategorieën, retail min/max, COGS- en marge-targets per regel",
+            "Distributie — kanalen (DTC, wholesale, marketplace) en doelmarkten, per familie",
+            "Financieel Plan — scenario-gedreven samenstelling met sell-through, AOV, marge, drop-kalender — verander één input en het seizoen bouwt zichzelf opnieuw",
+            "Collection Builder — elke SKU woont hier: met de hand, AI-gegenereerd, bewerk elke regel, lock de selectie, export naar Excel",
+          ],
+        },
+        three: {
+          eyebrow: "03 — Design & Development",
+          title: "Van één enkele referentiefoto tot de fabrieksvloer.",
+          bullets: [
+            "Schets — verander een referentiefoto in seconden in een fashion flat en verfijn dan de silhouette",
+            "Kleur & Materialen — palet per familie, materiaaltoewijzing, AI-render van elke SKU in de gekozen colorway",
+            "Tech Pack — eigen sheet per SKU met maten, BOM, Hatch-style pin-commentaar op de flat, leveranciers- en fabriekendirectory, A3 landscape PDF-export",
+            "Prototyping — sample-iteraties per SKU getrackt, foto's en notities per ronde, rode vlag wanneer de iteratieteller uit de hand loopt",
+            "Productie — PO's naar fabrieken, status, data, verzendvensters",
+            "Final Selection — lock de seizoens-range en duw de gelockte SKU's automatisch door naar marketing",
+          ],
+        },
+        four: {
+          eyebrow: "04 — Marketing & Sales",
+          title: "Lanceer het seizoen, verkoop het, vertel het verhaal.",
+          bullets: [
+            "GTM & Launch Plan — gefaseerde rollout per drop, kanaal voor kanaal, met de data die de kalender al kent",
+            "Content Studio — per-SKU vier-niveau visuele pipeline: e-commerce, still life, editorial, campagnevideo. AI-render, AI-try-on, AI-campagne",
+            "Aimily Model Roster — 28 in-house AI-modellen (14 vrouwen, 14 mannen) klaar voor editorial, try-on en lookbook — geen bureau, geen booking",
+            "Communications — copy, social templates, e-mailsequenties, brand-voice guard, SEO-drafts, alles gelezen vanuit je Merkidentiteit",
+            "Sales Dashboard — real-time KPI's, omzetcurve, drop-voor-drop performance, story-level commercieel overzicht",
+            "Point of Sale — wholesale-order CRUD vandaag, Shopify-gekoppelde webshop op komst",
+          ],
+        },
+      },
+
+      modes: {
+        eyebrow: "Drie modi, dezelfde data",
+        items: [
+          { name: "Work", desc: "Blok voor blok, met diepe bewerking op elk veld. De detailweergave." },
+          { name: "Calendar", desc: "Vijfenveertig mijlpalen over het hele seizoen, opzij gesleept als horizontale timeline. Dezelfde data, tijd-bewuste weergave. Klik op een balk om terug naar zijn workspace te springen." },
+          { name: "Presentation", desc: "Eenentwintig slides automatisch opgebouwd uit jouw Collection Intelligence. Tien thema's, PDF-export, openbare deellink, inline edit. Promote een slide-bewerking terug naar de workspace en de AI begint jouw bewerkte copy te gebruiken." },
+        ],
+      },
+
+      workingStyle: {
+        eyebrow: "Jij werkt op jouw manier",
+        items: [
+          { name: "Jij", desc: "Elk veld is bewerkbaar. Typ wat je weet, sla over wat je niet weet. Handmatig is eersteklas, geen fallback." },
+          { name: "AI-ondersteund", desc: "Genereer een concept, accepteer wat werkt, herschrijf de rest. Geen lock-in, geen provider-naam op de outputs." },
+          { name: "Hybride", desc: "De meeste studio's combineren. AI voor het saaie werk, jouw oordeel voor de beslissingen die er echt toe doen." },
+        ],
+      },
+
+      cta: "Maak je eerste collectie",
+      skip: "Overslaan — ik doe het later",
+    },
+
+    progress: {
+      step: "Stap {n} van {total}",
+    },
+  },
+
   aimilyAssistant: {
     fab: { label: "Vraag het Aimily" },
     title: "Aimily",

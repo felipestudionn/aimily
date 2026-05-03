@@ -3483,6 +3483,106 @@ export const de: Dictionary = {
     emptyBody: "Füge SKUs im Collection Builder hinzu, um hier Silhouetten und Colorways zu zeichnen.",
   },
 
+  welcome: {
+    language: {
+      headline: "In welcher Sprache soll aimily mit dir sprechen?",
+      subtitle: "Du kannst das jederzeit in deinem Konto ändern.",
+      detected: "Aus deinem Browser erkannt.",
+      languageNames: {
+        en: "English",
+        es: "Español",
+        fr: "Français",
+        it: "Italiano",
+        de: "Deutsch",
+        pt: "Português",
+        nl: "Nederlands",
+        sv: "Svenska",
+        no: "Norsk",
+      },
+    },
+
+    everything: {
+      greeting: "Hallo {name},",
+      greetingFallback: "Willkommen,",
+      headline: "Alles, was du hier drinnen findest.",
+      subtitle: "Vier Blöcke. Drei Modi. Gebaut, damit du eine Saison allein durchziehen kannst — oder die KI nur dann dazuholst, wenn sie wirklich hilft. Alles ist jederzeit editierbar.",
+
+      blocks: {
+        one: {
+          eyebrow: "01 — Creative Direction",
+          title: "Brief, Vision und Markenidentität, alles miteinander verdrahtet.",
+          bullets: [
+            "Consumer Definition — für wen du designst, abgebildet aus echter Psychografie statt aus einem generischen Persona-Template",
+            "Moodboard mit visueller Extraktion — füge 4–6 Referenzen ein und aimily zieht Farben, Materialien, Silhouetten und Mood heraus",
+            "Marktforschung in vier Linsen — direkte Wettbewerber, aspirational Referenzen, Makro-Trends und der White Space dazwischen",
+            "Markenidentität — Stimme, Werte, Archetyp, Referenzen, visuelle DNA",
+            "Creative Overview — ein Brand Board, von der KI aus allem oben synthetisiert, mit einem Klick umschreibbar und als Kontext in jedem Downstream-Prompt wiederverwendet",
+          ],
+        },
+        two: {
+          eyebrow: "02 — Merchandising & Planung",
+          title: "Die Zahlen hinter der Saison, bevor du ein einziges Stück skizzierst.",
+          bullets: [
+            "Buying Strategy — der REVENUE / IMAGE / ENTRY Tier-Mix, Einheitenumverteilung, Preispunkt-Mathematik",
+            "Assortment & Pricing — Produktfamilien, Unterkategorien, Retail-Min/Max, COGS- und Margenziele pro Zeile",
+            "Distribution — Kanäle (DTC, Wholesale, Marketplace) und Zielmärkte, pro Familie",
+            "Finanzplan — szenariobasierte Komposition mit Sell-Through, AOV, Marge, Drop-Kalender — ändere einen Input und die Saison baut sich neu",
+            "Collection Builder — jeder SKU lebt hier: per Hand, KI-generiert, jede Zeile editieren, Auswahl sperren, Excel-Export",
+          ],
+        },
+        three: {
+          eyebrow: "03 — Design & Entwicklung",
+          title: "Von einem einzigen Referenzfoto bis auf den Fabrikboden.",
+          bullets: [
+            "Sketch — verwandle ein Referenzfoto in Sekunden in einen Mode-Flat und verfeinere dann die Silhouette",
+            "Farbe & Materialien — Palette pro Familie, Materialzuweisung, KI-Rendering jedes SKU im gewählten Colorway",
+            "Tech Pack — eigenes Sheet pro SKU mit Maßen, BOM, Hatch-style Pin-Kommentaren auf dem Flat, Lieferanten- und Fabrik-Verzeichnissen, A3-Querformat-PDF-Export",
+            "Prototyping — Sample-Iterationen pro SKU getrackt, Fotos und Notizen pro Runde, Red Flag wenn der Iterationszähler aus dem Ruder läuft",
+            "Produktion — POs an Fabriken, Status, Daten, Versandfenster",
+            "Final Selection — sperre die Saison-Range und schiebe die gesperrten SKUs automatisch ins Marketing",
+          ],
+        },
+        four: {
+          eyebrow: "04 — Marketing & Vertrieb",
+          title: "Launche die Saison, verkaufe sie, erzähle die Geschichte.",
+          bullets: [
+            "GTM & Launch Plan — Phasen-Rollout pro Drop, Kanal für Kanal, mit den Daten, die der Kalender bereits kennt",
+            "Content Studio — Per-SKU vier-Level visuelle Pipeline: E-Commerce, Still Life, Editorial, Kampagnenvideo. KI-Rendering, KI-Try-On, KI-Kampagne",
+            "Aimily Model Roster — 28 hauseigene KI-Models (14 weiblich, 14 männlich) bereit für Editorial, Try-On und Lookbook — keine Agentur, kein Booking",
+            "Communications — Copy, Social-Templates, E-Mail-Sequenzen, Brand-Voice-Guard, SEO-Drafts, alles aus deiner Markenidentität gelesen",
+            "Sales Dashboard — Echtzeit-KPIs, Umsatzkurve, Drop-für-Drop-Performance, Story-Level Commercial Overview",
+            "Point of Sale — Wholesale-Order-CRUD heute, Shopify-verbundener Web-Shop in Arbeit",
+          ],
+        },
+      },
+
+      modes: {
+        eyebrow: "Drei Modi, dieselben Daten",
+        items: [
+          { name: "Work", desc: "Block für Block, mit tiefer Bearbeitung in jedem Feld. Die Detailansicht." },
+          { name: "Calendar", desc: "Fünfundvierzig Meilensteine über die Saison, seitwärts gezogen als horizontale Timeline. Dieselben Daten, zeitliche Sicht. Klick auf einen Balken bringt dich zurück in seinen Workspace." },
+          { name: "Presentation", desc: "Einundzwanzig Slides, automatisch aus deiner Collection Intelligence gebaut. Zehn Themes, PDF-Export, öffentlicher Share-Link, Inline-Edit. Promote eine Slide-Bearbeitung zurück in den Workspace und die KI nutzt deinen editierten Text." },
+        ],
+      },
+
+      workingStyle: {
+        eyebrow: "Du arbeitest, wie es dir passt",
+        items: [
+          { name: "Du", desc: "Jedes Feld ist editierbar. Schreib, was du weißt, überspring, was nicht. Manuell ist erste Klasse, kein Fallback." },
+          { name: "KI-unterstützt", desc: "Generiere einen Entwurf, übernimm was funktioniert, schreib den Rest neu. Kein Lock-in, kein Provider-Name auf den Outputs." },
+          { name: "Hybrid", desc: "Die meisten Studios mischen. KI für das Langweilige, dein Urteil bei den Entscheidungen, die wirklich zählen." },
+        ],
+      },
+
+      cta: "Deine erste Kollektion erstellen",
+      skip: "Überspringen — mache ich später",
+    },
+
+    progress: {
+      step: "Schritt {n} von {total}",
+    },
+  },
+
   aimilyAssistant: {
     fab: { label: "Aimily fragen" },
     title: "Aimily",

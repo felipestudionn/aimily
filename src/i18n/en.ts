@@ -3550,6 +3550,108 @@ export const en = {
     emptyBody: "Add SKUs in the Collection Builder to start sketching silhouettes and colorways here.",
   },
 
+  welcome: {
+    // Pantalla 1 — language picker
+    language: {
+      headline: "How would you like aimily to speak with you?",
+      subtitle: "You can change this anytime in your account.",
+      detected: "Detected from your browser.",
+      languageNames: {
+        en: "English",
+        es: "Español",
+        fr: "Français",
+        it: "Italiano",
+        de: "Deutsch",
+        pt: "Português",
+        nl: "Nederlands",
+        sv: "Svenska",
+        no: "Norsk",
+      },
+    },
+
+    // Pantalla 2 — full editorial of the product
+    everything: {
+      greeting: "Hi {name},",
+      greetingFallback: "Welcome,",
+      headline: "Everything you'll find inside.",
+      subtitle: "Four blocks. Three modes. Built so you can run a season alone, or bring AI in only when it helps. Edit anything, anytime.",
+
+      blocks: {
+        one: {
+          eyebrow: "01 — Creative Direction",
+          title: "Brief, vision, and brand identity, all wired together.",
+          bullets: [
+            "Consumer Definition — who you're designing for, mapped from real psychographics rather than a generic persona template",
+            "Moodboard with visual extraction — paste 4–6 references and aimily pulls colors, materials, silhouettes and mood",
+            "Market Research in four lenses — direct competitors, aspirational references, macro trends, and the white space between them",
+            "Brand Identity — voice, values, archetype, references, visual DNA",
+            "Creative Overview — a brand board synthesised by AI from everything above, rewritable in a click and reused as context by every prompt downstream",
+          ],
+        },
+        two: {
+          eyebrow: "02 — Merchandising & Planning",
+          title: "The numbers behind the season, before you sketch a single piece.",
+          bullets: [
+            "Buying Strategy — the REVENUE / IMAGE / ENTRY tier mix, unit redistribution, price-point math",
+            "Assortment & Pricing — product families, sub-categories, retail min/max, COGS and margin targets per row",
+            "Distribution — channels (DTC, wholesale, marketplace) and target markets, per family",
+            "Financial Plan — scenario-driven composition with sell-through, AOV, margin, drop calendar — change one input and watch the season rebuild",
+            "Collection Builder — every SKU lives here: build by hand, generate with AI, edit any row, lock the selection, export to Excel",
+          ],
+        },
+        three: {
+          eyebrow: "03 — Design & Development",
+          title: "From a single reference photo to the factory floor.",
+          bullets: [
+            "Sketch — turn a reference photo into a fashion flat in seconds, then refine the silhouette",
+            "Color & Materials — palette per family, material allocation, AI render of every SKU in the chosen colorway",
+            "Tech Pack — dedicated sheet per SKU with measurements, BOM, Hatch-style pin comments on the flat, supplier and factory directories, A3 landscape PDF export",
+            "Prototyping — sample iterations tracked per SKU, photos and notes per round, red-flag count when iterations drift",
+            "Production — POs to factories, status, dates, ship windows",
+            "Final Selection — lock the season's range and push the locked SKUs forward to marketing automatically",
+          ],
+        },
+        four: {
+          eyebrow: "04 — Marketing & Sales",
+          title: "Launch the season, sell it, tell the story.",
+          bullets: [
+            "GTM & Launch Plan — phased rollout per drop, channel by channel, with the dates the calendar already knows",
+            "Content Studio — per-SKU four-level visual pipeline: e-commerce, still life, editorial, campaign video. AI render, AI try-on, AI campaign",
+            "Aimily Model Roster — 28 in-house AI models (14 female, 14 male) ready for editorial, try-on and lookbook — no agency, no booking",
+            "Communications — copy, social templates, email sequences, brand-voice guard, SEO drafts, all reading from your Brand Identity",
+            "Sales Dashboard — real-time KPIs, revenue curve, drop-by-drop performance, story-level commercial overview",
+            "Point of Sale — wholesale order CRUD today, Shopify-connected web store on the way",
+          ],
+        },
+      },
+
+      modes: {
+        eyebrow: "Three modes, same data",
+        items: [
+          { name: "Work", desc: "Block by block, with deep edit on every field. The detail view." },
+          { name: "Calendar", desc: "Forty-five milestones across the season, dragged sideways as a horizontal timeline. Same data, time-aware view. Click any bar to jump back to its workspace." },
+          { name: "Presentation", desc: "Twenty-one slides auto-built from your Collection Intelligence. Ten themes, PDF export, public share link, inline edit. Promote a slide back to the workspace and the AI starts using your edited copy." },
+        ],
+      },
+
+      workingStyle: {
+        eyebrow: "How you work, your way",
+        items: [
+          { name: "You", desc: "Every field is editable. Type what you know, skip what you don't. Manual is a first-class citizen, never the fallback." },
+          { name: "AI-assisted", desc: "Generate a draft, accept what works, rewrite the rest. No model lock-in, no provider name on the outputs." },
+          { name: "Hybrid", desc: "Most studios blend. AI for the boring parts, your judgment on the decisions that actually matter." },
+        ],
+      },
+
+      cta: "Create your first collection",
+      skip: "Skip — I'll do it later",
+    },
+
+    progress: {
+      step: "Step {n} of {total}",
+    },
+  },
+
   aimilyAssistant: {
     fab: { label: "Ask Aimily" },
     title: "Aimily",

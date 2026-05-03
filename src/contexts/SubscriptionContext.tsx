@@ -36,6 +36,7 @@ interface SubscriptionData {
   refundedAt: string | null;
   refundAmountCents: number | null;
   refundCurrency: string | null;
+  onboardingCompletedAt: string | null;
 }
 
 interface SubscriptionContextType {
@@ -80,6 +81,7 @@ const TRIAL_DEFAULTS: SubscriptionData = {
   refundedAt: null,
   refundAmountCents: null,
   refundCurrency: null,
+  onboardingCompletedAt: null,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);

@@ -56,6 +56,7 @@ export async function GET() {
       refundedAt: sub?.refunded_at || null,
       refundAmountCents: sub?.refund_amount_cents || null,
       refundCurrency: sub?.refund_currency || null,
+      onboardingCompletedAt: sub?.onboarding_completed_at || null,
     });
   } catch (error) {
     console.error('Subscription fetch error:', error);

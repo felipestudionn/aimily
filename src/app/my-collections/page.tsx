@@ -67,7 +67,7 @@ export default function MyCollectionsPage() {
   const t = useTranslation();
   const { language } = useLanguage();
   const { toast } = useToast();
-  const { refresh: refreshSubscription } = useSubscription();
+  const { subscription, refresh: refreshSubscription } = useSubscription();
   const [collections, setCollections] = useState<CollectionPlan[]>([]);
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [skuCounts, setSkuCounts] = useState<Map<string, number>>(new Map());
@@ -78,6 +78,23 @@ export default function MyCollectionsPage() {
       router.push('/');
     }
   }, [user, authLoading, router]);
+
+  // Defensive onboarding redirect — if a brand-new user lands directly on
+  // /my-collections (URL paste, browser back-button after auth/callback,
+  // etc.) AND they haven't gone through /welcome yet AND they're recent
+  // (< 48h since signup), shepherd them to /welcome. After 48h we let
+  // them through unconditionally so a long-time user with a stale row
+  // never gets stuck.
+  useEffect(() => {
+    if (!user || !subscription) return;
+    if (subscription.onboardingCompletedAt) return;
+    const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+    const ageMs = Date.now() - createdAt;
+    const FORTY_EIGHT_H = 48 * 60 * 60 * 1000;
+    if (createdAt > 0 && ageMs < FORTY_EIGHT_H) {
+      router.replace('/welcome');
+    }
+  }, [user, subscription, router]);
 
   // Stripe return handler — show feedback and refresh subscription state.
   // Read window.location.search directly instead of useSearchParams() to

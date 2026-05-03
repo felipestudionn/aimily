@@ -3368,6 +3368,106 @@ export const sv: Dictionary = {
     emptyBody: "Lägg till SKU:er i Collection Builder för att börja skissa silhuetter och colorways här.",
   },
 
+  welcome: {
+    language: {
+      headline: "På vilket språk vill du att aimily talar med dig?",
+      subtitle: "Du kan ändra detta när som helst på ditt konto.",
+      detected: "Identifierat från din webbläsare.",
+      languageNames: {
+        en: "English",
+        es: "Español",
+        fr: "Français",
+        it: "Italiano",
+        de: "Deutsch",
+        pt: "Português",
+        nl: "Nederlands",
+        sv: "Svenska",
+        no: "Norsk",
+      },
+    },
+
+    everything: {
+      greeting: "Hej {name},",
+      greetingFallback: "Välkommen,",
+      headline: "Allt du hittar härinne.",
+      subtitle: "Fyra block. Tre lägen. Byggt så att du kan driva en säsong själv — eller ta in AI:n bara när den faktiskt hjälper. Allt går att redigera, alltid.",
+
+      blocks: {
+        one: {
+          eyebrow: "01 — Creative Direction",
+          title: "Brief, vision och varumärkesidentitet, allt sammankopplat.",
+          bullets: [
+            "Konsumentdefinition — vem du designar för, kartlagd från riktig psykografi snarare än en generisk persona-mall",
+            "Moodboard med visuell extraktion — klistra in 4–6 referenser och aimily plockar fram färger, material, silhuetter och mood",
+            "Marknadsundersökning i fyra linser — direkta konkurrenter, aspirational referenser, makro-trender och white space mellan dem",
+            "Varumärkesidentitet — röst, värderingar, arketyp, referenser, visuell DNA",
+            "Creative Overview — ett brand board, syntetiserat av AI från allt ovan, omskrivbart med ett klick och återanvänt som kontext av varje nedströms-prompt",
+          ],
+        },
+        two: {
+          eyebrow: "02 — Merchandising & Planering",
+          title: "Siffrorna bakom säsongen, innan du skissar en enda plagg.",
+          bullets: [
+            "Buying Strategy — REVENUE / IMAGE / ENTRY tier-mix, omfördelning av enheter, prispunkts-matematik",
+            "Assortment & Pricing — produktfamiljer, underkategorier, retail min/max, COGS- och marginalmål per rad",
+            "Distribution — kanaler (DTC, wholesale, marketplace) och målmarknader, per familj",
+            "Ekonomisk Plan — scenario-driven sammansättning med sell-through, AOV, marginal, drop-kalender — ändra en input och säsongen bygger om sig själv",
+            "Collection Builder — varje SKU bor här: för hand, AI-genererat, redigera varje rad, lås urvalet, exportera till Excel",
+          ],
+        },
+        three: {
+          eyebrow: "03 — Design & Utveckling",
+          title: "Från ett enda referensfoto till fabriksgolvet.",
+          bullets: [
+            "Skiss — förvandla ett referensfoto till en mode-flat på sekunder, sedan finjustera silhuetten",
+            "Färg & Material — palett per familj, materialtilldelning, AI-rendering av varje SKU i den valda colorwayen",
+            "Tech Pack — dedikerat sheet per SKU med mått, BOM, Hatch-stil pin-kommentarer på flaten, leverantörs- och fabrikskataloger, A3 landscape PDF-export",
+            "Prototypning — sample-iterationer trackade per SKU, foton och anteckningar per omgång, röd flagga när iterationsräknaren spårar ur",
+            "Produktion — POs till fabriker, status, datum, leveransfönster",
+            "Final Selection — lås säsongens range och skicka de låsta SKU:erna automatiskt vidare till marknadsföring",
+          ],
+        },
+        four: {
+          eyebrow: "04 — Marknadsföring & Försäljning",
+          title: "Lansera säsongen, sälj den, berätta historien.",
+          bullets: [
+            "GTM & Launch Plan — fas-rollout per drop, kanal för kanal, med datumen som kalendern redan känner till",
+            "Content Studio — per-SKU fyra-nivå visuell pipeline: e-handel, still life, editorial, kampanjvideo. AI-rendering, AI-try-on, AI-kampanj",
+            "Aimily Model Roster — 28 in-house AI-modeller (14 kvinnor, 14 män) redo för editorial, try-on och lookbook — ingen byrå, ingen bokning",
+            "Communications — copy, sociala mallar, mailsekvenser, brand-voice guard, SEO-drafts, allt läst från din Varumärkesidentitet",
+            "Sales Dashboard — real-time KPI:er, intäktskurva, drop-för-drop performance, story-nivå kommersiell översikt",
+            "Point of Sale — wholesale-order CRUD idag, Shopify-kopplad webbshop på väg",
+          ],
+        },
+      },
+
+      modes: {
+        eyebrow: "Tre lägen, samma data",
+        items: [
+          { name: "Work", desc: "Block för block, med djup redigering på varje fält. Detaljvyn." },
+          { name: "Calendar", desc: "Fyrtiofem milstolpar över hela säsongen, dragna sidledes som horisontell timeline. Samma data, tidsmedveten vy. Klicka på en balk för att hoppa tillbaka till dess workspace." },
+          { name: "Presentation", desc: "Tjugoen slides byggda automatiskt från din Collection Intelligence. Tio teman, PDF-export, publik delningslänk, inline-redigering. Promotea en slide-redigering tillbaka till workspacet och AI:n börjar använda din redigerade text." },
+        ],
+      },
+
+      workingStyle: {
+        eyebrow: "Du jobbar på ditt sätt",
+        items: [
+          { name: "Du", desc: "Varje fält går att redigera. Skriv det du vet, hoppa över det du inte vet. Manuellt är förstaklassig medborgare, inte fallback." },
+          { name: "AI-assisterad", desc: "Generera ett utkast, behåll det som fungerar, skriv om resten. Ingen inlåsning, inget provider-namn på outputs." },
+          { name: "Hybrid", desc: "De flesta studior blandar. AI för det tråkiga, ditt omdöme i besluten som faktiskt spelar roll." },
+        ],
+      },
+
+      cta: "Skapa din första kollektion",
+      skip: "Hoppa över — gör det senare",
+    },
+
+    progress: {
+      step: "Steg {n} av {total}",
+    },
+  },
+
   aimilyAssistant: {
     fab: { label: "Fråga Aimily" },
     title: "Aimily",
