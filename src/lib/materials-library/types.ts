@@ -111,6 +111,9 @@ export type Certification =
   | 'GOTS' | 'BCI' | 'Organic-Content-Standard' | 'Fair-Trade'
   | 'Cradle-to-Cradle' | 'EU-Ecolabel' | 'GRS' | 'RCS'
   | 'RWS' | 'RDS'                                    // wool, down (Responsible Wool/Down Standards)
+  | 'Woolmark'                                       // Australian Wool Innovation
+  | 'ZQ-Merino'                                      // New Zealand Merino Co. program
+  | 'NATIVA'                                         // Chargeurs Luxury Materials wool program
   | 'FSC' | 'Canopy'                                  // forest certifications for cellulosics
   | 'WISICA'                                          // Sea Island cotton authority
   | 'Supima'                                          // Pima cotton trademark
