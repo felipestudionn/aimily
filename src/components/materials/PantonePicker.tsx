@@ -44,6 +44,8 @@ interface PantonePickerProps {
   targetHex?: string;
   size?: 'compact' | 'default';
   placeholder?: string;
+  /** Optional override of the input className for context-specific styling. */
+  inputClassName?: string;
 }
 
 export function PantonePicker({
@@ -53,6 +55,7 @@ export function PantonePicker({
   targetHex,
   size = 'default',
   placeholder = 'Code or name (e.g. 18-1664 TCX)',
+  inputClassName,
 }: PantonePickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -100,9 +103,10 @@ export function PantonePicker({
   }, [onChange]);
 
   const isCompact = size === 'compact';
-  const inputClasses = isCompact
-    ? 'text-[11px] text-carbon/70 placeholder:text-carbon/30 bg-transparent border-b border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.2] py-1 w-full pl-7 pr-7'
-    : 'text-[13px] text-carbon placeholder:text-carbon/30 bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:outline-none focus:border-carbon/20 px-3 py-2.5 w-full pl-10 pr-9 transition-colors';
+  const inputClasses = inputClassName
+    ?? (isCompact
+      ? 'text-[11px] text-carbon/70 placeholder:text-carbon/30 bg-transparent border-b border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.2] py-1 w-full pl-7 pr-7'
+      : 'text-[13px] text-carbon placeholder:text-carbon/30 bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:outline-none focus:border-carbon/20 px-3 py-2.5 w-full pl-10 pr-9 transition-colors');
 
   return (
     <div ref={wrapperRef} className="relative w-full">

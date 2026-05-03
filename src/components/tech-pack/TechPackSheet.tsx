@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import type { SKU } from '@/hooks/useSkus';
 import { useTranslation } from '@/i18n';
+import { PantonePicker } from '@/components/materials/PantonePicker';
 
 type Section =
   | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
@@ -980,12 +981,14 @@ function MaterialsSection({
               placeholder={tp.zonePlaceholder || 'Zone (Upper, Lining, Sole…)'}
               className="w-full bg-white rounded-[8px] px-3 py-2 text-[13px] font-semibold text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 border border-carbon/[0.06] mb-2"
             />
-            <input
-              value={z.pantone}
-              onChange={(e) => update(i, { pantone: e.target.value })}
-              placeholder={tp.pantonePlaceholder || 'Pantone / code'}
-              className="w-full bg-white rounded-[8px] px-3 py-2 text-[12px] text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 border border-carbon/[0.06] mb-2 font-mono"
-            />
+            <div className="mb-2">
+              <PantonePicker
+                value={z.pantone}
+                onChange={(code) => update(i, { pantone: code })}
+                placeholder={tp.pantonePlaceholder || 'Pantone / code'}
+                inputClassName="w-full bg-white rounded-[8px] px-3 py-2 text-[12px] text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 border border-carbon/[0.06] font-mono pl-9 pr-7"
+              />
+            </div>
             <input
               value={z.supplier}
               onChange={(e) => update(i, { supplier: e.target.value })}

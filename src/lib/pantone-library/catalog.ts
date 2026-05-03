@@ -63,7 +63,6 @@ const RAW: RawEntry[] = [
   { code: '15-1306 TCX', name: 'Ginger Snap',           family: 'brown',    hex: '#b18e72' },
   { code: '16-1334 TCX', name: 'Apricot Tan',           family: 'orange',   hex: '#cb8e6e' },
   { code: '16-1431 TCX', name: 'Almond',                family: 'brown',    hex: '#b18a6b' },
-  { code: '17-1230 TCX', name: 'Toasted Almond',        family: 'brown',    hex: '#a48774' },
 
   // ─── Greys + stones ───
   { code: '13-4108 TCX', name: 'Glacier Grey',          family: 'neutral',  hex: '#bdc4c1' },
@@ -86,7 +85,6 @@ const RAW: RawEntry[] = [
   { code: '18-1664 TCX', name: 'Fiery Red',             family: 'red',      hex: '#cf2c30' },
   { code: '19-1763 TCX', name: 'Racing Red',            family: 'red',      hex: '#c5212a' },
   { code: '19-1762 TCX', name: 'Flame Scarlet',         family: 'red',      hex: '#c41e3a' },
-  { code: '18-1750 TCX', name: 'Strawberry',            family: 'red',      hex: '#cd212a' },
   { code: '19-1543 TCX', name: 'Rosewood',              family: 'red',      hex: '#65000b' },
   { code: '17-1456 TCX', name: 'Persimmon',             family: 'red',      hex: '#df513e' },
 
@@ -100,7 +98,6 @@ const RAW: RawEntry[] = [
   // ─── Oranges ───
   { code: '15-1247 TCX', name: 'Tangerine',             family: 'orange',   hex: '#f88f58' },
   { code: '16-1454 TCX', name: 'Vermillion Orange',     family: 'orange',   hex: '#dc572e' },
-  { code: '17-1463 TCX', name: 'Tigerlily',             family: 'orange',   hex: '#e2583e' },
 
   // ─── Yellows ───
   { code: '12-0721 TCX', name: 'Pale Banana',           family: 'yellow',   hex: '#fbe7a1' },
@@ -119,7 +116,7 @@ const RAW: RawEntry[] = [
   { code: '18-0312 TCX', name: 'Deep Lichen Green',     family: 'green',    hex: '#5b6a5b' },
   { code: '19-0220 TCX', name: 'Kombu Green',           family: 'green',    hex: '#3a4032' },
   { code: '19-5511 TCX', name: 'Forest Biome',          family: 'green',    hex: '#264a2e' },
-  { code: '17-5641 TCX', name: 'Pepper Green',          family: 'green',    hex: '#458961' },
+  { code: '15-6437 TCX', name: 'Peppermint',            family: 'green',    hex: '#65b88f' },
 
   // ─── Blues ───
   { code: '14-4214 TCX', name: 'Skylight',              family: 'blue',     hex: '#b3cde0' },
