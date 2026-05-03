@@ -35,10 +35,11 @@ const publicPagePrefixes = [
 
 // API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
 const publicApiPrefixes = [
-  '/api/webhooks/',      // Stripe webhook (verifies signature internally)
-  '/api/cron/',          // Cron jobs (verify CRON_SECRET internally)
-  '/api/auth/',          // OAuth callbacks (Pinterest, etc.)
-  '/api/chat-faq',       // Public FAQ chat — anyone can ask, per-IP rate limit
+  '/api/webhooks/',          // Stripe webhook (verifies signature internally)
+  '/api/cron/',              // Cron jobs (verify CRON_SECRET internally)
+  '/api/auth/',              // OAuth callbacks (Pinterest, etc.)
+  '/api/auth-email-hook',    // Supabase Send Email Hook (HMAC-SHA256 signature)
+  '/api/chat-faq',           // Public FAQ chat — anyone can ask, per-IP rate limit
 ];
 
 export async function middleware(request: NextRequest) {

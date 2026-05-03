@@ -59,24 +59,18 @@ function verifyStandardWebhook(
   const timestamp = headers.get('svix-timestamp') || headers.get('webhook-timestamp');
   const signatureHeader = headers.get('svix-signature') || headers.get('webhook-signature');
 
-  if (!id || !timestamp || !signatureHeader) {
-    console.error('[hook-debug] missing headers', { hasId: !!id, hasTs: !!timestamp, hasSig: !!signatureHeader });
-    return false;
-  }
+  if (!id || !timestamp || !signatureHeader) return false;
 
+  // Reject anything older than 5 minutes (replay protection).
   const ts = Number(timestamp);
-  if (!Number.isFinite(ts)) {
-    console.error('[hook-debug] timestamp not a number', { timestamp });
-    return false;
-  }
+  if (!Number.isFinite(ts)) return false;
   const ageMs = Math.abs(Date.now() - ts * 1000);
-  if (ageMs > 5 * 60 * 1000) {
-    console.error('[hook-debug] timestamp too old', { ageMs });
-    return false;
-  }
+  if (ageMs > 5 * 60 * 1000) return false;
 
+  // Standard Webhooks signs `${id}.${timestamp}.${body}` with the secret.
   const signedContent = `${id}.${timestamp}.${rawBody}`;
 
+  // Secret format: `v1,whsec_<base64>` — strip the version prefix.
   const rawSecret = secret.startsWith('v1,whsec_')
     ? secret.slice('v1,whsec_'.length)
     : secret.startsWith('whsec_')
@@ -87,21 +81,12 @@ function verifyStandardWebhook(
   try {
     secretBytes = Buffer.from(rawSecret, 'base64');
   } catch {
-    console.error('[hook-debug] secret base64 decode failed');
     return false;
   }
 
   const expected = createHmac('sha256', secretBytes).update(signedContent).digest('base64');
 
-  console.error('[hook-debug]', {
-    secretPrefix: secret.slice(0, 12),
-    rawSecretPrefix: rawSecret.slice(0, 8),
-    secretBytesLen: secretBytes.length,
-    signedContentLen: signedContent.length,
-    expected,
-    signatureHeader,
-  });
-
+  // The signature header is "v1,sig1 v1,sig2 ..." — accept if any matches.
   for (const candidate of signatureHeader.split(' ')) {
     const sig = candidate.startsWith('v1,') ? candidate.slice('v1,'.length) : candidate;
     try {
@@ -149,35 +134,6 @@ export async function POST(req: NextRequest) {
 
   if (!verifyStandardWebhook(rawBody, req.headers, secret)) {
     console.error('[auth-email-hook] signature verification failed');
-    // TEMP DEBUG — remove once verified
-    if (req.headers.get('x-debug-hook') === '1') {
-      const id = req.headers.get('svix-id') || req.headers.get('webhook-id');
-      const ts = req.headers.get('svix-timestamp') || req.headers.get('webhook-timestamp');
-      const sigHeader = req.headers.get('svix-signature') || req.headers.get('webhook-signature');
-      const rawSecret = secret.startsWith('v1,whsec_') ? secret.slice('v1,whsec_'.length) : secret;
-      let computed = 'no-bytes';
-      try {
-        const sb = Buffer.from(rawSecret, 'base64');
-        computed = createHmac('sha256', sb).update(`${id}.${ts}.${rawBody}`).digest('base64');
-      } catch (e) {
-        computed = String(e);
-      }
-      return NextResponse.json({
-        error: { message: 'Invalid signature' },
-        debug: {
-          haveId: !!id,
-          haveTs: !!ts,
-          haveSig: !!sigHeader,
-          secretPrefix: secret.slice(0, 12),
-          rawSecretLen: rawSecret.length,
-          rawSecretFirst4: rawSecret.slice(0, 4),
-          rawSecretLast4: rawSecret.slice(-4),
-          bodyLen: rawBody.length,
-          expected: computed,
-          received: sigHeader,
-        },
-      }, { status: 401 });
-    }
     return NextResponse.json(
       { error: { message: 'Invalid signature' } },
       { status: 401 },
