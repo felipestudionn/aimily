@@ -94,7 +94,8 @@ export type PriceTier = 'fast' | 'contemporary' | 'premium' | 'luxury';
 export type AestheticTag =
   | 'minimal' | 'romantic' | 'tailored' | 'resort'
   | 'sport' | 'streetwear' | 'workwear' | 'avant-garde'
-  | 'sustainable' | 'bohemian' | 'preppy' | 'utility';
+  | 'sustainable' | 'bohemian' | 'preppy' | 'utility'
+  | 'loungewear'; // relaxed at-home aesthetic (terry, fleece, jersey-heavy)
 
 /** Season suitability. */
 export type SeasonFit = 'SS' | 'FW' | 'transitional' | 'all-year';
@@ -113,6 +114,9 @@ export type Certification =
   | 'FSC' | 'Canopy'                                  // forest certifications for cellulosics
   | 'WISICA'                                          // Sea Island cotton authority
   | 'Supima'                                          // Pima cotton trademark
+  | 'Belgian-Linen'                                   // PGI trademark, Belgian Flax & Linen Association
+  | 'European-Flax'                                   // CELC — Confédération Européenne du Lin et du Chanvre
+  | 'Masters-of-Linen'                                // CELC premium European linen mark
   | 'LWG'                                             // Leather Working Group
   | 'REACH'                                           // EU chemical safety
   | 'ECARF'                                           // allergy-friendly
