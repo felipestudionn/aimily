@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "fashion",
@@ -82,6 +83,7 @@
     "postcss": "^8.4.31",
     "puppeteer": "^24.39.1",
     "tailwindcss": "^4.2.2",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "vitest": "^4.1.5"
   }
 }
