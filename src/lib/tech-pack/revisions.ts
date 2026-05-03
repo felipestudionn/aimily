@@ -57,6 +57,8 @@ export interface TechPackSnapshot {
   materials?: Record<string, unknown>;
   grading?: Record<string, unknown>;
   factory_notes?: Record<string, unknown>;
+  /** Phase 6 — structured stitching/pressing/finishing/hand-feel. */
+  construction_details?: Record<string, unknown>;
   cost_breakdown?: Record<string, unknown>;
   comments?: unknown[];
 }
@@ -75,6 +77,7 @@ export interface RevisionRow {
   materials_snapshot: Record<string, unknown>;
   grading_snapshot: Record<string, unknown>;
   factory_notes_snapshot: Record<string, unknown>;
+  construction_details_snapshot: Record<string, unknown>;
   cost_breakdown_snapshot: Record<string, unknown>;
   comments_snapshot: unknown[];
   approval_status: ApprovalStage;
@@ -173,6 +176,7 @@ export async function recordRevision(input: RecordRevisionInput): Promise<Revisi
       materials_snapshot: snapshot.materials ?? {},
       grading_snapshot: snapshot.grading ?? {},
       factory_notes_snapshot: snapshot.factory_notes ?? {},
+      construction_details_snapshot: snapshot.construction_details ?? {},
       cost_breakdown_snapshot: snapshot.cost_breakdown ?? {},
       comments_snapshot: snapshot.comments ?? [],
       approval_status: carryStatus,
@@ -332,6 +336,7 @@ const SECTION_KEYS: Array<keyof TechPackSnapshot> = [
   'materials',
   'grading',
   'factory_notes',
+  'construction_details',
   'cost_breakdown',
   'comments',
 ];
@@ -344,6 +349,7 @@ const SECTION_TO_COLUMN: Record<keyof TechPackSnapshot, keyof RevisionRow> = {
   materials: 'materials_snapshot',
   grading: 'grading_snapshot',
   factory_notes: 'factory_notes_snapshot',
+  construction_details: 'construction_details_snapshot',
   cost_breakdown: 'cost_breakdown_snapshot',
   comments: 'comments_snapshot',
 };
@@ -405,7 +411,7 @@ export async function buildSnapshot(skuId: string): Promise<TechPackSnapshot> {
   const [{ data: row }, { data: comments }, { data: sku }] = await Promise.all([
     supabaseAdmin
       .from('tech_pack_data')
-      .select('header, drawings, measurements, bom, grading, factory_notes')
+      .select('header, drawings, measurements, bom, grading, factory_notes, construction_details')
       .eq('sku_id', skuId)
       .maybeSingle(),
     supabaseAdmin
@@ -428,6 +434,7 @@ export async function buildSnapshot(skuId: string): Promise<TechPackSnapshot> {
     materials: (sku?.material_zones ?? {}) as Record<string, unknown>,
     grading: (row?.grading ?? {}) as Record<string, unknown>,
     factory_notes: (row?.factory_notes ?? {}) as Record<string, unknown>,
+    construction_details: (row?.construction_details ?? {}) as Record<string, unknown>,
     cost_breakdown: (sku?.cost_breakdown ?? {}) as Record<string, unknown>,
     comments: comments ?? [],
   };

@@ -55,6 +55,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   let bom: Record<string, unknown> = {};
   let materials: Record<string, unknown> = sku.material_zones ?? {};
   let factory_notes: Record<string, unknown> = {};
+  let construction_details: Record<string, unknown> = {};
   let cost_breakdown: Record<string, unknown> = {};
   if (current) {
     header = current.header_snapshot ?? {};
@@ -63,6 +64,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     bom = current.bom_snapshot ?? {};
     materials = current.materials_snapshot ?? materials;
     factory_notes = current.factory_notes_snapshot ?? {};
+    construction_details = current.construction_details_snapshot ?? {};
     cost_breakdown = current.cost_breakdown_snapshot ?? {};
   } else {
     const { data: tp } = await supabaseAdmin
@@ -76,6 +78,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       measurements = tp.measurements ?? {};
       bom = tp.bom ?? {};
       factory_notes = tp.factory_notes ?? {};
+      construction_details = tp.construction_details ?? {};
     }
   }
 
@@ -97,6 +100,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
           created_at: current.created_at,
         }
       : null,
-    snapshot: { header, drawings, measurements, bom, materials, factory_notes, cost_breakdown },
+    snapshot: { header, drawings, measurements, bom, materials, factory_notes, construction_details, cost_breakdown },
   });
 }

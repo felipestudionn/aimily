@@ -1,1 +1,8 @@
-{}
+{
+  "crons": [
+    {
+      "path": "/api/cron/cert-expiry-warnings",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}
