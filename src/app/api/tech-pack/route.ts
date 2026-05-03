@@ -17,6 +17,7 @@ import { buildSnapshot, recordRevision } from '@/lib/tech-pack/revisions';
 
 const VALID_SECTIONS = new Set([
   'header', 'drawings', 'measurements', 'bom', 'grading', 'factory_notes', 'materials',
+  'construction_details',  // Phase 6 — structured stitching/pressing/finishing
 ]);
 
 /* Resolve the collection that owns a SKU and gate via the team-aware
