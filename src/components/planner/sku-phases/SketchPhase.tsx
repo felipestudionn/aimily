@@ -15,6 +15,8 @@ import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { getDefaultZones } from '@/lib/product-zones';
+import { MaterialCombobox } from '@/components/materials/MaterialCombobox';
+import type { Zone } from '@/lib/materials-library';
 import type { FooterAction } from '../SkuDetailView';
 
 type InputMode = 'free' | 'ai';
@@ -1183,8 +1185,21 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         <div>{hex ? <div className="w-4 h-4 border border-carbon/[0.08]" style={{ backgroundColor: hex }} /> : <div className="w-4 h-4 border border-dashed border-carbon/[0.06]" />}</div>
                         <input value={mz.zone} onChange={(e) => updateMatZone(idx, 'zone', e.target.value)}
                           className="text-[11px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.12]" />
-                        <input value={mz.material} onChange={(e) => updateMatZone(idx, 'material', e.target.value)}
-                          placeholder="e.g. Nubuck leather" className="text-[11px] text-carbon/50 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                        <MaterialCombobox
+                          value={mz.material}
+                          onChange={(val, picked) => {
+                            updateMatZone(idx, 'material', val);
+                            // Auto-fill finish from picked material's defaultFinish
+                            // when the user hasn't already typed one. Reduces busywork.
+                            if (picked?.defaultFinish && !mz.finish) {
+                              updateMatZone(idx, 'finish', picked.defaultFinish);
+                            }
+                          }}
+                          category={sku.category}
+                          zone={mz.zone as Zone}
+                          size="compact"
+                          placeholder={stepLabel('materialPlaceholder') || 'e.g. Italian linen 230gsm'}
+                        />
                         <input value={mz.finish || ''} onChange={(e) => updateMatZone(idx, 'finish', e.target.value)}
                           placeholder="Tumbled, Matte..." className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
                         <button onClick={() => removeMatZone(idx)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>

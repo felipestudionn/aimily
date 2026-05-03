@@ -31,13 +31,14 @@ export function scoreMaterial(
 ): number {
   let score = 0;
 
-  // Zone match (+5)
+  // Zone match (+5 / 0)
+  // Soft preference rather than hard exclude — the filter step already
+  // pruned the pool when there were any zone matches. If we got here with
+  // no zone match it's because the zone-filtered pool was empty and we
+  // fell back to the full category pool. Don't penalise — let other axes
+  // rank.
   if (!ctx.zone || material.zones.includes(ctx.zone)) {
     score += 5;
-  } else {
-    // Hard exclude: if a zone is specified and the material doesn't list
-    // it, return -1 so the filter step drops it.
-    return -1;
   }
 
   // Subtype match (+4)
@@ -97,7 +98,17 @@ export function rankMaterials(
   let pool = catalog;
 
   // Hard filters first — cheaper, prune before scoring.
-  pool = pool.filter((m) => m.zones.length === 0 || !ctx.zone || m.zones.includes(ctx.zone));
+  // Zone filter with graceful fallback: if filtering by zone empties the pool
+  // (common during catalog rollout when not every fiber lists every zone),
+  // skip the zone filter so the user still sees something useful. The zone
+  // is then a soft preference scored downstream, not a hard cut. UX > purism.
+  if (ctx.zone) {
+    const zoneFiltered = pool.filter((m) => m.zones.length === 0 || m.zones.includes(ctx.zone!));
+    if (zoneFiltered.length > 0) {
+      pool = zoneFiltered;
+    }
+    // else: keep full pool, zone becomes soft preference via scoreMaterial
+  }
 
   if (ctx.veganBrand) {
     pool = pool.filter((m) => m.vegan);
