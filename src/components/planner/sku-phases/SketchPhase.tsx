@@ -815,7 +815,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                       <p className="text-[11px] text-carbon/40 leading-relaxed">
                         {stepLabel('manualSeedDesc') || 'Pick 3 colors. Aimily will generate 4 colorways using exactly these hex values, distributing them across the zones above.'}
                       </p>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {(['primary', 'secondary', 'tertiary'] as const).map((label, i) => (
                           <div key={label} className="space-y-1">
                             <p className="text-[9px] tracking-[0.1em] uppercase text-carbon/35">

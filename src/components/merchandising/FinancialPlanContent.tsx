@@ -299,7 +299,7 @@ export function FinancialPlanContent({ mode, data, onChange, collectionContext, 
 function Stat({ label, value, pending, pendingLabel, accent }: { label: string; value: string; pending?: boolean; pendingLabel?: string; accent?: boolean }) {
   return (
     <div className="flex flex-col">
-      <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-3 flex items-center gap-1.5">
+      <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/35 mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-1">
         {label}
         {pending && <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-citronella/15 text-[9px] font-semibold text-carbon/70">{pendingLabel}</span>}
       </div>

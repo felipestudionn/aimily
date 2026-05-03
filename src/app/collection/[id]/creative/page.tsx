@@ -425,8 +425,8 @@ function ConsumerProposalFlow({
                   <div className="text-[13px] text-carbon/70 leading-relaxed">{p.desc}</div>
                 )}
 
-                {/* Action buttons — all rounded-full */}
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-carbon/[0.06]">
+                {/* Action buttons — all rounded-full, wrap on narrow viewports */}
+                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-carbon/[0.06]">
                   <button
                     onClick={() => updateProposal(i, { status: p.status === 'liked' ? 'pending' : 'liked' })}
                     className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
@@ -2113,7 +2113,7 @@ function MarketResearchUnified({
   /* ─── Overview: 4 cards — GOLD STANDARD (CollectionOverview pattern) ─── */
   if (!activeTab) {
     return (
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {RESEARCH_BLOCKS.map((block, idx) => {
           const blockState = blockData[block.id] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
           const results = (blockState.data?.results as Array<{ selected?: boolean }>) || [];

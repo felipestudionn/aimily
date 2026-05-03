@@ -255,7 +255,7 @@ export function BrandBoardCanvas({
                 size="md"
               />
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[img0, img1, img2, img3].map((url, i) => (
                 <div key={i} className="rounded-[8px] bg-carbon/[0.04] overflow-hidden relative">
                   {url ? (

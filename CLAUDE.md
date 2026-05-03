@@ -43,10 +43,10 @@ When Felipe says "las tarjetas del overview" / "estilo gold standard de los bloq
 
 The 4 big block cards (01 Creative & Brand · 02 Merchandising · 03 Design & Development · 04 Marketing & Digital) and their sub-block cards (01.1, 01.2…) are the canonical reference. Every hub/grid view in the app must replicate this pattern verbatim.
 
-**Canonical code**:
+**Canonical code** (mobile-first — preserves the lg+ rendering verbatim, stacks gracefully on phone):
 
 ```tsx
-<div className="grid grid-cols-4 gap-5">
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
   {items.map((item, idx) => {
     const progress = item.progress ?? 0;
     const isComplete = progress === 100;
@@ -101,7 +101,7 @@ The 4 big block cards (01 Creative & Brand · 02 Merchandising · 03 Design & De
 ```
 
 **Non-negotiable rules**:
-- Grid: `grid-cols-4 gap-5` for 4-card layouts; `grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5` for 5-card sub-block layouts. NEVER 2×2.
+- Grid: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5` for 4-card layouts; `grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5` for 5-card sub-block layouts. The `lg:` rendering at 4 or 5 cols IS the gold standard — the `sm:` step keeps tablets symmetric, the base step (no prefix) is full-width single column on phone. NEVER 2×2 at any breakpoint.
 - Hover: `hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]` — always this exact lift.
 - CTA pill centered: `rounded-full bg-carbon text-white` (active) or `border text-carbon` (completed). With `ArrowRight` or `Check` icon.
 - Progress bar centered under CTA: `w-[120px] h-[6px] rounded-full bg-carbon/[0.06]` with inner `bg-carbon/30` fill.
@@ -139,7 +139,7 @@ The `3xl: 1920px` breakpoint is registered in `src/styles/globals.css` via `--br
 
 The Family Card design in `src/app/collection/[id]/merchandising/page.tsx` (FamilyCardGrid) is the canonical reference. Every workspace card MUST follow this exact pattern:
 
-- `grid grid-cols-4 gap-5` (always 4 cols, never 3)
+- `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5` — the `lg:` step IS the gold standard 4-col layout. Mobile-first prefixes preserve it on desktop while stacking gracefully on phone (NEVER skip the prefixes — Family Cards become illegible at 63px wide otherwise).
 - Card: `bg-white rounded-[20px] p-10 md:p-14 min-h-[500px]` + `hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]`
 - Title = subject's name in 24-28px semibold (NEVER add "KEY xxx" labels above)
 - NO ghost numbers (01., 02.) — Felipe explicitly removed

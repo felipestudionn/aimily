@@ -94,7 +94,7 @@ export function SupplierDirectory({ collectionId, collectionName }: Props) {
         <div className="relative text-center mb-10">
           <Link
             href={`/collection/${collectionId}/product?phase=techpack`}
-            className="absolute left-0 top-0 inline-flex items-center gap-2 text-carbon/50 hover:text-carbon transition-colors"
+            className="md:absolute md:left-0 md:top-0 inline-flex items-center gap-2 mb-4 md:mb-0 text-carbon/50 hover:text-carbon transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-[13px] font-medium tracking-[-0.01em]">{tp.backToTechPack || 'Back to Tech Pack'}</span>
@@ -234,7 +234,7 @@ function SupplierCard({ supplier, isEditing, isNew, onEdit, onSave, onCancel, on
           <p className="text-[13px] text-carbon/55 mt-2">{supplier.region}</p>
         )}
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
           {supplier.moq != null && (
             <Stat label={tp.moq || 'MOQ'} value={`${supplier.moq}`} />
           )}
@@ -306,7 +306,7 @@ function SupplierCard({ supplier, isEditing, isNew, onEdit, onSave, onCancel, on
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
         <input
           type="number"
           value={draft.moq ?? ''}

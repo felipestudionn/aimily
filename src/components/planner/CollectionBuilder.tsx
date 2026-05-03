@@ -1134,7 +1134,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
               <Download className="h-3 w-3" /> Excel
             </button>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap max-w-full">
             {viewMode === 'cards' && (
               <button
                 onClick={() => setFlipped(!flipped)}
@@ -1149,7 +1149,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 {flipped ? (t.plannerSections?.showVisual || 'Show visual') : (t.plannerSections?.flipForDetails || 'Flip for details')}
               </button>
             )}
-            <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5">
+            <div className="flex items-center bg-carbon/[0.04] rounded-full p-0.5 overflow-x-auto scrollbar-subtle max-w-full">
               {(['pipeline', 'list', 'cards', 'orders'] as const).map((mode) => (
                 <button key={mode} onClick={() => setViewMode(mode)} className={`flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase transition-all rounded-full ${viewMode === mode ? 'bg-carbon text-crema shadow-sm' : 'text-carbon/35 hover:text-carbon/60'}`}>
                   {mode === 'pipeline' ? <Kanban className="h-3 w-3" /> : mode === 'list' ? <List className="h-3 w-3" /> : mode === 'orders' ? <Package className="h-3 w-3" /> : <LayoutGrid className="h-3 w-3" />}{mode}

@@ -71,7 +71,7 @@ export function AssistantCoachMark() {
   return (
     <div
       role="status"
-      className="absolute top-full right-0 mt-3 z-50 animate-fade-in"
+      className="hidden sm:block absolute top-full right-0 mt-3 z-50 animate-fade-in"
     >
       <div className="relative bg-carbon text-crema rounded-[14px] shadow-[0_12px_32px_rgba(0,0,0,0.18)] px-4 py-3 max-w-[260px]">
         {/* Arrow pointing up to the assistant pill */}

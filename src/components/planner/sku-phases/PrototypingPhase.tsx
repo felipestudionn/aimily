@@ -254,7 +254,7 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
                             {isSelected && <Check className="h-3.5 w-3.5 text-carbon" />}
                           </div>
                           <p className="text-[11px] text-carbon/50 leading-relaxed">{region.fit}</p>
-                          <div className="grid grid-cols-3 gap-2 pt-1">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
                             <div><p className="text-[9px] text-carbon/40 uppercase font-medium">MOQ</p><p className="text-[11px] text-carbon/60">{region.moq}</p></div>
                             <div><p className="text-[9px] text-carbon/40 uppercase font-medium">Lead time</p><p className="text-[11px] text-carbon/60">{region.leadTime}</p></div>
                             <div><p className="text-[9px] text-carbon/40 uppercase font-medium">COGS</p><p className="text-[11px] text-carbon/60">{region.cogsRange}</p></div>

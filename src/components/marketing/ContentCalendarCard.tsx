@@ -608,7 +608,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
                   <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   <div className="col-span-2">
                     <Label className="text-xs">{t.marketingPage.directionOptional}</Label>
                     <Input
@@ -645,7 +645,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     {t.marketingPage.repurposeDesc}
                   </p>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <Label className="text-xs">{t.marketingPage.repurposePillarType}</Label>
                     <select
@@ -728,7 +728,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
                   <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <Label className="text-xs">{t.marketingPage.startDate}</Label>
                     <Input type="date" value={propuestaStartDate} onChange={e => setPropuestaStartDate(e.target.value)} className="h-9" />
@@ -840,7 +840,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
             </div>
 
             {/* ── Status Overview ── */}
-            <div className="grid grid-cols-6 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               {CONTENT_STATUS_IDS.map(id => (
                 <div key={id} className="bg-white border border-carbon/[0.06] p-4 text-center">
                   <p className="text-2xl font-light text-carbon">{statusCounts[id] || 0}</p>
@@ -867,7 +867,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newEntry}</p>
                   <button onClick={() => setShowAddEntry(false)} className="text-carbon/30 hover:text-carbon"><X className="h-4 w-4" /></button>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="col-span-2">
                     <Label className="text-xs">{t.marketingPage.title}</Label>
                     <Input value={newEntry.title} onChange={e => setNewEntry(p => ({ ...p, title: e.target.value }))} placeholder={t.marketingPage.title} className="h-9" />
@@ -891,7 +891,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <Label className="text-xs">{t.marketingPage.scheduledDate}</Label>
                     <Input type="date" value={newEntry.scheduled_date} onChange={e => setNewEntry(p => ({ ...p, scheduled_date: e.target.value }))} className="h-9" />
@@ -1180,7 +1180,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   <p className="text-xs font-medium tracking-[0.15em] uppercase text-carbon/40">{t.marketingPage.newContact}</p>
                   <button onClick={() => setShowAddContact(false)} className="text-carbon/30 hover:text-carbon"><X className="h-4 w-4" /></button>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <Label className="text-xs">{t.marketingPage.name}</Label>
                     <Input value={newContact.name} onChange={e => setNewContact(p => ({ ...p, name: e.target.value }))} className="h-9" />
@@ -1203,7 +1203,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                     <Input value={newContact.handle} onChange={e => setNewContact(p => ({ ...p, handle: e.target.value }))} placeholder={t.marketingPage.handlePlaceholder} className="h-9" />
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
                     <Label className="text-xs">{t.marketingPage.followersLabel}</Label>
                     <Input type="number" value={newContact.followers || ''} onChange={e => setNewContact(p => ({ ...p, followers: Number(e.target.value) }))} className="h-9" />

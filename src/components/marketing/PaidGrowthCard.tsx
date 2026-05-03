@@ -387,7 +387,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <Label className="text-xs">{t.marketingPage.budgetLabel} (€)</Label>
                 <Input type="number" min={0} value={assistedBudget} onChange={e => setAssistedBudget(Number(e.target.value))} className="h-9" />
@@ -423,7 +423,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
               <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <Label className="text-xs">{t.marketingPage.totalBudgetLabel} (€)</Label>
                 <Input type="number" min={0} value={propuestaBudget} onChange={e => setPropuestaBudget(Number(e.target.value))} className="h-9" />
@@ -569,7 +569,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
                   <Label className="text-xs">{t.marketingPage.name}</Label>
                   <Input value={newCampaign.name} onChange={e => setNewCampaign(prev => ({ ...prev, name: e.target.value }))} placeholder={t.marketingPage.campaignName} className="h-9" />
@@ -601,7 +601,7 @@ export function PaidGrowthCard({ collectionPlanId }: PaidGrowthCardProps) {
                   <Input type="number" min={0} value={newCampaign.budget} onChange={e => setNewCampaign(prev => ({ ...prev, budget: Number(e.target.value) }))} className="h-9" />
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
                   <Label className="text-xs">{t.marketingPage.startDate}</Label>
                   <Input type="date" value={newCampaign.start_date} onChange={e => setNewCampaign(prev => ({ ...prev, start_date: e.target.value }))} className="h-9" />

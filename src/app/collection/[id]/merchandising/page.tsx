@@ -210,7 +210,7 @@ function FamiliesContent({ mode, data, onChange, collectionContext, pricingData,
   /* ── Shared family card grid — ALWAYS 4 cols like dashboard ── */
   const FamilyCardGrid = () => (
     <>
-      <div className="grid grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {families.map((fam, fi) => (
           <div
             key={fi}

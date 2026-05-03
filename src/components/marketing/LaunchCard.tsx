@@ -514,7 +514,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <Label className="text-xs">{t.marketingPage.launchDate}</Label>
                 <Input type="date" value={assistedLaunchDate} onChange={e => setAssistedLaunchDate(e.target.value)} className="h-9" />
@@ -543,7 +543,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
                 <Label className="text-xs">{t.marketingPage.launchDate}</Label>
                 <Input type="date" value={propuestaLaunchDate} onChange={e => setPropuestaLaunchDate(e.target.value)} className="h-9" />
@@ -628,7 +628,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
 
         {/* ── Progress by Category ── */}
         {tasks.length > 0 && (
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {categoryProgress.map(cat => (
               <div key={cat.id} className="bg-white border border-carbon/[0.06] p-6">
                 <div className="flex items-center justify-between mb-3">
@@ -671,7 +671,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="col-span-2">
                   <Label className="text-xs">{t.marketingPage.title}</Label>
                   <Input value={newTask.title} onChange={e => setNewTask(prev => ({ ...prev, title: e.target.value }))} placeholder={t.marketingPage.taskDescription} className="h-9" />
@@ -699,7 +699,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
                   <Label className="text-xs">{t.marketingPage.dueDate}</Label>
                   <Input type="date" value={newTask.due_date} onChange={e => setNewTask(prev => ({ ...prev, due_date: e.target.value }))} className="h-9" />

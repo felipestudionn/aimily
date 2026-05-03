@@ -51,7 +51,7 @@ export function NotificationBell() {
 
       {/* Dropdown panel — editorial shell */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[400px] max-h-[28rem] bg-white rounded-[16px] shadow-[0_24px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] overflow-hidden z-50 animate-fade-in">
+        <div className="fixed top-[64px] right-3 left-3 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:mt-2 sm:w-[400px] max-h-[28rem] bg-white rounded-[16px] shadow-[0_24px_60px_rgba(0,0,0,0.18)] border border-carbon/[0.06] overflow-hidden z-50 animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-carbon/[0.06]">
             <div className="flex items-center gap-2">

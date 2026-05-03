@@ -83,7 +83,7 @@ export function FactoryDirectory({ collectionId, collectionName }: Props) {
         <div className="relative text-center mb-10">
           <Link
             href={`/collection/${collectionId}/product?phase=techpack`}
-            className="absolute left-0 top-0 inline-flex items-center gap-2 text-carbon/50 hover:text-carbon transition-colors"
+            className="md:absolute md:left-0 md:top-0 inline-flex items-center gap-2 mb-4 md:mb-0 text-carbon/50 hover:text-carbon transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-[13px] font-medium tracking-[-0.01em]">{tp.backToTechPack || 'Back to Tech Pack'}</span>
@@ -215,7 +215,7 @@ function FactoryCard({ factory, isEditing, isNew, onEdit, onSave, onCancel, onDe
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
           {factory.moq != null && <Stat label={tp.moq || 'MOQ'} value={`${factory.moq}`} />}
           {factory.lead_time_days != null && <Stat label={tp.leadTime || 'Lead'} value={`${factory.lead_time_days}d`} />}
           {factory.cost_note && <Stat label={tp.cost || 'Cost'} value={factory.cost_note} />}
@@ -295,7 +295,7 @@ function FactoryCard({ factory, isEditing, isNew, onEdit, onSave, onCancel, onDe
         className="w-full bg-carbon/[0.03] rounded-[8px] px-3 py-1.5 text-[12px] text-carbon placeholder:text-carbon/30 focus:outline-none focus:ring-1 focus:ring-carbon/20 mb-3"
       />
 
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
         <input
           type="number"
           value={draft.moq ?? ''}

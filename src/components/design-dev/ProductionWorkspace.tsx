@@ -274,7 +274,7 @@ export function ProductionWorkspace({ collectionPlanId, collectionName }: Props)
                     </div>
 
                     {/* Qty / Cost / ETA */}
-                    <div className="grid grid-cols-3 gap-2 mb-5 text-[11px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5 text-[11px]">
                       <div>
                         <p className="text-carbon/40 uppercase tracking-wide mb-0.5">{w.cardQty || 'Qty'}</p>
                         <p className="font-semibold text-carbon tabular-nums">{qty.toLocaleString()}</p>

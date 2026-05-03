@@ -695,9 +695,15 @@ export function WizardSidebar({
   const calendarInner = mode === 'calendar' ? (
     <>
         <div
-          className="flex flex-col overflow-hidden rounded-[16px] h-full"
+          className="relative flex flex-col overflow-hidden rounded-[16px] h-full"
           style={{ background: CAL_SIDEBAR_BG }}
         >
+          {/* Mobile-only right-edge gradient hint — suggests horizontal scroll for timeline */}
+          <div
+            className="lg:hidden pointer-events-none absolute top-0 right-0 bottom-0 w-10 z-10"
+            style={{ background: `linear-gradient(to left, ${CAL_SIDEBAR_BG}, transparent)` }}
+            aria-hidden="true"
+          />
           {/* Single scroll zone — horizontal + vertical */}
           <div
             ref={calScrollRef}

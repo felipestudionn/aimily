@@ -229,7 +229,7 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
                 <div className="space-y-3">
                   <p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium">{stepLabel('financialRecap') || 'Financial Recap'}</p>
                   <div className="bg-white border border-carbon/[0.06] p-3">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       <MetricCell label="PVP" value={`€${sku.pvp}`} />
                       <MetricCell label="COGS" value={`€${sku.cost}`} editable onChange={(v) => {
                         const val = Number(v.replace(/[^0-9.]/g, ''));
@@ -398,7 +398,7 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
                     </div>
                   </div>
                   {(pd.payment_terms || pd.shipping_method || pd.target_delivery_date) && (
-                    <div className="grid grid-cols-3 gap-3 pt-2 border-t border-carbon/[0.04]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 border-t border-carbon/[0.04]">
                       {pd.target_delivery_date && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.delivery || "Delivery"}</p><p className="text-[12px] text-carbon mt-0.5">{pd.target_delivery_date}</p></div>}
                       {pd.payment_terms && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">{(t.fieldLabels as Record<string, string>)?.payment || "Payment"}</p><p className="text-[12px] text-carbon mt-0.5">{pd.payment_terms}</p></div>}
                       {pd.shipping_method && <div><p className="text-[10px] text-carbon/40 uppercase tracking-wide font-medium">Shipping</p><p className="text-[12px] text-carbon mt-0.5">{pd.shipping_method}</p></div>}

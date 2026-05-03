@@ -225,7 +225,7 @@ export function FinalSelectionWorkspace({ collectionPlanId, collectionName, setu
                         <h3 className="text-[15px] font-semibold text-carbon tracking-[-0.01em] leading-tight mb-3 truncate">
                           {sku.name}
                         </h3>
-                        <div className="grid grid-cols-3 gap-2 mb-5 text-[11px]">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-5 text-[11px]">
                           <div>
                             <p className="text-carbon/40 uppercase tracking-wide mb-0.5">{w.cardPvp || 'PVP'}</p>
                             <p className="font-semibold text-carbon tabular-nums">€{sku.pvp}</p>

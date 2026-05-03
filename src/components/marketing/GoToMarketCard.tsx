@@ -421,7 +421,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.assistedMode}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.assistedModeDesc}</p>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
                 <Label className="text-xs">{t.marketingPage.numberOfDrops}</Label>
                 <Input type="number" min={1} max={12} value={assistedDropCount} onChange={e => setAssistedDropCount(Number(e.target.value))} className="h-9" />
@@ -445,7 +445,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <p className="text-xs font-medium tracking-[-0.01em] uppercase text-carbon/40 mb-1">{t.marketingPage.pillAiProposal}</p>
               <p className="text-sm font-light text-carbon/50">{t.marketingPage.propuestaDesc}</p>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <Label className="text-xs">{t.marketingPage.launchDateLabel}</Label>
                 <Input type="date" value={propuestaLaunchDate} onChange={e => setPropuestaLaunchDate(e.target.value)} className="h-9" />
@@ -610,7 +610,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           </div>
 
           {showAddDrop && (
-            <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-4 gap-4">
+            <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div><Label className="text-xs">{t.marketingPage.dropName}</Label><Input value={newDrop.name} onChange={e => setNewDrop({ ...newDrop, name: e.target.value })} placeholder={t.marketingPage.dropNamePlaceholder} className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.launchDate}</Label><Input type="date" value={newDrop.launch_date} onChange={e => setNewDrop({ ...newDrop, launch_date: e.target.value })} className="h-9" /></div>
               <div><Label className="text-xs">{t.marketingPage.weeksActive}</Label><Input type="number" value={newDrop.weeks_active} onChange={e => setNewDrop({ ...newDrop, weeks_active: Number(e.target.value) })} className="h-9" min={1} max={52} /></div>
@@ -688,7 +688,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
           </div>
 
           {showAddAction && (
-            <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-5 gap-4">
+            <div className="mb-4 p-4 border border-carbon/[0.06] bg-carbon/[0.02] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div><Label className="text-xs">{t.marketingPage.name}</Label><Input value={newAction.name} onChange={e => setNewAction({ ...newAction, name: e.target.value })} placeholder={t.marketingPage.actionNamePlaceholder} className="h-9" /></div>
               <div>
                 <Label className="text-xs">{t.marketingPage.type}</Label>
