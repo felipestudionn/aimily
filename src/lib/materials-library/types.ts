@@ -208,6 +208,15 @@ export interface Material {
   seasonFit: SeasonFit[];
   /** Certifications typically available for this material. */
   certifications?: Certification[];
+  /**
+   * Phase 5 — Compliance Hub. Curated REACH/AAFA-RSL/CPSIA flags that
+   * apply to this specific entry (vs. the family-level heuristics in
+   * the compliance engine). Catalog flags are treated as 'violation'
+   * severity — the heuristic layer issues 'warning' to keep the noise
+   * floor low. Examples: 'azo-dye-untested', 'phthalate-pvc',
+   * 'chromium-vi-untested', 'pfas-coating'.
+   */
+  rslFlags?: string[];
   /** True if the material is vegan (no animal-derived inputs). */
   vegan: boolean;
   /**
