@@ -3092,6 +3092,7 @@ export const en = {
     addZone: 'Add zone',
     bomDesc: 'assign materials to each zone',
     materialLabel: 'Material',
+    materialPlaceholder: 'e.g. Italian linen 230gsm',
     compositionLabel: 'Composition',
     weightLabel: 'Weight',
     finishLabel: 'Finish',

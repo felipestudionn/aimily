@@ -3034,6 +3034,7 @@ export const nl: Dictionary = {
     addZone: 'Zone toevoegen',
     bomDesc: 'wijs materialen toe aan elke zone',
     materialLabel: 'Materiaal',
+    materialPlaceholder: 'bv. Italiaans linnen 230gsm',
     compositionLabel: 'Samenstelling',
     weightLabel: 'Gewicht',
     finishLabel: 'Afwerking',
