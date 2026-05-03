@@ -59,18 +59,24 @@ function verifyStandardWebhook(
   const timestamp = headers.get('svix-timestamp') || headers.get('webhook-timestamp');
   const signatureHeader = headers.get('svix-signature') || headers.get('webhook-signature');
 
-  if (!id || !timestamp || !signatureHeader) return false;
+  if (!id || !timestamp || !signatureHeader) {
+    console.error('[hook-debug] missing headers', { hasId: !!id, hasTs: !!timestamp, hasSig: !!signatureHeader });
+    return false;
+  }
 
-  // Reject anything older than 5 minutes (replay protection).
   const ts = Number(timestamp);
-  if (!Number.isFinite(ts)) return false;
+  if (!Number.isFinite(ts)) {
+    console.error('[hook-debug] timestamp not a number', { timestamp });
+    return false;
+  }
   const ageMs = Math.abs(Date.now() - ts * 1000);
-  if (ageMs > 5 * 60 * 1000) return false;
+  if (ageMs > 5 * 60 * 1000) {
+    console.error('[hook-debug] timestamp too old', { ageMs });
+    return false;
+  }
 
-  // Standard Webhooks signs `${id}.${timestamp}.${body}` with the secret.
   const signedContent = `${id}.${timestamp}.${rawBody}`;
 
-  // Secret format: `v1,whsec_<base64>` — strip the version prefix.
   const rawSecret = secret.startsWith('v1,whsec_')
     ? secret.slice('v1,whsec_'.length)
     : secret.startsWith('whsec_')
@@ -81,12 +87,21 @@ function verifyStandardWebhook(
   try {
     secretBytes = Buffer.from(rawSecret, 'base64');
   } catch {
+    console.error('[hook-debug] secret base64 decode failed');
     return false;
   }
 
   const expected = createHmac('sha256', secretBytes).update(signedContent).digest('base64');
 
-  // The signature header is "v1,sig1 v1,sig2 ..." — accept if any matches.
+  console.error('[hook-debug]', {
+    secretPrefix: secret.slice(0, 12),
+    rawSecretPrefix: rawSecret.slice(0, 8),
+    secretBytesLen: secretBytes.length,
+    signedContentLen: signedContent.length,
+    expected,
+    signatureHeader,
+  });
+
   for (const candidate of signatureHeader.split(' ')) {
     const sig = candidate.startsWith('v1,') ? candidate.slice('v1,'.length) : candidate;
     try {
