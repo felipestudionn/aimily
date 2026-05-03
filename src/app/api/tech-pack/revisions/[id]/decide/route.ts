@@ -11,6 +11,7 @@ import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth'
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { transitionApproval } from '@/lib/tech-pack/revisions';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
+import { sendApprovalNotification } from '@/lib/approval-emails';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -91,6 +92,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       to: updated.approval_status,
       notes: body.notes,
     },
+  });
+
+  // Notify the next-stage reviewer (or the designer if rejected /
+  // fully approved). Best-effort, never block.
+  void sendApprovalNotification({
+    collectionPlanId: rev.collection_plan_id,
+    skuId: rev.sku_id,
+    revisionId: id,
+    version: updated.version,
+    stage: updated.approval_status,
+    notes: body.notes ?? null,
+    triggeredBy: user!.id,
+    triggeredByName: user!.user_metadata?.full_name ?? user!.email ?? null,
   });
 
   return NextResponse.json({ revision: updated });
