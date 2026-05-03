@@ -10,6 +10,7 @@ import { useTranslation } from "@/i18n";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { AssistantHeaderButton } from "@/components/aimily-assistant/AssistantHeaderButton";
+import { AssistantCoachMark } from "@/components/aimily-assistant/AssistantCoachMark";
 import { track } from "@/lib/posthog";
 
 /* ── Avatar dropdown (desktop only) ── */
@@ -198,7 +199,10 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
 
           {/* Right: ask aimily + notifications + avatar */}
           <div className="flex items-center gap-3">
-            <AssistantHeaderButton variant={isDark ? 'dark' : 'light'} />
+            <div className="relative">
+              <AssistantHeaderButton variant={isDark ? 'dark' : 'light'} />
+              <AssistantCoachMark />
+            </div>
             <NotificationBell />
             {user && (
               <AvatarMenu email={user.email || ''} onSignOut={handleSignOut} isDark={isDark} />
@@ -234,7 +238,10 @@ export function Navbar({ variant = 'default', collectionName, collectionId, side
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <>
-                <AssistantHeaderButton variant="light" />
+                <div className="relative">
+                  <AssistantHeaderButton variant="light" />
+                  <AssistantCoachMark />
+                </div>
                 <NotificationBell />
                 <AvatarMenu email={user.email || ''} onSignOut={handleSignOut} />
               </>

@@ -567,6 +567,22 @@ export default function AccountPage() {
               )}
             </section>
           </div>
+
+          {/* Subtle re-watch link to the editorial product tour. Lives outside
+              of any specific section so it doesn't visually compete with the
+              billing / danger-zone blocks. */}
+          <div className="mt-12 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2 text-center sm:text-left">
+            <p className="text-[12px] text-carbon/45 leading-[1.6]">
+              {t.account.viewTourLabel}
+            </p>
+            <Link
+              href="/welcome/tour"
+              className="inline-flex items-center gap-1 text-[12px] text-carbon/70 hover:text-carbon underline underline-offset-2"
+            >
+              {t.account.viewTourLink}
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
       </main>
       <SiteFooter variant="light" />

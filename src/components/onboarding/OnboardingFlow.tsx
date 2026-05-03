@@ -26,19 +26,41 @@ type Step = 1 | 2;
 
 const ALL_LANGUAGES: Language[] = ['en', 'es', 'fr', 'it', 'de', 'pt', 'nl', 'sv', 'no'];
 
+const STEP_STORAGE_KEY = 'aimily_welcome_step';
+
+function readStoredStep(): Step | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem(STEP_STORAGE_KEY);
+  if (raw === '1' || raw === '2') return Number(raw) as Step;
+  return null;
+}
+
 interface Props {
   /** Full name from auth metadata, used to greet by first name on step 2. */
   fullName?: string | null;
   /** When true, skip step 1 (language) — used for users who arrived from
    *  brief-to-collection flow, where they already chose locale upstream. */
   skipLanguage?: boolean;
+  /** Pre-resolved language from the server (auth.users.user_metadata.language).
+   *  When set, it means the user already picked a language in a previous
+   *  visit — we can skip step 1 on a refresh. */
+  initialLanguage?: string | null;
 }
 
-export function OnboardingFlow({ fullName, skipLanguage = false }: Props) {
+export function OnboardingFlow({ fullName, skipLanguage = false, initialLanguage = null }: Props) {
   const router = useRouter();
   const t = useTranslation();
   const { language, setLanguage } = useLanguage();
-  const [step, setStep] = useState<Step>(skipLanguage ? 2 : 1);
+  // Decide initial step based on (a) prop, (b) stored step from a previous
+  // unfinished visit, (c) whether the user has already saved a language
+  // server-side (means they crossed step 1 in a prior visit), (d) default 1.
+  const [step, setStep] = useState<Step>(() => {
+    if (skipLanguage) return 2;
+    const stored = readStoredStep();
+    if (stored) return stored;
+    if (initialLanguage) return 2;
+    return 1;
+  });
   const [saving, setSaving] = useState(false);
   // Tracks the user's pre-selected detected language so we can highlight
   // it on step 1 even if they haven't clicked yet.
@@ -50,6 +72,13 @@ export function OnboardingFlow({ fullName, skipLanguage = false }: Props) {
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  // Persist the current step so closing the browser mid-onboarding doesn't
+  // dump the user back to step 1 when they return.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(STEP_STORAGE_KEY, String(step));
+  }, [step]);
 
   const firstName = (fullName || '').split(' ')[0] || '';
 
@@ -64,6 +93,11 @@ export function OnboardingFlow({ fullName, skipLanguage = false }: Props) {
       });
     } catch {
       // Soft fail — server-side defensive redirect will still let them in.
+    }
+    // Onboarding done — clear the resume marker so the next user on this
+    // browser (a refresh, a different test account, etc.) starts clean.
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STEP_STORAGE_KEY);
     }
     // Hard navigation so AuthContext / SubscriptionContext re-fetch fresh
     // user metadata (including the freshly written language).

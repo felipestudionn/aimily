@@ -12,6 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
 import { track, Events } from '@/lib/posthog';
 import SubscriptionGate from '@/components/billing/SubscriptionGate';
+import { DeleteCollectionModal } from '@/components/collections/DeleteCollectionModal';
 import {
   Plus,
   Loader2,
@@ -72,6 +73,7 @@ export default function MyCollectionsPage() {
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [skuCounts, setSkuCounts] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<CollectionWithProgress | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -187,17 +189,20 @@ export default function MyCollectionsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm(t.collections.deleteConfirm)) return;
+  const performDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     try {
       const res = await fetch(`/api/collections/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to delete');
       }
-      setCollections(collections.filter((c) => c.id !== id));
+      setCollections((prev) => prev.filter((c) => c.id !== id));
+      setDeleteTarget(null);
     } catch (error) {
       console.error('Error deleting collection:', error);
+      setDeleteTarget(null);
     }
   };
 
@@ -326,7 +331,7 @@ export default function MyCollectionsPage() {
                       key={col.id}
                       idx={idx}
                       collection={col}
-                      onDelete={() => handleDelete(col.id)}
+                      onDelete={() => setDeleteTarget(col)}
                       language={language}
                       t={c}
                     />
@@ -338,6 +343,15 @@ export default function MyCollectionsPage() {
           </div>
         </main>
       </div>
+
+      <DeleteCollectionModal
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={performDelete}
+        collectionName={deleteTarget?.name || ''}
+        skuCount={deleteTarget?.skuCount}
+        milestoneCount={deleteTarget?.timeline?.milestones.length}
+      />
     </SubscriptionGate>
   );
 }

@@ -51,6 +51,7 @@ export default async function WelcomePage() {
   }
 
   const fullName = (user.user_metadata?.full_name as string | undefined) || null;
+  const initialLanguage = (user.user_metadata?.language as string | undefined) || null;
 
-  return <OnboardingFlow fullName={fullName} />;
+  return <OnboardingFlow fullName={fullName} initialLanguage={initialLanguage} />;
 }
