@@ -37,10 +37,14 @@ import { CostingPanel } from '@/components/tech-pack/CostingPanel';
 import type { CostBreakdown } from '@/lib/costing/landed-cost';
 import { RevisionPill } from '@/components/tech-pack/RevisionPill';
 import { CompliancePill } from '@/components/tech-pack/CompliancePill';
+import {
+  ConstructionDetailsSection,
+  type ConstructionDetails,
+} from '@/components/tech-pack/ConstructionDetailsSection';
 
 type Section =
   | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
-  | 'factory_notes' | 'materials';
+  | 'factory_notes' | 'materials' | 'construction_details';
 
 type CommentBlock =
   | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
@@ -68,6 +72,7 @@ interface TechPackDataRow {
   bom?: { lines?: BomLine[] };
   grading?: Record<string, string>;
   factory_notes?: Record<string, string>;
+  construction_details?: ConstructionDetails;
 }
 
 interface Comment {
@@ -198,6 +203,11 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
   const updateBom = useCallback((lines: BomLine[]) => {
     setData(d => ({ ...d, bom: { lines } }));
     saveSection('bom', { lines });
+  }, [saveSection]);
+
+  const updateConstructionDetails = useCallback((details: ConstructionDetails) => {
+    setData(d => ({ ...d, construction_details: details }));
+    saveSection('construction_details', details as unknown as Record<string, unknown>);
   }, [saveSection]);
 
   const updateFactoryNotes = useCallback((notes: string) => {
@@ -439,7 +449,16 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
             />
           </div>
 
-          {/* Factory notes */}
+          {/* Construction Details — Phase 6 structured stitching/pressing/finishing */}
+          <div className="border-t border-carbon/[0.06] p-8 md:p-10">
+            <ConstructionDetailsSection
+              initial={data.construction_details}
+              onChange={updateConstructionDetails}
+              saving={savingSection === 'construction_details'}
+            />
+          </div>
+
+          {/* Factory notes — free-form, anything not captured in Construction Details */}
           <div className="border-t border-carbon/[0.06] p-8 md:p-10">
             <FactoryNotes
               value={(data.factory_notes?.body as string) || ''}
