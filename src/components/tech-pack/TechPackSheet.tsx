@@ -33,6 +33,8 @@ import { useTranslation } from '@/i18n';
 import { PantonePicker } from '@/components/materials/PantonePicker';
 import { MaterialCombobox } from '@/components/materials/MaterialCombobox';
 import type { Zone } from '@/lib/materials-library';
+import { CostingPanel } from '@/components/tech-pack/CostingPanel';
+import type { CostBreakdown } from '@/lib/costing/landed-cost';
 
 type Section =
   | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
@@ -196,6 +198,23 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
     saveSection('factory_notes', { body: notes });
   }, [saveSection]);
 
+  /* ── Cost breakdown (Phase 2) ── */
+  const [costBreakdown, setCostBreakdown] = useState<Partial<CostBreakdown>>(
+    (sku as unknown as { cost_breakdown?: Partial<CostBreakdown> })?.cost_breakdown || {},
+  );
+  const updateCostBreakdown = useCallback((cb: CostBreakdown) => {
+    setCostBreakdown(cb);
+    // Persist via the SKU PATCH endpoint (cost_breakdown lives on
+    // collection_skus, not tech_pack_data).
+    fetch(`/api/skus/${sku.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cost_breakdown: cb }),
+    }).catch((err) => {
+      console.error('[CostingPanel] persist failed:', err);
+    });
+  }, [sku.id]);
+
   /* ── PDF export ── */
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -343,6 +362,19 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
         <div className="bg-white rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden">
           {/* Header block */}
           <HeaderBlock sku={sku} collectionName={collectionName} season={season} tp={tp} />
+
+          {/* Phase 2 Costing Panel — BOM-driven landed cost + AI margin protection */}
+          <div className="border-t border-carbon/[0.06] px-8 md:px-10 py-6">
+            <CostingPanel
+              skuId={sku.id}
+              pvp={sku.pvp || 0}
+              costManual={sku.cost || 0}
+              bomLines={bomLines}
+              initial={costBreakdown}
+              onChange={updateCostBreakdown}
+              sourcingRegion={sku.origin || 'default'}
+            />
+          </div>
 
           {/* Technical Drawings — 2 category-aware views, auto-prefilled
               from the SKU's flat sketches (sketch_url + sketch_top_url),
