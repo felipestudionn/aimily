@@ -76,6 +76,11 @@ export const AUDIT_ACTIONS = {
   // Marketing — presentation & retrospective deliverables
   MARKETING_PRESENTATION_EXPORT: 'marketing_presentation_export',
   MARKETING_RETROSPECTIVE_EMAILED: 'marketing_retrospective_emailed',
+
+  // Tech pack — revision + approval workflow (Phase 3 PLM parity)
+  TECH_PACK_REVISION_SUBMITTED: 'tech_pack_revision_submitted',
+  TECH_PACK_REVISION_APPROVED: 'tech_pack_revision_approved',
+  TECH_PACK_REVISION_REJECTED: 'tech_pack_revision_rejected',
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

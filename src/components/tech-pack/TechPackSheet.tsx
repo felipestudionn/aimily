@@ -35,6 +35,7 @@ import { MaterialCombobox } from '@/components/materials/MaterialCombobox';
 import type { Zone } from '@/lib/materials-library';
 import { CostingPanel } from '@/components/tech-pack/CostingPanel';
 import type { CostBreakdown } from '@/lib/costing/landed-cost';
+import { RevisionPill } from '@/components/tech-pack/RevisionPill';
 
 type Section =
   | 'header' | 'drawings' | 'measurements' | 'bom' | 'grading'
@@ -146,6 +147,10 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
   const [data, setData] = useState<TechPackDataRow>(initialData || {});
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [savingSection, setSavingSection] = useState<Section | null>(null);
+  // Bumps on every saveSection success → forces RevisionPill to refetch
+  // the new is_current row. The PATCH handler always creates a revision,
+  // so the pill should always reflect the latest version.
+  const [revisionRefreshKey, setRevisionRefreshKey] = useState(0);
 
   const measurementRows: MeasurementRow[] = data.measurements?.rows && data.measurements.rows.length > 0
     ? data.measurements.rows
@@ -162,11 +167,12 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
   const saveSection = useCallback(async (section: Section, payload: Record<string, unknown>) => {
     setSavingSection(section);
     try {
-      await fetch('/api/tech-pack', {
+      const res = await fetch('/api/tech-pack', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skuId: sku.id, section, data: payload }),
       });
+      if (res.ok) setRevisionRefreshKey((k) => k + 1);
     } finally {
       setSavingSection(null);
     }
@@ -361,7 +367,7 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 pt-10 pb-24">
         <div className="bg-white rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden">
           {/* Header block */}
-          <HeaderBlock sku={sku} collectionName={collectionName} season={season} tp={tp} />
+          <HeaderBlock sku={sku} collectionName={collectionName} season={season} tp={tp} revisionRefreshKey={revisionRefreshKey} />
 
           {/* Phase 2 Costing Panel — BOM-driven landed cost + AI margin protection */}
           <div className="border-t border-carbon/[0.06] px-8 md:px-10 py-6">
@@ -476,8 +482,8 @@ function SectionHeader({ label, saving, action }: { label: string; saving?: bool
   );
 }
 
-function HeaderBlock({ sku, collectionName, season, tp }: {
-  sku: SKU; collectionName: string; season: string; tp: Record<string, string>;
+function HeaderBlock({ sku, collectionName, season, tp, revisionRefreshKey }: {
+  sku: SKU; collectionName: string; season: string; tp: Record<string, string>; revisionRefreshKey: number;
 }) {
   const typeLabel = sku.type === 'IMAGEN' ? 'Image' : sku.type === 'REVENUE' ? 'Revenue' : 'Entry';
   const categoryLabel = sku.category === 'CALZADO' ? 'Footwear' : sku.category === 'ROPA' ? 'Apparel' : 'Accessories';
@@ -502,9 +508,7 @@ function HeaderBlock({ sku, collectionName, season, tp }: {
             {sku.name}
           </h1>
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-carbon/[0.04] text-[11px] font-semibold tracking-[0.05em] text-carbon/70 uppercase">
-          {tp.version || 'v1.0'}
-        </div>
+        <RevisionPill skuId={sku.id} fallback={tp.version || 'v1.0'} refreshKey={revisionRefreshKey} />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         {fields.map((f) => (

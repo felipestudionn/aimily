@@ -13,6 +13,7 @@ import {
   type BomLine,
   type CostBreakdown,
 } from '@/lib/costing/landed-cost';
+import { buildSnapshot, recordRevision } from '@/lib/tech-pack/revisions';
 
 const VALID_SECTIONS = new Set([
   'header', 'drawings', 'measurements', 'bom', 'grading', 'factory_notes', 'materials',
@@ -89,13 +90,32 @@ export async function PATCH(req: NextRequest) {
   // lines + the previously-stored factor inputs, and (if source_of_truth
   // is 'bom') sync sku.cost so Range Plan / Production / exports stay
   // consistent with the canonical landed cost number.
+  let costBreakdown: CostBreakdown | null = null;
   if (body.section === 'bom') {
     const bomLines = (body.data as { lines?: BomLine[] }).lines ?? [];
-    const updatedBreakdown = await recomputeAndSyncCost(body.skuId, bomLines);
-    return NextResponse.json({ ok: true, costBreakdown: updatedBreakdown });
+    costBreakdown = await recomputeAndSyncCost(body.skuId, bomLines);
   }
 
-  return NextResponse.json({ ok: true });
+  // Phase 3 — Tech pack version control.
+  // Every save creates a frozen snapshot. Build it AFTER the cost recompute
+  // so the revision captures the new cost_breakdown if this was a BOM save.
+  const snapshot = await buildSnapshot(body.skuId);
+  const revision = await recordRevision({
+    collectionPlanId: check.collectionPlanId,
+    skuId: body.skuId,
+    snapshot,
+    createdBy: user!.id,
+    createdByName: user!.user_metadata?.full_name ?? user!.email ?? null,
+    changeSummary: `Updated ${body.section}`,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    costBreakdown,
+    revision: revision
+      ? { id: revision.id, version: revision.version, approval_status: revision.approval_status }
+      : null,
+  });
 }
 
 /**
