@@ -217,6 +217,14 @@ export interface Material {
    * 'chromium-vi-untested', 'pfas-coating'.
    */
   rslFlags?: string[];
+  /**
+   * Phase 8 — Higg MSI 3.7 score (lower = better; unitless impact
+   * per kg of material, integrated across water/energy/chemistry/GHG/
+   * resource depletion). Populated by `applyHiggScores` annotation
+   * layer; specific entries can override at the file level when we
+   * have a tested datasheet from a verified mill.
+   */
+  higgMsi?: number;
   /** True if the material is vegan (no animal-derived inputs). */
   vegan: boolean;
   /**
