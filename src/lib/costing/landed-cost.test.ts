@@ -112,6 +112,50 @@ describe('recalculateCostBreakdown — pure function contract', () => {
   });
 });
 
+describe('recalculateCostBreakdown — FX conversion', () => {
+  const fxRates = { USD: 1.1702, CNY: 7.991, GBP: 0.86625 };
+
+  it('converts USD costs to EUR before rolling up', () => {
+    const r = recalculateCostBreakdown({
+      bomLines: [baseLine({ qty: '1', cost: '11.70', cost_currency: 'USD' })],
+      fxRates,
+      pvp: 100,
+    });
+    // 11.70 / 1.1702 ≈ 10.00 EUR
+    expect(r.materials.bom_rolled_up).toBeCloseTo(10, 1);
+  });
+
+  it('mixes EUR and non-EUR lines correctly', () => {
+    const r = recalculateCostBreakdown({
+      bomLines: [
+        baseLine({ qty: '1', cost: '5', cost_currency: 'EUR' }),
+        baseLine({ qty: '1', cost: '11.702', cost_currency: 'USD' }), // ≈ 10 EUR
+      ],
+      fxRates,
+      pvp: 100,
+    });
+    expect(r.materials.bom_rolled_up).toBeCloseTo(15, 1);
+  });
+
+  it('falls back to raw cost when rate is missing for the currency', () => {
+    const r = recalculateCostBreakdown({
+      bomLines: [baseLine({ qty: '1', cost: '10', cost_currency: 'XYZ' })],
+      fxRates,
+      pvp: 100,
+    });
+    expect(r.materials.bom_rolled_up).toBe(10);
+  });
+
+  it('treats missing cost_currency as EUR', () => {
+    const r = recalculateCostBreakdown({
+      bomLines: [baseLine({ qty: '2', cost: '5' })],
+      fxRates,
+      pvp: 100,
+    });
+    expect(r.materials.bom_rolled_up).toBe(10);
+  });
+});
+
 describe('shouldOfferMarginProtection', () => {
   it('returns false when BOM is empty', () => {
     const r = recalculateCostBreakdown({ bomLines: [], pvp: 100, targetMarginPct: 65 });

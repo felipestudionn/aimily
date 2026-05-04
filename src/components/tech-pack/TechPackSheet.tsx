@@ -51,7 +51,7 @@ type CommentBlock =
   | 'factory' | 'general' | 'materials';
 
 interface MeasurementRow { point: string; xs: string; s: string; m: string; l: string; xl: string }
-interface BomLine { type: string; material: string; qty: string; unit: string; supplier: string; cost: string; material_id?: string }
+interface BomLine { type: string; material: string; qty: string; unit: string; supplier: string; cost: string; cost_currency?: string; material_id?: string }
 interface MaterialZone { name: string; pantone: string; supplier: string; swatchUrl: string; notes: string; material_id?: string }
 interface Callout { url: string; label: string }
 
@@ -1329,9 +1329,28 @@ function BomTable({ lines, onChange, saving, tp, onGenerate, generating, skuCate
                         size="compact"
                         placeholder="—"
                       />
+                    ) : c.key === 'cost' ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          value={line.cost}
+                          onChange={(e) => update(i, 'cost', e.target.value)}
+                          placeholder="—"
+                          className="flex-1 min-w-0 bg-transparent text-[13px] text-carbon focus:outline-none focus:ring-1 focus:ring-carbon/10 rounded px-2 py-1"
+                        />
+                        <select
+                          value={line.cost_currency ?? 'EUR'}
+                          onChange={(e) => update(i, 'cost_currency', e.target.value)}
+                          className="bg-transparent text-[10px] text-carbon/55 focus:outline-none rounded px-1 py-1"
+                          title="Currency"
+                        >
+                          {['EUR','USD','GBP','CNY','VND','TRY','INR','BRL','JPY','KRW','MXN'].map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
                     ) : (
                       <input
-                        value={line[c.key]}
+                        value={line[c.key as keyof BomLine] as string ?? ''}
                         onChange={(e) => update(i, c.key, e.target.value)}
                         placeholder="—"
                         className="w-full bg-transparent text-[13px] text-carbon focus:outline-none focus:ring-1 focus:ring-carbon/10 rounded px-2 py-1"

@@ -137,9 +137,21 @@ async function recomputeAndSyncCost(
     .maybeSingle();
   if (!sku) return null;
 
+  // Load FX rates so BOM lines quoted in non-EUR currencies are
+  // converted before rolling up. Best-effort — if the table is empty
+  // (cron hasn't fired yet) we fall back to treating every cost as EUR.
+  const { data: fxRows } = await supabaseAdmin
+    .from('fx_rates')
+    .select('currency, eur_rate');
+  const fxRates: Record<string, number> = {};
+  for (const r of fxRows ?? []) {
+    if (typeof r.eur_rate === 'number' && r.currency) fxRates[r.currency] = r.eur_rate;
+  }
+
   const prev = (sku.cost_breakdown ?? {}) as Partial<CostBreakdown>;
   const breakdown = recalculateCostBreakdown({
     bomLines,
+    fxRates,
     manualMaterialOverride: prev.materials?.manual_override ?? null,
     materialSourceOfTruth: prev.materials?.source_of_truth ?? 'bom',
     factoryRate: prev.labor?.factory_rate ?? 0,

@@ -31,6 +31,7 @@ describe('closestPantone — perceptual color matching', () => {
   it('respects optional catalog parameter', () => {
     const customCatalog = [
       {
+        id: 'custom-1',
         code: 'CUSTOM-1',
         name: 'Test Red',
         series: 'TCX' as const,
