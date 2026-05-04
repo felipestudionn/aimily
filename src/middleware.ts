@@ -12,14 +12,27 @@ const intlMiddleware = createIntlMiddleware(routing);
 // All marketing routing is delegated to next-intl — no auth check.
 const MARKETING_BARE_PATHS = ['', '/contact', '/trust', '/privacy', '/terms', '/cookies'];
 
+// Marketing path PREFIXES — content-driven sub-trees (workflows, vs, etc.)
+// added in Wave 1+. Anything under these is public and should be delegated
+// to next-intl regardless of auth state.
+const MARKETING_PREFIXES = ['/workflows', '/vs', '/learn', '/for', '/compare'];
+
 function isMarketingPath(pathname: string): boolean {
   // Bare paths get caught by next-intl + redirected to /[locale]
   if (MARKETING_BARE_PATHS.includes(pathname === '/' ? '' : pathname)) return true;
+  // Bare prefix paths (/workflows/foo, /vs/bar — no locale yet)
+  if (MARKETING_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return true;
+  }
   // Locale-prefixed marketing paths
   for (const locale of locales) {
     if (pathname === `/${locale}`) return true;
     for (const mp of MARKETING_BARE_PATHS) {
       if (mp && pathname === `/${locale}${mp}`) return true;
+    }
+    // Locale + content prefix (/en/workflows/brand-dna, /es/vs/centric, …)
+    if (MARKETING_PREFIXES.some((p) => pathname === `/${locale}${p}` || pathname.startsWith(`/${locale}${p}/`))) {
+      return true;
     }
   }
   return false;
