@@ -81,6 +81,9 @@ export const AUDIT_ACTIONS = {
   TECH_PACK_REVISION_SUBMITTED: 'tech_pack_revision_submitted',
   TECH_PACK_REVISION_APPROVED: 'tech_pack_revision_approved',
   TECH_PACK_REVISION_REJECTED: 'tech_pack_revision_rejected',
+
+  // Production order variance settlement (Phase 8 PLM parity)
+  PO_CLOSED_WITH_VARIANCE: 'po_closed_with_variance',
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
