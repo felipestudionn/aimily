@@ -61,6 +61,7 @@
     "lucide-react": "^0.487.0",
     "motion": "^12.38.0",
     "next": "^16.1.6",
+    "next-intl": "^4.11.0",
     "openai": "^6.35.0",
     "posthog-js": "^1.372.3",
     "pptxgenjs": "^4.0.1",
