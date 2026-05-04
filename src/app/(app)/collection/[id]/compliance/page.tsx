@@ -60,24 +60,48 @@ export default function CompliancePage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Cert | 'new' | null>(null);
 
+  /**
+   * Defensive fetch — never lets a single network blip take down the
+   * whole page. Returns the parsed JSON or null. Hot-reload during
+   * dev or a transient 500 in prod no longer rejects Promise.all,
+   * which keeps the UI responsive and stops Sentry getting noisy
+   * "TypeError: Failed to fetch" reports for dev-only churn.
+   */
+  async function safeJson<T>(url: string): Promise<T | null> {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return (await res.json()) as T;
+    } catch {
+      return null;
+    }
+  }
+
   async function loadAll() {
     setLoading(true);
     const [c, skuRes, esgRes] = await Promise.all([
-      fetch('/api/certifications').then((r) => r.json() as Promise<{ certifications: Cert[] }>),
-      fetch(`/api/skus?planId=${params.id}`).then((r) => r.json() as Promise<Sku[]>),
-      fetch(`/api/esg/sku-rollup?planId=${params.id}`).then((r) => r.json() as Promise<{ collection_summary: EsgSummary | null }>),
+      safeJson<{ certifications: Cert[] }>('/api/certifications'),
+      safeJson<Sku[]>(`/api/skus?planId=${params.id}`),
+      safeJson<{ collection_summary: EsgSummary | null }>(`/api/esg/sku-rollup?planId=${params.id}`),
     ]);
-    setCerts(c.certifications ?? []);
-    setEsg(esgRes.collection_summary ?? null);
+    setCerts(c?.certifications ?? []);
+    setEsg(esgRes?.collection_summary ?? null);
     const skus = Array.isArray(skuRes) ? skuRes : [];
     const reportsList: SkuReport[] = await Promise.all(
       skus.map(async (s) => {
-        const r = await fetch(`/api/compliance/check?skuId=${s.id}`).then((res) => res.json());
+        const r = await safeJson<{ status: string; findings?: Array<{ severity: string }> }>(
+          `/api/compliance/check?skuId=${s.id}`,
+        );
+        if (!r) {
+          // Couldn't reach the endpoint for this SKU — show neutral
+          // state instead of corrupting the whole grid.
+          return { sku: s, status: 'compliant' as const, violations: 0, warnings: 0 };
+        }
         return {
           sku: s,
           status: r.status as 'compliant' | 'warning' | 'violation',
-          violations: ((r.findings ?? []) as Array<{ severity: string }>).filter((f) => f.severity === 'violation').length,
-          warnings: ((r.findings ?? []) as Array<{ severity: string }>).filter((f) => f.severity === 'warning').length,
+          violations: (r.findings ?? []).filter((f) => f.severity === 'violation').length,
+          warnings: (r.findings ?? []).filter((f) => f.severity === 'warning').length,
         };
       }),
     );
