@@ -11,16 +11,18 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: '/meet-aimily', destination: '/', permanent: true },
-      { source: '/how-it-works', destination: '/', permanent: true },
-      { source: '/discover', destination: '/', permanent: true },
-      { source: '/pricing', destination: '/#pricing', permanent: true },
+      // Legacy marketing aliases → home in English (avoids the
+      // /pre-Wave-0-path → / → /en double-hop the middleware would do)
+      { source: '/meet-aimily', destination: '/en', permanent: true },
+      { source: '/how-it-works', destination: '/en', permanent: true },
+      { source: '/discover', destination: '/en', permanent: true },
+      { source: '/pricing', destination: '/en#pricing', permanent: true },
       /* Zombie routes from the pre-2026-04-15 cleanup — survived
          /trends, /categories/*, /svg-test, /analytics, /creative-space.
          None are linked from the active sidebar; they shipped with
-         hardcoded EN strings and stale data. Redirect to the home
-         to catch any lingering external link instead of letting the
-         page render a stale UI. */
+         hardcoded EN strings and stale data. Redirect to /my-collections
+         (authenticated) to catch any lingering external link instead of
+         letting the page render a stale UI. */
       { source: '/creative-space', destination: '/my-collections', permanent: true },
       { source: '/trends', destination: '/my-collections', permanent: true },
       { source: '/svg-test', destination: '/my-collections', permanent: true },
