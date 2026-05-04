@@ -17,8 +17,8 @@ import type { CollectionPlan } from '@/types/planner';
 
 /* ── Lazy imports ── */
 
-const LazyCreativePage = lazy(() => import('@/app/collection/[id]/creative/page'));
-const LazyMerchandisingPage = lazy(() => import('@/app/collection/[id]/merchandising/page'));
+const LazyCreativePage = lazy(() => import('@/app/(app)/collection/[id]/creative/page'));
+const LazyMerchandisingPage = lazy(() => import('@/app/(app)/collection/[id]/merchandising/page'));
 const LazyPlannerDashboard = lazy(() =>
   import('@/components/planner/PlannerDashboard').then(m => ({ default: m.PlannerDashboard }))
 );

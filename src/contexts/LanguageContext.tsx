@@ -42,8 +42,18 @@ function detectDefaultLanguage(): Language {
   return 'en';
 }
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en');
+export function LanguageProvider({
+  children,
+  initialLanguage,
+}: {
+  children: React.ReactNode;
+  /** When provided, takes precedence over localStorage / browser detection.
+   *  Set by [locale]/layout.tsx so marketing pages stay in sync with the
+   *  URL segment. Authenticated app routes don't pass this and fall back
+   *  to the legacy localStorage-driven detection. */
+  initialLanguage?: Language;
+}) {
+  const [language, setLanguageState] = useState<Language>(initialLanguage ?? 'en');
   const [initialized, setInitialized] = useState(false);
   const { user } = useAuth();
 
@@ -51,16 +61,25 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (initialized) return;
 
-    // Check user profile first
+    // 1. URL segment wins (marketing pages under [locale]/)
+    if (initialLanguage && isLanguage(initialLanguage)) {
+      setLanguageState(initialLanguage);
+      localStorage.setItem(STORAGE_KEY, initialLanguage);
+      setInitialized(true);
+      return;
+    }
+
+    // 2. Authenticated user profile
     const userLang = user?.user_metadata?.language;
     if (isLanguage(userLang)) {
       setLanguageState(userLang);
       localStorage.setItem(STORAGE_KEY, userLang);
     } else {
+      // 3. Browser / localStorage detection
       setLanguageState(detectDefaultLanguage());
     }
     setInitialized(true);
-  }, [user, initialized]);
+  }, [user, initialized, initialLanguage]);
 
   // Sync <html lang> attribute
   useEffect(() => {

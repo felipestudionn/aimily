@@ -1,18 +1,34 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from '@/i18n/routing';
+import { locales } from '@/i18n/config';
 
-// Page routes that don't require authentication (exact match).
-// Note: /discover, /how-it-works, /meet-aimily, /pricing were retired
-// 2026-04-28; they now 308-redirect to / via next.config.js (the redirect
-// is processed before this middleware, so listing them here is not needed).
+const intlMiddleware = createIntlMiddleware(routing);
+
+// Marketing pages now live under [locale]/. They redirect bare paths
+// (/, /contact, ...) to /[locale]/... and emit hreflang Link headers.
+// All marketing routing is delegated to next-intl — no auth check.
+const MARKETING_BARE_PATHS = ['', '/contact', '/trust', '/privacy', '/terms', '/cookies'];
+
+function isMarketingPath(pathname: string): boolean {
+  // Bare paths get caught by next-intl + redirected to /[locale]
+  if (MARKETING_BARE_PATHS.includes(pathname === '/' ? '' : pathname)) return true;
+  // Locale-prefixed marketing paths
+  for (const locale of locales) {
+    if (pathname === `/${locale}`) return true;
+    for (const mp of MARKETING_BARE_PATHS) {
+      if (mp && pathname === `/${locale}${mp}`) return true;
+    }
+  }
+  return false;
+}
+
+// Page routes that don't require authentication (exact match). Marketing
+// paths are now handled by next-intl (see isMarketingPath above) so this
+// list keeps only auth + utility routes that live under (app)/.
 const publicPageRoutes = [
-  '/',
-  '/contact',
-  '/trust',
-  '/terms',
-  '/privacy',
-  '/cookies',
   '/auth/callback',
   '/auth/forgot-password',
   '/auth/reset-password',
@@ -47,6 +63,14 @@ const publicApiPrefixes = [
 
 export async function middleware(request: NextRequest) {
   const { pathname: rawPath } = request.nextUrl;
+
+  // ── Marketing pages: delegate to next-intl middleware
+  // Handles /[locale] prefix injection, locale detection from
+  // Accept-Language, sticky NEXT_LOCALE cookie, hreflang Link headers.
+  // No Supabase auth or rate-limit needed — marketing is fully public.
+  if (isMarketingPath(rawPath)) {
+    return intlMiddleware(request);
+  }
 
   // ── Rate limit AI endpoints by IP — first line of defence before any auth lookup
   if (rawPath.startsWith('/api/ai/') || rawPath.startsWith('/api/billing/checkout')) {
@@ -119,6 +143,6 @@ export const config = {
     //   - any path ending with a static-asset extension
     //   - root-level static files (manifest.json, robots.txt, sitemap.xml,
     //     monitoring tunnel, well-known)
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|sw.js|monitoring|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|woff2?|ttf)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|llms.txt|sw.js|monitoring|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|woff2?|ttf)$).*)',
   ],
 };
