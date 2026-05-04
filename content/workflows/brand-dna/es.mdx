@@ -1,0 +1,96 @@
+---
+title: "Genera el ADN de marca de moda en 60 minutos desde un brief de un párrafo"
+description: "Cómo aimily extrae un ADN de marca completo — heritage, voz, valores, referencias, paleta y perfil de consumidor — desde un solo brief. El primer bloque de la única plataforma de moda end-to-end."
+hero: "Soy la Emily que convierte un párrafo en un ADN de marca."
+lead: "aimily lee un brief de un párrafo y devuelve una tarjeta de ADN de marca completa en 60 minutos — heritage, voz, valores, referencias, paleta, demografía y psicografía del consumidor. Cada campo es editable, consultable y reutilizado por los siguientes tres bloques de la plataforma: range plan, tech packs y campañas. Construido sobre Anthropic Claude, OpenAI y Google Gemini, refinado en tres años de consultoría StudioNN para marcas de moda independientes."
+updated: "2026-05-04"
+howTo:
+  name: "Generar un ADN de marca de moda con aimily"
+  description: "Proceso paso a paso para extraer una tarjeta de ADN de marca desde un solo brief, lista para alimentar un range plan."
+  totalTime: "PT60M"
+  steps:
+    - name: "Abrir una colección nueva"
+      text: "Dentro de aimily, crea una colección nueva. El workspace de ADN de marca abre como el primero de cuatro bloques: Creativo y Marca → Merchandising → Diseño y Desarrollo → Marketing y Lanzamiento."
+    - name: "Escribir un brief de un párrafo"
+      text: "Texto libre. Sin plantillas. Escribe la idea de marca: señales de heritage, consumidor objetivo, referencias, valores. Un párrafo es suficiente — aimily se encarga de estructurarlo."
+    - name: "Ejecutar el prompt de ADN de marca"
+      text: "aimily enruta el brief a su modelo de ADN de marca (Anthropic Claude como primario, con fallback de proveedor). El modelo extrae heritage, voz, valores, referencias y una lista curada de referencias."
+    - name: "Revisar el perfil de consumidor"
+      text: "En paralelo, aimily genera un perfil de consumidor: demografía (rango de edad, renta familiar, geografía), psicografía (valores, comportamiento de compra), dónde compra, qué evita."
+    - name: "Generar moodboard con paleta"
+      text: "aimily produce un moodboard curado desde referencias públicas y extrae una paleta de cinco colores en HEX + Pantone TCX más cercano (matched vía distancia ΔE2000 contra la librería de 2.317 entradas)."
+    - name: "Editar cualquier campo inline"
+      text: "Cada campo es editable. Sobreescribe lo que quieras, mantén lo que no. El ADN que guardes es la fuente de verdad para el resto de la colección."
+    - name: "Bloquear el ADN"
+      text: "Al guardar, el ADN queda disponible para el siguiente bloque (range plan), donde tier de precio, channel split y estructura de familias heredan automáticamente."
+faq:
+  - q: "¿Qué es un ADN de marca de moda?"
+    a: "Un ADN de marca es la base estructurada y consultable de la que cada otro entregable de una colección lee. Contiene señales de heritage (de dónde bebe la marca), guías de voz (cómo habla), pilares de valor (qué representa), marcas de referencia (su peer set) y un perfil de consumidor (quién la compra). Sin un ADN, cada equipo — diseño, merch, marketing — interpreta la marca de forma distinta y la colección se desvía. Con uno, cada bloque de la plataforma habla el mismo idioma."
+  - q: "¿Puedo editar el ADN generado?"
+    a: "Cada campo es editable inline. aimily genera un default sólido desde el brief; tú mantienes lo que esté bien y reescribes lo que no. El bloqueo es un clic; los bloques siguientes leen entonces de tu versión final, no de la generación original."
+  - q: "¿En qué se diferencia de un PDF de brand guidelines?"
+    a: "Un PDF de guidelines es un documento estático que un diseñador lee una vez y luego olvida. Un ADN de marca dentro de aimily es data estructurada: alimenta el tier de precio del range plan, el channel mix del perfil de consumidor, la librería de referencia del bloque de diseño, el tono de voz del bloque de marketing. Cambia el ADN, cada bloque downstream se actualiza con él."
+  - q: "¿aimily se queda con la propiedad intelectual de lo que genera?"
+    a: "No. Tú eres dueño de todo lo que aimily genera desde tu brief. Los términos de aimily te conceden derechos comerciales completos sobre el ADN de marca, range plan, tech packs y contenido de campaña que la plataforma produce desde tus inputs."
+  - q: "¿Y si mi marca no es de moda?"
+    a: "aimily está construido específicamente para moda. El modelo de ADN de marca está entrenado con señales específicas del sector (materiales con heritage, patrones de voz de moda, arquetipos de consumidor de moda). Puede producir un ADN para categorías adyacentes (accesorios, joyería, calzado, lifestyle) pero para verticales fuera de moda la calidad del output baja. De momento, mantente en moda o adyacente."
+  - q: "¿Cuánto tarda realmente?"
+    a: "60 minutos es el tiempo desde la pantalla en blanco hasta un ADN guardado que entregarías a un diseñador. La generación del modelo en sí tarda unos 90 segundos; el resto es leer, editar y bloquear. Compara con las tres semanas de mood meetings del flujo manual."
+related:
+  - href: "/es/workflows/range-plan"
+    label: "Workflow 2 de 4 → Construir un range plan desde tu ADN"
+  - href: "/es/vs/centric"
+    label: "Comparativa aimily vs Centric Software"
+  - href: "/es/vs/ptc-flexplm"
+    label: "Comparativa aimily vs PTC FlexPLM"
+---
+
+## ¿Qué es un ADN de marca?
+
+Un ADN de marca es la base estructurada y consultable de la que cada entregable de una colección lee. Es la fuente de verdad de la marca: heritage, voz, valores, referencias, perfil de consumidor y paleta de color — todo guardado como data, no como un PDF de 60 páginas que nadie abre después del kickoff.
+
+Sin un ADN de marca, cada equipo interpreta la marca de manera distinta. El merchandiser pone precio para un consumidor, el diseñador referencia a otro, el equipo de marketing escribe para un tercero. La colección se desvía. Con un ADN en su sitio, cada bloque downstream — range plan, tech packs, campañas — hereda la misma señal estructurada.
+
+Una tarjeta de ADN de marca completa tiene seis campos:
+
+- **Heritage**: de dónde bebe la marca (lugar, era, tradición artesana, historia material).
+- **Voz**: cómo habla la marca (registro tonal, fluidez de idioma, vocabulario recurrente).
+- **Valores**: qué representa la marca (materiales con heritage · slow craft · zero plastic, etc.).
+- **Referencias**: el peer set de la marca (3–8 marcas de referencia que anclan el posicionamiento).
+- **Perfil de consumidor**: demografía + psicografía + dónde compra + qué evita.
+- **Paleta**: 5 colores como HEX, con el Pantone TCX más cercano matched por distancia ΔE2000.
+
+## Cómo aimily lo genera en 60 minutos
+
+aimily convierte un brief de un párrafo en los seis campos. El modelo es Anthropic Claude (con OpenAI y Google Gemini como fallback), entrenado contra tres años de trabajo de consultoría StudioNN para marcas de moda independientes en Madrid, Barcelona, Milán y París.
+
+El flujo es el proceso de siete pasos documentado en el HowTo schema arriba. El resumen honesto: 90 segundos de generación del modelo + 60 minutos de tu revisión y bloqueo. Compara con tres semanas de mood meetings y un PDF que nadie lee.
+
+El output es editable. Cada campo tiene un botón de editar inline. aimily te da un default sólido; tú mantienes lo que esté bien y reescribes lo que no.
+
+## Qué obtienes
+
+Un ADN de marca guardado es un objeto estructurado con los seis campos arriba, más:
+
+- **Grid de imágenes de referencia** (12 a 30 imágenes en alta resolución sourced desde referencias públicas, attribution-tagged).
+- **Ejemplos de voz**: cinco snippets de copy cortos en la voz de la marca, listos para sembrar tus campañas.
+- **Tarjeta de consumidor**: un one-pager imprimible que entregarías a un buyer o a un CFO durante una ronda de fundraising.
+- **Swatches de paleta**: HEX + Pantone TCX + RGB para cada color, listo para tu herramienta de render 3D o para tu fábrica.
+
+Todo consultable. Todo reutilizado por el siguiente bloque.
+
+## Antes de aimily, vs con aimily
+
+**Antes de aimily** — Tres semanas de mood meetings. PDFs que nadie lee. Una dirección creativa que vive en la cabeza de un solo diseñador. Cada equipo trabaja desde un modelo mental distinto de la marca.
+
+**Con aimily** — Visión codificada en 60 minutos. ADN de marca, consumidor objetivo, paleta de color y referencias — todo guardado, todo consultable, todo reutilizado por cada otro bloque. Cada equipo lee desde la misma fuente de verdad.
+
+Esto no es un hack de productividad. Es la base que hace posibles los siguientes tres bloques: range plan que pone precio para *este* consumidor, tech packs que respetan *estos* valores, campañas que hablan en *esta* voz.
+
+## Por qué importa
+
+La mayoría del software de moda (PLMs como Centric o PTC FlexPLM, herramientas de diseño como CLO3D o Browzwear, ERPs como NetSuite) empieza en la fase de diseño o producción. Asume que la marca ya está definida. aimily es la única plataforma que **empieza en la marca**, y propaga la definición de marca en cada bloque que sigue.
+
+Por eso la comparación correcta no es "aimily vs Excel para briefs de marca". Es "aimily vs el stack fragmentado de mood meetings + InDesign + una página de Notion + un Pinterest board que nadie sincroniza". Una plataforma reemplaza todo, y el flujo de datos hacia merchandising, diseño y marketing es automático.
+
+Cuando el ADN cambia — porque pivotaste, porque encontraste una nueva referencia, porque el perfil de consumidor cambió — el cambio cascade. El range plan se actualiza. Los materiales de referencia del tech pack cambian. El tono de la campaña se realinea. Esa es la diferencia entre un documento estático y una base viva.
