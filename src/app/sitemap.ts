@@ -15,11 +15,12 @@
 
 import type { MetadataRoute } from 'next';
 import { locales } from '@/i18n/config';
+import { listEntries } from '@/lib/content/loader';
 
 const BASE = 'https://www.aimily.app';
 
-// Build-time timestamp. Honest signal — when MDX content lands per page
-// we'll switch to per-page lastmod from frontmatter.
+// Build-time timestamp for static pages. Per-page lastmod comes from MDX
+// frontmatter for content-driven pages.
 const LASTMOD = new Date().toISOString();
 
 type MarketingPath = {
@@ -28,7 +29,7 @@ type MarketingPath = {
   priority: number;
 };
 
-const MARKETING_PATHS: MarketingPath[] = [
+const STATIC_PATHS: MarketingPath[] = [
   { path: '', changeFrequency: 'weekly', priority: 1.0 },
   { path: '/contact', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/trust', changeFrequency: 'monthly', priority: 0.6 },
@@ -37,8 +38,8 @@ const MARKETING_PATHS: MarketingPath[] = [
   { path: '/cookies', changeFrequency: 'yearly', priority: 0.3 },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  return MARKETING_PATHS.flatMap(({ path, changeFrequency, priority }) => {
+function staticEntries(): MetadataRoute.Sitemap {
+  return STATIC_PATHS.flatMap(({ path, changeFrequency, priority }) => {
     const languages: Record<string, string> = Object.fromEntries(
       locales.map((l) => [l, `${BASE}/${l}${path}`]),
     );
@@ -52,4 +53,47 @@ export default function sitemap(): MetadataRoute.Sitemap {
       alternates: { languages },
     }));
   });
+}
+
+async function contentEntries(
+  type: 'workflows' | 'vs',
+  pathPrefix: string,
+  changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
+  priority: number,
+): Promise<MetadataRoute.Sitemap> {
+  const entries = await listEntries(type);
+  // Group by slug → { slug: [locale, locale, ...] }
+  const bySlug = new Map<string, string[]>();
+  for (const { slug, locale } of entries) {
+    const arr = bySlug.get(slug) ?? [];
+    arr.push(locale);
+    bySlug.set(slug, arr);
+  }
+
+  const out: MetadataRoute.Sitemap = [];
+  bySlug.forEach((availableLocales, slug) => {
+    const languages: Record<string, string> = Object.fromEntries(
+      availableLocales.map((l: string) => [l, `${BASE}/${l}${pathPrefix}/${slug}`]),
+    );
+    languages['x-default'] = `${BASE}/en${pathPrefix}/${slug}`;
+
+    for (const locale of availableLocales) {
+      out.push({
+        url: `${BASE}/${locale}${pathPrefix}/${slug}`,
+        lastModified: LASTMOD,
+        changeFrequency,
+        priority,
+        alternates: { languages },
+      });
+    }
+  });
+  return out;
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const [workflows, comparisons] = await Promise.all([
+    contentEntries('workflows', '/workflows', 'monthly', 0.85),
+    contentEntries('vs', '/vs', 'monthly', 0.8),
+  ]);
+  return [...staticEntries(), ...workflows, ...comparisons];
 }

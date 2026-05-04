@@ -1,0 +1,110 @@
+---
+title: "Generate factory-ready tech packs from a sketch in under 5 seconds"
+description: "How aimily turns a sketch into a complete tech pack — multi-view drawings, BOM with Pantone TCX, materials from a 963-entry library, multi-stage approvals. PLM-grade. AI-native."
+hero: "I'm the Emily who has your tech pack ready before the factory asks."
+lead: "aimily generates a complete tech pack — multi-view technical drawings (up to 7 slots per SKU), bill of materials sourced from a 963-entry verified-supplier library, Pantone TCX swatches matched by ΔE2000 distance against 2,317 entries, BOM-driven costing with multi-currency ECB FX rates, sample tracking with AI photo comparison vs the original sketch, and multi-stage approvals with email notifications. PDF export in under 5 seconds. Centric and PTC FlexPLM users wait minutes."
+updated: "2026-05-04"
+howTo:
+  name: "Generate a fashion tech pack with aimily"
+  description: "From a SKU defined in the range plan to a factory-ready tech pack PDF."
+  totalTime: "PT15M"
+  steps:
+    - name: "Open a SKU in the design block"
+      text: "From a signed range plan, every SKU is already a row in the design workspace. No re-keying."
+    - name: "Add or generate a sketch"
+      text: "Upload a hand sketch (the AI Sketch endpoint extracts construction zones automatically) or use aimily's AI sketch generation from a reference image. Multi-view: front + back + side + detail (up to 7 slots per SKU)."
+    - name: "Apply colorways from your palette"
+      text: "Drop the brand DNA palette onto the sketch zones. Each color is a Pantone TCX picker — type a HEX, get the closest Pantone (ΔE2000 distance, top 3 matches). 2,317-entry library on tap."
+    - name: "Build the BOM from the materials library"
+      text: "MaterialCombobox per BOM row. 963 verified entries: natural fibers, regenerated cellulosics, synthetics, leathers + alternatives, hardware (YKK + Riri zippers, MOP + horn + corozo buttons), linings, certifications (OEKO-TEX, GOTS, BCI, RWS, RDS, GRS, RCS, FSC). cogs_hint per material auto-fills the costing engine."
+    - name: "Cost the SKU"
+      text: "BOM-driven costing engine rolls up materials cost in real time. Multi-currency support via daily ECB FX rates. AI Margin Protection flags below-target margin and proposes substitutions."
+    - name: "Set construction details + measurements"
+      text: "Reusable construction blocks (denim flat-felled side seam, French seam — chiffon, etc.) plus structured POMs with grade rules. Tolerances per POM. Auto-grading from sample size."
+    - name: "Submit for review"
+      text: "Multi-stage approval workflow. Reviewers get email notifications on stage transitions. Multi-pin annotations on tech pack drawings (Hatch-style, anchored to image coordinates)."
+    - name: "Export to PDF"
+      text: "Server-side render via Puppeteer + lightweight Chromium on Vercel Fluid. Under 5 seconds for a 30-page A3 PDF. Send to the factory inbox."
+faq:
+  - q: "What is a tech pack?"
+    a: "A tech pack is the technical specification a fashion brand sends to a factory so the factory can produce the garment. It contains the front + back + detail sketches, the bill of materials (BOM) listing every fabric, lining, thread, button and zipper with its supplier and reference, the colorways (which colors of fabric and trim are used per SKU variant), the measurement chart (points of measure across the size run with grading rules and tolerances), construction details (stitch type, seam type, finishes), and labels + care + packaging specs. Without a tech pack, no factory will quote the garment. With a bad one, the first sample misses the brief and three back-and-forth rounds happen before production starts."
+  - q: "How is aimily faster than Centric or PTC FlexPLM at PDF export?"
+    a: "Centric users complain about minutes-per-PDF on G2 (it's the platform's most-cited pain point). FlexPLM has the same architecture: server-side multi-page rendering of legacy templates. aimily renders modern HTML with Puppeteer + lightweight Chromium on Vercel Fluid Compute. A 30-page A3 PDF lands in 3–5 seconds. The architecture is purpose-built for the modern serverless stack."
+  - q: "What's in the materials library?"
+    a: "963 verified entries across 8 categories: natural fibers (linen, cotton, wool, silk, cashmere, alpaca, etc. — Rama 1, 156 entries), regenerated cellulosics (viscose, Tencel, Modal, cupro/Bemberg, acetate), synthetic + performance (poly, nylon, elastane, Cordura, Coolmax, Polartec, Gore-Tex, Pertex), construction types per fiber (Première Vision-aligned), leathers + plant-leather alternatives (full-grain, suede, nubuck, Saffiano, Piñatex, Desserto, MIRUM), hardware closures (YKK Vislon/coil/invisible/metal, Riri, MOP/horn/corozo buttons, eyelets, snaps), linings + interfacings + wadding, and footwear components. Each entry has composition, weight range, supplier, certifications, cogs_hint, and aesthetic tags. Filter by category × subtype × zone × brand price tier × season."
+  - q: "How does aimily handle Pantone?"
+    a: "Full TCX (Textile Cotton) library: all 2,317 entries with HEX, RGB and Lab values. Two flows: (a) browse by family and click a chip; (b) paste any HEX and get the top three closest Pantones by Delta E2000 distance. The hex→Pantone bridge is unique to aimily — Centric and FlexPLM have library access but no closest-match algorithm."
+  - q: "Can I version a tech pack and compare versions?"
+    a: "Yes. Multi-stage approvals with version control. Side-by-side diff between any two versions. Comments anchored to specific image coordinates (multi-pin), threaded discussion. Reviewers get email notifications on stage transitions. This is the standard PLM workflow, fully implemented as of Phase 3."
+  - q: "Does aimily work with my factory's existing systems?"
+    a: "The PDF tech pack is the universal interchange format every fashion factory accepts. Beyond PDF, aimily exports BOM as XLSX (ERP-ready), measurements as XLSX, colorways as XLSX with Pantone codes that any 3D engine (CLO3D, Browzwear, Optitex) can import. Vendor Portal (Phase 5, shipped 3 may 2026) gives factory contacts read-only access to the latest tech pack via a token-gated URL — no factory account needed on their end."
+  - q: "What about compliance and certifications?"
+    a: "Compliance Hub (Phase 5, shipped) tracks certifications per material (OEKO-TEX, GOTS, BCI, RWS, RDS, GRS, RCS, FSC, LWG, B-Corp). Restricted Substance List (RSL) flags per material (azo-dye, formaldehyde, nickel-leach). Vendor scorecards. ESG rollup — Higg MSI 3.7 sustainability score per SKU and per collection."
+related:
+  - href: "/en/workflows/range-plan"
+    label: "← Workflow 2 of 4 — Build a range plan"
+  - href: "/en/workflows/content-calendar"
+    label: "Workflow 4 of 4 → Generate the content calendar"
+  - href: "/en/vs/ptc-flexplm"
+    label: "How aimily compares to PTC FlexPLM"
+  - href: "/en/vs/centric"
+    label: "How aimily compares to Centric Software"
+---
+
+## What is a tech pack?
+
+A tech pack is the technical specification a fashion brand hands to a factory so the factory can produce the garment. It is the difference between a designer's intent and a production reality. Every fashion factory expects one. Brands that send bad tech packs spend three rounds going back and forth before the first sample matches the brief.
+
+A complete tech pack contains:
+
+- **Multi-view technical drawings** — front, back, side, detail callouts. Sometimes lining or exploded views.
+- **Bill of materials (BOM)** — every fabric, lining, thread, button, zipper, label, hangtag, with supplier reference and quantity.
+- **Colorways** — which colors of fabric and trim are used per SKU variant. Each color is a Pantone reference.
+- **Measurements (POMs + grade rules)** — points of measure across the size run, with grading rules and tolerances.
+- **Construction details** — stitch type (ISO 4915), seam type (ISO 4916), seam allowance, finish, SPI, thread weight.
+- **Labels + care + packaging** — woven labels, care symbols, hangtag specs, polybag size.
+
+A clean tech pack PDF is typically 10–30 A3 pages. The factory inbox expects PDF.
+
+## How aimily generates one in under 15 minutes
+
+aimily is Block 3 of a four-block flow. The SKU lives in the range plan from Block 2; the colors come from the brand DNA in Block 1. By the time you open the SKU in the design workspace, half the tech pack already exists.
+
+The eight-step flow is documented in the HowTo schema above. The headline differentiators against Centric and PTC FlexPLM (the two dominant fashion PLMs):
+
+- **PDF render in 3–5 seconds** vs minutes (Centric's most-cited G2 complaint).
+- **Pantone TCX 2,317 entries with HEX → ΔE2000 closest match** — both PLMs have library access but no closest-match algorithm.
+- **963-entry materials library with B2B-supplier verification + cogs_hint per entry** — neither incumbent ships a curated library at this depth.
+- **AI Margin Protection** — flags below-target margin and proposes material substitutions; both PLMs recalculate margin but don't suggest fixes.
+- **AI photo comparison sample vs sketch** — unique to aimily; ships in the sample tracking chain.
+- **Multi-pin annotations Hatch-style** — anchored to image coordinates, threaded discussion. Both incumbents have flat object-level comments only.
+
+## What you get
+
+Per SKU:
+
+- **Multi-view technical drawings** (up to 7 slots) — front + back + side + 4 details, AI-extractable from a reference image.
+- **BOM** with material library references, supplier contacts, certifications, cogs_hint per row.
+- **Colorways grid** — each color is a HEX + Pantone TCX + RGB triple.
+- **Measurements + grade rules** with tolerances per POM, auto-grading from sample size.
+- **Construction details** — reusable blocks library (French seam, flat-felled, bartack, etc.).
+- **Costing breakdown** — materials rolled up from BOM, labor + overhead + freight + duties = total landed. Multi-currency.
+- **Sample tracking chain** with AI photo comparison vs sketch.
+- **Multi-stage approval workflow** with email notifications on transitions.
+- **Compliance + ESG** — OEKO-TEX, GOTS, BCI etc. tracked per material; Higg MSI 3.7 sustainability rollup per SKU and per collection.
+- **Vendor Portal access** — token-gated read-only URL for factory contacts (no factory account needed).
+- **PDF export in 3–5 seconds** — A3 landscape, factory-inbox ready.
+
+## Before aimily, vs with aimily
+
+**Before aimily** — Sketches the factory can't read. Tech packs that miss measurements. Three back-and-forth rounds before the first sample lands. Excel for BOM, Pantone book on the desk, separate PDF for measurements, separate doc for construction notes.
+
+**With aimily** — Each SKU comes with a generated sketch, a colorway grid, a tech pack, a BOM and a pin-comment thread. First sample matches the brief.
+
+## Why it matters
+
+This is the block where Centric, PTC FlexPLM, Bamboo Rose, and Backbone PLM compete. They are enterprise-grade systems-of-record for product specification data. They are also expensive (€40–80K/year typical), slow to deploy (6–12 months), and customization-fee-heavy ("every column costs extra" — verbatim from a Capterra review of Centric).
+
+aimily ships PLM-equivalent depth in Block 3 (Pantone TCX + Materials Library + BOM costing + sample chain + version control + multi-stage approvals + Compliance Hub + Vendor Portal + Construction Details + Artworks Library + multi-view drawings + multi-currency + PO variance) plus what no PLM offers: Block 1 (Brand DNA), Block 2 (Range Plan + Margin Protection), Block 4 (Marketing & Launch). And starts at €159/month, not €40K/year.
+
+The right comparison is not "aimily vs Excel + Pantone book + factory email". It's "aimily vs the entire enterprise PLM stack you couldn't afford anyway".

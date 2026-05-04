@@ -1,0 +1,97 @@
+---
+title: "Build a CFO-ready range plan from your brand DNA in one day"
+description: "How aimily turns a brand DNA into a complete range plan: SKU grid, pricing tiers, channel split, budget reconciled with production capacity. The block your CFO actually cares about."
+hero: "I'm the Emily who builds a range plan by lunch."
+lead: "aimily reads your locked brand DNA and produces a complete range plan in a single day — families, SKUs, pricing tiers, channel allocation, total cost, revenue forecast, average margin, and budget reconciled to production capacity. Excel-exportable for ERP. Pricing tier and channel mix derive from the consumer profile in Block 1, so the numbers tell a coherent story instead of being made up in a meeting."
+updated: "2026-05-04"
+howTo:
+  name: "Build a fashion range plan with aimily"
+  description: "Turn a locked brand DNA into a CFO-ready range plan in one working day."
+  totalTime: "PT8H"
+  steps:
+    - name: "Lock the brand DNA"
+      text: "The range plan reads from the consumer profile. If you haven't locked the DNA, do that first — pricing tier and channel mix depend on demographics + psychographics."
+    - name: "Set families"
+      text: "aimily proposes 3–6 product families based on the brand DNA category and the consumer's wardrobe behavior. Edit family names and product mix inline."
+    - name: "Auto-generate SKUs per family"
+      text: "For each family, aimily generates SKU candidates with PVP, COGS, units, and margin. The default SKU count comes from category benchmarks; override per family."
+    - name: "Allocate channels"
+      text: "aimily proposes channel split (DTC + wholesale + concept stores + pop-up) driven by the consumer profile. A consumer who 'shops Net-a-Porter and concept stores' tilts the plan toward wholesale + concept; a consumer who 'shops direct-to-brand' tilts toward DTC."
+    - name: "Set the budget cycle"
+      text: "Materials & sampling, production, marketing & launch, logistics & 3PL — four budget lines. aimily reconciles total invested against production capacity (factory MOQs from the supplier library) so you don't budget for units the factory can't make."
+    - name: "Review margin per family"
+      text: "Inline margin column per family + average margin across the plan. Red flag below the target threshold; aimily proposes material substitutions or vendor moves to recover margin."
+    - name: "Export to Excel"
+      text: "One-click export. The XLSX is ERP-ready: SKU code, family, PVP, COGS, units, margin, channel allocation, budget line. Send it to finance, send it to production, send it to your buyers."
+faq:
+  - q: "What is a range plan?"
+    a: "A range plan is the bridge between creative vision and financial reality. It's a structured grid of SKUs grouped by family, with pricing, units, margin, channel allocation and budget. Without one, a brand can't tell its CFO what it expects to make this season; without one signed by finance, production can't start. Range plan vs assortment plan: assortment is a buyer-facing slice of the range; range is the brand-facing source of truth that the assortment is filtered from."
+  - q: "Range plan vs assortment plan — what's the difference?"
+    a: "Range plan is the full grid the brand commits to: every SKU, every colorway, every family. Assortment plan is a sliced view filtered for a specific buyer or channel — wholesale account A gets these 18 SKUs, the DTC site gets all 24, the concept-store edit is 12. aimily produces both: range first (signed by finance), then assortment per channel (sent to buyers)."
+  - q: "How does aimily price a SKU?"
+    a: "Pricing tier is inherited from the brand DNA's consumer profile. A consumer profile flagged as 'Net-a-Porter / Mytheresa shopper, €120–250k HHI' tilts the entire range to premium. aimily proposes PVP per SKU using a (a) tier-anchored ladder, (b) cost-plus override based on BOM rolled up from the materials library, (c) competitive reference. You edit any cell."
+  - q: "Can I import an existing range plan from Excel?"
+    a: "Yes. aimily accepts an XLSX import with column mapping (SKU code, family, PVP, COGS, units). The import populates the range plan and the platform back-fills any missing fields by inference from your brand DNA. Round-trip works: you can edit in Excel, re-import, no data loss."
+  - q: "What if my factory's MOQ is higher than my budget allows?"
+    a: "aimily flags the SKU. Three options surface: (a) raise the units forecast (and recompute revenue), (b) move to a different vendor in the supplier library with a lower MOQ, (c) consolidate the SKU into a sibling family. The platform proposes whichever resolves the conflict at lowest margin impact."
+  - q: "Does aimily replace an ERP?"
+    a: "No. aimily is the layer that ships a CFO-ready range plan. ERP (NetSuite, Apparel ERP, Microsoft Dynamics) takes that range plan and runs the operational reality: inventory, AR/AP, GL, fulfillment. The XLSX export bridges the two. We're working on direct ERP connectors as a Wave 2 feature."
+related:
+  - href: "/en/workflows/brand-dna"
+    label: "← Workflow 1 of 4 — Generate a brand DNA from a brief"
+  - href: "/en/workflows/tech-packs"
+    label: "Workflow 3 of 4 → Generate factory-ready tech packs"
+  - href: "/en/vs/centric"
+    label: "How aimily compares to Centric Software"
+---
+
+## What is a range plan?
+
+A range plan is the bridge between creative vision and financial reality. Every fashion brand needs one before production can start. Every CFO will refuse to fund a season without one. Every buyer expects one when they ask for a line sheet.
+
+The range plan answers four questions:
+
+- **What are we making?** — families, SKUs, colorways, units per SKU.
+- **How much will it cost us?** — total invested, COGS per SKU, margin per family.
+- **What do we expect to make from it?** — revenue forecast, average margin, channel split.
+- **Can we actually produce it?** — budget reconciled with factory MOQ + capacity.
+
+A complete range plan is a single grid that a finance team can sign, a production team can execute, and a buyer can read.
+
+## How aimily builds one from your brand DNA
+
+The range plan is Block 2 of aimily's four-block flow. It reads from the brand DNA locked in Block 1 — specifically the consumer profile, the price-tier signal, and the brand's reference set — and produces a CFO-ready plan in a single working day.
+
+The seven-step flow is documented in the HowTo schema above. The headline numbers:
+
+- 24 SKUs across 4 families is the typical default for an emerging brand season.
+- Pricing tier is inherited (no guessing).
+- Channel allocation is driven by the consumer profile (a "Net-a-Porter shopper" tilts toward wholesale + concept; a "shops-direct" consumer tilts toward DTC).
+- Budget reconciles against factory MOQs pulled live from the materials + suppliers library.
+
+aimily's AI Margin Protection — currently unique to aimily — flags any SKU below the target margin threshold and proposes specific fixes: material substitution from the 963-entry library, vendor swap, color reduction, or family consolidation. Centric and PTC FlexPLM recalculate margin but don't suggest fixes; aimily does.
+
+## What you get
+
+A locked range plan exports to:
+
+- **Excel (XLSX)** — ERP-ready, every column finance + production needs.
+- **Buyer line sheet (PDF)** — wholesale-ready slice with the SKUs allocated to each buyer.
+- **Drop calendar (Gantt)** — when each family ships across the season.
+- **Budget summary** — total invested, by line, percentage of cycle.
+
+The range plan is also the input to Block 3 (Design & Development): tech packs are generated for every SKU you signed off here. No hand-off, no copy-paste, no re-keying.
+
+## Before aimily, vs with aimily
+
+**Before aimily** — An Excel that nobody trusts. Buyers ask for a line sheet, you scramble. The CFO asks for margin per family, you escape the meeting. Three rounds of revisions before sign-off.
+
+**With aimily** — A range plan that finance signs in a day. Pricing locked by family. Channel allocation based on consumer signal. Budget reconciled with production capacity. Margin per family visible inline.
+
+## Why it matters
+
+The range plan is where most independent fashion brands lose money. The plan exists in someone's head, gets typed into Excel an hour before the meeting, the CFO asks an obvious question, the meeting ends without sign-off, production slips by two weeks, the launch window collapses.
+
+aimily's range plan is the structured intermediate that prevents this exact failure mode. The plan exists as data, not as a Excel document tied to one person's laptop. It updates when the brand DNA changes. It propagates downstream automatically. It exports clean.
+
+This is the block your CFO will actually thank you for. It's also the block that turns a brand from "creative project" into "business that ships on time".

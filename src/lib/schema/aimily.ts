@@ -158,3 +158,103 @@ function enterpriseOffer() {
 export function jsonLdScript(schema: object) {
   return JSON.stringify(schema).replace(/</g, '\\u003c');
 }
+
+// ────────────────────────────────────────────────────────────────────
+// Page-level helpers (workflows + comparison pages)
+// ────────────────────────────────────────────────────────────────────
+
+export interface FaqEntry { q: string; a: string; }
+export interface HowToStepIn { name: string; text: string; }
+
+export function faqPageSchema(faqs: FaqEntry[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: a,
+      },
+    })),
+  };
+}
+
+export function howToSchema({
+  name,
+  description,
+  totalTime,
+  steps,
+  url,
+}: {
+  name: string;
+  description: string;
+  totalTime?: string;
+  steps: HowToStepIn[];
+  url: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name,
+    description,
+    ...(totalTime ? { totalTime } : {}),
+    estimatedCost: { '@type': 'MonetaryAmount', currency: 'EUR', value: '0' },
+    tool: [{ '@type': 'HowToTool', name: 'aimily account (free trial)' }],
+    step: steps.map((s, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: s.name,
+      text: s.text,
+      url: `${url}#step-${i + 1}`,
+    })),
+  };
+}
+
+export function breadcrumbSchema(items: { name: string; url: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((it, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: it.name,
+      item: it.url,
+    })),
+  };
+}
+
+/** ItemList for comparison pages — Google understands these for
+ *  "best X" listicle-style queries. */
+export function comparisonItemListSchema({
+  name,
+  competitorName,
+  url,
+}: {
+  name: string;
+  competitorName: string;
+  url: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    numberOfItems: 2,
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'aimily',
+        url: BASE,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: competitorName,
+      },
+    ],
+    url,
+  };
+}

@@ -1,0 +1,96 @@
+---
+title: "Generate a fashion brand DNA in 60 minutes from a one-paragraph brief"
+description: "How aimily extracts a complete brand DNA — heritage, voice, values, references, palette and consumer profile — from a single brief. The first block of an end-to-end fashion platform."
+hero: "I'm the Emily who turns a paragraph into a brand DNA."
+lead: "aimily reads a one-paragraph brief and returns a complete brand DNA card in 60 minutes — heritage, voice, values, references, palette, consumer demographics and psychographics. Every field is editable, queryable, and reused by the next three blocks of the platform: range plan, tech packs and campaigns. Built on a stack of Anthropic Claude, OpenAI and Google Gemini, refined over three years of StudioNN consulting for independent fashion brands."
+updated: "2026-05-04"
+howTo:
+  name: "Generate a fashion brand DNA with aimily"
+  description: "Step-by-step process to extract a brand DNA card from a single brief, ready to drive a range plan."
+  totalTime: "PT60M"
+  steps:
+    - name: "Open a new collection"
+      text: "Inside aimily, create a new collection. The Brand DNA workspace opens as the first of four blocks: Creative & Brand → Merchandising → Design & Development → Marketing & Launch."
+    - name: "Write a one-paragraph brief"
+      text: "Free-text input. No template. Type the brand idea: heritage signals, target consumer, references, values. One paragraph is enough — aimily handles the structuring."
+    - name: "Run the Brand DNA prompt"
+      text: "aimily routes the brief to its Brand DNA model (Anthropic Claude as primary, with provider fallback). The model extracts heritage, voice, values, references, and a curated reference list."
+    - name: "Review the consumer profile"
+      text: "In parallel, aimily generates a consumer profile: demographics (age range, household income, geography), psychographics (values, shopping behavior), where she shops, what she avoids."
+    - name: "Generate a moodboard with palette"
+      text: "aimily produces a curated moodboard from public references and extracts a five-color palette in HEX + closest Pantone TCX (matched via ΔE2000 distance against the 2,317-entry library)."
+    - name: "Edit any field inline"
+      text: "Every field is editable. Override what you want, keep what you don't. The DNA you save is the source of truth for the rest of the collection."
+    - name: "Lock the DNA"
+      text: "When you save, the DNA becomes available to the next block (range plan), where pricing tier, channel split and family structure inherit from it automatically."
+faq:
+  - q: "What is a fashion brand DNA?"
+    a: "A brand DNA is the structured, queryable foundation that every other deliverable in a fashion collection reads from. It contains heritage signals (where the brand draws from), voice guidelines (how it speaks), value pillars (what it stands for), reference brands (its peer set), and a consumer profile (who buys it). Without a DNA, every team — design, merch, marketing — interprets the brand differently and the collection drifts. With one, every block of the platform speaks the same language."
+  - q: "Can I edit the generated brand DNA?"
+    a: "Every field is editable inline. aimily generates a strong default from the brief; you keep what's right and rewrite what isn't. The lock is one click; downstream blocks then read from your final version, not the original generation."
+  - q: "How is this different from a brand guidelines PDF?"
+    a: "A guidelines PDF is a static document a designer reads once and then forgets. A brand DNA inside aimily is structured data: it drives the range plan's pricing tier, the consumer profile's channel mix, the design block's reference library, the marketing block's tone of voice. Change the DNA, every downstream block updates with it."
+  - q: "Does aimily own the IP of what it generates?"
+    a: "No. You own everything aimily generates from your brief. aimily's terms grant you full commercial rights to the brand DNA, range plan, tech packs and campaign content the platform produces from your inputs."
+  - q: "What if my brand isn't a fashion brand?"
+    a: "aimily is purpose-built for fashion. The Brand DNA model is trained on fashion-specific signals (heritage materials, fashion voice patterns, fashion consumer archetypes). It can produce a brand DNA for adjacent categories (accessories, jewelry, footwear, lifestyle goods) but for outside-fashion verticals the output quality drops. Stick to fashion-or-adjacent for now."
+  - q: "How long does it really take?"
+    a: "60 minutes is the time from blank screen to a saved DNA you'd hand to a designer. The model generation itself takes about 90 seconds; the rest is you reading, editing, and locking. Compare to the three weeks of mood meetings the manual workflow takes."
+related:
+  - href: "/en/workflows/range-plan"
+    label: "Workflow 2 of 4 → Build a range plan from your brand DNA"
+  - href: "/en/vs/centric"
+    label: "How aimily compares to Centric Software"
+  - href: "/en/vs/ptc-flexplm"
+    label: "How aimily compares to PTC FlexPLM"
+---
+
+## What is a brand DNA?
+
+A brand DNA is the structured, queryable foundation that every deliverable in a fashion collection reads from. Think of it as the source of truth for the brand: heritage, voice, values, references, consumer profile and color palette — all stored as data, not as a 60-page PDF nobody opens after kickoff.
+
+Without a brand DNA, every team interprets the brand differently. The merchandiser prices for one consumer, the designer references another, the marketing team writes for a third. The collection drifts. With a brand DNA in place, every downstream block — range plan, tech packs, campaigns — inherits the same structured signal.
+
+A complete brand DNA card has six fields:
+
+- **Heritage**: where the brand draws from (place, era, craft tradition, material story).
+- **Voice**: how the brand speaks (tonal register, language fluency, recurring vocabulary).
+- **Values**: what the brand stands for (heritage materials · slow craft · zero plastic, etc.).
+- **References**: the brand's peer set (3–8 reference brands that anchor positioning).
+- **Consumer profile**: demographics + psychographics + where she shops + what she avoids.
+- **Palette**: 5 colors as HEX, with closest Pantone TCX matched by ΔE2000 distance.
+
+## How aimily generates one in 60 minutes
+
+aimily turns a one-paragraph brief into all six fields. The model is Anthropic Claude (with OpenAI and Google Gemini as fallback), trained against three years of StudioNN consulting work for independent fashion brands across Madrid, Barcelona, Milan and Paris.
+
+The flow is the seven-step process documented in the HowTo schema above. The honest summary: 90 seconds of model generation + 60 minutes of you reviewing and locking. Compare to three weeks of mood meetings and a PDF nobody reads.
+
+The output is editable. Every field has an inline edit button. aimily gives you a strong default; you keep what's right and rewrite what isn't.
+
+## What you get
+
+A saved brand DNA card is a structured object with the six fields above, plus:
+
+- **Reference image grid** (12 to 30 high-res images sourced from public references, attribution-tagged).
+- **Voice examples**: five short copy snippets in the brand's voice, ready to seed your campaigns.
+- **Consumer card**: a printable one-pager you'd hand to a buyer or to a CFO during fundraising.
+- **Palette swatches**: HEX + Pantone TCX + RGB for every color, ready for your 3D rendering tool or your factory.
+
+Everything queryable. Everything reused by the next block.
+
+## Before aimily, vs with aimily
+
+**Before aimily** — Three weeks of mood meetings. PDFs that nobody reads. A creative direction that lives in one designer's head. Every team works from a different mental model of the brand.
+
+**With aimily** — Vision codified in 60 minutes. Brand DNA, target consumer, color palette and references — all stored, all queryable, all reused by every other block. Every team reads from the same source of truth.
+
+This is not a productivity hack. It's the foundation that makes the next three blocks possible: range plan that prices to *this* consumer, tech packs that respect *these* values, campaigns that speak in *this* voice.
+
+## Why it matters
+
+Most fashion software (PLMs like Centric or PTC FlexPLM, design tools like CLO3D or Browzwear, ERPs like NetSuite) starts at the design or production stage. They assume the brand is already defined. aimily is the only platform that **starts at the brand**, and propagates the brand definition into every block that follows.
+
+That's why the right comparison is not "aimily vs Excel for brand briefs". It's "aimily vs the fragmented stack of mood meetings + InDesign + a Notion page + a Pinterest board that nobody syncs". One platform replaces all of it, and the data flow forward into merchandising, design and marketing is automatic.
+
+When the DNA changes — because you pivoted, because you found a new reference, because the consumer profile shifted — the change cascades. Range plan updates. Tech pack reference materials shift. Campaign tone re-aligns. That's the difference between a static document and a living foundation.
