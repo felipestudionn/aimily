@@ -143,6 +143,6 @@ export const config = {
     //   - any path ending with a static-asset extension
     //   - root-level static files (manifest.json, robots.txt, sitemap.xml,
     //     monitoring tunnel, well-known)
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|llms.txt|sw.js|monitoring|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|woff2?|ttf)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|llms.txt|llms-full.txt|sw.js|monitoring|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|woff2?|ttf)$).*)',
   ],
 };

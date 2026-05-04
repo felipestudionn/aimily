@@ -28,6 +28,9 @@ export async function GET() {
 > free trial. Starter €159/mo · Professional €479/mo · Pro Max
 > €1.199/mo · Enterprise from €3.000/mo.
 
+> Full machine-readable corpus (workflows + comparisons in one fetch):
+> ${BASE}/llms-full.txt
+
 ## Product
 
 - [Home](${BASE}): Devil Wears Prada angle, AZUR · SS27 walkthrough across the 4 blocks, pricing.
@@ -40,6 +43,20 @@ export async function GET() {
 - **Block 2 — Merchandising**: Range plan with SKU grid, pricing tiers, channel split (DTC + wholesale + concept stores + pop-up), budget reconciliation with production capacity.
 - **Block 3 — Design & Development (PLM-equivalent)**: tech pack PDF in <5s, multi-view drawings (7 slots/SKU), Pantone TCX library 2,317 entries with ΔE2000 closest-match, materials library 963 verified B2B-supplier entries, BOM-driven costing engine with multi-currency ECB FX rates, sample tracking with AI photo comparison vs sketch, multi-stage approval workflow with email notifications, version control, multi-pin annotations on tech pack drawings, Compliance Hub + Vendor Portal, Construction Details + Artworks Library, PO variance tracking.
 - **Block 4 — Marketing & Launch**: AI editorial generation without photoshoot, drop calendar coordination across stockists, content studio per SKU per channel, live sales dashboard.
+
+## Workflows (one hub page per Block)
+
+- [Brand DNA in 60 minutes from a brief](${BASE}/en/workflows/brand-dna): Block 1 — heritage, voice, values, references, palette, consumer profile.
+- [Range plan CFO-ready in one day](${BASE}/en/workflows/range-plan): Block 2 — SKU grid, pricing tiers, channel split, AI Margin Protection.
+- [Tech packs in under 5 seconds](${BASE}/en/workflows/tech-packs): Block 3 — multi-view drawings, BOM with Pantone TCX, materials library, multi-stage approvals.
+- [Editorials + drop calendar without a photoshoot](${BASE}/en/workflows/content-calendar): Block 4 — AI on-model editorials, content studio per SKU per channel, live sales dashboard.
+
+## Comparisons (vs the dominant fashion PLMs)
+
+- [aimily vs Centric Software](${BASE}/en/vs/centric): 25-feature comparison vs the world's most-deployed fashion PLM.
+- [aimily vs PTC FlexPLM](${BASE}/en/vs/ptc-flexplm): 25-feature comparison; both ship AI tech-pack auto-extraction (PTC NRF 2026, aimily Phase 7 2026-05).
+- [aimily vs Bamboo Rose](${BASE}/en/vs/bamboo-rose): brand-led vs sourcing-led architectures, 19-feature comparison.
+- [aimily vs Backbone PLM](${BASE}/en/vs/backbone-plm): the modern-stack comparison, 19-feature side-by-side.
 
 ## Where aimily wins vs incumbents
 

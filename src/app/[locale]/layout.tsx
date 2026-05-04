@@ -64,11 +64,11 @@ export async function generateMetadata({
   return {
     metadataBase: new URL(BASE),
     title: {
-      default: 'aimily — the AI assistant Miranda would have hired',
+      default: 'aimily — the only end-to-end AI platform for fashion brands',
       template: '%s · aimily',
     },
     description:
-      'The only AI-native, end-to-end fashion platform. Brand DNA, range plan, tech packs and campaigns in one continuous data flow. 14-day free trial.',
+      'Brand DNA → Range Plan → Tech Packs → Campaigns in one platform. The only AI-native fashion software that connects every block — replaces PLM + design tool + ERP + marketing software. 14-day free trial.',
     manifest: '/manifest.json',
     appleWebApp: {
       capable: true,
