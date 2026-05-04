@@ -28,7 +28,15 @@ export interface BomLine {
   qty: string;
   unit: string;
   supplier: string;
-  cost: string; // EUR per `unit`
+  /**
+   * Cost per `unit`. Stored in `cost_currency` if set (default EUR).
+   * The recompute helper converts to EUR via fx_rates before rolling
+   * up materials.bom_rolled_up so the canonical landed-cost figure
+   * stays consistently in EUR no matter how the factory quotes.
+   */
+  cost: string;
+  /** ISO 4217 currency code (USD, CNY, …). Defaults to EUR. */
+  cost_currency?: string;
   /**
    * Catalog link — set when the material was picked from the Materials
    * Library combobox (vs free text). Used by compliance, costing, and
@@ -40,6 +48,13 @@ export interface BomLine {
 export interface CostBreakdownInput {
   /** BOM rows from tech_pack_data.bom.lines. */
   bomLines: BomLine[];
+  /**
+   * Optional EUR conversion rates keyed by ISO 4217 (e.g.
+   * { USD: 1.1702, CNY: 7.991 }). When provided, lines with a
+   * non-EUR cost_currency are converted to EUR before rolling up.
+   * Omit for the legacy EUR-only flow.
+   */
+  fxRates?: Record<string, number>;
   /** Manual material cost override (EUR). Used when source_of_truth='manual'. */
   manualMaterialOverride?: number | null;
   /** Source of truth flag — 'bom' = derive from BOM, 'manual' = user override. */
@@ -125,6 +140,24 @@ const round = (n: number, decimals = 2): number => {
 // ─── Public API ───────────────────────────────────────────────────
 
 /**
+ * Convert a single BOM line's cost to EUR via the provided FX rate
+ * map. If the line has no cost_currency or it's EUR, returns the cost
+ * unchanged. Returns 0 for missing rates rather than NaN-poisoning
+ * the rollup.
+ */
+export function bomLineCostInEur(
+  line: BomLine,
+  fxRates?: Record<string, number>,
+): number {
+  const raw = num(line.cost);
+  const ccy = (line.cost_currency || 'EUR').toUpperCase();
+  if (ccy === 'EUR' || !fxRates) return raw;
+  const rate = fxRates[ccy];
+  if (!rate || !Number.isFinite(rate) || rate <= 0) return raw;
+  return raw / rate;
+}
+
+/**
  * Pure function: BOM lines + factors → CostBreakdown.
  *
  * Idempotent. Safe to call on every BOM edit. Default values keep
@@ -135,6 +168,7 @@ const round = (n: number, decimals = 2): number => {
 export function recalculateCostBreakdown(input: CostBreakdownInput): CostBreakdown {
   const {
     bomLines,
+    fxRates,
     manualMaterialOverride = null,
     materialSourceOfTruth = 'bom',
     factoryRate = 0,
@@ -149,9 +183,11 @@ export function recalculateCostBreakdown(input: CostBreakdownInput): CostBreakdo
     pvp,
   } = input;
 
-  // 1. Materials — sum of (qty × unit cost) across BOM lines.
+  // 1. Materials — sum of (qty × unit cost in EUR) across BOM lines.
+  // FX conversion applied per line so a BOM with mixed currencies
+  // (e.g. canvas in USD + Italian leather in EUR) rolls up cleanly.
   const bomRolledUp = bomLines.reduce((acc, line) => {
-    return acc + num(line.qty) * num(line.cost);
+    return acc + num(line.qty) * bomLineCostInEur(line, fxRates);
   }, 0);
 
   const effectiveMaterial =
