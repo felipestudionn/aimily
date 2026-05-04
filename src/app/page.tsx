@@ -29,6 +29,7 @@ import { PricingDetail } from '@/components/landing/PricingDetail';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { useHomeTranslation } from '@/i18n/home';
 import FaqWidget from '@/components/faq/FaqWidget';
+import { webApplicationSchema, jsonLdScript } from '@/lib/schema/aimily';
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -68,6 +69,10 @@ export default function HomePage() {
 
   return (
     <div className="bg-carbon text-crema min-h-screen overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(webApplicationSchema()) }}
+      />
       {/* ═══════════════════════ LAYER 1 — PORTADA (logo + tagline) ═══════════════════════ */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6">
         {/* Subtle grid texture */}

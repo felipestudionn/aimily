@@ -13,6 +13,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { cn } from "@/lib/utils";
 import { Suspense } from 'react';
 import { AssistantMount } from '@/components/aimily-assistant/AssistantMount';
+import { organizationSchema, jsonLdScript } from '@/lib/schema/aimily';
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -66,6 +67,10 @@ export default function RootLayout({
       <head>
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationSchema()) }}
+        />
       </head>
       <body className="min-h-screen antialiased">
         <AuthProvider>
