@@ -17,7 +17,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Loader2, ShieldAlert, ShieldCheck, ShieldQuestion, Calendar, Plus, Trash2, X } from 'lucide-react';
+import { Loader2, ShieldAlert, ShieldCheck, ShieldQuestion, Calendar, Plus, Trash2, X, Leaf } from 'lucide-react';
 
 interface Cert {
   id: string;
@@ -44,20 +44,31 @@ interface SkuReport {
   warnings: number;
 }
 
+interface EsgSummary {
+  tier: 'excellent' | 'good' | 'concern' | 'critical' | 'unknown';
+  avg_msi: number;
+  sku_count: number;
+  scored_count: number;
+  distribution: { excellent: number; good: number; concern: number; critical: number };
+}
+
 export default function CompliancePage() {
   const params = useParams<{ id: string }>();
   const [certs, setCerts] = useState<Cert[]>([]);
   const [reports, setReports] = useState<SkuReport[]>([]);
+  const [esg, setEsg] = useState<EsgSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Cert | 'new' | null>(null);
 
   async function loadAll() {
     setLoading(true);
-    const [c, skuRes] = await Promise.all([
+    const [c, skuRes, esgRes] = await Promise.all([
       fetch('/api/certifications').then((r) => r.json() as Promise<{ certifications: Cert[] }>),
       fetch(`/api/skus?planId=${params.id}`).then((r) => r.json() as Promise<Sku[]>),
+      fetch(`/api/esg/sku-rollup?planId=${params.id}`).then((r) => r.json() as Promise<{ collection_summary: EsgSummary | null }>),
     ]);
     setCerts(c.certifications ?? []);
+    setEsg(esgRes.collection_summary ?? null);
     const skus = Array.isArray(skuRes) ? skuRes : [];
     const reportsList: SkuReport[] = await Promise.all(
       skus.map(async (s) => {
@@ -109,6 +120,52 @@ export default function CompliancePage() {
             <RollupCard label="Compliant" count={compliantCount} icon={ShieldCheck} bg="bg-moss/[0.18]" />
             <RollupCard label="Warnings" count={warningCount} icon={ShieldQuestion} bg="bg-citronella/[0.22]" />
             <RollupCard label="Violations" count={violationCount} icon={ShieldAlert} bg="bg-red-50" />
+          </section>
+        )}
+
+        {/* ESG / Higg MSI rollup — visible always once we have SKUs,
+            with an empty-state hint when no BOM line carries a
+            catalog-linked material yet. */}
+        {esg && (
+          <section className="bg-white rounded-[14px] border border-carbon/[0.06] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Leaf className="h-4 w-4 text-moss" />
+              <h2 className="text-[14px] font-semibold text-carbon tracking-[-0.01em]">ESG · Higg MSI 3.7 rollup</h2>
+              <span className="ml-auto text-[11px] uppercase tracking-[0.05em] text-carbon/45">
+                {esg.scored_count} of {esg.sku_count} SKUs scored
+              </span>
+            </div>
+            {esg.scored_count === 0 && (
+              <p className="text-[13px] text-carbon/60 leading-snug">
+                ESG scores appear once BOM lines are linked to the materials library. Pick materials from the
+                Combobox in any tech pack BOM — Higg MSI is computed automatically from each entry's family,
+                refined by name keywords (organic, recycled, veg-tan, …).
+              </p>
+            )}
+            {esg.scored_count > 0 && (
+              <>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className={`p-4 rounded-[10px] border border-carbon/[0.06] ${
+                esg.tier === 'excellent' ? 'bg-moss/[0.18]' :
+                esg.tier === 'good' ? 'bg-moss/[0.10]' :
+                esg.tier === 'concern' ? 'bg-citronella/[0.18]' :
+                'bg-red-50'
+              }`}>
+                <p className="text-[10px] tracking-[0.18em] uppercase font-semibold text-carbon/55 mb-1">Avg MSI</p>
+                <p className="text-[24px] font-semibold text-carbon tracking-[-0.02em] leading-none">{esg.avg_msi}</p>
+                <p className="text-[11px] uppercase tracking-[0.08em] text-carbon/55 mt-2">{esg.tier}</p>
+              </div>
+              <EsgDistroCard label="Excellent" count={esg.distribution.excellent} bg="bg-moss/[0.18]" hint="<30" />
+              <EsgDistroCard label="Good" count={esg.distribution.good} bg="bg-moss/[0.10]" hint="30–80" />
+              <EsgDistroCard label="Concern" count={esg.distribution.concern} bg="bg-citronella/[0.18]" hint="80–150" />
+              <EsgDistroCard label="Critical" count={esg.distribution.critical} bg="bg-red-50" hint=">150" />
+            </div>
+            <p className="text-[11px] text-carbon/45 mt-3 leading-snug">
+              Scores derived from Higg MSI 3.7 family baselines plus name-keyword refinements (organic, recycled,
+              veg-tan, etc.). Lines without a catalog match are skipped — fuzzy ESG numbers are worse than no number.
+            </p>
+              </>
+            )}
           </section>
         )}
 
@@ -213,6 +270,16 @@ export default function CompliancePage() {
       {editing && (
         <CertEditor cert={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={loadAll} />
       )}
+    </div>
+  );
+}
+
+function EsgDistroCard({ label, count, bg, hint }: { label: string; count: number; bg: string; hint: string }) {
+  return (
+    <div className={`p-4 rounded-[10px] border border-carbon/[0.06] ${bg}`}>
+      <p className="text-[10px] tracking-[0.18em] uppercase font-semibold text-carbon/55 mb-1">{label}</p>
+      <p className="text-[24px] font-semibold text-carbon tracking-[-0.02em] leading-none">{count}</p>
+      <p className="text-[11px] tracking-[0.05em] text-carbon/45 mt-2">{hint}</p>
     </div>
   );
 }
