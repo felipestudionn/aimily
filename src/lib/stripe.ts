@@ -155,19 +155,13 @@ export function isSelfServePlan(plan: PlanId): boolean {
   return plan === 'founder' || plan === 'team' || plan === 'team_pro';
 }
 
-// Launch promo coupons — first 100 paid subs get a fixed €/mo discount
-// per plan for 12 months. Absolute amounts (not %) so the resulting
-// monthly charge always lands on a clean €X9 number:
-//   Founder  €99 - €50 = €49/mo · Team €599 - €300 = €299/mo
-//   Team Pro €1499 - €750 = €749/mo
-// Counter shared across all 3 in `launch_promo_counter` table.
-// Annual: monthly toggle is hidden in v2 — annual subs handled via
-// Customer Portal post-trial without auto-applied promo (deliberate).
-export const LAUNCH_PROMO_COUPONS: Record<'founder' | 'team' | 'team_pro', string> = {
-  founder: 'LAUNCH-FOUNDER-M',
-  team: 'LAUNCH-TEAM-M',
-  team_pro: 'LAUNCH-TEAM-PRO-M',
-};
+// Public launch promo retired May 2026 (decision: no public discount,
+// brand is premium fashion). Outreach now uses the private STUDIONN50
+// promotion code that customers type at checkout. The 3 coupons
+// LAUNCH-FOUNDER-M / LAUNCH-TEAM-M / LAUNCH-TEAM-PRO-M have been
+// archived in Stripe and the launch_promo_counter row has
+// active = false in Supabase. Reactivate by recreating the coupons
+// + re-importing this map if needed.
 
 // Aimily Credits packs — one-time top-up for imagery generation
 // Each pack adds N imagery to the user's `imagery_credits.balance` (no expiry).

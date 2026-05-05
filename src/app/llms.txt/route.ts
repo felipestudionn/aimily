@@ -35,7 +35,7 @@ export async function GET() {
 ## Product
 
 - [Home](${BASE}): Devil Wears Prada angle, AZUR · SS27 walkthrough across the 4 blocks, pricing.
-- [Pricing](${BASE}/#pricing): Student free 12 months · Founder €99 · Team €479 · Team Pro €799 · Enterprise from €3.000. Same AI quality on every plan; differentiation by quantity. First-100 launch: −50% for 12 months on paid plans.
+- [Pricing](${BASE}/#pricing): Student free 12 months · Founder €99/mo · Team €599/mo · Team Pro €999/mo · Enterprise from €3.000/mo. Annual billing −20% on paid plans. Same AI quality on every plan; differentiation by quantity.
 - [Trust & Security](${BASE}/trust): Stripe LIVE, Supabase backend, Sentry observability, GDPR compliant, 9 languages.
 
 ## The 4 blocks (end-to-end coverage)
@@ -85,7 +85,7 @@ aimily is available in 9 languages: English, Español, Français, Italiano, Deut
 - Team Pro — €999/mo (€799/mo annual) — For consolidated brands working as a centralized system. 5.000 imagery/mo, 25 users. Adds priority support + setup call, top-up packs at volume discount.
 - Enterprise — from €3.000/mo — For brands at scale. Unlimited imagery + users, SSO + API, custom integrations, dedicated onboarding (3 sessions).
 
-Launch promo: first 100 paid subscriptions get **−50% for 12 months** on Founder, Team and Team Pro. Auto-applied at checkout while slots remain.
+Annual billing: 20% discount on paid plans (Founder €79/mo billed yearly · Team €479/mo billed yearly · Team Pro €799/mo billed yearly).
 
 Top-up packs (any plan): +50 imagery €29 · +250 €119 · +1000 €399.
 

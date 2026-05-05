@@ -83,10 +83,9 @@ export async function GET() {
 > across Madrid, Barcelona, Milan and Paris since 2023.
 >
 > Pricing: Student free 12 months (academic email) · Founder €99/mo
-> (€79 annual) · Team €599/mo (€479 annual, recommended) · Team Pro
-> €999/mo (€799 annual) · Enterprise from €3,000/mo. 30-day free
-> trial. No credit card. Launch promo: first 100 paid subs get −50%
-> for 12 months on Founder/Team/Team Pro.
+> (€79 annual) · Team €599/mo (€479 annual) · Team Pro €999/mo
+> (€799 annual) · Enterprise from €3,000/mo. 30-day free trial. No
+> credit card.
 
 > Short index: ${BASE}/llms.txt
 > Web home: ${BASE}/en
