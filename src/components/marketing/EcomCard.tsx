@@ -13,6 +13,8 @@ import {
 import { useWholesaleOrders, type WholesaleOrder } from '@/hooks/useWholesaleOrders';
 import { useTranslation } from '@/i18n';
 import { EcomHub } from '@/components/ecom/EcomHub';
+import { SeoResearchHub } from '@/components/ecom/SeoResearchHub';
+import { useEffect } from 'react';
 
 /* ═══════════════════════════════════════════════════════════
    Ecom — DTC storefront hub (renamed from Point of Sale 2026-05-05).
@@ -48,6 +50,20 @@ export function EcomCard({ collectionPlanId }: EcomCardProps) {
   const m = (t as unknown as { marketingPage?: Record<string, string> }).marketingPage || {};
   const common = (t as unknown as { common?: Record<string, string> }).common || {};
   const { orders, loading, error, addOrder } = useWholesaleOrders(collectionPlanId);
+  const [storefrontId, setStorefrontId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/ecom/storefront-by-collection/${collectionPlanId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && data.storefront) setStorefrontId(data.storefront.id);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [collectionPlanId]);
 
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [newOrder, setNewOrder] = useState({
@@ -109,6 +125,9 @@ export function EcomCard({ collectionPlanId }: EcomCardProps) {
 
       {/* ═══ Ecom Hub (web store generator) ═══ */}
       <EcomHub collectionPlanId={collectionPlanId} />
+
+      {/* ═══ SEO Research (Sprint 7 module) ═══ */}
+      <SeoResearchHub collectionPlanId={collectionPlanId} storefrontId={storefrontId} />
 
       {/* Legacy Web Store placeholder — TODO Sprint 2: remove once EcomHub
           covers full publish flow including the empty-state UX above. */}
