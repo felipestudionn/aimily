@@ -1,16 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════════
-   Storefront route group · home page (hello-world stub for Sprint 1)
+   Storefront route group · home page
 
-   In Sprint 2 this will:
-     1. Resolve the host to a `storefronts` row (subdomain or custom_domain)
-     2. Load the theme via theme-registry
-     3. Load StorefrontData via loadStorefrontData(collectionPlanId)
-     4. Render <theme.pages.HomeTemplate data={data} />
+   Resolves the request host to a published storefront (subdomain or
+   custom domain). 404 if not found.
 
-   For Sprint 1 day 2 it just confirms the multi-tenant routing works.
+   In Sprint 2 this will swap the placeholder body for:
+     <theme.pages.HomeTemplate data={await loadStorefrontData(...)} />
 
    Plan: .planning/ecom/05-SPRINTS.md (Sprint 2 day 4-5)
    ═══════════════════════════════════════════════════════════════════ */
+
+import { notFound } from 'next/navigation';
+import { loadStorefrontByHost } from '@/lib/storefront/load-storefront';
 
 interface Props {
   params: Promise<{ host: string }>;
@@ -18,6 +19,11 @@ interface Props {
 
 export default async function StorefrontHome({ params }: Props) {
   const { host } = await params;
+  const storefront = await loadStorefrontByHost(host);
+
+  if (!storefront) {
+    notFound();
+  }
 
   return (
     <main
@@ -34,14 +40,29 @@ export default async function StorefrontHome({ params }: Props) {
       }}
     >
       <p style={{ fontSize: '11px', letterSpacing: '0.3em', textTransform: 'uppercase', opacity: 0.5, marginBottom: '2rem' }}>
-        aimily ecom · storefront preview
+        aimily ecom · {storefront.theme_id}
       </p>
       <h1 style={{ fontSize: '48px', fontWeight: 300, letterSpacing: '-0.03em', margin: 0, textAlign: 'center' }}>
         {host}
       </h1>
-      <p style={{ fontSize: '14px', opacity: 0.5, marginTop: '1.5rem', maxWidth: '480px', textAlign: 'center', lineHeight: 1.6 }}>
-        Multi-tenant routing wired. Theme, brand DNA, and product catalog ship in Sprint 2.
+      <p style={{ fontSize: '13px', opacity: 0.5, marginTop: '1.5rem', maxWidth: '560px', textAlign: 'center', lineHeight: 1.6 }}>
+        Theme &middot; <strong>{storefront.theme_id}</strong> &nbsp;|&nbsp;
+        Payment &middot; <strong>{storefront.payment_provider}</strong> &nbsp;|&nbsp;
+        Published &middot; <strong>{storefront.published_at?.slice(0, 10)}</strong>
+      </p>
+      <p style={{ fontSize: '12px', opacity: 0.35, marginTop: '2rem', maxWidth: '480px', textAlign: 'center', lineHeight: 1.6 }}>
+        Sprint 1 wired. Theme renderer + brand DNA + product catalog ship in Sprint 2.
       </p>
     </main>
   );
+}
+
+export async function generateMetadata({ params }: Props) {
+  const { host } = await params;
+  const storefront = await loadStorefrontByHost(host);
+  if (!storefront) return { title: 'Not found' };
+  return {
+    title: storefront.seo_title ?? host,
+    description: storefront.seo_description ?? undefined,
+  };
 }

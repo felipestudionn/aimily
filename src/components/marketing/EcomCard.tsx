@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useWholesaleOrders, type WholesaleOrder } from '@/hooks/useWholesaleOrders';
 import { useTranslation } from '@/i18n';
+import { EcomHub } from '@/components/ecom/EcomHub';
 
 /* ═══════════════════════════════════════════════════════════
    Ecom — DTC storefront hub (renamed from Point of Sale 2026-05-05).
@@ -106,8 +107,12 @@ export function EcomCard({ collectionPlanId }: EcomCardProps) {
         </div>
       )}
 
-      {/* ═══ Web Store ═══ */}
-      <div className="bg-white rounded-[20px] p-6 md:p-8">
+      {/* ═══ Ecom Hub (web store generator) ═══ */}
+      <EcomHub collectionPlanId={collectionPlanId} />
+
+      {/* Legacy Web Store placeholder — TODO Sprint 2: remove once EcomHub
+          covers full publish flow including the empty-state UX above. */}
+      <div className="bg-white rounded-[20px] p-6 md:p-8 hidden">
         <div className="flex items-center gap-2.5 mb-5">
           <Globe className="h-4 w-4 text-carbon/35" strokeWidth={1.75} />
           <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">
