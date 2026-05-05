@@ -29,6 +29,7 @@ import {
   faqPageSchema,
   breadcrumbSchema,
   comparisonItemListSchema,
+  articleSchema,
   jsonLdScript,
 } from '@/lib/schema/aimily';
 
@@ -99,6 +100,21 @@ export default async function ComparisonPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbs) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(
+            articleSchema({
+              headline: fm.title,
+              description: fm.description,
+              url,
+              datePublished: fm.updated,
+              dateModified: fm.updated,
+              inLanguage: locale,
+            }),
+          ),
+        }}
       />
       {cmp && (
         <script

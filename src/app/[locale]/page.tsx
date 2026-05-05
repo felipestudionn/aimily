@@ -17,7 +17,8 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/i18n';
@@ -34,6 +35,8 @@ import { webApplicationSchema, jsonLdScript } from '@/lib/schema/aimily';
 export default function HomePage() {
   const { user } = useAuth();
   const router = useRouter();
+  const params = useParams<{ locale: string }>();
+  const locale = params?.locale ?? 'en';
   const t = useTranslation();
   const h = useHomeTranslation();
   const [authOpen, setAuthOpen] = useState(false);
@@ -160,6 +163,43 @@ export default function HomePage() {
               {h.finalCta.button}
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════ LAYER 4.5 — RESOURCES (SEO internal links) ═══════════════════════ */}
+      {/* Cross-cluster internal linking — passes home authority to /how-to/, /workflows/, /vs/.
+          Critical for ranking on commercial-intent queries ("create a fashion collection", etc.). */}
+      <section className="px-6 py-20 md:py-32 border-t border-crema/[0.06] bg-carbon">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-10 md:gap-16">
+            <div>
+              <h3 className="text-[12px] uppercase tracking-[0.22em] text-crema/45 mb-6">How to</h3>
+              <ul className="space-y-3">
+                <li><Link href={`/${locale}/how-to/create-fashion-collection`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">Create a fashion collection</Link></li>
+                <li><Link href={`/${locale}/how-to/launch-fashion-collection`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">Launch a fashion collection</Link></li>
+                <li><Link href={`/${locale}/how-to/start-fashion-brand`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">Start a fashion brand</Link></li>
+                <li><Link href={`/${locale}/how-to/design-clothing-line`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">Design a clothing line</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-[12px] uppercase tracking-[0.22em] text-crema/45 mb-6">Workflows</h3>
+              <ul className="space-y-3">
+                <li><Link href={`/${locale}/workflows/brand-dna`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">Brand DNA in 60 minutes</Link></li>
+                <li><Link href={`/${locale}/workflows/range-plan`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">CFO-ready range plan in a day</Link></li>
+                <li><Link href={`/${locale}/workflows/tech-packs`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">Tech packs in under 5 seconds</Link></li>
+                <li><Link href={`/${locale}/workflows/content-calendar`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">Editorials without a photoshoot</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-[12px] uppercase tracking-[0.22em] text-crema/45 mb-6">Compare</h3>
+              <ul className="space-y-3">
+                <li><Link href={`/${locale}/vs/centric`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">aimily vs Centric Software</Link></li>
+                <li><Link href={`/${locale}/vs/ptc-flexplm`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">aimily vs PTC FlexPLM</Link></li>
+                <li><Link href={`/${locale}/vs/bamboo-rose`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">aimily vs Bamboo Rose</Link></li>
+                <li><Link href={`/${locale}/vs/backbone-plm`} className="text-[15px] text-crema/85 hover:text-crema underline-offset-4 hover:underline leading-snug">aimily vs Backbone PLM</Link></li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>

@@ -225,6 +225,47 @@ export function breadcrumbSchema(items: { name: string; url: string }[]) {
   };
 }
 
+/** Article schema for content pages — boosts knowledge panel + Top Stories
+ *  + helps Google understand authorship/freshness. Reference:
+ *  https://developers.google.com/search/docs/appearance/structured-data/article */
+export function articleSchema({
+  headline,
+  description,
+  url,
+  datePublished,
+  dateModified,
+  inLanguage,
+  imageUrl,
+}: {
+  headline: string;
+  description: string;
+  url: string;
+  datePublished: string;
+  dateModified: string;
+  inLanguage: string;
+  imageUrl?: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline,
+    description,
+    url,
+    inLanguage,
+    datePublished,
+    dateModified,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    author: {
+      '@type': 'Organization',
+      '@id': ORG_ID,
+      name: 'aimily',
+      url: BASE,
+    },
+    publisher: { '@id': ORG_ID },
+    image: imageUrl ?? `${BASE}/meet-aimily/og.jpg`,
+  };
+}
+
 /** ItemList for comparison pages — Google understands these for
  *  "best X" listicle-style queries. */
 export function comparisonItemListSchema({

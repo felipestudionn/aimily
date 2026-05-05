@@ -25,7 +25,7 @@ async function renderType(type: ContentType, sectionTitle: string): Promise<stri
     if (!entry) continue;
 
     const fm = entry.frontmatter;
-    const url = `${BASE}/en/${type === 'vs' ? 'vs' : 'workflows'}/${slug}`;
+    const url = `${BASE}/en/${type}/${slug}`;
 
     parts.push(`## ${fm.title}\n`);
     parts.push(`Source: ${url}\n`);
@@ -92,12 +92,13 @@ export async function GET() {
 
 `;
 
-  const [workflows, comparisons] = await Promise.all([
+  const [workflows, comparisons, howTos] = await Promise.all([
     renderType('workflows', 'Workflows — the 4 Blocks of aimily'),
     renderType('vs', 'Comparisons vs traditional fashion PLMs'),
+    renderType('how-to', 'How-to guides — commercial-intent pillar pages'),
   ]);
 
-  const body = header + workflows + comparisons;
+  const body = header + howTos + workflows + comparisons;
 
   return new Response(body, {
     headers: {
