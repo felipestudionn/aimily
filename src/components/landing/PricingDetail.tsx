@@ -203,8 +203,9 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   </p>
                 </div>
 
-                {/* Price block — always monthly. Annual mention is a sub-line. */}
-                <div className="mb-6 min-h-[5.5rem]">
+                {/* Price block — always monthly. No annual / promo / discount
+                    mentioned inside the card (those live in top banner only). */}
+                <div className="mb-6 min-h-[4.5rem]">
                   {plan.monthlyPrice !== null ? (
                     <>
                       <div className="flex items-baseline gap-2">
@@ -217,13 +218,14 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                       </div>
                       <div className="text-[12px] mt-2 min-h-[1rem] text-carbon/55">
                         {isStudent && p.studentDuration}
-                        {plan.annualPerMonth !== null && p.annualNote.replace('{price}', String(plan.annualPerMonth))}
                       </div>
                     </>
                   ) : null}
                 </div>
 
-                {/* Highlights — only concrete resources, no filler */}
+                {/* Highlights — only concrete resources, no filler.
+                    flex-1 makes the list expand so CTAs end up at the same
+                    Y across all 4 cards regardless of highlight count. */}
                 <ul className="space-y-3 flex-1 mb-7">
                   {planHighlights[plan.id].map((highlight, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-[13.5px] leading-[1.5]">
@@ -233,7 +235,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   ))}
                 </ul>
 
-                {/* CTA */}
+                {/* CTA — pinned to the bottom of every card by flex-1 above */}
                 {(() => {
                   const ctaLabel = isStudent
                     ? p.ctaVerifyStudent
@@ -275,7 +277,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
         </div>
 
         {/* Single global note — replaces 4 per-card "no credit card" lines */}
-        <p className="text-center text-[13px] text-carbon/55 mb-16">
+        <p className="text-center text-[15px] md:text-[16px] font-medium text-carbon mb-16">
           {p.noCardNoteGlobal}
         </p>
 
