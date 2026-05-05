@@ -102,7 +102,7 @@ export const PLANS = {
     limits: {
       collections: -1,
       imageryGenerations: 1000,
-      users: 5,
+      users: 10,
       exportEnabled: true,
       aiVideoEnabled: true,
       apiAccessEnabled: false,
@@ -112,8 +112,8 @@ export const PLANS = {
   team_pro: {
     name: 'Team Pro',
     nameEs: 'Team Pro',
-    price: 1499,
-    priceAnnual: 1199,
+    price: 999,
+    priceAnnual: 799,
     stripePriceId: process.env.STRIPE_TEAM_PRO_MONTHLY_PRICE_ID,
     stripePriceIdAnnual: process.env.STRIPE_TEAM_PRO_ANNUAL_PRICE_ID,
     limits: {

@@ -26,7 +26,7 @@ export async function GET() {
 > Built by StudioNN, a fashion agency consulting independent fashion
 > brands across Madrid, Barcelona, Milan and Paris since 2023. 30-day
 > free trial, no credit card. Student free 12 months for verified fashion
-> students. Founder €99/mo · Team €599/mo · Team Pro €1.499/mo ·
+> students. Founder €99/mo · Team €599/mo · Team Pro €999/mo ·
 > Enterprise from €3.000/mo.
 
 > Full machine-readable corpus (workflows + comparisons in one fetch):
@@ -35,7 +35,7 @@ export async function GET() {
 ## Product
 
 - [Home](${BASE}): Devil Wears Prada angle, AZUR · SS27 walkthrough across the 4 blocks, pricing.
-- [Pricing](${BASE}/#pricing): Student free 12 months · Founder €99 · Team €479 · Team Pro €1.199 · Enterprise from €3.000. Same AI quality on every plan; differentiation by quantity. First-100 launch: −50% for 12 months on paid plans.
+- [Pricing](${BASE}/#pricing): Student free 12 months · Founder €99 · Team €479 · Team Pro €799 · Enterprise from €3.000. Same AI quality on every plan; differentiation by quantity. First-100 launch: −50% for 12 months on paid plans.
 - [Trust & Security](${BASE}/trust): Stripe LIVE, Supabase backend, Sentry observability, GDPR compliant, 9 languages.
 
 ## The 4 blocks (end-to-end coverage)
@@ -82,7 +82,7 @@ aimily is available in 9 languages: English, Español, Français, Italiano, Deut
 - Student — Free 12 months — For verified fashion students (auto-verified via institutional email). 100 imagery/mo, 1 user. Same AI quality as Founder. Renewable.
 - Founder — €99/mo (€79/mo annual) — For the solo founder bringing an idea to life. 100 imagery/mo, 1 user, all 28 aimily AI models, top quality on every render, email support.
 - Team — €599/mo (€479/mo annual) — Recommended. For 3-5 person startups (buyer + designer + marketing). 1.000 imagery/mo, 5 users. Adds video generation (Kling 2.1), priority email, roles/permissions/collaboration.
-- Team Pro — €1.499/mo (€1.199/mo annual) — For consolidated brands working as a centralized system. 5.000 imagery/mo, 25 users. Adds priority support + setup call, top-up packs at volume discount.
+- Team Pro — €999/mo (€799/mo annual) — For consolidated brands working as a centralized system. 5.000 imagery/mo, 25 users. Adds priority support + setup call, top-up packs at volume discount.
 - Enterprise — from €3.000/mo — For brands at scale. Unlimited imagery + users, SSO + API, custom integrations, dedicated onboarding (3 sessions).
 
 Launch promo: first 100 paid subscriptions get **−50% for 12 months** on Founder, Team and Team Pro. Auto-applied at checkout while slots remain.

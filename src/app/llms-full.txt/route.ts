@@ -84,7 +84,7 @@ export async function GET() {
 >
 > Pricing: Student free 12 months (academic email) · Founder €99/mo
 > (€79 annual) · Team €599/mo (€479 annual, recommended) · Team Pro
-> €1,499/mo (€1,199 annual) · Enterprise from €3,000/mo. 30-day free
+> €999/mo (€799 annual) · Enterprise from €3,000/mo. 30-day free
 > trial. No credit card. Launch promo: first 100 paid subs get −50%
 > for 12 months on Founder/Team/Team Pro.
 

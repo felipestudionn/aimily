@@ -32,7 +32,7 @@ const PLAN_META: {
   { id: 'student', monthlyPrice: 0, annualPerMonth: null },
   { id: 'founder', monthlyPrice: 99, annualPerMonth: 79 },
   { id: 'team', monthlyPrice: 599, annualPerMonth: 479 },
-  { id: 'team_pro', monthlyPrice: 1499, annualPerMonth: 1199 },
+  { id: 'team_pro', monthlyPrice: 999, annualPerMonth: 799 },
 ];
 
 const PACKS: { id: PackId; imagery: number; price: number }[] = [

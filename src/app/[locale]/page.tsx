@@ -27,6 +27,7 @@ import { ChevronDown, ArrowRight } from 'lucide-react';
 import { track, Events } from '@/lib/posthog';
 import { MeetAimilyContent } from '@/components/landing/MeetAimilyContent';
 import { PricingDetail } from '@/components/landing/PricingDetail';
+import { PoweredBy } from '@/components/landing/PoweredBy';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { useHomeTranslation } from '@/i18n/home';
 import FaqWidget from '@/components/faq/FaqWidget';
@@ -136,7 +137,10 @@ export default function HomePage() {
         <MeetAimilyContent openAuth={openAuth} />
       </div>
 
-      {/* ═══════════════════════ LAYER 3 — PRICING (4 plans + packs + imagery) ═══════════════════════ */}
+      {/* ═══════════════════════ LAYER 3 — POWERED BY (AI provider transparency + cost comparison) ═══════════════════════ */}
+      <PoweredBy />
+
+      {/* ═══════════════════════ LAYER 4 — PRICING (4 plans + packs + imagery) ═══════════════════════ */}
       <PricingDetail openAuth={openAuth} />
 
       {/* ═══════════════════════ LAYER 4 — FINAL CTA ═══════════════════════ */}

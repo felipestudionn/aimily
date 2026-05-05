@@ -111,7 +111,7 @@ export function webApplicationSchema() {
       offer('Student', 0, 'Free 12 months for verified fashion students'),
       offer('Founder', 79, 'For the solo founder bringing an idea to life'),
       offer('Team', 479, 'For 3-5 person startups: buyer + designer + marketing'),
-      offer('Team Pro', 1199, 'For consolidated brands working as one centralized system'),
+      offer('Team Pro', 799, 'For consolidated brands working as one centralized system'),
       enterpriseOffer(),
     ],
   };
