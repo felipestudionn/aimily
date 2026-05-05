@@ -954,7 +954,7 @@ const es: HomeDict = {
     enterpriseName: 'Enterprise',
     studentTagline: 'Para estudiantes de moda que quieren hacer carrera en la industria.',
     founderTagline: 'Para alguien que tiene una idea y quiere hacerla realidad.',
-    teamTagline: 'Para startups de 3-5 personas: comprador + diseñador + marketing.',
+    teamTagline: 'Para startups de moda de 5-10 personas que quieren escalar.',
     teamProTagline: 'Para llevar tu marca de moda al siguiente nivel.',
     enterpriseTagline: 'Para marcas a gran escala.',
     perMonth: '/mes',
