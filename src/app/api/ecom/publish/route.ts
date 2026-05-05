@@ -28,6 +28,7 @@ import { revalidateTag } from 'next/cache';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isSubdomainAvailable, SUBDOMAIN_ERROR_MESSAGES } from '@/lib/storefront/subdomain-validator';
+import { registerStorefrontDomain, buildStorefrontUrl } from '@/lib/storefront/vercel-domains';
 import { ALL_THEME_IDS, type ThemeId, type PaymentProvider } from '@/types/storefront';
 
 const VALID_PROVIDERS: PaymentProvider[] = ['stripe_buy_button', 'shopify_buy', 'lookbook_only'];
@@ -175,6 +176,24 @@ export async function POST(request: Request) {
     },
   });
 
+  // Register the subdomain in Vercel so SSL gets emitted via HTTP-01.
+  // This is the SSL strategy for *.aimily.shop because:
+  //   - Cloudflare Free doesn't allow proxied wildcard records (Business+ only)
+  //   - Vercel can't emit a wildcard SSL cert without DNS-01 challenge access
+  //   - Cloudflare Registrar locks NS to Cloudflare nameservers (no NS swap)
+  // Per-subdomain SSL via Vercel API is the standard pattern (Linktree, Substack).
+  // Vercel emits a single-host cert in 30-90s once it sees DNS routes traffic.
+  const baseDomain = process.env.NEXT_PUBLIC_STOREFRONT_BASE_DOMAIN ?? 'aimily.shop';
+  const fullDomain = `${normalizedSubdomain}.${baseDomain}`;
+  const vercelResult = await registerStorefrontDomain(fullDomain);
+  if (!vercelResult.ok) {
+    // Soft-fail: the storefront row exists in DB but Vercel didn't accept the
+    // domain (transient API error, rate limit, etc.). The user gets a warning
+    // and can retry publish. We do NOT roll back the DB row — the storefront
+    // is already "published" semantically; only SSL is pending.
+    console.error('[ecom/publish] Vercel register failed:', vercelResult.error);
+  }
+
   // Cache invalidation (Next.js 16 requires explicit profile)
   revalidateTag(`storefront-${storefrontId}`, 'default');
 
@@ -185,8 +204,15 @@ export async function POST(request: Request) {
     .eq('id', storefrontId)
     .single();
 
-  const baseDomain = process.env.NEXT_PUBLIC_STOREFRONT_BASE_DOMAIN ?? 'aimily.shop';
-  const publicUrl = `https://${normalizedSubdomain}.${baseDomain}`;
+  const publicUrl = buildStorefrontUrl(normalizedSubdomain);
 
-  return NextResponse.json({ storefront, publicUrl }, { status: existing ? 200 : 201 });
+  return NextResponse.json(
+    {
+      storefront,
+      publicUrl,
+      sslPending: !vercelResult.ok || !vercelResult.alreadyExists,
+      sslWarning: vercelResult.ok ? undefined : 'SSL provisioning failed — please retry publish in 1 minute.',
+    },
+    { status: existing ? 200 : 201 },
+  );
 }
