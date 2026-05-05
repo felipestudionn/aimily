@@ -158,6 +158,13 @@ export function PoweredBy() {
                 </p>
               </div>
 
+              {/* Chaos note — descriptive UX before the total */}
+              <div className="border-t border-carbon/[0.08] pt-4 mb-5">
+                <p className="text-[13px] italic text-carbon/65 leading-[1.55]">
+                  {pb.chaosNote}
+                </p>
+              </div>
+
               {/* TOTAL */}
               <div className="border-t-2 border-carbon/15 pt-5 flex items-baseline justify-between">
                 <span className="text-[13px] text-carbon/55 uppercase tracking-[0.15em] font-semibold">{pb.totalLabel}</span>
@@ -175,7 +182,7 @@ export function PoweredBy() {
                 {pb.optionB}
               </div>
               <h4 className="text-[24px] font-light tracking-[-0.02em] leading-tight mb-6">
-                Founder
+                {pb.optionBTitle}
               </h4>
 
               {/* CATEGORY 1 — IA orchestrated */}
@@ -240,6 +247,13 @@ export function PoweredBy() {
                 </div>
                 <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyEditorialCaveat}
+                </p>
+              </div>
+
+              {/* Flow note — mirror of chaos note on left */}
+              <div className="border-t border-crema/15 pt-4 mb-5">
+                <p className="text-[13px] italic text-crema/75 leading-[1.55]">
+                  {pb.flowNote}
                 </p>
               </div>
 
