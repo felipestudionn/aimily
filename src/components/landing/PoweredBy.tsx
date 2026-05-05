@@ -95,11 +95,11 @@ export function PoweredBy() {
               totals end at the same Y level for visual impact. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-5xl mx-auto">
             {/* LEFT — Stack separately */}
-            <div className="bg-carbon/[0.03] border border-carbon/[0.06] rounded-[16px] p-7 flex flex-col">
-              <div className="text-[11px] tracking-[0.18em] uppercase text-carbon/55 font-semibold mb-1">
+            <div className="bg-carbon/[0.03] border border-carbon/[0.06] rounded-[16px] p-7 md:p-9 flex flex-col">
+              <div className="text-[13px] tracking-[0.22em] uppercase text-carbon/65 font-semibold mb-3">
                 {pb.optionA}
               </div>
-              <h4 className="text-[24px] font-light tracking-[-0.02em] leading-tight text-carbon mb-6">
+              <h4 className="text-[36px] md:text-[44px] font-light tracking-[-0.025em] leading-[1.05] text-carbon mb-8">
                 {pb.optionATitle}
               </h4>
 
@@ -177,11 +177,11 @@ export function PoweredBy() {
             </div>
 
             {/* RIGHT — With aimily, mirror structure */}
-            <div className="bg-carbon text-crema rounded-[16px] p-7 flex flex-col">
-              <div className="text-[11px] tracking-[0.18em] uppercase text-crema/60 font-semibold mb-1">
+            <div className="bg-carbon text-crema rounded-[16px] p-7 md:p-9 flex flex-col">
+              <div className="text-[13px] tracking-[0.22em] uppercase text-moss font-semibold mb-3">
                 {pb.optionB}
               </div>
-              <h4 className="text-[24px] font-light tracking-[-0.02em] leading-tight mb-6">
+              <h4 className="text-[36px] md:text-[44px] font-light tracking-[-0.025em] leading-[1.05] mb-8">
                 {pb.optionBTitle}
               </h4>
 
