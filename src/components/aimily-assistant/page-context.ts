@@ -55,7 +55,7 @@ const ROUTE_MAP: Array<{
   { base: /\/marketing\/creation$/, query: { key: 'block', value: 'content' }, miniBlockId: 'content-studio', blockCoord: '04.2', title: 'Content Studio' },
   { base: /\/marketing\/creation$/, query: { key: 'block', value: 'comms' }, miniBlockId: 'communications', blockCoord: '04.3', title: 'Communications' },
   { base: /\/marketing\/creation$/, query: { key: 'block', value: 'sales' }, miniBlockId: 'sales', blockCoord: '04.4', title: 'Sales Dashboard' },
-  { base: /\/marketing\/creation$/, query: { key: 'block', value: 'pos' }, miniBlockId: 'pos', blockCoord: '04.5', title: 'Point of Sale' },
+  { base: /\/marketing\/creation$/, query: { key: 'block', value: 'ecom' }, miniBlockId: 'ecom', blockCoord: '04.5', title: 'Ecom' },
   { base: /\/marketing\/creation$/, miniBlockId: 'marketing', blockCoord: '04', title: 'Block 04 · Marketing & Sales' },
 
   // Calendar / Presentation

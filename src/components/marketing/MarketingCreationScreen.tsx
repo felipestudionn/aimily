@@ -4,7 +4,7 @@ import type { TimelineMilestone } from '@/types/timeline';
 import { SalesDashboardCard } from './SalesDashboardCard';
 import { ContentStudioCard } from './ContentStudioCard';
 import { CommunicationsCard } from './CommunicationsCard';
-import { PointOfSaleCard } from './PointOfSaleCard';
+import { EcomCard } from './EcomCard';
 import { GtmLaunchHub } from './GtmLaunchHub';
 import { useSearchParams } from 'next/navigation';
 
@@ -19,7 +19,7 @@ const BLOCK_NAMES: Record<string, string> = {
   sales: 'Sales Dashboard',
   content: 'Content Studio',
   comms: 'Communications',
-  pos: 'Point of Sale',
+  ecom: 'Ecom',
 };
 
 export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }: Props) {
@@ -45,7 +45,7 @@ export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }
             {blockParam === 'sales' && <SalesDashboardCard collectionPlanId={collectionPlanId} />}
             {blockParam === 'content' && <ContentStudioCard collectionPlanId={collectionPlanId} />}
             {blockParam === 'comms' && <CommunicationsCard collectionPlanId={collectionPlanId} />}
-            {blockParam === 'pos' && <PointOfSaleCard collectionPlanId={collectionPlanId} />}
+            {blockParam === 'ecom' && <EcomCard collectionPlanId={collectionPlanId} />}
           </div>
         </div>
       </div>

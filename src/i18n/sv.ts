@@ -539,6 +539,7 @@ export const sv: Dictionary = {
     contentStudio: 'Innehållsstudio',
     communications: 'Kommunikation',
     pointOfSale: 'Försäljningsställe',
+    ecom: 'Ecom',
     presentation: 'Presentation',
     dashboard: 'Instrumentpanel',
     workspace: 'Arbetsyta',

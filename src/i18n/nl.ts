@@ -547,6 +547,7 @@ export const nl: Dictionary = {
     contentStudio: 'Content Studio',
     communications: 'Communicatie',
     pointOfSale: 'Verkooppunt',
+    ecom: 'Ecom',
     presentation: 'Presentatie',
     dashboard: 'Dashboard',
     workspace: 'Werkruimte',

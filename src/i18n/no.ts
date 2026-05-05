@@ -539,6 +539,7 @@ export const no: Dictionary = {
     contentStudio: 'Innholdsstudio',
     communications: 'Kommunikasjon',
     pointOfSale: 'Salgspunkt',
+    ecom: 'Ecom',
     presentation: 'Presentasjon',
     dashboard: 'Dashbord',
     workspace: 'Arbeidsområde',

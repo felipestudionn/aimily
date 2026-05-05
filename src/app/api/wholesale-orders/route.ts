@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     collectionPlanId: collection_plan_id,
     domain: 'sales', subdomain: 'wholesale', key: `order_${data.id.slice(0, 8)}`,
     value: { buyer: buyer_name, company: buyer_company, units: totalUnits, value: totalValue },
-    sourcePhase: 'sales', sourceComponent: 'PointOfSaleCard',
+    sourcePhase: 'sales', sourceComponent: 'EcomCard',
     tags: ['affects_finance'],
     userId: user!.id,
   }).catch((err: unknown) => console.error('[CIS] wholesale order capture failed:', err));

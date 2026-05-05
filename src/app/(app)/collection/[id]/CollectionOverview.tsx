@@ -86,7 +86,7 @@ const BLOCK_DEFS: BlockDef[] = [
       { id: 'content', label: 'Content\nStudio', description: 'Visual content per SKU: e-commerce, still life, editorial, and campaign shoots.', route: 'marketing/creation?block=content' },
       { id: 'comms', label: 'Communications', description: 'Copy, SEO, social templates, email sequences, and brand voice.', route: 'marketing/creation?block=comms' },
       { id: 'sales', label: 'Sales\nDashboard', description: 'Revenue forecasting, drop planning, and commercial KPIs for your collection.', route: 'marketing/creation?block=sales' },
-      { id: 'pos', label: 'Point\nof Sale', description: 'Connect your web store, track wholesale orders, and manage distribution.', route: 'marketing/creation?block=pos', isOutput: true },
+      { id: 'ecom', label: 'Ecom', description: 'Publish a DTC storefront — connect your Stripe or Shopify in one click.', route: 'marketing/creation?block=ecom', isOutput: true },
     ],
   },
 ];

@@ -547,6 +547,7 @@ export const es: Dictionary = {
     contentStudio: 'Estudio de Contenido',
     communications: 'Comunicaciones',
     pointOfSale: 'Punto de Venta',
+    ecom: 'Ecom',
     presentation: 'Presentación',
     dashboard: 'Panel',
     workspace: 'Trabajo',

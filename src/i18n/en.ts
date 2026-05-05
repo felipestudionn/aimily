@@ -545,6 +545,7 @@ export const en = {
     contentStudio: 'Content Studio',
     communications: 'Communications',
     pointOfSale: 'Point of Sale',
+    ecom: 'Ecom',
     presentation: 'Presentation',
     dashboard: 'Dashboard',
     workspace: 'Workspace',

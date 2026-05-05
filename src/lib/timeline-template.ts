@@ -89,7 +89,7 @@ export const MINI_BLOCK_ORDER: MiniBlockRow[] = [
   { phase: 'go_to_market', id: 'content-studio', labelKey: 'contentStudio' },
   { phase: 'go_to_market', id: 'communications', labelKey: 'communications' },
   { phase: 'go_to_market', id: 'sales', labelKey: 'salesDashboard' },
-  { phase: 'go_to_market', id: 'pos', labelKey: 'pointOfSale' },
+  { phase: 'go_to_market', id: 'ecom', labelKey: 'ecom' },
 ];
 
 /* Reverse index: milestone id → mini-block id (primary assignment).

@@ -416,14 +416,14 @@ const MINI_BLOCKS: KnowledgeEntry[] = [
     related: ['block-04', 'concept-post-launch'],
   },
   {
-    id: 'mini-point-of-sale',
+    id: 'mini-ecom',
     category: 'mini_block',
     coord: '04.5',
-    title: 'Point of Sale',
-    route: '/collection/[id]/marketing/creation?block=pos',
-    short: 'Web store placeholder (Shopify integration coming) plus wholesale order CRUD. Where transactions actually happen.',
+    title: 'Ecom',
+    route: '/collection/[id]/marketing/creation?block=ecom',
+    short: 'Publish a DTC storefront for this collection at <brand>.aimily.shop. Choose a theme, connect Stripe Buy Button or Shopify Buy SDK, go live in minutes — aimily never processes payments.',
     the_logic:
-      'POS is the operational endpoint. Wholesale orders are tracked here SKU-by-SKU with status, qty, unit price. The web store integration with Shopify is on the roadmap — for now, the placeholder shows the structure that will receive your storefront data when wired.',
+      'Ecom turns the entire collection (brand DNA + SKUs + lookbook + voice) into a public ready-to-sell storefront on a *.aimily.shop subdomain (custom domain in V1). 12 editorial themes inject your colors and typography automatically. The "buy" button on each PDP renders the Stripe Buy Button or Shopify Buy SDK with credentials you provide — checkout happens in their environment, money flows to your account, aimily is just the rendering layer.',
     inputs: ['mini-distribution', 'mini-final-selection'],
     related: ['block-04'],
   },
@@ -862,7 +862,7 @@ export const ROUTE_WHITELIST: ReadonlyArray<string> = [
   '/collection/[id]/marketing/creation?block=content',
   '/collection/[id]/marketing/creation?block=comms',
   '/collection/[id]/marketing/creation?block=sales',
-  '/collection/[id]/marketing/creation?block=pos',
+  '/collection/[id]/marketing/creation?block=ecom',
   '/collection/[id]/calendar',
   '/collection/[id]/presentation',
   // Global

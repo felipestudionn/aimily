@@ -65,7 +65,7 @@ type SidebarLabelKey =
   | 'colorways' | 'materialZones' | 'contentModels' | 'contentEditorial' | 'contentStillLife'
   | 'merchandisingPlanning' | 'buyingStrategy' | 'assortmentPricing' | 'familiesPricing' | 'distribution' | 'channelsMarkets' | 'financialPlan' | 'budgetFinancials' | 'collectionBuilder'
   | 'designDevelopment' | 'sketchColor' | 'techPack' | 'prototyping' | 'production' | 'finalSelection'
-  | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'pointOfSale'
+  | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'ecom'
   | 'calendar' | 'presentation' | 'dashboard' | 'workspace';
 
 interface SidebarSubItem {
@@ -139,7 +139,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
       { id: 'content-studio', labelKey: 'contentStudio', route: 'marketing/creation?block=content', phaseId: 'marketing-creation' },
       { id: 'communications', labelKey: 'communications', route: 'marketing/creation?block=comms', phaseId: 'marketing-creation' },
       { id: 'sales', labelKey: 'salesDashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
-      { id: 'pos', labelKey: 'pointOfSale', route: 'marketing/creation?block=pos', phaseId: 'marketing-creation', isOutput: true },
+      { id: 'ecom', labelKey: 'ecom', route: 'marketing/creation?block=ecom', phaseId: 'marketing-creation', isOutput: true },
     ],
   },
 ];

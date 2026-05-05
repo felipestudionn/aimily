@@ -14,13 +14,21 @@ import { useWholesaleOrders, type WholesaleOrder } from '@/hooks/useWholesaleOrd
 import { useTranslation } from '@/i18n';
 
 /* ═══════════════════════════════════════════════════════════
-   Point of Sale — gold-standard hub for distribution channels.
-   Web store integration is a placeholder; wholesale order CRUD
-   is functional. Renders inline inside the sidebar-driven page
-   shell — no internal modal.
+   Ecom — DTC storefront hub (renamed from Point of Sale 2026-05-05).
+
+   Sprint 1: visual placeholder only. Web store + wholesale orders
+   below remain as scaffolding while we build the real EcomHub
+   (theme picker, payment connect, publish toggle, preview iframe).
+
+   Sprint 2 will:
+   - Replace the entire body with <EcomHub /> from src/components/ecom/
+   - Move Wholesale Orders to Block 2 Merchandising > Channels
+     (semantically wholesale is B2B distribution, not DTC ecom)
+
+   Plan: .planning/ecom/05-SPRINTS.md
    ═══════════════════════════════════════════════════════════ */
 
-interface PointOfSaleCardProps {
+interface EcomCardProps {
   collectionPlanId: string;
 }
 
@@ -34,7 +42,7 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: 'bg-[#A0463C]/[0.08] text-[#A0463C]',
 };
 
-export function PointOfSaleCard({ collectionPlanId }: PointOfSaleCardProps) {
+export function EcomCard({ collectionPlanId }: EcomCardProps) {
   const t = useTranslation();
   const m = (t as unknown as { marketingPage?: Record<string, string> }).marketingPage || {};
   const common = (t as unknown as { common?: Record<string, string> }).common || {};
