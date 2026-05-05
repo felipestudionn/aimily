@@ -28,15 +28,20 @@ export const stripe = new Proxy({} as Stripe, {
   },
 });
 
-// Plan configuration — v5 (Apr 2026)
-// All plans get the SAME top-quality models. Differentiation is by quantity
-// (imagery generations, seats), not by quality or feature gating that limits
-// creativity. Brands and collections are unlimited on every plan.
+// ────────────────────────────────────────────────────────────────────────
+// Plan configuration — v6 (May 2026 rebrand)
+// Renamed for clarity by ICP (target organization size):
+//   • student    free  · for fashion students (12-month auto-verified)
+//   • founder    €99   · solo founder bringing an idea to life
+//   • team       €599  · 3-5 person startup (buyer + designer + marketing)
+//   • team_pro   €1499 · 10-25 person consolidated brand
+//   • enterprise custom · custom Stripe invoicing, not self-serve
 //
-// Imagery = AI image/video generations only (sketches, colorize, editorials,
+// Imagery = AI image/video generations (sketches, colorize, editorials,
 // still-life, try-on, brand-model, brand-references, Kling video). Text
-// generation is unlimited on every plan because its real cost is negligible
-// (Haiku $0.001-$0.008/call, Gemini $0.0007/call).
+// generation is unlimited on every plan because its cost is negligible.
+// Brands and collections are unlimited on every plan.
+// ────────────────────────────────────────────────────────────────────────
 export const PLANS = {
   trial: {
     name: 'Trial',
@@ -45,7 +50,7 @@ export const PLANS = {
     priceAnnual: 0,
     limits: {
       collections: -1,
-      imageryGenerations: 200,
+      imageryGenerations: 100,
       users: 1,
       exportEnabled: true,
       aiVideoEnabled: false,
@@ -53,16 +58,16 @@ export const PLANS = {
       ssoEnabled: false,
     },
   },
-  starter: {
-    name: 'Starter',
-    nameEs: 'Starter',
-    price: 199,
-    priceAnnual: 159,
-    stripePriceId: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
-    stripePriceIdAnnual: process.env.STRIPE_STARTER_ANNUAL_PRICE_ID,
+  student: {
+    name: 'Student',
+    nameEs: 'Estudiante',
+    price: 0,
+    priceAnnual: 0,
+    // Same limits as Founder; access auto-granted via academic email domain
+    // for 12 months. Tracked in `student_verifications` table.
     limits: {
       collections: -1,
-      imageryGenerations: 200,
+      imageryGenerations: 100,
       users: 1,
       exportEnabled: true,
       aiVideoEnabled: false,
@@ -70,13 +75,30 @@ export const PLANS = {
       ssoEnabled: false,
     },
   },
-  professional: {
-    name: 'Professional',
-    nameEs: 'Professional',
+  founder: {
+    name: 'Founder',
+    nameEs: 'Founder',
+    price: 99,
+    priceAnnual: 79,
+    stripePriceId: process.env.STRIPE_FOUNDER_MONTHLY_PRICE_ID,
+    stripePriceIdAnnual: process.env.STRIPE_FOUNDER_ANNUAL_PRICE_ID,
+    limits: {
+      collections: -1,
+      imageryGenerations: 100,
+      users: 1,
+      exportEnabled: true,
+      aiVideoEnabled: false,
+      apiAccessEnabled: false,
+      ssoEnabled: false,
+    },
+  },
+  team: {
+    name: 'Team',
+    nameEs: 'Team',
     price: 599,
     priceAnnual: 479,
-    stripePriceId: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
-    stripePriceIdAnnual: process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID,
+    stripePriceId: process.env.STRIPE_TEAM_MONTHLY_PRICE_ID,
+    stripePriceIdAnnual: process.env.STRIPE_TEAM_ANNUAL_PRICE_ID,
     limits: {
       collections: -1,
       imageryGenerations: 1000,
@@ -87,13 +109,13 @@ export const PLANS = {
       ssoEnabled: false,
     },
   },
-  professional_max: {
-    name: 'Professional Max',
-    nameEs: 'Professional Max',
+  team_pro: {
+    name: 'Team Pro',
+    nameEs: 'Team Pro',
     price: 1499,
     priceAnnual: 1199,
-    stripePriceId: process.env.STRIPE_PRO_MAX_MONTHLY_PRICE_ID,
-    stripePriceIdAnnual: process.env.STRIPE_PRO_MAX_ANNUAL_PRICE_ID,
+    stripePriceId: process.env.STRIPE_TEAM_PRO_MONTHLY_PRICE_ID,
+    stripePriceIdAnnual: process.env.STRIPE_TEAM_PRO_ANNUAL_PRICE_ID,
     limits: {
       collections: -1,
       imageryGenerations: 5000,
@@ -128,10 +150,15 @@ export function getPlanLimits(plan: PlanId) {
   return PLANS[plan].limits;
 }
 
-// Helper: is this a paid self-serve plan?
+// Self-serve = paid plans purchasable via Stripe Checkout
 export function isSelfServePlan(plan: PlanId): boolean {
-  return plan === 'starter' || plan === 'professional' || plan === 'professional_max';
+  return plan === 'founder' || plan === 'team' || plan === 'team_pro';
 }
+
+// Launch promo coupon — first 100 paid subs get 50% off for 12 months.
+// Created in Stripe Dashboard or via scripts/setup-stripe-launch-promo.ts.
+// Counter tracked in Supabase `launch_promo_counter` table.
+export const LAUNCH_PROMO_COUPON_ID = process.env.STRIPE_LAUNCH_PROMO_COUPON_ID || 'LAUNCH-50-Y1';
 
 // Aimily Credits packs — one-time top-up for imagery generation
 // Each pack adds N imagery to the user's `imagery_credits.balance` (no expiry).

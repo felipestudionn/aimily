@@ -33,10 +33,15 @@ export default function AccountPage() {
 
   const PLAN_LABELS: Record<string, string> = {
     trial: t.account.planTrial,
-    starter: t.account.planStarter,
-    professional: t.account.planProfessional,
-    professional_max: 'Professional Max',
+    student: 'Student',
+    founder: 'Founder',
+    team: 'Team',
+    team_pro: 'Team Pro',
     enterprise: t.account.planEnterprise,
+    // Legacy IDs (kept so historical subs render correctly)
+    starter: 'Founder',
+    professional: 'Team',
+    professional_max: 'Team Pro',
   };
 
   const [newPassword, setNewPassword] = useState('');

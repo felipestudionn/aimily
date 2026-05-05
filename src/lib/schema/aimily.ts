@@ -108,9 +108,10 @@ export function webApplicationSchema() {
       'Stripe LIVE billing with imagery quotas and top-up packs',
     ],
     offers: [
-      offer('Starter', 159, 'For solo founders'),
-      offer('Professional', 479, 'For teams shipping multiple drops'),
-      offer('Pro Max', 1199, 'For studios at peak creative pace'),
+      offer('Student', 0, 'Free 12 months for verified fashion students'),
+      offer('Founder', 79, 'For the solo founder bringing an idea to life'),
+      offer('Team', 479, 'For 3-5 person startups: buyer + designer + marketing'),
+      offer('Team Pro', 1199, 'For consolidated brands working as one centralized system'),
       enterpriseOffer(),
     ],
   };
