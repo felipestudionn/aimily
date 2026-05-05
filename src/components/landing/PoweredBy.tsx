@@ -96,7 +96,7 @@ export function PoweredBy() {
               <div className="text-[11px] tracking-[0.18em] uppercase text-carbon/55 font-semibold mb-5">
                 {pb.optionA}
               </div>
-              <ul className="space-y-2.5 text-[14px] text-carbon/75 mb-6">
+              <ul className="space-y-2.5 text-[14px] text-carbon/75 mb-5">
                 <li className="flex items-baseline justify-between"><span>Claude Pro</span><span className="text-carbon/55 font-mono tabular-nums">€18</span></li>
                 <li className="flex items-baseline justify-between"><span>ChatGPT Plus</span><span className="text-carbon/55 font-mono tabular-nums">€18</span></li>
                 <li className="flex items-baseline justify-between"><span>Gemini Advanced</span><span className="text-carbon/55 font-mono tabular-nums">€18</span></li>
@@ -104,11 +104,20 @@ export function PoweredBy() {
                 <li className="flex items-baseline justify-between"><span>Freepik Premium+</span><span className="text-carbon/55 font-mono tabular-nums">€27</span></li>
                 <li className="flex items-baseline justify-between"><span>Kling AI Pro</span><span className="text-carbon/55 font-mono tabular-nums">€27</span></li>
               </ul>
+              <div className="border-t border-carbon/[0.08] pt-4 mb-4">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[13.5px] text-carbon/75">{pb.productivityLabel}</span>
+                  <span className="text-carbon/55 font-mono tabular-nums text-[14px]">~€72</span>
+                </div>
+                <p className="text-[11.5px] italic text-carbon/45 mt-1.5 leading-[1.4]">
+                  {pb.productivityCaveat}
+                </p>
+              </div>
               <div className="border-t border-carbon/[0.08] pt-4 flex items-baseline justify-between">
                 <span className="text-[13px] text-carbon/55 uppercase tracking-[0.1em]">{pb.totalLabel}</span>
                 <span className="flex items-baseline tabular-nums">
                   <span className="text-[16px] font-light text-carbon/55 mr-1">€</span>
-                  <span className="text-[28px] font-light tracking-[-0.02em] text-carbon">126</span>
+                  <span className="text-[28px] font-light tracking-[-0.02em] text-carbon">198</span>
                   <span className="text-[13px] text-carbon/55 ml-1">/mes</span>
                 </span>
               </div>
