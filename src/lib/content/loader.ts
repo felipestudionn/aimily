@@ -20,7 +20,7 @@ import type { Locale } from '@/i18n/config';
 
 const CONTENT_ROOT = path.join(process.cwd(), 'content');
 
-export type ContentType = 'workflows' | 'vs';
+export type ContentType = 'workflows' | 'vs' | 'how-to';
 
 export interface FaqItem {
   q: string;

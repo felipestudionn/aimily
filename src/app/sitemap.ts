@@ -56,7 +56,7 @@ function staticEntries(): MetadataRoute.Sitemap {
 }
 
 async function contentEntries(
-  type: 'workflows' | 'vs',
+  type: 'workflows' | 'vs' | 'how-to',
   pathPrefix: string,
   changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency'],
   priority: number,
@@ -91,9 +91,12 @@ async function contentEntries(
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [workflows, comparisons] = await Promise.all([
+  const [workflows, comparisons, howTos] = await Promise.all([
     contentEntries('workflows', '/workflows', 'monthly', 0.85),
     contentEntries('vs', '/vs', 'monthly', 0.8),
+    // High-intent commercial pillars — highest priority because they
+    // capture bottom-funnel "create/launch a fashion collection" intent.
+    contentEntries('how-to', '/how-to', 'monthly', 0.9),
   ]);
-  return [...staticEntries(), ...workflows, ...comparisons];
+  return [...staticEntries(), ...workflows, ...comparisons, ...howTos];
 }

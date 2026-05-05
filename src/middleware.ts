@@ -15,7 +15,7 @@ const MARKETING_BARE_PATHS = ['', '/contact', '/trust', '/privacy', '/terms', '/
 // Marketing path PREFIXES — content-driven sub-trees (workflows, vs, etc.)
 // added in Wave 1+. Anything under these is public and should be delegated
 // to next-intl regardless of auth state.
-const MARKETING_PREFIXES = ['/workflows', '/vs', '/learn', '/for', '/compare'];
+const MARKETING_PREFIXES = ['/workflows', '/vs', '/learn', '/for', '/compare', '/how-to'];
 
 function isMarketingPath(pathname: string): boolean {
   // Bare paths get caught by next-intl + redirected to /[locale]
