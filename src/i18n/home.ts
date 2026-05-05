@@ -703,7 +703,7 @@ const en: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };
@@ -1044,7 +1044,7 @@ const es: HomeDict = {
     optionBDesc: 'Todo integrado. Los mejores modelos orquestados específicamente para moda.',
     optionBPromo: 'Primeras 100 plazas al −50% durante 12 meses',
     totalLabel: 'Total',
-    priceLabel: 'Founder · lanzamiento',
+    priceLabel: 'Founder',
     footnote: 'Precios indicativos de suscripciones consumer. Para uso intensivo (API access, mayor volumen) la diferencia es aún mayor.',
   },
 };
@@ -1384,7 +1384,7 @@ const fr: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };
@@ -1724,7 +1724,7 @@ const it: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };
@@ -2064,7 +2064,7 @@ const de: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };
@@ -2404,7 +2404,7 @@ const pt: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };
@@ -2744,7 +2744,7 @@ const nl: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };
@@ -3084,7 +3084,7 @@ const sv: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };
@@ -3424,7 +3424,7 @@ const no: HomeDict = {
     optionBDesc: 'Everything integrated. Top models orchestrated specifically for fashion.',
     optionBPromo: 'First 100 spots get −50% for 12 months',
     totalLabel: 'Total',
-    priceLabel: 'Founder · launch',
+    priceLabel: 'Founder',
     footnote: 'Indicative consumer-tier subscription prices. For heavy usage (API access, higher volume) the gap is even larger.',
   },
 };

@@ -126,23 +126,17 @@ export function PoweredBy() {
                 <h4 className="text-[24px] font-light tracking-[-0.02em] leading-tight mb-2">
                   aimily Founder
                 </h4>
-                <p className="text-[14px] text-crema/70 leading-[1.6] mb-4">
+                <p className="text-[14px] text-crema/70 leading-[1.6]">
                   {pb.optionBDesc}
                 </p>
-                <div className="text-[12px] text-crema/60 italic leading-[1.5]">
-                  {pb.optionBPromo}
-                </div>
               </div>
               <div className="border-t border-crema/[0.15] pt-4 flex items-baseline justify-between">
                 <span className="text-[13px] text-crema/60 uppercase tracking-[0.1em]">{pb.priceLabel}</span>
-                <div className="text-right tabular-nums">
-                  <div className="flex items-baseline justify-end">
-                    <span className="text-[16px] font-light text-crema/60 mr-1">€</span>
-                    <span className="text-[28px] font-light tracking-[-0.02em]">49</span>
-                    <span className="text-[13px] text-crema/60 ml-1">/mes</span>
-                  </div>
-                  <div className="text-[12px] text-crema/55 line-through">€99/mes</div>
-                </div>
+                <span className="flex items-baseline tabular-nums">
+                  <span className="text-[16px] font-light text-crema/60 mr-1">€</span>
+                  <span className="text-[28px] font-light tracking-[-0.02em]">99</span>
+                  <span className="text-[13px] text-crema/60 ml-1">/mes</span>
+                </span>
               </div>
             </div>
           </div>
