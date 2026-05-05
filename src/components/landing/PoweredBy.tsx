@@ -106,7 +106,11 @@ export function PoweredBy() {
               </ul>
               <div className="border-t border-carbon/[0.08] pt-4 flex items-baseline justify-between">
                 <span className="text-[13px] text-carbon/55 uppercase tracking-[0.1em]">{pb.totalLabel}</span>
-                <span className="text-[28px] font-light tracking-[-0.02em] text-carbon tabular-nums">€126<span className="text-[13px] text-carbon/55 ml-1">/mes</span></span>
+                <span className="flex items-baseline tabular-nums">
+                  <span className="text-[16px] font-light text-carbon/55 mr-1">€</span>
+                  <span className="text-[28px] font-light tracking-[-0.02em] text-carbon">126</span>
+                  <span className="text-[13px] text-carbon/55 ml-1">/mes</span>
+                </span>
               </div>
               <p className="text-[12px] italic text-carbon/55 mt-4 leading-[1.5]">
                 {pb.optionACaveat}
@@ -131,9 +135,13 @@ export function PoweredBy() {
               </div>
               <div className="border-t border-crema/[0.15] pt-4 flex items-baseline justify-between">
                 <span className="text-[13px] text-crema/60 uppercase tracking-[0.1em]">{pb.priceLabel}</span>
-                <div className="text-right">
-                  <div className="text-[28px] font-light tracking-[-0.02em] tabular-nums">€49<span className="text-[13px] text-crema/60 ml-1">/mes</span></div>
-                  <div className="text-[12px] text-crema/55 line-through tabular-nums">€99/mes</div>
+                <div className="text-right tabular-nums">
+                  <div className="flex items-baseline justify-end">
+                    <span className="text-[16px] font-light text-crema/60 mr-1">€</span>
+                    <span className="text-[28px] font-light tracking-[-0.02em]">49</span>
+                    <span className="text-[13px] text-crema/60 ml-1">/mes</span>
+                  </div>
+                  <div className="text-[12px] text-crema/55 line-through">€99/mes</div>
                 </div>
               </div>
             </div>

@@ -15,7 +15,7 @@
      • Enterprise as a discreet inline band below the grid.
    ═══════════════════════════════════════════════════════════════════ */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useHomeTranslation } from '@/i18n/home';
@@ -45,12 +45,6 @@ interface PricingDetailProps {
   openAuth: () => void;
 }
 
-interface PromoState {
-  active: boolean;
-  slots_left: number;
-  total_slots: number;
-}
-
 export function PricingDetail({ openAuth }: PricingDetailProps) {
   const { user } = useAuth();
   const { subscription, checkoutPlan, buyCreditPack, isPaid, openPortal } = useSubscription();
@@ -58,16 +52,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
   const p = h.pricing;
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [loadingPack, setLoadingPack] = useState<PackId | null>(null);
-  const [promo, setPromo] = useState<PromoState | null>(null);
   const [studentMsg, setStudentMsg] = useState<string | null>(null);
-
-  // Pull launch promo state once on mount
-  useEffect(() => {
-    fetch('/api/promo/counter')
-      .then((r) => r.json())
-      .then((data) => setPromo(data))
-      .catch(() => setPromo(null));
-  }, []);
 
   const planName: Record<PlanId, string> = {
     student: p.studentName,
@@ -146,13 +131,6 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
     finally { setLoadingPack(null); }
   };
 
-  const promoActive = !!promo?.active && promo.slots_left > 0;
-  const promoLabel = promoActive
-    ? p.promoBanner
-        .replace('{left}', String(promo!.slots_left))
-        .replace('{total}', String(promo!.total_slots))
-    : null;
-
   return (
     <section id="pricing" className="bg-crema text-carbon px-6 py-32 md:py-44 border-t border-carbon/[0.06]">
       <div className="max-w-7xl mx-auto">
@@ -164,17 +142,9 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
           <h2 className="text-[40px] md:text-[56px] font-light tracking-[-0.03em] leading-[1.05] max-w-[820px] mx-auto mb-6">
             <span className="italic">{p.titleItalic}</span>{p.titleEnd}
           </h2>
-          <p className="max-w-[520px] mx-auto text-[15px] text-carbon/65 leading-[1.6] mb-8">
+          <p className="max-w-[520px] mx-auto text-[15px] text-carbon/65 leading-[1.6]">
             {p.subtitle}
           </p>
-
-          {/* Launch promo strip — single instance, top of grid */}
-          {promoLabel && (
-            <div className="inline-flex items-center gap-2 bg-carbon text-crema px-5 py-2 rounded-full text-[12px] tracking-[0.08em] uppercase font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-moss animate-pulse" />
-              {promoLabel}
-            </div>
-          )}
         </div>
 
         {/* Plans grid — 4 cards, identical structure for visual consistency */}
@@ -203,17 +173,25 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   </p>
                 </div>
 
-                {/* Price block — always monthly. No annual / promo / discount
-                    mentioned inside the card (those live in top banner only). */}
+                {/* Price block — always monthly. The € sign is rendered
+                    smaller and spaced from the digits so the number reads
+                    cleanly as a single value, not a 3-digit string. */}
                 <div className="mb-6 min-h-[4.5rem]">
                   {plan.monthlyPrice !== null ? (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-[44px] font-light tracking-[-0.03em] leading-none text-carbon">
-                          {plan.monthlyPrice === 0 ? p.free : `€${plan.monthlyPrice}`}
-                        </span>
-                        {plan.monthlyPrice > 0 && (
-                          <span className="text-[13px] text-carbon/55">{p.perMonth}</span>
+                        {plan.monthlyPrice === 0 ? (
+                          <span className="text-[44px] font-light tracking-[-0.03em] leading-none text-carbon">
+                            {p.free}
+                          </span>
+                        ) : (
+                          <>
+                            <span className="leading-none text-carbon flex items-baseline">
+                              <span className="text-[22px] font-light text-carbon/55 mr-1.5">€</span>
+                              <span className="text-[44px] font-light tracking-[-0.03em]">{plan.monthlyPrice}</span>
+                            </span>
+                            <span className="text-[13px] text-carbon/55">{p.perMonth}</span>
+                          </>
                         )}
                       </div>
                       <div className="text-[12px] mt-2 min-h-[1rem] text-carbon/55">

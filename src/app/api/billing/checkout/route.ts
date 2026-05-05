@@ -108,50 +108,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Price not configured' }, { status: 500 });
     }
 
-    // Try to claim a launch promo slot (first 100 paid subs get a fixed
-    // €/mo discount via plan-specific absolute coupon for 12 months).
-    // The RPC is atomic + locks the counter row so concurrent checkouts
-    // can't oversell. Promo only applies to monthly subs — annual go
-    // straight to regular price (handled via Customer Portal post-trial).
-    let promoApplied = false;
-    if (!body.annual) {
-      try {
-        const { data: claim, error: claimErr } = await supabaseAdmin.rpc('claim_launch_promo_slot');
-        if (!claimErr && Array.isArray(claim) && claim[0]?.claimed) {
-          promoApplied = true;
-        }
-      } catch (e) {
-        console.error('claim_launch_promo_slot RPC failed (continuing without promo):', e);
-      }
-    }
-
-    const couponId = promoApplied
-      ? LAUNCH_PROMO_COUPONS[plan as 'founder' | 'team' | 'team_pro']
-      : undefined;
-
+    // Public launch promo retired (May 2026). Outreach now uses private
+    // coupon codes typed into Stripe's `allow_promotion_codes` field at
+    // checkout. Customers who don't have a code pay regular price.
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card', 'paypal'],
       payment_method_collection: 'if_required',
-      subscription_data: {
-        trial_period_days: 30,
-        ...(promoApplied ? { metadata: { launch_promo: 'first_100_y1' } } : {}),
-      },
-      ...(couponId
-        ? { discounts: [{ coupon: couponId }] }
-        : { allow_promotion_codes: true }),
+      subscription_data: { trial_period_days: 30 },
+      allow_promotion_codes: true,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${req.nextUrl.origin}/my-collections?billing=success`,
       cancel_url: `${req.nextUrl.origin}/?billing=canceled#pricing`,
       metadata: {
         supabase_user_id: user.id,
         plan,
-        ...(promoApplied ? { launch_promo: 'first_100_y1', launch_coupon: couponId! } : {}),
       },
     });
 
-    return NextResponse.json({ url: session.url, promoApplied });
+    return NextResponse.json({ url: session.url });
   } catch (error) {
     console.error('Checkout error:', error);
     return NextResponse.json(
