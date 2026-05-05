@@ -546,6 +546,7 @@ export const en = {
     communications: 'Communications',
     pointOfSale: 'Point of Sale',
     ecom: 'Ecom',
+    wholesale: 'Wholesale',
     presentation: 'Presentation',
     dashboard: 'Dashboard',
     workspace: 'Workspace',

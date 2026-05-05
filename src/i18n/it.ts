@@ -548,6 +548,7 @@ export const it: Dictionary = {
     communications: 'Comunicazioni',
     pointOfSale: 'Punto Vendita',
     ecom: 'Ecom',
+    wholesale: 'Wholesale',
     presentation: 'Presentazione',
     dashboard: 'Dashboard',
     workspace: 'Workspace',

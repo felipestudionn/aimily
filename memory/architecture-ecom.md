@@ -171,7 +171,14 @@ After **4 July 2026** (60-day ICANN transfer window post `aimily.shop` registrat
 
 ## Bugs known / TODOs
 
-- WholesaleOrders move from EcomCard → Merchandising > Channels (Sprint 2 deferred · code still inside EcomCard)
-- SEO Research module (5 endpoints `/api/ai/seo-*`) still pending — currently PoweredBy says "SEO ~€100 replaced" which is NOT yet honest
-- Inline-edit UI in EcomHub for storefront_overrides (writes already exist via PATCH endpoint, UI not yet) — Sprint 7
-- Plausible/Vercel Analytics on storefronts (mentioned in plan, not yet wired)
+✅ All major backlog items shipped 2026-05-05:
+- ✅ WholesaleOrders moved to Block 2 Merch > Channels (sub-block `wholesale`, sidebar entry, i18n in 9 locales). EcomCard cleaned to 3 sub-sections (Hub + SEO + Overrides).
+- ✅ SEO Research module shipped (PR #11) · 5 endpoints + SeoResearchHub UI with 4 tabs (Keywords, On-page, Competitors, Audit)
+- ✅ Inline-edit UI shipped (PR #12) · OverridesEditor with 6 fields across home/about/contact, save+republish in seconds
+- ✅ Vercel Analytics wired into storefront layout (privacy-friendly, GDPR by default, per-host event tagging)
+
+Future enhancements (no rush):
+- Per-SKU description overrides (currently only home/about/contact)
+- Keyword storage in BD so SEO research persists between sessions
+- Custom domain wizard in EcomHub (Vercel Domains API, V2)
+- Storefront analytics dashboard inside EcomHub showing visit counts

@@ -10,6 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard } from '@/components/workspace/DecisionCard';
 import { ScenariosContent } from '@/components/merchandising/ScenariosContent';
+import { WholesaleOrdersCard } from '@/components/merchandising/WholesaleOrdersCard';
 import { FinancialPlanContent } from '@/components/merchandising/FinancialPlanContent';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -995,6 +996,28 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   };
 
   /* ═══ CLEAN WORKSPACE VIEW (from sidebar with ?block= param) ═══ */
+  if (blockParam === 'wholesale') {
+    // Wholesale lives in Block 2 since Sprint 10 (was previously inside Marketing > Ecom).
+    // It's B2B distribution, semantically belongs to Merchandising.
+    return (
+      <div className="min-h-[80vh]">
+        <div className="px-6 md:px-12 lg:px-16 pt-12 md:pt-16">
+          <div className="text-center mb-8">
+            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
+              {collectionContext.collectionName || 'Collection'}
+            </p>
+            <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+              Wholesale Orders
+            </h1>
+          </div>
+          <div className="max-w-[1100px] mx-auto">
+            <WholesaleOrdersCard collectionPlanId={collectionId} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (blockParam && (blockParam === 'scenarios' || blockParam === 'families' || blockParam === 'channels' || blockParam === 'budget')) {
     // For families, use families card state; for others, use their own
     const cardId = blockParam === 'families' ? 'families' : blockParam;

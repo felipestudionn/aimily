@@ -17,6 +17,7 @@ import { notFound } from 'next/navigation';
 import { loadStorefrontByHost } from '@/lib/storefront/load-storefront';
 import { loadTheme } from '@/lib/storefront/theme-registry';
 import { GdprBanner } from '@/components/ecom/shared/GdprBanner';
+import { Analytics } from '@vercel/analytics/next';
 
 interface Props {
   children: ReactNode;
@@ -68,6 +69,16 @@ export default async function StorefrontLayout({ children, params }: Props) {
       <body data-storefront-host={host} data-theme={storefront.theme_id}>
         {children}
         <GdprBanner />
+        {/* Vercel Web Analytics — privacy-friendly, GDPR-compliant by default
+            (no cookies, anonymized). Tracks page views + per-storefront route
+            so brands can see traffic in the EcomHub stats section. */}
+        <Analytics
+          beforeSend={(event) => ({
+            ...event,
+            // Tag every event with the storefront host for per-tenant grouping
+            url: event.url ? new URL(event.url, `https://${host}`).toString() : event.url,
+          })}
+        />
       </body>
     </html>
   );

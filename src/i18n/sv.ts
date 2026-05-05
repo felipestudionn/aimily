@@ -540,6 +540,7 @@ export const sv: Dictionary = {
     communications: 'Kommunikation',
     pointOfSale: 'Försäljningsställe',
     ecom: 'Ecom',
+    wholesale: 'Wholesale',
     presentation: 'Presentation',
     dashboard: 'Instrumentpanel',
     workspace: 'Arbetsyta',

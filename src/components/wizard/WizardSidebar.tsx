@@ -63,7 +63,7 @@ type SidebarLabelKey =
   /* Presentation-only sub-slides (no sidebar entry, but they need a title in titles map) */
   | 'brandLogo' | 'brandPalette' | 'brandVoice' | 'buyingScenarios' | 'buyingDrops'
   | 'colorways' | 'materialZones' | 'contentModels' | 'contentEditorial' | 'contentStillLife'
-  | 'merchandisingPlanning' | 'buyingStrategy' | 'assortmentPricing' | 'familiesPricing' | 'distribution' | 'channelsMarkets' | 'financialPlan' | 'budgetFinancials' | 'collectionBuilder'
+  | 'merchandisingPlanning' | 'buyingStrategy' | 'assortmentPricing' | 'familiesPricing' | 'distribution' | 'channelsMarkets' | 'wholesale' | 'financialPlan' | 'budgetFinancials' | 'collectionBuilder'
   | 'designDevelopment' | 'sketchColor' | 'techPack' | 'prototyping' | 'production' | 'finalSelection'
   | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'ecom'
   | 'calendar' | 'presentation' | 'dashboard' | 'workspace';
@@ -110,6 +110,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
       { id: 'scenarios', labelKey: 'buyingStrategy', route: 'merchandising?block=scenarios', phaseId: 'merchandising' },
       { id: 'families-pricing', labelKey: 'assortmentPricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
       { id: 'channels', labelKey: 'distribution', route: 'merchandising?block=channels', phaseId: 'merchandising' },
+      { id: 'wholesale', labelKey: 'wholesale', route: 'merchandising?block=wholesale', phaseId: 'merchandising' },
       { id: 'budget', labelKey: 'financialPlan', route: 'merchandising?block=budget', phaseId: 'merchandising' },
       { id: 'builder-merch', labelKey: 'collectionBuilder', route: 'product', isOutput: true },
     ],

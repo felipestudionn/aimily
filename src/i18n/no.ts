@@ -540,6 +540,7 @@ export const no: Dictionary = {
     communications: 'Kommunikasjon',
     pointOfSale: 'Salgspunkt',
     ecom: 'Ecom',
+    wholesale: 'Wholesale',
     presentation: 'Presentasjon',
     dashboard: 'Dashbord',
     workspace: 'Arbeidsområde',

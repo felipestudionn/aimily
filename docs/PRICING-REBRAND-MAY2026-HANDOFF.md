@@ -71,10 +71,10 @@ the marketing 04.4 card, sitemap.xml/robots.txt/og.png/JSON-LD/GDPR
 banner per-storefront. See `memory/architecture-ecom.md` for the
 complete reference.
 
-**SEO research/on-page** still pending — the Powered by row claims
-"~€100 SEO replaced" but the dedicated SEO Research module (5
-endpoints under `/api/ai/seo-*` per the original plan) is NOT yet
-shipped. Sprint backlog item.
+**SEO research/on-page** ✅ SHIPPED 2026-05-05 (PR #11). 5 endpoints
+under `/api/ai/seo-*`: keywords, onpage, competitors, audit, copy.
+SeoResearchHub UI inside the Ecom card with 4 tabs. The "~€100 SEO
+replaced" line in PoweredBy is now fully honest.
 
 Original "what needs to ship" list (pre-2026-05-05) — kept for history:
 
