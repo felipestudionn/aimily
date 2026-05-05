@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, PLANS, PlanId, AIMILY_CREDITS_PACKS, CreditPackId } from '@/lib/stripe';
+import { stripe, PLANS, PlanId, AIMILY_CREDITS_PACKS, CreditPackId, LAUNCH_PROMO_COUPON_ID } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     // Get or create Stripe customer
     const { data: existingSub } = await supabaseAdmin
       .from('subscriptions')
-      .select('stripe_customer_id, stripe_subscription_id, status')
+      .select('stripe_customer_id, stripe_subscription_id, status, plan')
       .eq('user_id', user.id)
       .single();
 
@@ -73,7 +73,10 @@ export async function POST(req: NextRequest) {
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         mode: 'payment',
-        payment_method_types: ['card'],
+        // Card includes Apple Pay + Google Pay automatically when the
+        // domain is verified in Stripe Dashboard. PayPal needs explicit
+        // listing.
+        payment_method_types: ['card', 'paypal'],
         line_items: [{ price: packConfig.stripePriceId, quantity: 1 }],
         success_url: `${req.nextUrl.origin}/my-collections?credits=success`,
         cancel_url: `${req.nextUrl.origin}/?credits=canceled#pricing`,
@@ -89,8 +92,11 @@ export async function POST(req: NextRequest) {
 
     // Subscription plan checkout
     const plan = body.plan;
-    if (!plan || !PLANS[plan] || plan === 'trial' || plan === 'enterprise') {
-      return NextResponse.json({ error: 'Invalid plan — only starter, professional and professional_max support self-serve checkout' }, { status: 400 });
+    if (!plan || !PLANS[plan] || plan === 'trial' || plan === 'student' || plan === 'enterprise') {
+      return NextResponse.json(
+        { error: 'Invalid plan — only founder, team and team_pro support self-serve checkout' },
+        { status: 400 },
+      );
     }
 
     const planConfig = PLANS[plan];
@@ -102,20 +108,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Price not configured' }, { status: 500 });
     }
 
+    // Try to claim a launch promo slot (first 100 paid subs get 50% off
+    // for 12 months via coupon LAUNCH-50-Y1). The RPC is atomic + locks
+    // the counter row, so concurrent checkouts can't oversell. If no
+    // slot is available, the user gets the regular price — no error.
+    let promoApplied = false;
+    try {
+      const { data: claim, error: claimErr } = await supabaseAdmin.rpc('claim_launch_promo_slot');
+      if (!claimErr && Array.isArray(claim) && claim[0]?.claimed) {
+        promoApplied = true;
+      }
+    } catch (e) {
+      console.error('claim_launch_promo_slot RPC failed (continuing without promo):', e);
+    }
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
-      payment_method_types: ['card'],
+      // Card includes Apple Pay + Google Pay automatically when the
+      // domain is verified in Stripe Dashboard. PayPal needs explicit
+      // listing.
+      payment_method_types: ['card', 'paypal'],
+      // Trial without credit card friction — Stripe won't ask for a
+      // payment method during the trial. The user enters payment when
+      // the trial ends and they want to keep going.
+      payment_method_collection: 'if_required',
+      subscription_data: {
+        trial_period_days: 30,
+        ...(promoApplied ? { metadata: { launch_promo: 'first_100_y1' } } : {}),
+      },
+      ...(promoApplied
+        ? { discounts: [{ coupon: LAUNCH_PROMO_COUPON_ID }] }
+        : { allow_promotion_codes: true }),
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${req.nextUrl.origin}/my-collections?billing=success`,
       cancel_url: `${req.nextUrl.origin}/?billing=canceled#pricing`,
       metadata: {
         supabase_user_id: user.id,
         plan,
+        ...(promoApplied ? { launch_promo: 'first_100_y1' } : {}),
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url, promoApplied });
   } catch (error) {
     console.error('Checkout error:', error);
     return NextResponse.json(

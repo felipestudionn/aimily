@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { track, Events } from '@/lib/posthog';
 
-type PlanId = 'trial' | 'starter' | 'professional' | 'professional_max' | 'enterprise';
+type PlanId = 'trial' | 'student' | 'founder' | 'team' | 'team_pro' | 'enterprise';
 
 interface PlanLimits {
   collections: number;
@@ -42,9 +42,10 @@ interface SubscriptionData {
 interface SubscriptionContextType {
   subscription: SubscriptionData | null;
   loading: boolean;
-  isStarter: boolean;
-  isProfessional: boolean;
-  isProfessionalMax: boolean;
+  isStudent: boolean;
+  isFounder: boolean;
+  isTeam: boolean;
+  isTeamPro: boolean;
   isEnterprise: boolean;
   isPaid: boolean;
   isTrial: boolean;
@@ -59,7 +60,7 @@ interface SubscriptionContextType {
   openPortal: () => Promise<void>;
 }
 
-// Trial defaults — full access for 14 days, same imagery limit as Starter
+// Trial defaults — 30 days · same imagery limit as Founder (100/mo)
 const TRIAL_DEFAULTS: SubscriptionData = {
   plan: 'trial',
   status: 'active',
@@ -67,7 +68,7 @@ const TRIAL_DEFAULTS: SubscriptionData = {
   cancelAtPeriodEnd: false,
   limits: {
     collections: -1,
-    imageryGenerations: 200,
+    imageryGenerations: 100,
     users: 1,
     exportEnabled: true,
     aiVideoEnabled: false,
@@ -140,10 +141,16 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   const plan = subscription?.plan || 'trial';
   const isAdmin = subscription?.isAdmin || false;
-  const isStarter = plan === 'starter' || plan === 'professional' || plan === 'professional_max' || plan === 'enterprise';
-  const isProfessional = plan === 'professional' || plan === 'professional_max' || plan === 'enterprise';
-  const isProfessionalMax = plan === 'professional_max' || plan === 'enterprise';
+
+  // Tier predicates — each tier inherits everything from the tiers below it,
+  // so isFounder is true for founder/team/team_pro/enterprise users.
+  const isStudent = plan === 'student';
+  const isFounder = plan === 'founder' || plan === 'team' || plan === 'team_pro' || plan === 'enterprise';
+  const isTeam = plan === 'team' || plan === 'team_pro' || plan === 'enterprise';
+  const isTeamPro = plan === 'team_pro' || plan === 'enterprise';
   const isEnterprise = plan === 'enterprise';
+
+  // Anyone not on trial — student counts as paid in terms of feature access
   const isPaid = plan !== 'trial';
   const isTrial = plan === 'trial';
 
@@ -213,9 +220,10 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     <SubscriptionContext.Provider value={{
       subscription,
       loading,
-      isStarter,
-      isProfessional,
-      isProfessionalMax,
+      isStudent,
+      isFounder,
+      isTeam,
+      isTeamPro,
       isEnterprise,
       isPaid,
       isTrial,

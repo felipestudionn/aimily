@@ -14,13 +14,23 @@ async function getRawBody(req: NextRequest): Promise<Buffer> {
 function mapSubscriptionPlan(priceId: string): string {
   const priceMap: Record<string, string> = {};
 
-  // Build map from env vars
-  if (process.env.STRIPE_STARTER_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_STARTER_MONTHLY_PRICE_ID] = 'starter';
-  if (process.env.STRIPE_STARTER_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_STARTER_ANNUAL_PRICE_ID] = 'starter';
-  if (process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID] = 'professional';
-  if (process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID] = 'professional';
-  if (process.env.STRIPE_PRO_MAX_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PRO_MAX_MONTHLY_PRICE_ID] = 'professional_max';
-  if (process.env.STRIPE_PRO_MAX_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PRO_MAX_ANNUAL_PRICE_ID] = 'professional_max';
+  // Current plan price IDs (May 2026 rebrand)
+  if (process.env.STRIPE_FOUNDER_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_FOUNDER_MONTHLY_PRICE_ID] = 'founder';
+  if (process.env.STRIPE_FOUNDER_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_FOUNDER_ANNUAL_PRICE_ID] = 'founder';
+  if (process.env.STRIPE_TEAM_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_TEAM_MONTHLY_PRICE_ID] = 'team';
+  if (process.env.STRIPE_TEAM_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_TEAM_ANNUAL_PRICE_ID] = 'team';
+  if (process.env.STRIPE_TEAM_PRO_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_TEAM_PRO_MONTHLY_PRICE_ID] = 'team_pro';
+  if (process.env.STRIPE_TEAM_PRO_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_TEAM_PRO_ANNUAL_PRICE_ID] = 'team_pro';
+
+  // Legacy price IDs from pre-rebrand products — map to the equivalent new
+  // plan ID so any in-flight webhook for an archived product still resolves
+  // correctly. Safe to remove once all legacy Stripe products are deleted.
+  if (process.env.STRIPE_STARTER_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_STARTER_MONTHLY_PRICE_ID] = 'founder';
+  if (process.env.STRIPE_STARTER_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_STARTER_ANNUAL_PRICE_ID] = 'founder';
+  if (process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID] = 'team';
+  if (process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID] = 'team';
+  if (process.env.STRIPE_PRO_MAX_MONTHLY_PRICE_ID) priceMap[process.env.STRIPE_PRO_MAX_MONTHLY_PRICE_ID] = 'team_pro';
+  if (process.env.STRIPE_PRO_MAX_ANNUAL_PRICE_ID) priceMap[process.env.STRIPE_PRO_MAX_ANNUAL_PRICE_ID] = 'team_pro';
 
   return priceMap[priceId] || 'trial';
 }
@@ -136,7 +146,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .upsert({
       user_id: userId,
       stripe_customer_id: customerId,
-      plan: session.metadata?.plan || 'starter',
+      plan: session.metadata?.plan || 'founder',
       status: 'active',
       refunded_at: null,
       refund_amount_cents: null,
