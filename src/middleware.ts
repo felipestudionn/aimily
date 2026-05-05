@@ -15,7 +15,7 @@ const MARKETING_BARE_PATHS = ['', '/contact', '/trust', '/privacy', '/terms', '/
 // Marketing path PREFIXES — content-driven sub-trees (workflows, vs, etc.)
 // added in Wave 1+. Anything under these is public and should be delegated
 // to next-intl regardless of auth state.
-const MARKETING_PREFIXES = ['/workflows', '/vs', '/learn', '/for', '/compare', '/how-to'];
+const MARKETING_PREFIXES = ['/workflows', '/vs', '/learn', '/for', '/compare', '/how-to', '/student'];
 
 function isMarketingPath(pathname: string): boolean {
   // Bare paths get caught by next-intl + redirected to /[locale]
@@ -73,6 +73,7 @@ const publicApiPrefixes = [
   '/api/vendor-portal/',     // Phase 5 vendor portal (token-validated internally)
   '/api/ai/translate',       // Phase 5 vendor translation (token-validated internally)
   '/api/promo/',             // Public launch-promo counter for pricing page
+  '/api/academic-domains/',  // Public list of supported universities (Student page)
 ];
 
 export async function middleware(request: NextRequest) {
