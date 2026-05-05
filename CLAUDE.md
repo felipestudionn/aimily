@@ -18,6 +18,14 @@ Fashion collection management platform for planning, designing, and launching cl
 ## Git Rules
 - Every `git commit` MUST be followed by `git push`. No exceptions.
 
+## Ecom · aimily.shop wildcard storefront (NEW 2026-05-05)
+- Wildcard `*.aimily.shop` configured in Cloudflare DNS + added to Vercel project
+- Cloudflare credentials in `.env.local`: `CLOUDFLARE_API_TOKEN` · `CLOUDFLARE_ACCOUNT_ID` · `CLOUDFLARE_ZONE_ID_AIMILY_SHOP`
+- Token type: User API Token, scope=Zone:DNS:Edit on aimily.shop, no expiry
+- Use these vars for any DNS automation (no need to ask Felipe again)
+- Reference: `memory/credentials_cloudflare-aimily-shop.md`
+- Plan: `.planning/ecom/` (6 docs) + `memory/architecture-ecom.md`
+
 ## 🚨 AI CONTEXT ARCHITECTURE — DO NOT TOUCH
 All 16 AI endpoints load context SERVER-SIDE via `loadFullContext()` from `src/lib/ai/load-full-context.ts`. This reads CIS + Creative workspace + Brief answers + Collection plan. The 3 brief endpoints (`analyze`, `scenarios`, `generate`) accept `collectionPlanId` OPTIONALLY — if present they prepend CIS context via `formatCisPrefix()` from `src/lib/ai/cis-prefix.ts`. Frontend-only changes MUST NOT modify:
 - `src/lib/ai/load-full-context.ts`
