@@ -3,12 +3,16 @@
 /* ═══════════════════════════════════════════════════════════════════
    PricingDetail — clean editorial pricing, fully i18n.
 
-   May 2026 rebrand:
+   May 2026 rebrand v2:
      • 4 cards: Student (free) · Founder (€99) · Team (€599) · Team Pro (€1.499)
-     • Enterprise moved to a discreet inline band below the grid
-     • Launch promo: first 100 paid subs get -50% for 12 months,
-       counter pulled from /api/promo/counter
-     • Student tier auto-verified via academic email domain
+     • Always shows monthly price (no toggle) — annual discount mentioned
+       as a sub-line so customers don't feel bait-and-switched.
+     • No "Recommended" badge — none is universally recommended.
+     • Launch promo lives ONLY in the top banner, never inside cards.
+     • Highlights focus on concrete resources (users, Aimily Credits,
+       top LLM access, AI video) — no generic filler.
+     • "No credit card" message appears ONCE at the bottom of the grid.
+     • Enterprise as a discreet inline band below the grid.
    ═══════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useState } from 'react';
@@ -22,19 +26,14 @@ type PackId = 'pack_50' | 'pack_250' | 'pack_1000';
 
 const PLAN_META: {
   id: PlanId;
-  price: number | null;
-  priceAnnual: number | null;
-  imagery: string;
-  seats: string;
-  popular?: boolean;
+  monthlyPrice: number | null;  // shown price — always monthly
+  annualPerMonth: number | null;  // sub-line "Anual: €X/mes (−20%)"
 }[] = [
-  { id: 'student', price: 0, priceAnnual: 0, imagery: '100', seats: '1' },
-  { id: 'founder', price: 99, priceAnnual: 79, imagery: '100', seats: '1' },
-  { id: 'team', price: 599, priceAnnual: 479, imagery: '1.000', seats: '5', popular: true },
-  { id: 'team_pro', price: 1499, priceAnnual: 1199, imagery: '5.000', seats: '25' },
+  { id: 'student', monthlyPrice: 0, annualPerMonth: null },
+  { id: 'founder', monthlyPrice: 99, annualPerMonth: 79 },
+  { id: 'team', monthlyPrice: 599, annualPerMonth: 479 },
+  { id: 'team_pro', monthlyPrice: 1499, annualPerMonth: 1199 },
 ];
-
-const PROMO_PLANS: PlanId[] = ['founder', 'team', 'team_pro'];
 
 const PACKS: { id: PackId; imagery: number; price: number }[] = [
   { id: 'pack_50', imagery: 50, price: 29 },
@@ -57,7 +56,6 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
   const { subscription, checkoutPlan, buyCreditPack, isPaid, openPortal } = useSubscription();
   const h = useHomeTranslation();
   const p = h.pricing;
-  const [annual, setAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [loadingPack, setLoadingPack] = useState<PackId | null>(null);
   const [promo, setPromo] = useState<PromoState | null>(null);
@@ -110,7 +108,6 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
         const data = await res.json();
         if (data.eligible) {
           setStudentMsg(p.studentSuccess.replace('{school}', data.school_name || ''));
-          // Force a refresh so SubscriptionContext picks up the new plan
           window.location.reload();
         } else if (data.reason === 'domain_not_whitelisted') {
           setStudentMsg(p.studentNotEligible);
@@ -129,9 +126,6 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
 
     if (!user) { openAuth(); return; }
     if (planId === subscription?.plan) return;
-    // Has-subscription users changing plan: route through Customer Portal
-    // so Stripe handles proration. Avoids creating a parallel sub that
-    // would double-bill the customer.
     if (isPaid && subscription?.plan !== planId) {
       setLoadingPlan(planId);
       try { await openPortal(); }
@@ -139,7 +133,9 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
       return;
     }
     setLoadingPlan(planId);
-    try { await checkoutPlan(planId, annual); }
+    // Always start checkout in monthly. Customer can switch to annual
+    // post-trial via Customer Portal.
+    try { await checkoutPlan(planId, false); }
     finally { setLoadingPlan(null); }
   };
 
@@ -172,138 +168,73 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
             {p.subtitle}
           </p>
 
-          {/* Promo strip — discreet, editorial, only when active */}
+          {/* Launch promo strip — single instance, top of grid */}
           {promoLabel && (
-            <div className="inline-flex items-center gap-2 bg-carbon text-crema px-5 py-2 rounded-full text-[12px] tracking-[0.08em] uppercase font-medium mb-6">
+            <div className="inline-flex items-center gap-2 bg-carbon text-crema px-5 py-2 rounded-full text-[12px] tracking-[0.08em] uppercase font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-moss animate-pulse" />
               {promoLabel}
             </div>
           )}
-
-          {/* Billing toggle */}
-          <div className="inline-flex items-center gap-1 bg-white border border-carbon/10 rounded-full p-1">
-            <button
-              onClick={() => setAnnual(false)}
-              className={`px-5 py-2 rounded-full text-[13px] font-medium transition-colors ${
-                !annual ? 'bg-carbon text-crema' : 'text-carbon/65 hover:text-carbon'
-              }`}
-            >
-              {p.monthly}
-            </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`px-5 py-2 rounded-full text-[13px] font-medium transition-colors ${
-                annual ? 'bg-carbon text-crema' : 'text-carbon/65 hover:text-carbon'
-              }`}
-            >
-              {p.annual} <span className="opacity-65 ml-1">{p.annualSave}</span>
-            </button>
-          </div>
         </div>
 
-        {/* Plans grid — 4 cards (Student/Founder/Team/Team Pro), equal min-h */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 items-stretch">
+        {/* Plans grid — 4 cards, identical structure for visual consistency */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 items-stretch">
           {PLAN_META.map((plan) => {
-            const basePrice = annual ? plan.priceAnnual : plan.price;
-            const showPromo = promoActive && PROMO_PLANS.includes(plan.id) && basePrice !== null && basePrice > 0;
-            // Round to whole euro so visual price never ends in .5
-            const promoPrice = showPromo && basePrice !== null ? Math.round(basePrice * 0.5) : null;
             const isCurrent = subscription?.plan === plan.id;
             const isLoading = loadingPlan === plan.id;
-            const isDark = plan.popular;
             const isStudent = plan.id === 'student';
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-[20px] p-7 flex flex-col h-full min-h-[620px] transition-all ${
-                  isDark
-                    ? 'bg-carbon text-crema'
-                    : 'bg-white text-carbon border border-carbon/[0.08] hover:border-carbon/20'
-                } ${isCurrent ? 'ring-2 ring-carbon/40' : ''}`}
+                className={`relative rounded-[20px] p-7 flex flex-col h-full min-h-[560px] bg-white border border-carbon/[0.08] hover:border-carbon/25 transition-colors ${
+                  isCurrent ? 'ring-2 ring-carbon/40' : ''
+                }`}
               >
-                {plan.popular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-moss text-crema text-[11px] tracking-[0.18em] uppercase font-bold px-4 py-2 rounded-full shadow-[0_6px_22px_rgba(128,131,104,0.35)] whitespace-nowrap">
-                    {p.recommended}
-                  </div>
-                )}
-
-                {/* Plan name — large and prominent */}
-                <div className="mb-5">
-                  <div className={`flex items-center gap-2 mb-1`}>
-                    {isStudent && <GraduationCap className={`w-6 h-6 ${isDark ? 'text-crema/85' : 'text-carbon/85'}`} />}
-                    <h3 className={`text-[28px] font-medium tracking-[-0.02em] leading-none`}>
+                {/* Plan name — large, prominent, the visual anchor */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    {isStudent && <GraduationCap className="w-6 h-6 text-carbon/85" />}
+                    <h3 className="text-[28px] font-medium tracking-[-0.02em] leading-none text-carbon">
                       {planName[plan.id]}
                     </h3>
                   </div>
-                  <p className={`text-[13px] leading-[1.5] min-h-[2.6rem] mt-3 ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
+                  <p className="text-[13px] leading-[1.5] text-carbon/65 min-h-[3rem]">
                     {planTagline[plan.id]}
                   </p>
                 </div>
 
-                {/* Price block — fixed height so all cards line up */}
-                <div className="mb-6 min-h-[6.5rem]">
-                  {basePrice !== null ? (
+                {/* Price block — always monthly. Annual mention is a sub-line. */}
+                <div className="mb-6 min-h-[5.5rem]">
+                  {plan.monthlyPrice !== null ? (
                     <>
-                      <div className="flex items-baseline gap-2 flex-wrap">
-                        {showPromo && promoPrice !== null ? (
-                          <>
-                            <span className="text-[44px] font-light tracking-[-0.03em] leading-none">€{promoPrice}</span>
-                            <span className={`text-[16px] line-through ${isDark ? 'text-crema/45' : 'text-carbon/40'}`}>€{basePrice}</span>
-                            <span className={`text-[13px] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>{p.perMonth}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-[44px] font-light tracking-[-0.03em] leading-none">
-                              {basePrice === 0 ? p.free : `€${basePrice}`}
-                            </span>
-                            {basePrice > 0 && (
-                              <span className={`text-[13px] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>{p.perMonth}</span>
-                            )}
-                          </>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[44px] font-light tracking-[-0.03em] leading-none text-carbon">
+                          {plan.monthlyPrice === 0 ? p.free : `€${plan.monthlyPrice}`}
+                        </span>
+                        {plan.monthlyPrice > 0 && (
+                          <span className="text-[13px] text-carbon/55">{p.perMonth}</span>
                         )}
                       </div>
-                      <div className={`text-[12px] mt-2 min-h-[1rem] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                        {basePrice > 0 && annual && p.perYear.replace('{price}', String((showPromo && promoPrice !== null ? promoPrice : basePrice) * 12))}
-                      </div>
-                      <div className={`text-[11px] mt-1 italic min-h-[1.1rem] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                        {showPromo && p.promoCardNote}
+                      <div className="text-[12px] mt-2 min-h-[1rem] text-carbon/55">
                         {isStudent && p.studentDuration}
+                        {plan.annualPerMonth !== null && p.annualNote.replace('{price}', String(plan.annualPerMonth))}
                       </div>
                     </>
                   ) : null}
                 </div>
 
-                <div className={`grid grid-cols-2 gap-4 pb-6 mb-6 border-b ${isDark ? 'border-crema/15' : 'border-carbon/10'}`}>
-                  <div>
-                    <div className={`text-[11px] uppercase tracking-[0.12em] mb-1 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                      {p.imagery}
-                    </div>
-                    <div className="text-[18px] font-light tracking-[-0.02em]">{plan.imagery}</div>
-                  </div>
-                  <div>
-                    <div className={`text-[11px] uppercase tracking-[0.12em] mb-1 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                      {p.seats}
-                    </div>
-                    <div className="text-[18px] font-light tracking-[-0.02em]">{plan.seats}</div>
-                  </div>
-                </div>
-
-                <ul className="space-y-2.5 flex-1 mb-7">
+                {/* Highlights — only concrete resources, no filler */}
+                <ul className="space-y-3 flex-1 mb-7">
                   {planHighlights[plan.id].map((highlight, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.5]">
-                      <Check className={`w-3.5 h-3.5 mt-1 shrink-0 ${isDark ? 'text-crema/65' : 'text-carbon/55'}`} />
-                      <span className={isDark ? 'text-crema/85' : 'text-carbon/85'}>{highlight}</span>
+                    <li key={i} className="flex items-start gap-2.5 text-[13.5px] leading-[1.5]">
+                      <Check className="w-4 h-4 mt-[2px] shrink-0 text-carbon/65" />
+                      <span className="text-carbon/85">{highlight}</span>
                     </li>
                   ))}
                 </ul>
 
+                {/* CTA */}
                 {(() => {
-                  // CTA copy depends on context:
-                  //   - student plan          → Verify with school email
-                  //   - this is current plan  → Current plan (disabled)
-                  //   - paid user, other plan → Change plan (Customer Portal)
-                  //   - logged in trial       → Start free for 30 days
-                  //   - anonymous             → Start free
                   const ctaLabel = isStudent
                     ? p.ctaVerifyStudent
                     : isCurrent
@@ -317,12 +248,8 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                       disabled={isCurrent || isLoading}
                       className={`w-full py-3 px-5 rounded-full text-[13px] font-semibold transition-all flex items-center justify-center gap-2 ${
                         isCurrent
-                          ? (isDark
-                              ? 'bg-crema/15 text-crema/65 cursor-default'
-                              : 'bg-carbon/[0.06] text-carbon/55 cursor-default')
-                          : isDark
-                            ? 'bg-crema text-carbon hover:bg-crema/90'
-                            : 'bg-carbon text-crema hover:bg-carbon/90'
+                          ? 'bg-carbon/[0.06] text-carbon/55 cursor-default'
+                          : 'bg-carbon text-crema hover:bg-carbon/90'
                       }`}
                     >
                       {isLoading ? (
@@ -337,13 +264,8 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   );
                 })()}
 
-                {!isStudent && !isCurrent && (
-                  <p className={`text-[11px] mt-3 text-center ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                    {p.noCardNote}
-                  </p>
-                )}
                 {isStudent && studentMsg && (
-                  <p className={`text-[11px] mt-3 text-center leading-[1.5] ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
+                  <p className="text-[11px] mt-3 text-center leading-[1.5] text-carbon/65">
                     {studentMsg}
                   </p>
                 )}
@@ -351,6 +273,11 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
             );
           })}
         </div>
+
+        {/* Single global note — replaces 4 per-card "no credit card" lines */}
+        <p className="text-center text-[13px] text-carbon/55 mb-16">
+          {p.noCardNoteGlobal}
+        </p>
 
         {/* Enterprise band — discreet, separate from main grid */}
         <div className="border border-carbon/10 rounded-[20px] p-6 md:p-8 mb-16 bg-white/40">
@@ -397,7 +324,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   <span className="text-[20px] font-medium">€{pack.price}</span>
                 </div>
                 <div className="flex items-center justify-between text-[12px] text-carbon/55">
-                  <span>imagery</span>
+                  <span>{p.imagery}</span>
                   <span className="inline-flex items-center gap-1 text-carbon group-hover:translate-x-0.5 transition-transform text-[13px] font-medium">
                     {p.topupsBuy} <ArrowRight className="w-3.5 h-3.5" />
                   </span>
