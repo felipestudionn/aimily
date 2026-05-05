@@ -1,0 +1,112 @@
+---
+title: "Wie man eine Bekleidungslinie designt — vom Sketch zum Fabrik-fertigen Spec"
+description: "Der vollständige Designprozess für eine Bekleidungslinie: Sketches, BOM mit Pantone TCX, Materialien aus einer 963-Einträge-Bibliothek, Construction Details, Samples. Aufgebaut auf aimily."
+hero: "Eine Bekleidungslinie zu designen ist halb Kunst, halb Spec Sheet. aimily kümmert sich um die zweite Hälfte."
+lead: "Eine Bekleidungslinie zu designen heißt, ein kohärentes Set von Kleidungsstücken zu produzieren, wo jedes SKU einen Sketch, eine Bill of Materials, ein Colorway-Grid, Maße mit Grade Rules und Construction Details hat — alles in einem Format, das die Fabrik tatsächlich produzieren kann. Die meisten Designer kämpfen Wochen mit Excel und Illustrator-Übergaben. aimily ship PLM-äquivalente Tiefe im Design-Block (Block 3) plus den Marken- und Merchandising-Kontext."
+updated: "2026-05-04"
+howTo:
+  name: "Wie man eine Bekleidungslinie mit aimily designt"
+  description: "Design-zentrierter Prozess von kreativer Direktion zu Fabrik-fertigen Tech Packs."
+  totalTime: "P4W"
+  steps:
+    - name: "Brand DNA lesen (Woche 1)"
+      text: "Wenn du für eine Marke designst, lies die gesperrte Brand DNA in aimily — Heritage, Voice, Werte, Referenzen, Konsumentenprofil, Palette."
+    - name: "Silhouetten sketchen (Wochen 1-2)"
+      text: "Im Design-Block von aimily Sketches pro SKU hinzufügen — manuell (AI/PSD/PNG hochladen) oder AI-generiert aus einem Referenzfoto. Multi-View: front + back + side + Detail (bis zu 7 Slots/SKU)."
+    - name: "Colorways anwenden (Woche 2)"
+      text: "Markenpalette auf die Sketch-Zonen ziehen. Jede Farbe ist ein Pantone TCX Picker (2.317 Einträge mit HEX → ΔE2000 closest match)."
+    - name: "BOM aufbauen (Wochen 2-3)"
+      text: "MaterialCombobox pro BOM-Reihe — 963 verifizierte B2B-Lieferanten-Einträge: Naturfasern, regenerierte Cellulosika, Synthetik, Leder + Alternativen, Hardware, Futter, Zertifizierungen."
+    - name: "Construction Details und Maße definieren (Woche 3)"
+      text: "Wiederverwendbare Konstruktionsblöcke plus strukturierte POMs mit Grade Rules. Toleranzen pro POM. Auto-Grading aus Sample Size."
+    - name: "Costing und Margin Protection (Woche 3)"
+      text: "BOM-getriebener Costing-Engine rolls up Materialkosten in Echtzeit. AI Margin Protection markiert jedes SKU unter dem Schwellenwert."
+    - name: "Zur Freigabe einreichen und an Fabrik senden (Woche 4)"
+      text: "Multi-Stage-Approval-Workflow mit Email-Benachrichtigungen. Vendor Portal gibt Read-Only-Zugang. PDF Export in 3-5 Sekunden."
+faq:
+  - q: "Brauche ich CLO3D oder Browzwear, um eine Bekleidungslinie zu designen?"
+    a: "Nicht für die Spec-Phase. CLO3D und Browzwear sind 3D-Simulationstools — nützlich für Fit-Checks und digitales Sampling. aimily übernimmt die 2D-Spec-Phase und exportiert saubere Colorway-Daten, die jedes 3D-Tool importieren kann."
+  - q: "Kann aimily den Sketch aus einem Referenzfoto generieren?"
+    a: "Ja. Der AI-Sketch-Endpoint nimmt ein Referenzfoto und produziert einen Tech-Flat-Sketch mit extrahierten Konstruktionszonen. Output ist editierbar. Multi-View."
+  - q: "Was ist die kleinste BOM, die aimily verarbeitet?"
+    a: "Ein einfaches Jersey-T-Shirt hat typischerweise 5-8 BOM-Reihen. Ein komplexeres Outerwear-Stück kann 20-30 Reihen haben. aimily verarbeitet beides."
+  - q: "Wie verarbeitet aimily Pantone in der Praxis?"
+    a: "Vollständige TCX-Bibliothek: 2.317 Einträge mit HEX, RGB und Lab. Zwei Flows: (a) Browse nach Familie und Klick auf Chip; (b) füge irgendeinen Hex ein und erhalte die drei nächsten Pantones nach Delta-E2000-Distanz. Die Hex→Pantone-Brücke ist einzigartig bei aimily."
+  - q: "Kann ich eine Bekleidungslinie ohne Modedesign-Studium designen?"
+    a: "Hilfreich, aber nicht erforderlich. aimily liefert Struktur. Was aimily nicht ersetzt: Geschmack und Urteil."
+  - q: "Wie vergleicht sich der Design-Block mit Centric oder PTC FlexPLM?"
+    a: "Der Design-Block von aimily erreicht PLM-Parität mit Centric und FlexPLM in Block 3 seit Phase 1-7-Schluss (3.-4. Mai 2026). Differenzierer: PDF-Export in 3-5 Sekunden vs Minuten, Pantone hex→TCX closest match (einzigartig), AI Photo Comparison Sample vs Sketch (einzigartig)."
+related:
+  - href: "/de/workflows/tech-packs"
+    label: "Workflow → Fabrik-fertige Tech Packs in unter 5 Sekunden generieren"
+  - href: "/de/workflows/brand-dna"
+    label: "Workflow → Brand DNA generieren"
+  - href: "/de/how-to/create-fashion-collection"
+    label: "Wie → Eine Modekollektion erstellen (der breitere Prozess)"
+  - href: "/de/vs/centric"
+    label: "Vergleich aimily vs Centric Software"
+  - href: "/de/vs/ptc-flexplm"
+    label: "Vergleich aimily vs PTC FlexPLM"
+---
+
+## Was "eine Bekleidungslinie designen" wirklich bedeutet
+
+Eine Bekleidungslinie zu designen ist halb kreative Direktion, halb Spec Sheet. Die kreative Hälfte ist der Teil, den die meisten Designer lieben. Die Spec-Hälfte ist der Teil, wo die meisten Designer 70% ihrer Zeit verbringen.
+
+Ein vollständiges Tech Pack pro SKU enthält:
+
+- **Multi-View-Sketches** — front, back, side, Detail-Callouts
+- **Bill of Materials (BOM)**
+- **Colorways**
+- **Maße (POMs + Grade Rules)**
+- **Construction Details**
+- **Etiketten + Pflege + Verpackung**
+
+Ein sauberes Tech Pack PDF hat typischerweise 10-30 A3-Seiten.
+
+aimilys Design-Block komprimiert die Spec-Hälfte von 70% auf unter 30% deiner Zeit.
+
+## Der 4-Wochen-Zeitplan pro Kollektion
+
+**Woche 1 — Brand DNA + Sketches**.
+**Woche 2 — Colorways + BOM**.
+**Woche 3 — Konstruktion + Maße + Cost**.
+**Woche 4 — Freigabe + Fabrik**.
+
+Vergleich zum traditionellen Zeitplan: 8-12 Wochen.
+
+## Wie aimily den Design-Block (Block 3) handhabt
+
+PLM-Parität mit Centric Software und PTC FlexPLM seit Phase 1-7-Schluss (3.-4. Mai 2026):
+
+- Multi-View-Sketches bis zu 7 Slots
+- Pantone TCX Bibliothek 2.317 Einträge mit HEX→ΔE2000 closest match
+- Materialbibliothek 963 verifizierte B2B-Einträge
+- BOM Costing Engine mit Multi-Currency ECB und AI Margin Protection
+- Construction Details mit wiederverwendbaren Blöcken
+- Maße mit Grade Rules und Auto-Grading
+- Sample Tracking mit AI Photo Comparison vs Sketch (einzigartig)
+- Multi-Pin-Annotations Hatch-Style
+- Multi-Stage-Approval-Workflow mit Email-Benachrichtigungen
+- Vendor Portal token-gated read-only
+- Compliance Hub
+- Artworks Library
+- PDF Export in 3-5 Sekunden
+
+## Wo der Designprozess bricht (und wie aimily es fixt)
+
+**Bruch 1**: Excel + Illustrator. Fabrik liest zwei Spalten falsch.
+**Fix**: Tech Pack aus strukturierten Daten generiert.
+
+**Bruch 2**: Drei Runden "falsche Farbe".
+**Fix**: Pantone TCX mit HEX + RGB + Lab.
+
+**Bruch 3**: Marge verschwindet in der Produktion.
+**Fix**: AI Margin Protection gegen reale Cogs Hints.
+
+**Bruch 4**: Sample kommt mit falschem Manschetten-Detail.
+**Fix**: Multi-Pin-Annotations auf Zeichnungen.
+
+## Probier es aus
+
+14 Tage kostenlose Testversion. Generiere oder lade einen Sketch hoch, baue die erste BOM mit der Materialbibliothek, sieh das Tech Pack PDF in 3-5 Sekunden rendern.
