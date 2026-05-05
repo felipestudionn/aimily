@@ -20,13 +20,13 @@ const THEMES: Record<ThemeId, ThemeLoader | null> = {
   'streetwear-drop':     () => import('./themes/streetwear-drop'),
   'romantic-feminine':   () => import('./themes/romantic-feminine'),
   'resort-luxe':         () => import('./themes/resort-luxe'),
-  'performance-tech':    null,    // Sprint 5
-  'avant-garde-concept': null,    // Sprint 5
-  'sustainable-craft':   null,    // Sprint 5
-  'y2k-digital-native':  null,    // Sprint 5
-  'workwear-heritage':   null,    // Sprint 5
-  'drop-lookbook':       null,    // Sprint 5 (custom layout)
-  'linkinbio-plus':      null,    // Sprint 5 (custom layout)
+  'sustainable-craft':   () => import('./themes/sustainable-craft'),
+  'workwear-heritage':   () => import('./themes/workwear-heritage'),
+  'performance-tech':    () => import('./themes/performance-tech'),
+  'y2k-digital-native':  () => import('./themes/y2k-digital-native'),
+  'avant-garde-concept': () => import('./themes/avant-garde-concept'),
+  'drop-lookbook':       () => import('./themes/drop-lookbook'),
+  'linkinbio-plus':      () => import('./themes/linkinbio-plus'),
 };
 
 /**
