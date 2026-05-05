@@ -107,10 +107,10 @@ export function PoweredBy() {
               <div className="mb-4">
                 <div className="flex items-baseline justify-between mb-1.5">
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category1}</span>
-                  <span className="text-carbon font-mono tabular-nums text-[14px]">€136</span>
+                  <span className="text-carbon font-mono tabular-nums text-[14px]">€133</span>
                 </div>
                 <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
-                  Claude Pro · ChatGPT Plus · Gemini Advanced · Perplexity Pro · Midjourney · Freepik Premium+ · Kling AI Pro.
+                  Claude Pro €18 · ChatGPT Plus €18 · Gemini Advanced €18 · Perplexity Pro €18 · Freepik Premium+ €27 · Kling AI Pro €34.
                 </p>
               </div>
 
@@ -118,7 +118,7 @@ export function PoweredBy() {
               <div className="border-t border-carbon/[0.08] pt-3 mb-4">
                 <div className="flex items-baseline justify-between mb-1.5">
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category2}</span>
-                  <span className="text-carbon font-mono tabular-nums text-[14px]">€112</span>
+                  <span className="text-carbon font-mono tabular-nums text-[14px]">€124</span>
                 </div>
                 <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
                   {pb.productivityCaveat}
@@ -129,7 +129,7 @@ export function PoweredBy() {
               <div className="border-t border-carbon/[0.08] pt-3 mb-4">
                 <div className="flex items-baseline justify-between mb-1.5">
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category3}</span>
-                  <span className="text-carbon font-mono tabular-nums text-[14px]">~€30</span>
+                  <span className="text-carbon font-mono tabular-nums text-[14px]">~€400</span>
                 </div>
                 <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
                   {pb.webCaveat}
@@ -163,7 +163,7 @@ export function PoweredBy() {
                 <span className="text-[13px] text-carbon/55 uppercase tracking-[0.15em] font-semibold">{pb.totalLabel}</span>
                 <span className="flex items-baseline tabular-nums">
                   <span className="text-[20px] font-light text-carbon/55 mr-1.5">€</span>
-                  <span className="text-[40px] font-light tracking-[-0.03em] text-carbon leading-none">878</span>
+                  <span className="text-[40px] font-light tracking-[-0.03em] text-carbon leading-none">1.257</span>
                   <span className="text-[13px] text-carbon/55 ml-1">/mes</span>
                 </span>
               </div>
