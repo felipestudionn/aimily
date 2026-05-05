@@ -1,14 +1,14 @@
-/* Storefront route group · home page (renders theme.pages.home with full data) */
+/* Storefront route group · PDP (Product Detail Page) */
 import { notFound } from 'next/navigation';
 import { loadStorefrontByHost } from '@/lib/storefront/load-storefront';
 import { loadStorefrontData, StorefrontDataMissingError } from '@/lib/storefront/load-storefront-data';
 import { loadAndApplyOverrides } from '@/lib/storefront/apply-overrides';
 import { loadTheme } from '@/lib/storefront/theme-registry';
 
-interface Props { params: Promise<{ host: string }>; }
+interface Props { params: Promise<{ host: string; sku: string }>; }
 
-export default async function StorefrontHome({ params }: Props) {
-  const { host } = await params;
+export default async function PdpPage({ params }: Props) {
+  const { host, sku } = await params;
   const storefront = await loadStorefrontByHost(host);
   if (!storefront) notFound();
 
@@ -16,27 +16,31 @@ export default async function StorefrontHome({ params }: Props) {
   try {
     data = await loadStorefrontData(storefront);
   } catch (e) {
-    if (e instanceof StorefrontDataMissingError) {
-      console.error('[storefront/home] data missing:', e.message);
-      notFound();
-    }
+    if (e instanceof StorefrontDataMissingError) notFound();
     throw e;
   }
   data = await loadAndApplyOverrides(storefront.id, data);
 
   const theme = await loadTheme(storefront.theme_id);
-  const Home = theme.pages.home;
-  if (!Home) notFound();
+  const Pdp = theme.pages.pdp;
+  if (!Pdp) notFound();
 
-  return <Home data={data} />;
+  return <Pdp data={data} skuId={sku} />;
 }
 
 export async function generateMetadata({ params }: Props) {
-  const { host } = await params;
+  const { host, sku } = await params;
   const storefront = await loadStorefrontByHost(host);
   if (!storefront) return { title: 'Not found' };
-  return {
-    title: storefront.seo_title ?? host,
-    description: storefront.seo_description ?? undefined,
-  };
+  try {
+    const data = await loadStorefrontData(storefront);
+    const product = data.skus.find((s) => s.id === sku);
+    if (!product) return { title: 'Product not found' };
+    return {
+      title: `${product.name} · ${data.brand.name}`,
+      description: product.description?.slice(0, 160),
+    };
+  } catch {
+    return { title: storefront.subdomain };
+  }
 }

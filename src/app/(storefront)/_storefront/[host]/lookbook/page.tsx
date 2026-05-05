@@ -1,4 +1,4 @@
-/* Storefront route group · home page (renders theme.pages.home with full data) */
+/* Storefront route group · Lookbook */
 import { notFound } from 'next/navigation';
 import { loadStorefrontByHost } from '@/lib/storefront/load-storefront';
 import { loadStorefrontData, StorefrontDataMissingError } from '@/lib/storefront/load-storefront-data';
@@ -7,7 +7,7 @@ import { loadTheme } from '@/lib/storefront/theme-registry';
 
 interface Props { params: Promise<{ host: string }>; }
 
-export default async function StorefrontHome({ params }: Props) {
+export default async function LookbookPage({ params }: Props) {
   const { host } = await params;
   const storefront = await loadStorefrontByHost(host);
   if (!storefront) notFound();
@@ -16,27 +16,14 @@ export default async function StorefrontHome({ params }: Props) {
   try {
     data = await loadStorefrontData(storefront);
   } catch (e) {
-    if (e instanceof StorefrontDataMissingError) {
-      console.error('[storefront/home] data missing:', e.message);
-      notFound();
-    }
+    if (e instanceof StorefrontDataMissingError) notFound();
     throw e;
   }
   data = await loadAndApplyOverrides(storefront.id, data);
 
   const theme = await loadTheme(storefront.theme_id);
-  const Home = theme.pages.home;
-  if (!Home) notFound();
+  const Lookbook = theme.pages.lookbook;
+  if (!Lookbook) notFound();
 
-  return <Home data={data} />;
-}
-
-export async function generateMetadata({ params }: Props) {
-  const { host } = await params;
-  const storefront = await loadStorefrontByHost(host);
-  if (!storefront) return { title: 'Not found' };
-  return {
-    title: storefront.seo_title ?? host,
-    description: storefront.seo_description ?? undefined,
-  };
+  return <Lookbook data={data} />;
 }
