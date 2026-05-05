@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, PLANS, PlanId, AIMILY_CREDITS_PACKS, CreditPackId, LAUNCH_PROMO_COUPON_ID } from '@/lib/stripe';
+import { stripe, PLANS, PlanId, AIMILY_CREDITS_PACKS, CreditPackId, LAUNCH_PROMO_COUPONS } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
@@ -108,37 +108,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Price not configured' }, { status: 500 });
     }
 
-    // Try to claim a launch promo slot (first 100 paid subs get 50% off
-    // for 12 months via coupon LAUNCH-50-Y1). The RPC is atomic + locks
-    // the counter row, so concurrent checkouts can't oversell. If no
-    // slot is available, the user gets the regular price — no error.
+    // Try to claim a launch promo slot (first 100 paid subs get a fixed
+    // €/mo discount via plan-specific absolute coupon for 12 months).
+    // The RPC is atomic + locks the counter row so concurrent checkouts
+    // can't oversell. Promo only applies to monthly subs — annual go
+    // straight to regular price (handled via Customer Portal post-trial).
     let promoApplied = false;
-    try {
-      const { data: claim, error: claimErr } = await supabaseAdmin.rpc('claim_launch_promo_slot');
-      if (!claimErr && Array.isArray(claim) && claim[0]?.claimed) {
-        promoApplied = true;
+    if (!body.annual) {
+      try {
+        const { data: claim, error: claimErr } = await supabaseAdmin.rpc('claim_launch_promo_slot');
+        if (!claimErr && Array.isArray(claim) && claim[0]?.claimed) {
+          promoApplied = true;
+        }
+      } catch (e) {
+        console.error('claim_launch_promo_slot RPC failed (continuing without promo):', e);
       }
-    } catch (e) {
-      console.error('claim_launch_promo_slot RPC failed (continuing without promo):', e);
     }
+
+    const couponId = promoApplied
+      ? LAUNCH_PROMO_COUPONS[plan as 'founder' | 'team' | 'team_pro']
+      : undefined;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
-      // Card includes Apple Pay + Google Pay automatically when the
-      // domain is verified in Stripe Dashboard. PayPal needs explicit
-      // listing.
       payment_method_types: ['card', 'paypal'],
-      // Trial without credit card friction — Stripe won't ask for a
-      // payment method during the trial. The user enters payment when
-      // the trial ends and they want to keep going.
       payment_method_collection: 'if_required',
       subscription_data: {
         trial_period_days: 30,
         ...(promoApplied ? { metadata: { launch_promo: 'first_100_y1' } } : {}),
       },
-      ...(promoApplied
-        ? { discounts: [{ coupon: LAUNCH_PROMO_COUPON_ID }] }
+      ...(couponId
+        ? { discounts: [{ coupon: couponId }] }
         : { allow_promotion_codes: true }),
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${req.nextUrl.origin}/my-collections?billing=success`,
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         supabase_user_id: user.id,
         plan,
-        ...(promoApplied ? { launch_promo: 'first_100_y1' } : {}),
+        ...(promoApplied ? { launch_promo: 'first_100_y1', launch_coupon: couponId! } : {}),
       },
     });
 

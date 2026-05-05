@@ -612,7 +612,7 @@ const en: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',
@@ -927,7 +927,7 @@ const es: HomeDict = {
     studentNotEligible: 'Tu email no está en nuestra lista de centros académicos verificados. Pide a tu escuela que escriba a hello@aimily.app.',
     studentBlockedPaid: 'Ya tienes una suscripción de pago. Cancélala primero para cambiar a Estudiante.',
     studentError: 'La verificación falló. Inténtalo de nuevo.',
-    promoBanner: 'Lanzamiento · quedan {left} plazas · −50% durante 12 meses',
+    promoBanner: 'Lanzamiento · −50% durante 12 meses · primeras 100 plazas · desde €49/mes',
     promoCardNote: 'Lanzamiento · −50% durante 12 meses',
     h: {
       student1: '1 usuario',
@@ -1240,7 +1240,7 @@ const fr: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',
@@ -1553,7 +1553,7 @@ const it: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',
@@ -1866,7 +1866,7 @@ const de: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',
@@ -2179,7 +2179,7 @@ const pt: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',
@@ -2492,7 +2492,7 @@ const nl: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',
@@ -2805,7 +2805,7 @@ const sv: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',
@@ -3118,7 +3118,7 @@ const no: HomeDict = {
     studentNotEligible: 'Your email is not on our verified academic list. Ask your school to email hello@aimily.app.',
     studentBlockedPaid: 'You already have a paid subscription. Cancel it first to switch to Student.',
     studentError: 'Verification failed. Please try again.',
-    promoBanner: 'Launch · {left} spots left · −50% for 12 months',
+    promoBanner: 'Launch · −50% for 12 months · first 100 spots · from €49/mo',
     promoCardNote: 'Launch · −50% for 12 months',
     h: {
       student1: '1 user',

@@ -155,10 +155,19 @@ export function isSelfServePlan(plan: PlanId): boolean {
   return plan === 'founder' || plan === 'team' || plan === 'team_pro';
 }
 
-// Launch promo coupon — first 100 paid subs get 50% off for 12 months.
-// Created in Stripe Dashboard or via scripts/setup-stripe-launch-promo.ts.
-// Counter tracked in Supabase `launch_promo_counter` table.
-export const LAUNCH_PROMO_COUPON_ID = process.env.STRIPE_LAUNCH_PROMO_COUPON_ID || 'LAUNCH-50-Y1';
+// Launch promo coupons — first 100 paid subs get a fixed €/mo discount
+// per plan for 12 months. Absolute amounts (not %) so the resulting
+// monthly charge always lands on a clean €X9 number:
+//   Founder  €99 - €50 = €49/mo · Team €599 - €300 = €299/mo
+//   Team Pro €1499 - €750 = €749/mo
+// Counter shared across all 3 in `launch_promo_counter` table.
+// Annual: monthly toggle is hidden in v2 — annual subs handled via
+// Customer Portal post-trial without auto-applied promo (deliberate).
+export const LAUNCH_PROMO_COUPONS: Record<'founder' | 'team' | 'team_pro', string> = {
+  founder: 'LAUNCH-FOUNDER-M',
+  team: 'LAUNCH-TEAM-M',
+  team_pro: 'LAUNCH-TEAM-PRO-M',
+};
 
 // Aimily Credits packs — one-time top-up for imagery generation
 // Each pack adds N imagery to the user's `imagery_credits.balance` (no expiry).
