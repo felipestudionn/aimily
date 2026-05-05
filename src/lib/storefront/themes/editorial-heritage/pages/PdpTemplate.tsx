@@ -1,6 +1,7 @@
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { ProductCard } from '../components/ProductCard';
+import { BuyButton } from '@/components/ecom/shared/BuyButton';
 import type { PageTemplateProps } from '../../../types';
 
 export default function PdpTemplate({ data, skuId }: PageTemplateProps) {
@@ -240,39 +241,9 @@ export default function PdpTemplate({ data, skuId }: PageTemplateProps) {
               </div>
             )}
 
-            {/* BUY BUTTON placeholder — wired to BuyButton shared component in Sprint 3 */}
+            {/* BUY BUTTON · Stripe Buy Button or Shopify Buy SDK */}
             <div style={{ marginTop: '1rem' }}>
-              <button
-                disabled
-                style={{
-                  width: '100%',
-                  padding: '1rem 2rem',
-                  background: 'var(--s-fg)',
-                  color: 'var(--s-bg)',
-                  border: 'none',
-                  borderRadius: 'var(--s-radius-button)',
-                  fontSize: '13px',
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  fontFamily: 'var(--s-body-font)',
-                  cursor: 'not-allowed',
-                  opacity: 0.65,
-                }}
-              >
-                {sku.payment ? 'Buy now' : 'Coming soon'}
-              </button>
-              <p
-                style={{
-                  marginTop: '0.5rem',
-                  fontSize: '11px',
-                  color: 'var(--s-fg-muted)',
-                  textAlign: 'center',
-                  fontFamily: 'var(--s-body-font)',
-                }}
-              >
-                Checkout via {sku.payment?.provider === 'stripe_buy_button' ? 'Stripe' : sku.payment?.provider === 'shopify_buy' ? 'Shopify' : 'connected provider'} (wired in Sprint 3)
-              </p>
+              <BuyButton sku={sku} payment={data.payment} />
             </div>
 
             {sku.storyHook && (
