@@ -59,6 +59,48 @@ For manual outreach to brands ICP that StudioNN wants to selectively capture wit
 - Felipe distributes the code manually (LinkedIn outreach, IG DMs, email pitches)
 - Not visible anywhere on the public site
 
+## 🚨 IMPORTANT — Web + SEO marketed as INCLUDED but NOT YET BUILT
+
+The Powered by comparison block (live in production) shows Web + SEO as
+*included* (green check + "incluido" label). They are NOT implemented in
+the product yet. **Felipe is starting work on this with you (the Aimily
+agent) immediately after this handoff.**
+
+What needs to ship before this is honest:
+
+### A · Block 5: Storefront / Web pages templates
+- Goal: from brand DNA + collection data, generate landing page + DTC
+  product detail templates that the user can deploy to their own site
+  or directly to a hosted subdomain.
+- Suggested architecture:
+  - New workspace block alongside existing 4 (Brand DNA, Range plan, Tech
+    packs, Marketing). Could be "Storefront" or extend Block 4.
+  - `/api/ai/storefront-generate` endpoint: input `collection_id` +
+    brand DNA → output HTML/CSS or React components.
+  - Storage in Supabase (reuse `presentation` infra).
+  - Export options: download zip · publish to Vercel · embed snippet ·
+    deploy to user's Shopify.
+
+### B · SEO research + on-page optimization
+- Goal: keyword research per drop, on-page audit, SEO copy generation,
+  competitor monitoring.
+- Suggested architecture:
+  - Use Perplexity Sonar (already integrated in `src/lib/ai/perplexity-client.ts`)
+    for live keyword research.
+  - Use Claude Sonnet 4.5 for SEO copy generation.
+  - Optional: integrate DataForSEO API for keyword volume (cheaper than
+    Ahrefs API B2B tier).
+  - New endpoints under `/api/ai/seo-*` paralleling `/api/ai/market-trends`.
+
+### Marketing copy that depends on this
+
+Once the features ship, the cost comparison block on `aimily.app/es#pricing`
+becomes 100% honest. Currently the line items "Web · landing · DTC + integración
+~€400" and "SEO · research · on-page ~€100" claim to be replaced — make them
+real.
+
+---
+
 ### 6 · Powered by section (between Meet aimily and Pricing)
 
 `src/components/landing/PoweredBy.tsx` — transparency block showing the AI providers aimily orchestrates + cost comparison vs DIY stack.

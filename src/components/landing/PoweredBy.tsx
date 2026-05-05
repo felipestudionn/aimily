@@ -191,7 +191,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-crema font-medium flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-moss" /> {pb.aimilyAi}
                   </span>
-                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">incluido</span>
+                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
                 <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyAiCaveat}
@@ -204,7 +204,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-crema font-medium flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-moss" /> {pb.aimilyProductivity}
                   </span>
-                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">incluido</span>
+                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
                 <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyProductivityCaveat}
@@ -217,7 +217,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-crema font-medium flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-moss" /> {pb.aimilyWeb}
                   </span>
-                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">incluido</span>
+                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
                 <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyWebCaveat}
@@ -230,7 +230,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-crema font-medium flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-moss" /> {pb.aimilySeo}
                   </span>
-                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">incluido</span>
+                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
                 <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilySeoCaveat}
@@ -243,7 +243,7 @@ export function PoweredBy() {
                   <span className="text-[13.5px] text-crema font-medium flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-moss" /> {pb.aimilyEditorial}
                   </span>
-                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">incluido</span>
+                  <span className="text-crema/55 font-mono tabular-nums text-[12px]">{pb.includedLabel}</span>
                 </div>
                 <p className="text-[11.5px] italic text-crema/55 leading-[1.4] pl-5">
                   {pb.aimilyEditorialCaveat}
