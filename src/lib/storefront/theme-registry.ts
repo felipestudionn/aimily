@@ -16,17 +16,17 @@ type ThemeLoader = () => Promise<{ default: ThemeModule }>;
 
 const THEMES: Record<ThemeId, ThemeLoader | null> = {
   'editorial-heritage':  () => import('./themes/editorial-heritage'),
-  'streetwear-drop':     null,    // Sprint 2 batch B
-  'romantic-feminine':   null,    // Sprint 2 batch B
-  'minimal-architect':   null,    // Sprint 2 batch B
+  'minimal-architect':   () => import('./themes/minimal-architect'),
+  'streetwear-drop':     () => import('./themes/streetwear-drop'),
+  'romantic-feminine':   () => import('./themes/romantic-feminine'),
+  'resort-luxe':         () => import('./themes/resort-luxe'),
   'performance-tech':    null,    // Sprint 5
   'avant-garde-concept': null,    // Sprint 5
-  'sustainable-craft':   null,    // Sprint 4
+  'sustainable-craft':   null,    // Sprint 5
   'y2k-digital-native':  null,    // Sprint 5
-  'workwear-heritage':   null,    // Sprint 4
-  'resort-luxe':         null,    // Sprint 4
-  'drop-lookbook':       null,    // Sprint 5
-  'linkinbio-plus':      null,    // Sprint 5
+  'workwear-heritage':   null,    // Sprint 5
+  'drop-lookbook':       null,    // Sprint 5 (custom layout)
+  'linkinbio-plus':      null,    // Sprint 5 (custom layout)
 };
 
 /**
