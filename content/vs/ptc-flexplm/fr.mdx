@@ -1,0 +1,136 @@
+---
+title: "aimily vs PTC FlexPLM — comparatif PLM mode 2026"
+description: "Comment aimily se compare à PTC FlexPLM. Parité Bloc 3 vérifiée, plus Bloc 1, 2 et 4 qu'aucun PLM n'offre. Les deux ship AI tech-pack auto-extraction ; aimily ship tout le reste que FlexPLM ne couvre pas."
+hero: "FlexPLM est le bon choix pour une enterprise ancrée Windchill. aimily est le bon choix pour une marque."
+lead: "PTC FlexPLM est le second PLM mode dominant, utilisé par Nike, Crocs, Adidas, Lacoste et grands retailers via l'héritage de la plateforme Windchill. PTC a annoncé l'auto-extraction AI de tech packs au NRF 2026 — le mouvement AI 'post-sketch' le plus concret en PLM. aimily ship la capability équivalente depuis la fermeture de Phase 7 (3 mai 2026), plus Bloc 1 (ADN de Marque), Bloc 2 (Range Plan) et Bloc 4 (Marketing) que FlexPLM n'aborde pas."
+updated: "2026-05-04"
+comparison:
+  competitor: "PTC FlexPLM"
+  competitorUrl: "https://www.ptc.com/en/industries/retail/flexplm"
+  rows:
+    - feature: "Bloc 1 — Génération d'ADN de Marque"
+      competitor: "❌"
+      aimily: "✅ AI-généré en 60 min"
+    - feature: "Bloc 1 — Profil consommateur AI"
+      competitor: "❌"
+      aimily: "✅"
+    - feature: "Bloc 2 — Range plan + pricing"
+      competitor: "❌ (module séparé)"
+      aimily: "✅"
+    - feature: "Bloc 2 — AI Margin Protection"
+      competitor: "❌"
+      aimily: "✅ flague + propose substitutions"
+    - feature: "Bloc 3 — AI tech pack auto-fill depuis sketch"
+      competitor: "✅ NRF 2026 annoncé"
+      aimily: "✅ shipped"
+    - feature: "Bloc 3 — Bibliothèque Pantone"
+      competitor: "✅ (Swatch Maker Tool)"
+      aimily: "✅ 2 317 TCX + ΔE2000 hex→Pantone"
+    - feature: "Bloc 3 — Bibliothèque matériaux"
+      competitor: "✅"
+      aimily: "✅ 963 entrées vérifiées B2B"
+    - feature: "Bloc 3 — Sample tracking"
+      competitor: "✅"
+      aimily: "✅ + AI photo comparison vs sketch (unique)"
+    - feature: "Bloc 3 — Annotations multi-pin"
+      competitor: "❌ commentaires plats"
+      aimily: "✅ style Hatch ancrées"
+    - feature: "Bloc 3 — Vitesse export PDF tech pack"
+      competitor: "⚠️ minutes (legacy server-side)"
+      aimily: "✅ 3-5s (Vercel Fluid + Puppeteer)"
+    - feature: "Bloc 3 — ThingWorx IoT connectivity"
+      competitor: "✅ unique à FlexPLM (héritage Windchill)"
+      aimily: "❌"
+    - feature: "Bloc 3 — Tech Pack Access App (mobile)"
+      competitor: "✅ app mobile native role-based + barcode"
+      aimily: "Web mobile, pas d'app native"
+    - feature: "Bloc 4 — Éditorial / on-model imagery"
+      competitor: "❌"
+      aimily: "✅ AI sans shooting"
+    - feature: "Bloc 4 — Drop calendar"
+      competitor: "❌"
+      aimily: "✅"
+    - feature: "Bloc 4 — Sales dashboard live"
+      competitor: "❌"
+      aimily: "✅"
+    - feature: "Pricing entry-level"
+      competitor: "Enterprise (€80K+/an typique)"
+      aimily: "✅ €159/mois Starter"
+    - feature: "Time to value"
+      competitor: "⚠️ 6-12 mois de déploiement"
+      aimily: "✅ 90 secondes trial → première collection"
+    - feature: "AI native cross-block"
+      competitor: "❌ AI uniquement dans tech pack"
+      aimily: "✅ 16 endpoints AI connectés"
+faq:
+  - q: "Où PTC FlexPLM gagne-t-il clairement ?"
+    a: "Trois endroits. (1) Héritage plateforme Windchill : lifecycle engineering-grade, e-signature, features d'audit hérités de l'héritage enterprise PTC. (2) Connectivité ThingWorx IoT : la donnée du tech pack peut pull live mill availability et pricing depuis factory floors connectés. (3) Intégration bidirectionnelle Browzwear : PTC fut le premier PLM à shipper deep native VStitcher integration. (4) Tech Pack Access App : app mobile native role-based avec barcode scanning."
+  - q: "Où aimily gagne-t-il clairement ?"
+    a: "Mêmes six endroits que vs Centric, plus spécifique à FlexPLM : l'AI tech-pack auto-extraction est maintenant à parité (FlexPLM annoncé au NRF 2026, aimily shipped), mais la version d'aimily expose des confidence scores per-field. La demo NRF de FlexPLM présente les BOMs auto-peuplés comme des faits ; aimily flague chaque champ AI-extracted avec un badge de confidence — defaults honnêtes qui protègent contre les erreurs silencieuses."
+  - q: "Devrais-je migrer de FlexPLM à aimily ?"
+    a: "Pas si ton stack dépend de Windchill (intégration engineering), ThingWorx (IoT factory floor), ou si tu as besoin d'e-signatures grade 21-CFR-Part-11. Migre si tu utilises FlexPLM uniquement pour fonctionnalité fashion-PLM (le stack Bloc 3) et tu veux AI dans chaque bloc plus Bloc 1+2+4."
+  - q: "Comment les deux stratégies AI diffèrent-elles ?"
+    a: "L'AI de PTC est concentrée dans tech-pack auto-fill (NRF 2026). L'AI d'aimily est dans chaque bloc : génération ADN de marque, suggestions range plan, extraction de sketch, AI Margin Protection, comparaison d'échantillons, génération éditoriale, écriture de captions. Le pari de PTC est 'une grosse feature AI dans le module le plus utilisé' ; le pari d'aimily est 'AI dans chaque module, connecté'."
+  - q: "Pourquoi aimily render-t-elle des PDF plus vite que FlexPLM ?"
+    a: "FlexPLM utilise un renderer multi-page server-side hérité de Windchill. L'architecture marche mais elle est lente. aimily utilise Puppeteer + Chromium léger sur Vercel Fluid Compute — le stack serverless moderne. Un PDF A3 de 30 pages atterrit en 3-5 secondes."
+related:
+  - href: "/fr/vs/centric"
+    label: "aimily vs Centric Software"
+  - href: "/fr/vs/bamboo-rose"
+    label: "aimily vs Bamboo Rose"
+  - href: "/fr/workflows/tech-packs"
+    label: "Comment aimily génère des tech packs en moins de 5 secondes"
+---
+
+## Qu'est PTC FlexPLM, honnêtement
+
+PTC FlexPLM est le second PLM mode dominant, né dans la plateforme Windchill de PTC — le PLM engineering-grade que PTC a construit pour aerospace, automotive et discrete manufacturing — et adapté pour retail/footwear/apparel depuis 2007. Clients incluent Nike, Crocs, Adidas, Lacoste, et grands retailers en US et Europe.
+
+La force de FlexPLM est l'héritage enterprise. ThingWorx connecte la donnée du tech pack à des inputs live de factory floor. Le lifecycle engine de Windchill gère e-signature et audit style 21-CFR-Part-11. Le Adobe Illustrator Design Module est mature. Le partenariat Browzwear est le plus profond de tout PLM.
+
+Si ton CIO a standardisé sur le stack enterprise PTC et ton factory floor est câblé à ThingWorx — reste où tu es. Cette page n'est pas pour toi.
+
+## Qu'est aimily
+
+aimily est la seule plateforme mode end-to-end AI-native. Quatre blocs en flow de données continu :
+
+- **Bloc 1 · ADN de Marque** (sans équivalent FlexPLM)
+- **Bloc 2 · Range plan** (sans équivalent FlexPLM)
+- **Bloc 3 · Design & Développement** — équivalent PLM. PLM-Parity Phase 1-7 fermé le 3-4 mai 2026.
+- **Bloc 4 · Marketing & Lancement** (sans équivalent FlexPLM)
+
+## Où FlexPLM gagne
+
+- **Héritage plateforme Windchill** : workflow e-signature, audit grade 21-CFR-Part-11. Critique en contexte régulé.
+- **Connectivité ThingWorx IoT** : champs de donnée du tech pack peuvent pull live mill availability et pricing depuis factory floors connectés.
+- **Intégration bidirectionnelle Browzwear** : la plus profonde de tout PLM.
+- **Tech Pack Access App** : app mobile native avec vues role-based et barcode scanning.
+- **Maturité AI tech-pack auto-extraction (à peine)** : PTC annoncé au NRF janv 2026 comme feature headline. aimily ship la même capability mais l'investissement marketing PTC + liste de références autour de la feature est un an en avance.
+
+## Où aimily gagne
+
+- **Couverture Bloc 1, 2, 4** : même thème que vs Centric — FlexPLM est design+production seul.
+- **AI dans chaque bloc** : l'AI de PTC est concentrée dans tech-pack auto-fill. L'AI d'aimily est dans 16 endpoints across les quatre blocs.
+- **AI tech-pack auto-extraction avec confidence scores** : la demo NRF de PTC présente les BOMs auto-peuplés comme des faits. La version d'aimily expose des badges de confidence per-field et un prompt de "review" — la version honnête qui protège contre les erreurs silencieuses AI.
+- **Vitesse PDF tech pack** : 3-5s vs minutes.
+- **Pantone hex→TCX closest match (ΔE2000)** : le Swatch Maker Tool de FlexPLM convertit les couleurs Illustrator en swatches PLM mais ne match pas un hex à un Pantone par distance perceptuelle.
+- **Annotations multi-pin sur dessins du tech pack** : aimily ship style Hatch. FlexPLM a des commentaires plats au niveau objet.
+- **AI photo comparison sample vs sketch** : unique à aimily.
+- **Pricing** : Starter €159/mois vs ~€80K+/an pour FlexPLM.
+- **Time to value** : 90 secondes vs 6-12 mois.
+
+## Arbre de décision honnête
+
+**Choisis FlexPLM si** : ton CIO a standardisé sur le stack enterprise PTC, tu as besoin d'intégration ThingWorx au factory floor, tu as besoin d'e-signatures grade 21-CFR-Part-11, ton équipe design est locked-in à Browzwear et tu as besoin de l'intégration VStitcher la plus profonde, tu opères à échelle Nike/Adidas.
+
+**Choisis aimily si** : tu es une marque mode de 1-50 personnes, tu n'as pas d'IoT factory floor, tu n'as pas besoin d'audit pharma-grade, tu veux AI dans chaque bloc pas dans un module, tu as besoin du Bloc 1+2+4 que FlexPLM n'offre pas.
+
+**Run les deux si** : tu scale et ton CIO mandate FlexPLM comme système-de-record. Utilise FlexPLM pour l'audit trail ; utilise aimily pour le workflow créatif + marketing du quotidien.
+
+## Sur l'égalité AI tech-pack auto-extraction
+
+C'est la seule capability où PTC et aimily sont à parité. PTC annoncé au NRF janv 2026 ; aimily shipped la même en Phase 7 (3 mai 2026). Lecture honnête :
+
+L'investissement marketing de PTC est un an en avance. Ils ont la couverture presse NRF, un write-up ARC Advisory, et un halo de brand-recognition de leur annonce. aimily ship du tooling earlier-stage mais avec confidence scoring built-in : chaque ligne BOM AI-extracted, mesure, construction detail et colorway porte un badge de confidence per-field. La demo NRF de PTC ne montre pas confidence scoring, ce qui veut dire qu'un misread se propage silencieusement.
+
+Si la précision compte plus que la liste de références, aimily gagne sur cette feature spécifique.

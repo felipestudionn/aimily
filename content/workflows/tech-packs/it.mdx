@@ -1,0 +1,108 @@
+---
+title: "Generare tech pack pronti per fabbrica da uno sketch in meno di 5 secondi"
+description: "Come aimily trasforma uno sketch in un tech pack completo — disegni multi-vista, BOM con Pantone TCX, materiali da una libreria di 963 entries, approvazioni multi-stage. Equivalente PLM. AI-native."
+hero: "Sono l'Emily che ha il tuo tech pack pronto prima che la fabbrica lo chieda."
+lead: "aimily genera un tech pack completo — disegni tecnici multi-vista (fino a 7 slot per SKU), bill of materials sourced da una libreria di 963 entries con fornitori B2B verificati, swatch Pantone TCX matched per distanza ΔE2000 contro 2.317 entries, costing guidato da BOM con multi-currency via tassi ECB, sample tracking con AI photo comparison contro lo sketch originale, e approvazioni multi-stage con notifiche email. Export PDF in meno di 5 secondi. Gli utenti Centric e PTC FlexPLM aspettano minuti."
+updated: "2026-05-04"
+howTo:
+  name: "Generare un tech pack di moda con aimily"
+  description: "Da uno SKU definito nel range plan a un PDF tech pack pronto per fabbrica."
+  totalTime: "PT15M"
+  steps:
+    - name: "Aprire uno SKU nel blocco design"
+      text: "Da un range plan firmato, ogni SKU è già una riga nel workspace design. Niente retape."
+    - name: "Aggiungere o generare uno sketch"
+      text: "Carica uno sketch a mano (l'endpoint AI Sketch estrae le zone di costruzione automaticamente) o usa la generazione sketch AI di aimily da un'immagine di riferimento. Multi-vista: front + back + side + dettaglio (fino a 7 slot per SKU)."
+    - name: "Applicare colorway dalla tua palette"
+      text: "Trascina la palette del DNA brand sulle zone dello sketch. Ogni colore è un picker Pantone TCX — scrivi un HEX, ottieni il Pantone più vicino (distanza ΔE2000, top 3 match). Libreria di 2.317 entries a disposizione."
+    - name: "Costruire il BOM dalla libreria materiali"
+      text: "MaterialCombobox per riga BOM. 963 entries verificate: fibre naturali, cellulosici rigenerati, sintetici, pelli + alternative, hardware (cerniere YKK + Riri, bottoni MOP + corno + corozo), fodere, certificazioni (OEKO-TEX, GOTS, BCI, RWS, RDS, GRS, RCS, FSC). cogs_hint per materiale auto-riempie il motore costing."
+    - name: "Costare lo SKU"
+      text: "Il motore costing guidato da BOM rolls up costo materiali in tempo reale. Supporto multi-currency via tassi ECB giornalieri. AI Margin Protection flagga margine sotto threshold e propone sostituzioni."
+    - name: "Definire construction details + misure"
+      text: "Blocchi di costruzione riutilizzabili (denim flat-felled side seam, French seam — chiffon, ecc.) più POM strutturati con regole di gradazione. Tolleranze per POM. Auto-gradazione dal sample size."
+    - name: "Inviare a revisione"
+      text: "Workflow di approvazione multi-stage. I reviewer ricevono notifiche email alle transizioni di stage. Annotazioni multi-pin sui disegni del tech pack (stile Hatch, ancorate alle coordinate dell'immagine)."
+    - name: "Esportare in PDF"
+      text: "Render server-side via Puppeteer + Chromium leggero su Vercel Fluid. Sotto 5 secondi per un PDF A3 di 30 pagine. Manda all'inbox della fabbrica."
+faq:
+  - q: "Cos'è un tech pack?"
+    a: "Un tech pack è la specifica tecnica che un brand di moda invia a una fabbrica perché la fabbrica produca il capo. Contiene i sketch front + back + dettaglio, il bill of materials (BOM) che lista ogni tessuto, fodera, filo, bottone e cerniera con il suo fornitore e referenza, i colorway, il quadro misure (punti di misura sulla griglia di taglie con regole di gradazione e tolleranze), i dettagli di costruzione, e le specs etichette + cura + packaging."
+  - q: "Perché aimily è più veloce di Centric o PTC FlexPLM in export PDF?"
+    a: "Gli utenti Centric si lamentano di minuti per PDF su G2 (è il pain point più citato della piattaforma). FlexPLM ha la stessa architettura: render server-side multi-page di template legacy. aimily renderizza HTML moderno con Puppeteer + Chromium leggero su Vercel Fluid Compute. Un PDF A3 di 30 pagine atterra in 3-5 secondi."
+  - q: "Cosa c'è nella libreria materiali?"
+    a: "963 entries verificate in 8 categorie: fibre naturali (lino, cotone, lana, seta, cashmere, alpaca, ecc. — Rama 1, 156 entries), cellulosici rigenerati (viscosa, Tencel, Modal, cupro/Bemberg, acetato), sintetico + performance, tipi di costruzione per fibra, pelli + alternative, hardware closures, fodere + interfodere + ovatta, e componenti calzature."
+  - q: "Come gestisce aimily Pantone?"
+    a: "Libreria TCX (Textile Cotton) completa: tutti 2.317 entries con valori HEX, RGB e Lab. Due flow: (a) browse per famiglia e click su un chip; (b) incolla qualsiasi HEX e ottieni i tre Pantone più vicini per distanza Delta E2000. Il ponte hex→Pantone è unico di aimily."
+  - q: "Posso versionare un tech pack e confrontare versioni?"
+    a: "Sì. Approvazioni multi-stage con controllo versioni. Diff side-by-side tra qualsiasi due versioni. Commenti ancorati a coordinate immagine specifiche (multi-pin), discussione threaded. I reviewer ricevono notifiche email alle transizioni di stage."
+  - q: "aimily funziona con i sistemi esistenti della mia fabbrica?"
+    a: "Il PDF tech pack è il formato di scambio universale che ogni fabbrica di moda accetta. Oltre al PDF, aimily esporta BOM come XLSX (ERP-ready), misure come XLSX, colorway come XLSX con codici Pantone che ogni engine 3D (CLO3D, Browzwear, Optitex) può importare. Il Vendor Portal (Phase 5, shipped 3 mag 2026) dà ai contatti fabbrica accesso read-only all'ultimo tech pack via URL token-gated."
+  - q: "E compliance e certificazioni?"
+    a: "Compliance Hub (Phase 5, shipped) tracka certificazioni per materiale (OEKO-TEX, GOTS, BCI, RWS, RDS, GRS, RCS, FSC, LWG, B-Corp). Restricted Substance List (RSL) flag per materiale. Vendor scorecard. ESG rollup — Higg MSI 3.7 score di sostenibilità per SKU e per collezione."
+related:
+  - href: "/it/workflows/range-plan"
+    label: "← Workflow 2 di 4 — Costruire un range plan"
+  - href: "/it/workflows/content-calendar"
+    label: "Workflow 4 di 4 → Generare il calendario contenuti"
+  - href: "/it/vs/ptc-flexplm"
+    label: "Confronto aimily vs PTC FlexPLM"
+  - href: "/it/vs/centric"
+    label: "Confronto aimily vs Centric Software"
+---
+
+## Cos'è un tech pack?
+
+Un tech pack è la specifica tecnica che un brand di moda consegna a una fabbrica perché la fabbrica produca il capo. È la differenza tra l'intenzione di un designer e una realtà di produzione. Ogni fabbrica di moda ne aspetta uno. I brand che mandano tech pack cattivi spendono tre giri di back-and-forth prima che il primo campione corrisponda al brief.
+
+Un tech pack completo contiene:
+
+- **Disegni tecnici multi-vista** — front, back, side, callout dettaglio.
+- **Bill of materials (BOM)** — ogni tessuto, fodera, filo, bottone, cerniera, etichetta, hangtag, con referenza fornitore e quantità.
+- **Colorway** — quali colori di tessuto e trim usati per variante di SKU.
+- **Misure (POM + regole di gradazione)** — punti di misura sulla griglia di taglie, con regole di gradazione e tolleranze.
+- **Dettagli di costruzione** — tipo di cucitura (ISO 4915), tipo di seam (ISO 4916), seam allowance, finitura, SPI, peso del filo.
+- **Etichette + cura + packaging** — etichette tessute, simboli di cura, specs hangtag, dimensione polybag.
+
+Un PDF tech pack pulito tipicamente ha 10-30 pagine A3.
+
+## Come aimily ne genera uno in meno di 15 minuti
+
+aimily è il Blocco 3 di un flow a quattro blocchi. Lo SKU vive nel range plan del Blocco 2; i colori vengono dal DNA brand del Blocco 1. Quando apri lo SKU nel workspace design, metà del tech pack esiste già.
+
+I differenziatori chiave contro Centric e PTC FlexPLM (i due PLM moda dominanti):
+
+- **Render PDF in 3-5 secondi** vs minuti (la lamentela G2 #1 di Centric).
+- **Pantone TCX 2.317 entries con HEX → ΔE2000 closest match** — entrambi i PLM hanno accesso alla libreria ma nessun algoritmo di closest-match.
+- **Libreria materiali 963 entries con verifica fornitore B2B + cogs_hint per entry** — nessun incumbent ship una libreria curata a questa profondità.
+- **AI Margin Protection** — flagga margine sotto threshold e propone sostituzioni; entrambi i PLM ricalcolano margine ma non suggeriscono fix.
+- **AI photo comparison sample vs sketch** — unico di aimily.
+- **Annotazioni multi-pin stile Hatch** — ancorate a coordinate immagine, discussione threaded.
+
+## Cosa ottieni
+
+Per SKU:
+
+- **Disegni tecnici multi-vista** (fino a 7 slot).
+- **BOM** con riferimenti alla libreria materiali, contatti fornitore, certificazioni, cogs_hint per riga.
+- **Grid colorway** — ogni colore è una tripletta HEX + Pantone TCX + RGB.
+- **Misure + regole di gradazione** con tolleranze per POM, auto-gradazione dal sample size.
+- **Dettagli di costruzione** — libreria di blocchi riutilizzabili.
+- **Costing breakdown** — materiali rolled up dal BOM, manodopera + overhead + freight + dazi = totale landed. Multi-currency.
+- **Sample tracking chain** con AI photo comparison vs sketch.
+- **Workflow di approvazione multi-stage** con notifiche email alle transizioni.
+- **Compliance + ESG** — OEKO-TEX, GOTS, BCI ecc. tracked per materiale; rollup Higg MSI 3.7.
+- **Vendor Portal access** — URL token-gated read-only per contatti fabbrica.
+- **Export PDF in 3-5 secondi** — A3 paesaggio, pronto per inbox fabbrica.
+
+## Prima di aimily, vs con aimily
+
+**Prima di aimily** — Sketch che la fabbrica non può leggere. Tech pack che perdono misure. Tre giri di back-and-forth prima che il primo campione atterri. Excel per BOM, libro Pantone sulla scrivania, PDF separato per misure, doc separato per note di costruzione.
+
+**Con aimily** — Ogni SKU viene con uno sketch generato, una grid colorway, un tech pack, un BOM e un thread di pin-comment. Il primo campione corrisponde al brief.
+
+## Perché conta
+
+Questo è il blocco dove Centric, PTC FlexPLM, Bamboo Rose e Backbone PLM competono. Sono sistemi-di-record enterprise-grade per dato di specifica prodotto. Sono anche cari (€40-80K/anno tipici), lenti da deployare (6-12 mesi), e customization-fee-heavy ("ogni colonna costa extra" — verbatim di una review Capterra di Centric).
+
+aimily ship profondità equivalente PLM nel Blocco 3 più ciò che nessun PLM offre: Blocco 1 (DNA brand), Blocco 2 (Range Plan + Margin Protection), Blocco 4 (Marketing & Lancio). E parte da €159/mese, non €40K/anno.
