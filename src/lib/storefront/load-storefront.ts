@@ -34,7 +34,12 @@ import type { Storefront } from '@/types/storefront';
  */
 export async function loadStorefrontByHost(host: string): Promise<Storefront | null> {
   if (!host) return null;
-  const h = host.toLowerCase();
+  // The host segment in our route group can arrive URL-encoded (e.g. %3A for `:`)
+  // because middleware rewrites encodeURIComponent the host into the path.
+  const decoded = (() => {
+    try { return decodeURIComponent(host); } catch { return host; }
+  })();
+  const h = decoded.toLowerCase();
 
   const subdomain = extractSubdomain(h);
 

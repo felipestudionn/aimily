@@ -16,6 +16,7 @@ import type { ReactNode } from 'react';
 import { notFound } from 'next/navigation';
 import { loadStorefrontByHost } from '@/lib/storefront/load-storefront';
 import { loadTheme } from '@/lib/storefront/theme-registry';
+import { GdprBanner } from '@/components/ecom/shared/GdprBanner';
 
 interface Props {
   children: ReactNode;
@@ -66,6 +67,7 @@ export default async function StorefrontLayout({ children, params }: Props) {
       </head>
       <body data-storefront-host={host} data-theme={storefront.theme_id}>
         {children}
+        <GdprBanner />
       </body>
     </html>
   );

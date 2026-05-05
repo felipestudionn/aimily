@@ -6,84 +6,172 @@ type: project
 
 # Ecom — Storefront Module Architecture
 
-> **Status (2026-05-05)**: PLANNED · planning docs in `.planning/ecom/` · sprint 0 pending Felipe go-ahead.
-> **Update this file in the same commit** whenever anything changes in storefronts: adding a theme, changing data flow, new payment provider, schema change, route change. Out-of-sync = bug.
+> **Status (2026-05-05)**: ✅ SHIPPED end-to-end. Sprints 1-6 complete in 10 PRs.
+> **Update this file in the same commit** whenever anything changes in storefronts.
 
 ## Quick reference
 
-- **Card location**: Block 4 Marketing > `04.4 Ecom` (renombrado de `04.4 Point of Sale`)
-- **Wholesale Orders** (lo que estaba en Point of Sale) movido a Block 2 Merchandising > Channels
-- **Public route**: `*.aimily.shop` (subdomain por brand) + custom domain opcional V1
-- **Hosting**: Vercel Pro wildcard SSL · €0 marginal por brand · €21/mes total fijo
-- **Themes**: 12 editoriales fijos · Editorial Heritage · Streetwear Drop · Romantic Feminine · Minimal Architect · Performance Tech · Avant-Garde Concept · Sustainable Craft · Y2K Digital Native · Workwear Heritage · Resort Luxe · Drop Lookbook · Linkinbio Plus
-- **Payment providers**: Stripe Buy Button · Shopify Buy SDK · lookbook_only (no payment)
-- **Aimily NUNCA toca dinero**: cero MoR, cero PCI, cero webhooks de pago entrantes
+- **Card location**: `04.4 Ecom` inside Marketing card (renamed from Point of Sale)
+- **Public route**: `*.aimily.shop` (subdomain per brand) · custom domain V2
+- **Hosting**: Vercel Pro wildcard CNAME · per-subdomain SSL via Vercel API on publish
+- **Themes**: 12 editorial worlds, all working
+- **Payment**: Stripe Buy Button · Shopify Buy SDK · Lookbook-only (default). Aimily NEVER touches money.
 
-## Planning docs (canonical source)
-
-Todos en `.planning/ecom/`:
-- `00-OVERVIEW.md` — vision, scope, decisiones, coste
-- `01-ARCHITECTURE.md` — multi-tenant routing, wildcard, themes, data flow
-- `02-SCHEMA.md` — tablas SQL + RLS + migraciones
-- `03-THEMES.md` — los 12 themes editoriales con tokens y anchor brands
-- `04-PAYMENT-PROVIDERS.md` — integración Stripe + Shopify paso a paso
-- `05-SPRINTS.md` — roadmap 6 semanas día a día
-- `06-FILE-MAP.md` — inventario completo de archivos
-
-## Tablas Supabase
-
-- `storefronts` — 1 row por collection publicada · UNIQUE(collection_plan_id) · subdomain UNIQUE
-- `storefront_overrides` — copy edits del usuario (clon del patrón presentation_deck_overrides)
-- `storefront_publishes` — audit trail publish/unpublish/rebuild
-- `subscriptions.storefront_quota` — columna nueva · 1/5/25/∞ por plan
-
-## Flujo macro
+## Live infrastructure
 
 ```
-DNS *.aimily.shop → Vercel
-  → middleware detecta host
-    → rewrite a /(storefront)/_storefront/[host]/...
-      → resuelve storefront row
-        → loadStorefrontData(collectionId)
-          → reusa CIS (brand DNA) + collection_skus + sku_visuals + lookbook stories
-            → applyOverrides()
-              → renderiza theme.pages.HomeTemplate (o PLP, PDP, etc.)
-                → BuyButton renderiza Stripe Buy Button / Shopify SDK / Coming Soon
+DNS               *.aimily.shop CNAME → cname.vercel-dns.com
+                  Cloudflare DNS only (Cloudflare Free can't proxy wildcards)
+SSL               Per-subdomain via Vercel /v10/projects/aimily/domains POST
+                  Triggered by /api/ecom/publish, ~30-90s emission
+                  Let's Encrypt 50 certs/week per registered domain (sufficient)
+Cloudflare token  cfut_... in .env.local (CLOUDFLARE_API_TOKEN, scope DNS:Edit + Registrar:Edit)
+Vercel token      In .env.local + Vercel project envs (VERCEL_API_TOKEN)
 ```
 
-## Reusos importantes
+## DB tables
 
-- `compilePromptContext('brand-identity')` — brand DNA (colors, voice, typography)
-- `getIntelligence('brand-palette')` — paleta del usuario
-- `loadFullContext()` — read-only, NO se modifica
-- Patrón `presentation_deck_overrides` → `storefront_overrides`
-- Patrón `presentation_shares` → `storefronts` (subdomain en vez de token)
-- ContentStudioCard outputs (sku_visuals) → imágenes editorial/still-life/campaign
+- `storefronts` — 1 row per published collection · UNIQUE(collection_plan_id) · subdomain UNIQUE
+- `storefront_overrides` — copy edits per page (page_id + field_overrides JSONB)
+- `storefront_publishes` — audit trail
+- `subscriptions.storefront_quota` — 1/5/25/∞ per plan
 
-## Lo que NO toca (locks heredados)
+## File map
 
-- `src/lib/ai/load-full-context.ts` (read-only)
-- `src/lib/ai/cis-prefix.ts`
-- `src/lib/collection-intelligence.ts` (read-only)
-- Cualquier endpoint `src/app/api/ai/*`
+```
+.planning/ecom/
+├── 00-OVERVIEW.md ... 06-FILE-MAP.md          (planning, gitignored)
 
-## Decisiones clave (no revisitar sin motivo nuevo)
+src/types/storefront.ts                          (DB row + ThemeId + PaymentProvider types)
 
-1. **No Hydrogen/Oxygen** — rompería stack Next 16 + Vercel
-2. **Hosting propio en *.aimily.shop**, no static export — updates llegan a todos
-3. **12 themes fijos**, no generación AI libre — coherencia editorial
-4. **Stripe Buy Button + Shopify Buy SDK** únicos — cero responsabilidad MoR
-5. **Card Ecom dentro de Block 4**, no Block 5 nuevo — sidebar 4×5 se mantiene
-6. **Wholesale movido a Merchandising > Channels** — semánticamente correcto
-7. **Mailto/WhatsApp button retirado** (decisión Felipe 2026-05-05) — antiguo
+src/lib/storefront/
+├── host.ts                                      (extractStorefrontHost + extractSubdomain)
+├── reserved-subdomains.ts                       (80+ blocked names)
+├── subdomain-validator.ts                       (regex + reserved + uniqueness)
+├── load-storefront.ts                           (loadStorefrontByHost · decodes URL)
+├── load-storefront-data.ts                      (CIS-canonical, NO fallbacks, throws StorefrontDataMissingError)
+├── apply-overrides.ts                           (path-based copy edits merge)
+├── theme-registry.ts                            (dynamic import of all 12 themes)
+├── seo.ts                                       (Product + Organization JSON-LD)
+├── vercel-domains.ts                            (registerStorefrontDomain on publish)
+├── types.ts                                     (StorefrontData + ThemeManifest + ThemeModule)
+├── shared/                                      (cross-theme components)
+│   ├── Header.tsx                               (split | stacked | left layouts)
+│   ├── Footer.tsx                               (dark | light tone)
+│   ├── ProductCard.tsx                          (editorial | minimal | centered)
+│   └── page-templates.tsx                       (createAllPages factory · 6 templates)
+└── themes/                                      (12 themes, each ~70-150 LOC)
+    ├── editorial-heritage/  (manifest + tokens + components/* + pages/*)
+    ├── minimal-architect/   (uses createAllPages)
+    ├── streetwear-drop/     (uses createAllPages)
+    ├── romantic-feminine/
+    ├── resort-luxe/
+    ├── sustainable-craft/
+    ├── workwear-heritage/
+    ├── performance-tech/
+    ├── y2k-digital-native/
+    ├── avant-garde-concept/
+    ├── drop-lookbook/       (single-page custom)
+    └── linkinbio-plus/      (single-page mobile-first custom)
 
-## Open questions activas
+src/components/ecom/
+├── EcomHub.tsx                                  (publish hub UI inside aimily app)
+└── shared/
+    ├── BuyButton.tsx                            (Stripe Buy Button + Shopify Buy SDK + Coming Soon)
+    ├── JsonLd.tsx                               (server-rendered <script type="application/ld+json">)
+    └── GdprBanner.tsx                           (auto-injected cookie consent)
 
-- ¿Cloudflare delante en MVP o V1? (recomendación: V1, no bloqueante)
-- ¿Qué hace el storefront cuando el user downgrades al plan trial? (unpublish auto vs marca de agua)
-- ¿Plausible vs Vercel Analytics para tracking de visitas? (decisión sprint 5)
-- ¿GDPR banner inyectado por defecto o opt-in? (decisión sprint 4)
+src/app/(storefront)/storefront/[host]/          (route group · multi-tenant SSR)
+├── layout.tsx                                   (theme tokens + Google Fonts + GdprBanner)
+├── page.tsx                                     (Home + JSON-LD Organization)
+├── shop/page.tsx                                (PLP)
+├── shop/[sku]/page.tsx                          (PDP + JSON-LD Product)
+├── lookbook/page.tsx
+├── about/page.tsx
+├── contact/page.tsx
+├── sitemap.xml/route.ts                         (dynamic per-host)
+├── robots.txt/route.ts
+├── og.png/route.tsx                             (next/og dynamic image)
+└── not-found.tsx
 
-## Bugs conocidos / TODOs
+src/app/api/ecom/
+├── publish/route.ts                             (upsert + Vercel registerDomain)
+├── unpublish/route.ts                           (set published_at NULL + Vercel unregisterDomain)
+├── check-subdomain/route.ts                     (live availability)
+├── storefront/[id]/route.ts                     (GET + PATCH for theme/payment/SEO edits)
+└── storefront-by-collection/[planId]/route.ts   (lookup for hub UI hydration)
 
-(vacío hasta que arranque sprint 1)
+src/middleware.ts                                (extractStorefrontHost rewrite to /storefront/[encoded-host]/...)
+```
+
+## Flow macro
+
+```
+Visitor https://slaiz.aimily.shop/shop/sku123
+  → DNS: *.aimily.shop → Vercel
+    → middleware: extractStorefrontHost → rewrite /storefront/<encoded-host>/shop/sku123
+      → layout.tsx: loadStorefrontByHost → decodes host → loadTheme + injects tokens
+        → page.tsx: loadStorefrontData (CIS canonical) → applyOverrides → theme.pages.pdp
+          → renders SLAIZ data with editorial-heritage theme tokens
+            → BuyButton renders stripe-buy-button or shopify Buy SDK
+```
+
+## CIS keys (canonical · no fallbacks)
+
+```
+creative.identity.brand_name        → brand.name
+creative.identity.collection_vibe   → tagline (1st line) + manifesto (full)
+creative.identity.typography        → parsed display + body fonts (regex)
+creative.color.primary_palette      → array of "#XXXXXX (...)" parsed for hex
+marketing.voice.tone                → brand.voice.tone
+marketing.voice.personality         → brand.voice.keywords
+creative.inspiration.competitors    → brand.voice.values
+brand.contact.{email,instagram,address}  → opt-in (not fallbacks)
+
+Missing required field → throws StorefrontDataMissingError (publish endpoint
+surfaces "complete Block 1 Creative & Brand" message; SSR 404s).
+```
+
+## Smoke test (verified 2026-05-05)
+
+```
+9/9 routes 200 with Host header simulation:
+  /                 200 (home with theme rendered)
+  /shop             200 (PLP grid)
+  /lookbook         200
+  /about            200
+  /contact          200
+  /sitemap.xml      200 (dynamic XML with all skus)
+  /robots.txt       200
+  /og.png           200 (dynamic next/og image with brand palette)
+  /shop/{sku}       200 (PDP with JSON-LD)
+```
+
+## Decisions log (no revisitar sin motivo nuevo)
+
+1. **No Hydrogen/Oxygen** — would require Remix + Vercel-paralel infra
+2. **Hosting propio en *.aimily.shop**, no static export
+3. **12 themes fijos**, no AI generation
+4. **Stripe Buy Button + Shopify Buy SDK únicos** — cero MoR
+5. **Card Ecom dentro de Block 4** — sidebar 4×5 stays
+6. **Wholesale orders movido a Block 2 Channels** (Sprint 2 deferred — still in EcomCard for now)
+7. **Per-subdomain SSL via Vercel API**, no wildcard:
+   - Cloudflare Free no proxy wildcards (Business+ only)
+   - Vercel can't emit wildcard SSL without DNS-01 access
+   - Cloudflare Registrar locks NS for 60 days post-registration
+   - Linktree/Substack pattern · works enterprise-grade
+8. **Route group named `storefront/` not `_storefront/`** — Next.js doesn't route underscore-prefixed paths. Direct access from aimily.app blocked by middleware check.
+9. **CIS is canonical** for storefront brand DNA. brand_profiles is legacy/empty for SLAIZ; loader reads CIS only and throws if data incomplete.
+10. **Host param URL-encoded in path** (`%3A` for ports). Decoded in loadStorefrontByHost.
+11. **Render filter relaxed** (`price > 0` only) so SKUs without imagery still render with name fallback in PLP card.
+
+## Future migration path
+
+After **4 July 2026** (60-day ICANN transfer window post `aimily.shop` registration), the domain can be transferred to Vercel Domains. Vercel would then control the DNS and emit wildcard SSL natively. The publish endpoint changes (Vercel API per-domain registration) become unnecessary at that point and are reversible.
+
+## Bugs known / TODOs
+
+- WholesaleOrders move from EcomCard → Merchandising > Channels (Sprint 2 deferred · code still inside EcomCard)
+- SEO Research module (5 endpoints `/api/ai/seo-*`) still pending — currently PoweredBy says "SEO ~€100 replaced" which is NOT yet honest
+- Inline-edit UI in EcomHub for storefront_overrides (writes already exist via PATCH endpoint, UI not yet) — Sprint 7
+- Plausible/Vercel Analytics on storefronts (mentioned in plan, not yet wired)

@@ -48,6 +48,15 @@ const publicPageRoutes = [
   '/auth/reset-password',
   '/auth/confirm',
   '/video-reel',
+  // SEO files (now go through middleware so storefront wildcard rewrite works;
+  // these allow aimily.app/sitemap.xml etc. to keep serving from src/app/sitemap.ts)
+  '/sitemap.xml',
+  '/robots.txt',
+  // Per-storefront dynamic OG image (rewritten via wildcard host)
+  '/og.png',
+  // Aimily app static icons (Next.js src/app/icon.png + apple-icon.png)
+  '/icon.png',
+  '/apple-icon.png',
 ];
 
 // Page routes that don't require auth (prefix match). Used by:
@@ -86,10 +95,18 @@ export async function middleware(request: NextRequest) {
   // Storefronts are 100% public — no auth, no rate-limit, no Supabase JWT validate.
   // The page resolves the host → storefront row in Supabase via service role.
   const storefrontHost = extractStorefrontHost(host);
-  if (storefrontHost && !rawPath.startsWith('/_storefront/')) {
+  if (storefrontHost && !rawPath.startsWith('/storefront/')) {
     const url = request.nextUrl.clone();
-    url.pathname = `/_storefront/${storefrontHost}${rawPath === '/' ? '' : rawPath}`;
+    // encodeURIComponent so ports (`:`) and any future special chars don't
+    // break the dynamic [host] segment matching in the route group.
+    url.pathname = `/storefront/${encodeURIComponent(storefrontHost)}${rawPath === '/' ? '' : rawPath}`;
     return NextResponse.rewrite(url);
+  }
+
+  // Block direct access to /storefront/* from non-storefront hosts
+  // (the route group exists only to be reachable via the rewrite above)
+  if (rawPath.startsWith('/storefront/') && !storefrontHost) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   // ── Marketing pages: delegate to next-intl middleware
@@ -171,6 +188,14 @@ export const config = {
     //   - any path ending with a static-asset extension
     //   - root-level static files (manifest.json, robots.txt, sitemap.xml,
     //     monitoring tunnel, well-known)
-    '/((?!_next/static|_next/image|favicon.ico|manifest.json|robots.txt|sitemap.xml|llms.txt|llms-full.txt|ed97cba5c7d058f0d68f9c41b0db19e7\\.txt|sw.js|monitoring|\\.well-known|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|xml|txt|woff2?|ttf)$).*)',
+    // Note: sitemap.xml/robots.txt/og.png are NOT excluded — storefronts need them
+    // routed through middleware so the wildcard host rewrite can deliver per-host
+    // SEO assets. The aimily.app sitemap/robots are served by their own routes
+    // and the middleware's marketing-path / public-page checks let them through.
+    // Note: png/sitemap.xml/robots.txt/og.png are NOT excluded — storefronts
+    // need them routed through middleware so the wildcard host rewrite can
+    // deliver per-host SEO assets. The aimily.app sitemap/icons are served
+    // by their own routes (publicPageRoutes lets them through unprotected).
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|llms.txt|llms-full.txt|ed97cba5c7d058f0d68f9c41b0db19e7\\.txt|sw.js|monitoring|\\.well-known|.*\\.(?:svg|jpg|jpeg|gif|webp|ico|json|woff2?|ttf)$).*)',
   ],
 };

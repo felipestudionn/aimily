@@ -59,12 +59,24 @@ For manual outreach to brands ICP that StudioNN wants to selectively capture wit
 - Felipe distributes the code manually (LinkedIn outreach, IG DMs, email pitches)
 - Not visible anywhere on the public site
 
-## 🚨 IMPORTANT — Web + SEO marketed as INCLUDED but NOT YET BUILT
+## ✅ DONE — Web (Ecom Storefront) shipped 2026-05-05
 
-The Powered by comparison block (live in production) shows Web + SEO as
-*included* (green check + "incluido" label). They are NOT implemented in
-the product yet. **Felipe is starting work on this with you (the Aimily
-agent) immediately after this handoff.**
+The Powered by comparison block (live in production) shows Web as
+*included*. **As of 2026-05-05 this is HONEST**: the Ecom Block is
+shipped end-to-end (PR #1-#10) with 12 editorial themes, multi-tenant
+wildcard at `*.aimily.shop`, per-subdomain SSL via Vercel API, full
+SSR pipeline reading CIS canonical brand DNA, BuyButton with Stripe
+Buy Button + Shopify Buy SDK + Lookbook-only modes, EcomHub hub UI in
+the marketing 04.4 card, sitemap.xml/robots.txt/og.png/JSON-LD/GDPR
+banner per-storefront. See `memory/architecture-ecom.md` for the
+complete reference.
+
+**SEO research/on-page** still pending — the Powered by row claims
+"~€100 SEO replaced" but the dedicated SEO Research module (5
+endpoints under `/api/ai/seo-*` per the original plan) is NOT yet
+shipped. Sprint backlog item.
+
+Original "what needs to ship" list (pre-2026-05-05) — kept for history:
 
 What needs to ship before this is honest:
 

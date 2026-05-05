@@ -312,8 +312,14 @@ async function loadSkus(
   return skus
     .map((s): StorefrontSku => {
       const id = s.id as string;
-      const renderUrls = s.render_urls as string[] | null;
-      const renders = renderUrls ?? (s.render_url ? [s.render_url as string] : []);
+      // render_urls is JSONB — sometimes seeded as {}, sometimes as string[].
+      // Only treat as array of strings when it actually is one.
+      const renderUrlsRaw = s.render_urls;
+      const renders = Array.isArray(renderUrlsRaw)
+        ? (renderUrlsRaw as string[])
+        : s.render_url
+          ? [s.render_url as string]
+          : [];
       const editorials = editorialBySku.get(id) ?? [];
 
       const family = (s.type as string) || '';
@@ -340,7 +346,7 @@ async function loadSkus(
         payment: skuPaymentMap[id] ?? null,
       };
     })
-    .filter((s) => s.price > 0 && (s.images.ecommerce.length > 0 || s.images.editorial.length > 0));
+    .filter((s) => s.price > 0);  // SKUs without imagery still render (PLP card shows name fallback)
 }
 
 /* ── LOOKBOOK ───────────────────────────────────────────────────── */
