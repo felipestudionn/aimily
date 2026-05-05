@@ -4,6 +4,7 @@ import { rateLimit, clientIp } from '@/lib/rate-limit';
 import createIntlMiddleware from 'next-intl/middleware';
 import { routing } from '@/i18n/routing';
 import { locales } from '@/i18n/config';
+import { extractStorefrontHost } from '@/lib/storefront/host';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -78,6 +79,18 @@ const publicApiPrefixes = [
 
 export async function middleware(request: NextRequest) {
   const { pathname: rawPath } = request.nextUrl;
+  const host = request.headers.get('host') ?? '';
+
+  // ── Ecom storefront routing (BEFORE anything else) ──
+  // *.aimily.shop and custom domains rewrite to the (storefront) route group.
+  // Storefronts are 100% public — no auth, no rate-limit, no Supabase JWT validate.
+  // The page resolves the host → storefront row in Supabase via service role.
+  const storefrontHost = extractStorefrontHost(host);
+  if (storefrontHost && !rawPath.startsWith('/_storefront/')) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/_storefront/${storefrontHost}${rawPath === '/' ? '' : rawPath}`;
+    return NextResponse.rewrite(url);
+  }
 
   // ── Marketing pages: delegate to next-intl middleware
   // Handles /[locale] prefix injection, locale detection from
