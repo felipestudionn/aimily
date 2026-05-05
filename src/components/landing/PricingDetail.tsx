@@ -57,7 +57,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
   const { subscription, checkoutPlan, buyCreditPack, isPaid, openPortal } = useSubscription();
   const h = useHomeTranslation();
   const p = h.pricing;
-  const [annual, setAnnual] = useState(true);
+  const [annual, setAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [loadingPack, setLoadingPack] = useState<PackId | null>(null);
   const [promo, setPromo] = useState<PromoState | null>(null);
@@ -206,7 +206,8 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
           {PLAN_META.map((plan) => {
             const basePrice = annual ? plan.priceAnnual : plan.price;
             const showPromo = promoActive && PROMO_PLANS.includes(plan.id) && basePrice !== null && basePrice > 0;
-            const promoPrice = showPromo && basePrice !== null ? Math.round(basePrice * 0.5 * 100) / 100 : null;
+            // Round to whole euro so visual price never ends in .5
+            const promoPrice = showPromo && basePrice !== null ? Math.round(basePrice * 0.5) : null;
             const isCurrent = subscription?.plan === plan.id;
             const isLoading = loadingPlan === plan.id;
             const isDark = plan.popular;
@@ -214,7 +215,7 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-[20px] p-7 flex flex-col h-full min-h-[640px] transition-all ${
+                className={`relative rounded-[20px] p-7 flex flex-col h-full min-h-[620px] transition-all ${
                   isDark
                     ? 'bg-carbon text-crema'
                     : 'bg-white text-carbon border border-carbon/[0.08] hover:border-carbon/20'
@@ -226,29 +227,33 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                   </div>
                 )}
 
-                <div className="mb-7">
-                  <div className={`flex items-center gap-2 text-[12px] tracking-[0.25em] uppercase font-medium mb-2 ${isDark ? 'text-crema/65' : 'text-carbon/55'}`}>
-                    {isStudent && <GraduationCap className="w-3.5 h-3.5" />}
-                    {planName[plan.id]}
+                {/* Plan name — large and prominent */}
+                <div className="mb-5">
+                  <div className={`flex items-center gap-2 mb-1`}>
+                    {isStudent && <GraduationCap className={`w-6 h-6 ${isDark ? 'text-crema/85' : 'text-carbon/85'}`} />}
+                    <h3 className={`text-[28px] font-medium tracking-[-0.02em] leading-none`}>
+                      {planName[plan.id]}
+                    </h3>
                   </div>
-                  <p className={`text-[13px] leading-[1.5] min-h-[2.6rem] ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
+                  <p className={`text-[13px] leading-[1.5] min-h-[2.6rem] mt-3 ${isDark ? 'text-crema/65' : 'text-carbon/65'}`}>
                     {planTagline[plan.id]}
                   </p>
                 </div>
 
-                <div className="mb-7 min-h-[5rem]">
+                {/* Price block — fixed height so all cards line up */}
+                <div className="mb-6 min-h-[6.5rem]">
                   {basePrice !== null ? (
                     <>
                       <div className="flex items-baseline gap-2 flex-wrap">
                         {showPromo && promoPrice !== null ? (
                           <>
-                            <span className="text-[40px] font-light tracking-[-0.03em] leading-none">€{promoPrice}</span>
-                            <span className={`text-[15px] line-through ${isDark ? 'text-crema/45' : 'text-carbon/40'}`}>€{basePrice}</span>
+                            <span className="text-[44px] font-light tracking-[-0.03em] leading-none">€{promoPrice}</span>
+                            <span className={`text-[16px] line-through ${isDark ? 'text-crema/45' : 'text-carbon/40'}`}>€{basePrice}</span>
                             <span className={`text-[13px] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>{p.perMonth}</span>
                           </>
                         ) : (
                           <>
-                            <span className="text-[40px] font-light tracking-[-0.03em] leading-none">
+                            <span className="text-[44px] font-light tracking-[-0.03em] leading-none">
                               {basePrice === 0 ? p.free : `€${basePrice}`}
                             </span>
                             {basePrice > 0 && (
@@ -257,21 +262,13 @@ export function PricingDetail({ openAuth }: PricingDetailProps) {
                           </>
                         )}
                       </div>
-                      {basePrice > 0 && annual && (
-                        <div className={`text-[12px] mt-2 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                          {p.perYear.replace('{price}', String((showPromo && promoPrice !== null ? promoPrice : basePrice) * 12))}
-                        </div>
-                      )}
-                      {showPromo && (
-                        <div className={`text-[11px] mt-2 italic ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                          {p.promoCardNote}
-                        </div>
-                      )}
-                      {isStudent && (
-                        <div className={`text-[12px] mt-2 ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
-                          {p.studentDuration}
-                        </div>
-                      )}
+                      <div className={`text-[12px] mt-2 min-h-[1rem] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+                        {basePrice > 0 && annual && p.perYear.replace('{price}', String((showPromo && promoPrice !== null ? promoPrice : basePrice) * 12))}
+                      </div>
+                      <div className={`text-[11px] mt-1 italic min-h-[1.1rem] ${isDark ? 'text-crema/55' : 'text-carbon/55'}`}>
+                        {showPromo && p.promoCardNote}
+                        {isStudent && p.studentDuration}
+                      </div>
                     </>
                   ) : null}
                 </div>
