@@ -94,21 +94,17 @@ export default function MyCollectionsPage() {
     }
   }, [user, authLoading, router]);
 
-  // Defensive onboarding redirect — if a brand-new user lands directly on
-  // /my-collections (URL paste, browser back-button after auth/callback,
-  // etc.) AND they haven't gone through /welcome yet AND they're recent
-  // (< 48h since signup), shepherd them to /welcome. After 48h we let
-  // them through unconditionally so a long-time user with a stale row
-  // never gets stuck.
+  // Hard gate: any user with onboarding_completed_at IS NULL goes to
+  // /welcome before they can browse. The previous 48h carve-out was a
+  // worst-of-both: it let older users skip the language pick entirely,
+  // so the seed CIS signal (identity.user.language) was never captured
+  // for legacy accounts. /api/onboarding/complete has been bulletproof
+  // since the post-launch hardening (2026-05-02), so the carve-out is
+  // no longer needed. Closes F5 from the onboarding-lifecycle audit.
   useEffect(() => {
     if (!user || !subscription) return;
     if (subscription.onboardingCompletedAt) return;
-    const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
-    const ageMs = Date.now() - createdAt;
-    const FORTY_EIGHT_H = 48 * 60 * 60 * 1000;
-    if (createdAt > 0 && ageMs < FORTY_EIGHT_H) {
-      router.replace('/welcome');
-    }
+    router.replace('/welcome');
   }, [user, subscription, router]);
 
   // Stripe return handler — show feedback and refresh subscription state.

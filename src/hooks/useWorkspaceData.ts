@@ -68,12 +68,28 @@ export function useWorkspaceData<T extends object>(
               data: newData,
             }),
           });
-          // Sync milestone progress after save
+          // Sync milestone progress after save. We log failures
+          // (don't block the save UX) so dev tools surface drift —
+          // closes F7 from the onboarding-lifecycle audit. Framework
+          // rule §2.5: soft visible failure, not silent null.
           fetch('/api/collection-timelines/sync-progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ planId: collectionPlanId }),
-          }).catch(() => {});
+          })
+            .then(r => {
+              if (!r.ok) {
+                console.warn(
+                  `[sync-progress] failed (${r.status}) for plan=${collectionPlanId} workspace=${workspace}. Calendar progress may be stale.`,
+                );
+              }
+            })
+            .catch(err => {
+              console.warn(
+                `[sync-progress] error for plan=${collectionPlanId} workspace=${workspace}:`,
+                err,
+              );
+            });
         } catch {
           // silent fail — data is still in state
         } finally {
