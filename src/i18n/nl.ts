@@ -3839,6 +3839,8 @@ export const nl: Dictionary = {
   },
 
   ecom: {
+    awaitsPublishTitle: 'beschikbaar na publicatie',
+    awaitsPublishHint: 'Publiceer eerst je storefront — overrides per pagina en per SKU verschijnen hier zodra er een storefront-rij bestaat in de database.',
     hub: {
       storefrontGenerator: 'Storefront-generator',
       heroTitle: 'Maak van deze collectie een website die verkoopt.',

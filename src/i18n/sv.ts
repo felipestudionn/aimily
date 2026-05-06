@@ -3725,6 +3725,8 @@ export const sv: Dictionary = {
   },
 
   ecom: {
+    awaitsPublishTitle: 'tillgänglig efter publicering',
+    awaitsPublishHint: 'Publicera först din storefront — overrides per sida och per SKU dyker upp här när en storefront-rad finns i databasen.',
     hub: {
       storefrontGenerator: 'Storefront-generator',
       heroTitle: 'Förvandla denna kollektion till en webbplats som säljer.',

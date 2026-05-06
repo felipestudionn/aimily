@@ -117,7 +117,18 @@ export function OverridesEditor({ storefrontId }: Props) {
     }
   };
 
-  if (!storefrontId) return null;
+  if (!storefrontId) {
+    return (
+      <div className="bg-white rounded-[20px] p-6 md:p-8 opacity-60">
+        <div className="flex items-center gap-2.5 mb-2">
+          <Pencil className="h-4 w-4 text-carbon/40" strokeWidth={1.75} />
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">{tOv.title}</p>
+          <span className="text-[11px] text-carbon/35">{t.ecom.awaitsPublishTitle}</span>
+        </div>
+        <p className="text-[12px] text-carbon/55">{t.ecom.awaitsPublishHint}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-[20px] p-6 md:p-8">

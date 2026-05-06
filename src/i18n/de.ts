@@ -3840,6 +3840,8 @@ export const de: Dictionary = {
   },
 
   ecom: {
+    awaitsPublishTitle: 'verfügbar nach der Veröffentlichung',
+    awaitsPublishHint: 'Veröffentliche zuerst deinen Storefront — Overrides pro Seite und pro SKU erscheinen hier, sobald eine Storefront-Zeile in der Datenbank existiert.',
     hub: {
       storefrontGenerator: 'Storefront-Generator',
       heroTitle: 'Verwandle diese Kollektion in eine Website, die verkauft.',

@@ -3924,6 +3924,8 @@ export const en = {
   // inline copy overrides (OverridesEditor). Theme names are kept untranslated
   // (proper nouns / brand identifiers) — moods and taglines ARE translated.
   ecom: {
+    awaitsPublishTitle: 'available after publish',
+    awaitsPublishHint: 'Publish your storefront first — per-page and per-SKU overrides will appear here once a storefront row exists in the database.',
     hub: {
       storefrontGenerator: 'Storefront generator',
       heroTitle: 'Turn this collection into a website that sells.',

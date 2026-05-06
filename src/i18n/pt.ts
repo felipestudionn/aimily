@@ -3821,6 +3821,8 @@ export const pt: Dictionary = {
   },
 
   ecom: {
+    awaitsPublishTitle: 'disponível após publicar',
+    awaitsPublishHint: 'Publica primeiro o teu storefront — os overrides por página e por SKU aparecerão aqui quando existir uma linha de storefront na base de dados.',
     hub: {
       storefrontGenerator: 'Gerador de storefront',
       heroTitle: 'Transforma esta coleção num site que vende.',
