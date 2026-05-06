@@ -1297,23 +1297,43 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
             ) : null}
           </div>
 
-          {/* Add-more buttons — small pills */}
-          <div className="flex flex-wrap justify-center items-center gap-2 pt-2">
-            <label
-              htmlFor={FILE_INPUT_ID}
-              className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all cursor-pointer ${uploading ? 'opacity-40 pointer-events-none' : ''}`}
-            >
-              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-              {uploading ? uploadProgress : t.creative.addMore}
-            </label>
+          {/* Add-more — same two equal cards as entry, just shorter padding.
+              Drag is always visible, Pinterest stays prominent. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mx-auto pt-4">
+            {/* Pinterest card */}
             <button
               onClick={handlePinterestConnect}
               disabled={pinterestLoading}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+              className={`flex flex-col items-center justify-center gap-3 py-10 md:py-12 px-6 rounded-[20px] bg-carbon/[0.04] hover:bg-carbon/[0.07] transition-all disabled:opacity-40 ${pinterestLoading ? 'cursor-wait' : 'cursor-pointer'}`}
             >
-              {pinterestLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
-              {pinterestLoading ? t.creative.connecting : t.creative.pinterest.toLowerCase()}
+              <div className="w-11 h-11 rounded-full bg-carbon/[0.06] flex items-center justify-center">
+                {pinterestLoading ? <Loader2 className="h-5 w-5 animate-spin text-carbon/50" /> : <ExternalLink className="h-5 w-5 text-carbon/50" />}
+              </div>
+              <p className="text-[14px] font-medium text-carbon/70">
+                {pinterestLoading ? t.creative.connecting : `${t.creative.connect} ${t.creative.pinterest.toLowerCase()}`}
+              </p>
             </button>
+
+            {/* Drag/upload card */}
+            <label
+              htmlFor={FILE_INPUT_ID}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`flex flex-col items-center justify-center gap-3 py-10 md:py-12 px-6 rounded-[20px] border-2 border-dashed transition-all cursor-pointer ${
+                dragActive
+                  ? 'border-carbon/50 bg-carbon/[0.05]'
+                  : 'border-carbon/[0.15] hover:border-carbon/30 hover:bg-carbon/[0.02]'
+              } ${uploading ? 'opacity-40 pointer-events-none' : ''}`}
+            >
+              <div className="w-11 h-11 rounded-full bg-carbon/[0.04] flex items-center justify-center">
+                {uploading ? <Loader2 className="h-5 w-5 animate-spin text-carbon/50" /> : <Plus className="h-5 w-5 text-carbon/50" />}
+              </div>
+              <p className="text-[14px] font-medium text-carbon/70">
+                {uploading ? uploadProgress : t.creative.addMore}
+              </p>
+            </label>
           </div>
         </div>
       )}
