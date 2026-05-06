@@ -93,8 +93,8 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'creative',
     phaseIds: ['product', 'brand'],
     subItems: [
-      { id: 'consumer', labelKey: 'consumer', route: 'creative?block=consumer', phaseId: 'product' },
       { id: 'moodboard', labelKey: 'moodboard', route: 'creative?block=moodboard', phaseId: 'product' },
+      { id: 'consumer', labelKey: 'consumer', route: 'creative?block=consumer', phaseId: 'product' },
       { id: 'market-research', labelKey: 'marketResearch', route: 'creative?block=research', phaseId: 'product' },
       { id: 'brand-identity', labelKey: 'brandIdentity', route: 'creative?block=brand-dna', phaseId: 'brand' },
       { id: 'creative-overview', labelKey: 'creativeOverview', route: 'creative?block=synthesis', isOutput: true },

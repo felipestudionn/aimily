@@ -859,8 +859,12 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
   const { id: collectionId } = useParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const images = (data.images as string[]) || [];
+  const analysis = (data.analysis as string) || '';
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
+  const [showPasteLinks, setShowPasteLinks] = useState(false);
+  const [pasteLinksValue, setPasteLinksValue] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
 
   // Pinterest state
   const [pinterestStep, setPinterestStep] = useState<'idle' | 'boards' | 'pins'>('idle');
@@ -871,6 +875,54 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
   const [pinterestLoading, setPinterestLoading] = useState(false);
   const [pinterestError, setPinterestError] = useState('');
   const [importingPins, setImportingPins] = useState(false);
+
+  // Auto-analyze ≥3 images. Silent — result stored in data.analysis +
+  // data.keywords for loadFullContext (server-side prompt builder reads
+  // bd.moodboard.data.analysis on line 173 of load-full-context.ts).
+  // The endpoint also writes a string summary to CIS so downstream prompts
+  // see {{moodboard}} populated. Runs once per unique image set.
+  useEffect(() => {
+    if (images.length < 3) return;
+    if (analyzing) return;
+    const key = images.join('|');
+    const lastKey = (data._analyzedKey as string) || '';
+    if (key === lastKey) return;
+
+    const handle = setTimeout(async () => {
+      setAnalyzing(true);
+      try {
+        const res = await fetch('/api/ai/analyze-moodboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrls: images, collectionPlanId: collectionId }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          const summary = [
+            result.moodDescription ? `Mood: ${result.moodDescription}` : '',
+            result.keyColors?.length ? `Colors: ${result.keyColors.join(', ')}` : '',
+            result.keyStyles?.length ? `Styles: ${result.keyStyles.join(', ')}` : '',
+            result.keyMaterials?.length ? `Materials: ${result.keyMaterials.join(', ')}` : '',
+            result.keyTrends?.length ? `Trends: ${result.keyTrends.join(', ')}` : '',
+            result.keyBrands?.length ? `Brands: ${result.keyBrands.join(', ')}` : '',
+            result.targetAudience ? `Audience hint: ${result.targetAudience}` : '',
+            result.seasonalFit ? `Season fit: ${result.seasonalFit}` : '',
+          ].filter(Boolean).join('\n');
+          const keywords: string[] = [
+            ...((result.keyColors as string[]) || []),
+            ...((result.keyStyles as string[]) || []),
+            ...((result.keyMaterials as string[]) || []),
+          ].slice(0, 30);
+          onChange({ ...data, analysis: summary, keywords, _analyzedKey: key });
+        }
+      } catch (err) {
+        console.error('[Moodboard] silent analysis failed', err);
+      }
+      setAnalyzing(false);
+    }, 1500);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [images.join('|'), collectionId]);
 
   // Upload files to Supabase Storage
   const handleUpload = async (files: FileList) => {
@@ -1024,31 +1076,130 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setPinterestError('');
   };
 
+  // Paste links: take a textarea blob, extract URLs, push each through
+  // /api/storage/upload with sourceUrl (same path Pinterest uses) so the
+  // file ends up in our Storage bucket and persists across sessions.
+  const handleImportFromUrls = async () => {
+    const urls = pasteLinksValue
+      .split(/[\s,]+/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => /^https?:\/\//i.test(s));
+    if (urls.length === 0) return;
+    setImportingPins(true);
+    const newUrls: string[] = [];
+    for (let i = 0; i < urls.length; i++) {
+      setUploadProgress(`${t.creative.importingProgress} ${i + 1}/${urls.length}...`);
+      try {
+        const res = await fetch('/api/storage/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            collectionPlanId: collectionId,
+            assetType: 'moodboard',
+            name: `paste-${Date.now()}-${i}.jpg`,
+            sourceUrl: urls[i],
+            description: 'Pasted URL',
+            metadata: { source: 'paste' },
+          }),
+        });
+        if (res.ok) {
+          const { publicUrl } = await res.json();
+          newUrls.push(publicUrl);
+        }
+      } catch { /* skip failed */ }
+    }
+    if (newUrls.length > 0) {
+      onChange({ ...data, images: [...images, ...newUrls] });
+    }
+    setImportingPins(false);
+    setUploadProgress('');
+    setPasteLinksValue('');
+    setShowPasteLinks(false);
+  };
+
+  // Hidden file input rendered once at the top of the component (a single
+  // input element covers both entry-phase and add-more buttons).
+  const fileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      multiple
+      accept="image/*"
+      className="hidden"
+      onChange={(e) => {
+        if (e.target.files && e.target.files.length > 0) handleUpload(e.target.files);
+      }}
+    />
+  );
+
   return (
     <div className="space-y-6">
-      {/* Upload + Pinterest — compact inline buttons */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08] transition-colors disabled:opacity-40"
-        >
-          {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-          {uploading ? uploadProgress : t.creative.uploadPhotos}
-        </button>
-        <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => {
-          if (e.target.files && e.target.files.length > 0) handleUpload(e.target.files);
-        }} />
+      {fileInput}
 
-        <button
-          onClick={handlePinterestConnect}
-          disabled={pinterestLoading}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08] transition-colors disabled:opacity-40"
-        >
-          {pinterestLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
-          {pinterestLoading ? t.creative.connecting : t.creative.pinterest}
-        </button>
-      </div>
+      {/* ENTRY phase — pantalla limpia con 3 pills, sólo si no hay imágenes
+          ni overlay activo (Pinterest modal o paste-links inline form). */}
+      {images.length === 0 && pinterestStep === 'idle' && !showPasteLinks && (
+        <div className="flex flex-col items-center py-12 md:py-20">
+          <div className="flex flex-wrap justify-center items-center gap-3 md:gap-4">
+            <button
+              onClick={handlePinterestConnect}
+              disabled={pinterestLoading}
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+            >
+              {pinterestLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+              {pinterestLoading ? t.creative.connecting : t.creative.pinterest.toLowerCase()}
+            </button>
+            <button
+              onClick={() => setShowPasteLinks(true)}
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all"
+            >
+              {t.creative.pasteLinks}
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {uploading ? uploadProgress : t.creative.dragOrUpload}
+            </button>
+          </div>
+          <p className="mt-8 text-[13px] text-carbon/35 max-w-md text-center leading-relaxed">
+            {t.creative.moodboardEntryHint}
+          </p>
+        </div>
+      )}
+
+      {/* PASTE LINKS inline form — replaces the entry pills temporarily */}
+      {showPasteLinks && (
+        <div className="max-w-xl mx-auto py-12">
+          <p className="text-center text-[14px] text-carbon/55 mb-4">{t.creative.pasteLinksHint}</p>
+          <textarea
+            value={pasteLinksValue}
+            onChange={(e) => setPasteLinksValue(e.target.value)}
+            placeholder="https://..."
+            rows={4}
+            className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none placeholder:text-carbon/30"
+            autoFocus
+          />
+          <div className="mt-4 flex justify-center gap-3">
+            <button
+              onClick={() => { setShowPasteLinks(false); setPasteLinksValue(''); }}
+              className="px-5 py-2 rounded-full text-[13px] font-medium text-carbon/50 hover:text-carbon transition-colors"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              onClick={handleImportFromUrls}
+              disabled={!pasteLinksValue.trim() || importingPins}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30"
+            >
+              {importingPins ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              {importingPins ? uploadProgress : t.creative.importLinks}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Pinterest Modal — Boards */}
       {pinterestStep === 'boards' && (
@@ -1136,28 +1287,64 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         </div>
       )}
 
-      {/* Image Grid */}
+      {/* IMAGE GRID + status + add-more */}
       {images.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-3">{images.length} {t.creative.images}</p>
-          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2">
+        <div className="space-y-6">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
             {images.map((img, i) => (
               <div key={i} className="relative aspect-square bg-carbon/[0.04] rounded-[10px] overflow-hidden group">
                 <img src={img} alt="" className="w-full h-full object-cover" />
                 <button
                   onClick={() => onChange({ ...data, images: images.filter((_, j) => j !== i) })}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-carbon/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
           </div>
-        </div>
-      )}
 
-      {images.length === 0 && pinterestStep === 'idle' && (
-        <p className="text-xs text-carbon/60 text-center py-4">{t.creative.noImagesYet}</p>
+          {/* Silent analysis status — single line, no panel of inferences */}
+          <div className="flex items-center justify-center gap-2 text-[12px] text-carbon/35 min-h-[18px]">
+            {images.length < 3 ? (
+              <span>{t.creative.moodboardCounter.replace('{n}', String(images.length)).replace('{min}', '3')}</span>
+            ) : analyzing ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>{t.creative.moodboardReading}</span>
+              </>
+            ) : analysis ? (
+              <span>{t.creative.moodboardToneSaved}</span>
+            ) : null}
+          </div>
+
+          {/* Add-more buttons — small pills */}
+          <div className="flex flex-wrap justify-center items-center gap-2 pt-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+            >
+              {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+              {uploading ? uploadProgress : t.creative.addMore}
+            </button>
+            <button
+              onClick={handlePinterestConnect}
+              disabled={pinterestLoading}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+            >
+              {pinterestLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
+              {pinterestLoading ? t.creative.connecting : t.creative.pinterest.toLowerCase()}
+            </button>
+            <button
+              onClick={() => setShowPasteLinks(true)}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all"
+            >
+              <Plus className="h-3 w-3" />
+              {t.creative.pasteLinks}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -2975,6 +3162,8 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     'vibe': t.creative.vibeDesc,
     'moodboard': t.creative.moodboardDesc,
     'brand-dna': t.creative.brandDNADesc,
+    'research': t.creative.marketResearchDesc,
+    'synthesis': t.creative.creativeOverviewDesc,
     'global-trends': t.creative.globalTrendsDesc,
     'deep-dive': t.creative.deepDiveDesc,
     'live-signals': t.creative.liveSignalsDesc,
@@ -3037,8 +3226,8 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
   // Block 2 Merchandising → first item is `scenarios` (Buying Strategy).
   const advanceToNextSidebarBlock = useCallback((currentBlockId: string) => {
     const NEXT: Record<string, string> = {
-      consumer: 'moodboard',
-      moodboard: 'research',
+      moodboard: 'consumer',
+      consumer: 'research',
       research: 'brand-dna',
       'brand-dna': 'synthesis',
     };
@@ -3112,6 +3301,11 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
             <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
               {blockNameMap[blockParam] || t.creative.consumerDefinition}
             </h1>
+            {blockDescMap[blockParam] && (
+              <p className="mt-4 text-[14px] md:text-[15px] text-carbon/45 max-w-[520px] mx-auto leading-relaxed">
+                {blockDescMap[blockParam]}
+              </p>
+            )}
           </div>
         ) : (
           <>

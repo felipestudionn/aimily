@@ -604,7 +604,16 @@ export const sv: Dictionary = {
     marketResearch: 'Marknadsundersökning',
     creativeSynthesis: 'Kreativ Syntes',
     moodboard: 'Moodboard',
-    moodboardDesc: 'Ladda upp foton eller anslut Pinterest för visuella referenser',
+    moodboardDesc: 'Din första visuella riktning.',
+    pasteLinks: 'klistra in länkar',
+    pasteLinksHint: 'Klistra in bild-URL:er separerade med mellanslag, komman eller radbrytningar.',
+    importLinks: 'Importera',
+    dragOrUpload: 'dra eller ladda upp',
+    addMore: 'lägg till fler',
+    moodboardEntryHint: 'Några bilder som pekar i en riktning. Vi använder dem som guide — inget är fastställt ännu.',
+    moodboardCounter: '{n} av {min} minst',
+    moodboardReading: 'läser…',
+    moodboardToneSaved: 'tonen sparad.',
     uploadPhotos: 'LADDA UPP FOTON',
     fileTypes: 'JPG, PNG, WEBP',
     pinterest: 'PINTEREST',
@@ -619,11 +628,13 @@ export const sv: Dictionary = {
     importSelected: 'Importera valda',
     connecting: 'Ansluter...',
     consumerDefinition: 'Konsumentdefinition',
-    consumerDesc: 'Definiera dina målgruppsprofiler med AI-assisterade personas',
+    consumerDesc: 'Vi skissar din kund tillsammans.',
     collectionVibe: 'Kollektionskänsla',
-    vibeDesc: 'Sätt andan och den kreativa riktningen för kollektionen',
+    vibeDesc: 'Kollektionens anda.',
     brandDNA: 'Varumärkes-DNA',
-    brandDNADesc: 'Extrahera eller skapa din varumärkesidentitet — logotyp, färger, typografi, ton',
+    brandDNADesc: 'Namn, palett, röst, typografi.',
+    marketResearchDesc: 'Marknadens puls, live.',
+    creativeOverviewDesc: 'En levande översikt. Alltid uppdaterad.',
     stepVisionDesc: 'Definiera din konsument, kollektionskänsla, moodboard och varumärkes-DNA',
     stepResearchDesc: 'Utforska trender, signaler och konkurrenslandskap',
     stepSynthesisDesc: 'Konsoliderad kreativ input — vision + valda trender redo för nästa block',
@@ -3416,7 +3427,7 @@ export const sv: Dictionary = {
       greeting: "Hej {name},",
       greetingFallback: "Välkommen,",
       headline: "Allt du hittar härinne.",
-      subtitle: "Fyra block. Tre lägen. Byggt så att du kan driva en säsong själv — eller ta in AI:n bara när den faktiskt hjälper. Allt går att redigera, alltid.",
+      subtitle: "Fyra block. Tre vyer. aimily placerar dig, frågar det minsta, föreslår — du redigerar tills det känns ditt.",
 
       blocks: {
         one: {
@@ -3468,7 +3479,7 @@ export const sv: Dictionary = {
       },
 
       modes: {
-        eyebrow: "Tre lägen, samma data",
+        eyebrow: "Tre vyer, samma data",
         items: [
           { name: "Work", desc: "Block för block, med djup redigering på varje fält. Detaljvyn." },
           { name: "Calendar", desc: "Fyrtiofem milstolpar över hela säsongen, dragna sidledes som horisontell timeline. Samma data, tidsmedveten vy. Klicka på en balk för att hoppa tillbaka till dess workspace." },
@@ -3477,11 +3488,13 @@ export const sv: Dictionary = {
       },
 
       workingStyle: {
-        eyebrow: "Du jobbar på ditt sätt",
+        eyebrow: "Läget",
         items: [
-          { name: "Du", desc: "Varje fält går att redigera. Skriv det du vet, hoppa över det du inte vet. Manuellt är förstaklassig medborgare, inte fallback." },
-          { name: "AI-assisterad", desc: "Generera ett utkast, behåll det som fungerar, skriv om resten. Ingen inlåsning, inget provider-namn på outputs." },
-          { name: "Hybrid", desc: "De flesta studior blandar. AI för det tråkiga, ditt omdöme i besluten som faktiskt spelar roll." },
+          { name: "Vi placerar", desc: "Vi säger var du är och vad som bestäms här." },
+          { name: "Vi frågar", desc: "Precis lagom. Inga formulär." },
+          { name: "Vi föreslår", desc: "Du börjar aldrig från noll." },
+          { name: "Du redigerar", desc: "Allt är ditt, allt finslipas." },
+          { name: "Du bekräftar", desc: "När tiden känns rätt." },
         ],
       },
 

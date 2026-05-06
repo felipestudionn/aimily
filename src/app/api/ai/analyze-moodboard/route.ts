@@ -115,9 +115,14 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { images, language, collectionPlanId } = body as { images: ImageData[]; language?: 'en' | 'es'; collectionPlanId?: string };
+    const { images: rawImages, imageUrls, language, collectionPlanId } = body as {
+      images?: ImageData[];
+      imageUrls?: string[];
+      language?: 'en' | 'es';
+      collectionPlanId?: string;
+    };
 
-    if (!images || images.length === 0) {
+    if ((!rawImages || rawImages.length === 0) && (!imageUrls || imageUrls.length === 0)) {
       return NextResponse.json(
         { error: 'No images provided' },
         { status: 400 }
@@ -129,6 +134,30 @@ export async function POST(req: NextRequest) {
       if (!ownership.authorized) return ownership.error;
     }
 
+    // If imageUrls provided, fetch each + convert to base64 server-side.
+    // Public Supabase Storage URLs work — no auth needed.
+    let images: ImageData[] = rawImages || [];
+    if (imageUrls && imageUrls.length > 0) {
+      const fetched = await Promise.all(imageUrls.map(async (url): Promise<ImageData | null> => {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const buf = Buffer.from(await res.arrayBuffer());
+          const mimeType = res.headers.get('content-type') || 'image/jpeg';
+          return { base64: buf.toString('base64'), mimeType };
+        } catch {
+          return null;
+        }
+      }));
+      images = [...images, ...fetched.filter((x): x is ImageData => x !== null)];
+    }
+
+    if (images.length === 0) {
+      return NextResponse.json(
+        { error: 'Could not load any images' },
+        { status: 400 }
+      );
+    }
 
     // Split images into batches
     const batches: ImageData[][] = [];
@@ -158,18 +187,40 @@ export async function POST(req: NextRequest) {
       ? batchResults[0]
       : await mergeAnalysisResults(batchResults, language);
 
-    // CIS: capture moodboard analysis (fire-and-forget)
+    // CIS: capture moodboard analysis as a STRING summary (downstream prompts
+    // expect a string template variable; storing the raw object would render
+    // as "[object Object]" in {{moodboard}} substitutions). The full object
+    // still goes back to the client in the response — we only flatten what
+    // CIS persists.
     if (collectionPlanId && finalResult) {
+      const summaryParts = [
+        finalResult.moodDescription ? `Mood: ${finalResult.moodDescription}` : '',
+        finalResult.keyColors?.length ? `Colors: ${finalResult.keyColors.join(', ')}` : '',
+        finalResult.keyStyles?.length ? `Styles: ${finalResult.keyStyles.join(', ')}` : '',
+        finalResult.keyMaterials?.length ? `Materials: ${finalResult.keyMaterials.join(', ')}` : '',
+        finalResult.keyTrends?.length ? `Trends seen: ${finalResult.keyTrends.join(', ')}` : '',
+        finalResult.keyBrands?.length ? `Brands referenced: ${finalResult.keyBrands.join(', ')}` : '',
+        finalResult.targetAudience ? `Implied audience: ${finalResult.targetAudience}` : '',
+        finalResult.seasonalFit ? `Seasonal fit: ${finalResult.seasonalFit}` : '',
+      ].filter(Boolean);
+      const summaryString = summaryParts.join('\n');
+
       const { recordDecision } = await import('@/lib/collection-intelligence');
-      recordDecision({
-        collectionPlanId,
-        domain: 'creative', subdomain: 'inspiration', key: 'moodboard_analysis',
-        value: finalResult,
-        source: 'ai_recommendation',
-        sourcePhase: 'creative', sourceComponent: 'MoodboardAnalysis',
-        tags: ['affects_photography', 'affects_content'],
-        userId: user.id,
-      }).catch((err: unknown) => console.error('[CIS] moodboard analysis capture failed:', err));
+      // Await — Vercel Fluid Compute drops fire-and-forget promises.
+      // See feedback_fluid-compute-await-records.md.
+      try {
+        await recordDecision({
+          collectionPlanId,
+          domain: 'creative', subdomain: 'inspiration', key: 'moodboard_analysis',
+          value: summaryString,
+          source: 'ai_recommendation',
+          sourcePhase: 'creative', sourceComponent: 'MoodboardAnalysis',
+          tags: ['affects_photography', 'affects_content'],
+          userId: user.id,
+        });
+      } catch (err) {
+        console.error('[CIS] moodboard analysis capture failed:', err);
+      }
     }
 
     return NextResponse.json(finalResult);

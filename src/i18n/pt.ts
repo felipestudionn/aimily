@@ -613,7 +613,16 @@ export const pt: Dictionary = {
     creativeSynthesis: 'Síntese Criativa',
     // Moodboard
     moodboard: 'Moodboard',
-    moodboardDesc: 'Envie fotos ou conecte o Pinterest para referências visuais',
+    moodboardDesc: 'A tua primeira direção visual.',
+    pasteLinks: 'colar links',
+    pasteLinksHint: 'Cola URLs de imagens separadas por espaços, vírgulas ou novas linhas.',
+    importLinks: 'Importar',
+    dragOrUpload: 'arrastar ou carregar',
+    addMore: 'adicionar mais',
+    moodboardEntryHint: 'Algumas imagens que apontam numa direção. Usamo-las como guia — ainda nada está fixado.',
+    moodboardCounter: '{n} de {min} mínimas',
+    moodboardReading: 'a ler…',
+    moodboardToneSaved: 'tom guardado.',
     uploadPhotos: 'ENVIAR FOTOS',
     fileTypes: 'JPG, PNG, WEBP',
     pinterest: 'PINTEREST',
@@ -629,13 +638,15 @@ export const pt: Dictionary = {
     connecting: 'Conectando...',
     // Consumer
     consumerDefinition: 'Definição de consumidor',
-    consumerDesc: 'Defina os perfis do seu consumidor-alvo com personas assistidas por IA',
+    consumerDesc: 'Definimos juntos o teu cliente.',
     // Vibe
     collectionVibe: 'Vibe da Coleção',
-    vibeDesc: 'Defina o espírito e a direção criativa da coleção',
+    vibeDesc: 'O espírito da coleção.',
     // Brand DNA
     brandDNA: 'Identidade de Marca',
-    brandDNADesc: 'Extraia ou crie sua identidade de marca — logo, cores, tipografia, tom',
+    brandDNADesc: 'Nome, paleta, voz, tipografia.',
+    marketResearchDesc: 'O pulso do mercado, em direto.',
+    creativeOverviewDesc: 'Uma overview viva. Sempre atualizada.',
     // Steps
     stepVisionDesc: 'Defina seu consumidor, vibe da coleção, moodboard e identidade de marca',
     stepResearchDesc: 'Explore tendências, sinais e panorama competitivo',
@@ -3512,7 +3523,7 @@ export const pt: Dictionary = {
       greeting: "Olá {name},",
       greetingFallback: "Bem-vindo,",
       headline: "Tudo o que vais encontrar aqui dentro.",
-      subtitle: "Quatro blocos. Três modos. Pensado para que possas tirar uma temporada sozinho, ou apoiar-te na IA só quando isso ajudar. Tudo é editável, sempre.",
+      subtitle: "Quatro blocos. Três vistas. aimily posiciona-te, pede o mínimo e propõe — tu editas até parecer teu.",
 
       blocks: {
         one: {
@@ -3564,7 +3575,7 @@ export const pt: Dictionary = {
       },
 
       modes: {
-        eyebrow: "Três modos, os mesmos dados",
+        eyebrow: "Três vistas, os mesmos dados",
         items: [
           { name: "Work", desc: "Bloco a bloco, com edição profunda em cada campo. A vista de detalhe." },
           { name: "Calendar", desc: "Quarenta e cinco marcos ao longo da temporada, arrastáveis como timeline horizontal. Os mesmos dados, vista temporal. Clica em qualquer barra para voltar ao seu workspace." },
@@ -3573,11 +3584,13 @@ export const pt: Dictionary = {
       },
 
       workingStyle: {
-        eyebrow: "Trabalhas à tua maneira",
+        eyebrow: "O modo",
         items: [
-          { name: "Tu", desc: "Cada campo é editável. Escreve o que sabes, salta o que não sabes. Manual é cidadão de primeira classe, não o fallback." },
-          { name: "Assistido por IA", desc: "Gera um rascunho, aceita o que funciona, reescreve o resto. Sem amarras, sem nome do provider nos outputs." },
-          { name: "Híbrido", desc: "A maioria dos estúdios mistura. IA para o aborrecido, critério teu nas decisões que de facto importam." },
+          { name: "Posicionamos-te", desc: "Dizemos-te onde estás e o que se decide aqui." },
+          { name: "Perguntamos", desc: "O mínimo. Sem formulários." },
+          { name: "Propomos", desc: "Nunca começas do zero." },
+          { name: "Editas", desc: "Tudo é teu, tudo se afina." },
+          { name: "Confirmas", desc: "Quando o momento te encaixar." },
         ],
       },
 

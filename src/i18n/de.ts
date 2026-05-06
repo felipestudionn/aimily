@@ -613,7 +613,16 @@ export const de: Dictionary = {
     creativeSynthesis: 'Kreative Synthese',
     // Moodboard
     moodboard: 'Moodboard',
-    moodboardDesc: 'Laden Sie Fotos hoch oder verbinden Sie Pinterest für visuelle Referenzen',
+    moodboardDesc: 'Deine erste visuelle Richtung.',
+    pasteLinks: 'Links einfügen',
+    pasteLinksHint: 'Bild-URLs einfügen, getrennt durch Leerzeichen, Kommas oder Zeilenumbrüche.',
+    importLinks: 'Importieren',
+    dragOrUpload: 'ziehen oder hochladen',
+    addMore: 'mehr hinzufügen',
+    moodboardEntryHint: 'Ein paar Bilder, die in eine Richtung weisen. Wir nutzen sie als Leitfaden — noch wird nichts festgelegt.',
+    moodboardCounter: '{n} von {min} mindestens',
+    moodboardReading: 'lesen…',
+    moodboardToneSaved: 'Ton gespeichert.',
     uploadPhotos: 'FOTOS HOCHLADEN',
     fileTypes: 'JPG, PNG, WEBP',
     pinterest: 'PINTEREST',
@@ -629,13 +638,15 @@ export const de: Dictionary = {
     connecting: 'Verbindung wird hergestellt...',
     // Consumer
     consumerDefinition: 'Zielgruppendefinition',
-    consumerDesc: 'Definieren Sie Ihre Zielgruppen-Profile mit KI-gestützten Personas',
+    consumerDesc: 'Wir skizzieren deine Kund:in gemeinsam.',
     // Vibe
     collectionVibe: 'Kollektion-Vibe',
-    vibeDesc: 'Legen Sie die Stimmung und kreative Richtung der Kollektion fest',
+    vibeDesc: 'Der Geist der Kollektion.',
     // Brand DNA
     brandDNA: 'Marken-DNA',
-    brandDNADesc: 'Extrahieren oder erstellen Sie Ihre Markenidentität — Logo, Farben, Typografie, Tonalität',
+    brandDNADesc: 'Name, Palette, Stimme, Typografie.',
+    marketResearchDesc: 'Der Puls des Marktes, live.',
+    creativeOverviewDesc: 'Eine lebendige Übersicht. Immer aktuell.',
     // Steps
     stepVisionDesc: 'Definieren Sie Ihre Zielgruppe, Kollektion-Vibe, Moodboard und Marken-DNA',
     stepResearchDesc: 'Erkunden Sie Trends, Signale und die Wettbewerbslandschaft',
@@ -3531,7 +3542,7 @@ export const de: Dictionary = {
       greeting: "Hallo {name},",
       greetingFallback: "Willkommen,",
       headline: "Alles, was du hier drinnen findest.",
-      subtitle: "Vier Blöcke. Drei Modi. Gebaut, damit du eine Saison allein durchziehen kannst — oder die KI nur dann dazuholst, wenn sie wirklich hilft. Alles ist jederzeit editierbar.",
+      subtitle: "Vier Blöcke. Drei Ansichten. aimily positioniert dich, fragt das Nötigste, schlägt vor — du editierst, bis es sich nach dir anfühlt.",
 
       blocks: {
         one: {
@@ -3583,7 +3594,7 @@ export const de: Dictionary = {
       },
 
       modes: {
-        eyebrow: "Drei Modi, dieselben Daten",
+        eyebrow: "Drei Ansichten, dieselben Daten",
         items: [
           { name: "Work", desc: "Block für Block, mit tiefer Bearbeitung in jedem Feld. Die Detailansicht." },
           { name: "Calendar", desc: "Fünfundvierzig Meilensteine über die Saison, seitwärts gezogen als horizontale Timeline. Dieselben Daten, zeitliche Sicht. Klick auf einen Balken bringt dich zurück in seinen Workspace." },
@@ -3592,11 +3603,13 @@ export const de: Dictionary = {
       },
 
       workingStyle: {
-        eyebrow: "Du arbeitest, wie es dir passt",
+        eyebrow: "Der Modus",
         items: [
-          { name: "Du", desc: "Jedes Feld ist editierbar. Schreib, was du weißt, überspring, was nicht. Manuell ist erste Klasse, kein Fallback." },
-          { name: "KI-unterstützt", desc: "Generiere einen Entwurf, übernimm was funktioniert, schreib den Rest neu. Kein Lock-in, kein Provider-Name auf den Outputs." },
-          { name: "Hybrid", desc: "Die meisten Studios mischen. KI für das Langweilige, dein Urteil bei den Entscheidungen, die wirklich zählen." },
+          { name: "Wir positionieren", desc: "Wir sagen dir, wo du bist und was hier entschieden wird." },
+          { name: "Wir fragen", desc: "Nur das Nötigste. Keine Formulare." },
+          { name: "Wir schlagen vor", desc: "Du fängst nie bei null an." },
+          { name: "Du editierst", desc: "Alles gehört dir, alles wird verfeinert." },
+          { name: "Du bestätigst", desc: "Wenn der Moment für dich passt." },
         ],
       },
 

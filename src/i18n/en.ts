@@ -611,10 +611,20 @@ export const en = {
     creativeSynthesis: 'Creative Synthesis',
     // Moodboard
     moodboard: 'Moodboard',
-    moodboardDesc: 'Upload photos or connect Pinterest for visual references',
+    moodboardDesc: 'Your first visual direction.',
     uploadPhotos: 'UPLOAD PHOTOS',
     fileTypes: 'JPG, PNG, WEBP',
     pinterest: 'PINTEREST',
+    // Moodboard entry — new shape
+    pasteLinks: 'paste links',
+    pasteLinksHint: 'Paste image URLs separated by spaces, commas or new lines.',
+    importLinks: 'Import',
+    dragOrUpload: 'drag or upload',
+    addMore: 'add more',
+    moodboardEntryHint: 'A few images that point in a direction. We use them as a guide — nothing gets fixed yet.',
+    moodboardCounter: '{n} of {min} minimum',
+    moodboardReading: 'reading…',
+    moodboardToneSaved: 'tone saved.',
     selectFromBoards: 'Select from boards',
     noImagesYet: 'No images yet. Upload photos or import from Pinterest.',
     images: 'images',
@@ -627,13 +637,16 @@ export const en = {
     connecting: 'Connecting...',
     // Consumer
     consumerDefinition: 'Consumer Definition',
-    consumerDesc: 'Define your target consumer profiles with AI-assisted personas',
+    consumerDesc: 'We sketch your customer together.',
     // Vibe
     collectionVibe: 'Collection Vibe',
-    vibeDesc: 'Set the spirit and creative direction of the collection',
+    vibeDesc: 'The spirit of the collection.',
     // Brand DNA
     brandDNA: 'Brand DNA',
-    brandDNADesc: 'Extract or create your brand identity — logo, colors, typography, tone',
+    brandDNADesc: 'Name, palette, voice, typography.',
+    // Market Research + Synthesis briefings (sidebar header)
+    marketResearchDesc: 'The market pulse, live.',
+    creativeOverviewDesc: 'A live overview. Always up to date.',
     // Steps
     stepVisionDesc: 'Define your consumer, collection vibe, moodboard, and brand DNA',
     stepResearchDesc: 'Explore trends, signals, and competitive landscape',
@@ -3600,7 +3613,7 @@ export const en = {
       greeting: "Hi {name},",
       greetingFallback: "Welcome,",
       headline: "Everything you'll find inside.",
-      subtitle: "Four blocks. Three modes. Built so you can run a season alone, or bring AI in only when it helps. Edit anything, anytime.",
+      subtitle: "Four blocks. Three views. aimily positions you, asks the bare minimum, proposes — you edit until it feels yours.",
 
       blocks: {
         one: {
@@ -3652,7 +3665,7 @@ export const en = {
       },
 
       modes: {
-        eyebrow: "Three modes, same data",
+        eyebrow: "Three views, same data",
         items: [
           { name: "Work", desc: "Block by block, with deep edit on every field. The detail view." },
           { name: "Calendar", desc: "Forty-five milestones across the season, dragged sideways as a horizontal timeline. Same data, time-aware view. Click any bar to jump back to its workspace." },
@@ -3661,11 +3674,13 @@ export const en = {
       },
 
       workingStyle: {
-        eyebrow: "How you work, your way",
+        eyebrow: "The mode",
         items: [
-          { name: "You", desc: "Every field is editable. Type what you know, skip what you don't. Manual is a first-class citizen, never the fallback." },
-          { name: "AI-assisted", desc: "Generate a draft, accept what works, rewrite the rest. No model lock-in, no provider name on the outputs." },
-          { name: "Hybrid", desc: "Most studios blend. AI for the boring parts, your judgment on the decisions that actually matter." },
+          { name: "We position", desc: "We tell you where you are and what gets decided here." },
+          { name: "We ask", desc: "Just enough. No forms." },
+          { name: "We propose", desc: "You never start from zero." },
+          { name: "You edit", desc: "Everything is yours, everything refines." },
+          { name: "You confirm", desc: "When the moment feels right." },
         ],
       },
 

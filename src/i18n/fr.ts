@@ -613,7 +613,16 @@ export const fr: Dictionary = {
     creativeSynthesis: 'Synthèse Créative',
     // Moodboard
     moodboard: 'Moodboard',
-    moodboardDesc: 'Importez des photos ou connectez Pinterest pour vos références visuelles',
+    moodboardDesc: 'Ta première direction visuelle.',
+    pasteLinks: 'coller des liens',
+    pasteLinksHint: 'Colle des URLs d\'images séparées par espaces, virgules ou retours à la ligne.',
+    importLinks: 'Importer',
+    dragOrUpload: 'glisser ou téléverser',
+    addMore: 'ajouter plus',
+    moodboardEntryHint: 'Quelques images qui pointent dans une direction. On s\'en sert comme guide — rien n\'est encore fixé.',
+    moodboardCounter: '{n} sur {min} minimum',
+    moodboardReading: 'lecture…',
+    moodboardToneSaved: 'ton enregistré.',
     uploadPhotos: 'IMPORTER DES PHOTOS',
     fileTypes: 'JPG, PNG, WEBP',
     pinterest: 'PINTEREST',
@@ -629,13 +638,15 @@ export const fr: Dictionary = {
     connecting: 'Connexion...',
     // Consommateur
     consumerDefinition: 'Définition du consommateur',
-    consumerDesc: 'Définissez vos profils de consommateurs cibles avec des personas assistés par l\'IA',
+    consumerDesc: 'On définit ton client ensemble.',
     // Vibe
     collectionVibe: 'Esprit de la collection',
-    vibeDesc: 'Définissez l\'esprit et la direction créative de la collection',
+    vibeDesc: 'L\'esprit de la collection.',
     // ADN de marque
     brandDNA: 'ADN de marque',
-    brandDNADesc: 'Extrayez ou créez votre identité de marque — logo, couleurs, typographie, ton',
+    brandDNADesc: 'Nom, palette, voix, typographie.',
+    marketResearchDesc: 'Le pouls du marché, en direct.',
+    creativeOverviewDesc: 'Un overview vivant. Toujours à jour.',
     // Étapes
     stepVisionDesc: 'Définissez votre consommateur, l\'esprit de la collection, le moodboard et l\'ADN de marque',
     stepResearchDesc: 'Explorez les tendances, les signaux et le paysage concurrentiel',
@@ -3531,7 +3542,7 @@ export const fr: Dictionary = {
       greeting: "Bonjour {name},",
       greetingFallback: "Bienvenue,",
       headline: "Tout ce que tu vas trouver à l'intérieur.",
-      subtitle: "Quatre blocs. Trois modes. Conçu pour que tu puisses sortir une saison seul, ou faire appel à l'IA seulement quand cela aide. Tout est éditable, à tout moment.",
+      subtitle: "Quatre blocs. Trois vues. aimily te situe, te demande le minimum, te propose — tu édites jusqu'à ce que ce soit à toi.",
 
       blocks: {
         one: {
@@ -3583,7 +3594,7 @@ export const fr: Dictionary = {
       },
 
       modes: {
-        eyebrow: "Trois modes, mêmes données",
+        eyebrow: "Trois vues, mêmes données",
         items: [
           { name: "Work", desc: "Bloc par bloc, avec édition en profondeur sur chaque champ. La vue détaillée." },
           { name: "Calendar", desc: "Quarante-cinq jalons sur toute la saison, glissés latéralement comme une timeline horizontale. Mêmes données, vue temporelle. Clique sur n'importe quelle barre pour revenir à son workspace." },
@@ -3592,11 +3603,13 @@ export const fr: Dictionary = {
       },
 
       workingStyle: {
-        eyebrow: "Tu travailles à ta manière",
+        eyebrow: "Le mode",
         items: [
-          { name: "Toi", desc: "Chaque champ est éditable. Écris ce que tu sais, saute ce que tu ne sais pas. Le manuel est citoyen de première classe, pas le fallback." },
-          { name: "Assisté par IA", desc: "Génère un brouillon, accepte ce qui marche, réécris le reste. Pas d'enfermement, pas de nom de fournisseur sur les outputs." },
-          { name: "Hybride", desc: "La plupart des studios mélangent. IA pour l'ennuyeux, ton jugement sur les décisions qui comptent vraiment." },
+          { name: "On te situe", desc: "On te dit où tu es et ce qui se décide ici." },
+          { name: "On demande", desc: "Juste ce qu'il faut. Pas de formulaire." },
+          { name: "On propose", desc: "Tu ne pars jamais de zéro." },
+          { name: "Tu édites", desc: "Tout est à toi, tout s'affine." },
+          { name: "Tu confirmes", desc: "Quand le moment te convient." },
         ],
       },
 

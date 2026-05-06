@@ -613,7 +613,16 @@ export const nl: Dictionary = {
     creativeSynthesis: 'Creatieve Synthese',
     // Moodboard
     moodboard: 'Moodboard',
-    moodboardDesc: 'Upload foto\'s of koppel Pinterest voor visuele referenties',
+    moodboardDesc: 'Je eerste visuele richting.',
+    pasteLinks: 'links plakken',
+    pasteLinksHint: 'Plak afbeeldings-URLs gescheiden door spaties, komma\'s of nieuwe regels.',
+    importLinks: 'Importeren',
+    dragOrUpload: 'slepen of uploaden',
+    addMore: 'meer toevoegen',
+    moodboardEntryHint: 'Een paar beelden die een richting wijzen. We gebruiken ze als gids — nog niets staat vast.',
+    moodboardCounter: '{n} van {min} minimum',
+    moodboardReading: 'lezen…',
+    moodboardToneSaved: 'toon opgeslagen.',
     uploadPhotos: 'FOTO\'S UPLOADEN',
     fileTypes: 'JPG, PNG, WEBP',
     pinterest: 'PINTEREST',
@@ -629,13 +638,15 @@ export const nl: Dictionary = {
     connecting: 'Verbinding wordt gemaakt...',
     // Consumer
     consumerDefinition: 'Doelgroepdefinitie',
-    consumerDesc: 'Definieer uw doelgroepprofielen met AI-ondersteunde persona\'s',
+    consumerDesc: 'We schetsen samen jouw klant.',
     // Vibe
     collectionVibe: 'Collectie-vibe',
-    vibeDesc: 'Bepaal de sfeer en creatieve richting van de collectie',
+    vibeDesc: 'De geest van de collectie.',
     // Brand DNA
     brandDNA: 'Merk-DNA',
-    brandDNADesc: 'Extraheer of creëer uw merkidentiteit — logo, kleuren, typografie, tone of voice',
+    brandDNADesc: 'Naam, palet, stem, typografie.',
+    marketResearchDesc: 'De pols van de markt, live.',
+    creativeOverviewDesc: 'Een levend overzicht. Altijd actueel.',
     // Steps
     stepVisionDesc: 'Definieer uw doelgroep, collectie-vibe, moodboard en merk-DNA',
     stepResearchDesc: 'Verken trends, signalen en het concurrentielandschap',
@@ -3530,7 +3541,7 @@ export const nl: Dictionary = {
       greeting: "Hoi {name},",
       greetingFallback: "Welkom,",
       headline: "Alles wat je hier binnen vindt.",
-      subtitle: "Vier blokken. Drie modi. Gebouwd zodat je een seizoen alleen kunt draaien — of AI er alleen bij haalt waar het echt helpt. Alles is altijd te bewerken.",
+      subtitle: "Vier blokken. Drie weergaven. aimily plaatst je, vraagt het minimum, stelt voor — jij bewerkt tot het van jou voelt.",
 
       blocks: {
         one: {
@@ -3582,7 +3593,7 @@ export const nl: Dictionary = {
       },
 
       modes: {
-        eyebrow: "Drie modi, dezelfde data",
+        eyebrow: "Drie weergaven, dezelfde data",
         items: [
           { name: "Work", desc: "Blok voor blok, met diepe bewerking op elk veld. De detailweergave." },
           { name: "Calendar", desc: "Vijfenveertig mijlpalen over het hele seizoen, opzij gesleept als horizontale timeline. Dezelfde data, tijd-bewuste weergave. Klik op een balk om terug naar zijn workspace te springen." },
@@ -3591,11 +3602,13 @@ export const nl: Dictionary = {
       },
 
       workingStyle: {
-        eyebrow: "Jij werkt op jouw manier",
+        eyebrow: "De modus",
         items: [
-          { name: "Jij", desc: "Elk veld is bewerkbaar. Typ wat je weet, sla over wat je niet weet. Handmatig is eersteklas, geen fallback." },
-          { name: "AI-ondersteund", desc: "Genereer een concept, accepteer wat werkt, herschrijf de rest. Geen lock-in, geen provider-naam op de outputs." },
-          { name: "Hybride", desc: "De meeste studio's combineren. AI voor het saaie werk, jouw oordeel voor de beslissingen die er echt toe doen." },
+          { name: "We plaatsen", desc: "We vertellen je waar je bent en wat hier beslist wordt." },
+          { name: "We vragen", desc: "Alleen het hoognodige. Geen formulieren." },
+          { name: "We stellen voor", desc: "Je begint nooit bij nul." },
+          { name: "Jij bewerkt", desc: "Alles is van jou, alles verfijnt." },
+          { name: "Jij bevestigt", desc: "Wanneer het moment voor jou klopt." },
         ],
       },
 

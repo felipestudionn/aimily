@@ -337,21 +337,21 @@ function ClosingSlide({
         {/* Divider */}
         <div className={`h-px w-16 ${tw.divider} mb-16 md:mb-20`} />
 
-        {/* Three working styles */}
+        {/* Working style — adaptive grid: 3 cols up to 3 items, 5 cols when items >= 5 */}
         <div className="mb-16 md:mb-20">
           <p className={`text-[11px] md:text-[12px] font-semibold tracking-[0.22em] uppercase ${tw.fgFaint} mb-8`}>
             {workingStyle.eyebrow}
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12">
+          <div className={`grid grid-cols-1 ${workingStyle.items.length >= 5 ? 'md:grid-cols-5 gap-6 md:gap-8' : 'md:grid-cols-3 gap-10 md:gap-12'}`}>
             {workingStyle.items.map((style, idx) => (
               <div key={idx}>
                 <p
-                  className={`font-light tracking-[-0.02em] leading-[1.1] text-[28px] md:text-[34px] ${tw.fg} mb-4`}
+                  className={`font-light tracking-[-0.02em] leading-[1.1] ${workingStyle.items.length >= 5 ? 'text-[22px] md:text-[26px]' : 'text-[28px] md:text-[34px]'} ${tw.fg} mb-3`}
                   style={SERIF}
                 >
                   {style.name}
                 </p>
-                <p className={`text-[14px] md:text-[15px] leading-[1.65] ${tw.fgMuted}`}>
+                <p className={`${workingStyle.items.length >= 5 ? 'text-[13px] md:text-[14px]' : 'text-[14px] md:text-[15px]'} leading-[1.65] ${tw.fgMuted}`}>
                   {style.desc}
                 </p>
               </div>

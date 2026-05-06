@@ -613,7 +613,16 @@ export const it: Dictionary = {
     creativeSynthesis: 'Sintesi Creativa',
     // Moodboard
     moodboard: 'Moodboard',
-    moodboardDesc: 'Carica foto o connetti Pinterest per riferimenti visivi',
+    moodboardDesc: 'La tua prima direzione visiva.',
+    pasteLinks: 'incolla link',
+    pasteLinksHint: 'Incolla URL di immagini separati da spazi, virgole o nuove righe.',
+    importLinks: 'Importa',
+    dragOrUpload: 'trascina o carica',
+    addMore: 'aggiungi altro',
+    moodboardEntryHint: 'Alcune immagini che indicano una direzione. Le usiamo come guida — niente è ancora deciso.',
+    moodboardCounter: '{n} di {min} minime',
+    moodboardReading: 'leggendo…',
+    moodboardToneSaved: 'tono salvato.',
     uploadPhotos: 'CARICA FOTO',
     fileTypes: 'JPG, PNG, WEBP',
     pinterest: 'PINTEREST',
@@ -629,13 +638,15 @@ export const it: Dictionary = {
     connecting: 'Connessione...',
     // Consumer
     consumerDefinition: 'Definizione del Consumatore',
-    consumerDesc: 'Definisci i profili del tuo consumatore target con personas assistite dall\'AI',
+    consumerDesc: 'Definiamo insieme il tuo cliente.',
     // Vibe
     collectionVibe: 'Atmosfera della Collezione',
-    vibeDesc: 'Definisci lo spirito e la direzione creativa della collezione',
+    vibeDesc: 'Lo spirito della collezione.',
     // Brand DNA
     brandDNA: 'DNA del Brand',
-    brandDNADesc: 'Estrai o crea la tua identit\u00e0 di brand \u2014 logo, colori, tipografia, tono',
+    brandDNADesc: 'Nome, palette, voce, tipografia.',
+    marketResearchDesc: 'Il polso del mercato, in diretta.',
+    creativeOverviewDesc: 'Una panoramica viva. Sempre aggiornata.',
     // Steps
     stepVisionDesc: 'Definisci il tuo consumatore, l\'atmosfera della collezione, il moodboard e il DNA del brand',
     stepResearchDesc: 'Esplora tendenze, segnali e panorama competitivo',
@@ -3531,7 +3542,7 @@ export const it: Dictionary = {
       greeting: "Ciao {name},",
       greetingFallback: "Benvenuto,",
       headline: "Tutto quello che troverai dentro.",
-      subtitle: "Quattro blocchi. Tre modalità. Pensato perché tu possa portare avanti una stagione da solo, o appoggiarti all'IA solo quando serve. Tutto si modifica, sempre.",
+      subtitle: "Quattro blocchi. Tre viste. aimily ti orienta, ti chiede il minimo, ti propone — tu modifichi finché non lo senti tuo.",
 
       blocks: {
         one: {
@@ -3583,7 +3594,7 @@ export const it: Dictionary = {
       },
 
       modes: {
-        eyebrow: "Tre modalità, stessi dati",
+        eyebrow: "Tre viste, stessi dati",
         items: [
           { name: "Work", desc: "Blocco per blocco, con editing profondo su ogni campo. La vista di dettaglio." },
           { name: "Calendar", desc: "Quarantacinque tappe lungo la stagione, trascinabili come una timeline orizzontale. Stessi dati, vista temporale. Clicca su qualsiasi barra per tornare al suo workspace." },
@@ -3592,11 +3603,13 @@ export const it: Dictionary = {
       },
 
       workingStyle: {
-        eyebrow: "Lavori a modo tuo",
+        eyebrow: "Il modo",
         items: [
-          { name: "Tu", desc: "Ogni campo è modificabile. Scrivi quello che sai, salta quello che no. Manuale è cittadino di prima classe, non un fallback." },
-          { name: "Assistito dall'IA", desc: "Genera una bozza, accetta ciò che funziona, riscrivi il resto. Senza vincoli, senza nome del provider sugli output." },
-          { name: "Ibrido", desc: "Quasi tutti gli studi mischiano. IA per il noioso, criterio tuo sulle decisioni che contano davvero." },
+          { name: "Ti orientiamo", desc: "Ti diciamo dove sei e cosa si decide qui." },
+          { name: "Chiediamo", desc: "Lo stretto necessario. Niente moduli." },
+          { name: "Proponiamo", desc: "Non parti mai da zero." },
+          { name: "Modifichi", desc: "Tutto è tuo, tutto si rifinisce." },
+          { name: "Confermi", desc: "Quando il momento ti convince." },
         ],
       },
 
