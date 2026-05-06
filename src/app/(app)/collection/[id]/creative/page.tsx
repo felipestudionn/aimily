@@ -286,24 +286,51 @@ function VibeProposalFlow({
   );
 }
 
-function ConsumerProposalFlow({
-  data, onChange, collectionContext, generating, setGenerating, error, setError,
-}: {
-  data: Record<string, unknown>;
-  onChange: (d: Record<string, unknown>) => void;
-  collectionContext: { season: string; collectionName: string };
-  generating: boolean;
-  setGenerating: (v: boolean) => void;
-  error: string | null;
-  setError: (v: string | null) => void;
-}) {
+// ConsumerContent — single canonical mode (no Free/Assisted/AI toggle).
+//
+// Two phases driven entirely by data.proposals:
+//   ENTRY (no proposals yet) — centered question "para quién diseñamos {collection}",
+//     four gender chips, optional inline reference field, single CTA.
+//   PROPOSAL (proposals exist) — breadcrumb of current params + list of
+//     proposal cards with edit/like/reject + "regenerate rejected" affordance.
+//
+// Pattern aligned with the canonical: aimily situates → asks the bare
+// minimum → proposes → user edits → user confirms (parent shell handles
+// the confirm; the breadcrumb here lets the user reopen entry to tweak).
+function ConsumerContent({ data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
   const { language } = useLanguage();
-  const proposals = (data.proposals as ConsumerProfile[]) || [];
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [addingManual, setAddingManual] = useState(false);
-  const [manualTitle, setManualTitle] = useState('');
-  const [manualDesc, setManualDesc] = useState('');
+
+  const proposals = (data.proposals as ConsumerProfile[]) || [];
+  const gender = (data.gender as string) || '';
+  const reference = (data.reference as string) || '';
+  const hasProposals = proposals.length > 0;
+
+  const genderOptions = [
+    { id: 'women', label: t.creative.women },
+    { id: 'men', label: t.creative.men },
+    { id: 'unisex', label: t.creative.unisex },
+    { id: 'mixed', label: t.creative.mixed },
+  ] as const;
+
+  const generateProposals = async () => {
+    if (!gender) return;
+    setGenerating(true);
+    setError(null);
+    const { result, error: err } = await generateCreative('consumer-proposals', {
+      reference,
+      gender,
+      ...collectionContext,
+    }, language);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { proposals: Array<{ title: string; desc: string }> };
+    const withStatus = (parsed.proposals || []).map((p) => ({ ...p, status: 'pending' as const }));
+    onChange({ ...data, proposals: withStatus });
+    setGenerating(false);
+  };
 
   const updateProposal = (idx: number, updates: Partial<ConsumerProfile>) => {
     const updated = [...proposals];
@@ -315,425 +342,208 @@ function ConsumerProposalFlow({
     onChange({ ...data, proposals: proposals.filter((_, i) => i !== idx) });
   };
 
-  const likedProfiles = proposals.filter(p => p.status === 'liked');
-  const rejectedProfiles = proposals.filter(p => p.status === 'rejected');
-  const hasProposals = proposals.length > 0;
-
-  // Generate initial 4 proposals
-  const generateProposals = async () => {
-    setGenerating(true);
-    setError(null);
-    const { result, error: err } = await generateCreative('consumer-proposals', {
-      reference: (data.reference as string) || '',
-      gender: (data.gender as string) || '',
-      ...collectionContext,
-    }, language);
-    if (err) { setError(err); setGenerating(false); return; }
-    const parsed = result as { proposals: Array<{ title: string; desc: string }> };
-    const withStatus = (parsed.proposals || []).map(p => ({ ...p, status: 'pending' as const }));
-    onChange({ ...data, proposals: withStatus });
-    setGenerating(false);
-  };
-
-  // Regenerate only rejected profiles (replace them with new ones)
   const regenerateRejected = async () => {
+    const liked = proposals.filter((p) => p.status === 'liked');
+    const rejected = proposals.filter((p) => p.status === 'rejected');
+    if (rejected.length === 0) return;
     setGenerating(true);
     setError(null);
-    const existingLiked = likedProfiles.map(p => p.title).join(', ');
-    const count = rejectedProfiles.length;
     const { result, error: err } = await generateCreative('consumer-proposals', {
-      reference: (data.reference as string) || '',
-      gender: (data.gender as string) || '',
-      existingProfiles: existingLiked,
-      count: String(count),
+      reference,
+      gender,
+      existingProfiles: liked.map((p) => p.title).join(', '),
+      count: String(rejected.length),
       ...collectionContext,
     }, language);
     if (err) { setError(err); setGenerating(false); return; }
     const parsed = result as { proposals: Array<{ title: string; desc: string }> };
-    const newProposals = (parsed.proposals || []).map(p => ({ ...p, status: 'pending' as const }));
-    // Keep liked + pending, replace rejected with new
-    const kept = proposals.filter(p => p.status !== 'rejected');
-    onChange({ ...data, proposals: [...kept, ...newProposals] });
+    const fresh = (parsed.proposals || []).map((p) => ({ ...p, status: 'pending' as const }));
+    const kept = proposals.filter((p) => p.status !== 'rejected');
+    onChange({ ...data, proposals: [...kept, ...fresh] });
     setGenerating(false);
   };
 
-  // Add a manually written profile
-  const addManualProfile = () => {
-    if (!manualTitle.trim() || !manualDesc.trim()) return;
-    const newProfile: ConsumerProfile = { title: manualTitle, desc: manualDesc, status: 'liked' };
-    onChange({ ...data, proposals: [...proposals, newProfile] });
-    setManualTitle('');
-    setManualDesc('');
-    setAddingManual(false);
+  // Reopen entry — clear proposals so the entry phase renders again.
+  // Existing data.gender + data.reference stay so the user starts from
+  // their previous state. After tweaking and clicking "generate" again,
+  // a fresh proposals array is produced.
+  const reopenEntry = () => {
+    onChange({ ...data, proposals: [] });
   };
 
-  return (
-    <div className="space-y-5">
-      {/* Generate button */}
-      <button
-        onClick={generateProposals}
-        disabled={generating || !(data.gender as string)}
-        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-        {hasProposals ? t.creative.generateNewSet : t.creative.generateConsumerProfiles}
-      </button>
+  const rejectedCount = proposals.filter((p) => p.status === 'rejected').length;
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+  // ENTRY phase — only when no proposals exist yet (or after reopen).
+  if (!hasProposals) {
+    return (
+      <div className="flex flex-col items-center py-10 md:py-14 max-w-2xl mx-auto">
+        <h2 className="text-[24px] md:text-[28px] font-medium text-carbon/85 tracking-[-0.02em] mb-10 text-center leading-tight">
+          {((t.creative as Record<string, string>).forWhomDesigning || 'para quién diseñamos {collection}').replace('{collection}', collectionContext.collectionName)}
+        </h2>
 
-      {/* Proposal cards */}
-      {hasProposals && (
-        <div className="space-y-4">
-          <p className="text-[11px] font-semibold tracking-[0.08em] uppercase text-carbon/40">
-            {likedProfiles.length} {t.creative.selectedCount} · {rejectedProfiles.length} {t.creative.rejectedCount} · {proposals.filter(p => p.status === 'pending').length} {t.creative.pendingCount}
-          </p>
-
-          {proposals.map((p, i) => (
-            <div
-              key={`${p.title}-${i}`}
-              className={`rounded-[16px] border transition-all ${
-                p.status === 'liked'
-                  ? 'border-carbon bg-carbon/[0.03]'
-                  : p.status === 'rejected'
-                  ? 'border-carbon/[0.06] bg-carbon/[0.01] opacity-40'
-                  : 'border-carbon/[0.08]'
+        <div className="flex flex-wrap justify-center items-center gap-3 mb-12">
+          {genderOptions.map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => onChange({ ...data, gender: opt.id })}
+              className={`px-7 py-3 rounded-full text-[14px] font-medium transition-all ${
+                gender === opt.id
+                  ? 'bg-carbon text-white'
+                  : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
               }`}
             >
-              <div className="p-5">
-                {/* Title */}
-                {editingIdx === i ? (
-                  <input
-                    type="text"
-                    value={p.title}
-                    onChange={(e) => updateProposal(i, { title: e.target.value })}
-                    className="w-full text-[14px] font-semibold text-carbon bg-transparent border-b border-carbon/20 focus:border-carbon focus:outline-none mb-3 pb-1"
-                    autoFocus
-                  />
-                ) : (
-                  <div className="text-[14px] font-semibold text-carbon mb-3">{p.title}</div>
-                )}
-
-                {/* Description */}
-                {editingIdx === i ? (
-                  <textarea
-                    value={p.desc}
-                    onChange={(e) => updateProposal(i, { desc: e.target.value })}
-                    className="w-full text-[13px] text-carbon/70 leading-relaxed bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none p-3 resize-none"
-                    rows={5}
-                  />
-                ) : (
-                  <div className="text-[13px] text-carbon/70 leading-relaxed">{p.desc}</div>
-                )}
-
-                {/* Action buttons — all rounded-full, wrap on narrow viewports */}
-                <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-carbon/[0.06]">
-                  <button
-                    onClick={() => updateProposal(i, { status: p.status === 'liked' ? 'pending' : 'liked' })}
-                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
-                      p.status === 'liked'
-                        ? 'bg-carbon text-white'
-                        : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-                    }`}
-                  >
-                    <ThumbsUp className="h-3 w-3" />
-                    {p.status === 'liked' ? t.creative.selectedAction : t.creative.selectAction}
-                  </button>
-                  <button
-                    onClick={() => updateProposal(i, { status: p.status === 'rejected' ? 'pending' : 'rejected' })}
-                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
-                      p.status === 'rejected'
-                        ? 'bg-red-50 text-red-600'
-                        : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-                    }`}
-                  >
-                    <ThumbsDown className="h-3 w-3" />
-                    {t.creative.rejectAction}
-                  </button>
-                  <button
-                    onClick={() => setEditingIdx(editingIdx === i ? null : i)}
-                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
-                      editingIdx === i
-                        ? 'bg-amber-50 text-amber-700'
-                        : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-                    }`}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    {editingIdx === i ? t.creative.doneAction : t.creative.editAction}
-                  </button>
-                  <button
-                    onClick={() => removeProposal(i)}
-                    className="ml-auto w-7 h-7 rounded-full flex items-center justify-center text-carbon/20 hover:text-red-500 hover:bg-red-50 transition-all"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Regenerate rejected + Add manual */}
-          <div className="flex flex-wrap gap-3 pt-2">
-            {rejectedProfiles.length > 0 && (
-              <button
-                onClick={regenerateRejected}
-                disabled={generating}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
-              >
-                {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                {t.creative.regenerateRejected} {rejectedProfiles.length} {t.creative.rejectedLabel}
-              </button>
-            )}
-            <button
-              onClick={() => setAddingManual(true)}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-dashed border-carbon/[0.15] text-carbon/40 hover:border-carbon/30 hover:text-carbon transition-all"
-            >
-              <Plus className="h-3 w-3" />
-              {t.creative.addProfileManually}
+              {opt.label.toLowerCase()}
             </button>
-          </div>
-
-          {/* Manual profile form */}
-          {addingManual && (
-            <div className="rounded-[16px] border border-carbon/[0.1] p-5 space-y-3">
-              <input
-                type="text"
-                value={manualTitle}
-                onChange={(e) => setManualTitle(e.target.value)}
-                placeholder={t.creative.profileNamePlaceholder}
-                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-                autoFocus
-              />
-              <textarea
-                value={manualDesc}
-                onChange={(e) => setManualDesc(e.target.value)}
-                placeholder={t.creative.profileDescPlaceholder}
-                className="w-full h-28 px-4 py-3 text-[13px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={addManualProfile}
-                  disabled={!manualTitle.trim() || !manualDesc.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30"
-                >
-                  {t.creative.addProfile}
-                </button>
-                <button
-                  onClick={() => { setAddingManual(false); setManualTitle(''); setManualDesc(''); }}
-                  className="inline-flex items-center px-5 py-2 rounded-full text-[13px] font-medium text-carbon/50 border border-carbon/[0.1] hover:border-carbon/20 transition-colors"
-                >
-                  {t.common.cancel}
-                </button>
-              </div>
-            </div>
-          )}
+          ))}
         </div>
-      )}
-    </div>
-  );
-}
 
-function ConsumerContent({ mode, data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
-  const t = useTranslation();
-  const { language } = useLanguage();
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+        <div className="w-full mb-10">
+          <p className="text-[12px] text-carbon/35 text-center mb-3">
+            {(t.creative as Record<string, string>).somethingMoreInMind || 'algo más en la cabeza? una referencia, un detalle, una palabra'}
+          </p>
+          <input
+            type="text"
+            value={reference}
+            onChange={(e) => onChange({ ...data, reference: e.target.value })}
+            className="w-full text-[15px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-2 placeholder:text-carbon/25 text-center"
+          />
+        </div>
 
-  const genderOptions = [
-    { id: 'women', label: t.creative.women },
-    { id: 'men', label: t.creative.men },
-    { id: 'unisex', label: t.creative.unisex },
-    { id: 'mixed', label: t.creative.mixed },
-  ] as const;
+        <button
+          onClick={generateProposals}
+          disabled={!gender || generating}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-[14px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {generating ? ((t.creative as Record<string, string>).generatingProposals || 'generando…') : ((t.creative as Record<string, string>).generateProposalsCta || 'generar propuestas')}
+        </button>
 
-  /* ── Shared: Gender selector card content ── */
-  const GenderSelector = () => (
-    <>
-      <div className="flex flex-wrap gap-2">
-        {genderOptions.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => onChange({ ...data, gender: opt.id })}
-            className={`px-4 py-2.5 rounded-full text-[13px] font-medium transition-all ${
-              (data.gender as string) === opt.id
-                ? 'bg-carbon text-white'
-                : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+        {error && <p className="text-xs text-red-600 mt-4">{error}</p>}
+      </div>
+    );
+  }
+
+  // PROPOSAL phase — show params breadcrumb + cards + refine.
+  return (
+    <div className="space-y-6">
+      {/* Breadcrumb — current params, click to reopen entry */}
+      <div className="flex items-center justify-center flex-wrap gap-2 text-[12px] text-carbon/45">
+        {gender && (
+          <button onClick={reopenEntry} className="hover:text-carbon transition-colors lowercase">
+            {genderOptions.find((o) => o.id === gender)?.label}
+          </button>
+        )}
+        {reference && (
+          <>
+            <span>·</span>
+            <button onClick={reopenEntry} className="hover:text-carbon transition-colors">{reference}</button>
+          </>
+        )}
+        <span>·</span>
+        <button onClick={reopenEntry} className="hover:text-carbon transition-colors underline-offset-2 hover:underline">
+          {(t.creative as Record<string, string>).modifyAction || 'modificar'}
+        </button>
+      </div>
+
+      {/* Proposal cards */}
+      <div className="space-y-4">
+        {proposals.map((p, i) => (
+          <div
+            key={`${p.title}-${i}`}
+            className={`rounded-[16px] border transition-all ${
+              p.status === 'liked'
+                ? 'border-carbon bg-carbon/[0.03]'
+                : p.status === 'rejected'
+                ? 'border-carbon/[0.06] bg-carbon/[0.01] opacity-40'
+                : 'border-carbon/[0.08]'
             }`}
           >
-            {opt.label}
-          </button>
+            <div className="p-5">
+              {editingIdx === i ? (
+                <input
+                  type="text"
+                  value={p.title}
+                  onChange={(e) => updateProposal(i, { title: e.target.value })}
+                  className="w-full text-[14px] font-semibold text-carbon bg-transparent border-b border-carbon/20 focus:border-carbon focus:outline-none mb-3 pb-1"
+                  autoFocus
+                />
+              ) : (
+                <div className="text-[14px] font-semibold text-carbon mb-3">{p.title}</div>
+              )}
+
+              {editingIdx === i ? (
+                <textarea
+                  value={p.desc}
+                  onChange={(e) => updateProposal(i, { desc: e.target.value })}
+                  className="w-full text-[13px] text-carbon/70 leading-relaxed bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none p-3 resize-none"
+                  rows={5}
+                />
+              ) : (
+                <div className="text-[13px] text-carbon/70 leading-relaxed">{p.desc}</div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-carbon/[0.06]">
+                <button
+                  onClick={() => updateProposal(i, { status: p.status === 'liked' ? 'pending' : 'liked' })}
+                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
+                    p.status === 'liked'
+                      ? 'bg-carbon text-white'
+                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+                  }`}
+                >
+                  <ThumbsUp className="h-3 w-3" />
+                  {p.status === 'liked' ? t.creative.selectedAction : t.creative.selectAction}
+                </button>
+                <button
+                  onClick={() => updateProposal(i, { status: p.status === 'rejected' ? 'pending' : 'rejected' })}
+                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
+                    p.status === 'rejected'
+                      ? 'bg-red-50 text-red-600'
+                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+                  }`}
+                >
+                  <ThumbsDown className="h-3 w-3" />
+                  {t.creative.rejectAction}
+                </button>
+                <button
+                  onClick={() => setEditingIdx(editingIdx === i ? null : i)}
+                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
+                    editingIdx === i
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+                  }`}
+                >
+                  <Pencil className="h-3 w-3" />
+                  {editingIdx === i ? t.creative.doneAction : t.creative.editAction}
+                </button>
+                <button
+                  onClick={() => removeProposal(i)}
+                  className="ml-auto w-7 h-7 rounded-full flex items-center justify-center text-carbon/20 hover:text-red-500 hover:bg-red-50 transition-all"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
-      {(data.gender as string) === 'mixed' && (
-        <p className="mt-3 text-[13px] text-carbon/45 leading-relaxed">{t.creative.mixedDesc}</p>
-      )}
-      {(data.gender as string) === 'unisex' && (
-        <p className="mt-3 text-[13px] text-carbon/45 leading-relaxed">{t.creative.unisexDesc}</p>
-      )}
-    </>
-  );
 
-  return (
-    <>
-      {/* ═══ FREE MODE — left stack (3 small cards) + right tall card ═══ */}
-      {mode === 'free' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
-          {/* Left column: 3 stacked cards sharing the height */}
-          <div className="flex flex-col gap-5">
-            <DecisionCard title={t.creative.collectionTarget}>
-              <GenderSelector />
-            </DecisionCard>
-
-            <DecisionCard title={t.creative.ageRange}>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  value={(data.ageMin as string) || ''}
-                  onChange={(e) => onChange({ ...data, ageMin: e.target.value })}
-                  placeholder={(t.common as Record<string, string>)?.min || "Min"}
-                  className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-                />
-                <span className="text-carbon/20 text-sm">—</span>
-                <input
-                  type="number"
-                  value={(data.ageMax as string) || ''}
-                  onChange={(e) => onChange({ ...data, ageMax: e.target.value })}
-                  placeholder={(t.common as Record<string, string>)?.max || "Max"}
-                  className="flex-1 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-                />
-              </div>
-            </DecisionCard>
-
-            <DecisionCard title={t.creative.keyMarkets}>
-              <input
-                type="text"
-                value={(data.markets as string) || ''}
-                onChange={(e) => onChange({ ...data, markets: e.target.value })}
-                placeholder="e.g. Southern Europe, Urban professionals, Gen Z..."
-                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-              />
-            </DecisionCard>
-          </div>
-
-          {/* Right: Consumer Profile — fills available height */}
-          <DecisionCard title={t.creative.targetConsumerProfile} span={2} className="flex flex-col">
-            <textarea
-              value={(data.profile as string) || ''}
-              onChange={(e) => onChange({ ...data, profile: e.target.value })}
-              placeholder={t.creative.targetConsumerPlaceholder}
-              className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
-            />
-          </DecisionCard>
+      {/* Refine — only when there are rejected slots to replace */}
+      {rejectedCount > 0 && (
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={regenerateRejected}
+            disabled={generating}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
+          >
+            {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {t.creative.regenerateRejected} {rejectedCount} {t.creative.rejectedLabel}
+          </button>
         </div>
       )}
 
-      {/* ═══ ASSISTED MODE — left stack + right tall card ═══ */}
-      {mode === 'assisted' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
-          {/* Left column: Gender + Direction Keywords stacked */}
-          <div className="flex flex-col gap-5">
-            <DecisionCard title={t.creative.collectionTarget}>
-              <GenderSelector />
-            </DecisionCard>
-
-            <DecisionCard title={t.creative.directionKeywords} className="flex-1 flex flex-col">
-              <textarea
-                value={(data.keywords as string) || ''}
-                onChange={(e) => onChange({ ...data, keywords: e.target.value })}
-                placeholder={(t.creative as Record<string, string>)?.consumerDirectionPlaceholder || "Give direction"}
-                className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30"
-              />
-              <div className="mt-4 flex items-center gap-3 shrink-0">
-                <button
-                  onClick={async () => {
-                    setGenerating(true);
-                    setError(null);
-                    const { result, error: err } = await generateCreative('consumer-assisted', {
-                      keywords: (data.keywords as string) || '',
-                      gender: (data.gender as string) || '',
-                      ...collectionContext,
-                    }, language);
-                    if (err) { setError(err); setGenerating(false); return; }
-                    onChange({ ...data, profile: result as string });
-                    setGenerating(false);
-                  }}
-                  disabled={generating || !(data.keywords as string)?.trim() || !(data.gender as string)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                  {t.creative.expandWithAI}
-                </button>
-                {error && <p className="text-xs text-red-600">{error}</p>}
-              </div>
-            </DecisionCard>
-          </div>
-
-          {/* Right: AI Generated Profile — fills available height */}
-          {(data.profile as string) ? (
-            <DecisionCard
-              title={t.creative.aiGeneratedProfile}
-              description={t.creative.editable}
-              span={2}
-              className="flex flex-col"
-            >
-              <textarea
-                value={(data.profile as string) || ''}
-                onChange={(e) => onChange({ ...data, profile: e.target.value })}
-                className="w-full flex-1 min-h-0 px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed"
-              />
-            </DecisionCard>
-          ) : (
-            <DecisionCard span={2} className="flex items-center justify-center">
-              <div className="text-center py-12">
-                <Sparkles className="h-8 w-8 text-carbon/[0.08] mx-auto mb-4" />
-                <p className="text-[14px] text-carbon/30 tracking-[-0.02em]">
-                  {t.creative.aiGeneratedProfile}
-                </p>
-                <p className="text-[13px] text-carbon/20 mt-1">
-                  Fill in direction keywords and generate
-                </p>
-              </div>
-            </DecisionCard>
-          )}
-        </div>
-      )}
-
-      {/* ═══ AI MODE — left (gender + reference) + right proposals ═══ */}
-      {mode === 'ai' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-[calc((100vh-380px)*0.8)]">
-          <div className="flex flex-col gap-5">
-            <DecisionCard title={t.creative.collectionTarget}>
-              <GenderSelector />
-            </DecisionCard>
-
-            <DecisionCard
-              title={t.creative.minimalReference}
-              pill="Optional"
-              pillVariant="muted"
-            >
-              <input
-                type="text"
-                value={(data.reference as string) || ''}
-                onChange={(e) => onChange({ ...data, reference: e.target.value })}
-                placeholder="e.g. 'preppy 90s JFK' or 'streetwear enthusiasts'..."
-                className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
-              />
-            </DecisionCard>
-          </div>
-
-          <DecisionCard span={2} className="h-full">
-            <ConsumerProposalFlow
-              data={data}
-              onChange={onChange}
-              collectionContext={collectionContext}
-              generating={generating}
-              setGenerating={setGenerating}
-              error={error}
-              setError={setError}
-            />
-          </DecisionCard>
-        </div>
-      )}
-    </>
+      {error && <p className="text-xs text-red-600 text-center">{error}</p>}
+    </div>
   );
 }
 
@@ -3268,7 +3078,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
 
   // Hide mode pills for blocks with their own flow (moodboard, brand-dna, all research blocks)
   const researchBlocks = ['global-trends', 'deep-dive', 'live-signals', 'competitors'];
-  const hideModePills = expandedBlock === 'moodboard' || expandedBlock === 'brand-dna' || researchBlocks.includes(expandedBlock || '');
+  const hideModePills = expandedBlock === 'moodboard' || expandedBlock === 'consumer' || expandedBlock === 'brand-dna' || researchBlocks.includes(expandedBlock || '');
 
   if (persistLoading) {
     return (
@@ -3364,7 +3174,7 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
               const block = found.block;
               const resolvedStepId = found.stepId;
               const state = getBlockState(block.id);
-              const hideModePillsClean = block.id === 'moodboard';
+              const hideModePillsClean = block.id === 'moodboard' || block.id === 'consumer';
               return (
                 <div>
                   {/* Mode selector — centered below title */}

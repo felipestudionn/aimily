@@ -642,6 +642,11 @@ export const fr: Dictionary = {
     // Consommateur
     consumerDefinition: 'Définition du consommateur',
     consumerDesc: 'On définit ton client ensemble.',
+    forWhomDesigning: 'pour qui dessinons-nous {collection}',
+    somethingMoreInMind: 'autre chose en tête ? une référence, un détail, un mot',
+    generateProposalsCta: 'générer des propositions',
+    generatingProposals: 'génération…',
+    modifyAction: 'modifier',
     // Vibe
     collectionVibe: 'Esprit de la collection',
     vibeDesc: 'L\'esprit de la collection.',

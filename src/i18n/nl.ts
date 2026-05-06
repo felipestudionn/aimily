@@ -642,6 +642,11 @@ export const nl: Dictionary = {
     // Consumer
     consumerDefinition: 'Doelgroepdefinitie',
     consumerDesc: 'We schetsen samen jouw klant.',
+    forWhomDesigning: 'voor wie ontwerpen we {collection}',
+    somethingMoreInMind: 'nog iets in je hoofd? een referentie, een detail, een woord',
+    generateProposalsCta: 'voorstellen genereren',
+    generatingProposals: 'genereren…',
+    modifyAction: 'aanpassen',
     // Vibe
     collectionVibe: 'Collectie-vibe',
     vibeDesc: 'De geest van de collectie.',

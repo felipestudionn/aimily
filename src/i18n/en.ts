@@ -641,6 +641,11 @@ export const en = {
     // Consumer
     consumerDefinition: 'Consumer Definition',
     consumerDesc: 'We sketch your customer together.',
+    forWhomDesigning: 'who are we designing {collection} for',
+    somethingMoreInMind: 'anything else in mind? a reference, a detail, a word',
+    generateProposalsCta: 'generate proposals',
+    generatingProposals: 'generating…',
+    modifyAction: 'modify',
     // Vibe
     collectionVibe: 'Collection Vibe',
     vibeDesc: 'The spirit of the collection.',

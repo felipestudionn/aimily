@@ -642,6 +642,11 @@ export const de: Dictionary = {
     // Consumer
     consumerDefinition: 'Zielgruppendefinition',
     consumerDesc: 'Wir skizzieren deine Kund:in gemeinsam.',
+    forWhomDesigning: 'für wen designen wir {collection}',
+    somethingMoreInMind: 'noch etwas im Kopf? eine Referenz, ein Detail, ein Wort',
+    generateProposalsCta: 'Vorschläge generieren',
+    generatingProposals: 'generieren…',
+    modifyAction: 'ändern',
     // Vibe
     collectionVibe: 'Kollektion-Vibe',
     vibeDesc: 'Der Geist der Kollektion.',
