@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth';
 import {
   getIntelligence,
-  recordDecision,
+  recordDecisions,
   compilePromptContext,
   type RecordDecisionParams,
 } from '@/lib/collection-intelligence';
@@ -77,7 +77,11 @@ export async function POST(req: NextRequest) {
     if (!ownership.authorized) return ownership.error;
   }
 
-  await Promise.all(decisions.map(recordDecision));
+  // Sequential by design (recordDecisions iterates) — Promise.all would race
+  // the read+supersede+insert path of two same-key decisions and either drop
+  // a version or trip the partial unique index on (plan,domain,subdomain,key)
+  // WHERE is_current=true. See src/lib/collection-intelligence.ts:160-170.
+  await recordDecisions(decisions);
 
   return NextResponse.json({ recorded: decisions.length });
 }

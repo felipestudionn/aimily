@@ -330,11 +330,9 @@ export async function compilePromptContext(
   ctx.brand_name = get('creative', 'identity', 'brand_name') || get('creative', 'identity', 'collection_name') || '';
   ctx.collection_vibe = get('creative', 'identity', 'collection_vibe') || '';
   ctx.reference_brands = get('creative', 'inspiration', 'reference_brands') || [];
-  ctx.anti_references = get('creative', 'inspiration', 'anti_references') || [];
   ctx.selected_trends = get('creative', 'inspiration', 'trends_selected') || [];
   ctx.moodboard_summary = get('creative', 'inspiration', 'moodboard_analysis') || '';
   ctx.visual_direction = get('creative', 'identity', 'visual_direction') || '';
-  ctx.photography_style = get('creative', 'identity', 'photography_style') || '';
 
   // Consumer
   ctx.consumer_demographics = get('creative', 'target', 'demographics') || '';
@@ -344,6 +342,10 @@ export async function compilePromptContext(
   // Voice
   ctx.brand_voice_personality = get('marketing', 'voice', 'personality') || '';
   ctx.brand_voice_tone = get('marketing', 'voice', 'tone') || '';
+  /* brand_values: consumed by marketing-prompts.ts:48,183 as {{brand_values}}
+     but no UI currently writes marketing.voice.values. Kept until either a
+     "values" field ships in Brand Identity OR the prompts drop the
+     placeholder. Renders empty today. */
   const valuesRaw = get('marketing', 'voice', 'values');
   ctx.brand_values = Array.isArray(valuesRaw)
     ? (valuesRaw as string[]).join(', ')
@@ -353,7 +355,7 @@ export async function compilePromptContext(
   const vocabulary = get('marketing', 'voice', 'vocabulary');
   ctx.brand_voice_keywords = Array.isArray(vocabulary) ? (vocabulary as string[]).join(', ') : '';
   ctx.brand_voice_donot = Array.isArray(dontRules) ? (dontRules as string[]).join(', ') : '';
-  /* Build a do_rules alias too — referenced by some downstream prompt
+  /* brand_voice_do alias — referenced by some downstream prompt
      templates as `brand_voice_do`. */
   ctx.brand_voice_do = Array.isArray(doRules) ? (doRules as string[]).join(', ') : '';
   ctx.brand_voice_summary = [
@@ -362,20 +364,12 @@ export async function compilePromptContext(
     ctx.brand_values ? `Values: ${ctx.brand_values}` : '',
   ].filter(Boolean).join('. ');
 
-  // Design
-  ctx.material_signatures = get('design', 'materials', 'signature_materials') || [];
+  // Design / color (the wider design.* aliases were removed 2026-05-06 as
+  // confirmed-zombie reads — they had zero consumers in any prompt template.
+  // If/when Block 3 starts writing design.* decisions, the for-loop above
+  // already exposes them as ctx['design.subdomain.key'] and ctx[<key>] —
+  // no convenience alias needed unless a prompt template asks for one.)
   ctx.color_palette = get('creative', 'color', 'primary_palette') || [];
-  ctx.silhouette_language = get('design', 'silhouette', 'language') || '';
-  ctx.construction_techniques = get('design', 'construction', 'techniques') || [];
-
-  // Merchandising
-  ctx.price_positioning = get('merchandising', 'pricing', 'positioning') || '';
-  ctx.channel_strategy = get('merchandising', 'channels', 'primary_channel') || '';
-  ctx.dominant_categories = get('merchandising', 'structure', 'families_selected') || [];
-
-  // Marketing visual
-  ctx.model_casting_brief = get('marketing', 'visual', 'model_casting_brief') || '';
-  ctx.still_life_direction = get('marketing', 'visual', 'still_life_direction') || '';
 
   // Stories
   ctx.story_arcs = get('marketing', 'stories', 'story_arcs') || [];
