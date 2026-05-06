@@ -960,52 +960,13 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setUploadProgress('');
   };
 
-  // Pending OAuth marker. When the Pinterest popup is open we watch for
-  // either (a) a postMessage from the callback or (b) the parent window
-  // regaining focus (popup closed by user OR by its own script).
-  // Whichever fires first triggers loadPinterestBoards exactly once.
-  const pinterestPendingRef = useRef(false);
-
-  // Load boards. Self-guards against concurrent invocations so racing
-  // signals (postMessage + focus) can't double-fetch or double-toggle the
-  // spinner.
-  const loadingRef = useRef(false);
-  const loadPinterestBoards = async () => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
-    setPinterestLoading(true);
-    setPinterestError('');
-    try {
-      // Hard timeout so a hung Pinterest API never freezes the UI.
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch('/api/pinterest/boards', { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (res.ok) {
-        const boardsData = await res.json();
-        setBoards(boardsData.items || []);
-        setPinterestStep('boards');
-      } else if (res.status === 401) {
-        setPinterestError('Pinterest session expired — connect again.');
-      } else {
-        setPinterestError('Failed to load boards from Pinterest');
-      }
-    } catch {
-      setPinterestError('Failed to load boards from Pinterest');
-    } finally {
-      setPinterestLoading(false);
-      loadingRef.current = false;
-    }
-  };
-
-  // postMessage fast path: fires immediately when callback page can still
-  // see window.opener.
+  // Listen for Pinterest OAuth popup callback — original behavior, restored.
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      if (event.data?.type === 'pinterest_connected' && pinterestPendingRef.current) {
-        pinterestPendingRef.current = false;
-        loadPinterestBoards();
+      if (event.data?.type === 'pinterest_connected') {
+        // OAuth succeeded — reload boards.
+        handlePinterestConnect();
       }
     };
     window.addEventListener('message', handleMessage);
@@ -1013,25 +974,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Focus fallback: when the parent window regains focus after the popup
-  // closes (browser may strip window.opener so postMessage never arrives),
-  // try loading boards. Guarded by pinterestPendingRef so unrelated focus
-  // events do nothing.
-  useEffect(() => {
-    const handleFocus = () => {
-      if (!pinterestPendingRef.current) return;
-      // Wait a beat for the cookie to be readable on the upcoming fetch.
-      pinterestPendingRef.current = false;
-      setTimeout(() => loadPinterestBoards(), 300);
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Pinterest: connect or load boards. If not authenticated, opens OAuth in
-  // a popup and arms pinterestPendingRef — whichever signal fires first
-  // (postMessage or focus) triggers loadPinterestBoards.
+  // Pinterest: connect or load boards.
   const handlePinterestConnect = async () => {
     setPinterestLoading(true);
     setPinterestError('');
@@ -1043,7 +986,6 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
         const scope = 'boards:read,pins:read';
         const state = Math.random().toString(36).substring(2, 15);
         const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
-        pinterestPendingRef.current = true;
         window.open(url, '_blank', 'width=600,height=700');
         setPinterestLoading(false);
         return;
