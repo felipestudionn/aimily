@@ -2921,7 +2921,10 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     persistData((prev) => ({ ...prev, activeStep: step }));
   }, [persistData]);
 
-  // Auto-set the correct step when a block param is provided
+  // Sync expandedBlock with blockParam (URL → state). When blockParam is
+  // set, we expand it and select the right step. When it goes null (e.g.
+  // X-close clears the URL), we collapse to grid. Without the else-branch,
+  // closing a sidebar block left expandedBlock stale → stuck-open view.
   useEffect(() => {
     if (blockParam) {
       setExpandedBlock(blockParam);
@@ -2934,6 +2937,8 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
       if (stepIdx !== undefined && activeStep !== stepIdx) {
         setActiveStep(stepIdx);
       }
+    } else {
+      setExpandedBlock(null);
     }
   }, [blockParam]);
 
@@ -3007,11 +3012,51 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
     setTimeout(() => setIsAnimating(false), 400);
   }, []);
 
+  // When the user is in sidebar mode (blockParam set) and either confirms
+  // or closes a block, we need to navigate the URL — not just toggle local
+  // state. Otherwise blockParam in the URL drifts from expandedBlock and
+  // the page renders an incoherent hybrid (header from blockParam, body
+  // from expandedBlock=null grid). See onboarding lifecycle audit · Sesión 1
+  // bug found by Felipe driving AZUR through the natural flow.
   const handleCollapse = useCallback(() => {
     setIsAnimating(true);
-    setExpandedBlock(null);
+    if (blockParam) {
+      // Sidebar mode: clear blockParam from URL so the route matches the view.
+      router.push(`/collection/${collectionId}/creative`, { scroll: false });
+      // expandedBlock will be cleared by the blockParam effect (line 2925).
+    } else {
+      setExpandedBlock(null);
+    }
     setTimeout(() => setIsAnimating(false), 400);
-  }, []);
+  }, [blockParam, collectionId, router]);
+
+  // Sidebar order for creative items, mirrors src/components/wizard/WizardSidebar.tsx
+  // creative section. Used to advance to the next block after a confirm
+  // when the user came from the sidebar (blockParam set). When the last
+  // creative item (synthesis) is confirmed, the natural progression is
+  // Block 2 Merchandising → first item is `scenarios` (Buying Strategy).
+  const advanceToNextSidebarBlock = useCallback((currentBlockId: string) => {
+    const NEXT: Record<string, string> = {
+      consumer: 'moodboard',
+      moodboard: 'research',
+      research: 'brand-dna',
+      'brand-dna': 'synthesis',
+    };
+    setIsAnimating(true);
+    if (currentBlockId === 'synthesis') {
+      router.push(`/collection/${collectionId}/merchandising?block=scenarios`);
+      return;
+    }
+    const nextBlockId = NEXT[currentBlockId];
+    if (nextBlockId) {
+      router.push(`/collection/${collectionId}/creative?block=${nextBlockId}`, { scroll: false });
+    } else {
+      // currentBlockId is not in the sidebar (e.g. 'vibe' which is reachable
+      // only via direct grid expansion). Fall back to legacy collapse.
+      setExpandedBlock(null);
+    }
+    setTimeout(() => setIsAnimating(false), 400);
+  }, [collectionId, router]);
 
   const handleConfirm = useCallback((blockId: string) => {
     // For consumer block: if profile text exists but no proposals, convert it
@@ -3033,13 +3078,15 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
             proposals: [{ title, desc: profile, status: 'liked' }],
           },
         });
-        handleCollapse();
+        if (blockParam) advanceToNextSidebarBlock(blockId);
+        else handleCollapse();
         return;
       }
     }
     updateBlockData(blockId, { confirmed: true });
-    handleCollapse();
-  }, [updateBlockData, handleCollapse, blockData, collectionContext, t.creative.targetConsumer]);
+    if (blockParam) advanceToNextSidebarBlock(blockId);
+    else handleCollapse();
+  }, [updateBlockData, handleCollapse, advanceToNextSidebarBlock, blockData, collectionContext, t.creative.targetConsumer, blockParam]);
 
   // Hide mode pills for blocks with their own flow (moodboard, brand-dna, all research blocks)
   const researchBlocks = ['global-trends', 'deep-dive', 'live-signals', 'competitors'];
