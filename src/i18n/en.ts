@@ -648,6 +648,8 @@ export const en = {
     modifyAction: 'modify',
     readingMoodboard: 'reading your moodboard…',
     basedOnMoodboard: 'based on your moodboard — edit anything',
+    noMoodboardSignal: "I can't read a clear signal from the moodboard yet — start yourself",
+    moodboardReadFailed: "couldn't read your moodboard — start yourself",
     // Vibe
     collectionVibe: 'Collection Vibe',
     vibeDesc: 'The spirit of the collection.',

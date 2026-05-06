@@ -649,6 +649,8 @@ export const nl: Dictionary = {
     modifyAction: 'aanpassen',
     readingMoodboard: 'ik lees je moodboard…',
     basedOnMoodboard: 'gebaseerd op je moodboard — bewerk wat je wilt',
+    noMoodboardSignal: 'nog geen duidelijk signaal van je moodboard — begin jij',
+    moodboardReadFailed: 'kon je moodboard niet lezen — begin jij',
     // Vibe
     collectionVibe: 'Collectie-vibe',
     vibeDesc: 'De geest van de collectie.',

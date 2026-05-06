@@ -639,6 +639,8 @@ export const sv: Dictionary = {
     modifyAction: 'ändra',
     readingMoodboard: 'läser ditt moodboard…',
     basedOnMoodboard: 'baserat på ditt moodboard — redigera vad du vill',
+    noMoodboardSignal: 'läser ännu ingen tydlig signal från moodboardet — börja du',
+    moodboardReadFailed: 'kunde inte läsa ditt moodboard — börja du',
     collectionVibe: 'Kollektionskänsla',
     vibeDesc: 'Kollektionens anda.',
     brandDNA: 'Varumärkes-DNA',

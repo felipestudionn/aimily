@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useMemo, type ReactNode, type ComponentType } from 'react';
-import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useState, useCallback, useMemo, useEffect, type ReactNode, type ComponentType } from 'react';
+import { useRouter, useParams, usePathname, useSearchParams } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { WizardSidebar } from '@/components/wizard/WizardSidebar';
 import { Navbar } from '@/components/layout/navbar';
@@ -51,6 +51,7 @@ export function WorkspaceShell({
 }: WorkspaceShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [displayName, setDisplayName] = useState(collectionName);
@@ -70,6 +71,23 @@ export function WorkspaceShell({
 
   const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
   const basePath = `/collection/${collectionId}`;
+
+  /* When inside a workspace, follow URL changes so the sidebar highlight
+     stays in sync with `?block=` updates done via router.push/replace.
+     Without this, anything that updates the URL without going through
+     navigateToWorkspace (e.g. CreativeBrandPage advancing to the next
+     sidebar block on confirm) leaves viewState.route stale → sidebar
+     highlights the previous block. */
+  useEffect(() => {
+    if (viewState.type !== 'workspace') return;
+    if (!pathname) return;
+    const wsBase = pathname.replace(`${basePath}/`, '');
+    if (!wsBase || wsBase === pathname) return;
+    const qs = searchParams?.toString() || '';
+    const currentRoute = qs ? `${wsBase}?${qs}` : wsBase;
+    if (currentRoute === viewState.route) return;
+    setViewState((prev) => prev.type === 'workspace' ? { ...prev, route: currentRoute } : prev);
+  }, [pathname, searchParams, viewState, basePath]);
 
   /* ── Navigate to a workspace (state-based, no page navigation) ── */
   const navigateToWorkspace = useCallback((workspaceId: string, route: string) => {

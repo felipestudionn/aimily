@@ -305,6 +305,11 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   const [error, setError] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [suggesting, setSuggesting] = useState(false);
+  // 'idle' until we try; 'success' when aimily proposed something; 'empty'
+  // when the endpoint succeeded but had nothing to propose; 'error' on
+  // network/server failure. Used to keep the caption visible (so the user
+  // never feels left in limbo after a fast/silent failure).
+  const [suggestionStatus, setSuggestionStatus] = useState<'idle' | 'success' | 'empty' | 'error'>('idle');
 
   // Defensive: data can be undefined when the workspace row was reset to
   // a partial structure (e.g. {mode, confirmed} without `data`). Spreading
@@ -330,30 +335,50 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
     if (!collectionPlanId) return;
     suggestionFetchedRef.current = true;
 
+    let mounted = true;
+    const minSpinnerMs = 400; // never flash the spinner for less than this
+    const startedAt = Date.now();
+
     (async () => {
       setSuggesting(true);
+      let outcome: 'success' | 'empty' | 'error' = 'error';
       try {
         const res = await fetch('/api/ai/consumer-suggest-input', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ collectionPlanId, language }),
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          outcome = 'error';
+          return;
+        }
         const out = await res.json() as { gender: string | null; reference: string };
         if (out.gender || out.reference) {
-          onChange({
-            ...data,
-            gender: out.gender || gender,
-            reference: out.reference || reference,
-            _suggestionFromMoodboard: true,
-          });
+          if (mounted) {
+            onChange({
+              ...data,
+              gender: out.gender || gender,
+              reference: out.reference || reference,
+              _suggestionFromMoodboard: true,
+            });
+          }
+          outcome = 'success';
+        } else {
+          outcome = 'empty';
         }
       } catch {
-        // Silent — entry phase still works without the suggestion.
+        outcome = 'error';
       } finally {
-        setSuggesting(false);
+        const elapsed = Date.now() - startedAt;
+        const wait = Math.max(0, minSpinnerMs - elapsed);
+        setTimeout(() => {
+          if (!mounted) return;
+          setSuggesting(false);
+          setSuggestionStatus(outcome);
+        }, wait);
       }
     })();
+    return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionPlanId]);
 
@@ -436,6 +461,14 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
         ) : suggestionFromMoodboard ? (
           <p className="text-[12px] text-carbon/35 mb-10">
             {(t.creative as Record<string, string>).basedOnMoodboard || 'basado en tu moodboard — edita lo que quieras'}
+          </p>
+        ) : suggestionStatus === 'empty' ? (
+          <p className="text-[12px] text-carbon/30 mb-10 italic">
+            {(t.creative as Record<string, string>).noMoodboardSignal || 'aún no leo señal clara del moodboard — empieza tú'}
+          </p>
+        ) : suggestionStatus === 'error' ? (
+          <p className="text-[12px] text-carbon/30 mb-10 italic">
+            {(t.creative as Record<string, string>).moodboardReadFailed || 'no he podido leer tu moodboard — empieza tú'}
           </p>
         ) : (
           <div className="mb-10" />

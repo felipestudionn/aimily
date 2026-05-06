@@ -57,6 +57,10 @@ export async function POST(req: NextRequest) {
 
     // No moodboard yet → no suggestion. Caller will render the entry empty.
     if (!ctx.moodboard || ctx.moodboard.trim().length < 20) {
+      console.log('[ConsumerSuggestInput] empty:', {
+        collectionPlanId,
+        moodboardLength: ctx.moodboard?.length || 0,
+      });
       const empty: SuggestionResponse = { gender: null, reference: '' };
       return NextResponse.json(empty);
     }
@@ -95,6 +99,14 @@ Return JSON:
       gender: data.gender && allowed.includes(data.gender) ? data.gender : null,
       reference: typeof data.reference === 'string' ? data.reference.trim() : '',
     };
+
+    console.log('[ConsumerSuggestInput] result:', {
+      collectionPlanId,
+      moodboardLength: ctx.moodboard.length,
+      llmGender: data.gender,
+      sanitizedGender: out.gender,
+      referenceLength: out.reference.length,
+    });
 
     return NextResponse.json(out);
   } catch (error) {

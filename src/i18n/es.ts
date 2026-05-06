@@ -650,6 +650,8 @@ export const es: Dictionary = {
     modifyAction: 'modificar',
     readingMoodboard: 'leyendo tu moodboard…',
     basedOnMoodboard: 'basado en tu moodboard — edita lo que quieras',
+    noMoodboardSignal: 'aún no leo señal clara del moodboard — empieza tú',
+    moodboardReadFailed: 'no he podido leer tu moodboard — empieza tú',
     // Vibe
     collectionVibe: 'Vibe de la Colección',
     vibeDesc: 'El espíritu de la colección.',
