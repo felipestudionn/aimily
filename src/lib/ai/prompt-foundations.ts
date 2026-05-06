@@ -160,9 +160,6 @@ export function buildInheritedContext(input: Record<string, string>): string {
   if (input.creativeSynthesis) {
     parts.push(`CREATIVE SYNTHESIS (Block 1 validated output):\n${input.creativeSynthesis}`);
   }
-  if (input.briefContext) {
-    parts.push(`ORIGINAL BRIEF (user's own words):\n${input.briefContext}`);
-  }
   if (input.existingSkus) {
     parts.push(`EXISTING SKUs IN COLLECTION:\n${input.existingSkus}`);
   }

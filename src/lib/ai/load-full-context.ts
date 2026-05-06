@@ -189,22 +189,10 @@ export async function loadFullContext(collectionPlanId: string): Promise<Record<
     if (synthParts.length) ctx.creativeSynthesis = synthParts.join('\n');
   }
 
-  // 4. Brief answers — the original user input that started everything
-  const { data: briefRow } = await supabaseAdmin
-    .from('collection_workspace_data')
-    .select('data')
-    .eq('collection_plan_id', collectionPlanId)
-    .eq('workspace', 'brief')
-    .single();
-
-  if (briefRow?.data) {
-    const briefData = briefRow.data as Record<string, unknown>;
-    const answers = (briefData.answers || briefData.understood || {}) as Record<string, string>;
-    const answerParts = Object.entries(answers)
-      .filter(([, v]) => v && typeof v === 'string' && v.trim())
-      .map(([k, v]) => `${k}: ${v}`);
-    if (answerParts.length) ctx.briefContext = answerParts.join('\n');
-  }
+  // (Brief workspace read removed 2026-05-06 alongside the brief endpoints —
+  // no writer existed any more, so this block produced empty briefContext for
+  // every collection. The canonical first input is now /new-collection +
+  // walking the cube; the user's own words flow into the slot data directly.)
 
   return ctx;
 }

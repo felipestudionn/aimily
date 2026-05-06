@@ -714,7 +714,7 @@ const FLOWS: KnowledgeEntry[] = [
     id: 'flow-cis-everywhere',
     category: 'flow',
     title: 'Flow — How CIS reads in every AI prompt',
-    short: 'When you click any AI button, the server loads your full collection context: CIS facts + creative workspace + brief + plan. The AI never works blind.',
+    short: 'When you click any AI button, the server loads your full collection context: CIS facts + creative workspace + plan. The AI never works blind.',
     the_logic:
       'Frontend never decides what the AI sees. The server loads the context for every AI endpoint via loadFullContext(). This is why the merchandising AI knows your consumer (from 01.1), the marketing copy AI knows your brand voice (from 01.4), the editorial image AI knows your moodboard. You captured it once; every later AI call benefits.',
     related: ['cis', 'aimily-overview'],
