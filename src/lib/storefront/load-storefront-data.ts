@@ -309,6 +309,33 @@ async function loadSkus(
     }
   }
 
+  // Per-SKU AI-generated copy (product_description). The PDP description
+  // resolution chain is:
+  //   1. product_copy.content.description (most recent, any non-archived status)
+  //   2. fall back to collection_skus.notes
+  //   3. empty string
+  // The content column stores JSON.stringify({headline, description, features[], care})
+  // — we parse and pull `description`. Failures fall back to notes silently.
+  const { data: copyRows } = await supabaseAdmin
+    .from('product_copy')
+    .select('sku_id, content, status, updated_at')
+    .eq('collection_plan_id', collectionPlanId)
+    .eq('copy_type', 'product_description')
+    .neq('status', 'archived')
+    .order('updated_at', { ascending: false });
+
+  const copyBySku = new Map<string, { headline?: string; description?: string }>();
+  for (const c of (copyRows ?? [])) {
+    const skuId = c.sku_id as string | null;
+    if (!skuId || copyBySku.has(skuId)) continue;  // first wins (latest, since DESC ordered)
+    try {
+      const parsed = JSON.parse(c.content as string) as { headline?: string; description?: string };
+      if (parsed && (parsed.description || parsed.headline)) {
+        copyBySku.set(skuId, parsed);
+      }
+    } catch { /* malformed content — skip, will fall back to notes */ }
+  }
+
   return skus
     .map((s): StorefrontSku => {
       const id = s.id as string;
@@ -325,14 +352,24 @@ async function loadSkus(
       const family = (s.type as string) || '';
       const skuCode = `SKU-${id.slice(0, 8).toUpperCase()}`;
       const drop = s.drop_number ? `Drop ${s.drop_number}` : '';
-      // Name comes from notes (first line) — if absent, derive from family + drop
-      const name = ((s.notes as string)?.split('\n')[0] ?? '').trim() || `${family} ${drop}`.trim();
+      const aiCopy = copyBySku.get(id);
+
+      // Name: AI headline > notes first-line > family + drop fallback
+      const name =
+        aiCopy?.headline?.trim() ||
+        ((s.notes as string)?.split('\n')[0] ?? '').trim() ||
+        `${family} ${drop}`.trim();
+
+      // Description: AI description > notes (full) > empty
+      const description =
+        (aiCopy?.description ?? '').trim() ||
+        ((s.notes as string) ?? '').trim();
 
       return {
         id,
         skuCode,
         name,
-        description: ((s.notes as string) ?? '').trim(),
+        description,
         family,
         price: Number(s.final_price ?? s.pvp ?? 0),
         currency: 'EUR',

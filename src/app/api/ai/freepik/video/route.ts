@@ -163,6 +163,7 @@ export async function POST(req: NextRequest) {
       story_context,
       user_prompt,
       collectionPlanId,
+      skuId,
     } = await req.json();
 
     if (!image_url) {
@@ -233,6 +234,8 @@ export async function POST(req: NextRequest) {
             tier,
             duration,
             provider: modelUsed,
+            // sku_id is the join key for storefront SKU-specific imagery.
+            ...(skuId ? { sku_id: skuId } : {}),
           },
           uploadedBy: user!.id,
         });

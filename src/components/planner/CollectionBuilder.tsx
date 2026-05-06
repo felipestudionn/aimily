@@ -1402,6 +1402,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                                   family: sku.family,
                                   collectionPlanId,
                                   is_3d_render: true,
+                                  skuId: sku.id,
                                 }),
                               }).then(async (res) => {
                                 if (res.ok) {

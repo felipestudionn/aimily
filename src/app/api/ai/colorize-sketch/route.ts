@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
   const packConsumed = usage.packConsumed ?? 0;
 
   try {
-    const { sketch_url, colorway_name, color_description, zone_colors, category, product_name, family, collectionPlanId, is_3d_render } = await req.json();
+    const { sketch_url, colorway_name, color_description, zone_colors, category, product_name, family, collectionPlanId, is_3d_render, skuId } = await req.json();
 
     if (!sketch_url) {
       return NextResponse.json({ error: 'sketch_url required' }, { status: 400 });
@@ -167,6 +167,10 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
           base64: imageUrl.split(',')[1],
           mimeType: 'image/png',
           phase: 'design',
+          // sku_id is the join key the storefront uses to find SKU-specific
+          // imagery on the public PDP (load-storefront-data.ts:304). Without
+          // this, render assets exist in storage but never reach the buyer.
+          metadata: skuId ? { sku_id: skuId } : undefined,
         });
         if (result?.publicUrl) imageUrl = result.publicUrl;
       } catch { /* use data URL as fallback */ }

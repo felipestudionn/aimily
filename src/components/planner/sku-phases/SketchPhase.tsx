@@ -648,6 +648,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   product_name: sku.name,
                   family: sku.family,
                   collectionPlanId,
+                  skuId: sku.id,
                 }),
               });
               if (!res.ok) {
@@ -1371,6 +1372,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                                 family: sku.family,
                                 collectionPlanId,
                                 is_3d_render: true,
+                                skuId: sku.id,
                               }),
                             });
                             if (res.ok) {
@@ -1422,6 +1424,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                                   family: sku.family,
                                   collectionPlanId,
                                   is_3d_render: true,
+                                  skuId: sku.id,
                                 }),
                               });
                               if (res.ok) {

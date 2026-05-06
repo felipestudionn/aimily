@@ -393,6 +393,7 @@ export async function POST(req: NextRequest) {
       user_prompt,
       model_directives,
       collectionPlanId,
+      skuId,
     } = await req.json();
 
     // Look up the selected aimily model if provided
@@ -688,6 +689,9 @@ export async function POST(req: NextRequest) {
             prompt: providerUsed === 'openai-gpt-image-1.5' ? '(GPT prompt)' : prompt,
             scene,
             provider: providerUsed,
+            // sku_id is the join key for storefront SKU-specific imagery
+            // (load-storefront-data.ts:304). Always include when known.
+            ...(skuId ? { sku_id: skuId } : {}),
           },
           uploadedBy: user!.id,
         });

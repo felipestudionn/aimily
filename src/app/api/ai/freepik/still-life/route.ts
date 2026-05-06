@@ -380,6 +380,7 @@ export async function POST(req: NextRequest) {
       story_context,
       user_prompt,
       collectionPlanId,
+      skuId,
     } = await req.json();
 
     if (!product_image_url) {
@@ -473,6 +474,9 @@ export async function POST(req: NextRequest) {
             prompt,
             scene,
             provider: 'freepik-nano-banana',
+            // sku_id is the join key for storefront SKU-specific imagery
+            // (load-storefront-data.ts:304).
+            ...(skuId ? { sku_id: skuId } : {}),
           },
           uploadedBy: user!.id,
         });

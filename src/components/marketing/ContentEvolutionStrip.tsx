@@ -166,6 +166,9 @@ export function ContentEvolutionStrip({
           scene: 'editorial',
           user_prompt: editorialPrompt || undefined,
           collectionPlanId,
+          // sku_id is the join key for storefront PDP imagery — without
+          // this, the persisted asset is invisible to load-storefront-data.
+          skuId: sku.id,
         }),
       });
       if (!res.ok) throw await backendError(res);
@@ -194,6 +197,101 @@ export function ContentEvolutionStrip({
       setEditorialPrompt('');
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Editorial generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  /* ── Still Life (Block 04.2 level 2) ── */
+  const handleStillLifeGenerate = async () => {
+    if (!user || !sku.render_urls?.['3d']) return;
+    setGenerating(true);
+    onError(null);
+    try {
+      const res = await fetch('/api/ai/freepik/still-life', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_image_url: sku.render_urls['3d'],
+          product_name: sku.name,
+          category: sku.category,
+          scene: 'still_life',
+          collectionPlanId,
+          skuId: sku.id,
+        }),
+      });
+      if (!res.ok) throw await backendError(res);
+      const data = await res.json();
+
+      const addRes = await fetch('/api/ai-generations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          collection_plan_id: collectionPlanId,
+          generation_type: 'still_life',
+          prompt: `Still life for ${sku.name}`,
+          input_data: { sku_id: sku.id, sku_name: sku.name },
+          output_data: { images: data.images || [] },
+          provider_request_id: null,
+          model_used: 'freepik-nano-banana',
+          status: 'completed',
+          is_favorite: false,
+          story_id: null,
+        }),
+      });
+      if (!addRes.ok) throw await backendError(addRes);
+      onRefetchGenerations();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Still life generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  /* ── Video / Campaign (Block 04.2 level 4) ── */
+  const handleVideoGenerate = async () => {
+    if (!user || !sku.render_urls?.['3d']) return;
+    setGenerating(true);
+    onError(null);
+    try {
+      const res = await fetch('/api/ai/freepik/video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_url: sku.render_urls['3d'],
+          product_name: sku.name,
+          motion: 'subtle',
+          duration: 5,
+          tier: 'std',
+          collectionPlanId,
+          skuId: sku.id,
+        }),
+      });
+      if (!res.ok) throw await backendError(res);
+      const data = await res.json();
+
+      const addRes = await fetch('/api/ai-generations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          collection_plan_id: collectionPlanId,
+          generation_type: 'video',
+          prompt: `Video for ${sku.name}`,
+          input_data: { sku_id: sku.id, sku_name: sku.name },
+          output_data: { videos: data.videos || data.images || [] },
+          provider_request_id: null,
+          model_used: 'freepik-kling',
+          status: 'completed',
+          is_favorite: false,
+          story_id: null,
+        }),
+      });
+      if (!addRes.ok) throw await backendError(addRes);
+      onRefetchGenerations();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Video generation failed');
     } finally {
       setGenerating(false);
     }
@@ -233,7 +331,7 @@ export function ContentEvolutionStrip({
         {LEVELS.map((level) => {
           const count = countsByLevel[level.id] || 0;
           const isExpanded = expandedLevel === level.id;
-          const isDisabled = level.id === 'campaign';
+          const isDisabled = false;
           const hasContent = count > 0;
 
           return (
@@ -331,6 +429,23 @@ export function ContentEvolutionStrip({
                 />
               ) : (
                 <>
+                  {/* Generate button */}
+                  <div className="flex items-center justify-end">
+                    <button
+                      onClick={handleStillLifeGenerate}
+                      disabled={generating}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors disabled:opacity-50"
+                    >
+                      {generating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      {generating
+                        ? (m.generating as string | undefined) || 'Generating…'
+                        : getGensForLevel('still_life').length > 0
+                          ? (m.regenerate as string | undefined) || 'Regenerate'
+                          : (m.generateStillLife as string | undefined) || 'Generate still life'}
+                    </button>
+                  </div>
+
+                  {/* Gallery */}
                   {getGensForLevel('still_life').length > 0 ? (
                     <Gallery
                       items={getGensForLevel('still_life').flatMap((g) =>
@@ -348,8 +463,8 @@ export function ContentEvolutionStrip({
                     />
                   ) : (
                     <p className="text-[12px] text-carbon/45 italic">
-                      {m.stillLifeFromVisuals ||
-                        'Generate still life shots from the Product Visuals card using the editorial looks.'}
+                      {(m.stillLifeEmpty as string | undefined) ||
+                        'Click Generate to produce a packshot-style still life from your 3D render.'}
                     </p>
                   )}
                 </>
@@ -478,14 +593,57 @@ export function ContentEvolutionStrip({
             </div>
           )}
 
-          {/* ── Level 4: Campaign (placeholder) ── */}
+          {/* ── Level 4: Campaign / Video ── */}
           {expandedLevel === 'campaign' && (
-            <div className="text-center py-12">
-              <Film className="h-8 w-8 text-carbon/15 mx-auto mb-3" strokeWidth={1.5} />
-              <p className="text-[13px] text-carbon/40 italic max-w-md mx-auto leading-relaxed">
-                {m.campaignComingSoon ||
-                  'Multi-model campaign shoots and video are coming next. We’ll let you know.'}
-              </p>
+            <div className="space-y-5">
+              {!has3dRender ? (
+                <EmptyLevelCta
+                  message={m.noSourceImages || 'Complete the 3D render step in the Design phase first.'}
+                />
+              ) : (
+                <>
+                  {/* Generate button */}
+                  <div className="flex items-center justify-end">
+                    <button
+                      onClick={handleVideoGenerate}
+                      disabled={generating}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors disabled:opacity-50"
+                    >
+                      {generating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      {generating
+                        ? (m.generating as string | undefined) || 'Generating…'
+                        : getGensForLevel('video').length > 0
+                          ? (m.regenerate as string | undefined) || 'Regenerate'
+                          : (m.generateVideo as string | undefined) || 'Generate video'}
+                    </button>
+                  </div>
+
+                  {/* Gallery */}
+                  {getGensForLevel('video').length > 0 ? (
+                    <Gallery
+                      items={getGensForLevel('video').flatMap((g) => {
+                        const od = g.output_data as { videos?: { url: string }[]; images?: { url: string }[] } | undefined;
+                        const items = od?.videos ?? od?.images ?? [];
+                        return items.map((v, i) => ({
+                          genId: g.id,
+                          url: v.url,
+                          isFav: g.is_favorite,
+                          key: `${g.id}-${i}`,
+                        }));
+                      })}
+                      aspect="square"
+                      onLightbox={onLightbox}
+                      onToggleFavorite={onToggleFavorite}
+                      onDelete={onDeleteGeneration}
+                    />
+                  ) : (
+                    <p className="text-[12px] text-carbon/45 italic">
+                      {(m.videoEmpty as string | undefined) ||
+                        'Click Generate to produce a 5-second image-to-video from your 3D render.'}
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
