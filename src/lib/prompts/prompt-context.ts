@@ -140,8 +140,13 @@ export async function buildPromptContext(
   const supabase = supabaseAdmin;
 
   // Fetch all data in parallel
+  // launch_date lives on collection_timelines (one row per plan), not on
+  // collection_plans — the previous SELECT included a non-existent column
+  // and threw "column collection_plans.launch_date does not exist",
+  // crashing every AI prompt build (including consumer-suggest-input).
   const [
     planRes,
+    timelineRes,
     skusRes,
     storiesRes,
     pillarsRes,
@@ -155,9 +160,14 @@ export async function buildPromptContext(
   ] = await Promise.all([
     supabase
       .from('collection_plans')
-      .select('id, name, season, launch_date, location, status, user_id, created_at, updated_at')
+      .select('id, name, season, location, status, user_id, created_at, updated_at')
       .eq('id', collectionPlanId)
       .single(),
+    supabase
+      .from('collection_timelines')
+      .select('launch_date')
+      .eq('collection_plan_id', collectionPlanId)
+      .maybeSingle(),
     supabase
       .from('collection_skus')
       .select('*')
@@ -393,7 +403,7 @@ export async function buildPromptContext(
     copy_count: copyRes.data?.length ?? 0,
     email_template_count: emailTemplatesRes.data?.length ?? 0,
     calendar_entries_count: calendarRes.data?.length ?? 0,
-    launch_date: plan?.launch_date ?? '',
+    launch_date: (timelineRes?.data?.launch_date as string | undefined) ?? '',
   };
 }
 

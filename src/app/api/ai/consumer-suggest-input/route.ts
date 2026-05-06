@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership, enforceAiUserRateLimit } from '@/lib/api-auth';
 import { generateJSON } from '@/lib/ai/llm-client';
 import { loadFullContext } from '@/lib/ai/load-full-context';
-// normalizeAiError import temporarily removed while diagnostic mode returns
-// raw error info from the catch block.
+import { normalizeAiError } from '@/lib/ai/error-messages';
 
 /**
  * Consumer · Suggest Input — pre-fills the entry phase from prior CIS
@@ -43,7 +42,6 @@ export async function POST(req: NextRequest) {
   const usage = await checkAuthOnly(user.id, user.email!);
   if (!usage.allowed) return usageDeniedResponse(usage);
 
-  let stage: 'parse' | 'auth' | 'context' | 'llm' | 'unknown' = 'parse';
   try {
     const body = await req.json();
     const { collectionPlanId, language } = body as { collectionPlanId?: string; language?: 'en' | 'es' };
@@ -52,11 +50,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
     }
 
-    stage = 'auth';
     const ownership = await verifyCollectionOwnership(user.id, collectionPlanId);
     if (!ownership.authorized) return ownership.error;
 
-    stage = 'context';
     const ctx = await loadFullContext(collectionPlanId);
 
     // No moodboard yet → no suggestion. Caller will render the entry empty.
@@ -89,7 +85,6 @@ Return JSON:
 
     const system = language === 'es' ? SYSTEM + LANG_INSTRUCTION_ES : SYSTEM;
 
-    stage = 'llm';
     const { data } = await generateJSON<SuggestionResponse>({
       system,
       user: userPrompt,
@@ -115,18 +110,11 @@ Return JSON:
 
     return NextResponse.json(out);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[ConsumerSuggestInput] threw at stage=', stage, message, error);
-    // Return the stage + raw message so the client can console.error it
-    // and surface the failure in seconds. This is a temporary diagnostic
-    // — strip back to normalizeAiError once the root cause is identified.
+    console.error('[ConsumerSuggestInput] error', error);
+    const norm = normalizeAiError(error);
     return NextResponse.json(
-      {
-        error: 'Suggestion generation failed',
-        stage,
-        debug: message.slice(0, 400),
-      },
-      { status: 500 },
+      { error: norm.userMessage, code: norm.internalCode },
+      { status: norm.httpStatus },
     );
   }
 }
