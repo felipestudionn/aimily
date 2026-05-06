@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
 import type { CollectionPlan, SetupData } from "@/types/planner";
+import type { DerivedSetupData } from "@/lib/derive-setup-data";
 import { CollectionBuilder } from './CollectionBuilder';
 import { useTranslation } from '@/i18n';
 import { useSkus } from '@/hooks/useSkus';
@@ -11,6 +12,13 @@ import { useTimeline } from '@/contexts/TimelineContext';
 
 interface PlannerDashboardProps {
   plan: CollectionPlan;
+  /**
+   * Derived merchandising snapshot computed on read by the
+   * /api/derived-setup-data endpoint. Replaces the stale plan.setup_data
+   * cache that consumers used to read directly. See onboarding lifecycle
+   * audit (2026-05-06).
+   */
+  derived: DerivedSetupData;
   initialPhaseFilter?: string;
 }
 
@@ -31,11 +39,20 @@ const EMPTY_SETUP: SetupData = {
   maxPrice: 0,
 };
 
-export function PlannerDashboard({ plan, initialPhaseFilter }: PlannerDashboardProps) {
+export function PlannerDashboard({ plan, derived, initialPhaseFilter }: PlannerDashboardProps) {
   const t = useTranslation();
   const router = useRouter();
   const { updateMilestoneStatus } = useTimeline();
-  const [setupData] = useState<SetupData>({ ...EMPTY_SETUP, ...plan.setup_data });
+  // setupData is built ONLY from the derived snapshot — never from
+  // plan.setup_data, which is no longer a reliable source of truth.
+  // Filter undefined keys so EMPTY_SETUP defaults are preserved when
+  // the loader has no data for a given field.
+  const [setupData] = useState<SetupData>(() => {
+    const filteredDerived = Object.fromEntries(
+      Object.entries(derived).filter(([, v]) => v !== undefined),
+    );
+    return { ...EMPTY_SETUP, ...filteredDerived } as SetupData;
+  });
   const [showCelebration, setShowCelebration] = useState(false);
   const { skus } = useSkus(plan.id);
 

@@ -31,11 +31,17 @@ interface CollectionPlan {
   season?: string;
   created_at: string;
   updated_at: string;
-  setup_data: {
-    totalSalesTarget?: number;
-    productCategory?: string;
-    expectedSkus?: number;
-  };
+}
+
+/**
+ * Derived snapshot for a collection — fetched per-plan from
+ * /api/derived-setup-data. Replaces the stale setup_data jsonb cache
+ * the page used to read directly from collection_plans rows.
+ */
+interface DerivedSnapshot {
+  totalSalesTarget?: number;
+  productCategory?: string;
+  expectedSkus?: number;
 }
 
 interface TimelineData {
@@ -59,6 +65,7 @@ interface CollectionWithProgress extends CollectionPlan {
   upcoming: number;
   daysUntilLaunch?: number;
   skuCount: number;
+  derived: DerivedSnapshot;
 }
 
 export default function MyCollectionsPage() {
@@ -72,6 +79,7 @@ export default function MyCollectionsPage() {
   const [collections, setCollections] = useState<CollectionPlan[]>([]);
   const [timelines, setTimelines] = useState<TimelineData[]>([]);
   const [skuCounts, setSkuCounts] = useState<Map<string, number>>(new Map());
+  const [derivedMap, setDerivedMap] = useState<Map<string, DerivedSnapshot>>(new Map());
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<CollectionWithProgress | null>(null);
   const [undoToast, setUndoToast] = useState<{
@@ -174,19 +182,33 @@ export default function MyCollectionsPage() {
         // Use the authenticated /api/skus endpoint (enforces ownership via
         // supabaseAdmin). One request per plan runs in parallel — a user
         // typically has a handful of collections, so this stays cheap.
-        const skuResponses = await Promise.all(
-          planIds.map(id =>
-            fetch(`/api/skus?planId=${id}`)
-              .then(r => (r.ok ? r.json() : []))
-              .catch(() => []),
+        // Derived setup data is fetched in the same parallel pass so the
+        // dashboard cards never depend on the stale setup_data jsonb.
+        const [skuResponses, derivedResponses] = await Promise.all([
+          Promise.all(
+            planIds.map(id =>
+              fetch(`/api/skus?planId=${id}`)
+                .then(r => (r.ok ? r.json() : []))
+                .catch(() => []),
+            ),
           ),
-        );
+          Promise.all(
+            planIds.map(id =>
+              fetch(`/api/derived-setup-data?planId=${id}`)
+                .then(r => (r.ok ? r.json() : {}))
+                .catch(() => ({})),
+            ),
+          ),
+        ]);
         const countMap = new Map<string, number>();
+        const derivedNext = new Map<string, DerivedSnapshot>();
         planIds.forEach((planId, i) => {
           const list = (skuResponses[i] || []) as unknown[];
           countMap.set(planId, list.length);
+          derivedNext.set(planId, (derivedResponses[i] || {}) as DerivedSnapshot);
         });
         setSkuCounts(countMap);
+        setDerivedMap(derivedNext);
       }
     } catch (error) {
       console.error('Error fetching collections:', error);
@@ -258,7 +280,8 @@ export default function MyCollectionsPage() {
     return collections.map((c) => {
       const tl = timelines.find((t) => t.collection_plan_id === c.id);
       const skuCount = skuCounts.get(c.id) || 0;
-      if (!tl) return { ...c, progress: 0, overdue: 0, upcoming: 0, skuCount };
+      const derived = derivedMap.get(c.id) || {};
+      if (!tl) return { ...c, progress: 0, overdue: 0, upcoming: 0, skuCount, derived };
 
       const total = tl.milestones.length;
       const completed = tl.milestones.filter((m) => m.status === 'completed').length;
@@ -283,9 +306,9 @@ export default function MyCollectionsPage() {
         else if (endDate <= threeDays) upcoming++;
       }
 
-      return { ...c, timeline: tl, progress, overdue, upcoming, daysUntilLaunch, skuCount };
+      return { ...c, timeline: tl, progress, overdue, upcoming, daysUntilLaunch, skuCount, derived };
     });
-  }, [collections, timelines, skuCounts]);
+  }, [collections, timelines, skuCounts, derivedMap]);
 
   const stats = useMemo(() => {
     const totalOverdue = enrichedCollections.reduce((sum, c) => sum + c.overdue, 0);
@@ -297,7 +320,7 @@ export default function MyCollectionsPage() {
       .filter((c) => c.daysUntilLaunch !== undefined && c.daysUntilLaunch > 0)
       .sort((a, b) => (a.daysUntilLaunch || Infinity) - (b.daysUntilLaunch || Infinity))[0];
     const totalRevenue = enrichedCollections.reduce(
-      (sum, c) => sum + (c.setup_data?.totalSalesTarget || 0),
+      (sum, c) => sum + (c.derived.totalSalesTarget || 0),
       0,
     );
     return { totalOverdue, totalUpcoming, avgProgress, nextLaunch, totalRevenue };
@@ -437,7 +460,7 @@ function CollectionCard({ collection, idx, onDelete, language, t }: {
   t: Record<string, string>;
 }) {
   const n = String(idx + 1).padStart(2, '0');
-  const category = collection.setup_data?.productCategory;
+  const category = collection.derived.productCategory;
   const season = collection.season;
   const skuCount = collection.skuCount;
   const progress = collection.progress;
@@ -501,11 +524,11 @@ function CollectionCard({ collection, idx, onDelete, language, t }: {
           {skuCount > 0 && (
             <span className="tabular-nums font-semibold text-carbon/70">{skuCount} SKUs</span>
           )}
-          {collection.setup_data?.totalSalesTarget && collection.setup_data.totalSalesTarget > 0 && (
+          {collection.derived.totalSalesTarget && collection.derived.totalSalesTarget > 0 && (
             <>
               {skuCount > 0 && <span className="text-carbon/20">·</span>}
               <span className="tabular-nums">
-                €{(collection.setup_data.totalSalesTarget / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}K
+                €{(collection.derived.totalSalesTarget / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}K
               </span>
             </>
           )}

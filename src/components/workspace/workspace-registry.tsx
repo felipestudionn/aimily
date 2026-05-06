@@ -6,6 +6,7 @@ import { useTimeline } from '@/contexts/TimelineContext';
 import { createClient } from '@/lib/supabase/client';
 import type { WorkspaceComponentProps } from './ViewPort';
 import type { CollectionPlan } from '@/types/planner';
+import type { DerivedSetupData } from '@/lib/derive-setup-data';
 
 /* ══════════════════════════════════════════════════════════════
    Workspace Registry
@@ -30,19 +31,21 @@ const LazyMarketingCreation = lazy(() =>
 
 function ProductWrapper({ collectionId, blockParam }: WorkspaceComponentProps) {
   const [plan, setPlan] = useState<CollectionPlan | null>(null);
+  const [derived, setDerived] = useState<DerivedSetupData>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from('collection_plans')
-      .select('*')
-      .eq('id', collectionId)
-      .single()
-      .then(({ data }) => {
-        if (data) setPlan(data as CollectionPlan);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase.from('collection_plans').select('*').eq('id', collectionId).single(),
+      fetch(`/api/derived-setup-data?planId=${collectionId}`)
+        .then(r => (r.ok ? r.json() : {}))
+        .catch(() => ({})),
+    ]).then(([{ data }, derivedJson]) => {
+      if (data) setPlan(data as CollectionPlan);
+      setDerived((derivedJson || {}) as DerivedSetupData);
+      setLoading(false);
+    });
   }, [collectionId]);
 
   if (loading) {
@@ -56,7 +59,7 @@ function ProductWrapper({ collectionId, blockParam }: WorkspaceComponentProps) {
 
   if (!plan) return null;
 
-  return <LazyPlannerDashboard plan={plan} initialPhaseFilter={blockParam} />;
+  return <LazyPlannerDashboard plan={plan} derived={derived} initialPhaseFilter={blockParam} />;
 }
 
 /* ── Wrapper: Marketing Creation (needs collectionPlanId + milestones) ── */

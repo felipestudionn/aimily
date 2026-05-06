@@ -3,7 +3,7 @@
 /* ═══════════════════════════════════════════════════════════════════
    MerchBalanceSidebar — reusable live merch-mix panel.
 
-   Reads target mix from SetupData (families · price/type segmentation)
+   Reads target mix from DerivedSetupData (families · price/type segmentation)
    and compares against the ACTIVE SKU subset (whatever the parent
    workspace considers "the lineup"). Used by the Final Selection
    workspace today; designed so future dashboards can drop it in the
@@ -16,14 +16,14 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 import { Lock, Loader2 } from 'lucide-react';
-import type { SetupData } from '@/types/planner';
+import type { DerivedSetupData } from '@/lib/derive-setup-data';
 import type { SKU } from '@/hooks/useSkus';
 import { useTranslation } from '@/i18n';
 
 interface Props {
   skus: SKU[];
   approvedSkus: SKU[];
-  setupData: SetupData;
+  derived: DerivedSetupData;
   onLock: () => void;
   locking?: boolean;
   lockDisabled?: boolean;
@@ -40,7 +40,7 @@ function formatK(value: number) {
   return `€${Math.round(value / 1000).toLocaleString()}K`;
 }
 
-export function MerchBalanceSidebar({ skus, approvedSkus, setupData, onLock, locking, lockDisabled, locked }: Props) {
+export function MerchBalanceSidebar({ skus, approvedSkus, derived, onLock, locking, lockDisabled, locked }: Props) {
   const t = useTranslation();
   const w = (t as unknown as { finalSelectionWorkspace?: Record<string, string> }).finalSelectionWorkspace || {};
 
@@ -48,7 +48,7 @@ export function MerchBalanceSidebar({ skus, approvedSkus, setupData, onLock, loc
   const approvedCount = approvedSkus.length;
 
   // Families — compare approved distribution vs target.
-  // Target comes from setupData.productFamilies. Families that exist in
+  // Target comes from derived.productFamilies. Families that exist in
   // the actual SKUs but not in the target plan show up too (actual only).
   const approvedByFamily = new Map<string, number>();
   approvedSkus.forEach(s => {
@@ -56,7 +56,7 @@ export function MerchBalanceSidebar({ skus, approvedSkus, setupData, onLock, loc
     approvedByFamily.set(s.family, (approvedByFamily.get(s.family) || 0) + 1);
   });
   const targetMap = new Map<string, number>();
-  (setupData.productFamilies || []).forEach(fam => {
+  (derived.productFamilies || []).forEach(fam => {
     if (fam.name) targetMap.set(fam.name, Number(fam.percentage) || 0);
   });
   const allFamilyNames = new Set<string>([
@@ -89,7 +89,7 @@ export function MerchBalanceSidebar({ skus, approvedSkus, setupData, onLock, loc
   }, {} as Record<string, number>);
   const totalTypeRevenue = Object.values(typeRevenue).reduce((a, b) => a + b, 0);
   const typeTargets: Record<string, number> = {};
-  (setupData.productTypeSegments || []).forEach(seg => { typeTargets[seg.type] = seg.percentage; });
+  (derived.productTypeSegments || []).forEach(seg => { typeTargets[seg.type] = seg.percentage; });
   const TYPES: Array<SKU['type']> = ['REVENUE', 'IMAGEN', 'ENTRY'];
 
   // Drop split
@@ -155,7 +155,7 @@ export function MerchBalanceSidebar({ skus, approvedSkus, setupData, onLock, loc
       )}
 
       {/* Type split */}
-      {(setupData.productTypeSegments || []).length > 0 && (
+      {(derived.productTypeSegments || []).length > 0 && (
         <div className="mb-7">
           <p className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
             {w.sidebarTierSplit || 'Tier split'}

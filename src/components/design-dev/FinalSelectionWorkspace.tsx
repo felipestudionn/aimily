@@ -13,14 +13,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Check, X, ImagePlus, Loader2 } from 'lucide-react';
 import { useSkus, type SKU } from '@/hooks/useSkus';
-import type { SetupData } from '@/types/planner';
+import type { DerivedSetupData } from '@/lib/derive-setup-data';
 import { useTranslation } from '@/i18n';
 import { MerchBalanceSidebar } from './MerchBalanceSidebar';
 
 interface Props {
   collectionPlanId: string;
   collectionName: string;
-  setupData: SetupData;
+  derived: DerivedSetupData;
 }
 
 const ELIGIBLE_PHASES = new Set(['production', 'completed']);
@@ -37,7 +37,7 @@ function coverImage(sku: SKU): string | undefined {
   );
 }
 
-export function FinalSelectionWorkspace({ collectionPlanId, collectionName, setupData }: Props) {
+export function FinalSelectionWorkspace({ collectionPlanId, collectionName, derived }: Props) {
   const t = useTranslation();
   const w = (t as unknown as { finalSelectionWorkspace?: Record<string, string> }).finalSelectionWorkspace || {};
   const { skus: allSkus, updateSku, loading } = useSkus(collectionPlanId);
@@ -289,7 +289,7 @@ export function FinalSelectionWorkspace({ collectionPlanId, collectionName, setu
           <MerchBalanceSidebar
             skus={eligibleSkus}
             approvedSkus={approvedSkus}
-            setupData={setupData}
+            derived={derived}
             onLock={handleLock}
             locking={locking}
             lockDisabled={approvedSkus.length === 0 || isLocked}
