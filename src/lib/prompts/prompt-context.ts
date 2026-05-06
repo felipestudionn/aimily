@@ -10,6 +10,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { compilePromptContext as compileCIS } from '@/lib/collection-intelligence';
+import { loadDerivedSetupData } from '@/lib/derive-setup-data';
 
 // ─── Sub-context types ───
 
@@ -154,7 +155,7 @@ export async function buildPromptContext(
   ] = await Promise.all([
     supabase
       .from('collection_plans')
-      .select('*, setup_data')
+      .select('id, name, season, launch_date, location, status, user_id, created_at, updated_at')
       .eq('id', collectionPlanId)
       .single(),
     supabase
@@ -236,7 +237,6 @@ export async function buildPromptContext(
   }
 
   const plan = planRes.data;
-  const setupData = plan?.setup_data ?? {};
 
   // CIS: read decisions for brand identity, consumer, creative direction,
   // and merchandising context. These were previously read from setup_data
@@ -246,8 +246,10 @@ export async function buildPromptContext(
   // decisions are captured as they happen across all blocks.
   const cis = await compileCIS(collectionPlanId, 'full');
 
-  // Fallback to setup_data for fields that WERE populated (pricing/budget)
-  const merchandising = setupData.merchandising ?? {};
+  // Pricing/budget fields now come from the DerivedSetupData loader
+  // (computed on read from the merchandising workspace) rather than the
+  // stale `collection_plans.setup_data` jsonb cache.
+  const derived = await loadDerivedSetupData(collectionPlanId);
 
   const skus = (skusRes.data ?? []).map((s: Record<string, unknown>) => ({
     id: s.id as string,
@@ -363,20 +365,22 @@ export async function buildPromptContext(
     selected_trends: Array.isArray(cis.selected_trends) ? cis.selected_trends as string[] : [],
     moodboard_summary: (cis.moodboard_summary as string) || '',
     reference_brands: Array.isArray(cis.reference_brands) ? cis.reference_brands as string[] : [],
-    // Setup_data fields that WERE populated (pricing/budget fallback)
-    total_sales_target: (cis.total_sales_target as number) || merchandising.total_sales_target || setupData.totalSalesTarget || 0,
-    channels: merchandising.channels ?? [],
-    markets: merchandising.markets ?? [],
+    // Pricing/budget fields — sourced from DerivedSetupData (computed on
+    // read from the merchandising workspace) with CIS still as the
+    // primary signal where it has its own writers.
+    total_sales_target: (cis.total_sales_target as number) || derived.totalSalesTarget || 0,
+    channels: [] as string[], // TODO: surface from CIS once channels writer ships
+    markets: [] as string[],
     price_range: {
-      min: prices.length ? Math.min(...prices) : 0,
-      max: prices.length ? Math.max(...prices) : 0,
+      min: prices.length ? Math.min(...prices) : (derived.minPrice ?? 0),
+      max: prices.length ? Math.max(...prices) : (derived.maxPrice ?? 0),
       avg: prices.length
         ? Math.round(prices.reduce((a: number, b: number) => a + b, 0) / prices.length)
-        : 0,
+        : (derived.avgPriceTarget ?? 0),
     },
-    target_margin: merchandising.target_margin ?? 0,
-    sales_months: merchandising.sales_months ?? 0,
-    families: merchandising.families ?? [],
+    target_margin: derived.targetMargin ?? 0,
+    sales_months: 0,
+    families: derived.families ?? [],
     sku_count: skus.length,
     skus,
     stories,

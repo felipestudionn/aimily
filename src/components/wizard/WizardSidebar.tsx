@@ -190,7 +190,6 @@ interface WizardSidebarProps {
   season?: string;
   launchDate?: string | null;
   skuCount?: number;
-  setupData?: Record<string, unknown> | null;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
   onCollapsedChange?: (collapsed: boolean) => void;

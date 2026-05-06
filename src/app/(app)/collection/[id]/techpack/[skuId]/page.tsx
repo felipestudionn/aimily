@@ -27,7 +27,7 @@ export default async function TechPackPage({ params }: PageProps) {
 
   const { data: plan } = await supabaseAdmin
     .from('collection_plans')
-    .select('id, name, season, user_id, setup_data')
+    .select('id, name, season, user_id')
     .eq('id', id)
     .maybeSingle();
   if (!plan || plan.user_id !== user.id) notFound();

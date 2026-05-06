@@ -18,6 +18,7 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { buildPromptContext } from '@/lib/prompts/prompt-context';
+import { loadDerivedSetupData } from '@/lib/derive-setup-data';
 
 export async function loadFullContext(collectionPlanId: string): Promise<Record<string, string>> {
   const ctx: Record<string, string> = {};
@@ -102,29 +103,24 @@ export async function loadFullContext(collectionPlanId: string): Promise<Record<
     ).join('\n');
   }
 
-  // 2. Collection plan — productCategory + setup_data extras
-  const { data: plan } = await supabaseAdmin
-    .from('collection_plans')
-    .select('name, season, setup_data')
-    .eq('id', collectionPlanId)
-    .single();
+  // 2. Collection plan — name + season + derived productCategory.
+  // productCategory now comes from the DerivedSetupData loader (computed
+  // on read from the merchandising workspace + SKU.category fallback) so
+  // we always see live data, never a stale setup_data cache.
+  const [{ data: plan }, derived] = await Promise.all([
+    supabaseAdmin
+      .from('collection_plans')
+      .select('name, season')
+      .eq('id', collectionPlanId)
+      .single(),
+    loadDerivedSetupData(collectionPlanId),
+  ]);
 
   if (plan) {
     if (!ctx.collectionName) ctx.collectionName = plan.name || '';
     if (!ctx.season) ctx.season = plan.season || '';
-    const setupData = (plan.setup_data || {}) as Record<string, unknown>;
-    ctx.productCategory = (setupData.productCategory as string) || '';
-
-    // Fallback: infer category from existing SKUs
-    if (!ctx.productCategory) {
-      const { data: skuRow } = await supabaseAdmin
-        .from('collection_skus')
-        .select('category')
-        .eq('collection_plan_id', collectionPlanId)
-        .limit(1);
-      if (skuRow?.[0]?.category) ctx.productCategory = skuRow[0].category;
-    }
   }
+  ctx.productCategory = derived.productCategory || '';
 
   // 3. Creative workspace — FULL detail (CIS may only have summaries)
   const { data: creativeRow } = await supabaseAdmin

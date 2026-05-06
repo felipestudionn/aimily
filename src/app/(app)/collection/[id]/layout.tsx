@@ -82,7 +82,6 @@ export default async function CollectionHubLayout({ children, params }: LayoutPr
         milestones={data.milestones}
         launchDate={data.launchDate}
         skuCount={data.skuCount}
-        setupData={data.plan.setup_data}
       >
         {children}
       </CollectionHubShell>

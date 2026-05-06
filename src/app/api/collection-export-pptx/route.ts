@@ -5,6 +5,7 @@ import PptxGenJS from 'pptxgenjs';
 import { getMarketingPresentationData, getMarketingSlideVisibility } from '@/lib/presentation-data';
 import { addMarketingStorySlides } from '@/lib/presentation-pptx-slides';
 import { logAudit, AUDIT_ACTIONS } from '@/lib/audit-log';
+import { loadDerivedSetupData } from '@/lib/derive-setup-data';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PPTX Export — Generates a PowerPoint presentation matching the slide deck
@@ -56,13 +57,14 @@ export async function GET(req: NextRequest) {
   }
 
   // Fetch data (same as presentation page)
-  const [planRes, timelineRes, skusRes, creativeRes, merchRes, marketing] = await Promise.all([
+  const [planRes, timelineRes, skusRes, creativeRes, merchRes, marketing, derived] = await Promise.all([
     supabaseAdmin.from('collection_plans').select('*').eq('id', collectionId).single(),
     supabaseAdmin.from('collection_timelines').select('*').eq('collection_plan_id', collectionId).single(),
     supabaseAdmin.from('collection_skus').select('*').eq('collection_plan_id', collectionId),
     supabaseAdmin.from('collection_workspace_data').select('data').eq('collection_plan_id', collectionId).eq('workspace', 'creative').single(),
     supabaseAdmin.from('collection_workspace_data').select('data').eq('collection_plan_id', collectionId).eq('workspace', 'merchandising').single(),
     getMarketingPresentationData(collectionId, userId),
+    loadDerivedSetupData(collectionId),
   ]);
 
   if (planRes.error || !planRes.data) {
@@ -77,7 +79,6 @@ export async function GET(req: NextRequest) {
   const skus = (skusRes.data || []) as SKU[];
   const creative = (creativeRes.data?.data || {}) as Record<string, unknown>;
   const merch = (merchRes.data?.data || {}) as Record<string, unknown>;
-  const setup = plan.setup_data || {};
   const launchDate = timeline?.launch_date;
 
   // ── Extract creative data ──
@@ -103,14 +104,14 @@ export async function GET(req: NextRequest) {
   const markets = safe<string[]>(channelsData.markets, []);
 
   // ── SKU metrics ──
-  const totalSkus = skus.length || setup.expectedSkus || 0;
+  const totalSkus = skus.length || derived.expectedSkus || 0;
   const skuPrices = skus.map(s => s.pvp).filter(p => p > 0);
-  const avgPrice = skuPrices.length > 0 ? skuPrices.reduce((a, b) => a + b, 0) / skuPrices.length : (setup.avgPriceTarget || 0);
-  const minPrice = skuPrices.length > 0 ? Math.min(...skuPrices) : (setup.minPrice || 0);
-  const maxPrice = skuPrices.length > 0 ? Math.max(...skuPrices) : (setup.maxPrice || 0);
+  const avgPrice = skuPrices.length > 0 ? skuPrices.reduce((a, b) => a + b, 0) / skuPrices.length : (derived.avgPriceTarget || 0);
+  const minPrice = skuPrices.length > 0 ? Math.min(...skuPrices) : (derived.minPrice || 0);
+  const maxPrice = skuPrices.length > 0 ? Math.max(...skuPrices) : (derived.maxPrice || 0);
   const skuMargins = skus.filter(s => s.margin > 0).map(s => s.margin);
-  const avgMargin = skuMargins.length > 0 ? skuMargins.reduce((a, b) => a + b, 0) / skuMargins.length : (setup.targetMargin || 0);
-  const totalRevenue = skus.reduce((sum, s) => sum + (s.expected_sales || 0), 0) || (setup.totalSalesTarget || 0);
+  const avgMargin = skuMargins.length > 0 ? skuMargins.reduce((a, b) => a + b, 0) / skuMargins.length : (derived.targetMargin || 0);
+  const totalRevenue = skus.reduce((sum, s) => sum + (s.expected_sales || 0), 0) || (derived.totalSalesTarget || 0);
   const totalUnits = skus.reduce((sum, s) => sum + (s.buy_units || 0), 0);
   const totalCogs = skus.reduce((sum, s) => sum + ((s.cost || 0) * (s.buy_units || 0)), 0);
   const grossProfit = totalRevenue - totalCogs;

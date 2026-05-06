@@ -38,7 +38,6 @@ interface WorkspaceShellProps {
   milestones: TimelineMilestone[];
   launchDate?: string | null;
   skuCount?: number;
-  setupData?: Record<string, unknown> | null;
 }
 
 export function WorkspaceShell({
@@ -49,7 +48,6 @@ export function WorkspaceShell({
   milestones,
   launchDate,
   skuCount,
-  setupData,
 }: WorkspaceShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -179,7 +177,6 @@ export function WorkspaceShell({
           season={season}
           launchDate={launchDate}
           skuCount={skuCount}
-          setupData={setupData}
           mobileOpen={sidebarOpen}
           onMobileClose={() => setSidebarOpen(false)}
           onCollapsedChange={setSidebarCollapsed}
