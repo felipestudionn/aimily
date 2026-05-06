@@ -297,7 +297,7 @@ function VibeProposalFlow({
 // Pattern aligned with the canonical: aimily situates → asks the bare
 // minimum → proposes → user edits → user confirms (parent shell handles
 // the confirm; the breadcrumb here lets the user reopen entry to tweak).
-function ConsumerContent({ data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
+function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
   const { language } = useLanguage();
   const { id: collectionPlanId } = useParams();
@@ -306,6 +306,10 @@ function ConsumerContent({ data, onChange, collectionContext }: { mode: InputMod
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [suggesting, setSuggesting] = useState(false);
 
+  // Defensive: data can be undefined when the workspace row was reset to
+  // a partial structure (e.g. {mode, confirmed} without `data`). Spreading
+  // null/undefined into onChange would otherwise blow up below.
+  const data: Record<string, unknown> = rawData || {};
   const proposals = (data.proposals as ConsumerProfile[]) || [];
   const gender = (data.gender as string) || '';
   const reference = (data.reference as string) || '';
