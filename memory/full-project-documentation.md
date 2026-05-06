@@ -218,6 +218,45 @@ Every card/workspace offers 3 modes (UX universal rule):
 - **NO existen** como referencia: meta tag GSC en código (no necesario · DNS verification ya hecho), Indexing API automatizado para sitio web normal (Google solo permite Indexing API para job postings/livestreams)
 - **Pending**: añadir IndexNow protocol para Bing Webmaster (~30 LOC, opcional)
 
+### 4.6c Observability · PostHog + Sentry + Vercel Analytics
+
+- **PostHog** (product analytics + funnels):
+  - Env var: `NEXT_PUBLIC_POSTHOG_KEY` (in `.env.local` + Vercel)
+  - SDK init: `src/lib/observability-bootstrap.tsx` (loads `window.posthog`)
+  - Events helper: `src/lib/posthog.ts` exports `track(event, properties?)` + `Events` const
+  - Tracked events (funnel): `LANDING_VIEWED · CTA_CLICKED · AUTH_OPENED · SIGNUP_COMPLETED · COLLECTION_CREATED · AI_GENERATION_STARTED/SUCCEEDED/FAILED · IMAGERY_LIMIT_REACHED · CHECKOUT_OPENED · CREDIT_PACK_OPENED · SUBSCRIPTION_ACTIVATED`
+  - Used in: `SubscriptionContext`, `account/page.tsx`, `my-collections/page.tsx`, `new-collection/page.tsx`, auth callback
+  - Dashboard URL: PostHog cloud (login with felipe.studionn@gmail.com)
+
+- **Sentry** (error tracking + performance):
+  - Env vars: `SENTRY_DSN` (in `.env.local`), `SENTRY_AUTH_TOKEN` (release tracking, only in CI/build)
+  - Config files: `sentry.client.config.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`
+  - Org: aimily / project: aimily-app on sentry.io
+  - Sampling: 10% performance, 100% errors
+
+- **Vercel Web Analytics**:
+  - Active on main app (`src/app/layout.tsx` `<Analytics />`) AND on every storefront layout (Sprint 9 Ecom)
+  - Privacy-friendly · no cookies · GDPR-default
+  - Per-storefront beforeSend hook tags events with the storefront host (multi-tenant grouping in Vercel dashboard)
+
+### 4.6d AI providers (env vars confirmed in .env.local + Vercel)
+
+- `ANTHROPIC_API_KEY` — Claude Haiku 4.5 (primary text) + Claude Sonnet 4.5 (SeoResearch heavy text)
+- `GEMINI_API_KEY` — Google Gemini 2.5 Flash (text fallback) + 2.5 Flash Image
+- `OPENAI_API_KEY` — gpt-image-1.5 (design renders, OG images via next/og uses standard) + text-embedding-3
+- `PERPLEXITY_API_KEY` — Sonar (live search for trends + brand DNA + SEO competitors)
+- `FREEPIK_API_KEY` — Mystic (model headshots) + Nano Banana (still life/tryon/editorial) + Kling 2.1 Pro (video)
+- (Kling is invoked via Freepik wrapper · no separate `KLING_API_KEY` in .env)
+
+### 4.6e IONOS DNS API (aimily.app)
+
+- **Endpoint**: `https://api.hosting.ionos.com/dns/v1/`
+- **Env vars**: `IONOS_DNS_API_KEY` + `IONOS_ZONE_ID_AIMILY` (both in `.env.local`, NOT in Vercel — local management only)
+- **Capability**: añadir/editar/borrar DNS records de aimily.app via API. Útil para:
+  - Cron renewal de DKIM keys (Resend rotates)
+  - Future: añadir TXT records de verification para servicios externos sin pedir a Felipe
+- **Scope**: aimily.app zone only (no permite gestionar otras zonas Felipe)
+
 ### 4.7 Cloudflare (NEW 2026-05-05) · Ecom storefront DNS
 
 - **Domain**: `aimily.shop` registered via Cloudflare Registrar (~$30/year)
@@ -538,6 +577,19 @@ resetPassword(email), updatePassword(newPassword)
 ---
 
 ## 9. BILLING SYSTEM
+
+### 9.1b Stripe price IDs (verified in Vercel env 2026-05-06)
+```
+STRIPE_FOUNDER_MONTHLY_PRICE_ID    + STRIPE_FOUNDER_ANNUAL_PRICE_ID
+STRIPE_TEAM_MONTHLY_PRICE_ID       + STRIPE_TEAM_ANNUAL_PRICE_ID
+STRIPE_TEAM_PRO_MONTHLY_PRICE_ID   + STRIPE_TEAM_PRO_ANNUAL_PRICE_ID
+STRIPE_CREDITS_PACK_50_PRICE_ID    + _250 + _1000 (top-ups)
+```
+Legacy IDs (kept for backward compat, not used by new checkout):
+```
+STRIPE_STARTER_*  · STRIPE_PROFESSIONAL_*  · STRIPE_PRO_MAX_*
+```
+Stripe LIVE mode active. Customer Portal configured. Refund flow handled by `webhooks/stripe` route.
 
 ### 9.1 Pricing v5 (May 2026 rebrand · LIVE)
 Renamed by ICP (target organization size) so customers self-identify:
