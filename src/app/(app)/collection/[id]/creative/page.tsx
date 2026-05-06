@@ -286,6 +286,96 @@ function VibeProposalFlow({
   );
 }
 
+// FichaRow — small two-row layout used across the Consumer entry phase.
+// Tiny uppercase label on top, content below. Same rhythm as the editorial
+// "para quién / edad / ciudades…" sections.
+function FichaRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="w-full">
+      <p className="text-[11px] tracking-[0.15em] uppercase text-carbon/30 mb-2 font-medium">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+// EditableChipCloud — small reusable for any string[] dimension (cities,
+// brands, shops, reads, values, lifestyle). Hover a chip to reveal its
+// remove ✕. The trailing + opens an inline input. Enter / blur commits;
+// Esc cancels. Used across the Consumer entry phase to let the user
+// trim or extend each dimension that aimily pre-filled from the moodboard.
+function EditableChipCloud({
+  values,
+  onChange,
+  placeholder,
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+
+  const remove = (idx: number) => onChange(values.filter((_, i) => i !== idx));
+  const commit = () => {
+    const trimmed = inputValue.trim();
+    if (trimmed) onChange([...values, trimmed]);
+    setInputValue('');
+    setAdding(false);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {values.map((v, i) => (
+        <div
+          key={`${v}-${i}`}
+          className="group inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-[12px] bg-carbon/[0.04] text-carbon/70 transition-all"
+        >
+          <span>{v}</span>
+          <button
+            type="button"
+            onClick={() => remove(i)}
+            className="opacity-0 group-hover:opacity-100 w-3.5 h-3.5 flex items-center justify-center text-carbon/30 hover:text-red-500 transition-opacity"
+            aria-label="remove"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      {adding ? (
+        <input
+          autoFocus
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              commit();
+            } else if (e.key === 'Escape') {
+              setAdding(false);
+              setInputValue('');
+            }
+          }}
+          placeholder={placeholder}
+          className="px-3 py-1.5 rounded-full text-[12px] bg-carbon/[0.06] text-carbon focus:outline-none border-0 min-w-[140px] placeholder:text-carbon/35"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-carbon/[0.04] text-carbon/40 hover:bg-carbon/[0.08] hover:text-carbon transition-all"
+          aria-label="add"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ConsumerContent — single canonical mode (no Free/Assisted/AI toggle).
 //
 // Two phases driven entirely by data.proposals:
@@ -318,8 +408,16 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   const proposals = (data.proposals as ConsumerProfile[]) || [];
   const gender = (data.gender as string) || '';
   const reference = (data.reference as string) || '';
+  const ageRange = (data.ageRange as string) || '';
+  const cities = (data.cities as string[]) || [];
+  const wearsBrands = (data.wearsBrands as string[]) || [];
+  const shopsAt = (data.shopsAt as string[]) || [];
+  const reads = (data.reads as string[]) || [];
+  const values = (data.values as string[]) || [];
+  const lifestyle = (data.lifestyle as string[]) || [];
   const suggestionFromMoodboard = Boolean(data._suggestionFromMoodboard);
   const hasProposals = proposals.length > 0;
+  const updateField = (key: string, val: unknown) => onChange({ ...data, [key]: val });
 
   // Pre-fill the entry phase from CIS (mainly moodboard analysis) once on
   // mount, only when there's nothing user-set yet (no proposals, no gender,
@@ -330,7 +428,9 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   const suggestionFetchedRef = useRef(false);
   useEffect(() => {
     if (hasProposals) return;
-    if (gender || reference) return;
+    // Skip the suggestion only if there's ANY user-set data already on the
+    // entry phase — otherwise we'd overwrite their tweaks on a remount.
+    if (gender || reference || ageRange || cities.length || wearsBrands.length) return;
     if (suggestionFetchedRef.current) return;
     if (!collectionPlanId) return;
     suggestionFetchedRef.current = true;
@@ -349,19 +449,44 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           body: JSON.stringify({ collectionPlanId, language }),
         });
         if (!res.ok) {
-          // Surface the exact failure to the console so we can diagnose
-          // without logging the user's data. status + body, no PII.
           const body = await res.text().catch(() => '<unreadable body>');
           console.error('[ConsumerSuggestInput] HTTP', res.status, body);
           outcome = 'error';
           return;
         }
-        const out = await res.json() as { gender: string | null; reference: string };
-        if (out.gender || out.reference) {
+        const out = await res.json() as {
+          gender: string | null;
+          ageRange: string;
+          cities: string[];
+          wearsBrands: string[];
+          shopsAt: string[];
+          reads: string[];
+          values: string[];
+          lifestyle: string[];
+          reference: string;
+        };
+        const anyValue =
+          out.gender ||
+          out.ageRange ||
+          out.reference ||
+          (out.cities?.length || 0) +
+          (out.wearsBrands?.length || 0) +
+          (out.shopsAt?.length || 0) +
+          (out.reads?.length || 0) +
+          (out.values?.length || 0) +
+          (out.lifestyle?.length || 0);
+        if (anyValue) {
           if (mounted) {
             onChange({
               ...data,
               gender: out.gender || gender,
+              ageRange: out.ageRange || ageRange,
+              cities: out.cities?.length ? out.cities : cities,
+              wearsBrands: out.wearsBrands?.length ? out.wearsBrands : wearsBrands,
+              shopsAt: out.shopsAt?.length ? out.shopsAt : shopsAt,
+              reads: out.reads?.length ? out.reads : reads,
+              values: out.values?.length ? out.values : values,
+              lifestyle: out.lifestyle?.length ? out.lifestyle : lifestyle,
               reference: out.reference || reference,
               _suggestionFromMoodboard: true,
             });
@@ -402,6 +527,13 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
     const { result, error: err } = await generateCreative('consumer-proposals', {
       reference,
       gender,
+      ageRange,
+      cities: cities.join(', '),
+      wearsBrands: wearsBrands.join(', '),
+      shopsAt: shopsAt.join(', '),
+      reads: reads.join(', '),
+      values: values.join(', '),
+      lifestyle: lifestyle.join(' · '),
       ...collectionContext,
     }, language);
     if (err) { setError(err); setGenerating(false); return; }
@@ -430,6 +562,13 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
     const { result, error: err } = await generateCreative('consumer-proposals', {
       reference,
       gender,
+      ageRange,
+      cities: cities.join(', '),
+      wearsBrands: wearsBrands.join(', '),
+      shopsAt: shopsAt.join(', '),
+      reads: reads.join(', '),
+      values: values.join(', '),
+      lifestyle: lifestyle.join(' · '),
       existingProfiles: liked.map((p) => p.title).join(', '),
       count: String(rejected.length),
       ...collectionContext,
@@ -479,50 +618,117 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           <div className="mb-10" />
         )}
 
-        {/* Gender — chips. Step 1 of 2. */}
-        <p className="text-[12px] tracking-[0.15em] uppercase text-carbon/30 mb-5 font-medium">
-          {(t.creative as Record<string, string>).forWhom || 'para quién'}
-        </p>
-        <div className="flex flex-wrap justify-center items-center gap-3 mb-14">
-          {genderOptions.map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => onChange({ ...data, gender: opt.id })}
-              className={`px-7 py-3 rounded-full text-[14px] font-medium transition-all ${
-                gender === opt.id
-                  ? 'bg-carbon text-white'
-                  : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-              }`}
-            >
-              {opt.label.toLowerCase()}
-            </button>
-          ))}
+        {/* Rich ficha — 9 dimensions, every one editable. The first time the
+            user lands, aimily has filled most of them from the moodboard.
+            User trims/edits/adds; nothing here blocks "generar". */}
+        <div className="w-full space-y-7">
+          {/* Gender — chips */}
+          <FichaRow label={(t.creative as Record<string, string>).forWhom || 'para quién'}>
+            <div className="flex flex-wrap items-center gap-2">
+              {genderOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => onChange({ ...data, gender: opt.id })}
+                  className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all ${
+                    gender === opt.id
+                      ? 'bg-carbon text-white'
+                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+                  }`}
+                >
+                  {opt.label.toLowerCase()}
+                </button>
+              ))}
+            </div>
+          </FichaRow>
+
+          {/* Age range — single editable chip */}
+          <FichaRow label={(t.creative as Record<string, string>).ageRange || 'edad'}>
+            <input
+              type="text"
+              value={ageRange}
+              onChange={(e) => updateField('ageRange', e.target.value)}
+              placeholder="28-45"
+              className="px-3 py-1.5 rounded-full text-[12px] bg-carbon/[0.04] text-carbon/70 border-0 focus:outline-none focus:bg-carbon/[0.08] placeholder:text-carbon/30 w-32"
+            />
+          </FichaRow>
+
+          {/* Cities */}
+          <FichaRow label={(t.creative as Record<string, string>).consumerCities || 'ciudades'}>
+            <EditableChipCloud
+              values={cities}
+              onChange={(v) => updateField('cities', v)}
+              placeholder="ciudad o barrio"
+            />
+          </FichaRow>
+
+          {/* Wears brands */}
+          <FichaRow label={(t.creative as Record<string, string>).consumerWearsBrands || 'marcas que lleva'}>
+            <EditableChipCloud
+              values={wearsBrands}
+              onChange={(v) => updateField('wearsBrands', v)}
+              placeholder="añadir marca"
+            />
+          </FichaRow>
+
+          {/* Shops at */}
+          <FichaRow label={(t.creative as Record<string, string>).consumerShopsAt || 'dónde compra'}>
+            <EditableChipCloud
+              values={shopsAt}
+              onChange={(v) => updateField('shopsAt', v)}
+              placeholder="tienda, marketplace…"
+            />
+          </FichaRow>
+
+          {/* Reads */}
+          <FichaRow label={(t.creative as Record<string, string>).consumerReads || 'qué lee'}>
+            <EditableChipCloud
+              values={reads}
+              onChange={(v) => updateField('reads', v)}
+              placeholder="cuenta, revista, blog"
+            />
+          </FichaRow>
+
+          {/* Values */}
+          <FichaRow label={(t.creative as Record<string, string>).consumerValues || 'lo que valora'}>
+            <EditableChipCloud
+              values={values}
+              onChange={(v) => updateField('values', v)}
+              placeholder="añadir valor"
+            />
+          </FichaRow>
+
+          {/* Lifestyle */}
+          <FichaRow label={(t.creative as Record<string, string>).consumerLifestyle || 'cómo vive'}>
+            <EditableChipCloud
+              values={lifestyle}
+              onChange={(v) => updateField('lifestyle', v)}
+              placeholder="añadir momento"
+            />
+          </FichaRow>
+
+          {/* Reference — single editorial line */}
+          <FichaRow label={(t.creative as Record<string, string>).describeYourCustomerLabel || 'en una frase'}>
+            <input
+              type="text"
+              value={reference}
+              onChange={(e) => onChange({ ...data, reference: e.target.value })}
+              placeholder={(t.creative as Record<string, string>).describeYourCustomerPlaceholder || 'una frase, una referencia, un detalle…'}
+              className="w-full text-[16px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-2 placeholder:text-carbon/25 font-light tracking-[-0.01em]"
+            />
+          </FichaRow>
         </div>
 
-        {/* Reference — bigger, clearer prompt. Step 2 of 2. */}
-        <div className="w-full mb-12">
-          <p className="text-[12px] tracking-[0.15em] uppercase text-carbon/30 mb-3 font-medium text-center">
-            {(t.creative as Record<string, string>).describeYourCustomerLabel || 'describe a tu consumidor'}
-          </p>
-          <input
-            type="text"
-            value={reference}
-            onChange={(e) => onChange({ ...data, reference: e.target.value })}
-            placeholder={(t.creative as Record<string, string>).describeYourCustomerPlaceholder || 'una frase, una referencia, un detalle…'}
-            className="w-full text-[18px] md:text-[20px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-3 placeholder:text-carbon/25 text-center font-light tracking-[-0.01em]"
-          />
+        <div className="mt-12 flex flex-col items-center gap-3">
+          <button
+            onClick={generateProposals}
+            disabled={!gender || generating}
+            className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-[14px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {generating ? ((t.creative as Record<string, string>).generatingProposals || 'generando…') : ((t.creative as Record<string, string>).generateProposalsCta || 'generar propuestas')}
+          </button>
+          {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
-
-        <button
-          onClick={generateProposals}
-          disabled={!gender || generating}
-          className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-[14px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {generating ? ((t.creative as Record<string, string>).generatingProposals || 'generando…') : ((t.creative as Record<string, string>).generateProposalsCta || 'generar propuestas')}
-        </button>
-
-        {error && <p className="text-xs text-red-600 mt-4">{error}</p>}
       </div>
     );
   }

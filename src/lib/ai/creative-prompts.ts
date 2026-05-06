@@ -82,10 +82,12 @@ Return ONLY the profile text as a continuous narrative. No JSON, no markdown hea
         maxTokens: 8192,
         system: PERSONAS.consumerStrategist,
         user: `${ctx}
-${input.gender ? `\nCOLLECTION GENDER TARGET: ${input.gender}\n` : ''}
-The user needs to define their target consumer and has provided this minimal reference:
+${input.gender ? `\nCOLLECTION GENDER TARGET: ${input.gender}\n` : ''}${input.ageRange ? `AGE RANGE: ${input.ageRange}\n` : ''}${input.cities ? `LIVES IN: ${input.cities}\n` : ''}${input.wearsBrands ? `WEARS / OWNS: ${input.wearsBrands}\n` : ''}${input.shopsAt ? `SHOPS AT: ${input.shopsAt}\n` : ''}${input.reads ? `READS / FOLLOWS: ${input.reads}\n` : ''}${input.values ? `VALUES: ${input.values}\n` : ''}${input.lifestyle ? `LIFESTYLE MARKERS: ${input.lifestyle}\n` : ''}
+The user has confirmed this consumer summary based on their moodboard:
 
 "${input.reference}"
+
+Use the structured fields above as STRONG signal — every proposal must respect them and extend them with concrete buying behavior, media diet, and wardrobe psychology. Don't restate the fields verbatim; weave them in naturally.
 
 ${input.existingProfiles && input.count
   ? `The user has already selected these consumer profiles and wants to KEEP them:

@@ -194,10 +194,12 @@ export async function POST(req: NextRequest) {
     // CIS persists.
     if (collectionPlanId && finalResult) {
       const summaryParts = [
+        finalResult.collectionName ? `Collection name suggested: ${finalResult.collectionName}` : '',
         finalResult.moodDescription ? `Mood: ${finalResult.moodDescription}` : '',
         finalResult.keyColors?.length ? `Colors: ${finalResult.keyColors.join(', ')}` : '',
         finalResult.keyStyles?.length ? `Styles: ${finalResult.keyStyles.join(', ')}` : '',
         finalResult.keyMaterials?.length ? `Materials: ${finalResult.keyMaterials.join(', ')}` : '',
+        finalResult.keyItems?.length ? `Items seen: ${finalResult.keyItems.join(', ')}` : '',
         finalResult.keyTrends?.length ? `Trends seen: ${finalResult.keyTrends.join(', ')}` : '',
         finalResult.keyBrands?.length ? `Brands referenced: ${finalResult.keyBrands.join(', ')}` : '',
         finalResult.targetAudience ? `Implied audience: ${finalResult.targetAudience}` : '',
