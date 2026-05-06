@@ -202,6 +202,22 @@ Every card/workspace offers 3 modes (UX universal rule):
 - **Auto-deploy**: from GitHub `main` branch
 - **All env vars uploaded** (see section 13). Notable: `VERCEL_API_TOKEN` (used by /api/ecom/publish to register storefront domains)
 
+### 4.6b Google Search Console (verified 2026-05-06)
+
+- **Property type**: `sc-domain:aimily.app` (Domain property · cubre www, apex, todos subdominios)
+- **Verification method**: DNS TXT record en IONOS (la propiedad ya estaba verificada antes de mayo · no requiere meta tag en código)
+- **Owner**: `felipe.studionn@gmail.com`
+- **Sitemap submitted**: `https://www.aimily.app/sitemap.xml` el 5 may 2026
+- **Estado actual** (2026-05-06): 122 páginas descubiertas · estado Correcto · 0 indexadas todavía (datos procesando)
+- **Tráfico actual**: 0 clicks · 0 impresiones (sitio nuevo · ranking Google necesita 2-6 semanas para sites nuevos)
+- **URLs forzadas a cola prioritaria** (URL Inspection · 2026-05-06): los 9 home locales (/en /es /fr /it /de /pt /nl /sv /no). Aceleración esperada: indexación en 1-3 días vs 2-6 semanas vía sitemap solo
+- **Wakeups Claude programados**:
+  - 13 may 09:37 — chequeo de progreso a 7 días (impressions iniciales)
+  - 3 jun 09:23 — reporte mensual completo (top keywords / páginas / países)
+  - ⚠️ Wakeups son **session-only** del Claude session que los creó. Si la sesión muere, los wakeups mueren. Para garantía cross-session habría que añadir un cron Vercel `/api/cron/gsc-report` (no implementado).
+- **NO existen** como referencia: meta tag GSC en código (no necesario · DNS verification ya hecho), Indexing API automatizado para sitio web normal (Google solo permite Indexing API para job postings/livestreams)
+- **Pending**: añadir IndexNow protocol para Bing Webmaster (~30 LOC, opcional)
+
 ### 4.7 Cloudflare (NEW 2026-05-05) · Ecom storefront DNS
 
 - **Domain**: `aimily.shop` registered via Cloudflare Registrar (~$30/year)
