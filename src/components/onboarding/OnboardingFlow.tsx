@@ -38,24 +38,20 @@ function readStoredStep(): Step | null {
 interface Props {
   /** Full name from auth metadata, used to greet by first name on step 2. */
   fullName?: string | null;
-  /** When true, skip step 1 (language) — used for users who arrived from
-   *  brief-to-collection flow, where they already chose locale upstream. */
-  skipLanguage?: boolean;
   /** Pre-resolved language from the server (auth.users.user_metadata.language).
    *  When set, it means the user already picked a language in a previous
    *  visit — we can skip step 1 on a refresh. */
   initialLanguage?: string | null;
 }
 
-export function OnboardingFlow({ fullName, skipLanguage = false, initialLanguage = null }: Props) {
+export function OnboardingFlow({ fullName, initialLanguage = null }: Props) {
   const router = useRouter();
   const t = useTranslation();
   const { language, setLanguage } = useLanguage();
-  // Decide initial step based on (a) prop, (b) stored step from a previous
-  // unfinished visit, (c) whether the user has already saved a language
-  // server-side (means they crossed step 1 in a prior visit), (d) default 1.
+  // Decide initial step based on (a) stored step from a previous unfinished
+  // visit, (b) whether the user has already saved a language server-side
+  // (means they crossed step 1 in a prior visit), (c) default 1.
   const [step, setStep] = useState<Step>(() => {
-    if (skipLanguage) return 2;
     const stored = readStoredStep();
     if (stored) return stored;
     if (initialLanguage) return 2;
@@ -132,7 +128,7 @@ export function OnboardingFlow({ fullName, skipLanguage = false, initialLanguage
           <p className="text-[11px] tracking-[0.2em] uppercase text-crema/35">
             {t.welcome.progress.step
               .replace('{n}', String(step))
-              .replace('{total}', skipLanguage ? '1' : '2')}
+              .replace('{total}', '2')}
           </p>
         )}
       </header>

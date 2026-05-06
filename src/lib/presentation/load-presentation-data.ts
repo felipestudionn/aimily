@@ -572,11 +572,10 @@ export async function loadPresentationData(collectionPlanId: string): Promise<Pr
     }>;
     if (f.length > 0) {
       // CRITICAL: in collection_skus, `expected_sales` is stored as REVENUE
-      // in euros (see brief/create/route.ts: expected_sales = buy_units ×
-      // sale_percentage/100 × pvp). It is NOT a unit count. So the deck's
-      // total revenue is sum(expected_sales) directly. Multiplying by pvp
-      // again doubles the units and produces an inflated €4.5M instead of
-      // the real €143K for SLAIZ.
+      // in euros (formula: buy_units × sale_percentage/100 × pvp). It is NOT
+      // a unit count. So the deck's total revenue is sum(expected_sales)
+      // directly. Multiplying by pvp again doubles the units and produces
+      // an inflated €4.5M instead of the real €143K for SLAIZ.
       const totalRevenue = f.reduce((s, sku) => s + (sku.expected_sales ?? 0), 0);
       const totalBuyUnits = f.reduce((s, sku) => s + (sku.buy_units ?? 0), 0);
       const avgPvp = f.reduce((s, sku) => s + (sku.pvp ?? 0), 0) / f.length;
