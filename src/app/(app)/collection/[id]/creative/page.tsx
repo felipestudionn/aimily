@@ -1117,17 +1117,23 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setShowPasteLinks(false);
   };
 
-  // Hidden file input rendered once at the top of the component (a single
-  // input element covers both entry-phase and add-more buttons).
+  // Single hidden file input shared across entry pill + add-more pill via
+  // <label htmlFor>. The label pattern is more reliable than calling
+  // ref.click() programmatically — some browsers throttle/block synthetic
+  // clicks on hidden inputs from within React event handlers.
+  const FILE_INPUT_ID = 'moodboard-file-input';
   const fileInput = (
     <input
       ref={fileInputRef}
+      id={FILE_INPUT_ID}
       type="file"
       multiple
       accept="image/*"
       className="hidden"
       onChange={(e) => {
         if (e.target.files && e.target.files.length > 0) handleUpload(e.target.files);
+        // Reset value so the same file can be re-selected after removal.
+        e.target.value = '';
       }}
     />
   );
@@ -1155,14 +1161,13 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
             >
               {t.creative.pasteLinks}
             </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+            <label
+              htmlFor={FILE_INPUT_ID}
+              className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all cursor-pointer ${uploading ? 'opacity-40 pointer-events-none' : ''}`}
             >
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {uploading ? uploadProgress : t.creative.dragOrUpload}
-            </button>
+            </label>
           </div>
           <p className="mt-8 text-[13px] text-carbon/35 max-w-md text-center leading-relaxed">
             {t.creative.moodboardEntryHint}
@@ -1320,14 +1325,13 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
 
           {/* Add-more buttons — small pills */}
           <div className="flex flex-wrap justify-center items-center gap-2 pt-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+            <label
+              htmlFor={FILE_INPUT_ID}
+              className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all cursor-pointer ${uploading ? 'opacity-40 pointer-events-none' : ''}`}
             >
               {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
               {uploading ? uploadProgress : t.creative.addMore}
-            </button>
+            </label>
             <button
               onClick={handlePinterestConnect}
               disabled={pinterestLoading}
