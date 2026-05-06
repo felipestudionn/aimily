@@ -23,7 +23,6 @@ export async function POST(req: NextRequest) {
       description,
       season: providedSeason,
       location,
-      setup_data,
       launch_date,
       milestones: customMilestones,
       untitledLabel,
@@ -91,6 +90,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // setup_data is intentionally NOT set on insert — it's now a derived
+    // view (see src/lib/derive-setup-data.ts). The column is preserved
+    // only as the carrier for the post-launch cron's analysis blob.
     const { data, error } = await supabaseAdmin
       .from('collection_plans')
       .insert({
@@ -98,7 +100,6 @@ export async function POST(req: NextRequest) {
         description,
         season,
         location,
-        setup_data: setup_data || {},
         user_id,
         status: 'active',
       })

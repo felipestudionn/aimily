@@ -15,7 +15,15 @@ export interface ProductTypeSegment {
   percentage: number;
 }
 
-// This matches the structure from merch-mind-planner
+/**
+ * Rich required-fields snapshot used by the Collection Builder + planner
+ * dashboard internals. Populated by merging DerivedSetupData (loaded from
+ * /api/derived-setup-data) with EMPTY_SETUP defaults — never read
+ * directly from a database column.
+ *
+ * The on-disk `collection_plans.setup_data` jsonb is no longer typed
+ * as SetupData; it lives only as the carrier for `post_launch_analysis`.
+ */
 export interface SetupData {
   totalSalesTarget: number;
   monthlyDistribution: number[];
@@ -41,7 +49,6 @@ export interface CollectionPlan {
   description?: string;
   season?: string;
   location?: string;
-  setup_data: SetupData;
   status: 'draft' | 'active' | 'archived';
   created_at: string;
   updated_at: string;

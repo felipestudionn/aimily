@@ -197,7 +197,7 @@ export interface MarketingPresentationData {
 async function verifyOwnership(
   collectionPlanId: string,
   userId: string
-): Promise<{ owned: boolean; setupData: Record<string, unknown> | null; launchDate: string | null }> {
+): Promise<{ owned: boolean; postLaunchAnalysis: PresentationPostLaunchAnalysis | null; launchDate: string | null }> {
   const { data } = await supabaseAdmin
     .from('collection_plans')
     .select('user_id, setup_data, launch_date')
@@ -205,12 +205,20 @@ async function verifyOwnership(
     .single();
 
   if (!data || data.user_id !== userId) {
-    return { owned: false, setupData: null, launchDate: null };
+    return { owned: false, postLaunchAnalysis: null, launchDate: null };
   }
+
+  // setup_data is no longer the merchandising cache — it's preserved
+  // only as the carrier for post_launch_analysis (written by the cron
+  // and the manual /api/ai/post-launch/generate endpoint). Pull just
+  // that one field to keep the public API of this helper narrow.
+  const setup = (data.setup_data as Record<string, unknown> | null) ?? {};
+  const postLaunchAnalysis =
+    (setup.post_launch_analysis as PresentationPostLaunchAnalysis | undefined) ?? null;
 
   return {
     owned: true,
-    setupData: (data.setup_data as Record<string, unknown> | null) ?? {},
+    postLaunchAnalysis,
     launchDate: (data.launch_date as string | null) ?? null,
   };
 }
@@ -390,7 +398,6 @@ export async function getMarketingPresentationData(
   const ownership = await verifyOwnership(collectionPlanId, userId);
   if (!ownership.owned) return null;
 
-  const setup = ownership.setupData ?? {};
   const launchDate = ownership.launchDate;
 
   // Fire every query in parallel.
@@ -540,8 +547,9 @@ export async function getMarketingPresentationData(
     }
   }
 
-  // Post-launch analysis (from setup_data)
-  const postLaunchRaw = (setup as { post_launch_analysis?: PresentationPostLaunchAnalysis }).post_launch_analysis ?? null;
+  // Post-launch analysis (carried inside setup_data jsonb — the only
+  // remaining narrow scope for that column post-onboarding-audit).
+  const postLaunchRaw = ownership.postLaunchAnalysis;
   const postLaunchAnalysis = postLaunchRaw && postLaunchRaw.result ? postLaunchRaw : null;
 
   // isPastLaunch

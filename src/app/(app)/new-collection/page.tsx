@@ -113,7 +113,6 @@ function NewCollectionFlow() {
           name: finalName,
           season,
           launch_date: launchDate,
-          setup_data: {},
           untitledLabel,
         }),
       });
