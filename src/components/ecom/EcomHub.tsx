@@ -29,6 +29,7 @@ import {
   type ThemeId,
   type Storefront,
 } from '@/types/storefront';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   collectionPlanId: string;
@@ -50,19 +51,21 @@ type PublishResp = {
   sslWarning?: string;
 };
 
-const THEME_META: Record<ThemeId, { name: string; mood: string; tagline: string }> = {
-  'editorial-heritage':  { name: 'Editorial Heritage',  mood: 'Magazine premium · serif display', tagline: 'Whitespace and craft.' },
-  'streetwear-drop':     { name: 'Streetwear Drop',     mood: 'Drop-driven · countdown hero',      tagline: 'Made for the launch.' },
-  'romantic-feminine':   { name: 'Romantic Feminine',   mood: 'Pastel · italic serif lookbook',    tagline: 'Cinematic softness.' },
-  'minimal-architect':   { name: 'Minimal Architect',   mood: 'Cero ornamento · grid estricto',    tagline: 'The product speaks.' },
-  'performance-tech':    { name: 'Performance Tech',    mood: 'Mono + sans · data visible',        tagline: 'Engineered to move.' },
-  'avant-garde-concept': { name: 'Avant-Garde Concept', mood: 'Asimetría · scroll narrative',      tagline: 'Convention is optional.' },
-  'sustainable-craft':   { name: 'Sustainable Craft',   mood: 'Tonos tierra · maker focus',        tagline: 'Made by hand, with intent.' },
-  'y2k-digital-native':  { name: 'Y2K Digital Native',  mood: 'Color saturado · sans bold',        tagline: 'Internet-native fashion.' },
-  'workwear-heritage':   { name: 'Workwear Heritage',   mood: 'Khaki · slab serif · utilitario',   tagline: 'Built to outlast.' },
-  'resort-luxe':         { name: 'Resort Luxe',         mood: 'Off-white · luz natural full-bleed',tagline: 'Slow horizons.' },
-  'drop-lookbook':       { name: 'Drop Lookbook',       mood: 'Single page · scroll vertical',     tagline: 'A single moment, told well.' },
-  'linkinbio-plus':      { name: 'Linkinbio Plus',      mood: 'Mobile-first · bio-link aesthetic', tagline: 'One screen, everything.' },
+// Theme display NAMES are kept as proper nouns (untranslated brand identifiers).
+// Mood + tagline ARE translated — see t.ecom.themeMood and t.ecom.themeTagline.
+const THEME_NAMES: Record<ThemeId, string> = {
+  'editorial-heritage':  'Editorial Heritage',
+  'streetwear-drop':     'Streetwear Drop',
+  'romantic-feminine':   'Romantic Feminine',
+  'minimal-architect':   'Minimal Architect',
+  'performance-tech':    'Performance Tech',
+  'avant-garde-concept': 'Avant-Garde Concept',
+  'sustainable-craft':   'Sustainable Craft',
+  'y2k-digital-native':  'Y2K Digital Native',
+  'workwear-heritage':   'Workwear Heritage',
+  'resort-luxe':         'Resort Luxe',
+  'drop-lookbook':       'Drop Lookbook',
+  'linkinbio-plus':      'Linkinbio Plus',
 };
 
 function suggestSubdomain(name?: string): string {
@@ -78,6 +81,8 @@ function suggestSubdomain(name?: string): string {
 }
 
 export function EcomHub({ collectionPlanId, collectionName }: Props) {
+  const t = useTranslation();
+  const tHub = t.ecom.hub;
   const baseDomain = process.env.NEXT_PUBLIC_STOREFRONT_BASE_DOMAIN ?? 'aimily.shop';
 
   const [existing, setExisting] = useState<ExistingStorefront | null>(null);
@@ -135,7 +140,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
         );
         setCheck(await res.json());
       } catch {
-        setCheck({ ok: false, message: 'Network error' });
+        setCheck({ ok: false, message: tHub.networkError });
       } finally {
         setChecking(false);
       }
@@ -154,10 +159,10 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
         body: JSON.stringify({ collectionPlanId, subdomain, themeId, paymentProvider, paymentConfig }),
       });
       const data: PublishResp = await res.json();
-      setPublishResult(res.ok ? data : { error: data.error ?? 'Publish failed' });
+      setPublishResult(res.ok ? data : { error: data.error ?? tHub.publishFailed });
       if (res.ok) setPreviewKey((k) => k + 1);
     } catch {
-      setPublishResult({ error: 'Network error' });
+      setPublishResult({ error: tHub.networkError });
     } finally {
       setPublishing(false);
     }
@@ -176,14 +181,14 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
             <div className="flex items-center gap-2.5 mb-3">
               <ShoppingBag className="h-4 w-4 text-carbon/40" strokeWidth={1.75} />
               <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-carbon/45">
-                Storefront generator
+                {tHub.storefrontGenerator}
               </p>
             </div>
             <h2 className="text-[28px] md:text-[36px] font-semibold tracking-[-0.03em] text-carbon leading-[1.1]">
-              Turn this collection into a website that sells.
+              {tHub.heroTitle}
             </h2>
             <p className="text-[14px] text-carbon/55 mt-3 leading-[1.6]">
-              Choose a theme, connect your Stripe or Shopify in one click. Aimily renders the storefront — you keep 100% of every sale.
+              {tHub.heroDescription}
             </p>
           </div>
 
@@ -195,7 +200,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
               }`}
             />
             <span className="text-[12px] font-medium text-carbon/65 tracking-[-0.01em]">
-              {isPublished ? 'Published' : 'Draft'}
+              {isPublished ? tHub.statusPublished : tHub.statusDraft}
             </span>
           </div>
         </div>
@@ -204,7 +209,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
       {/* SUBDOMAIN */}
       <div className="bg-white rounded-[20px] p-6 md:p-8">
         <div className="flex items-center gap-2.5 mb-4">
-          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">Subdomain</p>
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">{tHub.subdomain}</p>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -212,7 +217,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
             onChange={(e) =>
               setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
             }
-            placeholder="your-brand"
+            placeholder={tHub.subdomainPlaceholder}
             maxLength={32}
             className="flex-1 text-[14px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] px-4 py-3 focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30"
           />
@@ -221,12 +226,12 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
         <div className="mt-2 min-h-[20px]">
           {checking && (
             <span className="text-[12px] text-carbon/45 inline-flex items-center gap-1.5">
-              <Loader2 className="h-3 w-3 animate-spin" /> Checking…
+              <Loader2 className="h-3 w-3 animate-spin" /> {tHub.checking}
             </span>
           )}
           {!checking && check?.ok && (
             <span className="text-[12px] text-[#5A7847] inline-flex items-center gap-1.5">
-              <Check className="h-3 w-3" /> Available
+              <Check className="h-3 w-3" /> {tHub.available}
             </span>
           )}
           {!checking && check && !check.ok && (
@@ -239,12 +244,14 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
       <div className="bg-white rounded-[20px] p-6 md:p-8">
         <div className="flex items-center gap-2.5 mb-5">
           <ImageIcon className="h-4 w-4 text-carbon/40" strokeWidth={1.75} />
-          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">Theme</p>
-          <span className="text-[11px] text-carbon/35">12 editorial worlds · pick one</span>
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">{tHub.theme}</p>
+          <span className="text-[11px] text-carbon/35">{tHub.themeSubtitle}</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {ALL_THEME_IDS.map((id) => {
-            const meta = THEME_META[id];
+            const themeName = THEME_NAMES[id];
+            const themeMood = t.ecom.themeMood[id];
+            const themeTagline = t.ecom.themeTagline[id];
             const active = themeId === id;
             return (
               <button
@@ -258,15 +265,15 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
               >
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <p className={`text-[15px] font-semibold tracking-[-0.02em] leading-tight ${active ? 'text-white' : 'text-carbon'}`}>
-                    {meta.name}
+                    {themeName}
                   </p>
                   {active && <Check className="h-4 w-4 text-white flex-shrink-0" strokeWidth={2.5} />}
                 </div>
                 <p className={`text-[11px] leading-[1.5] mb-2 ${active ? 'text-white/65' : 'text-carbon/55'}`}>
-                  {meta.mood}
+                  {themeMood}
                 </p>
                 <p className={`text-[11px] italic leading-[1.5] ${active ? 'text-white/45' : 'text-carbon/40'}`}>
-                  &ldquo;{meta.tagline}&rdquo;
+                  &ldquo;{themeTagline}&rdquo;
                 </p>
               </button>
             );
@@ -278,14 +285,14 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
       <div className="bg-white rounded-[20px] p-6 md:p-8">
         <div className="flex items-center gap-2.5 mb-5">
           <CreditCard className="h-4 w-4 text-carbon/40" strokeWidth={1.75} />
-          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">Payment</p>
-          <span className="text-[11px] text-carbon/35">Aimily never touches the money</span>
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">{tHub.payment}</p>
+          <span className="text-[11px] text-carbon/35">{tHub.paymentSubtitle}</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
           {([
-            { id: 'lookbook_only' as const,     title: 'Lookbook only', desc: 'Publish without buy buttons. Great for pre-launch or invite-only.' },
-            { id: 'stripe_buy_button' as const, title: 'Stripe',        desc: 'Indie default. Free Stripe account in 2 minutes — no code.' },
-            { id: 'shopify_buy' as const,       title: 'Shopify',       desc: 'For brands already on Shopify. Catalog stays in your store.' },
+            { id: 'lookbook_only' as const,     title: tHub.lookbookOnlyTitle, desc: tHub.lookbookOnlyDesc },
+            { id: 'stripe_buy_button' as const, title: tHub.stripeTitle,       desc: tHub.stripeDesc },
+            { id: 'shopify_buy' as const,       title: tHub.shopifyTitle,      desc: tHub.shopifyDesc },
           ]).map((p) => {
             const active = paymentProvider === p.id;
             return (
@@ -311,7 +318,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
         {/* Wizard inline per provider */}
         {paymentProvider === 'stripe_buy_button' && (
           <div className="rounded-[14px] bg-carbon/[0.025] p-5 space-y-3">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-carbon/45 font-semibold">Stripe publishable key</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-carbon/45 font-semibold">{tHub.stripeKeyLabel}</p>
             <input
               value={paymentConfig.publishableKey ?? ''}
               onChange={(e) => setPaymentConfig({ ...paymentConfig, publishableKey: e.target.value })}
@@ -319,20 +326,20 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
               className="w-full text-[13px] text-carbon bg-white rounded-[10px] border border-carbon/[0.08] px-3 py-2.5 focus:outline-none focus:border-carbon/25 transition-colors placeholder:text-carbon/30 font-mono"
             />
             <p className="text-[11.5px] text-carbon/55 leading-[1.55]">
-              Get yours at <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer noopener" className="underline">dashboard.stripe.com/apikeys</a>. Per-SKU buy button IDs are configured in the SKU table (Sprint 4 inline edit).
+              {tHub.stripeHelp}
             </p>
           </div>
         )}
         {paymentProvider === 'shopify_buy' && (
           <div className="rounded-[14px] bg-carbon/[0.025] p-5 space-y-3">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-carbon/45 font-semibold">Shopify shop domain</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-carbon/45 font-semibold">{tHub.shopifyDomainLabel}</p>
             <input
               value={paymentConfig.shopDomain ?? ''}
               onChange={(e) => setPaymentConfig({ ...paymentConfig, shopDomain: e.target.value })}
               placeholder="your-store.myshopify.com"
               className="w-full text-[13px] text-carbon bg-white rounded-[10px] border border-carbon/[0.08] px-3 py-2.5 focus:outline-none focus:border-carbon/25 transition-colors placeholder:text-carbon/30 font-mono"
             />
-            <p className="text-[11px] uppercase tracking-[0.18em] text-carbon/45 font-semibold pt-2">Storefront access token</p>
+            <p className="text-[11px] uppercase tracking-[0.18em] text-carbon/45 font-semibold pt-2">{tHub.shopifyTokenLabel}</p>
             <input
               value={paymentConfig.storefrontAccessToken ?? ''}
               onChange={(e) => setPaymentConfig({ ...paymentConfig, storefrontAccessToken: e.target.value })}
@@ -340,14 +347,14 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
               className="w-full text-[13px] text-carbon bg-white rounded-[10px] border border-carbon/[0.08] px-3 py-2.5 focus:outline-none focus:border-carbon/25 transition-colors placeholder:text-carbon/30 font-mono"
             />
             <p className="text-[11.5px] text-carbon/55 leading-[1.55]">
-              In your Shopify admin → Apps → Develop apps → create a custom app with Storefront API access. Per-SKU product handles in SKU table.
+              {tHub.shopifyHelp}
             </p>
           </div>
         )}
         {paymentProvider === 'lookbook_only' && (
           <div className="rounded-[14px] bg-carbon/[0.025] p-5">
             <p className="text-[12px] text-carbon/65 leading-[1.55]">
-              No payment provider needed. Your storefront publishes as a public lookbook with &ldquo;Coming soon&rdquo; CTAs on each PDP. Switch to Stripe or Shopify any time to enable checkout.
+              {tHub.lookbookHelp}
             </p>
           </div>
         )}
@@ -365,7 +372,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
           }`}
         >
           {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
-          {publishing ? 'Publishing…' : isPublished ? 'Republish' : 'Publish storefront'}
+          {publishing ? tHub.publishing : isPublished ? tHub.republish : tHub.publishStorefront}
         </button>
 
         {publishResult?.error && (
@@ -380,7 +387,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
         {publicUrl && !publishResult?.error && (
           <div className="mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#C5CAA8]/30 text-carbon">
             <Check className="h-4 w-4" />
-            <span className="text-[13px] font-medium">Live at</span>
+            <span className="text-[13px] font-medium">{tHub.liveAt}</span>
             <a
               href={publicUrl}
               target="_blank"
@@ -394,7 +401,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
                 try { await navigator.clipboard.writeText(publicUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
               }}
               className="ml-1 inline-flex items-center text-carbon/55 hover:text-carbon transition-colors"
-              aria-label="Copy URL"
+              aria-label={tHub.copyUrl}
             >
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             </button>
@@ -403,7 +410,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
               target="_blank"
               rel="noreferrer noopener"
               className="ml-1 inline-flex items-center text-carbon/55 hover:text-carbon transition-colors"
-              aria-label="Open"
+              aria-label={tHub.open}
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
@@ -417,7 +424,7 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
           <iframe
             key={previewKey}
             src={publicUrl}
-            title="Storefront preview"
+            title={tHub.storefrontPreview}
             className="w-full h-[640px] rounded-[16px] border border-carbon/[0.06]"
           />
         </div>

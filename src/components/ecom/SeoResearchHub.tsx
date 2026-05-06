@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { Loader2, Search, FileText, Users, Activity, Check, AlertTriangle } from 'lucide-react';
+import { useTranslation } from '@/i18n';
 
 interface Props {
   collectionPlanId: string;
@@ -27,28 +28,37 @@ interface Onpage { meta_title: string; meta_description: string; og_title: strin
 interface AuditCheck { id: string; label: string; pass: boolean; }
 interface AuditResult { url: string; score: number; passed: number; total: number; checks: AuditCheck[]; recommendations: string[]; }
 
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'keywords',    label: 'Keywords',    icon: Search },
-  { id: 'onpage',      label: 'On-page',     icon: FileText },
-  { id: 'competitors', label: 'Competitors', icon: Users },
-  { id: 'audit',       label: 'Audit',       icon: Activity },
+const TAB_DEFS: { id: Tab; icon: React.ElementType }[] = [
+  { id: 'keywords',    icon: Search },
+  { id: 'onpage',      icon: FileText },
+  { id: 'competitors', icon: Users },
+  { id: 'audit',       icon: Activity },
 ];
 
 export function SeoResearchHub({ collectionPlanId, storefrontId }: Props) {
+  const t = useTranslation();
+  const tSeo = t.ecom.seo;
   const [tab, setTab] = useState<Tab>('keywords');
+
+  const tabLabels: Record<Tab, string> = {
+    keywords: tSeo.tabKeywords,
+    onpage: tSeo.tabOnpage,
+    competitors: tSeo.tabCompetitors,
+    audit: tSeo.tabAudit,
+  };
 
   return (
     <div className="bg-white rounded-[20px] p-6 md:p-8">
       {/* Header */}
       <div className="flex items-center gap-2.5 mb-5">
         <Search className="h-4 w-4 text-carbon/40" strokeWidth={1.75} />
-        <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">SEO Research</p>
-        <span className="text-[11px] text-carbon/35">keywords · meta · competitors · audit</span>
+        <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">{tSeo.title}</p>
+        <span className="text-[11px] text-carbon/35">{tSeo.subtitle}</span>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-carbon/[0.06]">
-        {TABS.map(({ id, label, icon: Icon }) => {
+        {TAB_DEFS.map(({ id, icon: Icon }) => {
           const active = tab === id;
           return (
             <button
@@ -61,7 +71,7 @@ export function SeoResearchHub({ collectionPlanId, storefrontId }: Props) {
               }`}
             >
               <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
-              {label}
+              {tabLabels[id]}
             </button>
           );
         })}
@@ -77,6 +87,8 @@ export function SeoResearchHub({ collectionPlanId, storefrontId }: Props) {
 
 /* ── KEYWORDS ───────────────────────────────────────────────────── */
 function KeywordsTab({ collectionPlanId }: { collectionPlanId: string }) {
+  const t = useTranslation();
+  const tSeo = t.ecom.seo;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
@@ -89,9 +101,9 @@ function KeywordsTab({ collectionPlanId }: { collectionPlanId: string }) {
         body: JSON.stringify({ collectionPlanId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Failed'); return; }
+      if (!res.ok) { setError(data.error ?? tSeo.failed); return; }
       setKeywords(data.keywords ?? []);
-    } catch { setError('Network error'); }
+    } catch { setError(tSeo.networkError); }
     finally { setLoading(false); }
   };
 
@@ -101,7 +113,7 @@ function KeywordsTab({ collectionPlanId }: { collectionPlanId: string }) {
         <button onClick={generate} disabled={loading}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors disabled:opacity-50">
           {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {keywords.length > 0 ? 'Regenerate' : 'Generate keywords'}
+          {keywords.length > 0 ? tSeo.keywordsRegenerate : tSeo.keywordsGenerate}
         </button>
         {error && <span className="text-[12px] text-[#A0463C]">{error}</span>}
       </div>
@@ -129,6 +141,8 @@ function KeywordsTab({ collectionPlanId }: { collectionPlanId: string }) {
 
 /* ── ON-PAGE ────────────────────────────────────────────────────── */
 function OnpageTab({ collectionPlanId }: { collectionPlanId: string }) {
+  const t = useTranslation();
+  const tSeo = t.ecom.seo;
   const [page, setPage] = useState<'home' | 'plp' | 'pdp' | 'lookbook' | 'about'>('home');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,9 +156,9 @@ function OnpageTab({ collectionPlanId }: { collectionPlanId: string }) {
         body: JSON.stringify({ collectionPlanId, page }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Failed'); return; }
+      if (!res.ok) { setError(data.error ?? tSeo.failed); return; }
       setResult(data);
-    } catch { setError('Network error'); }
+    } catch { setError(tSeo.networkError); }
     finally { setLoading(false); }
   };
 
@@ -153,28 +167,28 @@ function OnpageTab({ collectionPlanId }: { collectionPlanId: string }) {
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <select value={page} onChange={(e) => setPage(e.target.value as typeof page)}
           className="text-[12px] text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] px-3 py-2 focus:outline-none focus:border-carbon/25">
-          <option value="home">Home</option>
-          <option value="plp">Shop (PLP)</option>
-          <option value="pdp">Product (PDP)</option>
-          <option value="lookbook">Lookbook</option>
-          <option value="about">About</option>
+          <option value="home">{tSeo.pageHome}</option>
+          <option value="plp">{tSeo.pagePlp}</option>
+          <option value="pdp">{tSeo.pagePdp}</option>
+          <option value="lookbook">{tSeo.pageLookbook}</option>
+          <option value="about">{tSeo.pageAbout}</option>
         </select>
         <button onClick={generate} disabled={loading}
           className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 disabled:opacity-50">
           {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {result ? 'Regenerate' : 'Generate meta'}
+          {result ? tSeo.onpageRegenerate : tSeo.onpageGenerate}
         </button>
         {error && <span className="text-[12px] text-[#A0463C]">{error}</span>}
       </div>
       {result && (
         <div className="space-y-3">
           {([
-            ['Meta title',       result.meta_title,       60],
-            ['Meta description', result.meta_description, 160],
-            ['OG title',         result.og_title,         70],
-            ['OG description',   result.og_description,   200],
-            ['H1 heading',       result.h1,               60],
-            ['Image alt pattern', result.image_alt_pattern, 100],
+            [tSeo.metaTitle,       result.meta_title,       60],
+            [tSeo.metaDescription, result.meta_description, 160],
+            [tSeo.ogTitle,         result.og_title,         70],
+            [tSeo.ogDescription,   result.og_description,   200],
+            [tSeo.h1Heading,       result.h1,               60],
+            [tSeo.imageAlt,        result.image_alt_pattern, 100],
           ] as const).map(([label, value, ideal]) => (
             <div key={label} className="px-4 py-3 rounded-[12px] bg-carbon/[0.02]">
               <div className="flex items-center justify-between mb-1">
@@ -194,6 +208,8 @@ function OnpageTab({ collectionPlanId }: { collectionPlanId: string }) {
 
 /* ── COMPETITORS ────────────────────────────────────────────────── */
 function CompetitorsTab({ collectionPlanId }: { collectionPlanId: string }) {
+  const t = useTranslation();
+  const tSeo = t.ecom.seo;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
@@ -206,9 +222,9 @@ function CompetitorsTab({ collectionPlanId }: { collectionPlanId: string }) {
         body: JSON.stringify({ collectionPlanId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Failed'); return; }
+      if (!res.ok) { setError(data.error ?? tSeo.failed); return; }
       setCompetitors(data.competitors ?? []);
-    } catch { setError('Network error'); }
+    } catch { setError(tSeo.networkError); }
     finally { setLoading(false); }
   };
 
@@ -218,7 +234,7 @@ function CompetitorsTab({ collectionPlanId }: { collectionPlanId: string }) {
         <button onClick={generate} disabled={loading}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 disabled:opacity-50">
           {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {competitors.length > 0 ? 'Refresh competitors' : 'Find competitors'}
+          {competitors.length > 0 ? tSeo.competitorsRefresh : tSeo.competitorsFind}
         </button>
         {error && <span className="text-[12px] text-[#A0463C]">{error}</span>}
       </div>
@@ -240,8 +256,8 @@ function CompetitorsTab({ collectionPlanId }: { collectionPlanId: string }) {
                   ))}
                 </div>
               )}
-              {c.content_strengths && <p className="text-[11.5px] text-carbon/55 mt-1"><strong>Strengths:</strong> {c.content_strengths}</p>}
-              {c.gaps_for_us && <p className="text-[11.5px] text-[#5A7847] mt-1"><strong>Opportunity:</strong> {c.gaps_for_us}</p>}
+              {c.content_strengths && <p className="text-[11.5px] text-carbon/55 mt-1"><strong>{tSeo.strengths}:</strong> {c.content_strengths}</p>}
+              {c.gaps_for_us && <p className="text-[11.5px] text-[#5A7847] mt-1"><strong>{tSeo.opportunity}:</strong> {c.gaps_for_us}</p>}
             </div>
           ))}
         </div>
@@ -252,6 +268,8 @@ function CompetitorsTab({ collectionPlanId }: { collectionPlanId: string }) {
 
 /* ── AUDIT ──────────────────────────────────────────────────────── */
 function AuditTab({ storefrontId }: { storefrontId: string | null }) {
+  const t = useTranslation();
+  const tSeo = t.ecom.seo;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AuditResult | null>(null);
@@ -259,7 +277,7 @@ function AuditTab({ storefrontId }: { storefrontId: string | null }) {
   if (!storefrontId) {
     return (
       <p className="text-[13px] text-carbon/55 italic px-4 py-6 text-center">
-        Publish your storefront first — the audit fetches your live site to score it.
+        {tSeo.auditPublishFirst}
       </p>
     );
   }
@@ -272,9 +290,9 @@ function AuditTab({ storefrontId }: { storefrontId: string | null }) {
         body: JSON.stringify({ storefrontId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Failed'); return; }
+      if (!res.ok) { setError(data.error ?? tSeo.failed); return; }
       setResult(data);
-    } catch { setError('Network error'); }
+    } catch { setError(tSeo.networkError); }
     finally { setLoading(false); }
   };
 
@@ -284,7 +302,7 @@ function AuditTab({ storefrontId }: { storefrontId: string | null }) {
         <button onClick={run} disabled={loading}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 disabled:opacity-50">
           {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-          {result ? 'Re-run audit' : 'Run SEO audit'}
+          {result ? tSeo.auditRerun : tSeo.auditRun}
         </button>
         {error && <span className="text-[12px] text-[#A0463C]">{error}</span>}
       </div>
@@ -293,7 +311,7 @@ function AuditTab({ storefrontId }: { storefrontId: string | null }) {
           <div className="flex items-baseline gap-3 mb-5 px-4 py-4 rounded-[14px] bg-carbon/[0.02]">
             <span className="text-[44px] font-light tracking-[-0.03em] text-carbon">{result.score}</span>
             <span className="text-[11px] text-carbon/55 font-medium uppercase tracking-[0.12em]">/100</span>
-            <span className="ml-auto text-[12px] text-carbon/55">{result.passed} of {result.total} checks passed</span>
+            <span className="ml-auto text-[12px] text-carbon/55">{tSeo.checksPassed.replace('{passed}', String(result.passed)).replace('{total}', String(result.total))}</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {result.checks.map((c) => (
