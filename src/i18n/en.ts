@@ -650,6 +650,9 @@ export const en = {
     basedOnMoodboard: 'based on your moodboard — edit anything',
     noMoodboardSignal: "I can't read a clear signal from the moodboard yet — start yourself",
     moodboardReadFailed: "couldn't read your moodboard — start yourself",
+    forWhom: 'for whom',
+    describeYourCustomerLabel: 'describe your customer',
+    describeYourCustomerPlaceholder: 'one sentence, a reference, a detail…',
     // Vibe
     collectionVibe: 'Collection Vibe',
     vibeDesc: 'The spirit of the collection.',

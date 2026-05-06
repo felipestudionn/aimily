@@ -349,6 +349,10 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           body: JSON.stringify({ collectionPlanId, language }),
         });
         if (!res.ok) {
+          // Surface the exact failure to the console so we can diagnose
+          // without logging the user's data. status + body, no PII.
+          const body = await res.text().catch(() => '<unreadable body>');
+          console.error('[ConsumerSuggestInput] HTTP', res.status, body);
           outcome = 'error';
           return;
         }
@@ -364,9 +368,11 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           }
           outcome = 'success';
         } else {
+          console.warn('[ConsumerSuggestInput] empty result', out);
           outcome = 'empty';
         }
-      } catch {
+      } catch (err) {
+        console.error('[ConsumerSuggestInput] fetch threw', err);
         outcome = 'error';
       } finally {
         const elapsed = Date.now() - startedAt;
@@ -449,32 +455,35 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   // ENTRY phase — only when no proposals exist yet (or after reopen).
   if (!hasProposals) {
     return (
-      <div className="flex flex-col items-center py-10 md:py-14 max-w-2xl mx-auto">
-        <h2 className="text-[24px] md:text-[28px] font-medium text-carbon/85 tracking-[-0.02em] mb-3 text-center leading-tight">
-          {((t.creative as Record<string, string>).forWhomDesigning || 'para quién diseñamos {collection}').replace('{collection}', collectionContext.collectionName)}
-        </h2>
+      <div className="flex flex-col items-center max-w-2xl mx-auto">
+        {/* Status caption — directly under the page title, never lets the
+            user wonder what aimily did. */}
         {suggesting ? (
-          <p className="text-[12px] text-carbon/35 mb-10 inline-flex items-center gap-2">
+          <p className="text-[13px] text-carbon/45 inline-flex items-center gap-2 mb-10">
             <Loader2 className="h-3 w-3 animate-spin" />
             {(t.creative as Record<string, string>).readingMoodboard || 'leyendo tu moodboard…'}
           </p>
         ) : suggestionFromMoodboard ? (
-          <p className="text-[12px] text-carbon/35 mb-10">
+          <p className="text-[13px] text-carbon/45 mb-10">
             {(t.creative as Record<string, string>).basedOnMoodboard || 'basado en tu moodboard — edita lo que quieras'}
           </p>
         ) : suggestionStatus === 'empty' ? (
-          <p className="text-[12px] text-carbon/30 mb-10 italic">
+          <p className="text-[13px] text-carbon/35 italic mb-10">
             {(t.creative as Record<string, string>).noMoodboardSignal || 'aún no leo señal clara del moodboard — empieza tú'}
           </p>
         ) : suggestionStatus === 'error' ? (
-          <p className="text-[12px] text-carbon/30 mb-10 italic">
+          <p className="text-[13px] text-carbon/35 italic mb-10">
             {(t.creative as Record<string, string>).moodboardReadFailed || 'no he podido leer tu moodboard — empieza tú'}
           </p>
         ) : (
           <div className="mb-10" />
         )}
 
-        <div className="flex flex-wrap justify-center items-center gap-3 mb-12">
+        {/* Gender — chips. Step 1 of 2. */}
+        <p className="text-[12px] tracking-[0.15em] uppercase text-carbon/30 mb-5 font-medium">
+          {(t.creative as Record<string, string>).forWhom || 'para quién'}
+        </p>
+        <div className="flex flex-wrap justify-center items-center gap-3 mb-14">
           {genderOptions.map((opt) => (
             <button
               key={opt.id}
@@ -490,15 +499,17 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           ))}
         </div>
 
-        <div className="w-full mb-10">
-          <p className="text-[12px] text-carbon/35 text-center mb-3">
-            {(t.creative as Record<string, string>).somethingMoreInMind || 'algo más en la cabeza? una referencia, un detalle, una palabra'}
+        {/* Reference — bigger, clearer prompt. Step 2 of 2. */}
+        <div className="w-full mb-12">
+          <p className="text-[12px] tracking-[0.15em] uppercase text-carbon/30 mb-3 font-medium text-center">
+            {(t.creative as Record<string, string>).describeYourCustomerLabel || 'describe a tu consumidor'}
           </p>
           <input
             type="text"
             value={reference}
             onChange={(e) => onChange({ ...data, reference: e.target.value })}
-            className="w-full text-[15px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-2 placeholder:text-carbon/25 text-center"
+            placeholder={(t.creative as Record<string, string>).describeYourCustomerPlaceholder || 'una frase, una referencia, un detalle…'}
+            className="w-full text-[18px] md:text-[20px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-3 placeholder:text-carbon/25 text-center font-light tracking-[-0.01em]"
           />
         </div>
 
@@ -3186,15 +3197,12 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
       <div className={`${blockParam ? 'px-6 md:px-16 lg:px-24 pt-12 md:pt-16' : 'px-4 sm:px-8 md:px-12 lg:px-16 py-8 sm:py-12'}`}>
         {/* Header — centered when coming from sidebar, legacy when direct */}
         {blockParam ? (
-          <div className="text-center mb-12">
-            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
-              {collectionContext.collectionName || t.creative.collectionFallback}
-            </p>
+          <div className="text-center mb-10">
             <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
               {blockNameMap[blockParam] || t.creative.consumerDefinition}
             </h1>
             {blockDescMap[blockParam] && (
-              <p className="mt-4 text-[14px] md:text-[15px] text-carbon/45 max-w-[520px] mx-auto leading-relaxed">
+              <p className="mt-3 text-[14px] md:text-[15px] text-carbon/45 max-w-[520px] mx-auto leading-relaxed">
                 {blockDescMap[blockParam]}
               </p>
             )}

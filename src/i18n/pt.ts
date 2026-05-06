@@ -651,6 +651,9 @@ export const pt: Dictionary = {
     basedOnMoodboard: 'baseado no teu moodboard — edita o que quiseres',
     noMoodboardSignal: 'ainda não leio sinal claro do moodboard — começa tu',
     moodboardReadFailed: 'não consegui ler o teu moodboard — começa tu',
+    forWhom: 'para quem',
+    describeYourCustomerLabel: 'descreve o teu cliente',
+    describeYourCustomerPlaceholder: 'uma frase, uma referência, um detalhe…',
     // Vibe
     collectionVibe: 'Vibe da Coleção',
     vibeDesc: 'O espírito da coleção.',
