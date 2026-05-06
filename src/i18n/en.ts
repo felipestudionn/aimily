@@ -3959,6 +3959,12 @@ export const en = {
       copyUrl: 'Copy URL',
       open: 'Open',
       storefrontPreview: 'Storefront preview',
+      validationTitle: 'Pre-publish check',
+      validationSubtitle: '{ready}/{total} SKUs ready · structural review',
+      validationErrorsLabel: 'Blockers',
+      validationWarningsLabel: 'Warnings',
+      validationWarningsAllowNote: 'You can publish — these warnings degrade the storefront but don’t block it. Fix when convenient.',
+      validationBlocked: 'Fix the blockers above before publishing.',
     },
     themeMood: {
       'editorial-heritage': 'Magazine premium · serif display',

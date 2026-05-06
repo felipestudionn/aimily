@@ -3760,6 +3760,12 @@ export const no: Dictionary = {
       copyUrl: 'Kopier URL',
       open: 'Åpne',
       storefrontPreview: 'Storefront-forhåndsvisning',
+      validationTitle: 'Pre-publish-sjekk',
+      validationSubtitle: '{ready}/{total} SKU-er klare · strukturell gjennomgang',
+      validationErrorsLabel: 'Blokkeringer',
+      validationWarningsLabel: 'Advarsler',
+      validationWarningsAllowNote: 'Du kan publisere — disse advarslene svekker storefronten, men blokkerer den ikke. Fiks når det passer.',
+      validationBlocked: 'Fiks blokkeringene før du publiserer.',
     },
     themeMood: {
       'editorial-heritage': 'Magasin premium · serif display',

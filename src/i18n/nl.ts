@@ -3874,6 +3874,12 @@ export const nl: Dictionary = {
       copyUrl: 'URL kopiëren',
       open: 'Openen',
       storefrontPreview: 'Storefront-voorbeeld',
+      validationTitle: 'Pre-publish controle',
+      validationSubtitle: '{ready}/{total} SKUs klaar · structurele review',
+      validationErrorsLabel: 'Blokkades',
+      validationWarningsLabel: 'Waarschuwingen',
+      validationWarningsAllowNote: 'Je kunt publiceren — deze waarschuwingen verslechteren de storefront maar blokkeren niet. Los op wanneer het uitkomt.',
+      validationBlocked: 'Los de blokkades op voordat je publiceert.',
     },
     themeMood: {
       'editorial-heritage': 'Magazine premium · serif display',

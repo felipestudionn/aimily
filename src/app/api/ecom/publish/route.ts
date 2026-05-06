@@ -29,6 +29,7 @@ import { getAuthenticatedUser, verifyCollectionOwnership } from '@/lib/api-auth'
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isSubdomainAvailable, SUBDOMAIN_ERROR_MESSAGES } from '@/lib/storefront/subdomain-validator';
 import { registerStorefrontDomain, buildStorefrontUrl } from '@/lib/storefront/vercel-domains';
+import { validateStorefront } from '@/lib/storefront/validate';
 import { ALL_THEME_IDS, type ThemeId, type PaymentProvider } from '@/types/storefront';
 
 const VALID_PROVIDERS: PaymentProvider[] = ['stripe_buy_button', 'shopify_buy', 'lookbook_only'];
@@ -91,6 +92,26 @@ export async function POST(request: Request) {
     paymentProvider && VALID_PROVIDERS.includes(paymentProvider as PaymentProvider)
       ? (paymentProvider as PaymentProvider)
       : 'lookbook_only';
+
+  // ── Pre-publish structural validation ──
+  // Same util backs GET /api/ecom/validate so the user can see blockers
+  // before clicking Publish. Errors block, warnings allow. Caller can
+  // bypass warnings by setting body.acknowledgeWarnings = true (the UI
+  // shows the warning list and asks for confirmation in that case).
+  const validation = await validateStorefront(collectionPlanId, {
+    paymentProvider: (paymentProvider as PaymentProvider) ?? 'lookbook_only',
+    skuPaymentMap: (skuPaymentMap as Record<string, { buyButtonId?: string; productHandle?: string }>) ?? {},
+  });
+  if (!validation.canPublish) {
+    return NextResponse.json(
+      {
+        error: 'Storefront not ready to publish — fix the issues below.',
+        reason: 'validation_failed',
+        validation,
+      },
+      { status: 422 },
+    );
+  }
 
   // Quota check via RPC (reads subscriptions.storefront_quota + counts published)
   const { data: canPublish, error: quotaError } = await supabaseAdmin.rpc('can_publish_storefront', {
@@ -212,6 +233,10 @@ export async function POST(request: Request) {
       publicUrl,
       sslPending: !vercelResult.ok || !vercelResult.alreadyExists,
       sslWarning: vercelResult.ok ? undefined : 'SSL provisioning failed — please retry publish in 1 minute.',
+      // Surface warnings (non-blocking) to the UI so the user knows the
+      // storefront is degraded even though publish succeeded.
+      validationWarnings: validation.warnings,
+      validationCounts: validation.counts,
     },
     { status: existing ? 200 : 201 },
   );

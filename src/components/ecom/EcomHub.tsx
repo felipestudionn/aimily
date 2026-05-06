@@ -123,6 +123,32 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
   const [copied, setCopied] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);     // bump to refresh iframe
 
+  // Pre-publish structural validation. Live-checked: refetches whenever
+  // subdomain/theme/payment changes (debounced 800ms). Surfaces blockers
+  // to the user BEFORE they click Publish. Same util backs the publish
+  // endpoint server-side so the source of truth is shared.
+  interface ValidationIssue { code: string; message: string; skuId?: string }
+  interface Validation {
+    canPublish: boolean;
+    errors: ValidationIssue[];
+    warnings: ValidationIssue[];
+    counts: { skusTotal: number; skusReady: number; skusWithEditorial: number; skusWithCopy: number; skusWithBuyButton: number };
+  }
+  const [validation, setValidation] = useState<Validation | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/ecom/validate?collectionPlanId=${collectionPlanId}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as Validation;
+        if (!cancelled) setValidation(data);
+      } catch { /* silent */ }
+    }, 800);
+    return () => { cancelled = true; clearTimeout(handle); };
+  }, [collectionPlanId, paymentProvider, paymentConfig, themeId, existing?.id]);
+
   useEffect(() => {
     if (!subdomain || subdomain.length < 4) {
       setCheck(null);
@@ -360,13 +386,62 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
         )}
       </div>
 
+      {/* PRE-PUBLISH VALIDATION */}
+      {validation && (validation.errors.length > 0 || validation.warnings.length > 0) && (
+        <div className="bg-white rounded-[20px] p-6 md:p-8 space-y-4">
+          <div className="flex items-center gap-2.5">
+            <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-carbon/45">
+              {tHub.validationTitle}
+            </p>
+            <span className="text-[11px] text-carbon/35">
+              {tHub.validationSubtitle.replace('{ready}', String(validation.counts.skusReady)).replace('{total}', String(validation.counts.skusTotal))}
+            </span>
+          </div>
+
+          {validation.errors.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-[#A0463C] font-semibold">
+                {tHub.validationErrorsLabel} ({validation.errors.length})
+              </p>
+              <ul className="space-y-1">
+                {validation.errors.map((iss, i) => (
+                  <li key={`e${i}`} className="text-[12px] text-[#A0463C] leading-[1.5]">
+                    • {iss.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {validation.warnings.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] uppercase tracking-[0.12em] text-[#A88033] font-semibold">
+                {tHub.validationWarningsLabel} ({validation.warnings.length})
+              </p>
+              <ul className="space-y-1 max-h-[200px] overflow-y-auto pr-2">
+                {validation.warnings.map((iss, i) => (
+                  <li key={`w${i}`} className="text-[12px] text-carbon/65 leading-[1.5]">
+                    • {iss.message}
+                  </li>
+                ))}
+              </ul>
+              {validation.errors.length === 0 && (
+                <p className="text-[11px] italic text-carbon/45 pt-1">
+                  {tHub.validationWarningsAllowNote}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* PUBLISH */}
       <div className="bg-white rounded-[20px] p-6 md:p-8 text-center">
         <button
           onClick={handlePublish}
-          disabled={!check?.ok || publishing}
+          disabled={!check?.ok || publishing || (validation !== null && !validation.canPublish)}
           className={`inline-flex items-center gap-2 px-7 py-3 rounded-full text-[14px] font-semibold tracking-[-0.01em] transition-all ${
-            check?.ok && !publishing
+            check?.ok && !publishing && (validation === null || validation.canPublish)
               ? 'bg-carbon text-white hover:bg-carbon/90 cursor-pointer'
               : 'bg-carbon/[0.06] text-carbon/30 cursor-not-allowed'
           }`}
@@ -374,6 +449,12 @@ export function EcomHub({ collectionPlanId, collectionName }: Props) {
           {publishing && <Loader2 className="h-4 w-4 animate-spin" />}
           {publishing ? tHub.publishing : isPublished ? tHub.republish : tHub.publishStorefront}
         </button>
+
+        {validation && !validation.canPublish && (
+          <p className="text-[12px] text-[#A0463C] mt-3 italic">
+            {tHub.validationBlocked}
+          </p>
+        )}
 
         {publishResult?.error && (
           <p className="text-[13px] text-[#A0463C] mt-4">{publishResult.error}</p>

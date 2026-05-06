@@ -3910,6 +3910,12 @@ export const es: Dictionary = {
       copyUrl: 'Copiar URL',
       open: 'Abrir',
       storefrontPreview: 'Vista previa del storefront',
+      validationTitle: 'Chequeo pre-publish',
+      validationSubtitle: '{ready}/{total} SKUs listos · revisión estructural',
+      validationErrorsLabel: 'Bloqueantes',
+      validationWarningsLabel: 'Avisos',
+      validationWarningsAllowNote: 'Puedes publicar — estos avisos degradan el storefront pero no lo bloquean. Arregla cuando puedas.',
+      validationBlocked: 'Arregla los bloqueantes antes de publicar.',
     },
     themeMood: {
       'editorial-heritage': 'Revista premium · serif display',
