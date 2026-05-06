@@ -862,9 +862,8 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
   const analysis = (data.analysis as string) || '';
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
-  const [showPasteLinks, setShowPasteLinks] = useState(false);
-  const [pasteLinksValue, setPasteLinksValue] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   // Pinterest state
   const [pinterestStep, setPinterestStep] = useState<'idle' | 'boards' | 'pins'>('idle');
@@ -1076,49 +1075,33 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setPinterestError('');
   };
 
-  // Paste links: take a textarea blob, extract URLs, push each through
-  // /api/storage/upload with sourceUrl (same path Pinterest uses) so the
-  // file ends up in our Storage bucket and persists across sessions.
-  const handleImportFromUrls = async () => {
-    const urls = pasteLinksValue
-      .split(/[\s,]+/)
-      .map((s: string) => s.trim())
-      .filter((s: string) => /^https?:\/\//i.test(s));
-    if (urls.length === 0) return;
-    setImportingPins(true);
-    const newUrls: string[] = [];
-    for (let i = 0; i < urls.length; i++) {
-      setUploadProgress(`${t.creative.importingProgress} ${i + 1}/${urls.length}...`);
-      try {
-        const res = await fetch('/api/storage/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            collectionPlanId: collectionId,
-            assetType: 'moodboard',
-            name: `paste-${Date.now()}-${i}.jpg`,
-            sourceUrl: urls[i],
-            description: 'Pasted URL',
-            metadata: { source: 'paste' },
-          }),
-        });
-        if (res.ok) {
-          const { publicUrl } = await res.json();
-          newUrls.push(publicUrl);
-        }
-      } catch { /* skip failed */ }
+  // Drag-and-drop handlers — wired on the <label> so users can either
+  // drop files anywhere on the dropzone or click to open the picker.
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleUpload(e.dataTransfer.files);
     }
-    if (newUrls.length > 0) {
-      onChange({ ...data, images: [...images, ...newUrls] });
-    }
-    setImportingPins(false);
-    setUploadProgress('');
-    setPasteLinksValue('');
-    setShowPasteLinks(false);
   };
 
-  // Single hidden file input shared across entry pill + add-more pill via
-  // <label htmlFor>. The label pattern is more reliable than calling
+  // Single hidden file input shared across entry dropzone + add-more pill
+  // via <label htmlFor>. The label pattern is more reliable than calling
   // ref.click() programmatically — some browsers throttle/block synthetic
   // clicks on hidden inputs from within React event handlers.
   const FILE_INPUT_ID = 'moodboard-file-input';
@@ -1142,67 +1125,58 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     <div className="space-y-6">
       {fileInput}
 
-      {/* ENTRY phase — pantalla limpia con 3 pills, sólo si no hay imágenes
-          ni overlay activo (Pinterest modal o paste-links inline form). */}
-      {images.length === 0 && pinterestStep === 'idle' && !showPasteLinks && (
-        <div className="flex flex-col items-center py-12 md:py-20">
-          <div className="flex flex-wrap justify-center items-center gap-3 md:gap-4">
+      {/* ENTRY phase — Pinterest + drag/upload, side-by-side, equal weight.
+          Pinterest left because most fashion moodboards live there already.
+          Upload right with full drag-and-drop support. Both feel like real
+          surfaces, not buttons. */}
+      {images.length === 0 && pinterestStep === 'idle' && (
+        <div className="flex flex-col items-center py-6 md:py-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl">
+            {/* Pinterest card */}
             <button
               onClick={handlePinterestConnect}
               disabled={pinterestLoading}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all disabled:opacity-40"
+              className={`flex flex-col items-center justify-center gap-4 py-16 md:py-20 px-6 rounded-[20px] bg-carbon/[0.04] hover:bg-carbon/[0.07] transition-all disabled:opacity-40 ${pinterestLoading ? 'cursor-wait' : 'cursor-pointer'}`}
             >
-              {pinterestLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-              {pinterestLoading ? t.creative.connecting : t.creative.pinterest.toLowerCase()}
+              <div className="w-14 h-14 rounded-full bg-carbon/[0.06] flex items-center justify-center">
+                {pinterestLoading ? <Loader2 className="h-6 w-6 animate-spin text-carbon/50" /> : <ExternalLink className="h-6 w-6 text-carbon/50" />}
+              </div>
+              <p className="text-[16px] font-medium text-carbon/75">
+                {pinterestLoading ? t.creative.connecting : `${t.creative.connect} ${t.creative.pinterest.toLowerCase()}`}
+              </p>
+              <p className="text-[13px] text-carbon/35 max-w-[220px] text-center leading-relaxed">
+                {t.creative.pinterestHint}
+              </p>
             </button>
-            <button
-              onClick={() => setShowPasteLinks(true)}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all"
-            >
-              {t.creative.pasteLinks}
-            </button>
+
+            {/* Upload card — drag-and-drop zone */}
             <label
               htmlFor={FILE_INPUT_ID}
-              className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[14px] font-medium bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] hover:text-carbon transition-all cursor-pointer ${uploading ? 'opacity-40 pointer-events-none' : ''}`}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`flex flex-col items-center justify-center gap-4 py-16 md:py-20 px-6 rounded-[20px] border-2 border-dashed transition-all cursor-pointer ${
+                dragActive
+                  ? 'border-carbon/50 bg-carbon/[0.05]'
+                  : 'border-carbon/[0.15] hover:border-carbon/30 hover:bg-carbon/[0.02]'
+              } ${uploading ? 'opacity-40 pointer-events-none' : ''}`}
             >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploading ? uploadProgress : t.creative.dragOrUpload}
+              <div className="w-14 h-14 rounded-full bg-carbon/[0.04] flex items-center justify-center">
+                {uploading ? <Loader2 className="h-6 w-6 animate-spin text-carbon/50" /> : <Upload className="h-6 w-6 text-carbon/50" />}
+              </div>
+              <p className="text-[16px] font-medium text-carbon/75">
+                {uploading ? uploadProgress : t.creative.dragOrUpload}
+              </p>
+              <p className="text-[13px] text-carbon/35 max-w-[220px] text-center leading-relaxed">
+                {t.creative.uploadHint}
+              </p>
             </label>
           </div>
+
           <p className="mt-8 text-[13px] text-carbon/35 max-w-md text-center leading-relaxed">
             {t.creative.moodboardEntryHint}
           </p>
-        </div>
-      )}
-
-      {/* PASTE LINKS inline form — replaces the entry pills temporarily */}
-      {showPasteLinks && (
-        <div className="max-w-xl mx-auto py-12">
-          <p className="text-center text-[14px] text-carbon/55 mb-4">{t.creative.pasteLinksHint}</p>
-          <textarea
-            value={pasteLinksValue}
-            onChange={(e) => setPasteLinksValue(e.target.value)}
-            placeholder="https://..."
-            rows={4}
-            className="w-full px-4 py-3 text-sm text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none placeholder:text-carbon/30"
-            autoFocus
-          />
-          <div className="mt-4 flex justify-center gap-3">
-            <button
-              onClick={() => { setShowPasteLinks(false); setPasteLinksValue(''); }}
-              className="px-5 py-2 rounded-full text-[13px] font-medium text-carbon/50 hover:text-carbon transition-colors"
-            >
-              {t.common.cancel}
-            </button>
-            <button
-              onClick={handleImportFromUrls}
-              disabled={!pasteLinksValue.trim() || importingPins}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30"
-            >
-              {importingPins ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              {importingPins ? uploadProgress : t.creative.importLinks}
-            </button>
-          </div>
         </div>
       )}
 
@@ -1339,13 +1313,6 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
             >
               {pinterestLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
               {pinterestLoading ? t.creative.connecting : t.creative.pinterest.toLowerCase()}
-            </button>
-            <button
-              onClick={() => setShowPasteLinks(true)}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/55 hover:bg-carbon/[0.08] hover:text-carbon transition-all"
-            >
-              <Plus className="h-3 w-3" />
-              {t.creative.pasteLinks}
             </button>
           </div>
         </div>
