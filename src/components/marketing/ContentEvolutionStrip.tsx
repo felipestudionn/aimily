@@ -127,16 +127,23 @@ export function ContentEvolutionStrip({
       const [header, data] = result.split(',');
       const mimeType = header.match(/data:(.*);/)?.[1] || 'image/png';
 
+      // Style references are AI-INPUT, not AI-OUTPUT. They feed Nano Banana
+      // composition/lighting cues but must NEVER show up on a SKU's PDP. We
+      // tag them as 'callout' (the storefront filter at
+      // load-storefront-data.ts:300 only reads editorial/lifestyle/still_life).
+      // Pre-2026-05-06 these were saved as 'editorial' which polluted every
+      // PDP filter. Audit reference: aimily-sku-lifecycle-audit-2026-05-06.md.
       const res = await fetch('/api/storage/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           collectionPlanId,
-          assetType: 'editorial',
-          name: file.name,
+          assetType: 'callout',
+          name: `style-ref-${file.name}`,
           base64: data,
           mimeType,
           phase: 'marketing',
+          metadata: { purpose: 'editorial_style_reference', sku_id: sku.id },
         }),
       });
       if (!res.ok) throw await backendError(res);

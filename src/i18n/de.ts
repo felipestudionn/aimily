@@ -3987,6 +3987,19 @@ export const de: Dictionary = {
       productHandleHint: 'Das Product Handle in deinem Shopify-Store (der URL-Slug).',
       lookbookOnlyNote: 'Lookbook-only Storefront — keine Zahlung pro SKU. Wechsle den Anbieter im Hub, um Checkout zu aktivieren.',
     },
+    orphanLinker: {
+      title: 'Verwaiste Storefront-Bilder',
+      description: 'Diese editorial / lifestyle / still-life Bilder existieren in deiner Kollektion, sind aber keinem SKU zugeordnet — sie werden auf keiner Produktseite erscheinen. Ordne jedes einem SKU zu, markiere als Input-Referenz oder lösche.',
+      loading: 'Verwaiste werden geladen…',
+      networkError: 'Netzwerkfehler',
+      actionFailed: 'Aktion fehlgeschlagen',
+      skuPickerLabel: '— SKU auswählen —',
+      assignAction: 'Zuordnen',
+      markAsInputAction: 'Referenz',
+      markAsInputHint: 'Reklassifiziere als Callout (AI-Input-Referenz) — von Storefront-PDPs ausgeschlossen.',
+      deleteAction: 'Löschen',
+      footerHint: 'Self-Heal-Muster: jeder neue Upload verlangt jetzt skuId an der Grenze — diese Liste sollte nahe null bleiben.',
+    },
   },
 
 };

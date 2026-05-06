@@ -4071,6 +4071,19 @@ export const en = {
       productHandleHint: 'The product handle in your Shopify store (the URL slug).',
       lookbookOnlyNote: 'Lookbook-only storefront — no payment per SKU. Switch payment provider in the Hub to enable checkout.',
     },
+    orphanLinker: {
+      title: 'Orphan storefront images',
+      description: 'These editorial / lifestyle / still-life images exist in your collection but are not linked to any SKU, so they will not appear on any product page. Assign each to a SKU, mark as input reference, or delete.',
+      loading: 'Loading orphans…',
+      networkError: 'Network error',
+      actionFailed: 'Action failed',
+      skuPickerLabel: '— select SKU —',
+      assignAction: 'Assign',
+      markAsInputAction: 'Input ref',
+      markAsInputHint: 'Reclassify as a callout (AI input reference) — excluded from storefront PDPs.',
+      deleteAction: 'Delete',
+      footerHint: 'Self-heal pattern: any new upload now requires skuId at the boundary, so this list should stay near zero.',
+    },
   },
 
 };

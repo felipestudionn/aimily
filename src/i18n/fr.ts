@@ -3987,6 +3987,19 @@ export const fr: Dictionary = {
       productHandleHint: 'Le handle du produit dans ta boutique Shopify (le slug de l’URL).',
       lookbookOnlyNote: 'Storefront lookbook seul — pas de paiement par SKU. Change le provider dans le Hub pour activer le checkout.',
     },
+    orphanLinker: {
+      title: 'Images orphelines du storefront',
+      description: 'Ces images editorial / lifestyle / still-life existent dans ta collection mais ne sont liées à aucun SKU, donc elles n’apparaîtront sur aucune page produit. Assigne chacune à un SKU, marque comme référence d’input, ou supprime.',
+      loading: 'Chargement des orphelins…',
+      networkError: 'Erreur réseau',
+      actionFailed: 'Action échouée',
+      skuPickerLabel: '— choisir SKU —',
+      assignAction: 'Assigner',
+      markAsInputAction: 'Référence',
+      markAsInputHint: 'Reclasse comme callout (référence d’input AI) — exclue des PDP du storefront.',
+      deleteAction: 'Supprimer',
+      footerHint: 'Pattern self-heal : chaque nouvel upload exige maintenant skuId à la frontière, cette liste doit rester proche de zéro.',
+    },
   },
 
 };

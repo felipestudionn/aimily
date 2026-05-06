@@ -3986,6 +3986,19 @@ export const nl: Dictionary = {
       productHandleHint: 'De product handle in je Shopify-store (de URL-slug).',
       lookbookOnlyNote: 'Lookbook-only storefront — geen betaling per SKU. Wijzig de provider in de Hub om checkout te activeren.',
     },
+    orphanLinker: {
+      title: 'Wezen-storefront-afbeeldingen',
+      description: 'Deze editorial / lifestyle / still-life afbeeldingen bestaan in je collectie maar zijn niet gekoppeld aan een SKU — ze verschijnen op geen enkele productpagina. Wijs elk toe aan een SKU, markeer als input-referentie, of verwijder.',
+      loading: 'Wezen laden…',
+      networkError: 'Netwerkfout',
+      actionFailed: 'Actie mislukt',
+      skuPickerLabel: '— kies SKU —',
+      assignAction: 'Toewijzen',
+      markAsInputAction: 'Referentie',
+      markAsInputHint: 'Herclassificeer als callout (AI-input-referentie) — uitgesloten van storefront-PDP\'s.',
+      deleteAction: 'Verwijderen',
+      footerHint: 'Self-heal-patroon: elke nieuwe upload vereist nu skuId aan de grens — deze lijst zou bij nul moeten blijven.',
+    },
   },
 
 };

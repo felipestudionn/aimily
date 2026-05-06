@@ -3872,6 +3872,19 @@ export const no: Dictionary = {
       productHandleHint: 'Produktets handle i Shopify-butikken (URL-slug).',
       lookbookOnlyNote: 'Kun lookbook-storefront — ingen betaling per SKU. Bytt leverandør i Hub for å aktivere kassen.',
     },
+    orphanLinker: {
+      title: 'Foreldreløse storefront-bilder',
+      description: 'Disse editorial / lifestyle / still-life-bildene finnes i kolleksjonen din, men er ikke koblet til noen SKU — de vises ikke på noen produktside. Tildel hvert et SKU, merk som input-referanse, eller slett.',
+      loading: 'Laster foreldreløse…',
+      networkError: 'Nettverksfeil',
+      actionFailed: 'Handling mislyktes',
+      skuPickerLabel: '— velg SKU —',
+      assignAction: 'Tildel',
+      markAsInputAction: 'Referanse',
+      markAsInputHint: 'Omklassifiser som callout (AI-input-referanse) — ekskludert fra storefront-PDP-er.',
+      deleteAction: 'Slett',
+      footerHint: 'Self-heal-mønster: hver ny opplasting krever nå skuId ved grensen — listen bør holde seg nær null.',
+    },
   },
 
 };
