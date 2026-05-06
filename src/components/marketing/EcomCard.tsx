@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { EcomHub } from '@/components/ecom/EcomHub';
 import { SeoResearchHub } from '@/components/ecom/SeoResearchHub';
 import { OverridesEditor } from '@/components/ecom/OverridesEditor';
+import { SkuOverridesEditor } from '@/components/ecom/SkuOverridesEditor';
 
 /* ═══════════════════════════════════════════════════════════════════
    Ecom Card · sub-block 04.4 of Marketing & Sales
@@ -43,6 +44,7 @@ export function EcomCard({ collectionPlanId }: EcomCardProps) {
       <EcomHub collectionPlanId={collectionPlanId} />
       <SeoResearchHub collectionPlanId={collectionPlanId} storefrontId={storefrontId} />
       <OverridesEditor storefrontId={storefrontId} />
+      <SkuOverridesEditor collectionPlanId={collectionPlanId} storefrontId={storefrontId} />
     </div>
   );
 }

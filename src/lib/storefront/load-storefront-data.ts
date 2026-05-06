@@ -261,7 +261,7 @@ async function loadSkus(
 ): Promise<StorefrontSku[]> {
   const { data: skus } = await supabaseAdmin
     .from('collection_skus')
-    .select('id, type, channel, drop_number, pvp, final_price, expected_sales, sketch_url, render_url, render_urls, notes, story_id')
+    .select('id, type, channel, drop_number, pvp, final_price, expected_sales, sketch_url, render_url, render_urls, notes, story_id, size_run')
     .eq('collection_plan_id', collectionPlanId)
     .order('drop_number')
     .order('expected_sales', { ascending: false });
@@ -280,13 +280,40 @@ async function loadSkus(
     .select('sku_id, name, hex_primary')
     .in('sku_id', skuIds);
 
+  // Resolve sizes per SKU from collection_skus.size_run (jsonb).
+  // The shape is { S: 10, M: 15, L: 20, XL: 5 } (size → buy_units count)
+  // — we pull the keys with non-zero values, ordered using a fashion-
+  // standard sort. Empty/missing size_run falls back to ['S','M','L','XL'].
+  const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+  const numericRe = /^\d+(?:\.\d+)?$/;
+  const sortSizes = (arr: string[]): string[] => {
+    const fashion = arr.filter((s) => SIZE_ORDER.includes(s.toUpperCase()));
+    const numeric = arr.filter((s) => numericRe.test(s));
+    const other = arr.filter((s) => !SIZE_ORDER.includes(s.toUpperCase()) && !numericRe.test(s));
+    return [
+      ...fashion.sort((a, b) => SIZE_ORDER.indexOf(a.toUpperCase()) - SIZE_ORDER.indexOf(b.toUpperCase())),
+      ...numeric.sort((a, b) => Number(a) - Number(b)),
+      ...other.sort(),
+    ];
+  };
+  const sizesBySku = new Map<string, string[]>();
+  for (const s of skus) {
+    const sr = s.size_run as Record<string, unknown> | null | undefined;
+    if (sr && typeof sr === 'object' && !Array.isArray(sr)) {
+      const sizes = Object.entries(sr)
+        .filter(([k, v]) => k && (typeof v === 'number' ? v > 0 : Boolean(v)))
+        .map(([k]) => k);
+      if (sizes.length) sizesBySku.set(s.id as string, sortSizes(sizes));
+    }
+  }
+
   const colorwaysBySku = new Map<string, StorefrontVariant[]>();
   for (const cw of (colorways ?? [])) {
     const arr = colorwaysBySku.get(cw.sku_id as string) ?? [];
     arr.push({
       color: (cw.name as string) || 'Default',
       hex: (cw.hex_primary as string) ?? null,
-      sizes: ['S', 'M', 'L', 'XL'],   // size_run propagation in Sprint 3
+      sizes: sizesBySku.get(cw.sku_id as string) ?? ['S', 'M', 'L', 'XL'],
     });
     colorwaysBySku.set(cw.sku_id as string, arr);
   }

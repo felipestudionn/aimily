@@ -415,6 +415,8 @@ export function ContentEvolutionStrip({
               ) : (
                 <EmptyLevelCta
                   message={m.noSourceImages || 'Complete the 3D render step in the Design phase, or upload your own image.'}
+                  ctaLabel={(m.generate3dRenderCta as string | undefined) || 'Generate 3D render now'}
+                  ctaHref={`/collection/${collectionPlanId}/product?phase=sketch`}
                 />
               )}
             </div>
@@ -426,6 +428,8 @@ export function ContentEvolutionStrip({
               {!has3dRender ? (
                 <EmptyLevelCta
                   message={m.noSourceImages || 'Complete the 3D render step in the Design phase first.'}
+                  ctaLabel={(m.generate3dRenderCta as string | undefined) || 'Generate 3D render now'}
+                  ctaHref={`/collection/${collectionPlanId}/product?phase=sketch`}
                 />
               ) : (
                 <>
@@ -478,6 +482,8 @@ export function ContentEvolutionStrip({
               {!has3dRender ? (
                 <EmptyLevelCta
                   message={m.noSourceImages || 'Complete the 3D render step in the Design phase first.'}
+                  ctaLabel={(m.generate3dRenderCta as string | undefined) || 'Generate 3D render now'}
+                  ctaHref={`/collection/${collectionPlanId}/product?phase=sketch`}
                 />
               ) : (
                 <>
@@ -599,6 +605,8 @@ export function ContentEvolutionStrip({
               {!has3dRender ? (
                 <EmptyLevelCta
                   message={m.noSourceImages || 'Complete the 3D render step in the Design phase first.'}
+                  ctaLabel={(m.generate3dRenderCta as string | undefined) || 'Generate 3D render now'}
+                  ctaHref={`/collection/${collectionPlanId}/product?phase=sketch`}
                 />
               ) : (
                 <>
@@ -654,13 +662,29 @@ export function ContentEvolutionStrip({
 
 /* ─── Helpers ─── */
 
-function EmptyLevelCta({ message }: { message: string }) {
+function EmptyLevelCta({
+  message,
+  ctaLabel,
+  ctaHref,
+}: {
+  message: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+}) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-8 gap-3">
       <div className="w-12 h-12 rounded-full bg-carbon/[0.04] flex items-center justify-center">
         <ImageIcon className="h-5 w-5 text-carbon/25" strokeWidth={1.75} />
       </div>
       <p className="text-[12px] text-carbon/45 max-w-md leading-relaxed">{message}</p>
+      {ctaLabel && ctaHref && (
+        <a
+          href={ctaHref}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-carbon text-white text-[11px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors"
+        >
+          {ctaLabel}
+        </a>
+      )}
     </div>
   );
 }
