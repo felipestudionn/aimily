@@ -647,6 +647,8 @@ export const fr: Dictionary = {
     generateProposalsCta: 'générer des propositions',
     generatingProposals: 'génération…',
     modifyAction: 'modifier',
+    readingMoodboard: 'je lis ton moodboard…',
+    basedOnMoodboard: 'basé sur ton moodboard — édite ce que tu veux',
     // Vibe
     collectionVibe: 'Esprit de la collection',
     vibeDesc: 'L\'esprit de la collection.',

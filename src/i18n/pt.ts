@@ -647,6 +647,8 @@ export const pt: Dictionary = {
     generateProposalsCta: 'gerar propostas',
     generatingProposals: 'a gerar…',
     modifyAction: 'modificar',
+    readingMoodboard: 'a ler o teu moodboard…',
+    basedOnMoodboard: 'baseado no teu moodboard — edita o que quiseres',
     // Vibe
     collectionVibe: 'Vibe da Coleção',
     vibeDesc: 'O espírito da coleção.',

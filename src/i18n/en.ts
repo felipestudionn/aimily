@@ -646,6 +646,8 @@ export const en = {
     generateProposalsCta: 'generate proposals',
     generatingProposals: 'generating…',
     modifyAction: 'modify',
+    readingMoodboard: 'reading your moodboard…',
+    basedOnMoodboard: 'based on your moodboard — edit anything',
     // Vibe
     collectionVibe: 'Collection Vibe',
     vibeDesc: 'The spirit of the collection.',

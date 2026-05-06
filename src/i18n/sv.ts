@@ -637,6 +637,8 @@ export const sv: Dictionary = {
     generateProposalsCta: 'generera förslag',
     generatingProposals: 'genererar…',
     modifyAction: 'ändra',
+    readingMoodboard: 'läser ditt moodboard…',
+    basedOnMoodboard: 'baserat på ditt moodboard — redigera vad du vill',
     collectionVibe: 'Kollektionskänsla',
     vibeDesc: 'Kollektionens anda.',
     brandDNA: 'Varumärkes-DNA',

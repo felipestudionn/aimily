@@ -300,14 +300,58 @@ function VibeProposalFlow({
 function ConsumerContent({ data, onChange, collectionContext }: { mode: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
   const { language } = useLanguage();
+  const { id: collectionPlanId } = useParams();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
 
   const proposals = (data.proposals as ConsumerProfile[]) || [];
   const gender = (data.gender as string) || '';
   const reference = (data.reference as string) || '';
+  const suggestionFromMoodboard = Boolean(data._suggestionFromMoodboard);
   const hasProposals = proposals.length > 0;
+
+  // Pre-fill the entry phase from CIS (mainly moodboard analysis) once on
+  // mount, only when there's nothing user-set yet (no proposals, no gender,
+  // no reference). This is the canonical pattern: aimily proposes input
+  // based on previous block, user edits + confirms. The flag stays in data
+  // so the "basado en tu moodboard" caption keeps showing even after the
+  // user tweaks values — they are still building on the suggestion.
+  const suggestionFetchedRef = useRef(false);
+  useEffect(() => {
+    if (hasProposals) return;
+    if (gender || reference) return;
+    if (suggestionFetchedRef.current) return;
+    if (!collectionPlanId) return;
+    suggestionFetchedRef.current = true;
+
+    (async () => {
+      setSuggesting(true);
+      try {
+        const res = await fetch('/api/ai/consumer-suggest-input', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionPlanId, language }),
+        });
+        if (!res.ok) return;
+        const out = await res.json() as { gender: string | null; reference: string };
+        if (out.gender || out.reference) {
+          onChange({
+            ...data,
+            gender: out.gender || gender,
+            reference: out.reference || reference,
+            _suggestionFromMoodboard: true,
+          });
+        }
+      } catch {
+        // Silent — entry phase still works without the suggestion.
+      } finally {
+        setSuggesting(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionPlanId]);
 
   const genderOptions = [
     { id: 'women', label: t.creative.women },
@@ -377,9 +421,21 @@ function ConsumerContent({ data, onChange, collectionContext }: { mode: InputMod
   if (!hasProposals) {
     return (
       <div className="flex flex-col items-center py-10 md:py-14 max-w-2xl mx-auto">
-        <h2 className="text-[24px] md:text-[28px] font-medium text-carbon/85 tracking-[-0.02em] mb-10 text-center leading-tight">
+        <h2 className="text-[24px] md:text-[28px] font-medium text-carbon/85 tracking-[-0.02em] mb-3 text-center leading-tight">
           {((t.creative as Record<string, string>).forWhomDesigning || 'para quién diseñamos {collection}').replace('{collection}', collectionContext.collectionName)}
         </h2>
+        {suggesting ? (
+          <p className="text-[12px] text-carbon/35 mb-10 inline-flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {(t.creative as Record<string, string>).readingMoodboard || 'leyendo tu moodboard…'}
+          </p>
+        ) : suggestionFromMoodboard ? (
+          <p className="text-[12px] text-carbon/35 mb-10">
+            {(t.creative as Record<string, string>).basedOnMoodboard || 'basado en tu moodboard — edita lo que quieras'}
+          </p>
+        ) : (
+          <div className="mb-10" />
+        )}
 
         <div className="flex flex-wrap justify-center items-center gap-3 mb-12">
           {genderOptions.map((opt) => (
@@ -691,7 +747,7 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
   // The endpoint also writes a string summary to CIS so downstream prompts
   // see {{moodboard}} populated. Runs once per unique image set.
   useEffect(() => {
-    if (images.length < 3) return;
+    if (images.length < 5) return;
     if (analyzing) return;
     const key = images.join('|');
     const lastKey = (data._analyzedKey as string) || '';
@@ -1093,8 +1149,8 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
 
           {/* Silent analysis status — single line, no panel of inferences */}
           <div className="flex items-center justify-center gap-2 text-[12px] text-carbon/35 min-h-[18px]">
-            {images.length < 3 ? (
-              <span>{t.creative.moodboardCounter.replace('{n}', String(images.length)).replace('{min}', '3')}</span>
+            {images.length < 5 ? (
+              <span>{t.creative.moodboardCounter.replace('{n}', String(images.length)).replace('{min}', '5')}</span>
             ) : analyzing ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" />
