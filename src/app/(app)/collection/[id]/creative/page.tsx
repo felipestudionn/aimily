@@ -960,13 +960,17 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     setUploadProgress('');
   };
 
-  // Listen for Pinterest OAuth popup callback
+  // Listen for Pinterest OAuth popup callback. Fast-path when window.opener
+  // survives the Pinterest hop. The polling fallback in handlePinterestConnect
+  // covers the case where it doesn't.
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'pinterest_connected') {
-        // OAuth succeeded — now load boards
-        handlePinterestConnect();
+        // Token cookie was just set — fetch boards directly. We don't call
+        // handlePinterestConnect here because that would re-fetch with the
+        // 401 branch and re-open a popup if cookie hasn't propagated yet.
+        loadPinterestBoards();
       }
     };
     window.addEventListener('message', handleMessage);
@@ -974,29 +978,68 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Pinterest: connect or load boards
+  // Load boards from a known-good auth state. Used both by direct call and
+  // as a follow-up after popup closes.
+  const loadPinterestBoards = async () => {
+    setPinterestLoading(true);
+    setPinterestError('');
+    try {
+      const res = await fetch('/api/pinterest/boards');
+      if (res.ok) {
+        const boardsData = await res.json();
+        setBoards(boardsData.items || []);
+        setPinterestStep('boards');
+      } else {
+        setPinterestError('Failed to load boards from Pinterest');
+      }
+    } catch {
+      setPinterestError('Failed to load boards from Pinterest');
+    }
+    setPinterestLoading(false);
+  };
+
+  // Pinterest: connect or load boards. If not authenticated, opens OAuth in
+  // a popup. We rely on TWO mechanisms to detect post-auth completion:
+  //   1. postMessage from the callback page (fast path — works when
+  //      window.opener survives the cross-origin Pinterest hop)
+  //   2. polling popup.closed (fallback — survives Chrome's COOP stripping
+  //      window.opener after Pinterest's same-origin redirect)
+  // Both paths converge on loadPinterestBoards. The boards-modal becomes
+  // visible from there.
   const handlePinterestConnect = async () => {
     setPinterestLoading(true);
     setPinterestError('');
     try {
-      // Check if already connected (has token cookie)
       const res = await fetch('/api/pinterest/boards');
       if (res.status === 401) {
-        // Not connected — redirect to Pinterest OAuth
         const clientId = process.env.NEXT_PUBLIC_PINTEREST_CLIENT_ID || '';
         const redirectUri = process.env.NEXT_PUBLIC_PINTEREST_REDIRECT_URI || `${window.location.origin}/api/auth/pinterest/callback`;
         const scope = 'boards:read,pins:read';
         const state = Math.random().toString(36).substring(2, 15);
         const url = `https://www.pinterest.com/oauth/?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${state}`;
-        window.open(url, '_blank', 'width=600,height=700');
+        const popup = window.open(url, '_blank', 'width=600,height=700');
         setPinterestLoading(false);
+
+        // Fallback: poll for popup close. Some browsers strip window.opener
+        // after the cross-origin Pinterest hop, so postMessage never reaches
+        // the parent. Watching popup.closed catches that case.
+        if (popup) {
+          const interval = setInterval(async () => {
+            if (popup.closed) {
+              clearInterval(interval);
+              // Wait a beat for the cookie to be readable on next fetch.
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              await loadPinterestBoards();
+            }
+          }, 500);
+        }
         return;
       }
       const boardsData = await res.json();
       setBoards(boardsData.items || []);
       setPinterestStep('boards');
-    } catch (e) {
-      setPinterestError('Failed to connect to Pinterest'); // Internal error, not user-facing label
+    } catch {
+      setPinterestError('Failed to connect to Pinterest');
     }
     setPinterestLoading(false);
   };
