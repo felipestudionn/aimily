@@ -188,11 +188,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Fire-and-forget: a CIS write failure should not abort the create
-    // response. The plan row + timeline are already committed above.
-    recordDecisions(seedDecisions).catch((err: unknown) =>
-      console.error('[planner/create] CIS seed capture failed:', err)
-    );
+    // Awaited (NOT fire-and-forget) — recordDecisions is sequential by
+    // design (rule §2.6 race-safety) so 4 seed rows take ~1-2s. Vercel
+    // Fluid Compute can recycle the lambda before a fire-and-forget
+    // promise completes, dropping the last 1-2 writes silently. We saw
+    // this in production on the very first AZUR creation: 3 of 4 seed
+    // CIS rows landed, the 4th (identity.user.language) was lost.
+    //
+    // try/catch keeps the original robustness contract: a CIS write
+    // failure must NEVER abort the create response, since plan row +
+    // timeline are already committed. The slight latency hit (1-2s)
+    // is acceptable on a one-time create flow.
+    try {
+      await recordDecisions(seedDecisions);
+    } catch (err) {
+      console.error('[planner/create] CIS seed capture failed:', err);
+    }
 
     return NextResponse.json(data);
   } catch (error) {

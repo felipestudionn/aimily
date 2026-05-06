@@ -115,7 +115,15 @@ export async function PATCH(req: NextRequest) {
       if (data.competitors?.length) decisions.push({ ...base, domain: 'creative', subdomain: 'inspiration', key: 'competitors', value: data.competitors, tags: ['affects_pricing', 'affects_content'] });
 
       if (decisions.length > 0) {
-        recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] brand profile capture failed:', err));
+        // Awaited (NOT fire-and-forget) — Vercel Fluid Compute can
+        // recycle the lambda before a fire-and-forget promise resolves,
+        // dropping the last 1-2 sequential CIS writes silently. See
+        // /api/planner/create for the same fix.
+        try {
+          await recordDecisions(decisions);
+        } catch (err) {
+          console.error('[CIS] brand profile capture failed:', err);
+        }
       }
     }
 

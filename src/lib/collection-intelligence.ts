@@ -161,6 +161,22 @@ export async function recordDecision(params: RecordDecisionParams): Promise<void
  * trip the partial unique index added in
  * `collection_decisions_unique_current_per_key`. We're trading the
  * micro-batch latency win for correctness.
+ *
+ * 🚨 IMPORTANT — callers MUST `await` this function (do NOT fire-and-forget).
+ * Each decision takes ~250-500ms (read + supersede + insert sequentially);
+ * a 4-decision batch is ~1-2s. On Vercel Fluid Compute, the lambda can
+ * recycle while a fire-and-forget promise is mid-flight, silently dropping
+ * the last 1-2 writes. We saw this in production on the AZUR onboarding
+ * seed (3 of 4 rows landed, the 4th was lost).
+ *
+ * Wrap in try/catch if you need to keep the original "CIS failure must
+ * not abort the response" contract — but DO await:
+ *
+ *   try {
+ *     await recordDecisions(decisions);
+ *   } catch (err) {
+ *     console.error('[CIS] capture failed:', err);
+ *   }
  */
 export async function recordDecisions(
   decisions: RecordDecisionParams[]

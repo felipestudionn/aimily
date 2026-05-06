@@ -82,7 +82,17 @@ export async function POST(req: NextRequest) {
       if (result.do_rules?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'do_rules', value: result.do_rules, tags: ['affects_content'] });
       if (result.dont_rules?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'dont_rules', value: result.dont_rules, tags: ['affects_content'] });
       if (result.vocabulary?.length) decisions.push({ ...base, domain: 'marketing', subdomain: 'voice', key: 'vocabulary', value: result.vocabulary, tags: ['affects_content', 'affects_seo'] });
-      if (decisions.length) recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] voice config capture failed:', err));
+      if (decisions.length) {
+        // Awaited (NOT fire-and-forget) — Vercel Fluid Compute can
+        // recycle the lambda before a fire-and-forget promise resolves,
+        // dropping the last 1-2 sequential CIS writes silently. See
+        // /api/planner/create for the same fix.
+        try {
+          await recordDecisions(decisions);
+        } catch (err) {
+          console.error('[CIS] voice config capture failed:', err);
+        }
+      }
     }
 
     return NextResponse.json(result, { status: existing ? 200 : 201 });

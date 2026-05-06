@@ -132,7 +132,15 @@ export async function POST(req: NextRequest) {
       if (data.pvp != null) {
         decisions.push({ ...base, domain: 'merchandising', subdomain: 'pricing', key: 'price_range', value: { min: data.pvp, max: data.pvp }, tags: ['affects_pricing', 'affects_content'] });
       }
-      recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] SKU creation capture failed:', err));
+      // Awaited (NOT fire-and-forget) — Vercel Fluid Compute can
+      // recycle the lambda before a fire-and-forget promise resolves,
+      // dropping the last 1-2 sequential CIS writes silently. See
+      // /api/planner/create for the same fix.
+      try {
+        await recordDecisions(decisions);
+      } catch (err) {
+        console.error('[CIS] SKU creation capture failed:', err);
+      }
     }
 
     return NextResponse.json(data);
