@@ -3,6 +3,14 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createDefaultTimeline } from '@/lib/timeline-template';
 import { getPlanLimits, PlanId } from '@/lib/stripe';
 import { getAuthenticatedUser } from '@/lib/api-auth';
+import { recordDecisions } from '@/lib/collection-intelligence';
+
+const SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'it', 'de', 'pt', 'nl', 'sv', 'no'] as const;
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+function isSupportedLanguage(v: unknown): v is SupportedLanguage {
+  return typeof v === 'string' && (SUPPORTED_LANGUAGES as readonly string[]).includes(v);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,6 +26,7 @@ export async function POST(req: NextRequest) {
       setup_data,
       launch_date,
       milestones: customMilestones,
+      untitledLabel,
     } = body;
 
     const user_id = user.id;
@@ -33,7 +42,16 @@ export async function POST(req: NextRequest) {
       return `${isFW ? 'FW' : 'SS'}${String(launchDateObj.getFullYear()).slice(2)}`;
     })();
     const season = providedSeason || seasonAuto;
-    const name = providedName?.trim() || `Sin título · ${season}`;
+
+    // i18n-friendly default name. The frontend ALWAYS passes a localized
+    // `untitledLabel` from the user's i18n dictionary; we accept it on the
+    // body as the fallback prefix when the user opted to skip naming.
+    // English fallback if neither name nor untitledLabel is sent (no
+    // hardcoded Spanish on the server).
+    const fallbackPrefix = (typeof untitledLabel === 'string' && untitledLabel.trim().length > 0)
+      ? untitledLabel.trim()
+      : 'Untitled';
+    const name = providedName?.trim() || `${fallbackPrefix} · ${season}`;
 
     // Check collection limit
     {
@@ -110,29 +128,70 @@ export async function POST(req: NextRequest) {
       console.error('Error creating default timeline:', timelineError);
     }
 
-    // CIS: capture initial collection plan decisions from setup_data (fire-and-forget)
-    if (data && setup_data) {
-      const { recordDecisions } = await import('@/lib/collection-intelligence');
-      const base = { collectionPlanId: data.id, sourcePhase: 'merchandising', sourceComponent: 'CollectionWizard', userId: user_id };
-      const decisions: Parameters<typeof recordDecisions>[0] = [];
+    // CIS seed capture — every new collection records its identity tuple
+    // (name, season, launch_date) + the user's chosen language as decisions
+    // so downstream AI prompts and consumers always see the seed signals
+    // without re-querying the plan row. Race-safe via recordDecisions
+    // (sequential by design — see collection-intelligence.ts:157-164).
+    const userLanguage = isSupportedLanguage(user.user_metadata?.language)
+      ? user.user_metadata.language
+      : null;
 
-      if (setup_data.total_sales_target != null) {
-        decisions.push({ ...base, domain: 'merchandising', subdomain: 'budget', key: 'total_sales_target', value: setup_data.total_sales_target, tags: ['affects_pricing', 'affects_finance'] });
-      }
-      if (setup_data.avg_price_target != null) {
-        decisions.push({ ...base, domain: 'merchandising', subdomain: 'pricing', key: 'avg_price_target', value: setup_data.avg_price_target, tags: ['affects_pricing', 'affects_production'] });
-      }
-      if (setup_data.price_range) {
-        decisions.push({ ...base, domain: 'merchandising', subdomain: 'pricing', key: 'price_range', value: setup_data.price_range, tags: ['affects_pricing', 'affects_production'] });
-      }
-      if (setup_data.families?.length) {
-        decisions.push({ ...base, domain: 'merchandising', subdomain: 'structure', key: 'families_selected', value: setup_data.families, tags: ['affects_production', 'affects_content'] });
-      }
+    const seedDecisions: Parameters<typeof recordDecisions>[0] = [
+      {
+        collectionPlanId: data.id,
+        userId: user_id,
+        sourcePhase: 'creative',
+        sourceComponent: 'NewCollectionWizard',
+        domain: 'identity',
+        subdomain: 'collection',
+        key: 'name',
+        value: name,
+        tags: ['seed'],
+      },
+      {
+        collectionPlanId: data.id,
+        userId: user_id,
+        sourcePhase: 'creative',
+        sourceComponent: 'NewCollectionWizard',
+        domain: 'identity',
+        subdomain: 'collection',
+        key: 'season',
+        value: season,
+        tags: ['seed'],
+      },
+      {
+        collectionPlanId: data.id,
+        userId: user_id,
+        sourcePhase: 'creative',
+        sourceComponent: 'NewCollectionWizard',
+        domain: 'identity',
+        subdomain: 'collection',
+        key: 'launch_date',
+        value: launchIso,
+        tags: ['seed'],
+      },
+    ];
 
-      if (decisions.length > 0) {
-        recordDecisions(decisions).catch((err: unknown) => console.error('[CIS] planner create capture failed:', err));
-      }
+    if (userLanguage) {
+      seedDecisions.push({
+        collectionPlanId: data.id,
+        userId: user_id,
+        sourcePhase: 'creative',
+        sourceComponent: 'NewCollectionWizard',
+        domain: 'identity',
+        subdomain: 'user',
+        key: 'language',
+        value: userLanguage,
+        tags: ['seed'],
+      });
     }
+
+    // Fire-and-forget: a CIS write failure should not abort the create
+    // response. The plan row + timeline are already committed above.
+    recordDecisions(seedDecisions).catch((err: unknown) =>
+      console.error('[planner/create] CIS seed capture failed:', err)
+    );
 
     return NextResponse.json(data);
   } catch (error) {

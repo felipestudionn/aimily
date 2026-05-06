@@ -114,6 +114,7 @@ function NewCollectionFlow() {
           season,
           launch_date: launchDate,
           setup_data: {},
+          untitledLabel,
         }),
       });
 
