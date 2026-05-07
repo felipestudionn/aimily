@@ -172,49 +172,42 @@ export async function researchTrends(
           material: { plural: 'materials',  block: materialsBlock,  jsonKey: 'materials' },
         };
 
+        // ── Common context header — IDENTICAL in both modes (initial
+        //    4-axis report and per-axis deepen). Keeps Sonar grounded
+        //    in the same brand/season/framing/source no matter what
+        //    the ask is. Only the BODY (the ask) varies.
+        const contextHeader = `${collectionInfo}${seasonNote}
+${trendQuery ? `\nIMPORTANT: The framing chips the user gave you: "${trendQuery}". Use them to focus the research.\n` : ''}
+Source: runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD, street-style coverage.`;
+
+        let askBody = '';
+        let jsonShape = '';
+
         if (targetDimension && targetMap[targetDimension]) {
-          // Single-axis deepen mode. Keeps the FULL upstream context
-          // (collection + season + framing chips + research sources)
-          // and adds the existing-cards anchor + the "complement, don't
-          // repeat" ask. The deepen prompt should never be a thin
-          // "more themes please" — without the brand/season/framing the
-          // LLM produces generic results.
+          // ── Single-axis deepen ──
           const spec = targetMap[targetDimension];
           const isColor = targetDimension === 'color';
-          const jsonShape = isColor
+          jsonShape = isColor
             ? `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"...","hex":"#RRGGBB"}, ...] }`
             : `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"..."}, ...] }`;
-
-          const axisSingular: Record<string, string> = {
-            theme: 'themes (cultural energy / aesthetic mood — Vogue/WWD-headline level, never products or materials)',
-            category: 'categories (specific product types — silhouette + qualifier, never moods or materials)',
-            color: 'colors (specific colour names with HEX — never themes or fabrics)',
-            material: 'materials (fabric, finish, construction technique — never moods or product types)',
-          };
 
           const existingBlock = existingInDimension && existingInDimension.length > 0
             ? `\nThe user already has these ${spec.plural.toUpperCase()} from your earlier research:\n${existingInDimension.map(c => `  · ${c.title}${c.desc ? ` — ${c.desc.slice(0, 100)}` : ''}`).join('\n')}\n\nDeepen this axis: give me 3-5 MORE ${spec.plural} that COMPLEMENT (don't repeat or paraphrase) what's above.`
             : `\nGive me 4-6 ${spec.plural}.`;
 
-          prompt = `${collectionInfo}${seasonNote}${trendQuery ? `\n\nFraming chips the user gave for this collection: "${trendQuery}". Anchor your research to these.` : ''}
-
-Source: runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD, street-style coverage.
+          askBody = `${spec.block}
 ${existingBlock}
 
-Stay strictly in the ${spec.plural.toUpperCase()} axis: ${axisSingular[targetDimension]}.
-
-For EVERY card include:
-  · "title": short concept name
-  · "brands": 3-5 designer/brand references
-  · "desc": 50-70 words${isColor ? '\n  · "hex": HEX color code (format "#RRGGBB")' : ''}
-
-${exclusionNote}Return ONLY valid JSON:
-${jsonShape}`;
+For EVERY card include "brands" (3-5 designer/brand references).`;
         } else {
-          // Initial 4-axis run — return all four buckets at once.
-          prompt = `${collectionInfo}${seasonNote}
-${trendQuery ? `\nIMPORTANT: The framing chips the user gave you: "${trendQuery}". Use them to focus the research, but cover ALL FOUR dimensions below.\n` : ''}
-Research this collection's market across FOUR DIMENSIONS using runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD and street-style coverage. Each dimension is a separate bucket of cards. NEVER mix dimensions. NEVER duplicate across dimensions.
+          // ── Initial 4-axis report ──
+          jsonShape = `{
+  "themes":     [{"title":"...","brands":"...","desc":"..."}, ...],
+  "categories": [{"title":"...","brands":"...","desc":"..."}, ...],
+  "colors":     [{"title":"...","brands":"...","desc":"...","hex":"#RRGGBB"}, ...],
+  "materials":  [{"title":"...","brands":"...","desc":"..."}, ...]
+}`;
+          askBody = `Research this collection's market across FOUR DIMENSIONS. Each dimension is a separate bucket of cards. NEVER mix dimensions. NEVER duplicate across dimensions.
 
 DIMENSION 1 · ${themesBlock}
 (produce 3-4 cards)
@@ -228,17 +221,15 @@ DIMENSION 3 · ${colorsBlock}
 DIMENSION 4 · ${materialsBlock}
 (produce 3-5 cards)
 
-For EVERY card across all dimensions, also include:
-  · "brands": 3-5 designer/brand references that represent this card.
+For EVERY card across all dimensions, also include "brands" (3-5 designer/brand references).`;
+        }
+
+        prompt = `${contextHeader}
+
+${askBody}
 
 ${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys, no extra wrapping):
-{
-  "themes":     [{"title":"...","brands":"...","desc":"..."}, ...],
-  "categories": [{"title":"...","brands":"...","desc":"..."}, ...],
-  "colors":     [{"title":"...","brands":"...","desc":"...","hex":"#RRGGBB"}, ...],
-  "materials":  [{"title":"...","brands":"...","desc":"..."}, ...]
-}`;
-        }
+${jsonShape}`;
       }
       break;
 
