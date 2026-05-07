@@ -2472,12 +2472,18 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   const handleLoadMoreDimension = async (dimension: 'theme' | 'category' | 'color' | 'material') => {
     setGeneratingDim(dimension);
     setError(null);
-    // Exclude ALL existing titles across ALL dimensions, not just the
-    // current axis. This prevents the LLM from leaking adjacent
-    // concepts ("Pantalón Cargo Elevado" duplicating "Pantalones Cargo"
-    // already in categories) when it runs out of fresh macro ideas.
+    // Two pieces of context flow into the deepen call:
+    //   1. existingInDimension — the SAME-axis cards Sonar produced
+    //      before. Sent as "Title :: short desc" so the LLM can see
+    //      what it already gave and complement.
+    //   2. excludeTitles — ALL titles across ALL axes, so the LLM
+    //      can't bleed paraphrases of other-axis concepts.
+    const sameDimensionCards = results.filter(r => r.dimension === dimension);
+    const sameDimensionTitles = sameDimensionCards.map(r => r.title);
     const allExistingTitles = results.map(r => r.title);
-    const sameDimensionTitles = results.filter(r => r.dimension === dimension).map(r => r.title);
+    const existingInDimension = sameDimensionCards
+      .map(r => `${r.title} :: ${(r.desc || '').slice(0, 80)}`)
+      .join('|||');
     const inputStr = blockId === 'competitors'
       ? brands.join(', ')
       : focus.join(', ');
@@ -2488,6 +2494,7 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
       ...collectionContext,
     };
     if (allExistingTitles.length > 0) inputPayload.excludeTitles = allExistingTitles.join('|||');
+    if (existingInDimension) inputPayload.existingInDimension = existingInDimension;
     const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', inputPayload, language);
     if (err) { setError(err); setGeneratingDim(null); return; }
     const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: 'theme' | 'category' | 'color' | 'material'; hex?: string }> };

@@ -117,6 +117,11 @@ export async function researchTrends(
   // buttons in the UI to deepen one axis without regenerating the
   // whole multi-dimension grid.
   targetDimension?: 'theme' | 'category' | 'color' | 'material',
+  // Existing cards in the same axis. When the user clicks "+ Más",
+  // we show Sonar what it already produced so it complements rather
+  // than restates. Each entry is the user's view of an existing
+  // card — title + a short hint from the desc.
+  existingInDimension?: Array<{ title: string; desc?: string }>,
 ): Promise<TrendResearchResponse | null> {
   if (!PERPLEXITY_API_KEY) return null;
 
@@ -168,42 +173,33 @@ export async function researchTrends(
         };
 
         if (targetDimension && targetMap[targetDimension]) {
-          // Single-axis deepen mode — used by the per-section "+ Más"
-          // buttons. Returns 5-7 NEW cards focused on that bucket
-          // and EXPLICITLY non-overlapping with the other axes.
+          // Single-axis deepen mode. Short, contextual prompt: "you
+          // already gave me X — give me more that complement". The
+          // existing cards anchor the LLM in the same axis and tell
+          // it implicitly what NOT to repeat.
           const spec = targetMap[targetDimension];
           const isColor = targetDimension === 'color';
-          const fieldsLine = isColor
-            ? '"title", "brands", "desc", "hex"'
-            : '"title", "brands", "desc"';
           const jsonShape = isColor
             ? `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"...","hex":"#RRGGBB"}, ...] }`
             : `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"..."}, ...] }`;
 
-          // Strict anti-leak language tailored per axis. Without this
-          // the LLM tends to bleed product/material/color concepts into
-          // the themes axis (and vice versa) when it runs out of pure
-          // ideas. Each branch tells it what to AVOID, in plain terms.
-          const antiLeakRules: Record<string, string> = {
-            theme: `\nABSOLUTE RULES — A THEME IS:\n  · A MACRO cultural force or aesthetic energy\n  · Vogue/WWD-style headline ("Quiet Luxury", "Sheer Everything", "Y2K Resurgence", "The New Prep")\n  · Concept-level — describes a MOOD, not a piece, a fabric, or a colour\n\nA THEME IS NOT:\n  · A product type ("Cargo Pants", "Blazers" — those go in CATEGORIES)\n  · A material or texture ("Fringe", "Mesh" — those go in MATERIALS)\n  · A colour name ("Cherry Red" — that goes in COLORS)\n  · A re-paraphrasing of a card already in another axis\n\nIf you cannot produce a fresh MACRO theme that doesn't paraphrase the user's other-axis cards, return FEWER cards rather than padding with off-axis content.`,
-            category: `\nABSOLUTE RULES — A CATEGORY IS:\n  · A specific product TYPE (silhouette + qualifier)\n  · "Mesh Ballet Flats", "Bias-cut Slips", "Knit Polo", "Tailored Bermudas"\n  · Always something the user could put on a buy sheet\n\nA CATEGORY IS NOT:\n  · A cultural energy or mood ("Quiet Luxury")\n  · A material ("Mesh", "Velvet")\n  · A colour\n\nDon't paraphrase themes/colours/materials already in the user's other axes.`,
-            color: `\nABSOLUTE RULES — A COLOR IS:\n  · A specific colour name ("Cherry Red", "Butter Yellow", "Powder Blue")\n  · Includes a hex code\n\nA COLOR IS NOT:\n  · A theme ("Romantic Florals" is a theme)\n  · A material ("Velvet" is a material)\n  · A product\n\nDon't paraphrase themes/categories/materials already in the user's other axes.`,
-            material: `\nABSOLUTE RULES — A MATERIAL IS:\n  · A fabric, finish, or construction technique\n  · "Liquid Jersey", "Vegetable-tanned Leather", "Mesh Panels", "Raw-edge Denim", "Sheer Organza"\n\nA MATERIAL IS NOT:\n  · A theme or aesthetic energy\n  · A product type ("Cargo Pants" is a category, not a material)\n  · A colour\n\nDon't paraphrase themes/categories/colours already in the user's other axes.`,
+          const axisSingular: Record<string, string> = {
+            theme: 'theme (cultural energy / mood)',
+            category: 'category (specific product type)',
+            color: 'color (with hex)',
+            material: 'material (fabric / finish / construction)',
           };
 
-          prompt = `${collectionInfo}${seasonNote}
-${trendQuery ? `\nFraming: "${trendQuery}".\n` : ''}
-The user wants MORE depth on ONLY the ${spec.plural.toUpperCase()} axis. Return 4-6 NEW cards. Strictly stay in this axis.
+          const existingBlock = existingInDimension && existingInDimension.length > 0
+            ? `\nYou already produced these ${spec.plural.toUpperCase()} for this user:\n${existingInDimension.map(c => `  · ${c.title}${c.desc ? ` — ${c.desc.slice(0, 80)}` : ''}`).join('\n')}\n\nGive me 3-5 MORE ${spec.plural} that COMPLEMENT (don't repeat) what's above. Stay strictly in the ${axisSingular[targetDimension]} axis.`
+            : `\nGive me 4-6 ${spec.plural} (${axisSingular[targetDimension]}). Stay strictly in this axis.`;
 
-${spec.block}
-${antiLeakRules[targetDimension]}
+          prompt = `${collectionInfo}${seasonNote}${trendQuery ? ` Framing: "${trendQuery}".` : ''}
+${existingBlock}
 
-For EVERY card include also:
-  · "brands": 3-5 designer/brand references that represent this card.
+${isColor ? 'Include a "hex" field per card (format "#RRGGBB").' : ''}
 
-Each card carries fields: ${fieldsLine}.
-
-${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys):
+${exclusionNote}Return ONLY valid JSON:
 ${jsonShape}`;
         } else {
           // Initial 4-axis run — return all four buckets at once.

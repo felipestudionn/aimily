@@ -69,6 +69,20 @@ export async function POST(req: NextRequest) {
       const targetDimension = (input.targetDimension && (validDims as readonly string[]).includes(input.targetDimension))
         ? (input.targetDimension as DimKey)
         : undefined;
+      // Existing cards in the same axis come through serialized as
+      // a `||` separated list of "Title :: short desc" entries. We
+      // unpack them so the Sonar prompt can show "you already had X"
+      // and ask for complement.
+      let existingInDimension: Array<{ title: string; desc?: string }> | undefined;
+      if (input.existingInDimension) {
+        existingInDimension = input.existingInDimension
+          .split('|||')
+          .map((s: string) => {
+            const [title, desc] = s.split(' :: ');
+            return { title: (title || '').trim(), desc: (desc || '').trim() };
+          })
+          .filter((e: { title: string; desc?: string }) => e.title.length > 0);
+      }
       const sonarResult = await researchTrends(
         input.input || '',
         input.season,
@@ -77,6 +91,7 @@ export async function POST(req: NextRequest) {
         excludeTitles,
         language,
         targetDimension,
+        existingInDimension,
       );
 
       if (sonarResult && sonarResult.results.length > 0) {
