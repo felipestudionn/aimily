@@ -419,6 +419,10 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   // network/server failure. Used to keep the caption visible (so the user
   // never feels left in limbo after a fast/silent failure).
   const [suggestionStatus, setSuggestionStatus] = useState<'idle' | 'success' | 'empty' | 'error'>('idle');
+  // Cover-Flow stage state — which proposal sits center stage. Updated on
+  // arrow click, keyboard, or clicking an adjacent card. Reset to 0 each
+  // time we re-enter the proposal phase (ie when proposals first appear).
+  const [activeIdx, setActiveIdx] = useState(0);
   const genderRef = useRef<HTMLDivElement | null>(null);
   // Close gender dropdown on outside click — keeps the chip-with-popover
   // pattern feeling native instead of sticky.
@@ -450,6 +454,34 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   const suggestionFromMoodboard = Boolean(data._suggestionFromMoodboard);
   const hasProposals = proposals.length > 0;
   const updateField = (key: string, val: unknown) => onChange({ ...data, [key]: val });
+
+  // Reset Cover-Flow position when entering the proposal phase fresh
+  // (proposals just generated) or when the user reopens the entry and
+  // clears them. Keeps the first card always center stage on entry.
+  useEffect(() => {
+    if (proposals.length === 0) setActiveIdx(0);
+  }, [proposals.length]);
+
+  // Cover-Flow keyboard navigation. Only active in the proposal phase
+  // and never when the user is typing in an input/textarea (so editing
+  // a proposal title doesn't fly the carousel).
+  useEffect(() => {
+    if (!hasProposals) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      const visible = proposals.filter((p) => p.status !== 'rejected').length;
+      const slots = visible + (visible < 8 ? 1 : 0);
+      if (slots <= 1) return;
+      if (e.key === 'ArrowRight') {
+        setActiveIdx((i) => Math.min(i + 1, slots - 1));
+      } else if (e.key === 'ArrowLeft') {
+        setActiveIdx((i) => Math.max(i - 1, 0));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [hasProposals, proposals]);
 
   // One-shot normalization of stored chip clouds + reference on mount.
   // Migrates rows written before the capitalize-first pass landed: old data
@@ -901,9 +933,126 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
     );
   };
 
+  // Render the editorial content of a single proposal card. Reused by
+  // the Cover-Flow stage so the visual stays canonical regardless of
+  // which slot the proposal occupies. Display index is what the user
+  // sees ("perfil 01"); originalIdx is the position in the proposals
+  // array that the update/remove handlers operate on.
+  const renderProposalCardBody = (p: ConsumerProfile, originalIdx: number, displayIdx: number) => {
+    const isEditing = editingIdx === originalIdx;
+    const isLiked = p.status === 'liked';
+    const hasStructured = Boolean(
+      p.essence || (p.wardrobe && p.wardrobe.length) || (p.lifestyle && p.lifestyle.length) || (p.values && p.values.length),
+    );
+    return (
+      <div
+        className={`relative bg-white rounded-[20px] p-8 xl:p-10 flex flex-col w-full h-full overflow-y-auto transition-all duration-300 shadow-[0_12px_40px_rgba(0,0,0,0.06)] ${
+          isLiked ? 'ring-2 ring-carbon/15' : 'opacity-70'
+        }`}
+      >
+        <div className="flex items-start justify-between mb-5">
+          <div className="text-[11px] tracking-[0.22em] uppercase text-carbon/55 font-semibold">
+            {(t.creative as Record<string, string>).consumerProfileLabel || 'perfil'} 0{displayIdx + 1}
+          </div>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); updateProposal(originalIdx, { status: isLiked ? 'pending' : 'liked' }); }}
+            aria-label={(t.creative as Record<string, string>).keepAction || 'me lo quedo'}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+              isLiked
+                ? 'bg-carbon text-white'
+                : 'bg-carbon/[0.06] text-carbon/30 hover:bg-carbon/[0.12]'
+            }`}
+          >
+            <Check className="h-4 w-4" />
+          </button>
+        </div>
+
+        {isEditing ? (
+          <input
+            type="text"
+            value={p.title}
+            onChange={(e) => updateProposal(originalIdx, { title: e.target.value })}
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+            className="text-[28px] xl:text-[34px] font-medium tracking-[-0.02em] text-carbon leading-[1.05] mb-5 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
+          />
+        ) : (
+          <h3 className="text-[28px] xl:text-[34px] font-medium tracking-[-0.02em] text-carbon leading-[1.05] mb-5">
+            {p.title}
+          </h3>
+        )}
+
+        {!isEditing && p.essence && (
+          <p className="text-[14px] xl:text-[15px] text-carbon/65 italic leading-[1.55] mb-5 tracking-[-0.01em]">
+            {p.essence}
+          </p>
+        )}
+
+        {!isEditing && p.keyQuote && (
+          <blockquote className="text-[13px] xl:text-[14px] text-carbon/55 leading-[1.6] mb-6 pl-3 border-l-2 border-carbon/15 tracking-[-0.005em]">
+            &ldquo;{p.keyQuote}&rdquo;
+          </blockquote>
+        )}
+
+        {isEditing ? (
+          <textarea
+            value={p.desc}
+            onChange={(e) => updateProposal(originalIdx, { desc: e.target.value })}
+            rows={10}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[14px] text-carbon/70 leading-[1.7] tracking-[-0.01em] bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-3 resize-none w-full"
+          />
+        ) : hasStructured ? (
+          <>
+            {renderSection((t.creative as Record<string, string>).consumerWardrobeLabel || 'cómo viste', p.wardrobe)}
+            {renderSection((t.creative as Record<string, string>).consumerLifestyleLabel || 'cómo vive', p.lifestyle)}
+            {renderSection((t.creative as Record<string, string>).consumerValuesLabel || 'qué valora', p.values)}
+          </>
+        ) : (
+          <p className="text-[14px] text-carbon/60 leading-[1.7] tracking-[-0.01em]">{p.desc}</p>
+        )}
+
+        <div className="flex-1 min-h-[20px]" />
+
+        <div className="mt-6 flex items-center gap-1.5">
+          <button
+            onClick={(e) => { e.stopPropagation(); setEditingIdx(isEditing ? null : originalIdx); }}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+              isEditing
+                ? 'bg-carbon text-white'
+                : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+            }`}
+          >
+            {isEditing ? <Check className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+            {isEditing
+              ? ((t.creative as Record<string, string>).doneAction || 'listo')
+              : ((t.creative as Record<string, string>).editAction || 'editar')}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); updateProposal(originalIdx, { status: 'rejected' }); }}
+            className="ml-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-medium bg-carbon/[0.04] text-carbon/45 hover:bg-red-50 hover:text-red-600 transition-all"
+            aria-label={(t.creative as Record<string, string>).removeAction || 'descartar'}
+          >
+            <X className="h-3 w-3" />
+            {(t.creative as Record<string, string>).discardAction || 'descartar'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // The deck — visible proposals + (when slots available) a final
+  // "+ pedir una más" tile. Both card kinds animate identically through
+  // the Cover-Flow stage; the add tile fires `requestOneMore` when
+  // clicked at center stage.
+  const canAddMore = visibleProposals.length < 8;
+  const totalSlots = visibleProposals.length + (canAddMore ? 1 : 0);
+  const safeActive = Math.min(activeIdx, Math.max(0, totalSlots - 1));
+
   const proposalFace = (
-    <div className="max-w-[1600px] mx-auto w-full">
-      {/* Modify-ficha breadcrumb — bigger pill, explicit copy. */}
+    <div className="w-full">
+      {/* Modify-ficha breadcrumb */}
       <div className="flex items-center justify-center mb-10">
         <button
           onClick={reopenEntry}
@@ -914,148 +1063,106 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
         </button>
       </div>
 
-      {/* 5-col grid — 4 proposals + the "+ pedir una más" tile sitting inline
-          to the right of the last card. Responsive sizing follows CLAUDE.md
-          gold-standard 5-card pattern (3xl:p-14 only on monitors ≥1920). */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-stretch">
-        {visibleProposals.map(({ p, idx: originalIdx }, displayIdx) => {
-          const isEditing = editingIdx === originalIdx;
-          const isLiked = p.status === 'liked';
-          const hasStructured = Boolean(
-            p.essence || (p.wardrobe && p.wardrobe.length) || (p.lifestyle && p.lifestyle.length) || (p.values && p.values.length),
-          );
+      {/* Cover-Flow stage — center card sits prominent, neighbours peek in
+          tilted on Y axis. Click adjacent card / arrow keys / chevrons to
+          navigate. The "+ pedir una más" tile is the last slot. */}
+      <div className="relative [perspective:2200px] w-full h-[640px] overflow-hidden">
+        {Array.from({ length: totalSlots }).map((_, idx) => {
+          const offset = idx - safeActive;
+          const abs = Math.abs(offset);
+          const visible = abs <= 2;
+          const scale = abs === 0 ? 1 : abs === 1 ? 0.78 : 0.6;
+          const rotY = offset === 0 ? 0 : offset > 0 ? -28 : 28;
+          const translateXPx = offset * 360;
+          const opacity = abs > 2 ? 0 : abs === 0 ? 1 : abs === 1 ? 0.55 : 0.18;
+          const zIndex = 30 - abs * 10;
+          const isAddSlot = canAddMore && idx === totalSlots - 1;
+          const slotData = !isAddSlot ? visibleProposals[idx] : null;
           return (
             <div
-              key={`${p.title}-${originalIdx}`}
-              className={`group relative bg-white rounded-[20px] p-6 xl:p-8 3xl:p-14 flex flex-col min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left ${
-                isLiked ? 'ring-2 ring-carbon/15' : 'opacity-60'
+              key={isAddSlot ? 'add-tile' : (slotData ? `${slotData.p.title}-${slotData.idx}` : idx)}
+              role="button"
+              tabIndex={offset === 0 ? -1 : 0}
+              aria-hidden={!visible}
+              onClick={() => {
+                if (offset === 0) return;
+                setActiveIdx(idx);
+              }}
+              className={`absolute top-0 left-1/2 w-[480px] h-full transition-[transform,opacity] duration-[600ms] [transition-timing-function:cubic-bezier(0.32,0.72,0.32,1)] ${
+                offset === 0 ? '' : 'cursor-pointer'
               }`}
+              style={{
+                marginLeft: '-240px',
+                transform: `translateX(${translateXPx}px) scale(${scale}) rotateY(${rotY}deg)`,
+                opacity,
+                zIndex,
+                pointerEvents: visible ? 'auto' : 'none',
+              }}
             >
-              {/* Top row — perfil 0X label + accept toggle in the corner */}
-              <div className="flex items-start justify-between mb-6 3xl:mb-8">
-                <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold">
-                  {(t.creative as Record<string, string>).consumerProfileLabel || 'perfil'} 0{displayIdx + 1}
-                </div>
+              {isAddSlot ? (
                 <button
                   type="button"
-                  onClick={() => updateProposal(originalIdx, { status: isLiked ? 'pending' : 'liked' })}
-                  aria-label={(t.creative as Record<string, string>).keepAction || 'me lo quedo'}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                    isLiked
-                      ? 'bg-carbon text-white'
-                      : 'bg-carbon/[0.06] text-carbon/30 hover:bg-carbon/[0.12]'
-                  }`}
+                  onClick={(e) => { e.stopPropagation(); if (offset === 0) requestOneMore(); else setActiveIdx(idx); }}
+                  disabled={generating && offset === 0}
+                  className="group relative bg-carbon/[0.015] hover:bg-carbon/[0.04] rounded-[20px] flex flex-col items-center justify-center w-full h-full border-2 border-dashed border-carbon/15 hover:border-carbon/35 text-carbon/40 hover:text-carbon/75 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed text-center"
                 >
-                  <Check className="h-3.5 w-3.5" />
+                  {generating && offset === 0 ? (
+                    <Loader2 className="h-9 w-9 mb-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-9 w-9 mb-4 transition-transform group-hover:scale-110" />
+                  )}
+                  <span className="text-[14px] font-semibold tracking-[-0.01em]">
+                    {(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+                  </span>
                 </button>
-              </div>
-
-              {/* Title */}
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={p.title}
-                  onChange={(e) => updateProposal(originalIdx, { title: e.target.value })}
-                  autoFocus
-                  className="text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 3xl:mb-5 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
-                />
-              ) : (
-                <h3 className="text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 3xl:mb-5">
-                  {p.title}
-                </h3>
-              )}
-
-              {/* Essence — short tagline, italic editorial */}
-              {!isEditing && p.essence && (
-                <p className="text-[13px] xl:text-[14px] text-carbon/65 italic leading-[1.55] mb-5 tracking-[-0.01em]">
-                  {p.essence}
-                </p>
-              )}
-
-              {/* Quote — what she would say */}
-              {!isEditing && p.keyQuote && (
-                <blockquote className="text-[12px] xl:text-[13px] text-carbon/55 leading-[1.6] mb-5 pl-3 border-l-2 border-carbon/15 tracking-[-0.005em]">
-                  "{p.keyQuote}"
-                </blockquote>
-              )}
-
-              {/* Editing OR sections OR fallback paragraph */}
-              {isEditing ? (
-                <textarea
-                  value={p.desc}
-                  onChange={(e) => updateProposal(originalIdx, { desc: e.target.value })}
-                  rows={10}
-                  className="text-[13px] text-carbon/70 leading-[1.7] tracking-[-0.01em] bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-3 resize-none w-full"
-                />
-              ) : hasStructured ? (
-                <>
-                  {renderSection((t.creative as Record<string, string>).consumerWardrobeLabel || 'cómo viste', p.wardrobe)}
-                  {renderSection((t.creative as Record<string, string>).consumerLifestyleLabel || 'cómo vive', p.lifestyle)}
-                  {renderSection((t.creative as Record<string, string>).consumerValuesLabel || 'qué valora', p.values)}
-                </>
-              ) : (
-                <p className="text-[13px] xl:text-[13.5px] text-carbon/60 leading-[1.7] tracking-[-0.01em]">
-                  {p.desc}
-                </p>
-              )}
-
-              <div className="flex-1" />
-
-              {/* Action row — always visible, never hover-only. Three pills:
-                  edit (or done), spacer, discard. The "keep" toggle is the
-                  check at the top-right (above) so the keep/skip state is
-                  always loud. */}
-              <div className="mt-6 3xl:mt-10 flex items-center gap-1.5">
-                <button
-                  onClick={() => setEditingIdx(isEditing ? null : originalIdx)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
-                    isEditing
-                      ? 'bg-carbon text-white'
-                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-                  }`}
-                >
-                  {isEditing ? <Check className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
-                  {isEditing
-                    ? ((t.creative as Record<string, string>).doneAction || 'listo')
-                    : ((t.creative as Record<string, string>).editAction || 'editar')}
-                </button>
-                <button
-                  onClick={() => updateProposal(originalIdx, { status: 'rejected' })}
-                  className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-carbon/[0.04] text-carbon/45 hover:bg-red-50 hover:text-red-600 transition-all"
-                  aria-label={(t.creative as Record<string, string>).removeAction || 'descartar'}
-                >
-                  <X className="h-3 w-3" />
-                  {(t.creative as Record<string, string>).discardAction || 'descartar'}
-                </button>
-              </div>
+              ) : slotData ? (
+                renderProposalCardBody(slotData.p, slotData.idx, idx)
+              ) : null}
             </div>
           );
         })}
 
-        {/* "+ pedir una más" tile — sits inline in the grid as the next slot
-            after the last visible profile. Same card silhouette, dashed
-            outline so it reads as "open slot". */}
-        {visibleProposals.length < 8 && (
+        {/* Stage chevrons — anchored to the stage edges, only render when
+            there's somewhere to go. Click moves activeIdx by one. */}
+        {safeActive > 0 && (
           <button
             type="button"
-            onClick={requestOneMore}
-            disabled={generating}
-            className="group relative bg-carbon/[0.015] hover:bg-carbon/[0.04] rounded-[20px] p-6 xl:p-8 3xl:p-14 flex flex-col items-center justify-center min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px] border-2 border-dashed border-carbon/15 hover:border-carbon/35 text-carbon/40 hover:text-carbon/75 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed text-center"
+            onClick={() => setActiveIdx((i) => Math.max(0, i - 1))}
+            aria-label="anterior"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.10)] flex items-center justify-center text-carbon/60 hover:text-carbon hover:scale-110 transition-all"
           >
-            {generating ? (
-              <Loader2 className="h-7 w-7 mb-3 animate-spin" />
-            ) : (
-              <Plus className="h-7 w-7 mb-3 transition-transform group-hover:scale-110" />
-            )}
-            <span className="text-[12px] xl:text-[13px] font-semibold tracking-[-0.01em]">
-              {(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
-            </span>
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        )}
+        {safeActive < totalSlots - 1 && (
+          <button
+            type="button"
+            onClick={() => setActiveIdx((i) => Math.min(totalSlots - 1, i + 1))}
+            aria-label="siguiente"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.10)] flex items-center justify-center text-carbon/60 hover:text-carbon hover:scale-110 transition-all"
+          >
+            <ArrowRight className="h-4 w-4" />
           </button>
         )}
       </div>
 
+      {/* Dot indicator below the stage — current position + total slots. */}
+      <div className="mt-6 flex items-center justify-center gap-2">
+        {Array.from({ length: totalSlots }).map((_, idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setActiveIdx(idx)}
+            aria-label={`ir al perfil ${idx + 1}`}
+            className={`h-1.5 rounded-full transition-all ${
+              idx === safeActive ? 'w-8 bg-carbon' : 'w-1.5 bg-carbon/20 hover:bg-carbon/35'
+            }`}
+          />
+        ))}
+      </div>
+
       {error && (
-        <div className="mt-6 flex justify-center">
+        <div className="mt-4 flex justify-center">
           <p className="text-xs text-red-600">{error}</p>
         </div>
       )}
