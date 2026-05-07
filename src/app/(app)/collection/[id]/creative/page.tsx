@@ -893,7 +893,7 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           {items.map((item, i) => (
             <li key={i} className="flex gap-2 text-[12.5px] xl:text-[13px] text-carbon/70 leading-[1.55] tracking-[-0.01em]">
               <span className="text-carbon/30 mt-[3px]">·</span>
-              <span>{item}</span>
+              <span>{capitalizeFirst(item)}</span>
             </li>
           ))}
         </ul>
@@ -951,34 +951,31 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
                 </button>
               </div>
 
-              {/* Title */}
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={p.title}
-                  onChange={(e) => updateProposal(originalIdx, { title: e.target.value })}
-                  autoFocus
-                  className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
-                />
-              ) : (
-                <h3 className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4">
-                  {p.title}
-                </h3>
-              )}
+              {/* Brief block — title + essence wrapped in a fixed min-height
+                  so the section headers below ("CÓMO VISTE", etc) line up
+                  vertically across all four cards regardless of how long
+                  the title or essence runs in any given proposal. */}
+              <div className="min-h-[170px] mb-2">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={p.title}
+                    onChange={(e) => updateProposal(originalIdx, { title: e.target.value })}
+                    autoFocus
+                    className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
+                  />
+                ) : (
+                  <h3 className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-3">
+                    {capitalizeFirst(p.title)}
+                  </h3>
+                )}
 
-              {/* Essence — short tagline, italic editorial */}
-              {!isEditing && p.essence && (
-                <p className="text-[13px] xl:text-[14px] text-carbon/65 italic leading-[1.55] mb-4 tracking-[-0.01em]">
-                  {p.essence}
-                </p>
-              )}
-
-              {/* Quote — what she would say */}
-              {!isEditing && p.keyQuote && (
-                <blockquote className="text-[12px] xl:text-[13px] text-carbon/55 leading-[1.55] mb-5 pl-3 border-l-2 border-carbon/15 tracking-[-0.005em]">
-                  &ldquo;{p.keyQuote}&rdquo;
-                </blockquote>
-              )}
+                {!isEditing && p.essence && (
+                  <p className="text-[13px] xl:text-[14px] text-carbon/65 italic leading-[1.55] tracking-[-0.01em]">
+                    {capitalizeFirst(p.essence)}
+                  </p>
+                )}
+              </div>
 
               {/* Editing OR sections OR fallback paragraph */}
               {isEditing ? (
@@ -996,7 +993,7 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
                 </>
               ) : (
                 <p className="text-[13px] xl:text-[13.5px] text-carbon/60 leading-[1.7] tracking-[-0.01em]">
-                  {p.desc}
+                  {capitalizeFirst(p.desc)}
                 </p>
               )}
 
