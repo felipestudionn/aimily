@@ -903,16 +903,11 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
 
   const proposalFace = (
     <div className="max-w-[1600px] mx-auto w-full">
-      {/* Modify-ficha breadcrumb — bigger pill, explicit copy. */}
-      <div className="flex items-center justify-center mb-10">
-        <button
-          onClick={reopenEntry}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-[13px] font-semibold text-carbon/65 hover:text-carbon hover:bg-carbon/[0.04] transition-all border border-carbon/[0.10] hover:border-carbon/25"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          {(t.creative as Record<string, string>).modifyConsumerBrief || 'Modificar brief del consumidor'}
-        </button>
-      </div>
+      {/* Navigation controls (Modificar brief ← / → Confirmar y Continuar)
+          live in the parent below the grid — see the bar after
+          ExpandedBlockContent. They sit on the same row aligned with
+          the card edges so the user has a "back ↔ forward" frame
+          around the proposals. */}
 
       {/* 4-card grid + a compact "+ una más" column on the right. Cards
           take 1fr each; the add column is auto-sized to its content so
@@ -3740,17 +3735,40 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                     vibeText={vibeText}
                   />
 
-                  {/* Confirm — centered. Hidden for Consumer until proposals
-                      exist: there's nothing to confirm in the entry-ficha
-                      phase, so showing the button there sends a misleading
-                      "ready to advance" signal. Same will apply to other
-                      blocks that follow the canonical entry → propose →
-                      confirm pattern (extend this guard as we go). */}
+                  {/* Navigation row — sits below the content, aligned to the
+                      same edges as the card grid. For Consumer in the
+                      proposal phase we render BOTH controls together:
+                      "← Modificar brief" left-edge and "Confirmar y Continuar
+                      →" right-edge. The user always knows there's a back
+                      and a forward. Other blocks keep the centered confirm
+                      until they migrate to the same pattern. */}
                   {(() => {
                     if (block.id === 'consumer') {
                       const proposals = (state.data?.proposals as Array<{ status?: string }>) || [];
                       const hasVisible = proposals.some((p) => p.status !== 'rejected');
                       if (!hasVisible) return null;
+                      return (
+                        <div className="max-w-[1600px] mx-auto mt-12 pt-8 border-t border-carbon/[0.06] flex items-center justify-between gap-4">
+                          <button
+                            onClick={() => updateBlockData(block.id, { data: { ...((state.data as Record<string, unknown>) || {}), proposals: [] } })}
+                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold text-carbon/65 hover:text-carbon hover:bg-carbon/[0.04] transition-all border border-carbon/[0.10] hover:border-carbon/25"
+                          >
+                            <ArrowLeft className="h-3.5 w-3.5" />
+                            {(t.creative as Record<string, string>).modifyConsumerBrief || 'Modificar brief del consumidor'}
+                          </button>
+                          <button
+                            onClick={() => handleConfirm(block.id)}
+                            className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                              state.confirmed
+                                ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
+                                : 'bg-carbon text-white hover:bg-carbon/90'
+                            }`}
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
+                          </button>
+                        </div>
+                      );
                     }
                     return (
                   <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
