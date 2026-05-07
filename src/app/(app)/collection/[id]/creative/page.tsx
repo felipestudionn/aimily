@@ -2472,7 +2472,12 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   const handleLoadMoreDimension = async (dimension: 'theme' | 'category' | 'color' | 'material') => {
     setGeneratingDim(dimension);
     setError(null);
-    const existingTitles = results.filter(r => r.dimension === dimension).map(r => r.title);
+    // Exclude ALL existing titles across ALL dimensions, not just the
+    // current axis. This prevents the LLM from leaking adjacent
+    // concepts ("Pantalón Cargo Elevado" duplicating "Pantalones Cargo"
+    // already in categories) when it runs out of fresh macro ideas.
+    const allExistingTitles = results.map(r => r.title);
+    const sameDimensionTitles = results.filter(r => r.dimension === dimension).map(r => r.title);
     const inputStr = blockId === 'competitors'
       ? brands.join(', ')
       : focus.join(', ');
@@ -2482,12 +2487,15 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
       targetDimension: dimension,
       ...collectionContext,
     };
-    if (existingTitles.length > 0) inputPayload.excludeTitles = existingTitles.join('|||');
+    if (allExistingTitles.length > 0) inputPayload.excludeTitles = allExistingTitles.join('|||');
     const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', inputPayload, language);
     if (err) { setError(err); setGeneratingDim(null); return; }
     const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: 'theme' | 'category' | 'color' | 'material'; hex?: string }> };
+    // Filter against same-dimension titles only at this point (the
+    // LLM has been told to avoid all titles already; this is just a
+    // safety net for exact-match same-axis duplicates).
     const moreResults = (parsed.results || [])
-      .filter(r => !existingTitles.includes(r.title))
+      .filter(r => !sameDimensionTitles.includes(r.title))
       .slice(0, 7)
       .map((r) => ({ ...r, dimension, selected: true, editing: false }));
     onChange({ ...data, results: [...results, ...moreResults] });

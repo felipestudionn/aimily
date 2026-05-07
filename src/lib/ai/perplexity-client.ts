@@ -169,7 +169,8 @@ export async function researchTrends(
 
         if (targetDimension && targetMap[targetDimension]) {
           // Single-axis deepen mode — used by the per-section "+ Más"
-          // buttons. Returns 5-7 NEW cards focused on that bucket.
+          // buttons. Returns 5-7 NEW cards focused on that bucket
+          // and EXPLICITLY non-overlapping with the other axes.
           const spec = targetMap[targetDimension];
           const isColor = targetDimension === 'color';
           const fieldsLine = isColor
@@ -178,11 +179,24 @@ export async function researchTrends(
           const jsonShape = isColor
             ? `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"...","hex":"#RRGGBB"}, ...] }`
             : `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"..."}, ...] }`;
+
+          // Strict anti-leak language tailored per axis. Without this
+          // the LLM tends to bleed product/material/color concepts into
+          // the themes axis (and vice versa) when it runs out of pure
+          // ideas. Each branch tells it what to AVOID, in plain terms.
+          const antiLeakRules: Record<string, string> = {
+            theme: `\nABSOLUTE RULES — A THEME IS:\n  · A MACRO cultural force or aesthetic energy\n  · Vogue/WWD-style headline ("Quiet Luxury", "Sheer Everything", "Y2K Resurgence", "The New Prep")\n  · Concept-level — describes a MOOD, not a piece, a fabric, or a colour\n\nA THEME IS NOT:\n  · A product type ("Cargo Pants", "Blazers" — those go in CATEGORIES)\n  · A material or texture ("Fringe", "Mesh" — those go in MATERIALS)\n  · A colour name ("Cherry Red" — that goes in COLORS)\n  · A re-paraphrasing of a card already in another axis\n\nIf you cannot produce a fresh MACRO theme that doesn't paraphrase the user's other-axis cards, return FEWER cards rather than padding with off-axis content.`,
+            category: `\nABSOLUTE RULES — A CATEGORY IS:\n  · A specific product TYPE (silhouette + qualifier)\n  · "Mesh Ballet Flats", "Bias-cut Slips", "Knit Polo", "Tailored Bermudas"\n  · Always something the user could put on a buy sheet\n\nA CATEGORY IS NOT:\n  · A cultural energy or mood ("Quiet Luxury")\n  · A material ("Mesh", "Velvet")\n  · A colour\n\nDon't paraphrase themes/colours/materials already in the user's other axes.`,
+            color: `\nABSOLUTE RULES — A COLOR IS:\n  · A specific colour name ("Cherry Red", "Butter Yellow", "Powder Blue")\n  · Includes a hex code\n\nA COLOR IS NOT:\n  · A theme ("Romantic Florals" is a theme)\n  · A material ("Velvet" is a material)\n  · A product\n\nDon't paraphrase themes/categories/materials already in the user's other axes.`,
+            material: `\nABSOLUTE RULES — A MATERIAL IS:\n  · A fabric, finish, or construction technique\n  · "Liquid Jersey", "Vegetable-tanned Leather", "Mesh Panels", "Raw-edge Denim", "Sheer Organza"\n\nA MATERIAL IS NOT:\n  · A theme or aesthetic energy\n  · A product type ("Cargo Pants" is a category, not a material)\n  · A colour\n\nDon't paraphrase themes/categories/colours already in the user's other axes.`,
+          };
+
           prompt = `${collectionInfo}${seasonNote}
 ${trendQuery ? `\nFraming: "${trendQuery}".\n` : ''}
-The user wants MORE depth on ONLY the ${spec.plural.toUpperCase()} axis. Return 5-7 NEW cards. Don't include any other dimension.
+The user wants MORE depth on ONLY the ${spec.plural.toUpperCase()} axis. Return 4-6 NEW cards. Strictly stay in this axis.
 
 ${spec.block}
+${antiLeakRules[targetDimension]}
 
 For EVERY card include also:
   · "brands": 3-5 designer/brand references that represent this card.
