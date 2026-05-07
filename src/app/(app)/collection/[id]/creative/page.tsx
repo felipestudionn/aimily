@@ -596,8 +596,46 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
     }, language);
     if (err) { setError(err); setGenerating(false); return; }
     const parsed = result as { proposals: Array<{ title: string; desc: string }> };
-    const withStatus = (parsed.proposals || []).map((p) => ({ ...p, status: 'pending' as const }));
+    // All AI proposals start "liked" — they ARE what the user got. They
+    // trim what doesn't fit and ask for more if needed. Synthesis filters
+    // status === 'liked' downstream so this preserves the contract.
+    const withStatus = (parsed.proposals || []).map((p) => ({ ...p, status: 'liked' as const }));
     onChange({ ...data, proposals: withStatus });
+    setGenerating(false);
+  };
+
+  // Pide una propuesta adicional al endpoint. La añade a la lista existente
+  // sin tocar las que ya están. Las nuevas también entran como 'liked'.
+  const requestOneMore = async () => {
+    setGenerating(true);
+    setError(null);
+    const existingTitles = proposals.map((p) => p.title).join(', ');
+    const { result, error: err } = await generateCreative('consumer-proposals', {
+      reference,
+      gender,
+      ageRange,
+      cities: cities.join(', '),
+      wearsBrands: wearsBrands.join(', '),
+      shopsAt: shopsAt.join(', '),
+      reads: reads.join(', '),
+      values: values.join(', '),
+      lifestyle: lifestyle.join(' · '),
+      existingProfiles: existingTitles,
+      count: '1',
+      ...collectionContext,
+    }, language);
+    if (err) { setError(err); setGenerating(false); return; }
+    const parsed = result as { proposals: Array<{ title: string; desc: string }> };
+    const next = (parsed.proposals || [])
+      .filter((p) => !proposals.some((q) => q.title === p.title))
+      .slice(0, 1)
+      .map((p) => ({ ...p, status: 'liked' as const }));
+    if (next.length === 0) {
+      setError(((t.creative as Record<string, string>).noNewProposal || 'no he podido proponer una nueva — prueba a editar la ficha'));
+      setGenerating(false);
+      return;
+    }
+    onChange({ ...data, proposals: [...proposals, ...next] });
     setGenerating(false);
   };
 
@@ -633,7 +671,7 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
     }, language);
     if (err) { setError(err); setGenerating(false); return; }
     const parsed = result as { proposals: Array<{ title: string; desc: string }> };
-    const fresh = (parsed.proposals || []).map((p) => ({ ...p, status: 'pending' as const }));
+    const fresh = (parsed.proposals || []).map((p) => ({ ...p, status: 'liked' as const }));
     const kept = proposals.filter((p) => p.status !== 'rejected');
     onChange({ ...data, proposals: [...kept, ...fresh] });
     setGenerating(false);
@@ -649,38 +687,48 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
 
   const rejectedCount = proposals.filter((p) => p.status === 'rejected').length;
 
-  // ENTRY phase — only when no proposals exist yet (or after reopen).
-  if (!hasProposals) {
-    return (
-      <div className="flex flex-col items-center max-w-2xl mx-auto">
-        {/* Status caption — directly under the page title, never lets the
-            user wonder what aimily did. */}
+  // ENTRY face — ficha 3-col layout (2 sub-cols of pills + reference textarea)
+  const entryFace = (
+    <div className="max-w-6xl mx-auto w-full">
+      {/* Status caption — editorial pill, never plain prose */}
+      <div className="flex justify-center mb-12">
         {suggesting ? (
-          <p className="text-[13px] text-carbon/45 inline-flex items-center gap-2 mb-10">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            {(t.creative as Record<string, string>).readingMoodboard || 'leyendo tu moodboard…'}
-          </p>
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-carbon/[0.04]">
+            <Loader2 className="h-3 w-3 animate-spin text-carbon/45" />
+            <span className="text-[10px] tracking-[0.18em] uppercase text-carbon/55 font-semibold">
+              {(t.creative as Record<string, string>).readingMoodboard || 'leyendo tu moodboard…'}
+            </span>
+          </div>
         ) : suggestionFromMoodboard ? (
-          <p className="text-[13px] text-carbon/45 mb-10">
-            {(t.creative as Record<string, string>).basedOnMoodboard || 'basado en tu moodboard — edita lo que quieras'}
-          </p>
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-carbon/[0.04]">
+            <span className="flex gap-0.5">
+              <span className="w-1 h-1 rounded-full bg-carbon/35" />
+              <span className="w-1 h-1 rounded-full bg-carbon/35" />
+              <span className="w-1 h-1 rounded-full bg-carbon/35" />
+            </span>
+            <span className="text-[10px] tracking-[0.18em] uppercase text-carbon/55 font-semibold">
+              {(t.creative as Record<string, string>).basedOnMoodboard || 'desde tu moodboard · edita lo que quieras'}
+            </span>
+          </div>
         ) : suggestionStatus === 'empty' ? (
-          <p className="text-[13px] text-carbon/35 italic mb-10">
-            {(t.creative as Record<string, string>).noMoodboardSignal || 'aún no leo señal clara del moodboard — empieza tú'}
-          </p>
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-carbon/[0.04]">
+            <span className="text-[10px] tracking-[0.18em] uppercase text-carbon/45 font-semibold italic">
+              {(t.creative as Record<string, string>).noMoodboardSignal || 'aún no leo señal clara — empieza tú'}
+            </span>
+          </div>
         ) : suggestionStatus === 'error' ? (
-          <p className="text-[13px] text-carbon/35 italic mb-10">
-            {(t.creative as Record<string, string>).moodboardReadFailed || 'no he podido leer tu moodboard — empieza tú'}
-          </p>
-        ) : (
-          <div className="mb-10" />
-        )}
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-carbon/[0.04]">
+            <span className="text-[10px] tracking-[0.18em] uppercase text-carbon/45 font-semibold italic">
+              {(t.creative as Record<string, string>).moodboardReadFailed || 'no he podido leer tu moodboard — empieza tú'}
+            </span>
+          </div>
+        ) : null}
+      </div>
 
-        {/* Rich ficha — 9 dimensions, every one editable. The first time the
-            user lands, aimily has filled most of them from the moodboard.
-            User trims/edits/adds; nothing here blocks "generar". */}
-        <div className="w-full space-y-7">
-          {/* Gender — chips */}
+      {/* 3-col grid: 2 sub-cols ficha (left) + reference textarea (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-10 items-start">
+        {/* LEFT BLOCK — 2 sub-columns of 8 ficha rows */}
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
           <FichaRow label={(t.creative as Record<string, string>).forWhom || 'para quién'}>
             <div className="flex flex-wrap items-center gap-2">
               {genderOptions.map((opt) => (
@@ -699,7 +747,6 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             </div>
           </FichaRow>
 
-          {/* Age range — single editable chip */}
           <FichaRow label={(t.creative as Record<string, string>).ageRange || 'edad'}>
             <input
               type="text"
@@ -710,7 +757,6 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             />
           </FichaRow>
 
-          {/* Cities */}
           <FichaRow label={(t.creative as Record<string, string>).consumerCities || 'ciudades'}>
             <EditableChipCloud
               values={cities}
@@ -719,7 +765,6 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             />
           </FichaRow>
 
-          {/* Wears brands */}
           <FichaRow label={(t.creative as Record<string, string>).consumerWearsBrands || 'marcas que lleva'}>
             <EditableChipCloud
               values={wearsBrands}
@@ -728,7 +773,6 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             />
           </FichaRow>
 
-          {/* Shops at */}
           <FichaRow label={(t.creative as Record<string, string>).consumerShopsAt || 'dónde compra'}>
             <EditableChipCloud
               values={shopsAt}
@@ -737,7 +781,6 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             />
           </FichaRow>
 
-          {/* Reads */}
           <FichaRow label={(t.creative as Record<string, string>).consumerReads || 'qué lee'}>
             <EditableChipCloud
               values={reads}
@@ -746,7 +789,6 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             />
           </FichaRow>
 
-          {/* Values */}
           <FichaRow label={(t.creative as Record<string, string>).consumerValues || 'lo que valora'}>
             <EditableChipCloud
               values={values}
@@ -755,7 +797,6 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             />
           </FichaRow>
 
-          {/* Lifestyle */}
           <FichaRow label={(t.creative as Record<string, string>).consumerLifestyle || 'cómo vive'}>
             <EditableChipCloud
               values={lifestyle}
@@ -763,154 +804,166 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
               placeholder="añadir momento"
             />
           </FichaRow>
+        </div>
 
-          {/* Reference — single editorial line */}
+        {/* RIGHT BLOCK — reference grows into a textarea, gets the full
+            column height. Lets the editorial line breathe instead of
+            squashing it into a thin underline. */}
+        <div className="lg:col-span-1">
           <FichaRow label={(t.creative as Record<string, string>).describeYourCustomerLabel || 'en una frase'}>
-            <input
-              type="text"
+            <textarea
               value={reference}
               onChange={(e) => onChange({ ...data, reference: e.target.value })}
               placeholder={(t.creative as Record<string, string>).describeYourCustomerPlaceholder || 'una frase, una referencia, un detalle…'}
-              className="w-full text-[16px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-2 placeholder:text-carbon/25 font-light tracking-[-0.01em]"
+              rows={12}
+              className="w-full text-[16px] text-carbon bg-carbon/[0.02] rounded-[16px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-5 resize-none leading-[1.7] tracking-[-0.01em] placeholder:text-carbon/25 font-light min-h-[280px]"
             />
           </FichaRow>
         </div>
-
-        <div className="mt-12 flex flex-col items-center gap-3">
-          <button
-            onClick={generateProposals}
-            disabled={!gender || generating}
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-full text-[14px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {generating ? ((t.creative as Record<string, string>).generatingProposals || 'generando…') : ((t.creative as Record<string, string>).generateProposalsCta || 'generar propuestas')}
-          </button>
-          {error && <p className="text-xs text-red-600">{error}</p>}
-        </div>
       </div>
-    );
-  }
 
-  // PROPOSAL phase — show params breadcrumb + cards + refine.
-  return (
-    <div className="space-y-6">
-      {/* Breadcrumb — current params, click to reopen entry */}
-      <div className="flex items-center justify-center flex-wrap gap-2 text-[12px] text-carbon/45">
-        {gender && (
-          <button onClick={reopenEntry} className="hover:text-carbon transition-colors">
-            {genderOptions.find((o) => o.id === gender)?.label}
-          </button>
-        )}
-        {reference && (
-          <>
-            <span>·</span>
-            <button onClick={reopenEntry} className="hover:text-carbon transition-colors">{reference}</button>
-          </>
-        )}
-        <span>·</span>
-        <button onClick={reopenEntry} className="hover:text-carbon transition-colors underline-offset-2 hover:underline">
-          {(t.creative as Record<string, string>).modifyAction || 'modificar'}
+      {/* CTA — Aimily-branded, no Sparkles */}
+      <div className="mt-14 flex flex-col items-center gap-3">
+        <button
+          onClick={generateProposals}
+          disabled={!gender || generating}
+          className="inline-flex items-center gap-2 pl-7 pr-6 py-3 rounded-full text-[14px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed group"
+        >
+          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          <span>
+            {generating
+              ? ((t.creative as Record<string, string>).generatingProposals || 'generando…')
+              : ((t.creative as Record<string, string>).generateProposalsCta || 'Generar con Aimily')}
+          </span>
+          {!generating && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
+        </button>
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
+    </div>
+  );
+
+  // PROPOSAL face — gold-standard 4-card grid (white, rounded-[20px], hover lift).
+  // All visible cards are implicitly "selected" (status === 'liked') so Synthesis
+  // downstream sees them. Removing a card flips it to 'rejected' (filtered out).
+  // "Pedir una más" appends a fresh card via the same endpoint with count=1.
+  const visibleProposals = proposals
+    .map((p, idx) => ({ p, idx }))
+    .filter(({ p }) => p.status !== 'rejected');
+
+  const proposalFace = (
+    <div className="max-w-7xl mx-auto w-full">
+      <div className="flex items-center justify-center mb-10">
+        <button
+          onClick={reopenEntry}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium text-carbon/55 hover:text-carbon hover:bg-carbon/[0.04] transition-all"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          {(t.creative as Record<string, string>).modifyAction || 'modificar ficha'}
         </button>
       </div>
 
-      {/* Proposal cards */}
-      <div className="space-y-4">
-        {proposals.map((p, i) => (
-          <div
-            key={`${p.title}-${i}`}
-            className={`rounded-[16px] border transition-all ${
-              p.status === 'liked'
-                ? 'border-carbon bg-carbon/[0.03]'
-                : p.status === 'rejected'
-                ? 'border-carbon/[0.06] bg-carbon/[0.01] opacity-40'
-                : 'border-carbon/[0.08]'
-            }`}
-          >
-            <div className="p-5">
-              {editingIdx === i ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {visibleProposals.map(({ p, idx: originalIdx }, displayIdx) => {
+          const isEditing = editingIdx === originalIdx;
+          return (
+            <div
+              key={`${p.title}-${originalIdx}`}
+              className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+            >
+              <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/30 font-semibold mb-8">
+                {(t.creative as Record<string, string>).consumerProfileLabel || 'perfil'} 0{displayIdx + 1}
+              </div>
+
+              {isEditing ? (
                 <input
                   type="text"
                   value={p.title}
-                  onChange={(e) => updateProposal(i, { title: e.target.value })}
-                  className="w-full text-[14px] font-semibold text-carbon bg-transparent border-b border-carbon/20 focus:border-carbon focus:outline-none mb-3 pb-1"
+                  onChange={(e) => updateProposal(originalIdx, { title: e.target.value })}
                   autoFocus
+                  className="text-[26px] md:text-[30px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-6 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
                 />
               ) : (
-                <div className="text-[14px] font-semibold text-carbon mb-3">{p.title}</div>
+                <h3 className="text-[26px] md:text-[30px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-6">
+                  {p.title}
+                </h3>
               )}
 
-              {editingIdx === i ? (
+              {isEditing ? (
                 <textarea
                   value={p.desc}
-                  onChange={(e) => updateProposal(i, { desc: e.target.value })}
-                  className="w-full text-[13px] text-carbon/70 leading-relaxed bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none p-3 resize-none"
-                  rows={5}
+                  onChange={(e) => updateProposal(originalIdx, { desc: e.target.value })}
+                  rows={8}
+                  className="text-[14px] text-carbon/70 leading-[1.7] tracking-[-0.01em] bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-3 resize-none w-full"
                 />
               ) : (
-                <div className="text-[13px] text-carbon/70 leading-relaxed">{p.desc}</div>
+                <p className="text-[14px] text-carbon/60 leading-[1.7] tracking-[-0.01em]">
+                  {p.desc}
+                </p>
               )}
 
-              <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-carbon/[0.06]">
+              <div className="flex-1" />
+
+              <div className={`mt-10 flex items-center gap-1.5 transition-opacity ${isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                 <button
-                  onClick={() => updateProposal(i, { status: p.status === 'liked' ? 'pending' : 'liked' })}
-                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
-                    p.status === 'liked'
+                  onClick={() => setEditingIdx(isEditing ? null : originalIdx)}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                    isEditing
                       ? 'bg-carbon text-white'
                       : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
                   }`}
                 >
-                  <ThumbsUp className="h-3 w-3" />
-                  {p.status === 'liked' ? t.creative.selectedAction : t.creative.selectAction}
+                  {isEditing ? <Check className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+                  {isEditing
+                    ? ((t.creative as Record<string, string>).doneAction || 'listo')
+                    : ((t.creative as Record<string, string>).editAction || 'editar')}
                 </button>
                 <button
-                  onClick={() => updateProposal(i, { status: p.status === 'rejected' ? 'pending' : 'rejected' })}
-                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
-                    p.status === 'rejected'
-                      ? 'bg-red-50 text-red-600'
-                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-                  }`}
-                >
-                  <ThumbsDown className="h-3 w-3" />
-                  {t.creative.rejectAction}
-                </button>
-                <button
-                  onClick={() => setEditingIdx(editingIdx === i ? null : i)}
-                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all ${
-                    editingIdx === i
-                      ? 'bg-amber-50 text-amber-700'
-                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-                  }`}
-                >
-                  <Pencil className="h-3 w-3" />
-                  {editingIdx === i ? t.creative.doneAction : t.creative.editAction}
-                </button>
-                <button
-                  onClick={() => removeProposal(i)}
-                  className="ml-auto w-7 h-7 rounded-full flex items-center justify-center text-carbon/20 hover:text-red-500 hover:bg-red-50 transition-all"
+                  onClick={() => updateProposal(originalIdx, { status: 'rejected' })}
+                  className="ml-auto w-8 h-8 rounded-full flex items-center justify-center text-carbon/30 hover:text-red-500 hover:bg-red-50 transition-all"
+                  aria-label={(t.creative as Record<string, string>).removeAction || 'eliminar'}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Refine — only when there are rejected slots to replace */}
-      {rejectedCount > 0 && (
-        <div className="flex justify-center pt-2">
-          <button
-            onClick={regenerateRejected}
-            disabled={generating}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30"
-          >
-            {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-            {t.creative.regenerateRejected} {rejectedCount} {t.creative.rejectedLabel}
-          </button>
-        </div>
-      )}
+      <div className="mt-8 flex flex-col items-center gap-3">
+        <button
+          onClick={requestOneMore}
+          disabled={generating || visibleProposals.length >= 8}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+          {(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+        </button>
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
+    </div>
+  );
 
-      {error && <p className="text-xs text-red-600 text-center">{error}</p>}
+  // Flip wrapper — entry on the front, proposals on the back. Both
+  // children stack in the same grid cell (1/1) so the parent sizes to
+  // the larger face. Parent rotates Y on hasProposals; each face has
+  // backface-visibility:hidden + the back is pre-rotated 180 so it
+  // shows upright once the parent is flipped. perspective drives the
+  // depth illusion.
+  return (
+    <div className="[perspective:1800px] w-full">
+      <div
+        className={`grid w-full transition-transform duration-700 ease-in-out [transform-style:preserve-3d] ${
+          hasProposals ? '[transform:rotateY(180deg)]' : ''
+        }`}
+      >
+        <div className="[grid-area:1/1] [backface-visibility:hidden]">
+          {entryFace}
+        </div>
+        <div className="[grid-area:1/1] [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          {proposalFace}
+        </div>
+      </div>
     </div>
   );
 }
