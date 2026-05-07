@@ -190,9 +190,21 @@ export async function researchTrends(
         //    4-axis report and per-axis deepen). Keeps Sonar grounded
         //    in the same brand/season/framing/source no matter what
         //    the ask is. Only the BODY (the ask) varies.
+        //
+        //    Source list curated to publications where trends are
+        //    actually analyzed in depth (not just photo dumps). The
+        //    LLM should treat these as primary reference points and
+        //    cross-reference everything it returns against what the
+        //    user's framing chips already imply.
         const contextHeader = `${collectionInfo}${seasonNote}
-${trendQuery ? `\nIMPORTANT: The framing chips the user gave you: "${trendQuery}". Use them to focus the research.\n` : ''}
-Source: runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD, street-style coverage.`;
+${trendQuery ? `\nIMPORTANT: The user's framing chips for this collection: "${trendQuery}". Cross-reference EVERY card you return against these — a finding only counts if it intersects with the user's chips. Don't generalise.\n` : ''}
+RESEARCH SOURCES — pull only from publications where trends are seriously analysed. Treat these as primary:
+  · Vogue Runway · Tag Walk · The Impression · Harper's Bazaar · Numero Magazine
+  · Business of Fashion (BoF) · WWD · Highsnobiety · NSS Magazine · SSENSE editorial
+  · Hypebeast / Hypebae · The Cut · 032c · 1 Granary · Dazed · i-D
+  · Street-style coverage from Vogue.com / Tag Walk for the recent season.
+
+Method: research these sources, identify recurring patterns across at least 2-3 of them, and only then propose a card. Do NOT invent trends that aren't backed by the sources. Reference real designers and shows in the desc.`;
 
         let askBody = '';
         let jsonShape = '';
@@ -455,7 +467,7 @@ async function callSonar(
       messages: [
         {
           role: 'system',
-          content: 'You are a fashion industry expert. Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON. Every trend must be real, visual, and concrete — something you could see on a runway or in a store.',
+          content: 'You are a senior fashion trend analyst writing for designers who will actually use your research. You read the major fashion publications closely (Vogue Runway, Tag Walk, The Impression, Harper\'s Bazaar, Numero, Business of Fashion, Highsnobiety, NSS Magazine, SSENSE editorial, The Cut, 032c, Dazed, WWD) and synthesize what they\'re collectively saying. Every trend you return must be backed by recurring coverage across multiple of these sources — not invented, not generalised, not from one isolated mention. Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON.',
         },
         { role: 'user', content: prompt },
       ],
