@@ -2541,19 +2541,25 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   // covers the user intent on the overview — there's no extra
   // intermediate Generate button. Editing chips after results exist
   // surfaces a small "Regenerar" pill (below).
-  const autoFiredRef = useRef(false);
+  // Auto-trigger Sonar when entering a lens that has chips ready and
+  // no results yet. The ref is keyed off blockId so swapping between
+  // lenses (Tendencias → Señales → Competidores) resets the trigger
+  // and each lens fires its own search on first arrival. Without this
+  // reset, only the first lens fired Sonar; subsequent swaps left the
+  // user staring at an empty pane.
+  const autoFiredForBlockRef = useRef<string | null>(null);
   useEffect(() => {
-    if (autoFiredRef.current) return;
+    if (autoFiredForBlockRef.current === blockId) return;
     if (results.length > 0) {
-      autoFiredRef.current = true;
+      autoFiredForBlockRef.current = blockId;
       return;
     }
     if (!canGenerate) return;
     if (generating) return;
-    autoFiredRef.current = true;
+    autoFiredForBlockRef.current = blockId;
     handleGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [blockId]);
 
   return (
     <div className="space-y-8">
@@ -3070,8 +3076,6 @@ function MarketResearchUnified({
   /* ─── Mode 2 · Expanded · activeIdx card grows to 3fr, others compact ─── */
   const activeBlock = RESEARCH_BLOCKS[activeIdx];
   const activeState = blockData[activeBlock.id] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
-  const inactive = RESEARCH_BLOCKS.map((block, idx) => ({ block, idx })).filter(({ idx }) => idx !== activeIdx);
-
   // Where does Confirm send the user next? Within Investigación de
   // Mercado the natural flow is lens → next lens → next lens. Once
   // the LAST lens (Competidores) is confirmed, the user advances to
@@ -3137,51 +3141,71 @@ function MarketResearchUnified({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] lg:grid-rows-2 gap-5 transition-all duration-500 ease-out">
-        {/* Active card — expanded, hosts the legacy ResearchBlockContent
-            inside which now renders the chip-based ficha + result cards. */}
-        <div className="lg:row-span-2 lg:col-start-1 bg-white rounded-[20px] p-8 md:p-10 min-h-[640px]">
-          <h2 className="text-[28px] md:text-[34px] font-medium text-carbon tracking-[-0.02em] leading-[1.05] mb-2">
-            {activeBlock.label}
-          </h2>
-          <p className="text-[14px] text-carbon/55 leading-[1.6] mb-8">
-            {activeBlock.desc}
-          </p>
-          <ResearchBlockContent
-            blockId={activeBlock.id}
-            mode={activeState.mode}
-            data={activeState.data}
-            onChange={(newData) => updateBlockData(activeBlock.id, { data: newData })}
-            collectionContext={collectionContext}
-            consumerProfile={consumerProfile}
-          />
-        </div>
-
-        {/* The 3 mini cards stacked in the right column */}
-        {inactive.map(({ block, idx }) => {
+      {/* ── Stepper · 3 lenses with state badges ─────────────────
+          Replaces the 3fr/1fr layout with mini cards on the right.
+          Sequence is explicit; clicking a step jumps to that lens.
+          State per step:
+          · activeIdx → active (filled black)
+          · confirmed → confirmed (border + check)
+          · neither   → pending (subtle gray) ──────────────────── */}
+      <div className="mb-8 flex items-center gap-3 max-w-[1100px] mx-auto">
+        {RESEARCH_BLOCKS.map((block, idx) => {
           const blockState = blockData[block.id] || { confirmed: false, data: {} };
-          const isStarted = blockState.confirmed || ((blockState.data?.results as unknown[])?.length || 0) > 0;
+          const results = (blockState.data?.results as Array<{ selected?: boolean }>) || [];
+          const keptCount = results.filter((r) => r.selected !== false).length;
+          const isActive = idx === activeIdx;
+          const isConfirmed = blockState.confirmed;
           return (
             <button
               key={block.id}
               type="button"
               onClick={() => setActiveIdx(idx)}
-              className="lg:col-start-2 group relative bg-white rounded-[20px] p-5 flex flex-col transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] text-left overflow-hidden"
+              className={`group flex-1 inline-flex items-center justify-between gap-3 px-5 py-3.5 rounded-[14px] text-left transition-all ${
+                isActive
+                  ? 'bg-carbon text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)]'
+                  : isConfirmed
+                  ? 'bg-white border border-carbon/15 text-carbon hover:border-carbon/30'
+                  : 'bg-white border border-carbon/[0.08] text-carbon/55 hover:text-carbon hover:border-carbon/20'
+              }`}
             >
-              <h3 className="text-[16px] font-medium text-carbon tracking-[-0.01em] leading-tight mb-3">
-                {block.label}
-              </h3>
-              <div className="mb-2">
-                {renderFichaPreview(block, true)}
-              </div>
-              <div className="flex-1" />
-              <div className="flex items-center justify-between mt-2 pt-2">
-                {renderBadge(block) || <span />}
-                <ArrowRight className="h-3 w-3 text-carbon/35 group-hover:text-carbon group-hover:translate-x-0.5 transition-all" />
-              </div>
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className={`text-[10px] tracking-[0.18em] uppercase font-semibold ${isActive ? 'text-white/55' : 'text-carbon/40'}`}>
+                  0{idx + 1}
+                </span>
+                <span className="text-[14px] font-medium tracking-[-0.01em] truncate">
+                  {block.label}
+                </span>
+              </span>
+              <span className="flex items-center gap-1.5 flex-shrink-0">
+                {keptCount > 0 && (
+                  <span className={`text-[10px] tracking-[0.1em] uppercase font-semibold ${isActive ? 'text-white/65' : 'text-carbon/45'}`}>
+                    ·{keptCount}
+                  </span>
+                )}
+                {isConfirmed && !isActive && <Check className="h-3.5 w-3.5 text-carbon/55" />}
+              </span>
             </button>
           );
         })}
+      </div>
+
+      {/* ── Active lens — full width, generous breathing room ─── */}
+      <div className="bg-white rounded-[20px] p-8 md:p-10 min-h-[640px]">
+        <h2 className="text-[28px] md:text-[34px] font-medium text-carbon tracking-[-0.02em] leading-[1.05] mb-2">
+          {activeBlock.label}
+        </h2>
+        <p className="text-[14px] text-carbon/55 leading-[1.6] mb-8 max-w-[700px]">
+          {activeBlock.desc}
+        </p>
+        <ResearchBlockContent
+          key={activeBlock.id}
+          blockId={activeBlock.id}
+          mode={activeState.mode}
+          data={activeState.data}
+          onChange={(newData) => updateBlockData(activeBlock.id, { data: newData })}
+          collectionContext={collectionContext}
+          consumerProfile={consumerProfile}
+        />
       </div>
     </div>
   );
