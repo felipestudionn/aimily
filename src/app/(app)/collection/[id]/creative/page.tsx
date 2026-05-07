@@ -104,6 +104,13 @@ const INPUT_MODES: { id: InputMode; label: string; description: string }[] = [
 interface ConsumerProfile {
   title: string;
   desc: string;
+  // Structured fields populated by the new endpoint shape. Optional for
+  // back-compat with older proposals that only have desc.
+  essence?: string;
+  keyQuote?: string;
+  wardrobe?: string[];
+  lifestyle?: string[];
+  values?: string[];
   status: 'pending' | 'liked' | 'rejected';
   editing?: boolean;
 }
@@ -872,63 +879,136 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
     .map((p, idx) => ({ p, idx }))
     .filter(({ p }) => p.status !== 'rejected');
 
+  // Render a section ("cómo viste / cómo vive / valores") — only when the
+  // proposal carries the structured array. Keeps the card editorial when
+  // the LLM emits the new schema, and gracefully omits when missing.
+  const renderSection = (label: string, items?: string[]) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="mt-5">
+        <div className="text-[9px] tracking-[0.22em] uppercase text-carbon/45 font-semibold mb-2">
+          {label}
+        </div>
+        <ul className="space-y-1.5">
+          {items.map((item, i) => (
+            <li key={i} className="flex gap-2 text-[12.5px] xl:text-[13px] text-carbon/70 leading-[1.55] tracking-[-0.01em]">
+              <span className="text-carbon/30 mt-[3px]">·</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   const proposalFace = (
-    <div className="max-w-7xl mx-auto w-full">
+    <div className="max-w-[1600px] mx-auto w-full">
+      {/* Modify-ficha breadcrumb — bigger pill, explicit copy. */}
       <div className="flex items-center justify-center mb-10">
         <button
           onClick={reopenEntry}
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium text-carbon/55 hover:text-carbon hover:bg-carbon/[0.04] transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-[13px] font-semibold text-carbon/65 hover:text-carbon hover:bg-carbon/[0.04] transition-all border border-carbon/[0.10] hover:border-carbon/25"
         >
-          <ArrowLeft className="h-3 w-3" />
-          {(t.creative as Record<string, string>).modifyAction || 'modificar ficha'}
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {(t.creative as Record<string, string>).modifyConsumerBrief || 'Modificar brief del consumidor'}
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* 5-col grid — 4 proposals + the "+ pedir una más" tile sitting inline
+          to the right of the last card. Responsive sizing follows CLAUDE.md
+          gold-standard 5-card pattern (3xl:p-14 only on monitors ≥1920). */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-stretch">
         {visibleProposals.map(({ p, idx: originalIdx }, displayIdx) => {
           const isEditing = editingIdx === originalIdx;
+          const isLiked = p.status === 'liked';
+          const hasStructured = Boolean(
+            p.essence || (p.wardrobe && p.wardrobe.length) || (p.lifestyle && p.lifestyle.length) || (p.values && p.values.length),
+          );
           return (
             <div
               key={`${p.title}-${originalIdx}`}
-              className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+              className={`group relative bg-white rounded-[20px] p-6 xl:p-8 3xl:p-14 flex flex-col min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left ${
+                isLiked ? 'ring-2 ring-carbon/15' : 'opacity-60'
+              }`}
             >
-              <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/30 font-semibold mb-8">
-                {(t.creative as Record<string, string>).consumerProfileLabel || 'perfil'} 0{displayIdx + 1}
+              {/* Top row — perfil 0X label + accept toggle in the corner */}
+              <div className="flex items-start justify-between mb-6 3xl:mb-8">
+                <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold">
+                  {(t.creative as Record<string, string>).consumerProfileLabel || 'perfil'} 0{displayIdx + 1}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => updateProposal(originalIdx, { status: isLiked ? 'pending' : 'liked' })}
+                  aria-label={(t.creative as Record<string, string>).keepAction || 'me lo quedo'}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                    isLiked
+                      ? 'bg-carbon text-white'
+                      : 'bg-carbon/[0.06] text-carbon/30 hover:bg-carbon/[0.12]'
+                  }`}
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </button>
               </div>
 
+              {/* Title */}
               {isEditing ? (
                 <input
                   type="text"
                   value={p.title}
                   onChange={(e) => updateProposal(originalIdx, { title: e.target.value })}
                   autoFocus
-                  className="text-[26px] md:text-[30px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-6 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
+                  className="text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 3xl:mb-5 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
                 />
               ) : (
-                <h3 className="text-[26px] md:text-[30px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-6">
+                <h3 className="text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 3xl:mb-5">
                   {p.title}
                 </h3>
               )}
 
+              {/* Essence — short tagline, italic editorial */}
+              {!isEditing && p.essence && (
+                <p className="text-[13px] xl:text-[14px] text-carbon/65 italic leading-[1.55] mb-5 tracking-[-0.01em]">
+                  {p.essence}
+                </p>
+              )}
+
+              {/* Quote — what she would say */}
+              {!isEditing && p.keyQuote && (
+                <blockquote className="text-[12px] xl:text-[13px] text-carbon/55 leading-[1.6] mb-5 pl-3 border-l-2 border-carbon/15 tracking-[-0.005em]">
+                  "{p.keyQuote}"
+                </blockquote>
+              )}
+
+              {/* Editing OR sections OR fallback paragraph */}
               {isEditing ? (
                 <textarea
                   value={p.desc}
                   onChange={(e) => updateProposal(originalIdx, { desc: e.target.value })}
-                  rows={8}
-                  className="text-[14px] text-carbon/70 leading-[1.7] tracking-[-0.01em] bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-3 resize-none w-full"
+                  rows={10}
+                  className="text-[13px] text-carbon/70 leading-[1.7] tracking-[-0.01em] bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-3 resize-none w-full"
                 />
+              ) : hasStructured ? (
+                <>
+                  {renderSection((t.creative as Record<string, string>).consumerWardrobeLabel || 'cómo viste', p.wardrobe)}
+                  {renderSection((t.creative as Record<string, string>).consumerLifestyleLabel || 'cómo vive', p.lifestyle)}
+                  {renderSection((t.creative as Record<string, string>).consumerValuesLabel || 'qué valora', p.values)}
+                </>
               ) : (
-                <p className="text-[14px] text-carbon/60 leading-[1.7] tracking-[-0.01em]">
+                <p className="text-[13px] xl:text-[13.5px] text-carbon/60 leading-[1.7] tracking-[-0.01em]">
                   {p.desc}
                 </p>
               )}
 
               <div className="flex-1" />
 
-              <div className={`mt-10 flex items-center gap-1.5 transition-opacity ${isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+              {/* Action row — always visible, never hover-only. Three pills:
+                  edit (or done), spacer, discard. The "keep" toggle is the
+                  check at the top-right (above) so the keep/skip state is
+                  always loud. */}
+              <div className="mt-6 3xl:mt-10 flex items-center gap-1.5">
                 <button
                   onClick={() => setEditingIdx(isEditing ? null : originalIdx)}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
                     isEditing
                       ? 'bg-carbon text-white'
                       : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
@@ -941,28 +1021,44 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
                 </button>
                 <button
                   onClick={() => updateProposal(originalIdx, { status: 'rejected' })}
-                  className="ml-auto w-8 h-8 rounded-full flex items-center justify-center text-carbon/30 hover:text-red-500 hover:bg-red-50 transition-all"
-                  aria-label={(t.creative as Record<string, string>).removeAction || 'eliminar'}
+                  className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-carbon/[0.04] text-carbon/45 hover:bg-red-50 hover:text-red-600 transition-all"
+                  aria-label={(t.creative as Record<string, string>).removeAction || 'descartar'}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3 w-3" />
+                  {(t.creative as Record<string, string>).discardAction || 'descartar'}
                 </button>
               </div>
             </div>
           );
         })}
+
+        {/* "+ pedir una más" tile — sits inline in the grid as the next slot
+            after the last visible profile. Same card silhouette, dashed
+            outline so it reads as "open slot". */}
+        {visibleProposals.length < 8 && (
+          <button
+            type="button"
+            onClick={requestOneMore}
+            disabled={generating}
+            className="group relative bg-carbon/[0.015] hover:bg-carbon/[0.04] rounded-[20px] p-6 xl:p-8 3xl:p-14 flex flex-col items-center justify-center min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px] border-2 border-dashed border-carbon/15 hover:border-carbon/35 text-carbon/40 hover:text-carbon/75 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed text-center"
+          >
+            {generating ? (
+              <Loader2 className="h-7 w-7 mb-3 animate-spin" />
+            ) : (
+              <Plus className="h-7 w-7 mb-3 transition-transform group-hover:scale-110" />
+            )}
+            <span className="text-[12px] xl:text-[13px] font-semibold tracking-[-0.01em]">
+              {(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+            </span>
+          </button>
+        )}
       </div>
 
-      <div className="mt-8 flex flex-col items-center gap-3">
-        <button
-          onClick={requestOneMore}
-          disabled={generating || visibleProposals.length >= 8}
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-          {(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
-        </button>
-        {error && <p className="text-xs text-red-600">{error}</p>}
-      </div>
+      {error && (
+        <div className="mt-6 flex justify-center">
+          <p className="text-xs text-red-600">{error}</p>
+        </div>
+      )}
     </div>
   );
 

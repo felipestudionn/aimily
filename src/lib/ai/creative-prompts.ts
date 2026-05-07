@@ -106,15 +106,34 @@ ${QUALITY_GATES.consumerSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Return this exact JSON structure:
+Return this exact JSON structure. EVERY field is required — never omit a section:
 {
   "proposals": [
     {
       "title": "2-3 word segment name (memorable, not generic)",
-      "desc": "Full profile (100-140 words): identity, values, shopping behavior, media habits, wardrobe psychology. Must include specific brand/retailer references and at least one quantified behavior."
+      "essence": "ONE editorial sentence (12-18 words) that captures who she is — her psychology in one breath. Lowercase, no marketing fluff.",
+      "keyQuote": "An ACTUAL phrase she would say about how she dresses or shops — natural speech, first person, 10-20 words. No quote marks in the value.",
+      "wardrobe": [
+        "Concrete wardrobe move with a brand or material (e.g. 'invierte en knitwear de Totême antes que en una bolsa logo')",
+        "Second wardrobe move",
+        "Third wardrobe move"
+      ],
+      "lifestyle": [
+        "Vivid daily-life micro-scene with a place or ritual (e.g. 'desayuno en Cereal Café antes del estudio')",
+        "Second lifestyle marker",
+        "Third lifestyle marker"
+      ],
+      "values": [
+        "What she actively prioritizes (e.g. 'craftsmanship sobre logo')",
+        "Second value",
+        "Third value"
+      ],
+      "desc": "Full profile (100-140 words): identity, values, shopping behavior, media habits, wardrobe psychology. Must include specific brand/retailer references and at least one quantified behavior. Used as fallback for older renderers — must still read as a polished standalone paragraph."
     }
   ]
-}`,
+}
+
+Each wardrobe / lifestyle / values bullet: 6-14 words, concrete proper nouns over abstractions, no semicolons.`,
       };
 
     // ═══════════════════════════════════════════════════
