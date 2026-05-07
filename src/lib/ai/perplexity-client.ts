@@ -33,6 +33,12 @@ export interface TrendResult {
   brands: string;
   desc: string;
   relevance: 'high' | 'medium';
+  // For the merged Tendencias lens, Sonar groups its findings across
+  // four dimensions (themes / categories / colors / materials). We
+  // flatten the four buckets into a single results array with this
+  // tag so the UI can group by dimension while the existing select /
+  // edit / remove flow stays unchanged.
+  dimension?: 'theme' | 'category' | 'color' | 'material';
 }
 
 export interface TrendResearchResponse {
@@ -125,17 +131,40 @@ export async function researchTrends(
 
   switch (type) {
     case 'global':
+      // Tendencias (merged Global + Deep) — return four axes so the
+      // research feels like a real season-trend report, not a single
+      // flat list. The downstream UI groups by `dimension` and the
+      // user marks across all four axes.
       prompt = `${collectionInfo}${seasonNote}
-${trendQuery ? `\nIMPORTANT: The user wants trends specifically about "${trendQuery}". ALL trends must be relevant to ${trendQuery}. Do NOT return general fashion trends — focus exclusively on ${trendQuery} trends.\n` : ''}
-Find 6-8 KEY FASHION TRENDS${trendQuery ? ` for ${trendQuery}` : ''} from runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, and WWD. These must be REAL trends seen on runways and in fashion coverage — not abstract concepts.
+${trendQuery ? `\nIMPORTANT: The framing chips the user gave you: "${trendQuery}". Use them to focus the research, but cover ALL FOUR dimensions below.\n` : ''}
+Research this collection's market across FOUR DIMENSIONS using runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD and street-style coverage. Each dimension is a separate bucket of cards. NEVER mix dimensions. NEVER duplicate across dimensions.
 
-For EACH trend, provide:
-- "title": A Vogue-style headline (2-4 words). GOOD: ${trendQuery ? `e.g. for footwear: "Mesh Ballet Flats", "Chunky Loafers", "Kitten Heel Return"` : `"Quiet Luxury", "Sheer Everything", "The New Prep", "Linen Suiting"`}. BAD: "Digital Enlightenment", "Regenerative Authenticity"
-- "brands": 3-5 designer/brand names that represent this trend
-- "desc": 60-80 words — what it looks like (silhouettes, colors, materials), how a designer would use it. Direct and visual, not academic.
-- "relevance": "high" or "medium"
+DIMENSION 1 · THEMES (3-4 cards) — concept-level cultural energy.
+  · "title": Vogue-style headline (2-4 words). Examples: "Quiet Luxury", "Sheer Everything", "The New Prep", "Y2K Resurgence"
+  · "desc": 50-70 words — what cultural force this captures, how brands embody it, what a wearer signals when they buy in.
 
-${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
+DIMENSION 2 · CATEGORIES (4-6 cards) — specific product types trending.
+  · "title": Product type + qualifier (2-4 words). Examples: "Mesh Ballet Flats", "Bias-cut Slips", "Barn Jacket", "Tailored Bermudas", "Knit Polo"
+  · "desc": 50-70 words — silhouette, who wears it, how it's styled, brands doing it best.
+
+DIMENSION 3 · COLORS (3-5 cards) — color stories of the season.
+  · "title": Color name (1-3 words). Examples: "Cherry Red", "Butter Yellow", "Powder Blue", "Chocolate Brown", "Sage"
+  · "desc": 50-70 words — the hex/Pantone reference if you can, what materials carry it best, which designers championed it, mood it conveys.
+
+DIMENSION 4 · MATERIALS (3-5 cards) — fabric, finish and construction trends.
+  · "title": Material or construction technique (1-4 words). Examples: "Liquid Jersey", "Vegetable-tanned Leather", "Mesh Panels", "Raw-edge Denim", "Sheer Organza"
+  · "desc": 50-70 words — feel, weight (gsm if known), how it drapes, which silhouettes it favours, brands working with it.
+
+For EVERY card across all dimensions, also include:
+  · "brands": 3-5 designer/brand references that represent this card.
+
+${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys, no extra wrapping):
+{
+  "themes":     [{"title":"...","brands":"...","desc":"..."}, ...],
+  "categories": [{"title":"...","brands":"...","desc":"..."}, ...],
+  "colors":     [{"title":"...","brands":"...","desc":"..."}, ...],
+  "materials":  [{"title":"...","brands":"...","desc":"..."}, ...]
+}`;
       break;
 
     case 'deep-dive':
@@ -372,15 +401,41 @@ async function callSonar(
     const text = data.choices?.[0]?.message?.content || '';
     const citations = data.citations || [];
 
-    // Parse JSON from response
+    // Parse JSON from response. Handles two shapes:
+    //   1. Legacy flat: { results: [...] }
+    //   2. New 4-axis: { themes: [...], categories: [...], colors: [...], materials: [...] }
+    // For (2) we flatten and tag each entry with `dimension` so the
+    // UI can group while preserving the existing select/edit/remove
+    // flow that operates on a flat results array.
+    const flatten = (parsed: Record<string, unknown>): TrendResult[] => {
+      if (Array.isArray(parsed.results)) return parsed.results as TrendResult[];
+      const out: TrendResult[] = [];
+      const buckets: Array<['theme' | 'category' | 'color' | 'material', string]> = [
+        ['theme', 'themes'],
+        ['category', 'categories'],
+        ['color', 'colors'],
+        ['material', 'materials'],
+      ];
+      for (const [dimension, key] of buckets) {
+        const list = parsed[key];
+        if (Array.isArray(list)) {
+          for (const item of list) {
+            if (item && typeof item === 'object') {
+              out.push({ ...(item as TrendResult), dimension });
+            }
+          }
+        }
+      }
+      return out;
+    };
     try {
       const parsed = JSON.parse(text);
-      return { results: cleanResults(parsed.results || []), citations };
+      return { results: cleanResults(flatten(parsed)), citations };
     } catch {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        return { results: cleanResults(parsed.results || []), citations };
+        return { results: cleanResults(flatten(parsed)), citations };
       }
     }
 
@@ -398,10 +453,11 @@ function cleanResults(results: TrendResult[]): TrendResult[] {
   return results.map(r => ({
     ...r,
     // Remove citation references like [1], [2], [3] from descriptions
-    desc: r.desc.replace(/\[\d+\]/g, '').replace(/\s{2,}/g, ' ').trim(),
-    title: r.title.replace(/\[\d+\]/g, '').trim(),
+    desc: (r.desc || '').replace(/\[\d+\]/g, '').replace(/\s{2,}/g, ' ').trim(),
+    title: (r.title || '').replace(/\[\d+\]/g, '').trim(),
     // Fix brands: ensure comma-separated (Sonar sometimes concatenates them)
     brands: fixBrandsList(r.brands || ''),
+    // dimension passes through if present
   }));
 }
 

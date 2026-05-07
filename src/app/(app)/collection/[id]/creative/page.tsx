@@ -2328,6 +2328,9 @@ interface ResearchResult {
   relevance?: string;
   selected: boolean;
   editing?: boolean;
+  // For the merged Tendencias lens, Sonar tags each card with which
+  // axis it belongs to. The expanded view groups by this.
+  dimension?: 'theme' | 'category' | 'color' | 'material';
 }
 
 function ResearchBlockContent({ blockId, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
@@ -2546,11 +2549,130 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
         )}
       </div>
 
-      {/* ── Results — 2-column grid inside the expanded lens column
-          (the lens itself takes 3fr of the page, so 4-col results
-          would be too narrow). 6-8 cards stack into 2×N rows; the
-          compact "+1 más" goes below as a separate row. ─────────── */}
-      {results.length > 0 && (
+      {/* ── Results — 2-column grid inside the expanded lens column.
+          For the merged Tendencias lens we group by dimension (themes /
+          categories / colors / materials) with section headers; the
+          other two lenses keep their flat list ─────────────────── */}
+      {results.length > 0 && results.some((r) => r.dimension) && (() => {
+        const dimensionsOrder: Array<{ key: 'theme' | 'category' | 'color' | 'material'; label: string }> = [
+          { key: 'theme',    label: (t.creative as Record<string, string>).dimensionThemes     || 'Themes' },
+          { key: 'category', label: (t.creative as Record<string, string>).dimensionCategories || 'Categorías' },
+          { key: 'color',    label: (t.creative as Record<string, string>).dimensionColors     || 'Colores' },
+          { key: 'material', label: (t.creative as Record<string, string>).dimensionMaterials  || 'Materiales' },
+        ];
+        return (
+          <div className="space-y-12">
+            {dimensionsOrder.map(({ key, label }) => {
+              const subset = results
+                .map((r, i) => ({ r, i }))
+                .filter(({ r }) => r.dimension === key);
+              if (subset.length === 0) return null;
+              return (
+                <section key={key}>
+                  <h3 className="text-[11px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-5">
+                    {label}
+                  </h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+                    {subset.map(({ r, i }) => {
+                      const isLiked = r.selected;
+                      return (
+                        <div
+                          key={`${r.title}-${i}`}
+                          className={`group relative bg-white rounded-[20px] p-7 xl:p-8 flex flex-col min-h-[300px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left ${
+                            isLiked ? 'ring-2 ring-carbon/15' : 'opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-5">
+                            <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold">
+                              {label.toLowerCase()}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => updateResult(i, { selected: !isLiked })}
+                              aria-label={(t.creative as Record<string, string>).keepAction || 'me lo quedo'}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                                isLiked
+                                  ? 'bg-carbon text-white'
+                                  : 'bg-carbon/[0.06] text-carbon/30 hover:bg-carbon/[0.12]'
+                              }`}
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+
+                          {r.editing ? (
+                            <input
+                              type="text"
+                              value={r.title}
+                              onChange={(e) => updateResult(i, { title: e.target.value })}
+                              autoFocus
+                              className="text-[20px] xl:text-[22px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-3 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
+                            />
+                          ) : (
+                            <h4 className="text-[20px] xl:text-[22px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-3">
+                              {capitalizeFirst(r.title)}
+                            </h4>
+                          )}
+
+                          {!r.editing && r.brands && (
+                            <p className="text-[12.5px] xl:text-[13px] text-carbon/55 italic leading-[1.5] tracking-[-0.005em] mb-3">
+                              {r.brands}
+                            </p>
+                          )}
+
+                          {r.editing ? (
+                            <textarea
+                              value={r.desc}
+                              onChange={(e) => updateResult(i, { desc: e.target.value })}
+                              rows={6}
+                              className="text-[13px] text-carbon/70 leading-[1.65] tracking-[-0.01em] bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-3 resize-none w-full"
+                            />
+                          ) : (
+                            <p className="text-[13px] xl:text-[13.5px] text-carbon/65 leading-[1.6] tracking-[-0.01em]">
+                              {capitalizeFirst(r.desc)}
+                            </p>
+                          )}
+
+                          <div className="flex-1" />
+
+                          <div className="mt-5 flex items-center gap-1.5">
+                            <button
+                              onClick={() => updateResult(i, { editing: !r.editing })}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                                r.editing
+                                  ? 'bg-carbon text-white'
+                                  : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+                              }`}
+                            >
+                              {r.editing ? <Check className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+                              {r.editing
+                                ? ((t.creative as Record<string, string>).doneAction || 'listo')
+                                : ((t.creative as Record<string, string>).editAction || 'editar')}
+                            </button>
+                            <button
+                              onClick={() => removeResult(i)}
+                              className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-carbon/[0.04] text-carbon/45 hover:bg-red-50 hover:text-red-600 transition-all"
+                              aria-label={(t.creative as Record<string, string>).removeAction || 'descartar'}
+                            >
+                              <X className="h-3 w-3" />
+                              {(t.creative as Record<string, string>).discardAction || 'descartar'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Legacy flat-list fallback for lenses without dimensions
+          (Live Signals + Competidores) and any old data without
+          the dimension tag. */}
+      {results.length > 0 && !results.some((r) => r.dimension) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
           {results.map((r, i) => {
             const isLiked = r.selected;
