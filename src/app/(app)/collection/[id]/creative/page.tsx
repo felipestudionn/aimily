@@ -914,10 +914,11 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
         </button>
       </div>
 
-      {/* 5-col grid — 4 proposals + the "+ pedir una más" tile sitting inline
-          to the right of the last card. Responsive sizing follows CLAUDE.md
-          gold-standard 5-card pattern (3xl:p-14 only on monitors ≥1920). */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 items-stretch">
+      {/* 4-card grid + a compact "+ una más" column on the right. Cards
+          take 1fr each; the add column is auto-sized to its content so
+          it never balloons into a card-shaped tile. On smaller breakpoints
+          it spans the row beneath the cards. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-5 items-stretch">
         {visibleProposals.map(({ p, idx: originalIdx }, displayIdx) => {
           const isEditing = editingIdx === originalIdx;
           const isLiked = p.status === 'liked';
@@ -927,12 +928,12 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           return (
             <div
               key={`${p.title}-${originalIdx}`}
-              className={`group relative bg-white rounded-[20px] p-6 xl:p-8 3xl:p-14 flex flex-col min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left ${
+              className={`group relative bg-white rounded-[20px] p-7 xl:p-8 flex flex-col min-h-[420px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left ${
                 isLiked ? 'ring-2 ring-carbon/15' : 'opacity-60'
               }`}
             >
               {/* Top row — perfil 0X label + accept toggle in the corner */}
-              <div className="flex items-start justify-between mb-6 3xl:mb-8">
+              <div className="flex items-start justify-between mb-5">
                 <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold">
                   {(t.creative as Record<string, string>).consumerProfileLabel || 'perfil'} 0{displayIdx + 1}
                 </div>
@@ -957,25 +958,25 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
                   value={p.title}
                   onChange={(e) => updateProposal(originalIdx, { title: e.target.value })}
                   autoFocus
-                  className="text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 3xl:mb-5 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
+                  className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
                 />
               ) : (
-                <h3 className="text-[20px] xl:text-[22px] 2xl:text-[24px] 3xl:text-[28px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 3xl:mb-5">
+                <h3 className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4">
                   {p.title}
                 </h3>
               )}
 
               {/* Essence — short tagline, italic editorial */}
               {!isEditing && p.essence && (
-                <p className="text-[13px] xl:text-[14px] text-carbon/65 italic leading-[1.55] mb-5 tracking-[-0.01em]">
+                <p className="text-[13px] xl:text-[14px] text-carbon/65 italic leading-[1.55] mb-4 tracking-[-0.01em]">
                   {p.essence}
                 </p>
               )}
 
               {/* Quote — what she would say */}
               {!isEditing && p.keyQuote && (
-                <blockquote className="text-[12px] xl:text-[13px] text-carbon/55 leading-[1.6] mb-5 pl-3 border-l-2 border-carbon/15 tracking-[-0.005em]">
-                  "{p.keyQuote}"
+                <blockquote className="text-[12px] xl:text-[13px] text-carbon/55 leading-[1.55] mb-5 pl-3 border-l-2 border-carbon/15 tracking-[-0.005em]">
+                  &ldquo;{p.keyQuote}&rdquo;
                 </blockquote>
               )}
 
@@ -1001,11 +1002,8 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
 
               <div className="flex-1" />
 
-              {/* Action row — always visible, never hover-only. Three pills:
-                  edit (or done), spacer, discard. The "keep" toggle is the
-                  check at the top-right (above) so the keep/skip state is
-                  always loud. */}
-              <div className="mt-6 3xl:mt-10 flex items-center gap-1.5">
+              {/* Action row — always visible, never hover-only. */}
+              <div className="mt-6 flex items-center gap-1.5">
                 <button
                   onClick={() => setEditingIdx(isEditing ? null : originalIdx)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
@@ -1032,25 +1030,27 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
           );
         })}
 
-        {/* "+ pedir una más" tile — sits inline in the grid as the next slot
-            after the last visible profile. Same card silhouette, dashed
-            outline so it reads as "open slot". */}
+        {/* Compact "+ una más" — auto-sized column to the right of the last
+            card on lg+. Vertically centered against the cards. On sm: spans
+            the row beneath. Never balloons into a card-shape that wastes
+            vertical space. */}
         {visibleProposals.length < 8 && (
-          <button
-            type="button"
-            onClick={requestOneMore}
-            disabled={generating}
-            className="group relative bg-carbon/[0.015] hover:bg-carbon/[0.04] rounded-[20px] p-6 xl:p-8 3xl:p-14 flex flex-col items-center justify-center min-h-[400px] xl:min-h-[440px] 2xl:min-h-[460px] 3xl:min-h-[500px] border-2 border-dashed border-carbon/15 hover:border-carbon/35 text-carbon/40 hover:text-carbon/75 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed text-center"
-          >
-            {generating ? (
-              <Loader2 className="h-7 w-7 mb-3 animate-spin" />
-            ) : (
-              <Plus className="h-7 w-7 mb-3 transition-transform group-hover:scale-110" />
-            )}
-            <span className="text-[12px] xl:text-[13px] font-semibold tracking-[-0.01em]">
-              {(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
-            </span>
-          </button>
+          <div className="flex items-center justify-center sm:col-span-2 lg:col-span-1">
+            <button
+              type="button"
+              onClick={requestOneMore}
+              disabled={generating}
+              className="group inline-flex items-center justify-center w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] text-carbon/55 hover:text-carbon hover:scale-105 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label={(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+              title={(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+            >
+              {generating ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Plus className="h-5 w-5 transition-transform group-hover:scale-110" />
+              )}
+            </button>
+          </div>
         )}
       </div>
 
