@@ -675,6 +675,7 @@ export const en = {
     continueAction: 'Continue',
     startResearch: 'Start research',
     continueResearch: 'Continue research',
+    regenerateResults: 'Regenerate with these chips',
     forWhom: 'for whom',
     describeYourCustomerLabel: 'in one sentence',
     describeYourCustomerPlaceholder: 'one sentence, a reference, a detail…',
@@ -705,8 +706,8 @@ export const en = {
     modeAI: 'AI Proposal',
     modeAIDesc: 'Minimal input, AI generates proposals',
     // Research blocks
-    globalTrends: 'Global Trends',
-    globalTrendsDesc: 'Macro-trends from runways for your season',
+    globalTrends: 'Trends',
+    globalTrendsDesc: "What's happening on runways and in product — a mix of macro trends and executable detail",
     deepDive: 'Deep Dive',
     deepDiveDesc: 'Micro-trends by product type, market, and season',
     liveSignals: 'Live Signals',

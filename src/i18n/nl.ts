@@ -676,6 +676,7 @@ export const nl: Dictionary = {
     continueAction: 'Doorgaan',
     startResearch: 'Research starten',
     continueResearch: 'Research voortzetten',
+    regenerateResults: 'Opnieuw genereren met deze chips',
     forWhom: 'voor wie',
     describeYourCustomerLabel: 'beschrijf je klant',
     describeYourCustomerPlaceholder: 'een zin, een referentie, een detail…',
@@ -705,8 +706,8 @@ export const nl: Dictionary = {
     modeAI: 'AI-voorstel',
     modeAIDesc: 'Minimale input, AI genereert voorstellen',
     // Research blocks
-    globalTrends: 'Wereldwijde trends',
-    globalTrendsDesc: 'Macrotrends van de catwalks voor uw seizoen',
+    globalTrends: 'Trends',
+    globalTrendsDesc: 'Wat er gebeurt op de catwalks en in het product — mix van macrotrends en uitvoerbaar detail',
     deepDive: 'Deep dive',
     deepDiveDesc: 'Microtrends per producttype, markt en seizoen',
     liveSignals: 'Live signalen',

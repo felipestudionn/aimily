@@ -2485,12 +2485,30 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     ? (fichaT.researchBrandsPlaceholder || 'añadir marca')
     : (fichaT.researchFocusPlaceholder || 'añadir categoría');
 
+  // Auto-fire research on first mount when the user has chips ready
+  // and no results yet. Felipe's rule: "Empezar research" already
+  // covers the user intent on the overview — there's no extra
+  // intermediate Generate button. Editing chips after results exist
+  // surfaces a small "Regenerar" pill (below).
+  const autoFiredRef = useRef(false);
+  useEffect(() => {
+    if (autoFiredRef.current) return;
+    if (results.length > 0) {
+      autoFiredRef.current = true;
+      return;
+    }
+    if (!canGenerate) return;
+    if (generating) return;
+    autoFiredRef.current = true;
+    handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-8">
-      {/* ── Ficha + Generate — chip-based, pre-poblado desde moodboard ── */}
+      {/* ── Ficha visible (chips editables) — el user puede afinar
+          y, si hay resultados, regenerarlos con un solo click ──── */}
       <div>
-        <p className="text-[14px] text-carbon/55 leading-relaxed mb-6 max-w-[640px]">{c.description}</p>
-
         <FichaRow label={fichaLabel}>
           <EditableChipCloud
             values={blockId === 'competitors' ? brands : focus}
@@ -2502,32 +2520,38 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
           />
         </FichaRow>
 
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            onClick={handleGenerate}
-            disabled={generating || !canGenerate}
-            className="inline-flex items-center gap-2 pl-7 pr-6 py-3 rounded-full text-[14px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed group"
-          >
-            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            <span>
-              {generating
-                ? ((t.creative as Record<string, string>).generatingProposals || 'Generando…')
-                : c.generateLabel}
-            </span>
-            {!generating && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
-          </button>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
-        </div>
+        {results.length > 0 && (
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              onClick={handleGenerate}
+              disabled={generating || !canGenerate}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              {(t.creative as Record<string, string>).regenerateResults || 'Regenerar con estos chips'}
+            </button>
+            {error && <p className="text-[12px] text-red-600">{error}</p>}
+          </div>
+        )}
+
+        {results.length === 0 && generating && (
+          <div className="mt-6 flex items-center gap-2 text-[13px] text-carbon/55">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>{(t.creative as Record<string, string>).generatingProposals || 'Generando…'}</span>
+          </div>
+        )}
+
+        {results.length === 0 && !generating && error && (
+          <p className="text-[12px] text-red-600 mt-4">{error}</p>
+        )}
       </div>
 
-      {/* ── Results — gold-standard 4-card grid + compact "+1 más" ─────
-          Mirror del flujo de propuestas en Consumer: cada card empieza
-          marcada (selected=true), el user descarta lo que no le encaja
-          y al confirmar la lente sólo las marcadas se escriben a CIS.
-          La compañía column auto sostiene el "+1 más" para regenerar
-          una sin alterar el grid ─────────────────────────────────── */}
+      {/* ── Results — 2-column grid inside the expanded lens column
+          (the lens itself takes 3fr of the page, so 4-col results
+          would be too narrow). 6-8 cards stack into 2×N rows; the
+          compact "+1 más" goes below as a separate row. ─────────── */}
       {results.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-5 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
           {results.map((r, i) => {
             const isLiked = r.selected;
             return (
@@ -2620,24 +2644,21 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
             );
           })}
 
-          {results.length < 8 && (
-            <div className="flex items-center justify-center sm:col-span-2 lg:col-span-1">
-              <button
-                type="button"
-                onClick={handleLoadMore}
-                disabled={generating}
-                className="group inline-flex items-center justify-center w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] text-carbon/55 hover:text-carbon hover:scale-105 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                aria-label={(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
-                title={(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
-              >
-                {generating ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Plus className="h-5 w-5 transition-transform group-hover:scale-110" />
-                )}
-              </button>
-            </div>
-          )}
+        </div>
+      )}
+
+      {/* Pedir una más — small button below the grid */}
+      {results.length > 0 && results.length < 12 && (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            disabled={generating}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+            {(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+          </button>
         </div>
       )}
     </div>
@@ -2668,9 +2689,13 @@ function MarketResearchUnified({
   const t = useTranslation();
   const { language } = useLanguage();
   const { id: collectionPlanId } = useParams();
+  // Three lenses (was four — Felipe collapsed Global Trends + Deep
+  // Dive into a single "Tendencias" lens after the outputs solapaban.
+  // The merged lens uses the same trends-global prompt path but with
+  // a mixed input (framing chips + product family chips). The CIS key
+  // remains creative.market.trends.
   const RESEARCH_BLOCKS: Array<{ id: string; lens: ResearchLensKey; label: string; desc: string; icon: typeof Globe }> = [
     { id: 'global-trends', lens: 'global',      label: t.creative.globalTrends,  desc: t.creative.globalTrendsDesc,  icon: Globe },
-    { id: 'deep-dive',     lens: 'deep',        label: t.creative.deepDive,      desc: t.creative.deepDiveDesc,      icon: Microscope },
     { id: 'live-signals',  lens: 'live',        label: t.creative.liveSignals,   desc: t.creative.liveSignalsDesc,   icon: Radio },
     { id: 'competitors',   lens: 'competitors', label: t.creative.competitors,   desc: t.creative.competitorsDesc,   icon: Building2 },
   ];
@@ -2793,10 +2818,10 @@ function MarketResearchUnified({
     );
   };
 
-  /* ─── Mode 1 · Overview · 4 cards equal size, all with pre-filled fichas ─── */
+  /* ─── Mode 1 · Overview · 3 cards equal size, all with pre-filled fichas ─── */
   if (activeIdx === null) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {RESEARCH_BLOCKS.map((block, idx) => {
           const blockState = blockData[block.id] || { confirmed: false, data: {} };
           const isStarted = blockState.confirmed || ((blockState.data?.results as unknown[])?.length || 0) > 0;
@@ -2899,10 +2924,10 @@ function MarketResearchUnified({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] lg:grid-rows-3 gap-5 transition-all duration-500 ease-out">
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] lg:grid-rows-2 gap-5 transition-all duration-500 ease-out">
         {/* Active card — expanded, hosts the legacy ResearchBlockContent
             inside which now renders the chip-based ficha + result cards. */}
-        <div className="lg:row-span-3 lg:col-start-1 bg-white rounded-[20px] p-8 md:p-10 min-h-[640px]">
+        <div className="lg:row-span-2 lg:col-start-1 bg-white rounded-[20px] p-8 md:p-10 min-h-[640px]">
           <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-2">
             0{activeIdx + 1} · {activeBlock.label}
           </div>

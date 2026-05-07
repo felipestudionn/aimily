@@ -96,7 +96,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { collectionPlanId, lens, language } = body as { collectionPlanId?: string; lens?: Lens; language?: 'en' | 'es' };
+    let { lens } = body as { lens?: Lens };
+    const { collectionPlanId, language } = body as { collectionPlanId?: string; language?: 'en' | 'es' };
 
     if (!collectionPlanId) return NextResponse.json({ error: 'collectionPlanId is required' }, { status: 400 });
     if (!lens || !['global', 'deep', 'live', 'competitors'].includes(lens)) {
@@ -132,11 +133,19 @@ export async function POST(req: NextRequest) {
       ctx.consumer ? `CONSUMER PROFILE:\n${ctx.consumer}` : '',
     ].filter(Boolean).join('\n\n');
 
+    // 'deep' is deprecated — the lens merged into 'global'. Treat any
+    // legacy caller as if it asked for the merged Tendencias lens.
+    if (lens === 'deep') lens = 'global';
+
     let userPrompt = '';
     if (lens === 'global') {
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 3-4 SHORT chips that frame WHO + WHEN + WHAT STYLE this brand operates in. Don't over-specify — Global is the macro lens; the more open it is, the more freedom Sonar has to find unexpected trends.\n\nReturn each thing as a SEPARATE chip. Don't fuse them.\n\nThe chips you should produce:\n  1. SEASON (just the season code) — pull from collection context (e.g. "SS27")\n  2. PRE-SEASON adjective ONLY if the moodboard explicitly references one (e.g. "Pre-Fall transitional" → only if moodboard mentions that). Skip otherwise.\n  3. CONSUMER in 2-4 words — gender + age range + 1 adjective (e.g. "mujer 28-45 creativa")\n  4. HIGH-LEVEL STYLE in 2-4 words from the moodboard mood (e.g. "lujo intelectual sin logo")\n\nNO product categories — that's Deep Dive's job. NO mid descriptors. Each chip max 5 words.\n\nReturn JSON:\n{ "focus": ["SS27", "consumer chip", "style chip", ...] }`;
-    } else if (lens === 'deep') {
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 3-5 PRODUCT-FAMILY chips that the moodboard already surfaces. These are the families this collection should deep-dive into. The downstream Sonar will research micro-trends within each family.\n\nLook at moodboard.keyItems / keyTrends / keyMaterials and distill the actual product families — what kinds of pieces this collection clearly hints at. Add a tight qualifier when it sharpens the family.\n\nGOOD examples (keep this short):\n  "Sastrería arquitectónica"\n  "Vestidos cropped midriff"\n  "Knitwear gauge fino"\n  "Calzado plano editorial"\n  "Outerwear estructurado"\n  "Bolsos minimal"\n\nDon't fuse with season — it lives in the upstream context already. 2-4 words per chip.\n\nReturn JSON:\n{ "focus": ["chip 1", "chip 2", ...] }`;
+      // Merged "Tendencias" lens — covers what was previously Global +
+      // Deep Dive in two separate sub-blocks. The chips mix framing
+      // (season + consumer + style) with product families so the
+      // downstream Sonar can pull both macro and micro trends in one
+      // research pass. The user trims/extends; Sonar tags each card
+      // with macro/micro scope at result time.
+      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 5-7 chips that frame WHAT to research for this collection's trends — a MIX of broad framing and product families so a single Sonar pass can pull both macro tendencies and execution-level details. Don't separate; mix them.\n\nThe mix should include:\n  1. SEASON (just the code) — e.g. "SS27"\n  2. PRE-SEASON adjective ONLY if the moodboard explicitly references one (e.g. "Pre-Fall transitional"). Skip if not.\n  3. CONSUMER in 2-4 words — gender + age range + 1 adjective (e.g. "mujer 28-45 creativa")\n  4. HIGH-LEVEL STYLE in 2-4 words from the moodboard mood (e.g. "lujo intelectual sin logo")\n  5-7. PRODUCT FAMILIES this collection hints at, distilled from moodboard.keyItems / keyTrends / keyMaterials. 2-4 words each (e.g. "Sastrería arquitectónica", "Vestidos cropped midriff", "Knitwear gauge fino").\n\nDon't write descriptions. Don't fuse season+style+product into one chip. Each chip max 5 words.\n\nReturn JSON:\n{ "focus": ["SS27", "consumer chip", "style chip", "product family 1", "product family 2", ...] }`;
     } else if (lens === 'live') {
       userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 4-6 chips that frame WHERE her world lives + WHAT cultural moments / hashtags relate to the moodboard. Sonar will then research live signals within those chips.\n\nMix:\n- 1-2 cities (pull verbatim from consumer.cities — e.g. "Copenhagen", "NYC Tribeca")\n- 1-2 lifestyle markers (distill from consumer.lifestyle — e.g. "vida en galerías", "cenas en terrazas")\n- 1-2 moodboard-related hashtags or hot topics (infer from moodboard.keyTrends + keyStyles — e.g. "#brutalistinteriors", "#tabiflats", "#liquidhemlines", "#biascutslip"). These are the social-media tags that align with the moodboard's visual language.\n\n1-3 words per chip. Hashtags lowercase, no spaces. Don't write full sentences.\n\nReturn JSON:\n{ "focus": ["chip 1", "chip 2", ...] }`;
     } else {

@@ -677,6 +677,7 @@ export const es: Dictionary = {
     continueAction: 'Continuar',
     startResearch: 'Empezar research',
     continueResearch: 'Continuar research',
+    regenerateResults: 'Regenerar con estos chips',
     forWhom: 'para quién',
     describeYourCustomerLabel: 'en una frase',
     describeYourCustomerPlaceholder: 'una frase, una referencia, un detalle…',
@@ -706,8 +707,8 @@ export const es: Dictionary = {
     modeAI: 'Propuesta IA',
     modeAIDesc: 'Input mínimo, la IA genera propuestas',
     // Research blocks
-    globalTrends: 'Tendencias Globales',
-    globalTrendsDesc: 'Macro-tendencias de las pasarelas para tu temporada',
+    globalTrends: 'Tendencias',
+    globalTrendsDesc: 'Lo que está pasando en pasarela y producto — mezcla de macro tendencias y detalles ejecutables',
     deepDive: 'Deep Dive',
     deepDiveDesc: 'Micro-tendencias por tipo de producto, mercado y temporada',
     liveSignals: 'Señales en Vivo',
