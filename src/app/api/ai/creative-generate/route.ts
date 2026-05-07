@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
         trendType,
         { collectionName: input.collectionName, consumer: input.consumer },
         excludeTitles,
+        language,
       );
 
       if (sonarResult && sonarResult.results.length > 0) {

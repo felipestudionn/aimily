@@ -100,7 +100,8 @@ export async function researchTrends(
   season?: string,
   type: 'global' | 'deep-dive' | 'live-signals' | 'competitors' = 'global',
   collectionContext?: { collectionName?: string; consumer?: string },
-  excludeTitles?: string[]
+  excludeTitles?: string[],
+  language?: string,
 ): Promise<TrendResearchResponse | null> {
   if (!PERPLEXITY_API_KEY) return null;
 
@@ -194,6 +195,26 @@ For EACH brand mentioned, provide:
 
 ${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
+  }
+
+  // Locale instruction — Sonar searches global English fashion press
+  // either way, but the JSON values it returns must be in the user's
+  // working language. Otherwise a Spanish-speaking user gets English
+  // headlines while their chips were in Spanish.
+  const langName: Record<string, string> = {
+    es: 'Spanish (Castilian)',
+    pt: 'Portuguese',
+    it: 'Italian',
+    fr: 'French',
+    de: 'German',
+    nl: 'Dutch',
+    sv: 'Swedish',
+    no: 'Norwegian',
+    en: 'English',
+  };
+  const targetLang = (language && langName[language]) ? langName[language] : null;
+  if (targetLang && targetLang !== 'English') {
+    prompt += `\n\nLANGUAGE OUTPUT: All JSON field values (title, brands, desc) MUST be written in ${targetLang}. The user is working in ${targetLang}; do not return English text. Brand proper nouns stay as-is (e.g. "The Row"); everything else translated to ${targetLang}.`;
   }
 
   // Live signals: last 3 months; others: last year
