@@ -2385,16 +2385,16 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   const unselectedCount = results.length - selectedCount;
 
   // Per-lens ficha shape — what the user edits in the input area.
+  // All four lenses share `focus: string[]` except competitors which
+  // uses `brands: string[]` (semantic separation for downstream).
   const focus = (data.focus as string[]) || [];
-  const aspects = (data.aspects as string[]) || [];
   const brands = (data.brands as string[]) || [];
-  const topic = (data.topic as string) || '';
 
-  // Validation per lens. Mirrors the canonical pattern: Deep needs a
-  // topic, Competitors needs at least one brand. Global and Live are
-  // optional (vacío = scan toda la temporada / sin foco específico).
+  // Validation per lens. Felipe's framing rules:
+  // - Global / Live: optional (vacío permitido = framing minimal)
+  // - Deep / Competitors: at least one chip required
   const canGenerate = (() => {
-    if (blockId === 'deep-dive') return topic.trim().length > 0;
+    if (blockId === 'deep-dive') return focus.length > 0;
     if (blockId === 'competitors') return brands.length > 0;
     return true;
   })();
@@ -2412,12 +2412,11 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     // separated string as `input`, so we just join chips (or
     // topic + aspects for deep-dive) into that shape.
     let inputStr = '';
-    if (blockId === 'global-trends' || blockId === 'live-signals') {
-      inputStr = focus.join(', ');
-    } else if (blockId === 'competitors') {
+    if (blockId === 'competitors') {
       inputStr = brands.join(', ');
-    } else if (blockId === 'deep-dive') {
-      inputStr = aspects.length > 0 ? `${topic} — ${aspects.join(', ')}` : topic;
+    } else {
+      // global / deep / live all use focus chips
+      inputStr = focus.join(', ');
     }
     if (!inputStr) inputStr = collectionContext.collectionName || '';
     const inputPayload: Record<string, string> = {
@@ -2473,20 +2472,16 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     setGenerating(false);
   };
 
-  // Lens-specific i18n strings for the ficha labels (chip cloud titles
-  // + topic placeholder for deep-dive). Falls back to compact Spanish
-  // copy if the keys aren't set yet.
+  // Lens-specific ficha label + placeholder. Three of four lenses
+  // share the focus chip cloud; competitors keeps `brands` for the
+  // semantic separation.
   const fichaT = t.creative as Record<string, string>;
   const fichaLabel = blockId === 'competitors'
     ? (fichaT.researchBrandsLabel || 'marcas a analizar')
-    : blockId === 'deep-dive'
-      ? (fichaT.researchAspectsLabel || 'aspectos a explorar')
-      : (fichaT.researchFocusLabel || 'categorías foco');
+    : (fichaT.researchFocusLabel || 'categorías foco');
   const fichaPlaceholder = blockId === 'competitors'
     ? (fichaT.researchBrandsPlaceholder || 'añadir marca')
-    : blockId === 'deep-dive'
-      ? (fichaT.researchAspectsPlaceholder || 'añadir aspecto')
-      : (fichaT.researchFocusPlaceholder || 'añadir categoría');
+    : (fichaT.researchFocusPlaceholder || 'añadir categoría');
 
   return (
     <div className="space-y-8">
@@ -2494,29 +2489,11 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
       <div>
         <p className="text-[14px] text-carbon/55 leading-relaxed mb-6 max-w-[640px]">{c.description}</p>
 
-        {blockId === 'deep-dive' && (
-          <div className="mb-5">
-            <p className="text-[11px] tracking-[0.15em] uppercase text-carbon/60 mb-2 font-semibold">
-              {(t.creative as Record<string, string>).researchTopicLabel || 'tema profundo'}
-            </p>
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => onChange({ ...data, topic: e.target.value })}
-              placeholder={(t.creative as Record<string, string>).researchTopicPlaceholder || 'el tema profundo a explorar'}
-              className="w-full text-[16px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-2 placeholder:text-carbon/25 font-light tracking-[-0.01em]"
-            />
-          </div>
-        )}
-
         <FichaRow label={fichaLabel}>
           <EditableChipCloud
-            values={blockId === 'global-trends' || blockId === 'live-signals' ? focus
-                  : blockId === 'competitors' ? brands
-                  : aspects}
+            values={blockId === 'competitors' ? brands : focus}
             onChange={(v) => {
               if (blockId === 'competitors') onChange({ ...data, brands: v });
-              else if (blockId === 'deep-dive') onChange({ ...data, aspects: v });
               else onChange({ ...data, focus: v });
             }}
             placeholder={fichaPlaceholder}
@@ -2703,9 +2680,7 @@ function MarketResearchUnified({
       const data = blockState.data || {};
       const alreadyHasFicha =
         ((data.focus as string[])?.length || 0) > 0 ||
-        ((data.brands as string[])?.length || 0) > 0 ||
-        Boolean((data.topic as string)?.trim()) ||
-        ((data.aspects as string[])?.length || 0) > 0;
+        ((data.brands as string[])?.length || 0) > 0;
       if (alreadyHasFicha) {
         fetchedFichaRef.current.add(block.id);
         return;
@@ -2738,34 +2713,10 @@ function MarketResearchUnified({
     const chipBase = compact
       ? 'inline-flex items-center px-2.5 py-1 rounded-full text-[10.5px] bg-carbon/[0.04] text-carbon/70'
       : 'inline-flex items-center px-3 py-1.5 rounded-full text-[12px] bg-carbon/[0.04] text-carbon/70';
-    if (block.lens === 'deep') {
-      const topic = (data.topic as string) || '';
-      const aspects = (data.aspects as string[]) || [];
-      return (
-        <div className={`flex flex-col gap-2 ${compact ? '' : 'gap-3'}`}>
-          {topic && (
-            <p className={`italic text-carbon/65 leading-snug ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
-              &ldquo;{capitalizeFirst(topic)}&rdquo;
-            </p>
-          )}
-          {aspects.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {aspects.slice(0, compact ? 3 : 6).map((a, i) => (
-                <span key={i} className={chipBase}>{capitalizeFirst(a)}</span>
-              ))}
-              {aspects.length > (compact ? 3 : 6) && (
-                <span className="text-[10px] text-carbon/40 self-center">+{aspects.length - (compact ? 3 : 6)}</span>
-              )}
-            </div>
-          )}
-          {!topic && aspects.length === 0 && (
-            <p className={`text-carbon/35 italic ${compact ? 'text-[11px]' : 'text-[12px]'}`}>
-              {(t.creative as Record<string, string>).researchPreviewLoading || 'leyendo tu moodboard…'}
-            </p>
-          )}
-        </div>
-      );
-    }
+    // All four lenses now share a chip-array shape: `focus` for
+    // global/deep/live, `brands` for competitors. Felipe collapsed
+    // Deep Dive's earlier topic+aspects shape into chips after the
+    // first run came back too output-like.
     const items = block.lens === 'competitors' ? ((data.brands as string[]) || []) : ((data.focus as string[]) || []);
     if (items.length === 0) {
       return (

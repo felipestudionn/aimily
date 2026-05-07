@@ -22,20 +22,37 @@ import { normalizeAiError } from '@/lib/ai/error-messages';
 
 type Lens = 'global' | 'deep' | 'live' | 'competitors';
 
-interface GlobalShape { focus: string[]; }
-interface DeepShape { topic: string; aspects: string[]; }
-interface LiveShape { focus: string[]; }
-interface CompetitorsShape { brands: string[]; }
+// All 4 lenses now share the same response shape — a tight chip
+// array. Deep dive used to carry topic + aspects (more elaborate
+// editorial input) but Felipe's feedback was that the input was
+// looking like output. Keep input MINIMAL — chips of 1-4 words —
+// and let the actual research prompt downstream do the elaboration.
+interface ChipsShape { focus: string[]; }
+interface BrandsShape { brands: string[]; }
 
-const SYSTEM = `You are a fashion market researcher. From the upstream creative context (moodboard analysis + consumer profile), you propose the STARTING POINT for a market research lens. Suggestions are editorial, lowercase, concrete (real product types / real proper nouns / real cultural moments).
+const SYSTEM = `You are a fashion market researcher producing FRAMING INPUTS for downstream research, not the research itself. Your output is short editorial CHIPS the user can edit before triggering Perplexity Sonar.
 
-Quality rules:
-- Real proper nouns over abstractions. "Bias-cut slip dress" beats "fluid silhouette".
-- For competitors: mix tier-aspirational brands the consumer wears with 2-3 brands at her actual buying tier (direct competitors). Don't just repeat wearsBrands verbatim.
-- For live signals: cultural moments / hashtags / reference accounts that are happening NOW, anchored to the consumer's reads + cities.
-- For deep dives: pick the single trend from the moodboard most actionable for this collection. The aspects are sub-areas to explore.
-- Forbidden words: elevate · curate · versatile · timeless · effortless · essential.
-Return ONLY valid JSON, no markdown wrapping.`;
+CRITICAL — these are INPUTS, not outputs. Each chip must be 1-4 words max. NEVER paragraphs. NEVER full sentences. NEVER descriptions. Just the keyword.
+
+GOOD chip examples:
+  "SS27 Pre-Fall"          (4 words ok)
+  "mujer 28-45"            (3 words)
+  "minimalismo arquitectónico"
+  "vestidos de verano"
+  "sastrería deconstruida"
+  "NYC Tribeca"
+  "vida en galerías"
+  "The Row"
+  "Frankie Shop"
+
+BAD examples (too long, descriptive — don't do this):
+  "diseñadores que viven en lofts brutalist con luz natural extrema"
+  "categorías clave para escanear macro tendencias en pre-fall 2026 incluyendo sastrería deconstruida"
+  "marcas de tier aspiracional que la consumidora ya admira y a veces compra"
+
+Forbidden words: elevate · curate · versatile · timeless · effortless · essential.
+
+Return ONLY valid JSON. No markdown wrapping.`;
 
 const LANG_INSTRUCTION_ES = '\n\nIMPORTANT: Respond entirely in Spanish (Castilian). Strings should read natural in Spanish.';
 
@@ -70,7 +87,7 @@ export async function POST(req: NextRequest) {
     if (!haveAnyUpstream) {
       const empty: Record<Lens, unknown> = {
         global: { focus: [] },
-        deep: { topic: '', aspects: [] },
+        deep: { focus: [] },
         live: { focus: [] },
         competitors: { brands: [] },
       };
@@ -89,45 +106,38 @@ export async function POST(req: NextRequest) {
 
     let userPrompt = '';
     if (lens === 'global') {
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nPropose 3-5 PRODUCT CATEGORIES or PIECE TYPES this brand should pay close attention to when scanning macro fashion trends for ${ctx.season || 'this season'}. These are areas where macro-trend coverage will move the collection most. Examples: "tailoring", "bias-cut slips", "leather outerwear", "knit dressing", "footwear silhouettes".\n\nReturn JSON:\n{ "focus": ["category 1", "category 2", ...] }`;
+      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 3-4 BROAD FRAMING CHIPS for global trend research — just enough to anchor what season + who + what high-level style. The downstream Sonar will do the actual macro trend research; here you are NOT picking trends, just framing. Don't over-specify or you kill the macro lens.\n\nThe chips are:\n- 1 chip: season descriptor (e.g. "SS27 Pre-Fall transitional")\n- 1 chip: consumer in 2-4 words (e.g. "mujer 28-45 creativa")\n- 1-2 chips: high-level style genre (e.g. "minimalismo arquitectónico", "luxury intelectual")\n\nKeep each chip under 5 words. No product categories — that's Deep Dive's job.\n\nReturn JSON:\n{ "focus": ["chip 1", "chip 2", "chip 3", "chip 4"] }`;
     } else if (lens === 'deep') {
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nFrom the moodboard, identify the SINGLE trend that deserves a deep-dive analysis for this collection. The most likely to drive specific design moves. Then propose 2-4 sub-aspects to explore within that trend (e.g. for "Deconstructed Suiting" → "exaggerated shoulder lines", "raw-edge lapels", "powder palette").\n\nReturn JSON:\n{ "topic": "the single deep-dive trend (3-7 words)", "aspects": ["aspect 1", "aspect 2", ...] }`;
+      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 3-5 PRODUCT-CATEGORY CHIPS for deep dive research — specific product types to explore in depth. Each chip is a category + a qualifier. 2-4 words max. Real product types.\n\nGOOD examples:\n  "vestidos de verano"\n  "sastrería arquitectónica"\n  "bolsos minimal"\n  "knitwear gauge fino"\n  "outerwear estructurado"\n  "calzado plano editorial"\n\nThis is the INPUT for downstream micro-trend research. Don't write descriptions, don't add the "why" — just the chip.\n\nReturn JSON:\n{ "focus": ["chip 1", "chip 2", ...] }`;
     } else if (lens === 'live') {
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nPropose 3-5 cultural moments, accounts, hashtags, or city scenes that the consumer's feed is most likely to surface RIGHT NOW. Anchor to her reads and her cities. Real proper nouns. Examples: "@emilisindlev", "Tribeca gallery openings", "tabi flat moment", "Phoebe Philo return".\n\nReturn JSON:\n{ "focus": ["signal 1", "signal 2", ...] }`;
+      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 3-5 CHIPS that frame the consumer's CULTURAL CONTEXT — only her cities and her lifestyle markers. NOT accounts, NOT hashtags, NOT cultural moments (those are output, not input).\n\n- Cities: pull from consumer.cities verbatim (e.g. "NYC Tribeca", "Copenhagen")\n- Lifestyle: distill 1-2 vivid markers from consumer.lifestyle (e.g. "vida en galerías", "espacios brutales")\n\nThis frames what's happening NOW in HER world. Sonar will then research the actual signals. 1-4 words per chip.\n\nReturn JSON:\n{ "focus": ["chip 1", "chip 2", ...] }`;
     } else {
       // competitors
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nPropose 4-6 brands to analyze competitively. Mix:\n- 2-3 of the consumer's aspirational brands (the ones she'd wear at higher tier — pull from her wearsBrands)\n- 2-3 direct competitors at the brand's actual buying tier (similar price point, similar consumer, NOT the aspirational ones)\nReturn real brand names only. No descriptions, just names.\n\nReturn JSON:\n{ "brands": ["Brand 1", "Brand 2", ...] }`;
+      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 6-8 BRAND CHIPS spanning the FULL price spectrum that competes for or aspires this consumer's wallet. NOT only aspirational. Include:\n- 2-3 high-tier brands (€500+/piece) — the aspirational ones (e.g. The Row, Khaite, Toteme)\n- 2-3 mid-tier brands (€150-400/piece) — direct competitors (e.g. Frankie Shop, COS, Tibi, Sandro)\n- 2 accessible-tier brands (€50-150/piece) — the affordable equivalents (e.g. Mango, Massimo Dutti, Arket)\n\nReal brand names only. No descriptions. 1-3 words each.\n\nReturn JSON:\n{ "brands": ["Brand 1", "Brand 2", ...] }`;
     }
 
     const system = language === 'es' ? SYSTEM + LANG_INSTRUCTION_ES : SYSTEM;
 
     const arr = (v: unknown): string[] => Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim().length > 0).map((x) => (x as string).trim()) : [];
-    const str = (v: unknown): string => typeof v === 'string' ? v.trim() : '';
 
-    if (lens === 'global' || lens === 'live') {
-      const { data } = await generateJSON<GlobalShape | LiveShape>({
-        system, user: userPrompt, temperature: 0.6, maxTokens: 800, language,
+    // Three of the four lenses (global / deep / live) all return a
+    // `focus` chip array now. Competitors keeps its own `brands`
+    // shape because semantically they are brand names, and downstream
+    // Block 2/4 readers may want to distinguish.
+    if (lens === 'competitors') {
+      const { data } = await generateJSON<BrandsShape>({
+        system, user: userPrompt, temperature: 0.5, maxTokens: 600, language,
       });
-      const out = { focus: arr(data.focus) };
-      console.log(`[ResearchSuggestInput:${lens}] result:`, { count: out.focus.length });
+      const out: BrandsShape = { brands: arr(data.brands) };
+      console.log('[ResearchSuggestInput:competitors] result:', { count: out.brands.length });
       return NextResponse.json(out);
     }
 
-    if (lens === 'deep') {
-      const { data } = await generateJSON<DeepShape>({
-        system, user: userPrompt, temperature: 0.6, maxTokens: 1000, language,
-      });
-      const out: DeepShape = { topic: str(data.topic), aspects: arr(data.aspects) };
-      console.log('[ResearchSuggestInput:deep] result:', { topicLen: out.topic.length, aspectsCount: out.aspects.length });
-      return NextResponse.json(out);
-    }
-
-    // competitors
-    const { data } = await generateJSON<CompetitorsShape>({
-      system, user: userPrompt, temperature: 0.6, maxTokens: 800, language,
+    const { data } = await generateJSON<ChipsShape>({
+      system, user: userPrompt, temperature: 0.5, maxTokens: 500, language,
     });
-    const out: CompetitorsShape = { brands: arr(data.brands) };
-    console.log('[ResearchSuggestInput:competitors] result:', { count: out.brands.length });
+    const out: ChipsShape = { focus: arr(data.focus) };
+    console.log(`[ResearchSuggestInput:${lens}] result:`, { count: out.focus.length });
     return NextResponse.json(out);
   } catch (error) {
     console.error('[ResearchSuggestInput] error', error);

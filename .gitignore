@@ -68,3 +68,4 @@ stripe-*.png
 posthog-*.png
 mobile-*.png
 *.png
+.gstack/
