@@ -681,6 +681,7 @@ export const en = {
     dimensionColors: 'Colors',
     dimensionMaterials: 'Materials & fabrics',
     researchMore: '+ More',
+    confirmAndGoTo: 'Confirm and go to {next}',
     forWhom: 'for whom',
     describeYourCustomerLabel: 'in one sentence',
     describeYourCustomerPlaceholder: 'one sentence, a reference, a detail…',

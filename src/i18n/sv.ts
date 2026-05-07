@@ -672,6 +672,7 @@ export const sv: Dictionary = {
     dimensionColors: 'Färger',
     dimensionMaterials: 'Material & tyger',
     researchMore: '+ Fler',
+    confirmAndGoTo: 'Bekräfta och gå till {next}',
     forWhom: 'för vem',
     describeYourCustomerLabel: 'beskriv din kund',
     describeYourCustomerPlaceholder: 'en mening, en referens, ett detalj…',

@@ -2889,6 +2889,7 @@ function MarketResearchUnified({
   const t = useTranslation();
   const { language } = useLanguage();
   const { id: collectionPlanId } = useParams();
+  const router = useRouter();
   // Three lenses (was four — Felipe collapsed Global Trends + Deep
   // Dive into a single "Tendencias" lens after the outputs solapaban.
   // The merged lens uses the same trends-global prompt path but with
@@ -3071,6 +3072,19 @@ function MarketResearchUnified({
   const activeState = blockData[activeBlock.id] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
   const inactive = RESEARCH_BLOCKS.map((block, idx) => ({ block, idx })).filter(({ idx }) => idx !== activeIdx);
 
+  // Where does Confirm send the user next? Within Investigación de
+  // Mercado the natural flow is lens → next lens → next lens. Once
+  // the LAST lens (Competidores) is confirmed, the user advances to
+  // the next sidebar block (Identidad de Marca). The button label
+  // names the destination explicitly so it's never ambiguous.
+  const nextLensIdx = activeIdx + 1;
+  const isLastLens = nextLensIdx >= RESEARCH_BLOCKS.length;
+  const nextDestinationLabel = isLastLens
+    ? t.creative.brandIdentity || 'Identidad de Marca'
+    : RESEARCH_BLOCKS[nextLensIdx].label;
+  const confirmTemplate = (t.creative as Record<string, string>).confirmAndGoTo || 'Confirmar e ir a {next}';
+  const confirmCtaLabel = confirmTemplate.replace('{next}', nextDestinationLabel);
+
   return (
     <div className="w-full">
       <div className="mb-6 flex items-center justify-between">
@@ -3083,12 +3097,12 @@ function MarketResearchUnified({
         </button>
         <button
           onClick={async () => {
-            const next = !activeState.confirmed;
-            updateBlockData(activeBlock.id, { confirmed: next });
-            // When toggling INTO confirmed, write the kept results +
-            // the ficha input to the new creative.market.{lens} CIS
-            // key so Block 2/3/4 prompts can read them downstream.
-            if (next && collectionPlanId) {
+            // Mark this lens confirmed + write its kept results to
+            // creative.market.{lens} so downstream Block 2/3/4 reads
+            // them. Then advance to the next lens (or the next
+            // sidebar block if this was the last lens).
+            updateBlockData(activeBlock.id, { confirmed: true });
+            if (collectionPlanId) {
               const data = (activeState.data || {}) as Record<string, unknown>;
               const results = (data.results as Array<{ title: string; brands?: string; desc: string; relevance?: string; selected?: boolean }>) || [];
               const fichaInput = activeBlock.lens === 'competitors'
@@ -3109,15 +3123,17 @@ function MarketResearchUnified({
                 console.error('[ResearchConfirm] failed to persist', err);
               }
             }
+            // Navigate.
+            if (isLastLens) {
+              router.push(`/collection/${collectionPlanId}/creative?block=brand-dna`, { scroll: false });
+            } else {
+              setActiveIdx(nextLensIdx);
+            }
           }}
-          className={`inline-flex items-center gap-2 py-2.5 pl-7 pr-6 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-            activeState.confirmed
-              ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
-              : 'bg-carbon text-white hover:bg-carbon/90'
-          }`}
+          className="inline-flex items-center gap-2 py-2.5 pl-7 pr-6 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white hover:bg-carbon/90 transition-all"
         >
-          {activeState.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
-          <Check className="h-3.5 w-3.5" />
+          {confirmCtaLabel}
+          <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </div>
 
