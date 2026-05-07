@@ -173,10 +173,12 @@ export async function researchTrends(
         };
 
         if (targetDimension && targetMap[targetDimension]) {
-          // Single-axis deepen mode. Short, contextual prompt: "you
-          // already gave me X — give me more that complement". The
-          // existing cards anchor the LLM in the same axis and tell
-          // it implicitly what NOT to repeat.
+          // Single-axis deepen mode. Keeps the FULL upstream context
+          // (collection + season + framing chips + research sources)
+          // and adds the existing-cards anchor + the "complement, don't
+          // repeat" ask. The deepen prompt should never be a thin
+          // "more themes please" — without the brand/season/framing the
+          // LLM produces generic results.
           const spec = targetMap[targetDimension];
           const isColor = targetDimension === 'color';
           const jsonShape = isColor
@@ -184,20 +186,27 @@ export async function researchTrends(
             : `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"..."}, ...] }`;
 
           const axisSingular: Record<string, string> = {
-            theme: 'theme (cultural energy / mood)',
-            category: 'category (specific product type)',
-            color: 'color (with hex)',
-            material: 'material (fabric / finish / construction)',
+            theme: 'themes (cultural energy / aesthetic mood — Vogue/WWD-headline level, never products or materials)',
+            category: 'categories (specific product types — silhouette + qualifier, never moods or materials)',
+            color: 'colors (specific colour names with HEX — never themes or fabrics)',
+            material: 'materials (fabric, finish, construction technique — never moods or product types)',
           };
 
           const existingBlock = existingInDimension && existingInDimension.length > 0
-            ? `\nYou already produced these ${spec.plural.toUpperCase()} for this user:\n${existingInDimension.map(c => `  · ${c.title}${c.desc ? ` — ${c.desc.slice(0, 80)}` : ''}`).join('\n')}\n\nGive me 3-5 MORE ${spec.plural} that COMPLEMENT (don't repeat) what's above. Stay strictly in the ${axisSingular[targetDimension]} axis.`
-            : `\nGive me 4-6 ${spec.plural} (${axisSingular[targetDimension]}). Stay strictly in this axis.`;
+            ? `\nThe user already has these ${spec.plural.toUpperCase()} from your earlier research:\n${existingInDimension.map(c => `  · ${c.title}${c.desc ? ` — ${c.desc.slice(0, 100)}` : ''}`).join('\n')}\n\nDeepen this axis: give me 3-5 MORE ${spec.plural} that COMPLEMENT (don't repeat or paraphrase) what's above.`
+            : `\nGive me 4-6 ${spec.plural}.`;
 
-          prompt = `${collectionInfo}${seasonNote}${trendQuery ? ` Framing: "${trendQuery}".` : ''}
+          prompt = `${collectionInfo}${seasonNote}${trendQuery ? `\n\nFraming chips the user gave for this collection: "${trendQuery}". Anchor your research to these.` : ''}
+
+Source: runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD, street-style coverage.
 ${existingBlock}
 
-${isColor ? 'Include a "hex" field per card (format "#RRGGBB").' : ''}
+Stay strictly in the ${spec.plural.toUpperCase()} axis: ${axisSingular[targetDimension]}.
+
+For EVERY card include:
+  · "title": short concept name
+  · "brands": 3-5 designer/brand references
+  · "desc": 50-70 words${isColor ? '\n  · "hex": HEX color code (format "#RRGGBB")' : ''}
 
 ${exclusionNote}Return ONLY valid JSON:
 ${jsonShape}`;
