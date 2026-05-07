@@ -64,6 +64,11 @@ export async function POST(req: NextRequest) {
     const trendType = type.replace('trends-', '') as 'global' | 'deep-dive' | 'live-signals' | 'competitors';
     try {
       const excludeTitles = input.excludeTitles ? input.excludeTitles.split('|||') : undefined;
+      const validDims = ['theme', 'category', 'color', 'material'] as const;
+      type DimKey = typeof validDims[number];
+      const targetDimension = (input.targetDimension && (validDims as readonly string[]).includes(input.targetDimension))
+        ? (input.targetDimension as DimKey)
+        : undefined;
       const sonarResult = await researchTrends(
         input.input || '',
         input.season,
@@ -71,6 +76,7 @@ export async function POST(req: NextRequest) {
         { collectionName: input.collectionName, consumer: input.consumer },
         excludeTitles,
         language,
+        targetDimension,
       );
 
       if (sonarResult && sonarResult.results.length > 0) {

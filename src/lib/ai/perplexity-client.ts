@@ -39,6 +39,10 @@ export interface TrendResult {
   // tag so the UI can group by dimension while the existing select /
   // edit / remove flow stays unchanged.
   dimension?: 'theme' | 'category' | 'color' | 'material';
+  // Color cards carry a hex string so the UI can render a swatch
+  // alongside the title. Format: "#RRGGBB" or a Pantone code that
+  // the frontend can resolve against the local pantone_colors table.
+  hex?: string;
 }
 
 export interface TrendResearchResponse {
@@ -108,6 +112,11 @@ export async function researchTrends(
   collectionContext?: { collectionName?: string; consumer?: string },
   excludeTitles?: string[],
   language?: string,
+  // When set, narrows the type='global' research to a single bucket.
+  // Used by the "+ Más temas / categorías / colores / materiales"
+  // buttons in the UI to deepen one axis without regenerating the
+  // whole multi-dimension grid.
+  targetDimension?: 'theme' | 'category' | 'color' | 'material',
 ): Promise<TrendResearchResponse | null> {
   if (!PERPLEXITY_API_KEY) return null;
 
@@ -131,29 +140,74 @@ export async function researchTrends(
 
   switch (type) {
     case 'global':
-      // Tendencias (merged Global + Deep) — return four axes so the
-      // research feels like a real season-trend report, not a single
-      // flat list. The downstream UI groups by `dimension` and the
-      // user marks across all four axes.
-      prompt = `${collectionInfo}${seasonNote}
+      // Tendencias (merged Global + Deep) — return four axes by default.
+      // When targetDimension is set, narrow to that single bucket and
+      // return MORE depth on that axis (used by the "+ Más temas /
+      // categorías / colores / materiales" buttons in the UI).
+      {
+        const themesBlock = `THEMES — concept-level cultural energy.
+  · "title": Vogue-style headline (2-4 words). Examples: "Quiet Luxury", "Sheer Everything", "The New Prep", "Y2K Resurgence"
+  · "desc": 50-70 words — what cultural force this captures, how brands embody it, what a wearer signals when they buy in.`;
+        const categoriesBlock = `CATEGORIES — specific product types trending.
+  · "title": Product type + qualifier (2-4 words). Examples: "Mesh Ballet Flats", "Bias-cut Slips", "Barn Jacket", "Tailored Bermudas", "Knit Polo"
+  · "desc": 50-70 words — silhouette, who wears it, how it's styled, brands doing it best.`;
+        const colorsBlock = `COLORS — color stories of the season.
+  · "title": Color name (1-3 words). Examples: "Cherry Red", "Butter Yellow", "Powder Blue", "Chocolate Brown", "Sage"
+  · "desc": 50-70 words — what materials carry it best, which designers championed it, mood it conveys.
+  · "hex": REQUIRED. The HEX color code for the swatch (format "#RRGGBB"). Use the closest Pantone equivalent if a runway color was named without a hex. NEVER omit this field for color cards.`;
+        const materialsBlock = `MATERIALS — fabric, finish and construction trends.
+  · "title": Material or construction technique (1-4 words). Examples: "Liquid Jersey", "Vegetable-tanned Leather", "Mesh Panels", "Raw-edge Denim", "Sheer Organza"
+  · "desc": 50-70 words — feel, weight (gsm if known), how it drapes, which silhouettes it favours, brands working with it.`;
+
+        type DimSpec = { plural: string; block: string; jsonKey: string };
+        const targetMap: Record<string, DimSpec> = {
+          theme:    { plural: 'themes',     block: themesBlock,     jsonKey: 'themes' },
+          category: { plural: 'categories', block: categoriesBlock, jsonKey: 'categories' },
+          color:    { plural: 'colors',     block: colorsBlock,     jsonKey: 'colors' },
+          material: { plural: 'materials',  block: materialsBlock,  jsonKey: 'materials' },
+        };
+
+        if (targetDimension && targetMap[targetDimension]) {
+          // Single-axis deepen mode — used by the per-section "+ Más"
+          // buttons. Returns 5-7 NEW cards focused on that bucket.
+          const spec = targetMap[targetDimension];
+          const isColor = targetDimension === 'color';
+          const fieldsLine = isColor
+            ? '"title", "brands", "desc", "hex"'
+            : '"title", "brands", "desc"';
+          const jsonShape = isColor
+            ? `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"...","hex":"#RRGGBB"}, ...] }`
+            : `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"..."}, ...] }`;
+          prompt = `${collectionInfo}${seasonNote}
+${trendQuery ? `\nFraming: "${trendQuery}".\n` : ''}
+The user wants MORE depth on ONLY the ${spec.plural.toUpperCase()} axis. Return 5-7 NEW cards. Don't include any other dimension.
+
+${spec.block}
+
+For EVERY card include also:
+  · "brands": 3-5 designer/brand references that represent this card.
+
+Each card carries fields: ${fieldsLine}.
+
+${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys):
+${jsonShape}`;
+        } else {
+          // Initial 4-axis run — return all four buckets at once.
+          prompt = `${collectionInfo}${seasonNote}
 ${trendQuery ? `\nIMPORTANT: The framing chips the user gave you: "${trendQuery}". Use them to focus the research, but cover ALL FOUR dimensions below.\n` : ''}
 Research this collection's market across FOUR DIMENSIONS using runway shows, Vogue, Tag Walk, The Impression, Harper's Bazaar, WWD and street-style coverage. Each dimension is a separate bucket of cards. NEVER mix dimensions. NEVER duplicate across dimensions.
 
-DIMENSION 1 · THEMES (3-4 cards) — concept-level cultural energy.
-  · "title": Vogue-style headline (2-4 words). Examples: "Quiet Luxury", "Sheer Everything", "The New Prep", "Y2K Resurgence"
-  · "desc": 50-70 words — what cultural force this captures, how brands embody it, what a wearer signals when they buy in.
+DIMENSION 1 · ${themesBlock}
+(produce 3-4 cards)
 
-DIMENSION 2 · CATEGORIES (4-6 cards) — specific product types trending.
-  · "title": Product type + qualifier (2-4 words). Examples: "Mesh Ballet Flats", "Bias-cut Slips", "Barn Jacket", "Tailored Bermudas", "Knit Polo"
-  · "desc": 50-70 words — silhouette, who wears it, how it's styled, brands doing it best.
+DIMENSION 2 · ${categoriesBlock}
+(produce 4-6 cards)
 
-DIMENSION 3 · COLORS (3-5 cards) — color stories of the season.
-  · "title": Color name (1-3 words). Examples: "Cherry Red", "Butter Yellow", "Powder Blue", "Chocolate Brown", "Sage"
-  · "desc": 50-70 words — the hex/Pantone reference if you can, what materials carry it best, which designers championed it, mood it conveys.
+DIMENSION 3 · ${colorsBlock}
+(produce 3-5 cards)
 
-DIMENSION 4 · MATERIALS (3-5 cards) — fabric, finish and construction trends.
-  · "title": Material or construction technique (1-4 words). Examples: "Liquid Jersey", "Vegetable-tanned Leather", "Mesh Panels", "Raw-edge Denim", "Sheer Organza"
-  · "desc": 50-70 words — feel, weight (gsm if known), how it drapes, which silhouettes it favours, brands working with it.
+DIMENSION 4 · ${materialsBlock}
+(produce 3-5 cards)
 
 For EVERY card across all dimensions, also include:
   · "brands": 3-5 designer/brand references that represent this card.
@@ -162,9 +216,11 @@ ${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys, no ex
 {
   "themes":     [{"title":"...","brands":"...","desc":"..."}, ...],
   "categories": [{"title":"...","brands":"...","desc":"..."}, ...],
-  "colors":     [{"title":"...","brands":"...","desc":"..."}, ...],
+  "colors":     [{"title":"...","brands":"...","desc":"...","hex":"#RRGGBB"}, ...],
   "materials":  [{"title":"...","brands":"...","desc":"..."}, ...]
 }`;
+        }
+      }
       break;
 
     case 'deep-dive':

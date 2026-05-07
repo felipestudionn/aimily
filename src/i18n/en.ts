@@ -680,6 +680,7 @@ export const en = {
     dimensionCategories: 'Product categories',
     dimensionColors: 'Colors',
     dimensionMaterials: 'Materials & fabrics',
+    researchMore: '+ More',
     forWhom: 'for whom',
     describeYourCustomerLabel: 'in one sentence',
     describeYourCustomerPlaceholder: 'one sentence, a reference, a detail…',

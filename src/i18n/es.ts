@@ -682,6 +682,7 @@ export const es: Dictionary = {
     dimensionCategories: 'Categorías de producto',
     dimensionColors: 'Colores',
     dimensionMaterials: 'Materiales y tejidos',
+    researchMore: '+ Más',
     forWhom: 'para quién',
     describeYourCustomerLabel: 'en una frase',
     describeYourCustomerPlaceholder: 'una frase, una referencia, un detalle…',

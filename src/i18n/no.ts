@@ -671,6 +671,7 @@ export const no: Dictionary = {
     dimensionCategories: 'Produktkategorier',
     dimensionColors: 'Farger',
     dimensionMaterials: 'Materialer & tekstiler',
+    researchMore: '+ Flere',
     forWhom: 'for hvem',
     describeYourCustomerLabel: 'beskriv kunden din',
     describeYourCustomerPlaceholder: 'en setning, en referanse, en detalj…',

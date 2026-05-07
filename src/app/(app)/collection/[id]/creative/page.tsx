@@ -2331,6 +2331,9 @@ interface ResearchResult {
   // For the merged Tendencias lens, Sonar tags each card with which
   // axis it belongs to. The expanded view groups by this.
   dimension?: 'theme' | 'category' | 'color' | 'material';
+  // Color cards carry a hex string so the UI renders a swatch
+  // alongside the title (only set when dimension === 'color').
+  hex?: string;
 }
 
 function ResearchBlockContent({ blockId, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
@@ -2452,13 +2455,43 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     const existingTitles = results.map(r => r.title);
     const { result, error: err } = await callResearch(existingTitles);
     if (err) { setError(err); setGenerating(false); return; }
-    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string }> };
+    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: 'theme' | 'category' | 'color' | 'material'; hex?: string }> };
     const moreResults = (parsed.results || [])
       .filter(r => !existingTitles.includes(r.title)) // Extra safety: no duplicates
       .slice(0, 4)
-      .map((r) => ({ ...r, selected: false, editing: false }));
+      .map((r) => ({ ...r, selected: true, editing: false }));
     onChange({ ...data, results: [...results, ...moreResults] });
     setGenerating(false);
+  };
+
+  // Deepen one specific dimension (themes / categories / colors /
+  // materials). Used by the per-section "+ Más" buttons in the
+  // expanded Tendencias view. Sonar receives a targetDimension flag
+  // and returns only cards for that axis; we append them tagged.
+  const [generatingDim, setGeneratingDim] = useState<'theme' | 'category' | 'color' | 'material' | null>(null);
+  const handleLoadMoreDimension = async (dimension: 'theme' | 'category' | 'color' | 'material') => {
+    setGeneratingDim(dimension);
+    setError(null);
+    const existingTitles = results.filter(r => r.dimension === dimension).map(r => r.title);
+    const inputStr = blockId === 'competitors'
+      ? brands.join(', ')
+      : focus.join(', ');
+    const inputPayload: Record<string, string> = {
+      input: inputStr || collectionContext.collectionName || '',
+      consumer: consumerProfile || '',
+      targetDimension: dimension,
+      ...collectionContext,
+    };
+    if (existingTitles.length > 0) inputPayload.excludeTitles = existingTitles.join('|||');
+    const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', inputPayload, language);
+    if (err) { setError(err); setGeneratingDim(null); return; }
+    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: 'theme' | 'category' | 'color' | 'material'; hex?: string }> };
+    const moreResults = (parsed.results || [])
+      .filter(r => !existingTitles.includes(r.title))
+      .slice(0, 7)
+      .map((r) => ({ ...r, dimension, selected: true, editing: false }));
+    onChange({ ...data, results: [...results, ...moreResults] });
+    setGeneratingDim(null);
   };
 
   const handleReplaceUnselected = async () => {
@@ -2600,6 +2633,23 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
                             </button>
                           </div>
 
+                          {/* Color swatch — only on color cards. The
+                              hex comes from Sonar; we render it as a
+                              circular swatch above the title so the
+                              user SEES the color, not just reads it. */}
+                          {r.dimension === 'color' && r.hex && (
+                            <div className="flex items-center gap-3 mb-4">
+                              <div
+                                className="w-12 h-12 rounded-full border border-carbon/[0.08] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.02)]"
+                                style={{ backgroundColor: r.hex }}
+                                aria-label={`Color swatch ${r.hex}`}
+                              />
+                              <span className="text-[11px] tracking-[0.15em] uppercase text-carbon/45 font-mono">
+                                {r.hex}
+                              </span>
+                            </div>
+                          )}
+
                           {r.editing ? (
                             <input
                               type="text"
@@ -2661,6 +2711,19 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
                         </div>
                       );
                     })}
+                  </div>
+                  {/* Per-dimension deepen — extra Sonar focused on
+                      this single axis, appended below its section. */}
+                  <div className="mt-5 flex justify-start">
+                    <button
+                      type="button"
+                      onClick={() => handleLoadMoreDimension(key)}
+                      disabled={generatingDim !== null}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      {generatingDim === key ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                      {(t.creative as Record<string, string>).researchMore || '+ Más'} {label.toLowerCase()}
+                    </button>
                   </div>
                 </section>
               );

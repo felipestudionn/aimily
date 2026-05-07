@@ -681,6 +681,7 @@ export const nl: Dictionary = {
     dimensionCategories: 'Productcategorieën',
     dimensionColors: 'Kleuren',
     dimensionMaterials: 'Materialen & stoffen',
+    researchMore: '+ Meer',
     forWhom: 'voor wie',
     describeYourCustomerLabel: 'beschrijf je klant',
     describeYourCustomerPlaceholder: 'een zin, een referentie, een detail…',
