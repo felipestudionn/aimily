@@ -3723,6 +3723,40 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                     </div>
                   )}
 
+                  {/* Top navigation row — Consumer in proposal phase only.
+                      Sits ABOVE the cards so the user never has to scroll
+                      to find Confirmar y Continuar on a tall monitor. The
+                      ← Modificar brief lives at the left edge of card 01;
+                      Confirmar at the right edge of card 04. */}
+                  {(() => {
+                    if (block.id !== 'consumer') return null;
+                    const proposals = (state.data?.proposals as Array<{ status?: string }>) || [];
+                    const hasVisible = proposals.some((p) => p.status !== 'rejected');
+                    if (!hasVisible) return null;
+                    return (
+                      <div className="max-w-[1600px] mx-auto mb-8 flex items-center justify-between gap-4">
+                        <button
+                          onClick={() => updateBlockData(block.id, { data: { ...((state.data as Record<string, unknown>) || {}), proposals: [] } })}
+                          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold text-carbon/65 hover:text-carbon hover:bg-carbon/[0.04] transition-all border border-carbon/[0.10] hover:border-carbon/25"
+                        >
+                          <ArrowLeft className="h-3.5 w-3.5" />
+                          {(t.creative as Record<string, string>).modifyConsumerBrief || 'Modificar brief del consumidor'}
+                        </button>
+                        <button
+                          onClick={() => handleConfirm(block.id)}
+                          className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                            state.confirmed
+                              ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
+                              : 'bg-carbon text-white hover:bg-carbon/90'
+                          }`}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
+                        </button>
+                      </div>
+                    );
+                  })()}
+
                   {/* Content — full width for card grid */}
                   <ExpandedBlockContent
                     blockId={block.id}
@@ -3735,55 +3769,25 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                     vibeText={vibeText}
                   />
 
-                  {/* Navigation row — sits below the content, aligned to the
-                      same edges as the card grid. For Consumer in the
-                      proposal phase we render BOTH controls together:
-                      "← Modificar brief" left-edge and "Confirmar y Continuar
-                      →" right-edge. The user always knows there's a back
-                      and a forward. Other blocks keep the centered confirm
-                      until they migrate to the same pattern. */}
+                  {/* Default centered Confirm — only for blocks that haven't
+                      migrated to the canonical top nav bar yet. Consumer
+                      hides it because the top bar already has both controls. */}
                   {(() => {
-                    if (block.id === 'consumer') {
-                      const proposals = (state.data?.proposals as Array<{ status?: string }>) || [];
-                      const hasVisible = proposals.some((p) => p.status !== 'rejected');
-                      if (!hasVisible) return null;
-                      return (
-                        <div className="max-w-[1600px] mx-auto mt-12 pt-8 border-t border-carbon/[0.06] flex items-center justify-between gap-4">
-                          <button
-                            onClick={() => updateBlockData(block.id, { data: { ...((state.data as Record<string, unknown>) || {}), proposals: [] } })}
-                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold text-carbon/65 hover:text-carbon hover:bg-carbon/[0.04] transition-all border border-carbon/[0.10] hover:border-carbon/25"
-                          >
-                            <ArrowLeft className="h-3.5 w-3.5" />
-                            {(t.creative as Record<string, string>).modifyConsumerBrief || 'Modificar brief del consumidor'}
-                          </button>
-                          <button
-                            onClick={() => handleConfirm(block.id)}
-                            className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-                              state.confirmed
-                                ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
-                                : 'bg-carbon text-white hover:bg-carbon/90'
-                            }`}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                            {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
-                          </button>
-                        </div>
-                      );
-                    }
+                    if (block.id === 'consumer') return null;
                     return (
-                  <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
-                    <button
-                      onClick={() => handleConfirm(block.id)}
-                      className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-                        state.confirmed
-                          ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
-                          : 'bg-carbon text-white hover:bg-carbon/90'
-                      }`}
-                    >
-                      <Check className="h-3.5 w-3.5" />
-                      {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
-                    </button>
-                  </div>
+                      <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
+                        <button
+                          onClick={() => handleConfirm(block.id)}
+                          className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                            state.confirmed
+                              ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
+                              : 'bg-carbon text-white hover:bg-carbon/90'
+                          }`}
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
+                        </button>
+                      </div>
                     );
                   })()}
                 </div>
