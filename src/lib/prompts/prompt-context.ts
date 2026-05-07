@@ -95,6 +95,13 @@ export interface PromptContext {
   moodboard_summary: string;
   reference_brands: string[];
 
+  // Investigación de Mercado · per-lens results (S3 migration). Each
+  // entry is a card kept by the user when confirming the lens.
+  market_trends: Array<{ title: string; brands?: string; desc: string }>;
+  market_deep_dive: Array<{ title: string; brands?: string; desc: string }>;
+  market_live_signals: Array<{ title: string; brands?: string; desc: string }>;
+  market_competitors: Array<{ title: string; brands?: string; desc: string }>;
+
   // Block 2: Merchandising
   total_sales_target: number;
   channels: string[];
@@ -375,6 +382,10 @@ export async function buildPromptContext(
     selected_trends: Array.isArray(cis.selected_trends) ? cis.selected_trends as string[] : [],
     moodboard_summary: (cis.moodboard_summary as string) || '',
     reference_brands: Array.isArray(cis.reference_brands) ? cis.reference_brands as string[] : [],
+    market_trends: Array.isArray(cis.market_trends) ? cis.market_trends as Array<{ title: string; brands?: string; desc: string }> : [],
+    market_deep_dive: Array.isArray(cis.market_deep_dive) ? cis.market_deep_dive as Array<{ title: string; brands?: string; desc: string }> : [],
+    market_live_signals: Array.isArray(cis.market_live_signals) ? cis.market_live_signals as Array<{ title: string; brands?: string; desc: string }> : [],
+    market_competitors: Array.isArray(cis.market_competitors) ? cis.market_competitors as Array<{ title: string; brands?: string; desc: string }> : [],
     // Pricing/budget fields — sourced from DerivedSetupData (computed on
     // read from the merchandising workspace) with CIS still as the
     // primary signal where it has its own writers.

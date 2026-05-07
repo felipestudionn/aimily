@@ -2436,7 +2436,9 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     const { result, error: err } = await callResearch();
     if (err) { setError(err); setGenerating(false); return; }
     const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string }> };
-    const newResults = (parsed.results || []).map((r) => ({ ...r, selected: false, editing: false }));
+    // Canonical pattern (matching Consumer): all proposals start
+    // selected so the user trims down rather than selecting up.
+    const newResults = (parsed.results || []).map((r) => ({ ...r, selected: true, editing: false }));
     onChange({ ...data, results: newResults });
     setGenerating(false);
   };
@@ -2518,116 +2520,124 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
         </div>
       </div>
 
-      {/* ── Status + controls row ── */}
+      {/* ── Results — gold-standard 4-card grid + compact "+1 más" ─────
+          Mirror del flujo de propuestas en Consumer: cada card empieza
+          marcada (selected=true), el user descarta lo que no le encaja
+          y al confirmar la lente sólo las marcadas se escriben a CIS.
+          La compañía column auto sostiene el "+1 más" para regenerar
+          una sin alterar el grid ─────────────────────────────────── */}
       {results.length > 0 && (
-        <div className="flex items-center justify-between">
-          <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
-            {selectedCount} {t.creative.selectedCount} · {unselectedCount} {t.creative.unselectedCount} · {results.length} {t.creative.totalCount}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleLoadMore}
-              disabled={generating}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30"
-            >
-              {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-              Load 4 more
-            </button>
-            {selectedCount > 0 && unselectedCount > 0 && (
-              <button
-                onClick={handleReplaceUnselected}
-                disabled={generating}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-colors disabled:opacity-30"
-              >
-                {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                Replace {unselectedCount} unselected
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Results grid — premium cards ── */}
-      {results.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {results.map((r, i) => (
-            <div
-              key={i}
-              className={`group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[260px] transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)] ${
-                r.selected ? 'border-2 border-carbon' : 'border border-carbon/[0.06]'
-              }`}
-            >
-              {/* Selector — top right */}
-              <button
-                onClick={() => updateResult(i, { selected: !r.selected })}
-                className={`absolute top-5 right-5 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
-                  r.selected
-                    ? 'bg-carbon text-white'
-                    : 'bg-carbon/[0.04] text-transparent hover:bg-carbon/[0.08] group-hover:text-carbon/30'
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-5 items-stretch">
+          {results.map((r, i) => {
+            const isLiked = r.selected;
+            return (
+              <div
+                key={`${r.title}-${i}`}
+                className={`group relative bg-white rounded-[20px] p-7 xl:p-8 flex flex-col min-h-[420px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left ${
+                  isLiked ? 'ring-2 ring-carbon/15' : 'opacity-60'
                 }`}
               >
-                <Check className="h-3.5 w-3.5" />
-              </button>
+                <div className="flex items-start justify-between mb-5">
+                  <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold">
+                    {(blockId === 'global-trends' ? (t.creative as Record<string, string>).macroLabel || 'macro'
+                      : blockId === 'deep-dive' ? (t.creative as Record<string, string>).deepLabel || 'deep'
+                      : blockId === 'live-signals' ? (t.creative as Record<string, string>).signalLabel || 'señal'
+                      : (t.creative as Record<string, string>).competitorLabel || 'competidor')} 0{i + 1}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateResult(i, { selected: !isLiked })}
+                    aria-label={(t.creative as Record<string, string>).keepAction || 'me lo quedo'}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                      isLiked
+                        ? 'bg-carbon text-white'
+                        : 'bg-carbon/[0.06] text-carbon/30 hover:bg-carbon/[0.12]'
+                    }`}
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </button>
+                </div>
 
-              {r.editing ? (
-                <div className="flex flex-col gap-3 pr-10">
+                {r.editing ? (
                   <input
                     type="text"
                     value={r.title}
                     onChange={(e) => updateResult(i, { title: e.target.value })}
-                    className="px-3 py-2 text-[16px] font-semibold text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none"
+                    autoFocus
+                    className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-4 bg-transparent border-0 border-b border-carbon/25 focus:border-carbon focus:outline-none w-full"
                   />
+                ) : (
+                  <h3 className="text-[22px] xl:text-[26px] font-medium tracking-[-0.02em] text-carbon leading-[1.1] mb-3">
+                    {capitalizeFirst(r.title)}
+                  </h3>
+                )}
+
+                {!r.editing && r.brands && (
+                  <p className="text-[12.5px] xl:text-[13px] text-carbon/55 italic leading-[1.5] tracking-[-0.005em] mb-4">
+                    {r.brands}
+                  </p>
+                )}
+
+                {r.editing ? (
                   <textarea
                     value={r.desc}
                     onChange={(e) => updateResult(i, { desc: e.target.value })}
-                    rows={4}
-                    className="px-3 py-2 text-[13px] text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none resize-none leading-relaxed"
+                    rows={9}
+                    className="text-[13px] text-carbon/70 leading-[1.7] tracking-[-0.01em] bg-carbon/[0.02] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none p-3 resize-none w-full"
                   />
+                ) : (
+                  <p className="text-[13px] xl:text-[13.5px] text-carbon/65 leading-[1.65] tracking-[-0.01em]">
+                    {capitalizeFirst(r.desc)}
+                  </p>
+                )}
+
+                <div className="flex-1" />
+
+                <div className="mt-6 flex items-center gap-1.5">
                   <button
-                    onClick={() => updateResult(i, { editing: false })}
-                    className="self-start inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-medium bg-carbon text-white hover:bg-carbon/90 transition-colors"
+                    onClick={() => updateResult(i, { editing: !r.editing })}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                      r.editing
+                        ? 'bg-carbon text-white'
+                        : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+                    }`}
                   >
-                    <Check className="h-3 w-3" /> {t.creative.doneEditing}
+                    {r.editing ? <Check className="h-3 w-3" /> : <Pencil className="h-3 w-3" />}
+                    {r.editing
+                      ? ((t.creative as Record<string, string>).doneAction || 'listo')
+                      : ((t.creative as Record<string, string>).editAction || 'editar')}
+                  </button>
+                  <button
+                    onClick={() => removeResult(i)}
+                    className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-carbon/[0.04] text-carbon/45 hover:bg-red-50 hover:text-red-600 transition-all"
+                    aria-label={(t.creative as Record<string, string>).removeAction || 'descartar'}
+                  >
+                    <X className="h-3 w-3" />
+                    {(t.creative as Record<string, string>).discardAction || 'descartar'}
                   </button>
                 </div>
-              ) : (
-                <>
-                  {r.relevance && (
-                    <div
-                      className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] tracking-[0.15em] uppercase font-semibold mb-4 ${
-                        r.relevance === 'high' ? 'bg-carbon text-white' : 'bg-carbon/[0.06] text-carbon/50'
-                      }`}
-                    >
-                      {r.relevance}
-                    </div>
-                  )}
-                  <h3 className="text-[18px] md:text-[20px] font-semibold text-carbon tracking-[-0.02em] leading-tight mb-2 pr-10">
-                    {r.title}
-                  </h3>
-                  {r.brands && (
-                    <div className="text-[12px] text-carbon/45 italic mb-3 leading-relaxed">{r.brands}</div>
-                  )}
-                  <p className="text-[13px] text-carbon/65 leading-relaxed flex-1">{r.desc}</p>
+              </div>
+            );
+          })}
 
-                  {/* Hover actions — bottom row */}
-                  <div className="mt-6 pt-4 border-t border-carbon/[0.06] flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => updateResult(i, { editing: true })}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium text-carbon/50 hover:text-carbon hover:bg-carbon/[0.04] transition-colors"
-                    >
-                      <Pencil className="h-2.5 w-2.5" /> Edit
-                    </button>
-                    <button
-                      onClick={() => removeResult(i)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-medium text-carbon/50 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      <X className="h-2.5 w-2.5" /> Remove
-                    </button>
-                  </div>
-                </>
-              )}
+          {results.length < 8 && (
+            <div className="flex items-center justify-center sm:col-span-2 lg:col-span-1">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                disabled={generating}
+                className="group inline-flex items-center justify-center w-14 lg:w-16 h-14 lg:h-16 rounded-full bg-white shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] text-carbon/55 hover:text-carbon hover:scale-105 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label={(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+                title={(t.creative as Record<string, string>).requestOneMore || 'pedir una más'}
+              >
+                {generating ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Plus className="h-5 w-5 transition-transform group-hover:scale-110" />
+                )}
+              </button>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -2850,7 +2860,34 @@ function MarketResearchUnified({
           {(t.creative as Record<string, string>).backToOverview || 'Ver las 4 lentes'}
         </button>
         <button
-          onClick={() => updateBlockData(activeBlock.id, { confirmed: !activeState.confirmed })}
+          onClick={async () => {
+            const next = !activeState.confirmed;
+            updateBlockData(activeBlock.id, { confirmed: next });
+            // When toggling INTO confirmed, write the kept results +
+            // the ficha input to the new creative.market.{lens} CIS
+            // key so Block 2/3/4 prompts can read them downstream.
+            if (next && collectionPlanId) {
+              const data = (activeState.data || {}) as Record<string, unknown>;
+              const results = (data.results as Array<{ title: string; brands?: string; desc: string; relevance?: string; selected?: boolean }>) || [];
+              const fichaInput = activeBlock.lens === 'competitors'
+                ? { brands: (data.brands as string[]) || [] }
+                : { focus: (data.focus as string[]) || [] };
+              try {
+                await fetch('/api/research-confirm', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    collectionPlanId,
+                    lens: activeBlock.lens,
+                    results,
+                    fichaInput,
+                  }),
+                });
+              } catch (err) {
+                console.error('[ResearchConfirm] failed to persist', err);
+              }
+            }
+          }}
           className={`inline-flex items-center gap-2 py-2.5 pl-7 pr-6 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
             activeState.confirmed
               ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'

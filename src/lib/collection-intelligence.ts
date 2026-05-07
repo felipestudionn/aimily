@@ -348,6 +348,15 @@ export async function compilePromptContext(
   ctx.reference_brands = get('creative', 'inspiration', 'reference_brands') || [];
   ctx.selected_trends = get('creative', 'inspiration', 'trends_selected') || [];
   ctx.moodboard_summary = get('creative', 'inspiration', 'moodboard_analysis') || '';
+
+  // Investigación de Mercado · per-lens CIS keys (S3 of the migration).
+  // Each lens writes the user-confirmed cards to its own subdomain so
+  // Block 2/3/4 prompts can read them with precision instead of the
+  // ambiguous trends_selected blob.
+  ctx.market_trends = get('creative', 'market', 'trends') || [];
+  ctx.market_deep_dive = get('creative', 'market', 'deep_dive') || [];
+  ctx.market_live_signals = get('creative', 'market', 'live_signals') || [];
+  ctx.market_competitors = get('creative', 'market', 'competitors') || [];
   ctx.visual_direction = get('creative', 'identity', 'visual_direction') || '';
 
   // Consumer

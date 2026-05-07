@@ -56,6 +56,26 @@ export async function loadFullContext(collectionPlanId: string): Promise<Record<
   // Moodboard from CIS
   if (promptCtx.moodboard_summary) ctx.moodboard = promptCtx.moodboard_summary;
 
+  // Investigación de Mercado · per-lens results (S3 migration). Each
+  // lens lands as a separate ctx key so downstream prompts can pull
+  // exactly what they need (e.g., merch only wants macro_trends and
+  // competitors; design wants deep_dive; marketing wants live_signals).
+  // Format: "Title — brands · desc" per row.
+  const fmtCard = (c: { title: string; brands?: string; desc: string }) =>
+    `${c.title}${c.brands ? ' — ' + c.brands : ''}: ${c.desc}`;
+  if (promptCtx.market_trends?.length) {
+    ctx.market_trends = promptCtx.market_trends.map(fmtCard).join('\n\n');
+  }
+  if (promptCtx.market_deep_dive?.length) {
+    ctx.market_deep_dive = promptCtx.market_deep_dive.map(fmtCard).join('\n\n');
+  }
+  if (promptCtx.market_live_signals?.length) {
+    ctx.market_live_signals = promptCtx.market_live_signals.map(fmtCard).join('\n\n');
+  }
+  if (promptCtx.market_competitors?.length) {
+    ctx.market_competitors = promptCtx.market_competitors.map(fmtCard).join('\n\n');
+  }
+
   // Existing SKUs context
   if (promptCtx.skus?.length) {
     const skuSummary = promptCtx.skus.slice(0, 30).map(s =>
