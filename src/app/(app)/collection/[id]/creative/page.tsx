@@ -2830,9 +2830,6 @@ function MarketResearchUnified({
               key={block.id}
               className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[500px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
             >
-              <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-4">
-                0{idx + 1} · {block.label}
-              </div>
               <h3 className="text-[22px] md:text-[26px] font-medium text-carbon tracking-[-0.02em] leading-[1.15] mb-3">
                 {block.label}
               </h3>
@@ -2928,9 +2925,6 @@ function MarketResearchUnified({
         {/* Active card — expanded, hosts the legacy ResearchBlockContent
             inside which now renders the chip-based ficha + result cards. */}
         <div className="lg:row-span-2 lg:col-start-1 bg-white rounded-[20px] p-8 md:p-10 min-h-[640px]">
-          <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-2">
-            0{activeIdx + 1} · {activeBlock.label}
-          </div>
           <h2 className="text-[28px] md:text-[34px] font-medium text-carbon tracking-[-0.02em] leading-[1.05] mb-2">
             {activeBlock.label}
           </h2>
@@ -2958,10 +2952,7 @@ function MarketResearchUnified({
               onClick={() => setActiveIdx(idx)}
               className="lg:col-start-2 group relative bg-white rounded-[20px] p-5 flex flex-col transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] text-left overflow-hidden"
             >
-              <div className="text-[9px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-2">
-                0{idx + 1} · {block.label}
-              </div>
-              <h3 className="text-[15px] font-medium text-carbon tracking-[-0.01em] leading-tight mb-3">
+              <h3 className="text-[16px] font-medium text-carbon tracking-[-0.01em] leading-tight mb-3">
                 {block.label}
               </h3>
               <div className="mb-2">
