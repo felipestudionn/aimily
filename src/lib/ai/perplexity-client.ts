@@ -506,15 +506,56 @@ async function callSonar(
 // ─── Clean Sonar results ───
 
 function cleanResults(results: TrendResult[]): TrendResult[] {
-  return results.map(r => ({
-    ...r,
-    // Remove citation references like [1], [2], [3] from descriptions
-    desc: (r.desc || '').replace(/\[\d+\]/g, '').replace(/\s{2,}/g, ' ').trim(),
-    title: (r.title || '').replace(/\[\d+\]/g, '').trim(),
-    // Fix brands: ensure comma-separated (Sonar sometimes concatenates them)
-    brands: fixBrandsList(r.brands || ''),
-    // dimension passes through if present
-  }));
+  return results.map(r => {
+    const cleanDesc = (r.desc || '').replace(/\[\d+\]/g, '').replace(/\s{2,}/g, ' ').trim();
+    const cleanTitle = (r.title || '').replace(/\[\d+\]/g, '').trim();
+    // Hex fallback for color cards: if Sonar omitted the structured
+    // hex field but mentioned a #RRGGBB or "Pantone XX-XXXX" inside
+    // the description, recover it. Pantone codes get mapped via the
+    // small inline lookup below for the most common runway codes.
+    let hex = r.hex;
+    if (r.dimension === 'color' && !hex) {
+      const hexMatch = cleanDesc.match(/#([0-9A-Fa-f]{6})/);
+      if (hexMatch) {
+        hex = `#${hexMatch[1].toUpperCase()}`;
+      } else {
+        const pantoneMatch = cleanDesc.match(/Pantone\s*(\d{2}-\d{4})/i);
+        if (pantoneMatch) {
+          hex = pantoneCodeToHex(pantoneMatch[1]);
+        }
+      }
+    }
+    return {
+      ...r,
+      desc: cleanDesc,
+      title: cleanTitle,
+      brands: fixBrandsList(r.brands || ''),
+      hex,
+    };
+  });
+}
+
+// Tiny Pantone → hex map for the most common runway/season colours.
+// Falls back to undefined if no match. The Pantone DB cross-reference
+// (S-future) will replace this with the local pantone_colors table.
+function pantoneCodeToHex(code: string): string | undefined {
+  const map: Record<string, string> = {
+    '13-1907': '#F4C2C2', // Baby Pink / Pastel Pink
+    '15-4319': '#A4C8DD', // Ice Blue
+    '19-1012': '#5C4033', // Earth Brown
+    '12-0734': '#F0E68C', // Butter Yellow
+    '11-0602': '#F5F2E9', // Off-White / Cream
+    '17-1463': '#F25C40', // Tomato / Cherry Red
+    '17-1126': '#A87B5C', // Tobacco
+    '15-3817': '#94A4C7', // Powder Blue
+    '14-1064': '#FFA94D', // Tangerine
+    '15-0850': '#E5C76B', // Saffron
+    '18-1750': '#A02B3A', // Burgundy
+    '13-0625': '#E1D8A8', // Sage / Pale Lime
+    '17-5641': '#0F8A6C', // Emerald
+    '19-3832': '#3F4F8F', // Cobalt / Indigo
+  };
+  return map[code];
 }
 
 function fixBrandsList(brands: string): string {
