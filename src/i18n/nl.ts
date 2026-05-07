@@ -674,6 +674,8 @@ export const nl: Dictionary = {
     inYourBrief: 'in je brief',
     backToOverview: 'Alle 4 lenzen tonen',
     continueAction: 'Doorgaan',
+    startResearch: 'Research starten',
+    continueResearch: 'Research voortzetten',
     forWhom: 'voor wie',
     describeYourCustomerLabel: 'beschrijf je klant',
     describeYourCustomerPlaceholder: 'een zin, een referentie, een detail…',

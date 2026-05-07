@@ -664,6 +664,8 @@ export const sv: Dictionary = {
     inYourBrief: 'i din brief',
     backToOverview: 'Visa alla 4 linser',
     continueAction: 'Fortsätt',
+    startResearch: 'Starta research',
+    continueResearch: 'Fortsätt research',
     forWhom: 'för vem',
     describeYourCustomerLabel: 'beskriv din kund',
     describeYourCustomerPlaceholder: 'en mening, en referens, ett detalj…',

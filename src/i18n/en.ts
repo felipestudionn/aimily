@@ -673,6 +673,8 @@ export const en = {
     inYourBrief: 'in your brief',
     backToOverview: 'See all 4 lenses',
     continueAction: 'Continue',
+    startResearch: 'Start research',
+    continueResearch: 'Continue research',
     forWhom: 'for whom',
     describeYourCustomerLabel: 'in one sentence',
     describeYourCustomerPlaceholder: 'one sentence, a reference, a detail…',

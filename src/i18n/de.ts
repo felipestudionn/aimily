@@ -674,6 +674,8 @@ export const de: Dictionary = {
     inYourBrief: 'in deinem Brief',
     backToOverview: 'Alle 4 Linsen anzeigen',
     continueAction: 'Weiter',
+    startResearch: 'Research starten',
+    continueResearch: 'Research fortsetzen',
     forWhom: 'für wen',
     describeYourCustomerLabel: 'beschreibe deine Kund:in',
     describeYourCustomerPlaceholder: 'ein Satz, eine Referenz, ein Detail…',

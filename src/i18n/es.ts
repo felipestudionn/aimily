@@ -675,6 +675,8 @@ export const es: Dictionary = {
     inYourBrief: 'en tu brief',
     backToOverview: 'Ver las 4 lentes',
     continueAction: 'Continuar',
+    startResearch: 'Empezar research',
+    continueResearch: 'Continuar research',
     forWhom: 'para quién',
     describeYourCustomerLabel: 'en una frase',
     describeYourCustomerPlaceholder: 'una frase, una referencia, un detalle…',

@@ -2753,6 +2753,36 @@ function MarketResearchUnified({
     );
   };
 
+  // Edit-in-place chips for the overview cards. Each lens writes back
+  // to its own `focus` (or `brands` for competitors) array via
+  // updateBlockData. The user can add / edit / remove BEFORE clicking
+  // Start research — the chips are the proposed framing, not a wall.
+  const renderEditableFicha = (block: typeof RESEARCH_BLOCKS[number]) => {
+    const data = blockData[block.id]?.data || {};
+    const items = block.lens === 'competitors' ? ((data.brands as string[]) || []) : ((data.focus as string[]) || []);
+    if (items.length === 0) {
+      return (
+        <p className="text-carbon/35 italic text-[12px]">
+          {(t.creative as Record<string, string>).researchPreviewLoading || 'leyendo tu moodboard…'}
+        </p>
+      );
+    }
+    return (
+      <EditableChipCloud
+        values={items}
+        onChange={(v) => {
+          const key = block.lens === 'competitors' ? 'brands' : 'focus';
+          updateBlockData(block.id, { data: { ...data, [key]: v } });
+        }}
+        placeholder={
+          block.lens === 'competitors'
+            ? ((t.creative as Record<string, string>).researchBrandsPlaceholder || 'añadir marca')
+            : ((t.creative as Record<string, string>).researchFocusPlaceholder || 'añadir')
+        }
+      />
+    );
+  };
+
   /* ─── Mode 1 · Overview · 4 cards equal size, all with pre-filled fichas ─── */
   if (activeIdx === null) {
     return (
@@ -2761,11 +2791,9 @@ function MarketResearchUnified({
           const blockState = blockData[block.id] || { confirmed: false, data: {} };
           const isStarted = blockState.confirmed || ((blockState.data?.results as unknown[])?.length || 0) > 0;
           return (
-            <button
+            <div
               key={block.id}
-              type="button"
-              onClick={() => setActiveIdx(idx)}
-              className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+              className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[500px] transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
             >
               <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-4">
                 0{idx + 1} · {block.label}
@@ -2777,9 +2805,10 @@ function MarketResearchUnified({
                 {block.desc}
               </p>
 
-              {/* Ficha preview — chips pre-pobladas desde el moodboard */}
+              {/* Editable ficha — chips pre-poblados desde el moodboard,
+                  el user puede añadir/editar/quitar antes de Empezar. */}
               <div className="mb-6">
-                {renderFichaPreview(block, false)}
+                {renderEditableFicha(block)}
               </div>
 
               <div className="flex-1" />
@@ -2787,12 +2816,18 @@ function MarketResearchUnified({
               {renderBadge(block)}
 
               <div className="flex justify-center mt-6">
-                <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white group-hover:bg-carbon/90 transition-all">
-                  {isStarted ? ((t.creative as Record<string, string>).continueAction || 'Continuar') : 'Start'}
-                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveIdx(idx)}
+                  className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white hover:bg-carbon/90 transition-all"
+                >
+                  {isStarted
+                    ? ((t.creative as Record<string, string>).continueResearch || 'Continuar research')
+                    : ((t.creative as Record<string, string>).startResearch || 'Empezar research')}
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

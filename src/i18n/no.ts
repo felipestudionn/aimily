@@ -664,6 +664,8 @@ export const no: Dictionary = {
     inYourBrief: 'i briefen din',
     backToOverview: 'Se alle 4 linsene',
     continueAction: 'Fortsett',
+    startResearch: 'Start research',
+    continueResearch: 'Fortsett research',
     forWhom: 'for hvem',
     describeYourCustomerLabel: 'beskriv kunden din',
     describeYourCustomerPlaceholder: 'en setning, en referanse, en detalj…',
