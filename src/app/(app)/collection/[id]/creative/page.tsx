@@ -3744,14 +3744,14 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                         </button>
                         <button
                           onClick={() => handleConfirm(block.id)}
-                          className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                          className={`inline-flex items-center gap-2 py-2.5 pl-7 pr-6 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
                             state.confirmed
                               ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
                               : 'bg-carbon text-white hover:bg-carbon/90'
                           }`}
                         >
-                          <Check className="h-3.5 w-3.5" />
                           {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
+                          <Check className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     );
@@ -3778,14 +3778,14 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                       <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
                         <button
                           onClick={() => handleConfirm(block.id)}
-                          className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+                          className={`inline-flex items-center gap-2 py-2.5 pl-7 pr-6 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
                             state.confirmed
                               ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
                               : 'bg-carbon text-white hover:bg-carbon/90'
                           }`}
                         >
-                          <Check className="h-3.5 w-3.5" />
                           {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
+                          <Check className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     );
