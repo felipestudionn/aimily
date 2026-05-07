@@ -420,17 +420,22 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   const updateField = (key: string, val: unknown) => onChange({ ...data, [key]: val });
 
   // Pre-fill the entry phase from CIS (mainly moodboard analysis) once on
-  // mount, only when there's nothing user-set yet (no proposals, no gender,
-  // no reference). This is the canonical pattern: aimily proposes input
-  // based on previous block, user edits + confirms. The flag stays in data
-  // so the "basado en tu moodboard" caption keeps showing even after the
-  // user tweaks values — they are still building on the suggestion.
+  // mount. Versioned so collections sitting on the pre-rediseño 2-field
+  // shape (gender + reference only) auto-enrich on next visit instead of
+  // staying frozen with empty chip clouds. Bump _fichaVersion in any
+  // future shape change so the migration cascade keeps flowing.
+  const fichaVersion = (data._fichaVersion as number) || 0;
+  const hasRichFields = Boolean(
+    cities.length || wearsBrands.length || shopsAt.length ||
+    reads.length || values.length || lifestyle.length,
+  );
   const suggestionFetchedRef = useRef(false);
   useEffect(() => {
     if (hasProposals) return;
-    // Skip the suggestion only if there's ANY user-set data already on the
-    // entry phase — otherwise we'd overwrite their tweaks on a remount.
-    if (gender || reference || ageRange || cities.length || wearsBrands.length) return;
+    if (fichaVersion >= 2) return;
+    // Don't clobber rich fields a user already populated under the new
+    // shape without the version flag (transitional collections mid-edit).
+    if (hasRichFields) return;
     if (suggestionFetchedRef.current) return;
     if (!collectionPlanId) return;
     suggestionFetchedRef.current = true;
@@ -489,6 +494,7 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
               lifestyle: out.lifestyle?.length ? out.lifestyle : lifestyle,
               reference: out.reference || reference,
               _suggestionFromMoodboard: true,
+              _fichaVersion: 2,
             });
           }
           outcome = 'success';
