@@ -2383,8 +2383,21 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
 
   const selectedCount = results.filter(r => r.selected).length;
   const unselectedCount = results.length - selectedCount;
-  const hasInput = !!(data.input as string)?.trim();
-  const canGenerate = c.requiresInput ? hasInput : true;
+
+  // Per-lens ficha shape — what the user edits in the input area.
+  const focus = (data.focus as string[]) || [];
+  const aspects = (data.aspects as string[]) || [];
+  const brands = (data.brands as string[]) || [];
+  const topic = (data.topic as string) || '';
+
+  // Validation per lens. Mirrors the canonical pattern: Deep needs a
+  // topic, Competitors needs at least one brand. Global and Live are
+  // optional (vacío = scan toda la temporada / sin foco específico).
+  const canGenerate = (() => {
+    if (blockId === 'deep-dive') return topic.trim().length > 0;
+    if (blockId === 'competitors') return brands.length > 0;
+    return true;
+  })();
 
   const typeMap: Record<string, string> = {
     'global-trends': 'trends-global',
@@ -2394,12 +2407,24 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   };
 
   const callResearch = async (excludeTitles: string[] = []) => {
+    // Build the prompt input from the lens-specific ficha. The
+    // existing creative-generate prompts consume a single comma-
+    // separated string as `input`, so we just join chips (or
+    // topic + aspects for deep-dive) into that shape.
+    let inputStr = '';
+    if (blockId === 'global-trends' || blockId === 'live-signals') {
+      inputStr = focus.join(', ');
+    } else if (blockId === 'competitors') {
+      inputStr = brands.join(', ');
+    } else if (blockId === 'deep-dive') {
+      inputStr = aspects.length > 0 ? `${topic} — ${aspects.join(', ')}` : topic;
+    }
+    if (!inputStr) inputStr = collectionContext.collectionName || '';
     const inputPayload: Record<string, string> = {
-      input: (data.input as string) || collectionContext.collectionName || '',
+      input: inputStr,
       consumer: consumerProfile || '',
       ...collectionContext,
     };
-    // Tell the API which titles to exclude (avoid duplicates)
     if (excludeTitles.length > 0) {
       inputPayload.excludeTitles = excludeTitles.join('|||');
     }
@@ -2448,39 +2473,69 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     setGenerating(false);
   };
 
+  // Lens-specific i18n strings for the ficha labels (chip cloud titles
+  // + topic placeholder for deep-dive). Falls back to compact Spanish
+  // copy if the keys aren't set yet.
+  const fichaT = t.creative as Record<string, string>;
+  const fichaLabel = blockId === 'competitors'
+    ? (fichaT.researchBrandsLabel || 'marcas a analizar')
+    : blockId === 'deep-dive'
+      ? (fichaT.researchAspectsLabel || 'aspectos a explorar')
+      : (fichaT.researchFocusLabel || 'categorías foco');
+  const fichaPlaceholder = blockId === 'competitors'
+    ? (fichaT.researchBrandsPlaceholder || 'añadir marca')
+    : blockId === 'deep-dive'
+      ? (fichaT.researchAspectsPlaceholder || 'añadir aspecto')
+      : (fichaT.researchFocusPlaceholder || 'añadir categoría');
+
   return (
     <div className="space-y-8">
-      {/* ── Input + Generate — single premium card ── */}
-      <div className="bg-white rounded-[20px] p-8 md:p-12 border border-carbon/[0.06]">
-        <div className="text-[11px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
-          {c.inputLabel}
-        </div>
+      {/* ── Ficha + Generate — chip-based, pre-poblado desde moodboard ── */}
+      <div>
         <p className="text-[14px] text-carbon/55 leading-relaxed mb-6 max-w-[640px]">{c.description}</p>
-        {c.requiresInput ? (
-          <textarea
-            value={(data.input as string) || ''}
-            onChange={(e) => onChange({ ...data, input: e.target.value })}
-            placeholder={c.placeholder}
-            rows={3}
-            className="w-full px-5 py-4 text-[15px] text-carbon bg-carbon/[0.03] rounded-[14px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/30 mb-5"
-          />
-        ) : (
-          <input
-            type="text"
-            value={(data.input as string) || ''}
-            onChange={(e) => onChange({ ...data, input: e.target.value })}
-            placeholder={c.placeholder}
-            className="w-full px-5 py-4 text-[15px] text-carbon bg-carbon/[0.03] rounded-[14px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 mb-5"
-          />
+
+        {blockId === 'deep-dive' && (
+          <div className="mb-5">
+            <p className="text-[11px] tracking-[0.15em] uppercase text-carbon/60 mb-2 font-semibold">
+              {(t.creative as Record<string, string>).researchTopicLabel || 'tema profundo'}
+            </p>
+            <input
+              type="text"
+              value={topic}
+              onChange={(e) => onChange({ ...data, topic: e.target.value })}
+              placeholder={(t.creative as Record<string, string>).researchTopicPlaceholder || 'el tema profundo a explorar'}
+              className="w-full text-[16px] text-carbon bg-transparent border-0 border-b border-carbon/15 focus:border-carbon/40 focus:outline-none py-2 placeholder:text-carbon/25 font-light tracking-[-0.01em]"
+            />
+          </div>
         )}
-        <div className="flex items-center gap-3">
+
+        <FichaRow label={fichaLabel}>
+          <EditableChipCloud
+            values={blockId === 'global-trends' || blockId === 'live-signals' ? focus
+                  : blockId === 'competitors' ? brands
+                  : aspects}
+            onChange={(v) => {
+              if (blockId === 'competitors') onChange({ ...data, brands: v });
+              else if (blockId === 'deep-dive') onChange({ ...data, aspects: v });
+              else onChange({ ...data, focus: v });
+            }}
+            placeholder={fichaPlaceholder}
+          />
+        </FichaRow>
+
+        <div className="mt-6 flex items-center gap-3">
           <button
             onClick={handleGenerate}
             disabled={generating || !canGenerate}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white hover:bg-carbon/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 pl-7 pr-6 py-3 rounded-full text-[14px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed group"
           >
-            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            {c.generateLabel}
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            <span>
+              {generating
+                ? ((t.creative as Record<string, string>).generatingProposals || 'Generando…')
+                : c.generateLabel}
+            </span>
+            {!generating && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
           </button>
           {error && <p className="text-[12px] text-red-600">{error}</p>}
         </div>
@@ -2602,7 +2657,16 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   );
 }
 
-/* ─── Market Research Unified — 4 gold-standard cards + drill-down ─── */
+/* ─── Market Research Unified — 4 fichas pre-pobladas + expansion 3fr/1fr ───
+   Each lens lands pre-filled from upstream CIS (moodboard + consumer):
+   chips visibles in the overview cards, no opaque textareas. Click
+   Start on a card → grid reorganizes from 4-col to 3fr/1fr with that
+   card expanded and the other 3 stacked compactly on the right. The
+   expanded view hosts ResearchBlockContent with the canonical helpers
+   (FichaRow + EditableChipCloud) replacing the legacy textarea path.
+   ───────────────────────────────────────────────────────────────── */
+type ResearchLensKey = 'global' | 'deep' | 'live' | 'competitors';
+
 function MarketResearchUnified({
   blockData,
   updateBlockData,
@@ -2615,75 +2679,167 @@ function MarketResearchUnified({
   consumerProfile?: string;
 }) {
   const t = useTranslation();
-  const RESEARCH_BLOCKS = [
-    { id: 'global-trends', label: t.creative.globalTrends, desc: t.creative.globalTrendsDesc, icon: Globe },
-    { id: 'deep-dive', label: t.creative.deepDive, desc: t.creative.deepDiveDesc, icon: Microscope },
-    { id: 'live-signals', label: t.creative.liveSignals, desc: t.creative.liveSignalsDesc, icon: Radio },
-    { id: 'competitors', label: t.creative.competitors, desc: t.creative.competitorsDesc, icon: Building2 },
+  const { language } = useLanguage();
+  const { id: collectionPlanId } = useParams();
+  const RESEARCH_BLOCKS: Array<{ id: string; lens: ResearchLensKey; label: string; desc: string; icon: typeof Globe }> = [
+    { id: 'global-trends', lens: 'global',      label: t.creative.globalTrends,  desc: t.creative.globalTrendsDesc,  icon: Globe },
+    { id: 'deep-dive',     lens: 'deep',        label: t.creative.deepDive,      desc: t.creative.deepDiveDesc,      icon: Microscope },
+    { id: 'live-signals',  lens: 'live',        label: t.creative.liveSignals,   desc: t.creative.liveSignalsDesc,   icon: Radio },
+    { id: 'competitors',   lens: 'competitors', label: t.creative.competitors,   desc: t.creative.competitorsDesc,   icon: Building2 },
   ];
-  const [activeTab, setActiveTab] = useState<string | null>(null);
-  const activeBlock = activeTab ? RESEARCH_BLOCKS.find((b) => b.id === activeTab) : null;
-  const state = activeTab
-    ? blockData[activeTab] || { mode: 'ai' as InputMode, confirmed: false, data: {} }
-    : null;
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const fetchedFichaRef = useRef<Set<string>>(new Set());
 
-  /* ─── Overview: 4 cards — GOLD STANDARD (CollectionOverview pattern) ─── */
-  if (!activeTab) {
+  // Pre-fill the four lenses' fichas from upstream CIS in parallel on
+  // mount. Each lens has its own shape (focus chips for global/live;
+  // topic+aspects for deep; brands for competitors) — the suggest
+  // endpoint returns the right one based on `lens`. Skip if the lens
+  // already has data (user already populated, or already fetched).
+  useEffect(() => {
+    if (!collectionPlanId) return;
+    RESEARCH_BLOCKS.forEach((block) => {
+      if (fetchedFichaRef.current.has(block.id)) return;
+      const blockState = blockData[block.id] || { data: {} };
+      const data = blockState.data || {};
+      const alreadyHasFicha =
+        ((data.focus as string[])?.length || 0) > 0 ||
+        ((data.brands as string[])?.length || 0) > 0 ||
+        Boolean((data.topic as string)?.trim()) ||
+        ((data.aspects as string[])?.length || 0) > 0;
+      if (alreadyHasFicha) {
+        fetchedFichaRef.current.add(block.id);
+        return;
+      }
+      fetchedFichaRef.current.add(block.id);
+      (async () => {
+        try {
+          const res = await fetch('/api/ai/research-suggest-input', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collectionPlanId, lens: block.lens, language }),
+          });
+          if (!res.ok) return;
+          const out = await res.json();
+          updateBlockData(block.id, { data: { ...data, ...out, _suggestionFromMoodboard: true } });
+        } catch (err) {
+          console.error('[ResearchSuggestInput] failed for lens', block.lens, err);
+        }
+      })();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionPlanId]);
+
+  // Render a compact ficha summary (chips, topic, brands) for a lens
+  // card — used in both the overview front face and the mini cards
+  // when something else is active. Read-only display; the editable
+  // version lives in the expanded view.
+  const renderFichaPreview = (block: typeof RESEARCH_BLOCKS[number], compact = false) => {
+    const data = blockData[block.id]?.data || {};
+    const chipBase = compact
+      ? 'inline-flex items-center px-2.5 py-1 rounded-full text-[10.5px] bg-carbon/[0.04] text-carbon/70'
+      : 'inline-flex items-center px-3 py-1.5 rounded-full text-[12px] bg-carbon/[0.04] text-carbon/70';
+    if (block.lens === 'deep') {
+      const topic = (data.topic as string) || '';
+      const aspects = (data.aspects as string[]) || [];
+      return (
+        <div className={`flex flex-col gap-2 ${compact ? '' : 'gap-3'}`}>
+          {topic && (
+            <p className={`italic text-carbon/65 leading-snug ${compact ? 'text-[12px]' : 'text-[14px]'}`}>
+              &ldquo;{capitalizeFirst(topic)}&rdquo;
+            </p>
+          )}
+          {aspects.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {aspects.slice(0, compact ? 3 : 6).map((a, i) => (
+                <span key={i} className={chipBase}>{capitalizeFirst(a)}</span>
+              ))}
+              {aspects.length > (compact ? 3 : 6) && (
+                <span className="text-[10px] text-carbon/40 self-center">+{aspects.length - (compact ? 3 : 6)}</span>
+              )}
+            </div>
+          )}
+          {!topic && aspects.length === 0 && (
+            <p className={`text-carbon/35 italic ${compact ? 'text-[11px]' : 'text-[12px]'}`}>
+              {(t.creative as Record<string, string>).researchPreviewLoading || 'leyendo tu moodboard…'}
+            </p>
+          )}
+        </div>
+      );
+    }
+    const items = block.lens === 'competitors' ? ((data.brands as string[]) || []) : ((data.focus as string[]) || []);
+    if (items.length === 0) {
+      return (
+        <p className={`text-carbon/35 italic ${compact ? 'text-[11px]' : 'text-[12px]'}`}>
+          {(t.creative as Record<string, string>).researchPreviewLoading || 'leyendo tu moodboard…'}
+        </p>
+      );
+    }
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {items.slice(0, compact ? 3 : 6).map((item, i) => (
+          <span key={i} className={chipBase}>{capitalizeFirst(item)}</span>
+        ))}
+        {items.length > (compact ? 3 : 6) && (
+          <span className="text-[10px] text-carbon/40 self-center">+{items.length - (compact ? 3 : 6)}</span>
+        )}
+      </div>
+    );
+  };
+
+  // Confirm/results badge — shown when the user has already saved
+  // selected results for that lens. Replaces the Start CTA in that
+  // case. The number reflects results.filter(selected) on confirm.
+  const renderBadge = (block: typeof RESEARCH_BLOCKS[number]) => {
+    const blockState = blockData[block.id] || { confirmed: false, data: {} };
+    const results = (blockState.data?.results as Array<{ selected?: boolean }>) || [];
+    const selectedCount = results.filter((r) => r.selected).length;
+    if (!blockState.confirmed || selectedCount === 0) return null;
+    return (
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] tracking-[0.12em] uppercase font-semibold bg-carbon/[0.06] text-carbon/65">
+        <Check className="h-3 w-3" />
+        {selectedCount} {(t.creative as Record<string, string>).inYourBrief || 'en tu brief'}
+      </div>
+    );
+  };
+
+  /* ─── Mode 1 · Overview · 4 cards equal size, all with pre-filled fichas ─── */
+  if (activeIdx === null) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {RESEARCH_BLOCKS.map((block, idx) => {
-          const blockState = blockData[block.id] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
-          const results = (blockState.data?.results as Array<{ selected?: boolean }>) || [];
-          const selectedCount = results.filter((r) => r.selected).length;
-          const hasData = selectedCount > 0 || Object.keys(blockState.data || {}).length > 0;
-          const progress = blockState.confirmed ? 100 : selectedCount > 0 ? Math.min(selectedCount * 20, 80) : 0;
-          const isComplete = progress === 100;
-          const isStarted = progress > 0;
+          const blockState = blockData[block.id] || { confirmed: false, data: {} };
+          const isStarted = blockState.confirmed || ((blockState.data?.results as unknown[])?.length || 0) > 0;
           return (
             <button
               key={block.id}
               type="button"
-              onClick={() => setActiveTab(block.id)}
-              className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
+              onClick={() => setActiveIdx(idx)}
+              className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left"
             >
-              {/* Ghost number — 01, 02, 03, 04 */}
-              <div className="mb-10">
-                <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
-                  0{idx + 1}.
-                </span>
+              <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-4">
+                0{idx + 1} · {block.label}
               </div>
-
-              {/* Title */}
-              <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-5">
+              <h3 className="text-[22px] md:text-[26px] font-medium text-carbon tracking-[-0.02em] leading-[1.15] mb-3">
                 {block.label}
               </h3>
-
-              {/* Description */}
-              <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em]">
+              <p className="text-[13px] text-carbon/50 leading-[1.6] tracking-[-0.01em] mb-6">
                 {block.desc}
               </p>
 
-              <div className="flex-1" />
-
-              {/* CTA pill — centered */}
-              <div className="flex justify-center mt-10">
-                <div className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-                  isComplete
-                    ? 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
-                    : 'bg-carbon text-white group-hover:bg-carbon/90'
-                }`}>
-                  {isComplete ? 'Completed' : isStarted ? 'Continue' : 'Start'}
-                  {!isComplete && <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />}
-                  {isComplete && <Check className="h-3.5 w-3.5" />}
-                </div>
+              {/* Ficha preview — chips pre-pobladas desde el moodboard */}
+              <div className="mb-6">
+                {renderFichaPreview(block, false)}
               </div>
 
-              {/* Progress bar */}
-              <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
+              <div className="flex-1" />
+
+              {renderBadge(block)}
+
+              <div className="flex justify-center mt-6">
+                <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white group-hover:bg-carbon/90 transition-all">
+                  {isStarted ? ((t.creative as Record<string, string>).continueAction || 'Continuar') : 'Start'}
+                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </div>
             </button>
           );
@@ -2692,49 +2848,85 @@ function MarketResearchUnified({
     );
   }
 
-  /* ─── Drill-down: active sub-block full view ─── */
+  /* ─── Mode 2 · Expanded · activeIdx card grows to 3fr, others compact ─── */
+  const activeBlock = RESEARCH_BLOCKS[activeIdx];
+  const activeState = blockData[activeBlock.id] || { mode: 'ai' as InputMode, confirmed: false, data: {} };
+  const inactive = RESEARCH_BLOCKS.map((block, idx) => ({ block, idx })).filter(({ idx }) => idx !== activeIdx);
+
   return (
-    <div>
-      <div className="mb-8 flex items-center justify-between">
+    <div className="w-full">
+      <div className="mb-6 flex items-center justify-between">
         <button
-          onClick={() => setActiveTab(null)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium text-carbon/50 hover:text-carbon hover:bg-carbon/[0.04] transition-all"
+          onClick={() => setActiveIdx(null)}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-semibold text-carbon/65 hover:text-carbon hover:bg-carbon/[0.04] transition-all border border-carbon/[0.10] hover:border-carbon/25"
         >
-          <ArrowLeft className="h-3 w-3" />
-          All research
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {(t.creative as Record<string, string>).backToOverview || 'Ver las 4 lentes'}
         </button>
-        <div className="text-center">
-          <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-1">
-            Market Research
-          </div>
-          <h2 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-tight">
-            {activeBlock?.label}
-          </h2>
-        </div>
-        <div className="w-[120px]" />
-      </div>
-
-      <ResearchBlockContent
-        blockId={activeTab}
-        mode={state!.mode}
-        data={state!.data}
-        onChange={(newData) => updateBlockData(activeTab, { data: newData })}
-        collectionContext={collectionContext}
-        consumerProfile={consumerProfile}
-      />
-
-      <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
         <button
-          onClick={() => updateBlockData(activeTab, { confirmed: !state!.confirmed })}
-          className={`inline-flex items-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
-            state!.confirmed
+          onClick={() => updateBlockData(activeBlock.id, { confirmed: !activeState.confirmed })}
+          className={`inline-flex items-center gap-2 py-2.5 pl-7 pr-6 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+            activeState.confirmed
               ? 'border border-carbon/[0.15] text-carbon hover:bg-carbon/[0.04]'
               : 'bg-carbon text-white hover:bg-carbon/90'
           }`}
         >
+          {activeState.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
           <Check className="h-3.5 w-3.5" />
-          {state!.confirmed ? 'Confirmed' : t.creative.confirmContinue}
         </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] lg:grid-rows-3 gap-5 transition-all duration-500 ease-out">
+        {/* Active card — expanded, hosts the legacy ResearchBlockContent
+            inside which now renders the chip-based ficha + result cards. */}
+        <div className="lg:row-span-3 lg:col-start-1 bg-white rounded-[20px] p-8 md:p-10 min-h-[640px]">
+          <div className="text-[10px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-2">
+            0{activeIdx + 1} · {activeBlock.label}
+          </div>
+          <h2 className="text-[28px] md:text-[34px] font-medium text-carbon tracking-[-0.02em] leading-[1.05] mb-2">
+            {activeBlock.label}
+          </h2>
+          <p className="text-[14px] text-carbon/55 leading-[1.6] mb-8">
+            {activeBlock.desc}
+          </p>
+          <ResearchBlockContent
+            blockId={activeBlock.id}
+            mode={activeState.mode}
+            data={activeState.data}
+            onChange={(newData) => updateBlockData(activeBlock.id, { data: newData })}
+            collectionContext={collectionContext}
+            consumerProfile={consumerProfile}
+          />
+        </div>
+
+        {/* The 3 mini cards stacked in the right column */}
+        {inactive.map(({ block, idx }) => {
+          const blockState = blockData[block.id] || { confirmed: false, data: {} };
+          const isStarted = blockState.confirmed || ((blockState.data?.results as unknown[])?.length || 0) > 0;
+          return (
+            <button
+              key={block.id}
+              type="button"
+              onClick={() => setActiveIdx(idx)}
+              className="lg:col-start-2 group relative bg-white rounded-[20px] p-5 flex flex-col transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] text-left overflow-hidden"
+            >
+              <div className="text-[9px] tracking-[0.22em] uppercase text-carbon/55 font-semibold mb-2">
+                0{idx + 1} · {block.label}
+              </div>
+              <h3 className="text-[15px] font-medium text-carbon tracking-[-0.01em] leading-tight mb-3">
+                {block.label}
+              </h3>
+              <div className="mb-2">
+                {renderFichaPreview(block, true)}
+              </div>
+              <div className="flex-1" />
+              <div className="flex items-center justify-between mt-2 pt-2">
+                {renderBadge(block) || <span />}
+                <ArrowRight className="h-3 w-3 text-carbon/35 group-hover:text-carbon group-hover:translate-x-0.5 transition-all" />
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
