@@ -150,19 +150,33 @@ export async function researchTrends(
       // return MORE depth on that axis (used by the "+ Más temas /
       // categorías / colores / materiales" buttons in the UI).
       {
-        const themesBlock = `THEMES — concept-level cultural energy.
-  · "title": Vogue-style headline (2-4 words). Examples: "Quiet Luxury", "Sheer Everything", "The New Prep", "Y2K Resurgence"
-  · "desc": 50-70 words — what cultural force this captures, how brands embody it, what a wearer signals when they buy in.`;
+        const themesBlock = `THEMES — concept-level cultural energy or aesthetic mood.
+  HARD RULES:
+  · NOT a colour name → if the title is a colour ("Tonos Morados", "Verde Azur", "Cherry Red"), it belongs in COLORS, never here.
+  · NOT a product type → if the title is a piece ("Mocasines", "Vestidos Lenceros", "Blazers"), it belongs in CATEGORIES, never here.
+  · NOT a fabric or finish → if the title is a textile ("Encaje", "Punto Jersey", "Satén"), it belongs in MATERIALS, never here.
+  · NOT a print pattern → if the title is a print ("Lunares", "Flores Tridimensionales"), it belongs in MATERIALS or CATEGORIES.
+  Themes are MOODS / ENERGIES / CULTURAL FORCES.
+  · "title": Vogue/WWD headline (2-4 words). GOOD: "Quiet Luxury" · "Sheer Everything" · "Y2K Resurgence" · "The New Prep" · "Dark Romance" · "Balletcore Minimal" · "Utilitario Chic". BAD: "Tonos Morados Expresivos" · "Mocasines Sofisticados" · "Encaje Romántico" · "Lunares Gráficos".
+  · "desc": 50-70 words — cultural force, brands embodying it, wearer signal.`;
         const categoriesBlock = `CATEGORIES — specific product types trending.
-  · "title": Product type + qualifier (2-4 words). Examples: "Mesh Ballet Flats", "Bias-cut Slips", "Barn Jacket", "Tailored Bermudas", "Knit Polo"
-  · "desc": 50-70 words — silhouette, who wears it, how it's styled, brands doing it best.`;
+  HARD RULES:
+  · A category is a piece you'd put on a buy sheet (silhouette + qualifier).
+  · NOT a mood ("Quiet Luxury" is a theme). NOT a fabric ("Mesh" is a material). NOT a colour.
+  · "title": Product type + qualifier (2-4 words). GOOD: "Mesh Ballet Flats" · "Bias-cut Slips" · "Barn Jacket" · "Tailored Bermudas" · "Knit Polo". BAD: "Quiet Luxury" · "Cherry Red" · "Liquid Jersey".
+  · "desc": 50-70 words — silhouette, who wears it, styling, brands doing it best.`;
         const colorsBlock = `COLORS — color stories of the season.
-  · "title": Color name (1-3 words). Examples: "Cherry Red", "Butter Yellow", "Powder Blue", "Chocolate Brown", "Sage"
+  HARD RULES:
+  · A color card has a single colour as the focus. NOT a print, NOT a fabric, NOT a mood.
+  · "title": Color name (1-3 words). GOOD: "Cherry Red" · "Butter Yellow" · "Powder Blue" · "Chocolate Brown" · "Sage". BAD: "Tonos Morados Expresivos" (too verbose; just "Morado" or "Lila") · "Lunares Gráficos" (that's a print) · "Romantic Florals" (that's a theme).
   · "desc": 50-70 words — what materials carry it best, which designers championed it, mood it conveys.
-  · "hex": REQUIRED. The HEX color code for the swatch (format "#RRGGBB"). Use the closest Pantone equivalent if a runway color was named without a hex. NEVER omit this field for color cards.`;
+  · "hex": REQUIRED. HEX colour code (format "#RRGGBB"). Closest match if a runway colour was only described in words. NEVER omit.`;
         const materialsBlock = `MATERIALS — fabric, finish and construction trends.
-  · "title": Material or construction technique (1-4 words). Examples: "Liquid Jersey", "Vegetable-tanned Leather", "Mesh Panels", "Raw-edge Denim", "Sheer Organza"
-  · "desc": 50-70 words — feel, weight (gsm if known), how it drapes, which silhouettes it favours, brands working with it.`;
+  HARD RULES:
+  · A material card focuses on the textile / construction / finish itself.
+  · NOT a mood, NOT a colour, NOT a product silhouette.
+  · "title": Material or technique (1-4 words). GOOD: "Liquid Jersey" · "Vegetable-tanned Leather" · "Mesh Panels" · "Raw-edge Denim" · "Sheer Organza". BAD: "Romanticismo Etéreo" (theme) · "Vestidos Lenceros" (category) · "Cherry Red" (colour).
+  · "desc": 50-70 words — feel, weight (gsm if known), drape, silhouettes it favours, brands working with it.`;
 
         type DimSpec = { plural: string; block: string; jsonKey: string };
         const targetMap: Record<string, DimSpec> = {
