@@ -123,12 +123,24 @@ Return JSON with this exact shape:
 
     // Sanitize all fields. Each defaults to a clean empty value if the
     // LLM returned the wrong type — keeps the client schema stable.
+    // Capitalize first character of each chip + reference so BD stays
+    // canonical (proper nouns + @handles pass through unchanged because
+    // their first char is already uppercase / non-letter).
     const allowed = ['women', 'men', 'unisex', 'mixed'];
-    const arr = (v: unknown): string[] => Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim().length > 0).map((x) => (x as string).trim()) : [];
-    const str = (v: unknown): string => typeof v === 'string' ? v.trim() : '';
+    const capFirst = (s: string): string => {
+      if (!s) return s;
+      const first = s.charAt(0);
+      const upper = first.toUpperCase();
+      return upper === first ? s : upper + s.slice(1);
+    };
+    const arr = (v: unknown): string[] =>
+      Array.isArray(v)
+        ? v.filter((x) => typeof x === 'string' && x.trim().length > 0).map((x) => capFirst((x as string).trim()))
+        : [];
+    const str = (v: unknown): string => typeof v === 'string' ? capFirst(v.trim()) : '';
     const out: SuggestionResponse = {
       gender: data.gender && allowed.includes(data.gender) ? data.gender : null,
-      ageRange: str(data.ageRange),
+      ageRange: typeof data.ageRange === 'string' ? data.ageRange.trim() : '',
       cities: arr(data.cities),
       wearsBrands: arr(data.wearsBrands),
       shopsAt: arr(data.shopsAt),

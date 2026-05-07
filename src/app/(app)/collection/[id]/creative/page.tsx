@@ -286,6 +286,17 @@ function VibeProposalFlow({
   );
 }
 
+// Capitalize the first character of a string. Idempotent: already-capital
+// strings (proper nouns, brand names, @handles) pass through unchanged.
+// Used at the display + commit layer for chip clouds and at the endpoint
+// for fresh writes — keeps BD canonical and old lowercase rows readable.
+function capitalizeFirst(s: string): string {
+  if (!s) return s;
+  const first = s.charAt(0);
+  const upper = first.toUpperCase();
+  return upper === first ? s : upper + s.slice(1);
+}
+
 // FichaRow — small two-row layout used across the Consumer entry phase.
 // Tiny uppercase label on top, content below. Same rhythm as the editorial
 // "para quién / edad / ciudades…" sections.
@@ -320,7 +331,7 @@ function EditableChipCloud({
   const remove = (idx: number) => onChange(values.filter((_, i) => i !== idx));
   const commit = () => {
     const trimmed = inputValue.trim();
-    if (trimmed) onChange([...values, trimmed]);
+    if (trimmed) onChange([...values, capitalizeFirst(trimmed)]);
     setInputValue('');
     setAdding(false);
   };
@@ -332,7 +343,7 @@ function EditableChipCloud({
           key={`${v}-${i}`}
           className="group inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-[12px] bg-carbon/[0.04] text-carbon/70 transition-all"
         >
-          <span>{v}</span>
+          <span>{capitalizeFirst(v)}</span>
           <button
             type="button"
             onClick={() => remove(i)}
@@ -418,6 +429,47 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   const suggestionFromMoodboard = Boolean(data._suggestionFromMoodboard);
   const hasProposals = proposals.length > 0;
   const updateField = (key: string, val: unknown) => onChange({ ...data, [key]: val });
+
+  // One-shot normalization of stored chip clouds + reference on mount.
+  // Migrates rows written before the capitalize-first pass landed: old data
+  // had values like "craftsmanship sobre tendencias" which now need to read
+  // "Craftsmanship sobre tendencias". Idempotent — runs once per row state
+  // and only writes back if anything actually changes.
+  const casingNormalizedRef = useRef(false);
+  useEffect(() => {
+    if (casingNormalizedRef.current) return;
+    if (hasProposals) return;
+    const norm = (arr: string[]) => arr.map(capitalizeFirst);
+    const arrChanged = (a: string[], b: string[]) => a.some((v, i) => v !== b[i]);
+    const nextCities = norm(cities);
+    const nextBrands = norm(wearsBrands);
+    const nextShopsAt = norm(shopsAt);
+    const nextReads = norm(reads);
+    const nextValues = norm(values);
+    const nextLifestyle = norm(lifestyle);
+    const nextReference = capitalizeFirst(reference);
+    const dirty =
+      arrChanged(cities, nextCities) || arrChanged(wearsBrands, nextBrands) ||
+      arrChanged(shopsAt, nextShopsAt) || arrChanged(reads, nextReads) ||
+      arrChanged(values, nextValues) || arrChanged(lifestyle, nextLifestyle) ||
+      reference !== nextReference;
+    if (!dirty) {
+      casingNormalizedRef.current = true;
+      return;
+    }
+    casingNormalizedRef.current = true;
+    onChange({
+      ...data,
+      cities: nextCities,
+      wearsBrands: nextBrands,
+      shopsAt: nextShopsAt,
+      reads: nextReads,
+      values: nextValues,
+      lifestyle: nextLifestyle,
+      reference: nextReference,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pre-fill the entry phase from CIS (mainly moodboard analysis) once on
   // mount. Versioned so collections sitting on the pre-rediseño 2-field
@@ -641,7 +693,7 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
                       : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
                   }`}
                 >
-                  {opt.label.toLowerCase()}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -745,7 +797,7 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
       {/* Breadcrumb — current params, click to reopen entry */}
       <div className="flex items-center justify-center flex-wrap gap-2 text-[12px] text-carbon/45">
         {gender && (
-          <button onClick={reopenEntry} className="hover:text-carbon transition-colors lowercase">
+          <button onClick={reopenEntry} className="hover:text-carbon transition-colors">
             {genderOptions.find((o) => o.id === gender)?.label}
           </button>
         )}
