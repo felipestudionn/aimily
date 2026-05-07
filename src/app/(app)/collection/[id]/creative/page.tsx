@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, ArrowLeft, Check, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic, ThumbsUp, ThumbsDown, RefreshCw, Plus, Pencil } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, ChevronDown, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic, ThumbsUp, ThumbsDown, RefreshCw, Plus, Pencil } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
@@ -303,7 +303,7 @@ function capitalizeFirst(s: string): string {
 function FichaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="w-full">
-      <p className="text-[11px] tracking-[0.15em] uppercase text-carbon/30 mb-2 font-medium">
+      <p className="text-[11px] tracking-[0.15em] uppercase text-carbon/60 mb-2 font-semibold">
         {label}
       </p>
       {children}
@@ -406,11 +406,25 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
   const [error, setError] = useState<string | null>(null);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [suggesting, setSuggesting] = useState(false);
+  const [genderOpen, setGenderOpen] = useState(false);
   // 'idle' until we try; 'success' when aimily proposed something; 'empty'
   // when the endpoint succeeded but had nothing to propose; 'error' on
   // network/server failure. Used to keep the caption visible (so the user
   // never feels left in limbo after a fast/silent failure).
   const [suggestionStatus, setSuggestionStatus] = useState<'idle' | 'success' | 'empty' | 'error'>('idle');
+  const genderRef = useRef<HTMLDivElement | null>(null);
+  // Close gender dropdown on outside click — keeps the chip-with-popover
+  // pattern feeling native instead of sticky.
+  useEffect(() => {
+    if (!genderOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (genderRef.current && !genderRef.current.contains(e.target as Node)) {
+        setGenderOpen(false);
+      }
+    };
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
+  }, [genderOpen]);
 
   // Defensive: data can be undefined when the workspace row was reset to
   // a partial structure (e.g. {mode, confirmed} without `data`). Spreading
@@ -700,14 +714,9 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
             </span>
           </div>
         ) : suggestionFromMoodboard ? (
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-carbon/[0.04]">
-            <span className="flex gap-0.5">
-              <span className="w-1 h-1 rounded-full bg-carbon/35" />
-              <span className="w-1 h-1 rounded-full bg-carbon/35" />
-              <span className="w-1 h-1 rounded-full bg-carbon/35" />
-            </span>
+          <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-carbon/[0.04]">
             <span className="text-[10px] tracking-[0.18em] uppercase text-carbon/55 font-semibold">
-              {(t.creative as Record<string, string>).basedOnMoodboard || 'desde tu moodboard · edita lo que quieras'}
+              {(t.creative as Record<string, string>).basedOnMoodboard || 'Basado en tu moodboard. Edita lo que quieras.'}
             </span>
           </div>
         ) : suggestionStatus === 'empty' ? (
@@ -730,20 +739,33 @@ function ConsumerContent({ data: rawData, onChange, collectionContext }: { mode:
         {/* LEFT BLOCK — 2 sub-columns of 8 ficha rows */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-8">
           <FichaRow label={(t.creative as Record<string, string>).forWhom || 'para quién'}>
-            <div className="flex flex-wrap items-center gap-2">
-              {genderOptions.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => onChange({ ...data, gender: opt.id })}
-                  className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all ${
-                    gender === opt.id
-                      ? 'bg-carbon text-white'
-                      : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div ref={genderRef} className="relative inline-block">
+              <button
+                type="button"
+                onClick={() => setGenderOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-[12px] bg-carbon/[0.04] text-carbon/70 hover:bg-carbon/[0.08] transition-all"
+              >
+                <span>{gender ? (genderOptions.find((o) => o.id === gender)?.label) : ((t.creative as Record<string, string>).pickGender || 'elige')}</span>
+                <ChevronDown className={`h-3 w-3 text-carbon/40 transition-transform ${genderOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {genderOpen && (
+                <div className="absolute top-full left-0 mt-1.5 bg-white rounded-[12px] shadow-[0_8px_28px_rgba(0,0,0,0.10)] border border-carbon/[0.06] p-1 z-20 flex gap-1">
+                  {genderOptions.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => { onChange({ ...data, gender: opt.id }); setGenderOpen(false); }}
+                      className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-all ${
+                        gender === opt.id
+                          ? 'bg-carbon text-white'
+                          : 'text-carbon/70 hover:bg-carbon/[0.06]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </FichaRow>
 
@@ -3625,7 +3647,19 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                     vibeText={vibeText}
                   />
 
-                  {/* Confirm — centered */}
+                  {/* Confirm — centered. Hidden for Consumer until proposals
+                      exist: there's nothing to confirm in the entry-ficha
+                      phase, so showing the button there sends a misleading
+                      "ready to advance" signal. Same will apply to other
+                      blocks that follow the canonical entry → propose →
+                      confirm pattern (extend this guard as we go). */}
+                  {(() => {
+                    if (block.id === 'consumer') {
+                      const proposals = (state.data?.proposals as Array<{ status?: string }>) || [];
+                      const hasVisible = proposals.some((p) => p.status !== 'rejected');
+                      if (!hasVisible) return null;
+                    }
+                    return (
                   <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
                     <button
                       onClick={() => handleConfirm(block.id)}
@@ -3639,6 +3673,8 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
                       {state.confirmed ? t.creative.confirmedAction : t.creative.confirmContinue}
                     </button>
                   </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
