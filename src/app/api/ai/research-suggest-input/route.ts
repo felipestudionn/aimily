@@ -22,6 +22,34 @@ import { normalizeAiError } from '@/lib/ai/error-messages';
 
 type Lens = 'global' | 'deep' | 'live' | 'competitors';
 
+/**
+ * Mirror season helper — given a season code like "SS27" / "FW27" /
+ * "Pre-Fall 27" / "Resort 28", returns the same season type one year
+ * earlier (the fashion shows that already happened and set the tone
+ * for the current collection). Used to force-include a "{prev}
+ * fashion shows" chip into the macro trends ficha so Sonar always
+ * pulls from the mirror season's runway coverage.
+ *
+ * Returns null if the season string can't be parsed.
+ */
+function previousMirrorSeason(season: string | undefined | null): string | null {
+  if (!season) return null;
+  const m = season.trim().match(/^(SS|FW|Pre-Fall|Resort|Cruise)\s*(\d{2,4})$/i);
+  if (!m) return null;
+  const rawPrefix = m[1].toUpperCase() === 'SS' ? 'SS'
+    : m[1].toUpperCase() === 'FW' ? 'FW'
+    : m[1].toLowerCase().startsWith('pre') ? 'Pre-Fall'
+    : m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
+  const yearStr = m[2];
+  const year = parseInt(yearStr, 10);
+  const fullYear = yearStr.length === 2 ? 2000 + year : year;
+  const prevFull = fullYear - 1;
+  const prevStr = yearStr.length === 2 ? String(prevFull).slice(-2) : String(prevFull);
+  // SS/FW have no space; Pre-Fall / Resort / Cruise carry one.
+  const sep = rawPrefix === 'SS' || rawPrefix === 'FW' ? '' : ' ';
+  return `${rawPrefix}${sep}${prevStr}`;
+}
+
 // All 4 lenses now share the same response shape — a tight chip
 // array. Deep dive used to carry topic + aspects (more elaborate
 // editorial input) but Felipe's feedback was that the input was
@@ -137,6 +165,20 @@ export async function POST(req: NextRequest) {
       system, user: userPrompt, temperature: 0.5, maxTokens: 500, language,
     });
     const out: ChipsShape = { focus: arr(data.focus) };
+
+    // Macro trends carry a non-negotiable mirror-season anchor: the
+    // same season type one year earlier. SS27 → "SS26 fashion shows".
+    // The runway shows of that mirror season already set the trends
+    // that arrive a year later in collection.
+    if (lens === 'global') {
+      const mirror = previousMirrorSeason(ctx.season);
+      if (mirror) {
+        const mirrorChip = `${mirror} fashion shows`;
+        const alreadyPresent = out.focus.some((c) => c.toLowerCase().includes(mirror.toLowerCase()));
+        if (!alreadyPresent) out.focus = [mirrorChip, ...out.focus];
+      }
+    }
+
     console.log(`[ResearchSuggestInput:${lens}] result:`, { count: out.focus.length });
     return NextResponse.json(out);
   } catch (error) {
