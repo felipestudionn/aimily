@@ -30,7 +30,7 @@ interface TimelinePreviewProps {
 // distribution while keeping the visual readable.
 const PHASE_WEIGHTS: Record<TimelinePhase, number> = {
   creative: 22,
-  planning: 18,
+  merchandising: 18,
   development: 38,
   go_to_market: 22,
 };
@@ -40,7 +40,7 @@ const TOTAL_WEIGHT = Object.values(PHASE_WEIGHTS).reduce((a, b) => a + b, 0);
 // Block numbering matches the Collection Overview (01-04).
 const PHASE_BLOCK_NUMBER: Record<TimelinePhase, string> = {
   creative: '01',
-  planning: '02',
+  merchandising: '02',
   development: '03',
   go_to_market: '04',
 };
@@ -51,7 +51,7 @@ const PHASE_BLOCK_NUMBER: Record<TimelinePhase, string> = {
 // have a single tweak point.
 const PHASE_TEXT_ON_ACCENT: Record<TimelinePhase, string> = {
   creative: 'text-carbon',
-  planning: 'text-carbon',
+  merchandising: 'text-carbon',
   development: 'text-carbon',
   go_to_market: 'text-carbon',
 };

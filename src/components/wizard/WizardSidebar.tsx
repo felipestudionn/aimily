@@ -101,7 +101,7 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     ],
   },
   {
-    id: 'planning',
+    id: 'merchandising',
     labelKey: 'merchandisingPlanning',
     icon: ClipboardList,
     route: 'merchandising',

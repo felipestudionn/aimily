@@ -77,7 +77,7 @@ export const WIZARD_PHASES: WizardPhase[] = [
     name: 'Merchandising & Planning',
     nameEs: 'Merchandising y Planificación',
     path: 'merchandising',
-    block: 'planning',
+    block: 'merchandising',
     milestoneIds: ['rp-1', 'rp-2', 'rp-3', 'rp-4', 'rp-5', 'rp-6'],
     unlockWhen: [], // FREE — can start anytime
   },

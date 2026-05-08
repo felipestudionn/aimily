@@ -29,13 +29,13 @@ export const SPINE: MicroBlockSlide[] = [
   /* ── 02 · MERCHANDISING ─────────────────────────────────────────── */
   /* Buying Strategy expands into 3 slides: thesis narrative, side-by-side
      comparison of the 3 AI-generated scenarios, and the drop architecture. */
-  { id: 'buying-strategy',     block: 'planning',     blockIndex: 2, microIndex: 1, template: 'narrative-portrait', titleKey: 'buyingStrategy',     eyebrow: '02 · MERCHANDISING' },
-  { id: 'buying-scenarios',    block: 'planning',     blockIndex: 2, microIndex: 1, template: 'scenario-compare',   titleKey: 'buyingScenarios',    eyebrow: '02 · MERCHANDISING' },
-  { id: 'buying-drops',        block: 'planning',     blockIndex: 2, microIndex: 1, template: 'grid-tile',          titleKey: 'buyingDrops',        eyebrow: '02 · MERCHANDISING' },
-  { id: 'assortment-pricing',  block: 'planning',     blockIndex: 2, microIndex: 2, template: 'grid-tile',          titleKey: 'assortmentPricing',  eyebrow: '02 · MERCHANDISING' },
-  { id: 'distribution',        block: 'planning',     blockIndex: 2, microIndex: 3, template: 'editorial-stat',     titleKey: 'distribution',       eyebrow: '02 · MERCHANDISING' },
-  { id: 'financial-plan',      block: 'planning',     blockIndex: 2, microIndex: 4, template: 'editorial-stat',     titleKey: 'financialPlan',      eyebrow: '02 · MERCHANDISING' },
-  { id: 'collection-builder',  block: 'planning',     blockIndex: 2, microIndex: 5, template: 'range-wall',         titleKey: 'collectionBuilder',  eyebrow: '02 · MERCHANDISING' },
+  { id: 'buying-strategy',     block: 'merchandising',     blockIndex: 2, microIndex: 1, template: 'narrative-portrait', titleKey: 'buyingStrategy',     eyebrow: '02 · MERCHANDISING' },
+  { id: 'buying-scenarios',    block: 'merchandising',     blockIndex: 2, microIndex: 1, template: 'scenario-compare',   titleKey: 'buyingScenarios',    eyebrow: '02 · MERCHANDISING' },
+  { id: 'buying-drops',        block: 'merchandising',     blockIndex: 2, microIndex: 1, template: 'grid-tile',          titleKey: 'buyingDrops',        eyebrow: '02 · MERCHANDISING' },
+  { id: 'assortment-pricing',  block: 'merchandising',     blockIndex: 2, microIndex: 2, template: 'grid-tile',          titleKey: 'assortmentPricing',  eyebrow: '02 · MERCHANDISING' },
+  { id: 'distribution',        block: 'merchandising',     blockIndex: 2, microIndex: 3, template: 'editorial-stat',     titleKey: 'distribution',       eyebrow: '02 · MERCHANDISING' },
+  { id: 'financial-plan',      block: 'merchandising',     blockIndex: 2, microIndex: 4, template: 'editorial-stat',     titleKey: 'financialPlan',      eyebrow: '02 · MERCHANDISING' },
+  { id: 'collection-builder',  block: 'merchandising',     blockIndex: 2, microIndex: 5, template: 'range-wall',         titleKey: 'collectionBuilder',  eyebrow: '02 · MERCHANDISING' },
 
   /* ── 03 · DESIGN & DEVELOPMENT ──────────────────────────────────── */
   /* Sketch & Color expands into 3: range plan grid, color stories

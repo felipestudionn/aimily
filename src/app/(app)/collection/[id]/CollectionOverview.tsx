@@ -48,7 +48,7 @@ const BLOCK_DEFS: BlockDef[] = [
     ],
   },
   {
-    phase: 'planning',
+    phase: 'merchandising',
     number: '02',
     title: 'Merchandising & Planning',
     description: 'Buying strategy, assortment, channels, and budget.',
@@ -124,13 +124,13 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
     const block = BLOCK_DEFS.find((b) => b.phase === phase)!;
     const titleKey = ({
       creative: 'block01Title',
-      planning: 'block02Title',
+      merchandising: 'block02Title',
       development: 'block03Title',
       go_to_market: 'block04Title',
     } as const)[phase];
     const descKey = ({
       creative: 'block01Desc',
-      planning: 'block02Desc',
+      merchandising: 'block02Desc',
       development: 'block03Desc',
       go_to_market: 'block04Desc',
     } as const)[phase];
@@ -175,7 +175,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
   const wizardPhases = computeWizardState(milestones);
   const BLOCK_TO_PHASE_IDS: Record<TimelinePhase, string[]> = {
     creative: ['product', 'brand'],
-    planning: ['merchandising'],
+    merchandising: ['merchandising'],
     development: ['design', 'prototyping', 'sampling', 'production'],
     go_to_market: ['marketing-creation', 'marketing-distribution'],
   };
@@ -337,7 +337,7 @@ export function CollectionOverview({ plan, timeline, skuCount }: CollectionOverv
                   // a vivid block of paint.
                   const accentBg = ({
                     creative: '#B6C8C780',     // sea-foam @ 50%
-                    planning: '#C5CAA880',     // sage @ 50%
+                    merchandising: '#C5CAA880',     // sage @ 50%
                     development: '#D8BAA080',  // pale clay @ 50%
                     go_to_market: '#FFF4CE80', // citronella @ 50%
                   } as const)[block.phase];

@@ -19,8 +19,8 @@ export const PHASES: Record<TimelinePhase, PhaseInfo> = {
     bgColor: '#EDF1F0',
     icon: '✦',
   },
-  planning: {
-    id: 'planning',
+  merchandising: {
+    id: 'merchandising',
     name: 'Range Planning & Strategy',
     nameEs: 'Planificación y Estrategia',
     color: '#C5CAA8',
@@ -47,7 +47,7 @@ export const PHASES: Record<TimelinePhase, PhaseInfo> = {
 
 export const PHASE_ORDER: TimelinePhase[] = [
   'creative',
-  'planning',
+  'merchandising',
   'development',
   'go_to_market',
 ];
@@ -73,11 +73,11 @@ export const MINI_BLOCK_ORDER: MiniBlockRow[] = [
   { phase: 'creative', id: 'brand-identity', labelKey: 'brandIdentity' },
   { phase: 'creative', id: 'creative-overview', labelKey: 'creativeOverview' },
   // Planning
-  { phase: 'planning', id: 'scenarios', labelKey: 'buyingStrategy' },
-  { phase: 'planning', id: 'families-pricing', labelKey: 'assortmentPricing' },
-  { phase: 'planning', id: 'channels', labelKey: 'distribution' },
-  { phase: 'planning', id: 'budget', labelKey: 'financialPlan' },
-  { phase: 'planning', id: 'builder-merch', labelKey: 'collectionBuilder' },
+  { phase: 'merchandising', id: 'scenarios', labelKey: 'buyingStrategy' },
+  { phase: 'merchandising', id: 'families-pricing', labelKey: 'assortmentPricing' },
+  { phase: 'merchandising', id: 'channels', labelKey: 'distribution' },
+  { phase: 'merchandising', id: 'budget', labelKey: 'financialPlan' },
+  { phase: 'merchandising', id: 'builder-merch', labelKey: 'collectionBuilder' },
   // Development
   { phase: 'development', id: 'sketch', labelKey: 'sketchColor' },
   { phase: 'development', id: 'tech-pack', labelKey: 'techPack' },
@@ -182,12 +182,12 @@ export const DEFAULT_MILESTONES: MilestoneTemplate[] = [
   // BLOCK 2: RANGE PLANNING & STRATEGY (merchandising / planners)
   // Consumer → market → channel → budget → SKUs → GTM
   // ══════════════════════════════════════════════════════════
-  { id: 'rp-1', phase: 'planning', name: 'Buying Strategy Definition', nameEs: 'Definición de buying strategy', responsible: 'US', startWeeksBefore: 46, durationWeeks: 2, color: '#C5CAA8' },
-  { id: 'rp-2', phase: 'planning', name: 'Distribution Strategy', nameEs: 'Estrategia de distribución', responsible: 'US', startWeeksBefore: 44, durationWeeks: 2, color: '#C5CAA8' },
-  { id: 'rp-3', phase: 'planning', name: 'Financial Plan & Budget', nameEs: 'Plan financiero y presupuesto', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#C5CAA8' },
-  { id: 'rp-4', phase: 'planning', name: 'Assortment & Pricing Definition', nameEs: 'Definición de assortment y pricing', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#C5CAA8' },
-  { id: 'rp-5', phase: 'planning', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 40, durationWeeks: 3, color: '#C5CAA8' },
-  { id: 'rp-6', phase: 'planning', name: 'Range Plan Validation', nameEs: 'Validación del range plan', responsible: 'US', startWeeksBefore: 37, durationWeeks: 1, color: '#C5CAA8' },
+  { id: 'rp-1', phase: 'merchandising', name: 'Buying Strategy Definition', nameEs: 'Definición de buying strategy', responsible: 'US', startWeeksBefore: 46, durationWeeks: 2, color: '#C5CAA8' },
+  { id: 'rp-2', phase: 'merchandising', name: 'Distribution Strategy', nameEs: 'Estrategia de distribución', responsible: 'US', startWeeksBefore: 44, durationWeeks: 2, color: '#C5CAA8' },
+  { id: 'rp-3', phase: 'merchandising', name: 'Financial Plan & Budget', nameEs: 'Plan financiero y presupuesto', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#C5CAA8' },
+  { id: 'rp-4', phase: 'merchandising', name: 'Assortment & Pricing Definition', nameEs: 'Definición de assortment y pricing', responsible: 'US', startWeeksBefore: 42, durationWeeks: 2, color: '#C5CAA8' },
+  { id: 'rp-5', phase: 'merchandising', name: 'Collection Planning & SKU Definition', nameEs: 'Planificación de colección y definición de SKUs', responsible: 'US', startWeeksBefore: 40, durationWeeks: 3, color: '#C5CAA8' },
+  { id: 'rp-6', phase: 'merchandising', name: 'Range Plan Validation', nameEs: 'Validación del range plan', responsible: 'US', startWeeksBefore: 37, durationWeeks: 1, color: '#C5CAA8' },
 
   // ══════════════════════════════════════════════════════════
   // BLOCK 3: DESIGN & DEVELOPMENT (equipo técnico)

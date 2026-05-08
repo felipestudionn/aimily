@@ -22,7 +22,7 @@ import type { ElementType } from 'react';
  */
 export const PHASE_ICONS: Record<TimelinePhase, ElementType> = {
   creative: Paintbrush,
-  planning: BarChart3,
+  merchandising: BarChart3,
   development: PenTool,
   go_to_market: Rocket,
 };

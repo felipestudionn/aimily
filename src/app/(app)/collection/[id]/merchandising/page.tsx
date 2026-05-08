@@ -830,12 +830,12 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
 
   // Kill the legacy hub: direct nav to /merchandising (no `?block=...`)
   // used to land on the old 4-card overview, which is not gold-standard.
-  // The canonical Block 2 hub lives at /collection/[id]?block=planning
+  // The canonical Block 2 hub lives at /collection/[id]?block=merchandising
   // (rendered by CollectionOverview's sub-block grid). Sidebar mini-block
   // links pass `?block=...` so they bypass this redirect.
   useEffect(() => {
     if (blockParamOverride === undefined && !searchParams?.get('block')) {
-      router.replace(`/collection/${collectionId}?block=planning`);
+      router.replace(`/collection/${collectionId}?block=merchandising`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collectionId]);
