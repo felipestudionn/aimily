@@ -4980,7 +4980,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
           consumerCount={consumerProposals.length}
           trendCount={allTrends.length}
           competitorCount={competitors.length}
-          onContinue={() => router.push(`/collection/${collectionId}/merchandising`)}
+          onContinue={() => router.push(`/collection/${collectionId}/merchandising?block=scenarios`)}
           onDismiss={() => setShowCelebration(false)}
         />
       )}
