@@ -110,7 +110,12 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
       { id: 'scenarios', labelKey: 'buyingStrategy', route: 'merchandising?block=scenarios', phaseId: 'merchandising' },
       { id: 'families-pricing', labelKey: 'assortmentPricing', route: 'merchandising?block=families', phaseId: 'merchandising' },
       { id: 'channels', labelKey: 'distribution', route: 'merchandising?block=channels', phaseId: 'merchandising' },
-      { id: 'wholesale', labelKey: 'wholesale', route: 'merchandising?block=wholesale', phaseId: 'merchandising' },
+      // Wholesale was a standalone mini-block; semantically it lives
+      // INSIDE Distribución (B2B is a distribution channel). Removed
+      // from the sidebar 2026-05-08 to match the hub (which only has
+      // 02.1-02.5). The /merchandising?block=wholesale page route is
+      // kept alive as a deep link until it's wired inside Distribución
+      // proper in the Block 2 redesign session.
       { id: 'budget', labelKey: 'financialPlan', route: 'merchandising?block=budget', phaseId: 'merchandising' },
       { id: 'builder-merch', labelKey: 'collectionBuilder', route: 'product', isOutput: true },
     ],
