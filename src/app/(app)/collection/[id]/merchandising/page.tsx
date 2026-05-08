@@ -1083,6 +1083,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                 onConfirmed={() => updateCardData('scenarios', { confirmed: true })}
                 collectionContext={{ collectionPlanId: collectionId, productCategory: collectionContext.productCategory, collectionName: collectionContext.collectionName }}
                 language={language}
+                basePath={`/collection/${collectionId}/merchandising`}
               />
             </div>
           )}

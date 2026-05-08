@@ -94,6 +94,14 @@ interface Props {
   onConfirmed?: () => void;
   collectionContext: { collectionPlanId: string; productCategory?: string; collectionName?: string };
   language?: string;
+  /**
+   * Base path for the collection's merchandising area (e.g.
+   * `/collection/<id>/merchandising`). After /api/strategy-confirm
+   * succeeds we navigate to `<basePath>?block=families` so the user
+   * lands directly on 02.2 Surtido & Precios with their seeded data.
+   * Optional for back-compat; if missing, no navigation happens.
+   */
+  basePath?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -980,7 +988,7 @@ function DropsCard({ editor, onChange, onDeepen, deepening, language }: {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
-export function ScenariosContent({ data, onChange, onConfirmed, collectionContext, language = 'es' }: Props) {
+export function ScenariosContent({ data, onChange, onConfirmed, collectionContext, language = 'es', basePath }: Props) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
 
@@ -1141,12 +1149,19 @@ export function ScenariosContent({ data, onChange, onConfirmed, collectionContex
       }
       onChange({ ...data, phase: 'confirmed' });
       onConfirmed?.();
+      // Auto-navigate to 02.2 Surtido & Precios — the seed has landed
+      // in CIS, the next mini-block reads it on mount. Without this
+      // the user gets stuck on the confirmed editor with no obvious
+      // way to advance.
+      if (basePath) {
+        window.location.href = `${basePath}?block=families`;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : (labels.errConfirm || 'Error inesperado'));
     } finally {
       setConfirming(false);
     }
-  }, [collectionContext.collectionPlanId, data, archetypes, onChange, onConfirmed, labels]);
+  }, [collectionContext.collectionPlanId, data, archetypes, onChange, onConfirmed, labels, basePath]);
 
   // ── Render ───────────────────────────────────────────────────────────────
 
