@@ -10,6 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard } from '@/components/workspace/DecisionCard';
 import { ScenariosContent } from '@/components/merchandising/ScenariosContent';
+import { AssortmentContent } from '@/components/merchandising/AssortmentContent';
 import { WholesaleOrdersCard } from '@/components/merchandising/WholesaleOrdersCard';
 import { FinancialPlanContent } from '@/components/merchandising/FinancialPlanContent';
 import { Slider } from '@/components/ui/slider';
@@ -1047,11 +1048,11 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </h1>
           </div>
 
-          {/* Mode selector — Sprint B.1 dropped SegmentedPill for 02.1
-              scenarios; the canonical archetype-first flow owns its
-              own UX. Other 02.x mini-blocks still show the pill until
-              their B.x sprint lands. */}
-          {blockParam !== 'scenarios' && (
+          {/* Mode selector — Sprint B.1/B.2 dropped SegmentedPill for
+              02.1 scenarios + 02.2 families; their canonical flows own
+              their own UX. Other 02.x mini-blocks still show the pill
+              until their B.x sprint lands. */}
+          {blockParam !== 'scenarios' && blockParam !== 'families' && (
             <div className="mb-10 flex flex-col items-center gap-3">
               <SegmentedPill
                 options={INPUT_MODE_IDS.map((modeId) => ({
@@ -1061,7 +1062,9 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
                 value={state.mode}
                 onChange={(modeId) => {
                   updateCardData(cardId, { mode: modeId });
-                  if (blockParam === 'families') updateCardData('pricing', { mode: modeId });
+                  // 'families' is now handled by AssortmentContent, but keep this guard
+                  // for the legacy direct-access path until the unified flow lands.
+                  if ((blockParam as string) === 'families') updateCardData('pricing', { mode: modeId });
                 }}
                 size="md"
               />
@@ -1084,16 +1087,13 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </div>
           )}
 
-          {/* Content — unified Families & Pricing (all modes use same grid) */}
+          {/* Content — Sprint B.2 canonical Surtido & Precios */}
           {blockParam === 'families' && (
             <div className="min-h-[calc((100vh-380px)*0.8)]">
-              <FamiliesContent
-                mode={state.mode}
-                data={state.data}
-                onChange={(newData) => updateCardData('families', { data: newData })}
-                collectionContext={collectionContext}
-                pricingData={(pricingState.data.pricing as PricingRow[]) || []}
-                onPricingChange={(rows) => updateCardData('pricing', { data: { ...pricingState.data, pricing: rows } })}
+              <AssortmentContent
+                collectionContext={{ collectionPlanId: collectionId, collectionName: collectionContext.collectionName }}
+                language={language}
+                basePath={`/collection/${collectionId}/merchandising`}
               />
             </div>
           )}
@@ -1124,16 +1124,17 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </div>
           )}
 
-          {/* Generic confirm bar — kept for 02.2/02.3/02.4 until their
-              canonical B.x sprints land. 02.1 owns its own canonical
-              confirm bar inside ScenariosContent. */}
-          {blockParam !== 'scenarios' && (
+          {/* Generic confirm bar — kept for 02.3/02.4 until their
+              canonical B.x sprints land. 02.1 + 02.2 own their own
+              canonical confirm bar via CanonicalActionBar inside their
+              dedicated content components. */}
+          {blockParam !== 'scenarios' && blockParam !== 'families' && (
             <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
               <Button
                 variant={state.confirmed ? 'outline' : 'default'}
                 onClick={() => {
                   handleConfirm(cardId);
-                  if (blockParam === 'families') handleConfirm('pricing');
+                  if ((blockParam as string) === 'families') handleConfirm('pricing');
                 }}
                 className="rounded-full px-7"
               >
