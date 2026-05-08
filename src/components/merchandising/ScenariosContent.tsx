@@ -257,14 +257,50 @@ function EditorAxisCard({
   );
 }
 
-function VolumeCard({ editor, onChange, onDeepen, deepening }: {
+function VolumeCard({ editor, onChange, onDeepen, deepening, archetype }: {
   editor: PrefilledEditor;
   onChange: (e: PrefilledEditor) => void;
   onDeepen: (axis: string) => void;
   deepening: string | null;
+  archetype?: ScenarioArchetype;
 }) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
+
+  // Volume is the live sum of family counts — single source of truth.
+  // Editing the total below proportionally rescales each family count
+  // so the math always stays balanced.
+  const total = editor.families.reduce((s, f) => s + (f.count || 0), 0) || editor.sku_count || 0;
+  const min = archetype?.sku_range?.min ?? 8;
+  const max = archetype?.sku_range?.max ?? 60;
+  const pct = max === min ? 50 : Math.max(0, Math.min(100, ((total - min) / (max - min)) * 100));
+  const inRange = total >= min && total <= max;
+
+  const rescale = (newTotal: number) => {
+    if (newTotal <= 0 || total === 0) {
+      onChange({ ...editor, sku_count: Math.max(0, newTotal) });
+      return;
+    }
+    const ratio = newTotal / total;
+    const families = editor.families.map(f => {
+      const newFamily = Math.max(0, Math.round((f.count || 0) * ratio));
+      const subRatio = (f.count || 0) === 0 ? 1 : newFamily / (f.count || 1);
+      return {
+        ...f,
+        count: newFamily,
+        subcategories: f.subcategories.map(s => ({
+          ...s,
+          count: Math.max(0, Math.round((s.count || 0) * subRatio)),
+        })),
+      };
+    });
+    onChange({ ...editor, families, sku_count: newTotal });
+  };
+
+  // SKUs per drop average (visual split across the timeline)
+  const drops = Math.max(1, editor.drops?.count || 1);
+  const perDrop = Math.round(total / drops);
+
   return (
     <EditorAxisCard
       title={labels.volume || 'Volumen total'}
@@ -273,15 +309,60 @@ function VolumeCard({ editor, onChange, onDeepen, deepening }: {
       onDeepen={onDeepen}
       deepening={deepening}
     >
-      <div className="flex items-baseline gap-3 mt-2">
+      {/* Big number + edit affordance */}
+      <div className="flex items-baseline gap-3 mt-2 mb-5">
         <input
           type="number"
-          value={editor.sku_count || 0}
-          onChange={(e) => onChange({ ...editor, sku_count: Math.max(0, Number(e.target.value) || 0) })}
-          className="bg-transparent border-0 outline-none text-[40px] font-semibold text-carbon tracking-[-0.04em] leading-none w-[110px] focus:text-carbon"
+          value={total}
+          onChange={(e) => rescale(Math.max(0, Number(e.target.value) || 0))}
+          className="bg-transparent border-0 outline-none text-[56px] font-semibold text-carbon tracking-[-0.04em] leading-none w-[140px] focus:text-carbon tabular-nums"
         />
-        <span className="text-[14px] text-carbon/40 tracking-[-0.01em]">SKUs</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[14px] text-carbon/45 tracking-[-0.01em]">SKUs</span>
+          <span className="text-[10px] tracking-[0.05em] uppercase text-carbon/35">
+            {(labels.acrossDrops || '~ {n}/drop').replace('{n}', String(perDrop))}
+          </span>
+        </div>
       </div>
+
+      {/* Archetype range bar */}
+      <div className="mb-5">
+        <div className="flex items-baseline justify-between text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/35 mb-1.5">
+          <span>{labels.archetypeMin || 'Mín archetype'} · {min}</span>
+          <span className={inRange ? 'text-carbon/55' : 'text-orange-600'}>
+            {inRange ? (labels.inRange || 'En rango') : (labels.outOfRange || 'Fuera de rango')}
+          </span>
+          <span>{max} · {labels.archetypeMax || 'Máx'}</span>
+        </div>
+        <div className="relative h-2 rounded-full bg-carbon/[0.06]">
+          <div className="absolute inset-y-0 left-0 bg-carbon/15 rounded-full" />
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-carbon ring-4 ring-shade transition-all"
+            style={{ left: `calc(${pct}% - 7px)` }}
+          />
+        </div>
+      </div>
+
+      {/* Family distribution mini-bar */}
+      {editor.families.length > 0 && total > 0 && (
+        <div>
+          <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/35 mb-2">
+            {labels.byFamily || 'Por familia'}
+          </div>
+          <div className="flex h-1.5 rounded-full overflow-hidden bg-carbon/[0.04]">
+            {editor.families.map((f, i) => {
+              const w = ((f.count || 0) / total) * 100;
+              if (w === 0) return null;
+              return (
+                <div
+                  key={i}
+                  style={{ width: `${w}%`, backgroundColor: FAMILY_ACCENTS[i % FAMILY_ACCENTS.length] }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </EditorAxisCard>
   );
 }
@@ -308,6 +389,16 @@ function PricingCard({ editor, onChange, onDeepen, deepening }: {
       },
     });
   };
+
+  const tierAvg = (tier: PriceTier) => Math.round(((tier.min || 0) + (tier.max || 0)) / 2);
+  const heroMax = editor.pricing_tiers.hero.max || 1;
+
+  // Implied avg PVP across the three tiers (assumes even SKU split — Block 3
+  // solver will refine when SKUs are distributed per tier).
+  const avgPvp = Math.round(
+    (tierAvg(editor.pricing_tiers.entry) + tierAvg(editor.pricing_tiers.core) + tierAvg(editor.pricing_tiers.hero)) / 3,
+  );
+
   return (
     <EditorAxisCard
       title={labels.pricing || 'Arquitectura de precios'}
@@ -316,33 +407,86 @@ function PricingCard({ editor, onChange, onDeepen, deepening }: {
       onDeepen={onDeepen}
       deepening={deepening}
     >
-      <div className="space-y-4 mt-3">
-        {tiers.map(([key, label]) => {
+      {/* Avg pill at top */}
+      <div className="flex items-baseline justify-between mb-5 mt-2">
+        <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
+          {labels.avgPrice || 'PVP medio'}
+        </span>
+        <span className="text-[24px] font-semibold text-carbon tabular-nums tracking-[-0.02em]">
+          €{avgPvp.toLocaleString()}
+        </span>
+      </div>
+
+      {/* 3 vertical bars proportional to tier avg */}
+      <div className="grid grid-cols-3 gap-3 mb-5 h-[150px]">
+        {tiers.map(([key, label], i) => {
+          const tier = editor.pricing_tiers[key];
+          const avg = tierAvg(tier);
+          const heightPct = (avg / heroMax) * 100;
+          const accent = FAMILY_ACCENTS[i % FAMILY_ACCENTS.length];
+          return (
+            <div key={key} className="relative flex flex-col justify-end">
+              {/* Bar */}
+              <div
+                className="rounded-t-[10px] transition-all duration-500 ease-out flex items-end justify-center pb-2"
+                style={{
+                  height: `${Math.max(10, heightPct)}%`,
+                  backgroundColor: accent,
+                }}
+                title={`${label}: €${tier.min}–€${tier.max} · avg €${avg}`}
+              >
+                <span className="text-[11px] font-semibold text-carbon/70 tabular-nums">€{avg}</span>
+              </div>
+              {/* Footer label */}
+              <div className="mt-2 text-center">
+                <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/45">{label}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Editable rows + anchored brands */}
+      <div className="space-y-3 pt-3 border-t border-carbon/[0.06]">
+        {tiers.map(([key, label], i) => {
           const tier = editor.pricing_tiers[key];
           return (
-            <div key={key} className="border-t border-carbon/[0.06] pt-3 first:border-t-0 first:pt-0">
-              <div className="flex items-baseline justify-between mb-1.5">
-                <span className="text-[11px] tracking-[0.1em] uppercase font-semibold text-carbon/40">{label}</span>
-                <div className="flex items-baseline gap-1.5 text-[14px] text-carbon font-medium">
+            <div key={key} className="space-y-1.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 text-[11px] tracking-[0.1em] uppercase font-semibold text-carbon/55">
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: FAMILY_ACCENTS[i % FAMILY_ACCENTS.length] }}
+                  />
+                  {label}
+                </span>
+                <div className="flex items-baseline gap-1.5 text-[13px] text-carbon font-medium">
                   <span className="text-carbon/40">€</span>
                   <input
                     type="number"
                     value={tier.min || 0}
                     onChange={(e) => updateTier(key, { min: Math.max(0, Number(e.target.value) || 0) })}
-                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[64px] outline-none focus:bg-carbon/[0.06]"
+                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[64px] outline-none focus:bg-carbon/[0.06] tabular-nums"
                   />
                   <span className="text-carbon/30">–</span>
                   <input
                     type="number"
                     value={tier.max || 0}
                     onChange={(e) => updateTier(key, { max: Math.max(0, Number(e.target.value) || 0) })}
-                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[64px] outline-none focus:bg-carbon/[0.06]"
+                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[64px] outline-none focus:bg-carbon/[0.06] tabular-nums"
                   />
                 </div>
               </div>
               {tier.anchored_by?.length > 0 && (
-                <div className="text-[11px] text-carbon/45 leading-snug">
-                  {labels.anchoredBy || 'Anclado a'}: {tier.anchored_by.join(' · ')}
+                <div className="flex flex-wrap gap-1.5">
+                  {tier.anchored_by.map((brand, bi) => (
+                    <span
+                      key={bi}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-carbon/[0.04] text-[11px] text-carbon/65 leading-snug"
+                    >
+                      {brand}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
@@ -552,65 +696,138 @@ function InvestmentCard({ editor, onChange }: {
     next.total = (next.production || 0) + (next.marketing || 0);
     onChange({ ...editor, investment_split: next });
   };
+
+  const total = editor.investment_split.total || ((editor.investment_split.production || 0) + (editor.investment_split.marketing || 0));
+  const prod = editor.investment_split.production || 0;
+  const mktg = editor.investment_split.marketing || 0;
+  const prodPct = total > 0 ? (prod / total) * 100 : 0;
+  const salesY1 = editor.sales_target_y1 || 0;
+  const roiX = total > 0 ? (salesY1 / total) : 0;
+  const margin = editor.target_margin_pct || 0;
+
+  // Donut: production = sea-foam segment, marketing = moss segment
+  const RADIUS = 56;
+  const STROKE = 14;
+  const C = 2 * Math.PI * RADIUS;
+  const prodLen = (prodPct / 100) * C;
+  const mktgLen = C - prodLen;
+
   return (
     <EditorAxisCard
       title={labels.investmentSplit || 'Inversión'}
       description={labels.investmentSplitDesc || 'Producción + marketing + ventas Y1.'}
       axis="investment"
     >
-      <div className="space-y-3 mt-3">
-        <div className="flex items-baseline justify-between">
-          <span className="text-[12px] text-carbon/60">{labels.production || 'Producción'}</span>
-          <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium">
-            <span className="text-carbon/40">€</span>
-            <input
-              type="number"
-              value={editor.investment_split.production || 0}
-              onChange={(e) => update({ production: Math.max(0, Number(e.target.value) || 0) })}
-              className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[100px] outline-none focus:bg-carbon/[0.06] tabular-nums"
+      {/* Donut + total */}
+      <div className="flex items-center gap-5 mt-2 mb-5">
+        <div className="relative shrink-0" style={{ width: 140, height: 140 }}>
+          <svg width="140" height="140" viewBox="0 0 140 140" className="transform -rotate-90">
+            <circle cx="70" cy="70" r={RADIUS} fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth={STROKE} />
+            {/* Production arc */}
+            <circle
+              cx="70" cy="70" r={RADIUS} fill="none" stroke="#b6c8c7" strokeWidth={STROKE}
+              strokeDasharray={`${prodLen} ${C - prodLen}`} strokeDashoffset="0" strokeLinecap="butt"
+              className="transition-all duration-500"
             />
+            {/* Marketing arc */}
+            <circle
+              cx="70" cy="70" r={RADIUS} fill="none" stroke="#c5caa8" strokeWidth={STROKE}
+              strokeDasharray={`${mktgLen} ${C - mktgLen}`} strokeDashoffset={-prodLen} strokeLinecap="butt"
+              className="transition-all duration-500"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-[20px] font-semibold text-carbon tabular-nums tracking-[-0.02em] leading-none">
+              {fmtEur(total)}
+            </div>
+            <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 mt-1">
+              {labels.totalShort || 'total'}
+            </div>
           </div>
         </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-[12px] text-carbon/60">{labels.marketing || 'Marketing'}</span>
-          <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium">
-            <span className="text-carbon/40">€</span>
-            <input
-              type="number"
-              value={editor.investment_split.marketing || 0}
-              onChange={(e) => update({ marketing: Math.max(0, Number(e.target.value) || 0) })}
-              className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[100px] outline-none focus:bg-carbon/[0.06] tabular-nums"
-            />
+        <div className="flex-1 space-y-2.5">
+          <div>
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: '#b6c8c7' }} />
+              <span className="text-[11px] tracking-[0.1em] uppercase font-semibold text-carbon/45 flex-1">
+                {labels.production || 'Producción'}
+              </span>
+              <span className="text-[10px] text-carbon/40 tabular-nums">{Math.round(prodPct)}%</span>
+            </div>
+            <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium pl-3.5">
+              <span className="text-carbon/40">€</span>
+              <input
+                type="number"
+                value={prod}
+                onChange={(e) => update({ production: Math.max(0, Number(e.target.value) || 0) })}
+                className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[100px] outline-none focus:bg-carbon/[0.06] tabular-nums"
+              />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2 mb-0.5">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: '#c5caa8' }} />
+              <span className="text-[11px] tracking-[0.1em] uppercase font-semibold text-carbon/45 flex-1">
+                {labels.marketing || 'Marketing'}
+              </span>
+              <span className="text-[10px] text-carbon/40 tabular-nums">{Math.round(100 - prodPct)}%</span>
+            </div>
+            <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium pl-3.5">
+              <span className="text-carbon/40">€</span>
+              <input
+                type="number"
+                value={mktg}
+                onChange={(e) => update({ marketing: Math.max(0, Number(e.target.value) || 0) })}
+                className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[100px] outline-none focus:bg-carbon/[0.06] tabular-nums"
+              />
+            </div>
           </div>
         </div>
-        <div className="flex items-baseline justify-between border-t border-carbon/[0.06] pt-3">
-          <span className="text-[12px] text-carbon/60 font-semibold">{labels.total || 'Total'}</span>
-          <span className="text-[16px] text-carbon font-semibold tabular-nums">
-            {fmtEur(editor.investment_split.total || 0)}
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-[12px] text-carbon/60">{labels.salesTargetY1 || 'Ventas Y1 target'}</span>
-          <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium">
-            <span className="text-carbon/40">€</span>
+      </div>
+
+      {/* Y1 target + margin + implied ROI */}
+      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-carbon/[0.06]">
+        <div className="bg-shade rounded-[12px] p-3.5">
+          <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-1.5">
+            {labels.salesTargetY1 || 'Ventas Y1'}
+          </div>
+          <div className="flex items-baseline gap-1 text-carbon font-semibold">
+            <span className="text-carbon/40 text-[12px]">€</span>
             <input
               type="number"
-              value={editor.sales_target_y1 || 0}
+              value={salesY1}
               onChange={(e) => onChange({ ...editor, sales_target_y1: Math.max(0, Number(e.target.value) || 0) })}
-              className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[120px] outline-none focus:bg-carbon/[0.06] tabular-nums"
+              className="text-[18px] tabular-nums bg-transparent outline-none w-full focus:bg-carbon/[0.04] rounded px-1 -mx-1 tracking-[-0.02em]"
             />
           </div>
+          {roiX > 0 && (
+            <div className="text-[10px] text-carbon/45 italic mt-1.5">
+              {(labels.roiHint || '{x}× sobre la inversión').replace('{x}', roiX.toFixed(1))}
+            </div>
+          )}
         </div>
-        <div className="flex items-baseline justify-between">
-          <span className="text-[12px] text-carbon/60">{labels.targetMargin || 'Margen objetivo'}</span>
-          <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium">
+        <div className="bg-shade rounded-[12px] p-3.5">
+          <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-1.5">
+            {labels.targetMargin || 'Margen objetivo'}
+          </div>
+          <div className="flex items-baseline gap-1.5">
             <input
               type="number"
-              value={editor.target_margin_pct || 0}
+              value={margin}
               onChange={(e) => onChange({ ...editor, target_margin_pct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
-              className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[64px] outline-none focus:bg-carbon/[0.06] tabular-nums"
+              className="text-[18px] font-semibold text-carbon tabular-nums bg-transparent outline-none w-[60px] focus:bg-carbon/[0.04] rounded px-1 -mx-1 tracking-[-0.02em]"
             />
-            <span className="text-carbon/40">%</span>
+            <span className="text-carbon/40 text-[14px]">%</span>
+          </div>
+          {/* Margin bar */}
+          <div className="mt-2 h-1.5 rounded-full bg-carbon/[0.06] overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min(100, margin)}%`,
+                backgroundColor: margin >= 60 ? '#c5caa8' : margin >= 45 ? '#fff4ce' : '#f1efed',
+              }}
+            />
           </div>
         </div>
       </div>
@@ -627,11 +844,19 @@ function DropsCard({ editor, onChange, onDeepen, deepening }: {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
   const names = editor.drops.suggested_names || [];
+  const dropCount = Math.max(1, editor.drops.count || 1);
+  const totalSkus = editor.families.reduce((s, f) => s + (f.count || 0), 0) || editor.sku_count || 0;
+  const skusPerDrop = Math.round(totalSkus / dropCount);
+
   const updateName = (i: number, value: string) => {
     const next = [...names];
     next[i] = value;
     onChange({ ...editor, drops: { ...editor.drops, suggested_names: next } });
   };
+  const updateCount = (n: number) => {
+    onChange({ ...editor, drops: { ...editor.drops, count: Math.max(1, Math.min(6, n)) } });
+  };
+
   return (
     <EditorAxisCard
       title={labels.dropCalendar || 'Calendario de drops'}
@@ -640,21 +865,69 @@ function DropsCard({ editor, onChange, onDeepen, deepening }: {
       onDeepen={onDeepen}
       deepening={deepening}
     >
-      <div className="space-y-3 mt-3">
-        <div className="flex items-baseline justify-between">
-          <span className="text-[12px] text-carbon/60">{labels.dropsCount || 'Número de drops'}</span>
-          <input
-            type="number"
-            min={1}
-            max={6}
-            value={editor.drops.count || 1}
-            onChange={(e) => onChange({ ...editor, drops: { ...editor.drops, count: Math.max(1, Math.min(6, Number(e.target.value) || 1)) } })}
-            className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[44px] text-[14px] text-carbon font-medium outline-none focus:bg-carbon/[0.06] tabular-nums"
-          />
+      {/* Top: total drops + SKUs per drop */}
+      <div className="flex items-baseline justify-between mb-5 mt-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => updateCount(dropCount - 1)}
+            disabled={dropCount <= 1}
+            className="w-7 h-7 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/60 disabled:opacity-30 disabled:cursor-not-allowed text-[14px] leading-none flex items-center justify-center"
+          >−</button>
+          <span className="text-[28px] font-semibold text-carbon tabular-nums tracking-[-0.02em] leading-none w-[36px] text-center">
+            {dropCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => updateCount(dropCount + 1)}
+            disabled={dropCount >= 6}
+            className="w-7 h-7 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/60 disabled:opacity-30 disabled:cursor-not-allowed text-[14px] leading-none flex items-center justify-center"
+          >+</button>
+          <span className="text-[12px] text-carbon/45 ml-2">{labels.dropsCount || 'drops'}</span>
         </div>
-        {Array.from({ length: editor.drops.count || 1 }).map((_, i) => (
-          <div key={i} className="flex items-baseline gap-2 text-[13px]">
-            <span className="text-[11px] tracking-[0.1em] uppercase font-semibold text-carbon/40 shrink-0">
+        <div className="text-right">
+          <div className="text-[16px] font-semibold text-carbon tabular-nums">~{skusPerDrop}</div>
+          <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/40">
+            {labels.skusPerDrop || 'SKUs/drop'}
+          </div>
+        </div>
+      </div>
+
+      {/* Horizontal timeline */}
+      <div className="relative h-[68px] mb-2">
+        {/* Track */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-carbon/15" />
+        {/* Drop dots */}
+        {Array.from({ length: dropCount }).map((_, i) => {
+          const left = dropCount === 1 ? 50 : (i / (dropCount - 1)) * 100;
+          const accent = FAMILY_ACCENTS[i % FAMILY_ACCENTS.length];
+          return (
+            <div
+              key={i}
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
+              style={{ left: `${left}%` }}
+            >
+              <div
+                className="w-4 h-4 rounded-full ring-4 ring-shade shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+                style={{ backgroundColor: accent }}
+              />
+              <div className="absolute top-full mt-2 text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/50 whitespace-nowrap">
+                Drop {String(i + 1).padStart(2, '0')}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Drop name inputs */}
+      <div className="space-y-2 pt-3 border-t border-carbon/[0.06] mt-4">
+        {Array.from({ length: dropCount }).map((_, i) => (
+          <div key={i} className="flex items-center gap-2.5">
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: FAMILY_ACCENTS[i % FAMILY_ACCENTS.length] }}
+            />
+            <span className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 shrink-0 w-[52px]">
               Drop {String(i + 1).padStart(2, '0')}
             </span>
             <input
@@ -662,7 +935,7 @@ function DropsCard({ editor, onChange, onDeepen, deepening }: {
               value={names[i] || ''}
               placeholder={labels.dropNamePlaceholder || 'Nombre del drop'}
               onChange={(e) => updateName(i, e.target.value)}
-              className="text-carbon/80 bg-carbon/[0.03] rounded-md px-2 py-1 flex-1 outline-none focus:bg-carbon/[0.06] placeholder:text-carbon/30"
+              className="text-[13px] text-carbon bg-carbon/[0.03] rounded-md px-2.5 py-1.5 flex-1 outline-none focus:bg-carbon/[0.06] placeholder:text-carbon/30"
             />
           </div>
         ))}
@@ -938,7 +1211,7 @@ export function ScenariosContent({ data, onChange, onConfirmed, collectionContex
 
       {/* Multi-axis editor grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <VolumeCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} />
+        <VolumeCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} archetype={chosen} />
         <InvestmentCard editor={editor} onChange={handleEditorChange} />
         <PricingCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} />
         <DropsCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} />
