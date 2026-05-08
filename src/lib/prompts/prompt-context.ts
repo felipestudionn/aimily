@@ -106,6 +106,17 @@ export interface PromptContext {
   market_deep_dive: Array<{ title: string; brands?: string; desc: string }>;
   market_live_signals: Array<{ title: string; brands?: string; desc: string }>;
   market_competitors: Array<{ title: string; brands?: string; desc: string }>;
+  /**
+   * Dim discriminator for the competitors lens. The user confirmed a ficha
+   * separating direct COMPETITORS (same segment, valid pricing benchmarks)
+   * from REFERENCES (aspirational imagery codes — moodboard cousins, not
+   * pricing anchors). Block 2 prompts must respect this split:
+   *   · Pricing prompts → competitors[] ONLY
+   *   · Families / subcategorías / visual mix → references[] OK
+   * Lives at `creative.market.competitors_input` in CIS, written by
+   * MarketResearchUnified at confirm-lens time.
+   */
+  market_competitors_input: { competitors: string[]; references: string[] };
 
   // Block 2: Merchandising
   total_sales_target: number;
@@ -395,6 +406,13 @@ export async function buildPromptContext(
     market_deep_dive: Array.isArray(cis.market_deep_dive) ? cis.market_deep_dive as Array<{ title: string; brands?: string; desc: string }> : [],
     market_live_signals: Array.isArray(cis.market_live_signals) ? cis.market_live_signals as Array<{ title: string; brands?: string; desc: string }> : [],
     market_competitors: Array.isArray(cis.market_competitors) ? cis.market_competitors as Array<{ title: string; brands?: string; desc: string }> : [],
+    market_competitors_input: (() => {
+      const raw = cis.market_competitors_input as { competitors?: string[]; references?: string[] } | undefined;
+      return {
+        competitors: Array.isArray(raw?.competitors) ? raw!.competitors!.filter(Boolean) : [],
+        references: Array.isArray(raw?.references) ? raw!.references!.filter(Boolean) : [],
+      };
+    })(),
     // Pricing/budget fields — sourced from DerivedSetupData (computed on
     // read from the merchandising workspace) with CIS still as the
     // primary signal where it has its own writers.

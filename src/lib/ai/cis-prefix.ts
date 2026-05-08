@@ -19,6 +19,12 @@ export function formatCisPrefix(ctx: Record<string, string>): string {
   if (ctx.vibe) parts.push(`COLLECTION VIBE:\n${ctx.vibe}`);
   if (ctx.moodboard) parts.push(`MOODBOARD SUMMARY:\n${ctx.moodboard}`);
   if (ctx.trends) parts.push(`SELECTED TRENDS:\n${ctx.trends}`);
+  // Investigación de Mercado · per-lens cards (S3 lens map). Each lens
+  // is opt-in so prompts that don't need a particular lens stay lean.
+  if (ctx.market_trends) parts.push(`MARKET TRENDS (Block 1 · Lens 1):\n${ctx.market_trends}`);
+  if (ctx.market_deep_dive) parts.push(`MARKET DEEP DIVE (Block 1 · Lens 2):\n${ctx.market_deep_dive}`);
+  if (ctx.market_live_signals) parts.push(`MARKET LIVE SIGNALS (Block 1 · Lens 3):\n${ctx.market_live_signals}`);
+  if (ctx.market_competitors) parts.push(`MARKET COMPETITORS & REFERENCES (Block 1 · Lens 4):\n${ctx.market_competitors}`);
   if (ctx.productCategory) parts.push(`PRODUCT CATEGORY: ${ctx.productCategory}`);
   if (ctx.collectionName) parts.push(`COLLECTION NAME: ${ctx.collectionName}`);
   if (ctx.season) parts.push(`SEASON: ${ctx.season}`);

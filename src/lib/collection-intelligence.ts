@@ -359,6 +359,12 @@ export async function compilePromptContext(
   ctx.market_deep_dive = get('creative', 'market', 'deep_dive') || [];
   ctx.market_live_signals = get('creative', 'market', 'live_signals') || [];
   ctx.market_competitors = get('creative', 'market', 'competitors') || [];
+  // The user's ficha when confirming the competitors lens — split into
+  // direct competitors (pricing benchmarks) vs aspirational references
+  // (visual / brand DNA cousins). Block 2 prompts respect this split:
+  //   · Pricing → competitors[] ONLY
+  //   · Families / subcategories / visual mix → references[] OK
+  ctx.market_competitors_input = get('creative', 'market', 'competitors_input') || { competitors: [], references: [] };
   ctx.visual_direction = get('creative', 'identity', 'visual_direction') || '';
 
   // Consumer

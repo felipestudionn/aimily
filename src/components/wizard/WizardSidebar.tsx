@@ -406,19 +406,28 @@ export function WizardSidebar({
 
     // Check query param match for routes like product?phase=sketch
     const expectedPhase = getRouteParam(sub.route, 'phase');
+    const expectedBlock = getRouteParam(sub.route, 'block');
     if (expectedPhase) {
       return searchParams?.get('phase') === expectedPhase;
+    }
+    if (expectedBlock) {
+      return searchParams?.get('block') === expectedBlock;
     }
 
     // If no query param, only highlight if no other sub-item with query param matches
     const currentPhase = searchParams?.get('phase');
-    if (currentPhase) {
-      // A phase param is set but this sub-item doesn't have one — not active
+    const currentBlock = searchParams?.get('block');
+    if (currentPhase || currentBlock) {
+      // A phase/block param is set but this sub-item doesn't have one — not active
       return false;
     }
 
-    // No phase param on URL and no phase param on sub-item — first match wins
-    const firstWithSameRoute = block.subItems.find(s => getRoutePath(s.route) === subRoutePath && !getRouteParam(s.route, 'phase'));
+    // No phase/block param on URL and no phase/block param on sub-item — first match wins
+    const firstWithSameRoute = block.subItems.find(s =>
+      getRoutePath(s.route) === subRoutePath
+      && !getRouteParam(s.route, 'phase')
+      && !getRouteParam(s.route, 'block')
+    );
     return firstWithSameRoute?.id === sub.id;
   }
 

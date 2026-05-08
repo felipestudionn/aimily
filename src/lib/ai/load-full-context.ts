@@ -90,6 +90,15 @@ export async function loadFullContext(collectionPlanId: string): Promise<Record<
   if (promptCtx.market_competitors?.length) {
     ctx.market_competitors = promptCtx.market_competitors.map(fmtCard).join('\n\n');
   }
+  // Dim discriminator (Block 2 anti-leak): pricing prompts read
+  // `market_competitors_input.competitors[]` ONLY (real benchmarks);
+  // families / visual prompts may read `references[]` (aspirational
+  // imagery codes — moodboard cousins). Surfaced as JSON so downstream
+  // prompt builders can pick which list to interpolate.
+  const ci = promptCtx.market_competitors_input;
+  if (ci && (ci.competitors?.length || ci.references?.length)) {
+    ctx.market_competitors_input = JSON.stringify(ci);
+  }
 
   // Existing SKUs context
   if (promptCtx.skus?.length) {
