@@ -827,6 +827,18 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   const t = useTranslation();
   const { language } = useLanguage();
   const [expandedCard, setExpandedCard] = useState<string | null>(blockParam || null);
+
+  // Kill the legacy hub: direct nav to /merchandising (no `?block=...`)
+  // used to land on the old 4-card overview, which is not gold-standard.
+  // The canonical Block 2 hub lives at /collection/[id]?block=planning
+  // (rendered by CollectionOverview's sub-block grid). Sidebar mini-block
+  // links pass `?block=...` so they bypass this redirect.
+  useEffect(() => {
+    if (blockParamOverride === undefined && !searchParams?.get('block')) {
+      router.replace(`/collection/${collectionId}?block=planning`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionId]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '', productCategory: '', collectionPlanId: collectionId });
