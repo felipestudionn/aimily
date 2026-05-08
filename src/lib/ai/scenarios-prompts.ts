@@ -106,6 +106,34 @@ CRITICAL RULES — anti-leak split between sources:
 - COUNT BY FAMILY must sum to roughly the archetype's mid-range SKU count.
 - BRAND NAME for any narrative must be ${brandName}. NEVER mention any other working title.
 
+═══ TAXONOMY RULES (NON-NEGOTIABLE — readers will check) ═══
+
+There are THREE levels of detail; you must respect all three:
+
+  1. FAMILY (this output)        = top-level product CATEGORY. A single noun, no adjectives, no aesthetic descriptors.
+  2. SUBCATEGORY (this output)   = the TYPE within the family. Two-word maximum, descriptive of the silhouette.
+  3. DESCRIPTION (Block 3, NOT here) = adjectives like "minimalist", "architectural", "structured" go on the SKU itself, not the family name.
+
+FAMILY EXAMPLES — what the field "name" must look like:
+  RIGHT: "Vestidos", "Sastrería", "Calzado", "Pantalones", "Prendas superiores", "Bolsos", "Accesorios", "Outerwear"
+  WRONG: "Sastrería Arquitectónica" (has descriptor), "Vestidos Fluidos" (this is a SUB-level), "Calzado Minimalista", "Prendas Superiores Minimalistas"
+
+SUBCATEGORY EXAMPLES — what \`subcategories[].name\` must look like:
+  Family "Vestidos" → subcategorías: "Vestidos fluidos", "Vestidos asimétricos", "Vestidos lenceros", "Vestidos camiseros"
+  Family "Sastrería" → subcategorías: "Blazers", "Pantalones de traje", "Chaquetas"
+  Family "Calzado" → subcategorías: "Mocasines", "Zapatos planos", "Sandalias", "Botas"
+  Family "Prendas superiores" → subcategorías: "Blusas", "Camisas", "Knitwear", "T-shirts"
+  Family "Pantalones" → subcategorías: "Cargo", "Jeans", "Tailoring", "Wide-leg"
+  Family "Bolsos" → subcategorías: "Tote", "Hobo", "Crossbody", "Clutch"
+  WRONG subcategorías: "Blazers Mini Estructurados" (has descriptor), "Vestidos Lencería Largos" (extra adjective), "Mocasines Cuero Adornados"
+
+For SINGLE-CATEGORY BRANDS (jewelry, fragrance, swimwear only):
+  Use the PRODUCT TYPE as the family.
+  Jewelry → families: "Anillos", "Collares", "Pulseras", "Pendientes"
+    Subcategorías for "Anillos": "Signets", "Solitaires", "Eternity rings", "Bandas"
+
+═══ END TAXONOMY RULES ═══
+
 QUALITY GATES:
 - 3 to 5 top-level families maximum.
 - 2 to 4 subcategories per family.
@@ -193,7 +221,7 @@ export function buildScenariosDeepenPrompt(args: {
 
   const axisInstructions: Record<DeepenAxis, { task: string; schema: string }> = {
     volume: {
-      task: 'Re-balance the SKU count across families to better match the brand\'s creative narrative, while staying inside the archetype envelope. Surface 1-2 alternative volume distributions if you see a better one. Adjust subcategory counts to keep family.count = sum(subcategory.counts).',
+      task: 'Re-balance the SKU count across families to better match the brand\'s creative narrative, while staying inside the archetype envelope. Surface 1-2 alternative volume distributions if you see a better one. Adjust subcategory counts to keep family.count = sum(subcategory.counts). TAXONOMY: family names must be generic single-noun categories (Vestidos, Sastrería, Calzado, Pantalones, Bolsos) — NO descriptors like "Arquitectónica" or "Fluidos". Subcategorías keep silhouette type names ("Vestidos fluidos", "Blazers", "Mocasines"). Descriptive adjectives belong to the SKU level, not here.',
       schema: '{"sku_count": 0, "families": [{"name":"...","count":0,"subcategories":[{"name":"...","count":0,"evidence":"..."}]}]}',
     },
     pricing: {
@@ -201,7 +229,7 @@ export function buildScenariosDeepenPrompt(args: {
       schema: '{"pricing_tiers": {"entry":{"min":0,"max":0,"anchored_by":["..."]},"core":{"min":0,"max":0,"anchored_by":["..."]},"hero":{"min":0,"max":0,"anchored_by":["..."]}}}',
     },
     families: {
-      task: 'Refine the families and subcategories — add 1-2 subcategories that the moodboard / trends / references support but the current draft missed. Strengthen evidence citations. Keep total SKU count stable.',
+      task: 'Refine the families and subcategories — add 1-2 subcategories that the moodboard / trends / references support but the current draft missed. Strengthen evidence citations. Keep total SKU count stable. TAXONOMY: family names must be generic single-noun categories (Vestidos, Sastrería, Calzado, Pantalones, Bolsos) — NO adjective descriptors. Subcategorías keep silhouette-type names ("Vestidos fluidos", "Blazers", "Mocasines") — no aesthetic adjectives like "Arquitectónica", "Mini Estructurado". If existing families/subcategories carry descriptors, REWRITE them to comply.',
       schema: '{"families": [{"name":"...","count":0,"subcategories":[{"name":"...","count":0,"evidence":"..."}]}]}',
     },
     drops: {
