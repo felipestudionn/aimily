@@ -827,18 +827,6 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   const t = useTranslation();
   const { language } = useLanguage();
   const [expandedCard, setExpandedCard] = useState<string | null>(blockParam || null);
-
-  // Direct nav to /merchandising (no `?block=...`) used to land on the
-  // legacy 4-card overview, which is not gold-standard. Force every
-  // direct entry into the first mini-block (Estrategia de Compra) so
-  // the user never sees the legacy hub. The sidebar mini-block links
-  // already pass `?block=...` so they bypass this redirect.
-  useEffect(() => {
-    if (blockParamOverride === undefined && !searchParams?.get('block')) {
-      router.replace(`/collection/${collectionId}/merchandising?block=scenarios`);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionId]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '', productCategory: '', collectionPlanId: collectionId });
