@@ -717,13 +717,14 @@ export const it: Dictionary = {
     modeAIDesc: 'Input minimo, l\'AI genera proposte',
     // Research blocks
     globalTrends: 'Tendenze',
-    globalTrendsDesc: 'Cosa sta succedendo in passerella e nel prodotto — mix di macro-trend e dettaglio eseguibile',
+    globalTrendsDesc: 'Il consenso editoriale dei curatori — cosa dicono le passerelle e la stampa specializzata su ciò che arriva',
     deepDive: 'Approfondimento',
     deepDiveDesc: 'Micro-trend per tipologia di prodotto, mercato e stagione',
     liveSignals: 'Segnali Live',
-    liveSignalsDesc: 'Tendenze virali dai social media in questo momento',
+    liveSignalsDesc: 'Quello che sta già accadendo per strada — cattura diretta del momento presente sui social media e nel retail',
     competitors: 'Competitor & Riferimenti',
-    competitorsDesc: 'Analizza brand concorrenti e posizionamento',
+    competitorsDesc: 'Come si posizionano i brand che competono o aspirano a questa consumatrice',
+    sourcesLabel: 'Fonti',
     // Consumer
     collectionTarget: 'Target della Collezione',
     women: 'Donna',

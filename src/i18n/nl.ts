@@ -717,13 +717,14 @@ export const nl: Dictionary = {
     modeAIDesc: 'Minimale input, AI genereert voorstellen',
     // Research blocks
     globalTrends: 'Trends',
-    globalTrendsDesc: 'Wat er gebeurt op de catwalks en in het product — mix van macrotrends en uitvoerbaar detail',
+    globalTrendsDesc: 'De redactionele consensus van de curatoren — wat de catwalks en vakpers zeggen over wat eraan komt',
     deepDive: 'Deep dive',
     deepDiveDesc: 'Microtrends per producttype, markt en seizoen',
     liveSignals: 'Live signalen',
-    liveSignalsDesc: 'Virale trends van social media nu',
+    liveSignalsDesc: 'Wat er al op straat gebeurt — directe opname van het huidige moment op social media en retail',
     competitors: 'Concurrenten & referenties',
-    competitorsDesc: 'Analyseer concurrerende merken en positionering',
+    competitorsDesc: 'Hoe de merken zich positioneren die om deze consument concurreren of naar haar opkijken',
+    sourcesLabel: 'Bronnen',
     // Consumer
     collectionTarget: 'Collectie-doelgroep',
     women: 'Dames',

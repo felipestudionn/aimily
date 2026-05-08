@@ -717,13 +717,14 @@ export const en = {
     modeAIDesc: 'Minimal input, AI generates proposals',
     // Research blocks
     globalTrends: 'Trends',
-    globalTrendsDesc: "What's happening on runways and in product — a mix of macro trends and executable detail",
+    globalTrendsDesc: "The editorial consensus from the curators — what the runways and trade press say is coming",
     deepDive: 'Deep Dive',
     deepDiveDesc: 'Micro-trends by product type, market, and season',
     liveSignals: 'Live Signals',
-    liveSignalsDesc: 'Viral trends from social media right now',
+    liveSignalsDesc: "What's already happening on the street — direct capture of the present moment on social media and retail",
     competitors: 'Competitors & References',
-    competitorsDesc: 'Analyze competitor brands and positioning',
+    competitorsDesc: 'How the brands competing for or aspiring to this consumer are positioned',
+    sourcesLabel: 'Sources',
     // Consumer
     collectionTarget: 'Collection Target',
     women: 'Women',

@@ -2952,10 +2952,25 @@ function MarketResearchUnified({
   // The merged lens uses the same trends-global prompt path but with
   // a mixed input (framing chips + product family chips). The CIS key
   // remains creative.market.trends.
-  const RESEARCH_BLOCKS: Array<{ id: string; lens: ResearchLensKey; label: string; desc: string; icon: typeof Globe }> = [
-    { id: 'global-trends', lens: 'global',      label: t.creative.globalTrends,  desc: t.creative.globalTrendsDesc,  icon: Globe },
-    { id: 'live-signals',  lens: 'live',        label: t.creative.liveSignals,   desc: t.creative.liveSignalsDesc,   icon: Radio },
-    { id: 'competitors',   lens: 'competitors', label: t.creative.competitors,   desc: t.creative.competitorsDesc,   icon: Building2 },
+  // Sources are nominal references (publication / platform names)
+  // and stay in code, not i18n. Each lens shows 5-6 sources so the
+  // user understands where the research is grounded. Tendencias =
+  // editorial curators (the consensus); Live Signals = present-tense
+  // capture (TikTok/Instagram/sold-out feeds); Competitors = brand
+  // discovery surfaces.
+  const RESEARCH_BLOCKS: Array<{ id: string; lens: ResearchLensKey; label: string; desc: string; icon: typeof Globe; sources: string[] }> = [
+    {
+      id: 'global-trends', lens: 'global', label: t.creative.globalTrends, desc: t.creative.globalTrendsDesc, icon: Globe,
+      sources: ['Vogue Runway', 'Tag Walk', 'BoF', 'WWD', 'Highsnobiety', '032c'],
+    },
+    {
+      id: 'live-signals', lens: 'live', label: t.creative.liveSignals, desc: t.creative.liveSignalsDesc, icon: Radio,
+      sources: ['TikTok', 'Instagram', 'Pinterest', 'Reddit', 'sold-out feeds', 'red carpet'],
+    },
+    {
+      id: 'competitors', lens: 'competitors', label: t.creative.competitors, desc: t.creative.competitorsDesc, icon: Building2,
+      sources: ['web oficial', 'Farfetch', 'SSENSE', 'Net-a-Porter', 'Mr Porter'],
+    },
   ];
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const fetchedFichaRef = useRef<Set<string>>(new Set());
@@ -3091,8 +3106,18 @@ function MarketResearchUnified({
               <h3 className="text-[22px] md:text-[26px] font-medium text-carbon tracking-[-0.02em] leading-[1.15] mb-3">
                 {block.label}
               </h3>
-              <p className="text-[13px] text-carbon/50 leading-[1.6] tracking-[-0.01em] mb-6">
+              <p className="text-[13px] text-carbon/50 leading-[1.6] tracking-[-0.01em] mb-3">
                 {block.desc}
+              </p>
+
+              {/* Sources band — small editorial label so the user
+                  understands where each lens pulls from. The three
+                  lenses are complementary: Tendencias = curators,
+                  Señales = present-tense capture, Competidores =
+                  brand surfaces. */}
+              <p className="text-[10px] tracking-[0.14em] uppercase text-carbon/35 font-medium mb-6 leading-[1.6]">
+                <span className="text-carbon/55">{(t.creative as Record<string, string>).sourcesLabel || 'Fuentes'}</span>
+                {' · '}{block.sources.join(' · ')}
               </p>
 
               {/* Editable ficha — chips pre-poblados desde el moodboard,
@@ -3235,8 +3260,12 @@ function MarketResearchUnified({
         <h2 className="text-[28px] md:text-[34px] font-medium text-carbon tracking-[-0.02em] leading-[1.05] mb-2">
           {activeBlock.label}
         </h2>
-        <p className="text-[14px] text-carbon/55 leading-[1.6] mb-8 max-w-[700px]">
+        <p className="text-[14px] text-carbon/55 leading-[1.6] mb-3 max-w-[700px]">
           {activeBlock.desc}
+        </p>
+        <p className="text-[10px] tracking-[0.14em] uppercase text-carbon/35 font-medium mb-8 leading-[1.6] max-w-[700px]">
+          <span className="text-carbon/55">{(t.creative as Record<string, string>).sourcesLabel || 'Fuentes'}</span>
+          {' · '}{activeBlock.sources.join(' · ')}
         </p>
         <ResearchBlockContent
           key={activeBlock.id}

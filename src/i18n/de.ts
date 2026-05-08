@@ -717,13 +717,14 @@ export const de: Dictionary = {
     modeAIDesc: 'Minimaler Input, KI generiert Vorschläge',
     // Research blocks
     globalTrends: 'Trends',
-    globalTrendsDesc: 'Was auf den Laufstegen und im Produkt passiert — Mix aus Makrotrends und umsetzbarem Detail',
+    globalTrendsDesc: 'Der redaktionelle Konsens der Kuratoren — was Laufstege und Fachpresse über das sagen, was kommt',
     deepDive: 'Deep Dive',
     deepDiveDesc: 'Mikrotrends nach Produkttyp, Markt und Saison',
     liveSignals: 'Live Signale',
-    liveSignalsDesc: 'Virale Trends aus Social Media jetzt',
+    liveSignalsDesc: 'Was bereits auf der Straße passiert — direkte Erfassung des gegenwärtigen Moments in Social Media und Retail',
     competitors: 'Wettbewerber & Referenzen',
-    competitorsDesc: 'Analysieren Sie Wettbewerbermarken und Positionierung',
+    competitorsDesc: 'Wie sich die Marken positionieren, die um diese Konsumentin konkurrieren oder zu ihr aufschauen',
+    sourcesLabel: 'Quellen',
     // Consumer
     collectionTarget: 'Kollektion-Zielgruppe',
     women: 'Damen',
