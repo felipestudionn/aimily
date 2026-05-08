@@ -241,6 +241,8 @@ export const de: Dictionary = {
     anchoredBy: 'Anchored to',
     families: 'Families & subcategories',
     familiesDesc: 'Top-level families and the product types they will carry.',
+    distribution: 'Distribution',
+    subTotalMismatch: 'Subcategories sum to {sub}; the family indicates {fam}.',
     investmentSplit: 'Investment',
     investmentSplitDesc: 'Production + marketing + Y1 sales target.',
     production: 'Production',

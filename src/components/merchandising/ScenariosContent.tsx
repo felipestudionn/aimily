@@ -353,6 +353,20 @@ function PricingCard({ editor, onChange, onDeepen, deepening }: {
   );
 }
 
+/**
+ * Family accents — soft tones from the Aimily accent palette, rotated
+ * per family so the user reads each family as a distinct "lane" in the
+ * distribution bar and the avatars below.
+ */
+const FAMILY_ACCENTS = [
+  '#b6c8c7', // sea foam
+  '#c5caa8', // moss
+  '#fff4ce', // citronella
+  '#f1efed', // linen
+  '#001519', // midnight (text white on this one)
+];
+const FAMILY_ACCENT_TEXT = ['#000', '#000', '#000', '#000', '#fff'];
+
 function FamiliesCard({ editor, onChange, onDeepen, deepening }: {
   editor: PrefilledEditor;
   onChange: (e: PrefilledEditor) => void;
@@ -361,6 +375,8 @@ function FamiliesCard({ editor, onChange, onDeepen, deepening }: {
 }) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
+  const total = editor.families.reduce((s, f) => s + (f.count || 0), 0) || 1;
+
   const updateFamily = (idx: number, patch: Partial<PrefilledFamily>) => {
     const next = [...editor.families];
     next[idx] = { ...next[idx], ...patch };
@@ -373,6 +389,7 @@ function FamiliesCard({ editor, onChange, onDeepen, deepening }: {
     next[fIdx] = { ...next[fIdx], subcategories: subs };
     onChange({ ...editor, families: next });
   };
+
   return (
     <EditorAxisCard
       title={labels.families || 'Familias y subcategorías'}
@@ -381,51 +398,144 @@ function FamiliesCard({ editor, onChange, onDeepen, deepening }: {
       onDeepen={onDeepen}
       deepening={deepening}
     >
-      <div className="space-y-5 mt-3">
-        {editor.families.map((f, fi) => (
-          <div key={fi} className="border-t border-carbon/[0.06] pt-3 first:border-t-0 first:pt-0">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <input
-                type="text"
-                value={f.name}
-                onChange={(e) => updateFamily(fi, { name: e.target.value })}
-                className="text-[15px] font-semibold text-carbon bg-transparent outline-none flex-1 focus:bg-carbon/[0.03] rounded px-1 -mx-1 py-0.5"
+      {/* ── Distribution dashboard ─────────────────────────────── */}
+      <div className="bg-shade rounded-[14px] p-5 mb-6 border border-carbon/[0.04]">
+        <div className="flex items-baseline justify-between mb-3">
+          <span className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40">
+            {labels.distribution || 'Distribución'}
+          </span>
+          <span className="text-[24px] font-semibold text-carbon tabular-nums tracking-[-0.02em]">
+            {total}
+            <span className="text-[12px] font-normal text-carbon/40 ml-1.5">SKUs</span>
+          </span>
+        </div>
+        <div className="flex h-2.5 rounded-full overflow-hidden bg-carbon/[0.04] mb-3">
+          {editor.families.map((f, i) => {
+            const pct = ((f.count || 0) / total) * 100;
+            if (pct === 0) return null;
+            return (
+              <div
+                key={i}
+                className="transition-opacity hover:opacity-90"
+                style={{ width: `${pct}%`, backgroundColor: FAMILY_ACCENTS[i % FAMILY_ACCENTS.length] }}
+                title={`${f.name}: ${f.count}`}
               />
-              <div className="flex items-baseline gap-1 text-[13px]">
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+          {editor.families.map((f, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 text-[12px] text-carbon/65">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: FAMILY_ACCENTS[i % FAMILY_ACCENTS.length] }}
+              />
+              <span className="truncate max-w-[160px]">{f.name}</span>
+              <span className="text-carbon/30">·</span>
+              <span className="text-carbon font-medium tabular-nums">{f.count}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Family blocks ──────────────────────────────────────── */}
+      <div className="space-y-6">
+        {editor.families.map((f, fi) => {
+          const accent = FAMILY_ACCENTS[fi % FAMILY_ACCENTS.length];
+          const accentText = FAMILY_ACCENT_TEXT[fi % FAMILY_ACCENT_TEXT.length];
+          const initial = (f.name?.trim()[0] || '?').toUpperCase();
+          const subTotal = f.subcategories.reduce((s, sc) => s + (sc.count || 0), 0);
+          return (
+            <div key={fi} className="relative">
+              {/* Family header — avatar + editable name + count badge */}
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-[14px] font-semibold shrink-0"
+                  style={{ backgroundColor: accent, color: accentText }}
+                >
+                  {initial}
+                </div>
                 <input
-                  type="number"
-                  value={f.count || 0}
-                  onChange={(e) => updateFamily(fi, { count: Math.max(0, Number(e.target.value) || 0) })}
-                  className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[44px] text-carbon font-medium outline-none focus:bg-carbon/[0.06]"
+                  type="text"
+                  value={f.name}
+                  onChange={(e) => updateFamily(fi, { name: e.target.value })}
+                  className="text-[18px] font-semibold text-carbon tracking-[-0.02em] bg-transparent outline-none flex-1 focus:bg-carbon/[0.03] rounded px-2 -mx-2 py-1"
                 />
-                <span className="text-carbon/40 text-[12px]">SKUs</span>
-              </div>
-            </div>
-            <div className="space-y-1.5 pl-3 border-l border-carbon/[0.08]">
-              {f.subcategories.map((s, si) => (
-                <div key={si} className="flex items-center gap-2 text-[12px]">
-                  <input
-                    type="text"
-                    value={s.name}
-                    onChange={(e) => updateSubcat(fi, si, { name: e.target.value })}
-                    className="text-carbon/80 bg-transparent outline-none flex-1 focus:bg-carbon/[0.03] rounded px-1 -mx-1"
-                  />
+                <div className="inline-flex items-baseline gap-1.5 rounded-full bg-carbon/[0.04] px-3 py-1.5 shrink-0">
                   <input
                     type="number"
-                    value={s.count || 0}
-                    onChange={(e) => updateSubcat(fi, si, { count: Math.max(0, Number(e.target.value) || 0) })}
-                    className="bg-carbon/[0.03] rounded-md px-1.5 py-0.5 w-[40px] text-carbon outline-none focus:bg-carbon/[0.06] tabular-nums"
+                    value={f.count || 0}
+                    onChange={(e) => updateFamily(fi, { count: Math.max(0, Number(e.target.value) || 0) })}
+                    className="w-[36px] text-center text-[15px] font-semibold text-carbon tabular-nums outline-none bg-transparent"
                   />
-                  {s.evidence && (
-                    <span className="text-[10px] text-carbon/40 italic max-w-[160px] truncate" title={s.evidence}>
-                      {s.evidence}
-                    </span>
-                  )}
+                  <span className="text-[10px] tracking-[0.08em] uppercase text-carbon/45 font-medium">SKUs</span>
                 </div>
-              ))}
+              </div>
+
+              {/* Subcategory chip rows */}
+              <div className="pl-13 space-y-2" style={{ paddingLeft: '52px' }}>
+                {f.subcategories.map((s, si) => (
+                  <div
+                    key={si}
+                    className="group rounded-[14px] bg-white border border-carbon/[0.06] hover:border-carbon/[0.15] hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)] transition-all px-4 py-3 flex items-start gap-3"
+                  >
+                    {/* Visual count dots */}
+                    <div className="flex flex-wrap gap-1 max-w-[60px] pt-1.5 shrink-0">
+                      {Array.from({ length: Math.min(s.count || 0, 8) }).map((_, di) => (
+                        <span
+                          key={di}
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: accent }}
+                        />
+                      ))}
+                      {(s.count || 0) > 8 && (
+                        <span className="text-[10px] text-carbon/45 leading-none mt-0.5 ml-0.5">+{s.count - 8}</span>
+                      )}
+                      {!(s.count > 0) && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-carbon/[0.12]" />
+                      )}
+                    </div>
+
+                    {/* Name + evidence */}
+                    <div className="flex-1 min-w-0">
+                      <input
+                        type="text"
+                        value={s.name}
+                        onChange={(e) => updateSubcat(fi, si, { name: e.target.value })}
+                        className="text-[13px] font-medium text-carbon bg-transparent outline-none w-full focus:bg-carbon/[0.03] rounded px-1 -mx-1"
+                      />
+                      {s.evidence && (
+                        <p
+                          className="text-[11px] text-carbon/45 italic mt-1 leading-snug truncate group-hover:whitespace-normal group-hover:overflow-visible"
+                          title={s.evidence}
+                        >
+                          {s.evidence}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Count input */}
+                    <input
+                      type="number"
+                      value={s.count || 0}
+                      onChange={(e) => updateSubcat(fi, si, { count: Math.max(0, Number(e.target.value) || 0) })}
+                      className="w-[44px] text-center text-[13px] font-medium text-carbon tabular-nums bg-carbon/[0.03] rounded-md py-1.5 outline-none focus:bg-carbon/[0.06] shrink-0"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Sub-total hint when the family count diverges from sum-of-subs */}
+              {subTotal !== f.count && f.subcategories.length > 0 && (
+                <div className="mt-2 pl-13 text-[10px] text-carbon/40 italic" style={{ paddingLeft: '52px' }}>
+                  {(labels.subTotalMismatch || 'Las subcategorías suman {sub}; la familia indica {fam}.')
+                    .replace('{sub}', String(subTotal))
+                    .replace('{fam}', String(f.count))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </EditorAxisCard>
   );

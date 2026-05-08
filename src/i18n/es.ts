@@ -243,6 +243,8 @@ export const es: Dictionary = {
     anchoredBy: 'Anclado a',
     families: 'Familias y subcategorías',
     familiesDesc: 'Tus familias top-level y los tipos de producto que llevarán.',
+    distribution: 'Distribución',
+    subTotalMismatch: 'Las subcategorías suman {sub}; la familia indica {fam}.',
     investmentSplit: 'Inversión',
     investmentSplitDesc: 'Producción + marketing + ventas Y1.',
     production: 'Producción',
