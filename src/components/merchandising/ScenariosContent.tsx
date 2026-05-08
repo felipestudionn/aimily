@@ -105,6 +105,28 @@ const fmtEur = (n: number) =>
 
 const fmtRange = (r: { min: number; max: number }) => `${fmtEur(r.min)}–${fmtEur(r.max)}`;
 
+/**
+ * Locale-aware thousand-separator formatter for numeric inputs/outputs.
+ * Spanish/European locales use "." as thousand separator (420.000),
+ * English uses "," (420,000). Inputs that wrap this become type=text
+ * because <input type=number> strips separators on every keystroke.
+ */
+const localeFor = (lang: string) => (lang === 'en' ? 'en-US' : 'es-ES');
+
+function fmtNum(n: number | null | undefined, locale: string): string {
+  if (n == null || !Number.isFinite(n)) return '0';
+  return new Intl.NumberFormat(locale).format(n);
+}
+
+function parseNum(s: string): number {
+  if (!s) return 0;
+  // Strip every non-digit (negative sign kept for completeness, though
+  // counts never go negative in this UI).
+  const cleaned = s.replace(/[^\d-]/g, '');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
 // ── Archetype Card (kick-off display) ──────────────────────────────────────
 
 function ArchetypeCard({
@@ -257,15 +279,17 @@ function EditorAxisCard({
   );
 }
 
-function VolumeCard({ editor, onChange, onDeepen, deepening, archetype }: {
+function VolumeCard({ editor, onChange, onDeepen, deepening, archetype, language }: {
   editor: PrefilledEditor;
   onChange: (e: PrefilledEditor) => void;
   onDeepen: (axis: string) => void;
   deepening: string | null;
   archetype?: ScenarioArchetype;
+  language: string;
 }) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
+  const locale = localeFor(language);
 
   // Volume is the live sum of family counts — single source of truth.
   // Editing the total below proportionally rescales each family count
@@ -297,42 +321,34 @@ function VolumeCard({ editor, onChange, onDeepen, deepening, archetype }: {
     onChange({ ...editor, families, sku_count: newTotal });
   };
 
-  // SKUs per drop average (visual split across the timeline)
-  const drops = Math.max(1, editor.drops?.count || 1);
-  const perDrop = Math.round(total / drops);
-
   return (
     <EditorAxisCard
-      title={labels.volume || 'Volumen total'}
-      description={labels.volumeDesc || 'Número objetivo de SKUs en la colección.'}
+      title={labels.skuCount || 'Número de SKUs'}
+      description={labels.skuCountDesc || 'Cuántos productos compondrán la colección.'}
       axis="volume"
       onDeepen={onDeepen}
       deepening={deepening}
     >
-      {/* Big number + edit affordance */}
-      <div className="flex items-baseline gap-3 mt-2 mb-5">
+      {/* Big number — single anchor stat, no redundancies */}
+      <div className="flex items-baseline gap-3 mt-2 mb-6">
         <input
-          type="number"
-          value={total}
-          onChange={(e) => rescale(Math.max(0, Number(e.target.value) || 0))}
-          className="bg-transparent border-0 outline-none text-[56px] font-semibold text-carbon tracking-[-0.04em] leading-none w-[140px] focus:text-carbon tabular-nums"
+          type="text"
+          inputMode="numeric"
+          value={fmtNum(total, locale)}
+          onChange={(e) => rescale(parseNum(e.target.value))}
+          className="bg-transparent border-0 outline-none text-[64px] font-semibold text-carbon tracking-[-0.04em] leading-none w-[200px] focus:text-carbon tabular-nums"
         />
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] text-carbon/45 tracking-[-0.01em]">SKUs</span>
-          <span className="text-[10px] tracking-[0.05em] uppercase text-carbon/35">
-            {(labels.acrossDrops || '~ {n}/drop').replace('{n}', String(perDrop))}
-          </span>
-        </div>
+        <span className="text-[16px] text-carbon/45 tracking-[-0.01em]">SKUs</span>
       </div>
 
       {/* Archetype range bar */}
       <div className="mb-5">
         <div className="flex items-baseline justify-between text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/35 mb-1.5">
-          <span>{labels.archetypeMin || 'Mín archetype'} · {min}</span>
+          <span>{labels.archetypeMin || 'Mín archetype'} · {fmtNum(min, locale)}</span>
           <span className={inRange ? 'text-carbon/55' : 'text-orange-600'}>
             {inRange ? (labels.inRange || 'En rango') : (labels.outOfRange || 'Fuera de rango')}
           </span>
-          <span>{max} · {labels.archetypeMax || 'Máx'}</span>
+          <span>{fmtNum(max, locale)} · {labels.archetypeMax || 'Máx'}</span>
         </div>
         <div className="relative h-2 rounded-full bg-carbon/[0.06]">
           <div className="absolute inset-y-0 left-0 bg-carbon/15 rounded-full" />
@@ -367,14 +383,16 @@ function VolumeCard({ editor, onChange, onDeepen, deepening, archetype }: {
   );
 }
 
-function PricingCard({ editor, onChange, onDeepen, deepening }: {
+function PricingCard({ editor, onChange, onDeepen, deepening, language }: {
   editor: PrefilledEditor;
   onChange: (e: PrefilledEditor) => void;
   onDeepen: (axis: string) => void;
   deepening: string | null;
+  language: string;
 }) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
+  const locale = localeFor(language);
   const tiers: Array<['entry' | 'core' | 'hero', string]> = [
     ['entry', labels.tierEntry || 'Entry'],
     ['core', labels.tierCore || 'Core'],
@@ -413,7 +431,7 @@ function PricingCard({ editor, onChange, onDeepen, deepening }: {
           {labels.avgPrice || 'PVP medio'}
         </span>
         <span className="text-[24px] font-semibold text-carbon tabular-nums tracking-[-0.02em]">
-          €{avgPvp.toLocaleString()}
+          €{fmtNum(avgPvp, locale)}
         </span>
       </div>
 
@@ -433,9 +451,9 @@ function PricingCard({ editor, onChange, onDeepen, deepening }: {
                   height: `${Math.max(10, heightPct)}%`,
                   backgroundColor: accent,
                 }}
-                title={`${label}: €${tier.min}–€${tier.max} · avg €${avg}`}
+                title={`${label}: €${fmtNum(tier.min, locale)}–€${fmtNum(tier.max, locale)} · avg €${fmtNum(avg, locale)}`}
               >
-                <span className="text-[11px] font-semibold text-carbon/70 tabular-nums">€{avg}</span>
+                <span className="text-[11px] font-semibold text-carbon/70 tabular-nums">€{fmtNum(avg, locale)}</span>
               </div>
               {/* Footer label */}
               <div className="mt-2 text-center">
@@ -463,17 +481,19 @@ function PricingCard({ editor, onChange, onDeepen, deepening }: {
                 <div className="flex items-baseline gap-1.5 text-[13px] text-carbon font-medium">
                   <span className="text-carbon/40">€</span>
                   <input
-                    type="number"
-                    value={tier.min || 0}
-                    onChange={(e) => updateTier(key, { min: Math.max(0, Number(e.target.value) || 0) })}
-                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[64px] outline-none focus:bg-carbon/[0.06] tabular-nums"
+                    type="text"
+                    inputMode="numeric"
+                    value={fmtNum(tier.min || 0, locale)}
+                    onChange={(e) => updateTier(key, { min: Math.max(0, parseNum(e.target.value)) })}
+                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[80px] outline-none focus:bg-carbon/[0.06] tabular-nums"
                   />
                   <span className="text-carbon/30">–</span>
                   <input
-                    type="number"
-                    value={tier.max || 0}
-                    onChange={(e) => updateTier(key, { max: Math.max(0, Number(e.target.value) || 0) })}
-                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[64px] outline-none focus:bg-carbon/[0.06] tabular-nums"
+                    type="text"
+                    inputMode="numeric"
+                    value={fmtNum(tier.max || 0, locale)}
+                    onChange={(e) => updateTier(key, { max: Math.max(0, parseNum(e.target.value)) })}
+                    className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[80px] outline-none focus:bg-carbon/[0.06] tabular-nums"
                   />
                 </div>
               </div>
@@ -685,12 +705,14 @@ function FamiliesCard({ editor, onChange, onDeepen, deepening }: {
   );
 }
 
-function InvestmentCard({ editor, onChange }: {
+function InvestmentCard({ editor, onChange, language }: {
   editor: PrefilledEditor;
   onChange: (e: PrefilledEditor) => void;
+  language: string;
 }) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
+  const locale = localeFor(language);
   const update = (patch: Partial<PrefilledEditor['investment_split']>) => {
     const next = { ...editor.investment_split, ...patch };
     next.total = (next.production || 0) + (next.marketing || 0);
@@ -757,9 +779,10 @@ function InvestmentCard({ editor, onChange }: {
             <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium pl-3.5">
               <span className="text-carbon/40">€</span>
               <input
-                type="number"
-                value={prod}
-                onChange={(e) => update({ production: Math.max(0, Number(e.target.value) || 0) })}
+                type="text"
+                inputMode="numeric"
+                value={fmtNum(prod, locale)}
+                onChange={(e) => update({ production: Math.max(0, parseNum(e.target.value)) })}
                 className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[100px] outline-none focus:bg-carbon/[0.06] tabular-nums"
               />
             </div>
@@ -775,9 +798,10 @@ function InvestmentCard({ editor, onChange }: {
             <div className="flex items-baseline gap-1 text-[14px] text-carbon font-medium pl-3.5">
               <span className="text-carbon/40">€</span>
               <input
-                type="number"
-                value={mktg}
-                onChange={(e) => update({ marketing: Math.max(0, Number(e.target.value) || 0) })}
+                type="text"
+                inputMode="numeric"
+                value={fmtNum(mktg, locale)}
+                onChange={(e) => update({ marketing: Math.max(0, parseNum(e.target.value)) })}
                 className="bg-carbon/[0.03] rounded-md px-2 py-0.5 w-[100px] outline-none focus:bg-carbon/[0.06] tabular-nums"
               />
             </div>
@@ -794,9 +818,10 @@ function InvestmentCard({ editor, onChange }: {
           <div className="flex items-baseline gap-1 text-carbon font-semibold">
             <span className="text-carbon/40 text-[12px]">€</span>
             <input
-              type="number"
-              value={salesY1}
-              onChange={(e) => onChange({ ...editor, sales_target_y1: Math.max(0, Number(e.target.value) || 0) })}
+              type="text"
+              inputMode="numeric"
+              value={fmtNum(salesY1, locale)}
+              onChange={(e) => onChange({ ...editor, sales_target_y1: Math.max(0, parseNum(e.target.value)) })}
               className="text-[18px] tabular-nums bg-transparent outline-none w-full focus:bg-carbon/[0.04] rounded px-1 -mx-1 tracking-[-0.02em]"
             />
           </div>
@@ -812,9 +837,10 @@ function InvestmentCard({ editor, onChange }: {
           </div>
           <div className="flex items-baseline gap-1.5">
             <input
-              type="number"
-              value={margin}
-              onChange={(e) => onChange({ ...editor, target_margin_pct: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })}
+              type="text"
+              inputMode="numeric"
+              value={fmtNum(margin, locale)}
+              onChange={(e) => onChange({ ...editor, target_margin_pct: Math.max(0, Math.min(100, parseNum(e.target.value))) })}
               className="text-[18px] font-semibold text-carbon tabular-nums bg-transparent outline-none w-[60px] focus:bg-carbon/[0.04] rounded px-1 -mx-1 tracking-[-0.02em]"
             />
             <span className="text-carbon/40 text-[14px]">%</span>
@@ -835,18 +861,28 @@ function InvestmentCard({ editor, onChange }: {
   );
 }
 
-function DropsCard({ editor, onChange, onDeepen, deepening }: {
+function DropsCard({ editor, onChange, onDeepen, deepening, language }: {
   editor: PrefilledEditor;
   onChange: (e: PrefilledEditor) => void;
   onDeepen: (axis: string) => void;
   deepening: string | null;
+  language: string;
 }) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
+  const locale = localeFor(language);
   const names = editor.drops.suggested_names || [];
   const dropCount = Math.max(1, editor.drops.count || 1);
   const totalSkus = editor.families.reduce((s, f) => s + (f.count || 0), 0) || editor.sku_count || 0;
-  const skusPerDrop = Math.round(totalSkus / dropCount);
+
+  // SKU split per drop — even by default, with the remainder going to
+  // the earliest drops so the sum still equals total. Surface each
+  // drop's count clearly per Felipe's feedback.
+  const skusPerDrop = Array.from({ length: dropCount }).map((_, i) => {
+    const base = Math.floor(totalSkus / dropCount);
+    const remainder = totalSkus - base * dropCount;
+    return base + (i < remainder ? 1 : 0);
+  });
 
   const updateName = (i: number, value: string) => {
     const next = [...names];
@@ -860,44 +896,34 @@ function DropsCard({ editor, onChange, onDeepen, deepening }: {
   return (
     <EditorAxisCard
       title={labels.dropCalendar || 'Calendario de drops'}
-      description={labels.dropCalendarDesc || 'Cuántos drops y con qué nombre lanzarás la colección.'}
+      description={labels.dropCalendarDesc || 'Cuántos drops y cuántos SKUs lleva cada uno.'}
       axis="drops"
       onDeepen={onDeepen}
       deepening={deepening}
     >
-      {/* Top: total drops + SKUs per drop */}
-      <div className="flex items-baseline justify-between mb-5 mt-2">
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() => updateCount(dropCount - 1)}
-            disabled={dropCount <= 1}
-            className="w-7 h-7 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/60 disabled:opacity-30 disabled:cursor-not-allowed text-[14px] leading-none flex items-center justify-center"
-          >−</button>
-          <span className="text-[28px] font-semibold text-carbon tabular-nums tracking-[-0.02em] leading-none w-[36px] text-center">
-            {dropCount}
-          </span>
-          <button
-            type="button"
-            onClick={() => updateCount(dropCount + 1)}
-            disabled={dropCount >= 6}
-            className="w-7 h-7 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/60 disabled:opacity-30 disabled:cursor-not-allowed text-[14px] leading-none flex items-center justify-center"
-          >+</button>
-          <span className="text-[12px] text-carbon/45 ml-2">{labels.dropsCount || 'drops'}</span>
-        </div>
-        <div className="text-right">
-          <div className="text-[16px] font-semibold text-carbon tabular-nums">~{skusPerDrop}</div>
-          <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/40">
-            {labels.skusPerDrop || 'SKUs/drop'}
-          </div>
-        </div>
+      {/* Top: drop count stepper */}
+      <div className="flex items-center gap-1.5 mt-2 mb-6">
+        <button
+          type="button"
+          onClick={() => updateCount(dropCount - 1)}
+          disabled={dropCount <= 1}
+          className="w-7 h-7 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/60 disabled:opacity-30 disabled:cursor-not-allowed text-[14px] leading-none flex items-center justify-center"
+        >−</button>
+        <span className="text-[28px] font-semibold text-carbon tabular-nums tracking-[-0.02em] leading-none w-[36px] text-center">
+          {dropCount}
+        </span>
+        <button
+          type="button"
+          onClick={() => updateCount(dropCount + 1)}
+          disabled={dropCount >= 6}
+          className="w-7 h-7 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/60 disabled:opacity-30 disabled:cursor-not-allowed text-[14px] leading-none flex items-center justify-center"
+        >+</button>
+        <span className="text-[12px] text-carbon/45 ml-2">{labels.dropsCount || 'drops'}</span>
       </div>
 
-      {/* Horizontal timeline */}
-      <div className="relative h-[68px] mb-2">
-        {/* Track */}
+      {/* Horizontal timeline with SKU count badge under each dot */}
+      <div className="relative h-[78px] mb-3">
         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-carbon/15" />
-        {/* Drop dots */}
         {Array.from({ length: dropCount }).map((_, i) => {
           const left = dropCount === 1 ? 50 : (i / (dropCount - 1)) * 100;
           const accent = FAMILY_ACCENTS[i % FAMILY_ACCENTS.length];
@@ -911,16 +937,21 @@ function DropsCard({ editor, onChange, onDeepen, deepening }: {
                 className="w-4 h-4 rounded-full ring-4 ring-shade shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
                 style={{ backgroundColor: accent }}
               />
-              <div className="absolute top-full mt-2 text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/50 whitespace-nowrap">
-                Drop {String(i + 1).padStart(2, '0')}
+              <div className="absolute top-full mt-2 flex flex-col items-center whitespace-nowrap">
+                <span className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/50">
+                  Drop {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="text-[15px] font-semibold text-carbon tabular-nums tracking-[-0.02em] mt-0.5">
+                  {fmtNum(skusPerDrop[i] || 0, locale)} <span className="text-[10px] font-normal text-carbon/40">SKUs</span>
+                </span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Drop name inputs */}
-      <div className="space-y-2 pt-3 border-t border-carbon/[0.06] mt-4">
+      {/* Drop name inputs — show count alongside each */}
+      <div className="space-y-2 pt-3 border-t border-carbon/[0.06] mt-6">
         {Array.from({ length: dropCount }).map((_, i) => (
           <div key={i} className="flex items-center gap-2.5">
             <span
@@ -937,6 +968,9 @@ function DropsCard({ editor, onChange, onDeepen, deepening }: {
               onChange={(e) => updateName(i, e.target.value)}
               className="text-[13px] text-carbon bg-carbon/[0.03] rounded-md px-2.5 py-1.5 flex-1 outline-none focus:bg-carbon/[0.06] placeholder:text-carbon/30"
             />
+            <span className="text-[11px] text-carbon/50 tabular-nums shrink-0 px-2.5 py-1.5 bg-carbon/[0.03] rounded-md">
+              {fmtNum(skusPerDrop[i] || 0, locale)} SKUs
+            </span>
           </div>
         ))}
       </div>
@@ -1211,10 +1245,10 @@ export function ScenariosContent({ data, onChange, onConfirmed, collectionContex
 
       {/* Multi-axis editor grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <VolumeCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} archetype={chosen} />
-        <InvestmentCard editor={editor} onChange={handleEditorChange} />
-        <PricingCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} />
-        <DropsCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} />
+        <VolumeCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} archetype={chosen} language={language} />
+        <InvestmentCard editor={editor} onChange={handleEditorChange} language={language} />
+        <PricingCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} language={language} />
+        <DropsCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} language={language} />
         <div className="lg:col-span-2">
           <FamiliesCard editor={editor} onChange={handleEditorChange} onDeepen={handleDeepen} deepening={deepening} />
         </div>

@@ -233,6 +233,8 @@ export const fr: Dictionary = {
     deepenAxis: '+ More',
     volume: 'Total volume',
     volumeDesc: 'Target SKU count for the collection.',
+    skuCount: 'SKU count',
+    skuCountDesc: 'How many products will make up the collection.',
     acrossDrops: '~{n}/drop',
     archetypeMin: 'Archetype min',
     archetypeMax: 'Max',

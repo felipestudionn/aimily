@@ -235,6 +235,8 @@ export const es: Dictionary = {
     /* axis labels */
     volume: 'Volumen total',
     volumeDesc: 'Número objetivo de SKUs en la colección.',
+    skuCount: 'Número de SKUs',
+    skuCountDesc: 'Cuántos productos compondrán la colección.',
     acrossDrops: '~{n}/drop',
     archetypeMin: 'Mín archetype',
     archetypeMax: 'Máx',
