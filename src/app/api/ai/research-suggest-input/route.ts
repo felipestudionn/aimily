@@ -56,7 +56,12 @@ function previousMirrorSeason(season: string | undefined | null): string | null 
 // looking like output. Keep input MINIMAL — chips of 1-4 words —
 // and let the actual research prompt downstream do the elaboration.
 interface ChipsShape { focus: string[]; }
-interface BrandsShape { brands: string[]; }
+// Competitors lens carries two arrays: competitors (price-tier
+// peers — what to benchmark on positioning + price gaps) and
+// references (aspirational brands — what to inspire from on
+// imagery, narrative, product execution). Splitting them up
+// front lets Sonar ask different questions of each tier.
+interface BrandsShape { competitors: string[]; references: string[]; }
 
 const SYSTEM = `You are a fashion market researcher producing FRAMING INPUTS for downstream research, not the research itself. Your output is short editorial CHIPS the user can edit before triggering Perplexity Sonar.
 
@@ -118,7 +123,7 @@ export async function POST(req: NextRequest) {
         global: { focus: [] },
         deep: { focus: [] },
         live: { focus: [] },
-        competitors: { brands: [] },
+        competitors: { competitors: [], references: [] },
       };
       return NextResponse.json(empty[lens]);
     }
@@ -155,8 +160,12 @@ export async function POST(req: NextRequest) {
       // never depends on a model call to see the defaults.
       userPrompt = `${collectionLine}\n\n${upstream}\n\nWe already have a fixed editorial radar of 8 cities (London, NYC, Paris, Tokyo, Stockholm, Barcelona, Copenhagen, Milan). Your job is ONLY to propose 2-3 EXTRA specific locations that the moodboard hints at — neighborhoods, districts, or smaller cities that aren't already in the base 8.\n\nHARD RULES\n  · DO NOT repeat or rephrase any of the 8 base cities (no "Shoreditch", no "SoHo", no "Le Marais", no "Daikanyama", no "Södermalm", no "Born", no "Nørrebro", no "Brera"). Those are already covered.\n  · The extras must be CONCRETE places — a neighborhood + city, or a smaller distinctive city — not lifestyle markers, not hashtags, not vibes.\n  · Pull from moodboard cultural references (locations, scenes, cities mentioned), or from consumer.cities IF it lists somewhere not already covered.\n  · 2-4 words per chip. Format: "City Neighborhood" (e.g. "Berlin Kreuzberg") or just "City" (e.g. "Lisbon", "LA Venice", "Mexico City Roma").\n\nGOOD extras examples:\n  "Berlin Mitte" · "LA Venice" · "Lisbon" · "Antwerp" · "Mexico City Roma" · "Seoul Hannam" · "Brooklyn Bushwick"\n\nBAD examples (DO NOT produce):\n  "vida en galerías" · "cenas en terrazas" · "#tabiflats" · "minimalismo brutalista" · "Shoreditch" (already in base) · "SoHo" (already in base)\n\nReturn JSON:\n{ "focus": ["Extra 1", "Extra 2", "Extra 3"] }`;
     } else {
-      // competitors
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 6-8 BRAND chips spanning the FULL price spectrum competing for or aspiring this consumer's wallet. Mix:\n- 2-3 high-tier (€500+/piece) — aspirational brands she admires\n- 2-3 mid-tier (€150-400/piece) — direct competitors\n- 2 accessible-tier (€50-150/piece) — affordable equivalents (e.g. Mango, Massimo Dutti, Arket, Uniqlo C, COS Plus)\n\nReal brand names only. No descriptions. 1-3 words each.\n\nReturn JSON:\n{ "brands": ["Brand 1", "Brand 2", ...] }`;
+      // competitors lens — split output into two distinct buckets.
+      // The split matters because the downstream research asks
+      // different questions of each tier (price/positioning for
+      // competitors vs imagery/narrative for references) so the
+      // input ficha must commit the user to a tier per brand.
+      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn TWO arrays of brand chips, both grounded in this consumer's profile:\n\nCOMPETITORS (4-5 brands): direct price-tier peers — brands competing for the SAME wallet. These are the ones whose pricing strategy and positioning we'll benchmark against. Pick mid-tier and accessible-tier brands at or near the consumer's purchase range (e.g. €80-400/piece if she shops mid-luxury; €40-150/piece if she shops contemporary).\n  Common picks: COS · Arket · Massimo Dutti · Mango · Uniqlo U · & Other Stories · H&M Studio · Toteme · Filippa K · ARKET · Sandro · Maje · Ba&sh\n\nREFERENCES (3-4 brands): aspirational brands she admires but rarely or never buys (€500+/piece). Inspirational for imagery, campaign codes, product execution and narrative — NOT price benchmarks. These are the brands her Pinterest is full of even if her closet isn't.\n  Common picks: The Row · Lemaire · Margiela · Bottega Veneta · Loewe · Phoebe Philo · Dries Van Noten · Khaite · Toteme (if her tier is contemporary) · Fear of God · Auralee\n\nHARD RULES:\n  · Real brand names only. 1-3 words each. No descriptions.\n  · NEVER put the same brand in both arrays.\n  · Tier classification must be RELATIVE to this consumer's price point — what's a "competitor" for one consumer is a "reference" for another.\n\nReturn JSON:\n{ "competitors": ["Brand 1", "Brand 2", ...], "references": ["Brand 1", "Brand 2", ...] }`;
     }
 
     const system = language === 'es' ? SYSTEM + LANG_INSTRUCTION_ES : SYSTEM;
@@ -171,8 +180,14 @@ export async function POST(req: NextRequest) {
       const { data } = await generateJSON<BrandsShape>({
         system, user: userPrompt, temperature: 0.5, maxTokens: 600, language,
       });
-      const out: BrandsShape = { brands: arr(data.brands) };
-      console.log('[ResearchSuggestInput:competitors] result:', { count: out.brands.length });
+      // Defensive de-dup: the prompt forbids overlap but we strip
+      // any reference that also appears in competitors (and vice
+      // versa) so a model slip never sneaks through.
+      const competitors = arr(data.competitors);
+      const references = arr(data.references)
+        .filter((r) => !competitors.some((c) => c.toLowerCase() === r.toLowerCase()));
+      const out: BrandsShape = { competitors, references };
+      console.log('[ResearchSuggestInput:competitors] result:', { competitors: out.competitors.length, references: out.references.length });
       return NextResponse.json(out);
     }
 

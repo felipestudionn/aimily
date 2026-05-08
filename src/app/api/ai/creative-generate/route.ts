@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
       const validDims = [
         'theme', 'category', 'color', 'material',
         'street_style', 'social_media', 'retail_signals', 'cultural_moments',
+        'competitor', 'reference',
       ] as const;
       type DimKey = typeof validDims[number];
       const targetDimension = (input.targetDimension && (validDims as readonly string[]).includes(input.targetDimension))

@@ -48,7 +48,10 @@ export async function POST(req: NextRequest) {
       collectionPlanId?: string;
       lens?: Lens;
       results?: ResearchCard[];
-      fichaInput?: { focus?: string[]; brands?: string[] };
+      // Competitors lens carries TWO arrays (competitors / references)
+      // since the split-tier refactor. Old shape `brands` kept for
+      // back-compat — readers should prefer the split arrays.
+      fichaInput?: { focus?: string[]; brands?: string[]; competitors?: string[]; references?: string[] };
     };
 
     if (!collectionPlanId) {
@@ -93,7 +96,7 @@ export async function POST(req: NextRequest) {
     // Also stash the ficha input so we can reproduce / re-research
     // later from the same framing. Useful for "regenerate with same
     // chips" UX in the future.
-    if (fichaInput && (fichaInput.focus?.length || fichaInput.brands?.length)) {
+    if (fichaInput && (fichaInput.focus?.length || fichaInput.brands?.length || fichaInput.competitors?.length || fichaInput.references?.length)) {
       await recordDecision({
         collectionPlanId,
         domain: 'creative',

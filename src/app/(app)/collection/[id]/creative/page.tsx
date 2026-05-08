@@ -2400,17 +2400,25 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   const unselectedCount = results.length - selectedCount;
 
   // Per-lens ficha shape — what the user edits in the input area.
-  // All four lenses share `focus: string[]` except competitors which
-  // uses `brands: string[]` (semantic separation for downstream).
+  //   global / deep / live → `focus: string[]`
+  //   competitors          → two distinct arrays:
+  //     · `competitorsList` — direct price-tier peers (benchmark
+  //       on positioning + pricing)
+  //     · `referencesList`  — aspirational brands (inspire on
+  //       imagery + narrative; price irrelevant)
+  // The split is enforced at input time so Sonar can ask the right
+  // question of each tier; mixing them was producing mush.
   const focus = (data.focus as string[]) || [];
-  const brands = (data.brands as string[]) || [];
+  const competitorsList = (data.competitors as string[]) || [];
+  const referencesList = (data.references as string[]) || [];
 
   // Validation per lens. Felipe's framing rules:
   // - Global / Live: optional (vacío permitido = framing minimal)
-  // - Deep / Competitors: at least one chip required
+  // - Deep: at least one chip required
+  // - Competitors: at least ONE brand in EITHER cloud required
   const canGenerate = (() => {
     if (blockId === 'deep-dive') return focus.length > 0;
-    if (blockId === 'competitors') return brands.length > 0;
+    if (blockId === 'competitors') return competitorsList.length > 0 || referencesList.length > 0;
     return true;
   })();
 
@@ -2428,7 +2436,12 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     // topic + aspects for deep-dive) into that shape.
     let inputStr = '';
     if (blockId === 'competitors') {
-      inputStr = brands.join(', ');
+      // Competitors lens passes BOTH tiers in a single string the
+      // Sonar prompt parses on `|`. Empty tier is omitted so Sonar
+      // doesn't get an empty array to chew on.
+      const compPart = competitorsList.length > 0 ? `competitors: ${competitorsList.join(', ')}` : '';
+      const refPart  = referencesList.length > 0 ? `references: ${referencesList.join(', ')}` : '';
+      inputStr = [compPart, refPart].filter(Boolean).join(' | ');
     } else {
       // global / deep / live all use focus chips
       inputStr = focus.join(', ');
@@ -2487,26 +2500,26 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   // Sonar returns only cards for that axis; we append them tagged.
   type DimKey =
     | 'theme' | 'category' | 'color' | 'material'
-    | 'street_style' | 'social_media' | 'retail_signals' | 'cultural_moments';
+    | 'street_style' | 'social_media' | 'retail_signals' | 'cultural_moments'
+    | 'competitor' | 'reference';
   const [generatingDim, setGeneratingDim] = useState<DimKey | null>(null);
   const handleLoadMoreDimension = async (dimension: DimKey) => {
     setGeneratingDim(dimension);
     setError(null);
-    // Two pieces of context flow into the deepen call:
-    //   1. existingInDimension — the SAME-axis cards Sonar produced
-    //      before. Sent as "Title :: short desc" so the LLM can see
-    //      what it already gave and complement.
-    //   2. excludeTitles — ALL titles across ALL axes, so the LLM
-    //      can't bleed paraphrases of other-axis concepts.
     const sameDimensionCards = results.filter(r => r.dimension === dimension);
     const sameDimensionTitles = sameDimensionCards.map(r => r.title);
     const allExistingTitles = results.map(r => r.title);
     const existingInDimension = sameDimensionCards
       .map(r => `${r.title} :: ${(r.desc || '').slice(0, 80)}`)
       .join('|||');
-    const inputStr = blockId === 'competitors'
-      ? brands.join(', ')
-      : focus.join(', ');
+    let inputStr: string;
+    if (blockId === 'competitors') {
+      const compPart = competitorsList.length > 0 ? `competitors: ${competitorsList.join(', ')}` : '';
+      const refPart  = referencesList.length > 0 ? `references: ${referencesList.join(', ')}` : '';
+      inputStr = [compPart, refPart].filter(Boolean).join(' | ');
+    } else {
+      inputStr = focus.join(', ');
+    }
     const inputPayload: Record<string, string> = {
       input: inputStr || collectionContext.collectionName || '',
       consumer: consumerProfile || '',
@@ -2580,7 +2593,7 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     // for Live Signals, the location-grounded scan with sibling
     // framing). Ref is set immediately so we don't loop on the
     // intermediate state changes that handleGenerate triggers.
-    const isMultiAxisLens = blockId === 'global-trends' || blockId === 'live-signals';
+    const isMultiAxisLens = blockId === 'global-trends' || blockId === 'live-signals' || blockId === 'competitors';
     const hasStaleSchema = results.length > 0 && !results.some((r) => r.dimension);
     if (isMultiAxisLens && hasStaleSchema && canGenerate && !generating) {
       autoFiredForBlockRef.current = blockId;
@@ -2603,16 +2616,37 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
       {/* ── Ficha visible (chips editables) — el user puede afinar
           y, si hay resultados, regenerarlos con un solo click ──── */}
       <div>
-        <FichaRow label={fichaLabel}>
-          <EditableChipCloud
-            values={blockId === 'competitors' ? brands : focus}
-            onChange={(v) => {
-              if (blockId === 'competitors') onChange({ ...data, brands: v });
-              else onChange({ ...data, focus: v });
-            }}
-            placeholder={fichaPlaceholder}
-          />
-        </FichaRow>
+        {blockId === 'competitors' ? (
+          // Competitors lens has TWO chip clouds — competitors (price
+          // peers) and references (aspirational). User must place each
+          // brand in the cloud where it conceptually belongs; that
+          // commitment is what lets Sonar ask the right question of
+          // each tier downstream.
+          <div className="space-y-5">
+            <FichaRow label={(t.creative as Record<string, string>).competitorsCloudLabel || 'Competidores · precio'}>
+              <EditableChipCloud
+                values={competitorsList}
+                onChange={(v) => onChange({ ...data, competitors: v })}
+                placeholder={(t.creative as Record<string, string>).competitorsCloudPlaceholder || 'añadir competidor'}
+              />
+            </FichaRow>
+            <FichaRow label={(t.creative as Record<string, string>).referencesCloudLabel || 'Referencias · aspiracional'}>
+              <EditableChipCloud
+                values={referencesList}
+                onChange={(v) => onChange({ ...data, references: v })}
+                placeholder={(t.creative as Record<string, string>).referencesCloudPlaceholder || 'añadir referencia'}
+              />
+            </FichaRow>
+          </div>
+        ) : (
+          <FichaRow label={fichaLabel}>
+            <EditableChipCloud
+              values={focus}
+              onChange={(v) => onChange({ ...data, focus: v })}
+              placeholder={fichaPlaceholder}
+            />
+          </FichaRow>
+        )}
 
         {results.length > 0 && (
           <div className="mt-4 flex items-center gap-3">
@@ -2658,6 +2692,11 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
                 { key: 'social_media',     label: tCreative.dimensionSocialMedia     || 'Redes sociales' },
                 { key: 'retail_signals',   label: tCreative.dimensionRetailSignals   || 'Señales retail' },
                 { key: 'cultural_moments', label: tCreative.dimensionCulturalMoments || 'Momentos culturales' },
+              ]
+            : blockId === 'competitors'
+            ? [
+                { key: 'competitor', label: tCreative.dimensionCompetitor || 'Competidores' },
+                { key: 'reference',  label: tCreative.dimensionReference  || 'Referencias' },
               ]
             : [
                 { key: 'theme',    label: tCreative.dimensionThemes     || 'Themes' },
@@ -2980,14 +3019,59 @@ function MarketResearchUnified({
   // topic+aspects for deep; brands for competitors) — the suggest
   // endpoint returns the right one based on `lens`. Skip if the lens
   // already has data (user already populated, or already fetched).
+  // Inline inference for migrating legacy `brands: string[]` (the
+  // pre-split competitors shape) into `{competitors, references}`.
+  // The split is heuristic: maisons / aspirational €500+ stay as
+  // references, mass-market and contemporary fall to competitors.
+  // It's only used as a one-time migration; the user can move chips
+  // between clouds afterwards if anything is mis-classified.
+  const REFERENCE_HINT_BRANDS = new Set([
+    'the row', 'lemaire', 'margiela', 'maison margiela', 'bottega veneta',
+    'loewe', 'phoebe philo', 'dries van noten', 'khaite', 'fear of god',
+    'auralee', 'jil sander', 'celine', 'hermes', 'hermès', 'prada',
+    'miu miu', 'saint laurent', 'ysl', 'chloe', 'chloé', 'gucci',
+    'balenciaga', 'rick owens', 'comme des garçons', 'cdg', 'thom browne',
+    'valentino', 'dior', 'fendi', 'givenchy', 'maison kitsuné', 'totême',
+    'toteme',
+  ]);
+
   useEffect(() => {
     if (!collectionPlanId) return;
     RESEARCH_BLOCKS.forEach((block) => {
       if (fetchedFichaRef.current.has(block.id)) return;
       const blockState = blockData[block.id] || { data: {} };
       const data = blockState.data || {};
+
+      // ── Legacy shape migration (competitors lens only) ──
+      // Old shape was `brands: string[]`. New shape is two arrays:
+      // `competitors` and `references`. If we see the old shape,
+      // partition it heuristically and rewrite, then proceed.
+      if (
+        block.id === 'competitors' &&
+        Array.isArray(data.brands) &&
+        ((data.brands as string[]).length > 0) &&
+        !Array.isArray(data.competitors) &&
+        !Array.isArray(data.references)
+      ) {
+        const legacyBrands = data.brands as string[];
+        const competitors: string[] = [];
+        const references: string[] = [];
+        for (const b of legacyBrands) {
+          if (REFERENCE_HINT_BRANDS.has(b.toLowerCase().trim())) references.push(b);
+          else competitors.push(b);
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { brands: _legacy, ...rest } = data;
+        const migrated = { ...rest, competitors, references };
+        updateBlockData(block.id, { data: migrated });
+        fetchedFichaRef.current.add(block.id);
+        return;
+      }
+
       const alreadyHasFicha =
         ((data.focus as string[])?.length || 0) > 0 ||
+        ((data.competitors as string[])?.length || 0) > 0 ||
+        ((data.references as string[])?.length || 0) > 0 ||
         ((data.brands as string[])?.length || 0) > 0;
       if (alreadyHasFicha) {
         fetchedFichaRef.current.add(block.id);
@@ -3025,7 +3109,12 @@ function MarketResearchUnified({
     // global/deep/live, `brands` for competitors. Felipe collapsed
     // Deep Dive's earlier topic+aspects shape into chips after the
     // first run came back too output-like.
-    const items = block.lens === 'competitors' ? ((data.brands as string[]) || []) : ((data.focus as string[]) || []);
+    // Competitors lens has two pools — show them as one wrapped chip
+    // line on the overview (no two-column split needed at preview
+    // size); the expanded view is where the user actually sorts them.
+    const items = block.lens === 'competitors'
+      ? [...((data.competitors as string[]) || []), ...((data.references as string[]) || []), ...((data.brands as string[]) || [])]
+      : ((data.focus as string[]) || []);
     if (items.length === 0) {
       return (
         <p className={`text-carbon/35 italic ${compact ? 'text-[11px]' : 'text-[12px]'}`}>
@@ -3067,26 +3156,63 @@ function MarketResearchUnified({
   // Start research — the chips are the proposed framing, not a wall.
   const renderEditableFicha = (block: typeof RESEARCH_BLOCKS[number]) => {
     const data = blockData[block.id]?.data || {};
-    const items = block.lens === 'competitors' ? ((data.brands as string[]) || []) : ((data.focus as string[]) || []);
+    const tCreative = t.creative as Record<string, string>;
+
+    // Competitors lens — two stacked tiny chip clouds, labelled, so
+    // the user commits each brand to a tier from the very first
+    // touchpoint (overview). Same writeback shape as the expanded
+    // view (`competitors` / `references`).
+    if (block.lens === 'competitors') {
+      const competitorsList = (data.competitors as string[]) || [];
+      const referencesList = (data.references as string[]) || [];
+      const empty = competitorsList.length === 0 && referencesList.length === 0;
+      if (empty) {
+        return (
+          <p className="text-carbon/35 italic text-[12px]">
+            {tCreative.researchPreviewLoading || 'leyendo tu moodboard…'}
+          </p>
+        );
+      }
+      return (
+        <div className="space-y-3">
+          <div>
+            <p className="text-[10px] tracking-[0.14em] uppercase text-carbon/45 font-medium mb-1.5">
+              {tCreative.competitorsCloudLabel || 'Competidores · precio'}
+            </p>
+            <EditableChipCloud
+              values={competitorsList}
+              onChange={(v) => updateBlockData(block.id, { data: { ...data, competitors: v } })}
+              placeholder={tCreative.competitorsCloudPlaceholder || 'añadir competidor'}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] tracking-[0.14em] uppercase text-carbon/45 font-medium mb-1.5">
+              {tCreative.referencesCloudLabel || 'Referencias · aspiracional'}
+            </p>
+            <EditableChipCloud
+              values={referencesList}
+              onChange={(v) => updateBlockData(block.id, { data: { ...data, references: v } })}
+              placeholder={tCreative.referencesCloudPlaceholder || 'añadir referencia'}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // global / deep / live — single focus cloud as before.
+    const items = (data.focus as string[]) || [];
     if (items.length === 0) {
       return (
         <p className="text-carbon/35 italic text-[12px]">
-          {(t.creative as Record<string, string>).researchPreviewLoading || 'leyendo tu moodboard…'}
+          {tCreative.researchPreviewLoading || 'leyendo tu moodboard…'}
         </p>
       );
     }
     return (
       <EditableChipCloud
         values={items}
-        onChange={(v) => {
-          const key = block.lens === 'competitors' ? 'brands' : 'focus';
-          updateBlockData(block.id, { data: { ...data, [key]: v } });
-        }}
-        placeholder={
-          block.lens === 'competitors'
-            ? ((t.creative as Record<string, string>).researchBrandsPlaceholder || 'añadir marca')
-            : ((t.creative as Record<string, string>).researchFocusPlaceholder || 'añadir')
-        }
+        onChange={(v) => updateBlockData(block.id, { data: { ...data, focus: v } })}
+        placeholder={tCreative.researchFocusPlaceholder || 'añadir'}
       />
     );
   };
@@ -3187,7 +3313,10 @@ function MarketResearchUnified({
               const data = (activeState.data || {}) as Record<string, unknown>;
               const results = (data.results as Array<{ title: string; brands?: string; desc: string; relevance?: string; selected?: boolean }>) || [];
               const fichaInput = activeBlock.lens === 'competitors'
-                ? { brands: (data.brands as string[]) || [] }
+                ? {
+                    competitors: (data.competitors as string[]) || [],
+                    references: (data.references as string[]) || [],
+                  }
                 : { focus: (data.focus as string[]) || [] };
               try {
                 await fetch('/api/research-confirm', {

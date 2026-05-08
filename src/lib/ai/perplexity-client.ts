@@ -38,8 +38,9 @@ export interface TrendResult {
   // single results array with this tag so the UI can group by
   // dimension while the existing select / edit / remove flow stays
   // unchanged.
-  //   Tendencias  → theme | category | color | material
+  //   Tendencias   → theme | category | color | material
   //   Live Signals → street_style | social_media | retail_signals | cultural_moments
+  //   Competitors  → competitor | reference
   dimension?:
     | 'theme'
     | 'category'
@@ -48,7 +49,9 @@ export interface TrendResult {
     | 'street_style'
     | 'social_media'
     | 'retail_signals'
-    | 'cultural_moments';
+    | 'cultural_moments'
+    | 'competitor'
+    | 'reference';
   // Color cards carry a hex string so the UI can render a swatch
   // alongside the title. Format: "#RRGGBB" or a Pantone code that
   // the frontend can resolve against the local pantone_colors table.
@@ -143,7 +146,9 @@ export async function researchTrends(
     | 'street_style'
     | 'social_media'
     | 'retail_signals'
-    | 'cultural_moments',
+    | 'cultural_moments'
+    | 'competitor'
+    | 'reference',
   // Existing cards in the same axis. When the user clicks "+ Más",
   // we show Sonar what it already produced so it complements rather
   // than restates. Each entry is the user's view of an existing
@@ -430,22 +435,82 @@ ${liveJsonShape}`;
       break;
 
     case 'competitors':
-      // Competitors prompt: the user passes a list of brand names in
-      // trendQuery. The model analyses positioning vs THEIR brand
-      // generically — never naming the user's collection or working
-      // title. The opportunity / gap field is phrased as "for a brand
-      // sitting in this space" so the LLM doesn't try to invent a
-      // placeholder name from context.
-      prompt = `Analyze these fashion brands as competitive landscape: "${trendQuery}"
+      // Competitors lens — split into TWO axes that ask different
+      // questions of each brand tier. The user passes a string with
+      // both pools embedded as: "competitors: A, B, C | references:
+      // D, E" (parser below splits on the pipe). Sonar returns two
+      // buckets we flatten with `dimension: competitor | reference`.
+      //
+      // Why split: a competitor card cares about pricing, positioning
+      // gap, and operational learnings (€/piece, markdown rhythm,
+      // size run). A reference card cares about imagery, campaign
+      // codes, narrative, product execution — price is irrelevant
+      // because the user can't compete on those numbers anyway.
+      // Asking the same question of both tiers used to produce
+      // mush; splitting forces clarity.
+      {
+        const parts = trendQuery.split('|').map((s) => s.trim());
+        const compInput = parts.find((p) => p.toLowerCase().startsWith('competitors:'))?.replace(/^competitors:\s*/i, '').trim() || '';
+        const refInput = parts.find((p) => p.toLowerCase().startsWith('references:'))?.replace(/^references:\s*/i, '').trim() || '';
+        const fallbackList = (!compInput && !refInput) ? trendQuery : '';
 
-For EACH brand mentioned, provide:
-- "title": "Brand Name: Key Insight" (e.g., "COS: Affordable Minimalism Gap")
-- "brands": The brand + 2-3 closest competitors at same tier
-- "desc": 60-80 words — price range (real € numbers), positioning, what they do well, and the gap or opportunity a NEW brand entering this space could exploit (refer to that new brand only as "a new entrant", "your collection", or "the user" — NEVER invent or echo any specific name)
-- "relevance": "high" or "medium"
+        const competitorBlock = `COMPETITORS — direct price-tier peers competing for the same wallet.
+  HARD RULES:
+  · Card focus: pricing, positioning gap, operational ops.
+  · "title": "Brand Name: Key Insight" — the insight is a positioning angle (e.g., "COS: Quiet Luxury Slipping" · "Arket: Linen Becoming Their DNA" · "Mango Studio: Catalan Tailoring Push").
+  · "brands": The brand + 2-3 same-tier peers.
+  · "desc": 60-80 words. MUST include: actual price range in € (real numbers, not "affordable" — say €80-220 / €150-400), markdown rhythm (full-price discipline vs heavy sale), what they execute best, and the SPECIFIC gap a new entrant in this exact tier could exploit. Refer to the new entrant only as "a new entrant" / "your collection" — never invent a name.`;
+
+        const referenceBlock = `REFERENCES — aspirational brands the consumer admires but rarely or never buys.
+  HARD RULES:
+  · Card focus: imagery, narrative, product execution. NEVER dwell on price (the user isn't competing on price with these).
+  · "title": "Brand Name: Code/Lesson" — the lesson is a visual or narrative code (e.g., "The Row: Stillness as Authority" · "Lemaire: Beige as a Voice" · "Margiela: Wabi-Sabi in Tailoring").
+  · "brands": The brand + 2-3 same-tier peers in the aspirational bracket.
+  · "desc": 60-80 words. MUST include: the imagery code or campaign signature (lighting, set, casting, posture), the narrative voice (whose authority does this brand borrow?), the product execution detail worth stealing (a cut, a finish, a styling move), and how a new entrant can credibly reinterpret that code WITHOUT copying. Zero pricing language.`;
+
+        type CompDimSpec = { plural: string; block: string; jsonKey: string };
+        const compTargetMap: Record<string, CompDimSpec> = {
+          competitor: { plural: 'competitor cards', block: competitorBlock, jsonKey: 'competitors' },
+          reference:  { plural: 'reference cards',  block: referenceBlock,  jsonKey: 'references' },
+        };
+
+        let compAskBody = '';
+        let compJsonShape = '';
+
+        if (targetDimension && compTargetMap[targetDimension]) {
+          // Single-axis deepen ("+ Más competidores" / "+ Más referencias").
+          const spec = compTargetMap[targetDimension];
+          compJsonShape = `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"..."}, ...] }`;
+          const targetList = targetDimension === 'competitor' ? compInput : refInput;
+          const existingBlock = existingInDimension && existingInDimension.length > 0
+            ? `\nThe user already has these ${spec.plural.toUpperCase()} from your earlier research:\n${existingInDimension.map(c => `  · ${c.title}${c.desc ? ` — ${c.desc.slice(0, 100)}` : ''}`).join('\n')}\n\nDeepen this axis: give me 3-5 MORE ${spec.plural} that COMPLEMENT (don't repeat or paraphrase) what's above.`
+            : `\nGive me 3-5 ${spec.plural}.`;
+          compAskBody = `${spec.block}
+${targetList ? `\nBrands to analyse for this axis: "${targetList}".` : ''}
+${existingBlock}`;
+        } else {
+          // Two-axis report.
+          compJsonShape = `{
+  "competitors": [{"title":"...","brands":"...","desc":"..."}, ...],
+  "references":  [{"title":"...","brands":"...","desc":"..."}, ...]
+}`;
+          compAskBody = `Analyse the user's competitive landscape across TWO axes. Each axis is a separate bucket. NEVER mix.
+
+DIMENSION 1 · ${competitorBlock}
+${compInput ? `Brands the user marked as competitors: "${compInput}".` : (fallbackList ? `Brands to analyse: "${fallbackList}".` : '')}
+(produce 1 card per competitor brand, max 5)
+
+DIMENSION 2 · ${referenceBlock}
+${refInput ? `Brands the user marked as references: "${refInput}".` : ''}
+(produce 1 card per reference brand, max 4)`;
+        }
+
+        prompt = `${compAskBody}
 ${antiLeakRule}
 
-${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
+${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys, no extra wrapping):
+${compJsonShape}`;
+      }
       break;
   }
 
@@ -644,6 +709,9 @@ async function callSonar(
         ['social_media', 'social_media'],
         ['retail_signals', 'retail_signals'],
         ['cultural_moments', 'cultural_moments'],
+        // Competitors lens
+        ['competitor', 'competitors'],
+        ['reference', 'references'],
       ];
       for (const [dimension, key] of buckets) {
         const list = parsed[key];
