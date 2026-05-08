@@ -845,7 +845,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   const [collectionContext, setCollectionContext] = useState<Record<string, string>>({ season: '', collectionName: '', consumer: '', vibe: '', brandDNA: '', productCategory: '', collectionPlanId: collectionId });
 
   // Persist card data to Supabase (auto-save with 1s debounce)
-  const { data: persisted, save: persistData, loading: persistLoading } =
+  const { data: persisted, save: persistData, loading: persistLoading, loaded: persistLoaded } =
     useWorkspaceData<{ cardData: CardData }>(
       collectionId,
       'merchandising',
@@ -1029,6 +1029,17 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   }
 
   if (blockParam && (blockParam === 'scenarios' || blockParam === 'families' || blockParam === 'channels' || blockParam === 'budget')) {
+    // Wait for workspace-data to finish loading before mounting mini-block
+    // content. Otherwise auto-fetched state (e.g. ScenariosContent's archetypes)
+    // gets overwritten by useWorkspaceData.load()'s setData(merged) when it
+    // resolves later — silent state loss.
+    if (!persistLoaded) {
+      return (
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <div className="h-6 w-6 border-2 border-carbon/20 border-t-carbon/60 rounded-full animate-spin" />
+        </div>
+      );
+    }
     // For families, use families card state; for others, use their own
     const cardId = blockParam === 'families' ? 'families' : blockParam;
     const state = getCardState(cardId);
