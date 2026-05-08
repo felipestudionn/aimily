@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollectionOwnership, enforceAiUserRateLimit } from '@/lib/api-auth';
 import { generateJSON, generateText } from '@/lib/ai/llm-client';
 import { buildCreativePrompt } from '@/lib/ai/creative-prompts';
-import { scrapeBrandContent } from '@/lib/brand-scraper';
-import { researchBrand, researchTrends } from '@/lib/ai/perplexity-client';
+import { researchTrends } from '@/lib/ai/perplexity-client';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
 
 /* ═══════════════════════════════════════════════════════════
    Creative Block — AI Generation Endpoint
 
-   brand-extract: Perplexity Search + website scraping → Claude analysis
    trends (4 types): Perplexity Sonar DIRECT (1 call, no Claude needed)
-   consumer/vibe/brand-generate: Claude Haiku (creative tasks)
+   consumer/vibe: Claude Haiku (creative tasks)
+   Brand DNA moved to /api/ai/brand-propose + /api/ai/brand-from-external
+   in the Sprint A.3 multi-axis refactor (2026-05-08).
    ═══════════════════════════════════════════════════════════ */
 
 type GenerationType =
@@ -19,10 +19,6 @@ type GenerationType =
   | 'consumer-proposals'
   | 'vibe-assisted'
   | 'vibe-proposals'
-  | 'brand-extract'
-  | 'brand-generate'
-  | 'brand-assisted'
-  | 'brand-proposals'
   | 'trends-global'
   | 'trends-deep-dive'
   | 'trends-live-signals'
@@ -119,45 +115,6 @@ export async function POST(req: NextRequest) {
       console.warn('Sonar returned no results, falling through to Claude');
     } catch (e) {
       console.error('Sonar trend research failed, falling through to Claude:', e);
-    }
-  }
-
-  // ══════════════════════════════════════════════════════════
-  // BRAND EXTRACT: Perplexity Search + scraping → Claude analysis
-  // ══════════════════════════════════════════════════════════
-  if (type === 'brand-extract' || type === 'brand-assisted') {
-    let brandHint = '';
-    if (input.website) {
-      try {
-        brandHint = new URL(
-          input.website.startsWith('http') ? input.website : 'https://' + input.website
-        ).hostname.replace('www.', '').split('.')[0];
-      } catch { brandHint = input.website; }
-    }
-    if (input.instagram) {
-      input._igHandle = input.instagram.replace(/^@/, '').replace(/\/$/, '');
-      if (!brandHint) brandHint = input._igHandle;
-    }
-
-    const [perplexityResult, scraped] = await Promise.all([
-      researchBrand(brandHint, input.website, input.instagram),
-      input.website ? scrapeBrandContent(input.website) : Promise.resolve(null),
-    ]);
-
-    if (perplexityResult) {
-      input._webResearch = perplexityResult.content;
-      if (perplexityResult.sources.length > 0) {
-        input._sources = perplexityResult.sources.slice(0, 5).join(', ');
-      }
-    }
-
-    if (scraped) {
-      input._brandName = scraped.brandName;
-      input._tagline = scraped.tagline;
-      input._headings = scraped.headings.join(' | ');
-      input._bodyContent = scraped.bodyContent;
-      input._aboutContent = scraped.aboutContent;
-      input._productDescriptions = scraped.productDescriptions.join('\n');
     }
   }
 

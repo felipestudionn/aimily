@@ -28,24 +28,39 @@ export async function loadFullContext(collectionPlanId: string): Promise<Record<
   ctx.collectionName = promptCtx.brand_name || '';
   ctx.season = promptCtx.season || '';
 
-  // Consumer from CIS
-  const consumerParts = [
-    promptCtx.consumer_profile.demographics,
-    promptCtx.consumer_profile.psychographics,
-    promptCtx.consumer_profile.lifestyle,
-  ].filter(Boolean);
-  if (consumerParts.length) ctx.consumer = consumerParts.join('\n');
+  // Consumer from CIS — proposals[] (per-segment cards) preferred when
+  // available (set by Synthesis edits or future consumer mini-block
+  // refactor). Falls back to the flat demographics/psychographics/
+  // lifestyle text fields the legacy consumer block writes today.
+  const proposalsArr = promptCtx.consumer_profile.proposals || [];
+  const likedProposals = proposalsArr.filter(p => p.status !== 'rejected');
+  if (likedProposals.length > 0) {
+    ctx.consumer = likedProposals.map(p => `${p.title}\n${p.desc}`).join('\n\n');
+  } else {
+    const consumerParts = [
+      promptCtx.consumer_profile.demographics,
+      promptCtx.consumer_profile.psychographics,
+      promptCtx.consumer_profile.lifestyle,
+    ].filter(Boolean);
+    if (consumerParts.length) ctx.consumer = consumerParts.join('\n');
+  }
 
   // Vibe from CIS
   if (promptCtx.collection_vibe) ctx.vibe = promptCtx.collection_vibe;
 
-  // Brand DNA from CIS
+  // Brand DNA from CIS — projected from user_brands by /api/brand-confirm
   const dnaParts = [
     promptCtx.brand_name ? `Brand: ${promptCtx.brand_name}` : '',
+    promptCtx.brand_tagline ? `Tagline: ${promptCtx.brand_tagline}` : '',
+    promptCtx.brand_dna.colors?.length
+      ? `Palette: ${promptCtx.brand_dna.colors.map(c => `${c.name || ''} ${c.hex}${c.role ? ` (${c.role})` : ''}`.trim()).join(', ')}`
+      : '',
     promptCtx.brand_dna.visual_identity ? `Visual Identity: ${promptCtx.brand_dna.visual_identity}` : '',
     promptCtx.brand_dna.voice.tone ? `Tone: ${promptCtx.brand_dna.voice.tone}` : '',
     promptCtx.brand_dna.voice.personality ? `Personality: ${promptCtx.brand_dna.voice.personality}` : '',
-    promptCtx.brand_dna.voice.keywords?.length ? `Keywords: ${promptCtx.brand_dna.voice.keywords.join(', ')}` : '',
+    promptCtx.brand_dna.voice.keywords?.length ? `Vocabulary: ${promptCtx.brand_dna.voice.keywords.join(', ')}` : '',
+    promptCtx.brand_dna.voice.do?.length ? `Do: ${promptCtx.brand_dna.voice.do.join(' · ')}` : '',
+    promptCtx.brand_dna.voice.doNot?.length ? `Don't: ${promptCtx.brand_dna.voice.doNot.join(' · ')}` : '',
     promptCtx.reference_brands?.length ? `Reference brands: ${promptCtx.reference_brands.join(', ')}` : '',
   ].filter(Boolean);
   if (dnaParts.length) ctx.brandDNA = dnaParts.join('\n');

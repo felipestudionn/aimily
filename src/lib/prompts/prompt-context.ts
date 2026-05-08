@@ -80,15 +80,20 @@ export interface PromptContext {
   // Block 1: Creative
   season: string;
   brand_name: string;
+  brand_tagline: string;
   brand_dna: {
-    voice: { tone: string; personality: string; keywords: string[]; doNot: string[] };
+    voice: { tone: string; personality: string; keywords: string[]; doNot: string[]; do?: string[] };
     values: string[];
     visual_identity: string;
+    /** Structured palette (proposal.palette[]) projected from user_brands.colors */
+    colors: Array<{ name?: string; hex: string; role?: string; rationale?: string }>;
   };
   consumer_profile: {
     demographics: string;
     psychographics: string;
     lifestyle: string;
+    /** Per-segment proposal cards (added when the Synthesis edits them or the Consumer block writes them) */
+    proposals: Array<{ title: string; desc: string; status?: string }>;
   };
   collection_vibe: string;
   selected_trends: string[];
@@ -363,20 +368,24 @@ export async function buildPromptContext(
     season: plan?.season ?? '',
     // CIS-powered fields (previously empty from setup_data)
     brand_name: (cis.brand_name as string) || '',
+    brand_tagline: (cis.brand_tagline as string) || '',
     brand_dna: {
       voice: {
         tone: (cis.brand_voice_tone as string) || '',
         personality: (cis.brand_voice_personality as string) || '',
         keywords: Array.isArray(cis.vocabulary) ? cis.vocabulary as string[] : [],
         doNot: Array.isArray(cis.dont_rules) ? cis.dont_rules as string[] : [],
+        do: Array.isArray(cis.do_rules) ? cis.do_rules as string[] : [],
       },
       values: [],
       visual_identity: (cis.visual_direction as string) || '',
+      colors: Array.isArray(cis.brand_colors) ? cis.brand_colors as Array<{ name?: string; hex: string; role?: string; rationale?: string }> : [],
     },
     consumer_profile: {
       demographics: (cis.consumer_demographics as string) || '',
       psychographics: (cis.consumer_psychographics as string) || '',
       lifestyle: (cis.consumer_lifestyle as string) || '',
+      proposals: Array.isArray(cis.consumer_proposals) ? cis.consumer_proposals as Array<{ title: string; desc: string; status?: string }> : [],
     },
     collection_vibe: (cis.collection_vibe as string) || '',
     selected_trends: Array.isArray(cis.selected_trends) ? cis.selected_trends as string[] : [],

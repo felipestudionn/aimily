@@ -25,15 +25,43 @@ export interface CreativePrompt {
   maxTokens?: number;
 }
 
+/* ─── Brand DNA · 6-axis structured contract ───
+   Sprint A.3 (2026-05-08). Both rama B (propose-from-Block-1) and
+   rama A2 (external import — URL/IG/PDF) emit this exact shape so
+   the multi-axis renderer treats them uniformly. The synthesis
+   variant may set `_needsConfirmation: true` on any field where
+   the underlying sources contradict; rama B never sets it. */
+export interface BrandIdentityProposal {
+  // Axis 1 — Name + tagline (3–5 candidates)
+  nameOptions: Array<{ name: string; tagline?: string; reasoning: string; _needsConfirmation?: boolean }>;
+  // Axis 2 — Palette (4–6 colors)
+  palette: Array<{ name: string; hex: string; role: 'primary' | 'secondary' | 'accent' | 'neutral'; rationale: string; _needsConfirmation?: boolean }>;
+  // Axis 3 — Voice
+  voice: {
+    personality: string;
+    tone: string;
+    do_rules: string[];        // 5
+    dont_rules: string[];      // 5
+    vocabulary: string[];      // 8–12
+    _needsConfirmation?: boolean;
+  };
+  // Axis 4 — Typography (2–3 pairings)
+  typography: Array<{ role: 'display' | 'body' | 'mono'; family: string; fallback: string; usage: string; _needsConfirmation?: boolean }>;
+  // Axis 5 — Visual identity (3–4 axes)
+  visualIdentity: Array<{ axis: 'composition' | 'photography' | 'lighting' | 'casting'; description: string; references: string[]; _needsConfirmation?: boolean }>;
+  // Axis 6 — Applications (2–4 mockups)
+  applications: Array<{ type: 'logo' | 'packaging' | 'hangtag' | 'social_square'; assetUrl?: string; prompt: string; _needsConfirmation?: boolean }>;
+  // Top-level provenance — populated by rama A2 only
+  sources?: string[];
+}
+
 type CreativePromptType =
   | 'consumer-assisted'
   | 'consumer-proposals'
   | 'vibe-assisted'
   | 'vibe-proposals'
-  | 'brand-extract'
-  | 'brand-generate'
-  | 'brand-assisted'
-  | 'brand-proposals'
+  | 'brand-multi-axis'
+  | 'brand-from-external-synthesis'
   | 'trends-global'
   | 'trends-deep-dive'
   | 'trends-live-signals'
@@ -205,225 +233,158 @@ Return:
       };
 
     // ═══════════════════════════════════════════════════
-    // BRAND DNA
+    // BRAND DNA · MULTI-AXIS (Sprint A.3, 2026-05-08)
+    //
+    // Canonical contract: 6 axes. Two callers, same schema —
+    //   brand-multi-axis            → propose from Block 1 context
+    //   brand-from-external-synthesis → propose from external sources
+    //
+    // Anti-leak: never echo or invent a brand name from the
+    // collection's working title (collection_plans.name). The user
+    // is BUILDING the brand here — the working title is a placeholder.
     // ═══════════════════════════════════════════════════
 
-    case 'brand-extract':
-      return {
-        temperature: 0.5,
-        maxTokens: 8192,
-        system: `${PERSONAS.brandArchitect}
+    case 'brand-multi-axis': {
+      const referenceCodes = (input.market_competitors_references || '').trim();
+      const seasonColors = (input.market_trends_colors || '').trim();
+      const seasonMaterials = (input.market_trends_materials || '').trim();
 
-You are extracting the Brand DNA of a fashion/lifestyle brand. You will receive TWO sources of real information:
-
-1. **WEB RESEARCH** — sourced information about this brand from fashion press, reviews, articles, and industry analysis. This gives you the brand's positioning, reputation, and identity as perceived by the industry.
-2. **WEBSITE CONTENT** — the brand's own words: their copy, about page, product descriptions, headlines. This gives you their voice, tone, and self-positioning.
-
-Your job is to CROSS-REFERENCE both sources to produce an expert-level brand analysis that is deeply specific to THIS brand and no other.
-
-CRITICAL RULES:
-- The brand name must be EXACTLY correct — check both sources.
-- Every sentence must be true ONLY of this brand. If it could describe 10 other brands, it's too generic.
-- For COLORS: identify the brand's REAL signature palette. If the research mentions specific colors, use those. Think Hermès orange, Tiffany blue — what color IS this brand?
-- For VOICE: analyze their ACTUAL copy. Quote specific phrases. How do they describe products? What words do they choose vs. avoid?
-- For TYPOGRAPHY: name specific typefaces if known from research. Otherwise, describe the typographic character precisely.
-- For VISUAL IDENTITY: be concrete — photography style, spatial grammar, iconic elements, packaging details.
-- NEVER refuse. ALWAYS return valid JSON.`,
-        user: `Extract the complete Brand DNA for use in fashion collection planning.
-
-BRAND REFERENCES:
-${input.website ? `- Website: ${input.website}` : ''}
-${input.instagram ? `- Instagram: ${input.instagram}` : ''}
-${input._igHandle ? `- IG handle: @${input._igHandle}` : ''}
-
-${input._webResearch ? `
-═══════════════════════════════════════════════════════════
-SOURCE 1: WEB RESEARCH (from fashion press, articles, reviews)
-═══════════════════════════════════════════════════════════
-${input._webResearch}
-${input._sources ? `\nSources: ${input._sources}` : ''}
-═══════════════════════════════════════════════════════════
-` : ''}
-
-${input._brandName || input._bodyContent ? `
-───────────────────────────────────────────────────────────
-SOURCE 2: BRAND'S OWN WEBSITE CONTENT
-───────────────────────────────────────────────────────────
-
-DETECTED BRAND NAME: ${input._brandName || 'Unknown'}
-${input._tagline ? `TAGLINE: ${input._tagline}` : ''}
-
-${input._headings ? `HEADLINES:\n${input._headings}` : ''}
-
-${input._bodyContent ? `HOMEPAGE COPY:\n${input._bodyContent}` : ''}
-
-${input._aboutContent ? `\nABOUT/STORY PAGE:\n${input._aboutContent}` : ''}
-
-${input._productDescriptions ? `\nPRODUCT DESCRIPTIONS:\n${input._productDescriptions}` : ''}
-───────────────────────────────────────────────────────────
-` : ''}
-
-${!input._webResearch && !input._bodyContent ? 'No data available — use your knowledge of this brand.' : ''}
-
-ANALYSIS TASK — Cross-reference BOTH sources to extract:
-
-1. BRAND NAME — The EXACT official name as the brand uses it.
-
-2. COLOR SYSTEM — 4 colors that define this brand's visual identity:
-   - Primary: THE signature color (from research + website visual cues)
-   - Secondary: A key supporting color in their system
-   - Accent: A highlight/energy color
-   - Neutral: Their base/background tone
-   Use the web research to identify real brand colors. Provide accurate hex codes.
-
-3. VOICE & TONE — Cross-reference the web research (how press describes them) with their actual copy (how they describe themselves). Quote or reference specific phrases from Source 2. Describe: tonal register, vocabulary patterns, what they emphasize, what they avoid. A copywriter should be able to write on-brand after reading this.
-
-4. TYPOGRAPHY — If the research or your knowledge identifies specific typefaces, name them. Otherwise, describe the precise typographic character and what it signals about positioning.
-
-5. VISUAL IDENTITY — Synthesize from both sources: photography style (artisanal/editorial/studio/lifestyle), layout approach, spatial grammar, iconic brand elements (logos, patterns, signatures), packaging details, store/showroom aesthetic. A designer should immediately see the visual world.
-
-${QUALITY_GATES.antiGeneric}
-${OUTPUT_RULES}
-
-Return:
-{
-  "brandName": "Exact official brand name",
-  "colors": ["#hex1 (primary)", "#hex2 (secondary)", "#hex3 (accent)", "#hex4 (neutral)"],
-  "tone": "40-70 words — cross-reference press perception with actual copy, quote specific phrases, describe tonal register and vocabulary patterns",
-  "typography": "25-40 words — name actual typefaces if known, describe typographic character and positioning signal",
-  "style": "40-70 words — photography style, layout, iconic elements, packaging, store aesthetic. Specific enough to brief a designer."
-}`,
-      };
-
-    case 'brand-generate':
       return {
         temperature: 0.8,
-        maxTokens: 8192,
-        system: PERSONAS.brandArchitect,
-        user: `${ctx}
-
-The user is creating a brand identity from scratch for their collection.
-
-${input.brandName ? `Preferred brand name: "${input.brandName}"` : 'No brand name decided yet — suggest one.'}
-${input.direction ? `Brand direction: "${input.direction}"` : ''}
-
-Create a brand identity system that feels intentional, cohesive, and market-ready. This is not a logo exercise — it's a complete signal system.
-
-DESIGN PRINCIPLES:
-1. COLOR SYSTEM — 4 colors with strategic roles (primary, secondary, accent, neutral). Colors must:
-   - Work together as a system (not random "nice colors")
-   - Reflect the brand positioning (accessible vs. exclusive, warm vs. cool, bold vs. restrained)
-   - Be differentiated from obvious competitors in this space
-   - Include hex codes that are production-ready
-
-2. VOICE — How the brand speaks, with enough specificity that anyone could write on-brand copy after reading this
-
-3. TYPOGRAPHY — Headline + body recommendations that match the brand metabolism
-
-4. VISUAL IDENTITY — The overall system described in terms of its distinctive grammar
-
-${QUALITY_GATES.antiGeneric}
-${OUTPUT_RULES}
-
-Return:
-{
-  "brandName": "${input.brandName || 'Suggested brand name'}",
-  "colors": ["#hex1 (primary)", "#hex2 (secondary)", "#hex3 (accent)", "#hex4 (neutral)"],
-  "tone": "25-40 word description of brand voice",
-  "typography": "20-30 word typography recommendation (headline + body)",
-  "style": "25-40 word visual identity description"
-}`,
-      };
-
-    case 'brand-assisted':
-      return {
-        temperature: 0.75,
-        maxTokens: 8192,
-        system: `${PERSONAS.brandArchitect}
-
-You are helping create a NEW brand identity inspired by an existing reference brand. The user has provided a reference brand they admire — you have research data about that brand. Your job is to:
-1. Understand the reference brand's DNA (from the research + scraped content)
-2. Create a NEW, ORIGINAL brand identity that is INSPIRED by the reference but distinct
-3. Incorporate the user's brief/direction to differentiate
-
-CRITICAL: You are NOT copying the reference brand. You are using it as a springboard to create something new that captures a similar spirit but with its own identity.`,
-        user: `${ctx}
-
-═══ REFERENCE BRAND RESEARCH ═══
-${input._webResearch || 'No web research available'}
-
-═══ REFERENCE BRAND WEBSITE CONTENT ═══
-Brand name: ${input._brandName || 'Unknown'}
-Headings: ${input._headings || 'N/A'}
-Body content: ${input._bodyContent || 'N/A'}
-About: ${input._aboutContent || 'N/A'}
-Product descriptions: ${input._productDescriptions || 'N/A'}
-
-${input.brief ? `═══ USER'S BRIEF FOR THEIR NEW BRAND ═══\n"${input.brief}"` : ''}
-${input.brandName ? `Preferred brand name for the new brand: "${input.brandName}"` : 'No brand name decided yet — suggest one.'}
-
-Based on the reference brand's DNA and the user's brief, create a NEW brand identity that:
-- Captures a SIMILAR spirit/positioning but is clearly original
-- Adapts to the user's specific collection context (season, consumer, market)
-- Has its own color palette (inspired by but not identical to the reference)
-- Has its own voice (similar register but distinct personality)
-
-${QUALITY_GATES.antiGeneric}
-${QUALITY_GATES.designSpecificity}
-${OUTPUT_RULES}
-
-Return:
-{
-  "brandName": "${input.brandName || 'Suggested new brand name'}",
-  "colors": ["#hex1 (primary — role)", "#hex2 (secondary — role)", "#hex3 (accent — role)", "#hex4 (neutral — role)"],
-  "tone": "40-60 words — how this NEW brand speaks, referencing what was learned from the reference",
-  "typography": "25-40 words — specific font families that match the new positioning",
-  "style": "40-60 words — photography, layout, packaging aesthetic for the new brand",
-  "inspiration": "20-30 words — what was taken from the reference and how it was transformed"
-}`,
-      };
-
-    case 'brand-proposals':
-      return {
-        temperature: 0.85,
         maxTokens: 8192,
         system: `${PERSONAS.brandArchitect}
 
 ${PERSONAS.creativeDirector}
 
-You create brand identities for fashion collections. Given the collection context (consumer, vibe, moodboard, trends, season), you generate 3 completely distinct brand identity proposals.
+You produce a complete BRAND IDENTITY system as a structured 6-axis report. Each axis is a coherent design decision; together they read as one brand, not six unrelated proposals. Every axis is grounded in the inherited Block 1 context — consumer, moodboard, market trends (theme/category/color/material), aspirational reference brands. You never default to safe generics.
 
-Each proposal must feel like a REAL brand — not a concept exercise. Someone should be able to launch a brand tomorrow using your output.`,
+ANTI-LEAK RULE — CRITICAL:
+- NEVER use the collection's working title as a brand name candidate. The working title is internal scaffolding — the user has not chosen a brand name yet.
+- NEVER invent prices, retail locations, founder bios, or business numbers. You design the identity system; commercial fiction is forbidden.
+
+CASE FORMATTING — Spanish-language brand outputs:
+- Brand names: Title Case (or ALL CAPS only if the brand metabolism explicitly calls for it).
+- Taglines, vocabulary, descriptions: Spanish sentence case. Never gratuitous ALL CAPS.`,
         user: `${ctx}
 
-${input.brief ? `User's additional direction: "${input.brief}"` : ''}
+${referenceCodes ? `\nASPIRATIONAL REFERENCE BRANDS (from Investigación de Mercado · Referencias) — use these as imagery codes for visual identity, not as price-tier benchmarks:\n${referenceCodes}\n` : ''}${seasonColors ? `\nSEASON COLOR DIRECTION (from Tendencias · color axis):\n${seasonColors}\n` : ''}${seasonMaterials ? `\nSEASON MATERIAL DIRECTION (from Tendencias · material axis):\n${seasonMaterials}\n` : ''}
+Produce a complete brand identity system across these 6 axes. Every axis must feel chosen for THIS specific consumer, vibe, and moodboard — never interchangeable with another brand.
 
-Generate 3 brand identity proposals for this collection. Each must be a COMPLETELY DIFFERENT interpretation:
+AXIS 1 — NAME + TAGLINE (3–5 candidates)
+  Each candidate is a real, usable Spanish or English brand name (short, easy to say, IP-feasible). Tagline is optional but must be specific when present. Reasoning is one sentence on why the name fits THIS world.
 
-PROPOSAL 1 — REFINED: Minimal, understated, quiet confidence. Think The Row, Lemaire, Jil Sander.
-PROPOSAL 2 — EXPRESSIVE: Bold personality, memorable, distinctive. Think Jacquemus, Ganni, Collina Strada.
-PROPOSAL 3 — HERITAGE: Timeless, craft-driven, legacy-building. Think Hermès, Brunello Cucinelli, Loro Piana.
+AXIS 2 — PALETTE (4–6 colors)
+  Each color: evocative name, accurate hex, one of {primary, secondary, accent, neutral}, and a rationale tying it to the moodboard or season color direction. The palette must read as ONE system, not six pretty swatches.
 
-For EACH proposal, return:
-{
-  "title": "2-3 word brand essence (like a mood, not a tagline)",
-  "brandName": "A real, usable brand name suggestion",
-  "colors": ["#hex1 (primary — role)", "#hex2 (secondary — role)", "#hex3 (accent — role)", "#hex4 (neutral — role)"],
-  "tone": "40-60 words — how this brand speaks, what language it uses, what it avoids",
-  "typography": "25-40 words — name REAL font families (Google Fonts or system fonts) + why",
-  "style": "40-60 words — photography direction, layout principles, packaging philosophy",
-  "rationale": "20-30 words — why this direction works for THIS specific collection"
-}
+AXIS 3 — VOICE
+  Personality (1 sentence). Tone (1 sentence). 5 do-rules + 5 don't-rules (concrete, copy-test ready). 8–12 vocabulary anchors (real words and phrases the brand would use).
 
-${QUALITY_GATES.antiGeneric}
+AXIS 4 — TYPOGRAPHY (2–3 pairings)
+  Each pairing: role (display | body | mono), real font family name (Google Fonts or licensed), a fallback stack, and one sentence on usage. Fonts must be specific and identifiable.
+
+AXIS 5 — VISUAL IDENTITY (3–4 axes)
+  Each axis is one of {composition, photography, lighting, casting}. Description is concrete — a designer reads it and can shoot. References are 1–3 imagery codes (designer names, photographers, films, places) drawn from the aspirational reference brands and the moodboard, never invented.
+
+AXIS 6 — APPLICATIONS (2–4 mockup briefs)
+  Each: type ∈ {logo, packaging, hangtag, social_square}. Prompt is the gpt-image / Freepik prompt that would render this asset. assetUrl stays empty — the renderer fills it later.
+
 ${QUALITY_GATES.designSpecificity}
+${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Return a JSON object:
+Return EXACTLY this JSON shape:
 {
-  "proposals": [proposal1, proposal2, proposal3]
+  "nameOptions": [
+    { "name": "Brand Name", "tagline": "Optional tagline", "reasoning": "One sentence." }
+  ],
+  "palette": [
+    { "name": "Evocative color name", "hex": "#RRGGBB", "role": "primary", "rationale": "One sentence." }
+  ],
+  "voice": {
+    "personality": "1 sentence",
+    "tone": "1 sentence",
+    "do_rules": ["...", "...", "...", "...", "..."],
+    "dont_rules": ["...", "...", "...", "...", "..."],
+    "vocabulary": ["...", "...", "...", "...", "...", "...", "...", "..."]
+  },
+  "typography": [
+    { "role": "display", "family": "Real font family", "fallback": "serif | sans-serif | monospace stack", "usage": "1 sentence." }
+  ],
+  "visualIdentity": [
+    { "axis": "composition", "description": "1–2 sentences, concrete.", "references": ["Reference 1", "Reference 2"] }
+  ],
+  "applications": [
+    { "type": "logo", "prompt": "gpt-image prompt that would render this asset." }
+  ]
 }`,
       };
+    }
+
+    case 'brand-from-external-synthesis': {
+      const sonarBlock = (input._sonarResearch || '').trim();
+      const igBlock = (input._instagramFindings || '').trim();
+      const scrapedBlock = (input._scrapedSite || '').trim();
+      const pdfBlock = (input._pdfExtraction || '').trim();
+      const sourcesLine = (input._sources || '').trim();
+
+      return {
+        temperature: 0.55,
+        maxTokens: 8192,
+        system: `${PERSONAS.brandArchitect}
+
+You SYNTHESIZE a brand identity from real-world sources the user provided (any combination of: brand website, Instagram handle, brandbook PDF). You will receive raw research from Perplexity Sonar (web + IG with citations) and/or extracted text from a brandbook PDF.
+
+Your job:
+1. Cross-reference the sources to extract the brand's REAL identity — what already exists, not what you'd design from scratch.
+2. Output the canonical 6-axis schema.
+3. When sources contradict (e.g., website says "minimal" but Sonar says "maximalist"), set "_needsConfirmation": true on that field and return the most-supported value plus the contradiction in the rationale.
+4. NEVER fabricate fonts, hex codes, or claims the sources don't support. If a source doesn't mention something, mark "_needsConfirmation": true and return your best inference.
+
+ANTI-HALLUCINATION:
+- Hex codes: only those visible in cited sources or industry-known signature colors for this brand. Otherwise mark _needsConfirmation.
+- Font families: only those named in sources. Otherwise mark _needsConfirmation and return a best-fit characterization.
+- Vocabulary: quote the brand's actual words from scraped/PDF copy when possible.`,
+        user: `Synthesize the brand identity from the sources below.
+
+${sonarBlock ? `═══ SONAR · WEB + INSTAGRAM RESEARCH ═══\n${sonarBlock}\n${sourcesLine ? `Sources: ${sourcesLine}\n` : ''}═══════════════════════════════════════\n` : ''}
+${igBlock ? `═══ INSTAGRAM FINDINGS ═══\n${igBlock}\n═════════════════════════\n` : ''}
+${scrapedBlock ? `═══ WEBSITE CONTENT (scraped) ═══\n${scrapedBlock}\n═════════════════════════════════\n` : ''}
+${pdfBlock ? `═══ BRANDBOOK PDF (extracted) ═══\n${pdfBlock}\n═════════════════════════════════\n` : ''}
+${!sonarBlock && !scrapedBlock && !pdfBlock ? 'No sources available — return a 6-axis stub with every field marked _needsConfirmation: true and reasoning that explains the gap.' : ''}
+
+Return the canonical 6-axis JSON. For each top-level axis (nameOptions, palette, voice, typography, visualIdentity, applications), include "_needsConfirmation": true on any item where the sources don't unambiguously support the value.
+
+${OUTPUT_RULES}
+
+Return EXACTLY this JSON shape:
+{
+  "nameOptions": [
+    { "name": "Exact brand name as used by the brand", "tagline": "Their actual tagline if cited", "reasoning": "Source citation.", "_needsConfirmation": false }
+  ],
+  "palette": [
+    { "name": "Color name", "hex": "#RRGGBB", "role": "primary", "rationale": "Source citation.", "_needsConfirmation": false }
+  ],
+  "voice": {
+    "personality": "1 sentence — paraphrase or quote",
+    "tone": "1 sentence",
+    "do_rules": ["..."],
+    "dont_rules": ["..."],
+    "vocabulary": ["..."],
+    "_needsConfirmation": false
+  },
+  "typography": [
+    { "role": "display", "family": "Real font family", "fallback": "fallback stack", "usage": "1 sentence.", "_needsConfirmation": false }
+  ],
+  "visualIdentity": [
+    { "axis": "photography", "description": "1–2 sentences from the sources.", "references": ["..."], "_needsConfirmation": false }
+  ],
+  "applications": [
+    { "type": "logo", "prompt": "Description of the actual logo as it appears in sources.", "_needsConfirmation": false }
+  ],
+  "sources": ["url1", "url2"]
+}`,
+      };
+    }
 
     // ═══════════════════════════════════════════════════
     // TREND RESEARCH

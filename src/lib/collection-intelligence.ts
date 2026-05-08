@@ -342,8 +342,10 @@ export async function compilePromptContext(
     return found?.value ?? '';
   };
 
-  // Brand identity
+  // Brand identity (Brand DNA Sprint A — projected from user_brands by /api/brand-confirm)
   ctx.brand_name = get('creative', 'identity', 'brand_name') || get('creative', 'identity', 'collection_name') || '';
+  ctx.brand_tagline = get('creative', 'identity', 'tagline') || '';
+  ctx.brand_colors = get('creative', 'identity', 'colors') || [];  // structured palette jsonb [{ name, hex, role, rationale }]
   ctx.collection_vibe = get('creative', 'identity', 'collection_vibe') || '';
   ctx.reference_brands = get('creative', 'inspiration', 'reference_brands') || [];
   ctx.selected_trends = get('creative', 'inspiration', 'trends_selected') || [];
@@ -363,6 +365,7 @@ export async function compilePromptContext(
   ctx.consumer_demographics = get('creative', 'target', 'demographics') || '';
   ctx.consumer_psychographics = get('creative', 'target', 'psychographics') || '';
   ctx.consumer_lifestyle = get('creative', 'target', 'lifestyle') || '';
+  ctx.consumer_proposals = get('creative', 'target', 'proposals') || [];  // jsonb proposal cards [{title, desc, status}]
 
   // Voice
   ctx.brand_voice_personality = get('marketing', 'voice', 'personality') || '';

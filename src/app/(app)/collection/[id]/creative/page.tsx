@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, ArrowLeft, Check, ChevronDown, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic, ThumbsUp, ThumbsDown, RefreshCw, Plus, Pencil } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Check, ChevronDown, User, Sparkles, Image, Fingerprint, Globe, Microscope, Radio, Building2, X, Loader2, Upload, ExternalLink, Palette, Type, Mic, ThumbsUp, ThumbsDown, RefreshCw, Plus, Pencil, Compass } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useWorkspaceData } from '@/hooks/useWorkspaceData';
@@ -9,11 +9,7 @@ import { useTranslation } from '@/i18n';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard, DecisionCardGrid } from '@/components/workspace/DecisionCard';
-import { TypographySpecimen } from '@/components/workspace/TypographySpecimen';
-import { VoiceToneField } from '@/components/workspace/VoiceToneField';
-import { VisualIdentityField } from '@/components/workspace/VisualIdentityField';
-import { BrandBoardCanvas } from '@/components/workspace/BrandBoardCanvas';
-import { usePaletteSync } from '@/components/workspace/ColorPaletteField';
+import type { BrandIdentityProposal } from '@/lib/ai/creative-prompts';
 
 /* ─── AI generation helper ─── */
 async function generateCreative(
@@ -1680,642 +1676,1286 @@ function MoodboardContent({ data, onChange }: { data: Record<string, unknown>; o
   );
 }
 
-/* ─── Shared editable brand result ─── */
-function BrandResultEditor({ data, onChange }: { data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void }) {
-  const t = useTranslation();
-  const { id: collectionId } = useParams();
-  const colors = (data.colors as string[]) || [];
-  const visualIdentityImages = (data.visualIdentityImages as string[]) || [];
-  const aiGenerated = Boolean(data.extracted || data.generated);
-  const autoGenRef = useRef(false);
-  const [autoGenerating, setAutoGenerating] = useState(false);
+/* ═══════════════════════════════════════════════════════════
+   Brand DNA · Multi-axis flow (Sprint A.4 — 2026-05-08)
 
-  const generateVisualReferences = useCallback(async (): Promise<string[] | null> => {
-    try {
-      const res = await fetch('/api/ai/brand/visual-references', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          brandName: (data.brandName as string) || '',
-          tone: (data.tone as string) || '',
-          style: (data.style as string) || '',
-          colors: colors,
-          collectionPlanId: collectionId,
-        }),
-      });
-      if (!res.ok) {
-        console.error('[VisualRefs] request failed', res.status);
-        return null;
-      }
-      const json = await res.json();
-      return Array.isArray(json.images) ? json.images : null;
-    } catch (err) {
-      console.error('[VisualRefs] fetch error', err);
-      return null;
-    }
-  }, [data.brandName, data.tone, data.style, colors]);
+   A brand is a USER-LEVEL entity (`user_brands`), not a per-collection
+   blob. `collection_plans.brand_id` links a collection to one brand.
+   Three states:
+     LOCKED  — brand_id set → "Tu marca: X" header (Cambiar / Modificar)
+     GATING  — brand_id null → 2 gold-standard cards (A vault / B propose)
+     EDITING — multi-axis renderer (6 sections), Confirmar projects to CIS
+   ═══════════════════════════════════════════════════════════ */
 
-  useEffect(() => {
-    if (!aiGenerated) return;
-    if (visualIdentityImages.length > 0) return;
-    if (autoGenRef.current) return;
-    autoGenRef.current = true;
-    (async () => {
-      setAutoGenerating(true);
-      try {
-        const urls = await generateVisualReferences();
-        if (urls && urls.length > 0) {
-          onChange({ ...data, visualIdentityImages: urls });
+interface UserBrandRow {
+  id: string;
+  brand_name: string;
+  tagline?: string | null;
+  colors?: unknown;
+  voice?: BrandIdentityProposal['voice'] | null;
+  visual_identity?: BrandIdentityProposal['visualIdentity'] | null;
+  applications?: BrandIdentityProposal['applications'] | null;
+  typography?: string | null;
+  tone?: string | null;
+  style?: string | null;
+  source?: string | null;
+  brand_data?: Record<string, unknown> | null;
+}
+
+// Reverse the brand-confirm flatten: rebuild a BrandIdentityProposal from
+// the persisted user_brands row so "Modificar" loads the confirmed data
+// instead of throwing it away and re-proposing from scratch.
+function brandToProposal(brand: UserBrandRow): BrandIdentityProposal {
+  const bd = (brand.brand_data ?? {}) as Record<string, unknown>;
+  const cachedNameOptions = Array.isArray(bd.nameOptions) ? bd.nameOptions as BrandIdentityProposal['nameOptions'] : [];
+  // If the chosen brand_name isn't in the cached options (e.g., vault
+  // brand from an older flow), prepend it so the editor still shows the
+  // user's locked-in choice as a candidate.
+  const hasChosen = cachedNameOptions.some(o => o.name === brand.brand_name);
+  const nameOptions: BrandIdentityProposal['nameOptions'] = hasChosen
+    ? cachedNameOptions
+    : [
+        { name: brand.brand_name, tagline: brand.tagline || '', reasoning: '' },
+        ...cachedNameOptions,
+      ];
+
+  const palette = Array.isArray(brand.colors)
+    ? (brand.colors as Array<unknown>).map(c => {
+        if (typeof c === 'object' && c !== null && 'hex' in (c as Record<string, unknown>)) {
+          return c as BrandIdentityProposal['palette'][number];
         }
-      } finally {
-        setAutoGenerating(false);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiGenerated]);
+        // Legacy "#hex (role)" string entries → minimal structured shape
+        const str = typeof c === 'string' ? c : '';
+        const m = str.match(/^(#[0-9a-fA-F]{3,8})\s*(?:\((.+)\))?$/);
+        return {
+          name: '',
+          hex: m?.[1] || '#cccccc',
+          role: ((m?.[2] as 'primary' | 'secondary' | 'accent' | 'neutral') || 'accent'),
+          rationale: '',
+        };
+      })
+    : [];
 
-  const { palette, setPalette } = usePaletteSync(data, onChange);
+  const voice: BrandIdentityProposal['voice'] = brand.voice ?? {
+    personality: '',
+    tone: brand.tone || '',
+    do_rules: [],
+    dont_rules: [],
+    vocabulary: [],
+  };
+
+  const typography = Array.isArray(bd.typography_pairings) ? bd.typography_pairings as BrandIdentityProposal['typography'] : [];
+  const visualIdentity = Array.isArray(brand.visual_identity) ? brand.visual_identity : [];
+  const applications = Array.isArray(brand.applications) ? brand.applications : [];
+  const sources = Array.isArray(bd.sources) ? bd.sources as string[] : undefined;
+
+  return { nameOptions, palette, voice, typography, visualIdentity, applications, sources };
+}
+
+function paletteHexes(brand: UserBrandRow): Array<{ hex: string; name?: string }> {
+  if (!brand.colors || !Array.isArray(brand.colors)) return [];
+  return (brand.colors as Array<unknown>).map(c => {
+    if (typeof c === 'string') {
+      const hex = c.replace(/\s*\(.*\)/, '').trim();
+      return { hex: hex.startsWith('#') ? hex : '#cccccc' };
+    }
+    if (c && typeof c === 'object' && 'hex' in (c as Record<string, unknown>)) {
+      const obj = c as { hex?: string; name?: string };
+      const safeHex = typeof obj.hex === 'string' && obj.hex.startsWith('#') ? obj.hex : '#cccccc';
+      return { hex: safeHex, name: obj.name };
+    }
+    return { hex: '#cccccc' };
+  }).slice(0, 6);
+}
+
+function BrandExternalImportFicha({
+  busy, onCancel, onAnalyze,
+}: {
+  busy: boolean;
+  onCancel: () => void;
+  onAnalyze: (input: { url: string; instagram: string; pdfFile: File | null }) => void;
+}) {
+  const t = useTranslation();
+  const ts = t.creative as Record<string, string>;
+  const [url, setUrl] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const canAnalyze = !!(url.trim() || instagram.trim() || pdfFile);
 
   return (
-    <div>
-      <BrandBoardCanvas
-        brandName={(data.brandName as string) || ''}
-        onBrandNameChange={(v) => onChange({ ...data, brandName: v })}
-        palette={palette}
-        onPaletteChange={setPalette}
-        typographyFont={(data.typographyFont as string) || ''}
-        onTypographyFontChange={(v) => onChange({ ...data, typographyFont: v })}
-        tone={(data.tone as string) || ''}
-        onToneChange={(v) => onChange({ ...data, tone: v })}
-        style={(data.style as string) || ''}
-        onStyleChange={(v) => onChange({ ...data, style: v })}
-        moodboardImages={visualIdentityImages}
-      />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[20px] font-semibold tracking-[-0.03em] text-carbon">
+          {ts.importBrandTitle || 'Importar marca existente'}
+        </h3>
+        <button
+          onClick={onCancel}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] text-carbon/50 hover:text-carbon hover:bg-carbon/[0.04] transition-all"
+        >
+          ← {ts.backToSelection || 'Volver'}
+        </button>
+      </div>
 
-      {/* Legacy VisualIdentityField kept wired for auto-gen side effects */}
-      <div className="hidden">
-        <VisualIdentityField
-          images={visualIdentityImages}
-          onImagesChange={(v) => onChange({ ...data, visualIdentityImages: v })}
-          notes={(data.style as string) || ''}
-          onNotesChange={(v) => onChange({ ...data, style: v })}
-          notesPlaceholder={t.creative.visualIdentityPlaceholder}
-          generateLabel={t.creative.visualIdentityGenerate}
-          uploadLabel={t.creative.visualIdentityUpload}
-          onGenerate={aiGenerated ? generateVisualReferences : undefined}
-          externalGenerating={autoGenerating}
-        />
+      <div className="bg-white rounded-[20px] p-8 md:p-10 space-y-6">
+        <div className="space-y-2">
+          <p className="text-[13px] text-carbon/55 leading-[1.6] tracking-[-0.01em]">
+            {ts.importBrandDesc || 'Pega la web oficial, el handle de Instagram y/o sube el brandbook PDF. Aimily extrae los seis ejes (nombre, paleta, voz, tipografía, identidad visual, aplicaciones) cruzando todas las fuentes y marca para revisión los campos donde encuentre contradicciones.'}
+          </p>
+          <p className="text-[12px] text-carbon/35 italic leading-[1.6] tracking-[-0.01em]">
+            {ts.importBrandByline || 'Sonar · web + Instagram · Sonnet vision · síntesis editorial'}
+          </p>
+        </div>
+
+        <FichaRow label={ts.websiteLabel || 'Web oficial'}>
+          <input
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://..."
+            disabled={busy}
+            className="w-full px-4 py-3 text-[14px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 disabled:opacity-50"
+          />
+        </FichaRow>
+
+        <FichaRow label={ts.instagramLabel || 'Instagram'}>
+          <input
+            type="text"
+            value={instagram}
+            onChange={(e) => setInstagram(e.target.value)}
+            placeholder="@nombredelamarca"
+            disabled={busy}
+            className="w-full px-4 py-3 text-[14px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/30 disabled:opacity-50"
+          />
+        </FichaRow>
+
+        <FichaRow label={ts.brandbookLabel || 'Brandbook PDF (opcional)'}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
+              disabled={busy}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={busy}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/65 hover:text-carbon hover:border-carbon/30 transition-all disabled:opacity-40"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              {pdfFile ? (ts.replacePdf || 'Cambiar PDF') : (ts.uploadPdf || 'Subir PDF')}
+            </button>
+            {pdfFile && (
+              <span className="inline-flex items-center gap-2 text-[12px] text-carbon/65">
+                <span className="font-mono truncate max-w-[260px]">{pdfFile.name}</span>
+                <span className="text-carbon/35">{(pdfFile.size / 1024 / 1024).toFixed(2)}MB</span>
+                <button
+                  type="button"
+                  onClick={() => setPdfFile(null)}
+                  className="text-carbon/30 hover:text-red-500 transition-colors"
+                  aria-label="remove pdf"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            )}
+            <span className="text-[11px] text-carbon/35 italic ml-auto">
+              {ts.pdfMaxSize || 'máx. 4MB'}
+            </span>
+          </div>
+        </FichaRow>
+      </div>
+
+      <div className="flex justify-center">
+        <button
+          type="button"
+          onClick={() => onAnalyze({ url, instagram, pdfFile })}
+          disabled={busy || !canAnalyze}
+          className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-carbon text-white hover:bg-carbon/90 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          {busy ? (ts.analyzingBrand || 'Analizando…') : (ts.analyzeBrand || 'Empezar análisis')}
+          {!busy && <ArrowRight className="h-3.5 w-3.5" />}
+        </button>
       </div>
     </div>
   );
 }
 
-interface SavedBrand {
-  id: string;
-  brand_name: string;
-  colors: string[];
-  tone: string;
-  typography: string;
-  style: string;
-  instagram: string;
-  website: string;
-  is_trend_driven: boolean;
-  brand_data: Record<string, unknown>;
+function BrandIdentityHub({
+  brands, linkedBrandId, onPick, onModify, onUnlink, onDelete, onImport, onCreateNew, busyCreate,
+}: {
+  brands: UserBrandRow[];
+  linkedBrandId: string | null;
+  onPick: (brand: UserBrandRow) => void;
+  onModify: (brand: UserBrandRow) => void;
+  onUnlink: () => void;
+  onDelete: (id: string) => void;
+  onImport: () => void;
+  onCreateNew: () => void;
+  busyCreate: boolean;
+}) {
+  const t = useTranslation();
+  const ts = t.creative as Record<string, string>;
+  // Render the linked brand first, then the rest of the vault. Stable
+  // sort by updated_at is preserved within each group.
+  const sortedBrands = linkedBrandId
+    ? [
+        ...brands.filter(b => b.id === linkedBrandId),
+        ...brands.filter(b => b.id !== linkedBrandId),
+      ]
+    : brands;
+  return (
+    <div className="space-y-12">
+      {/* ── Actions zone (TOP) ─────────────────────────────
+          The two starting paths to land a brand on this collection.
+          Same gold-standard card pattern as the brand cards below —
+          rounded-[20px] p-8 min-h-[260px] white card, 22px title,
+          centered CTA pill — so the visual language is consistent
+          across the whole hub. The icon (Upload / Compass) replaces
+          the palette swatches; otherwise identical anatomy. Width is
+          2-col on large screens (so each card is wider and reads as
+          "primary action") while the vault below uses 3-col. */}
+      <section className="space-y-4">
+        <div className="flex items-baseline justify-between gap-4">
+          <h3 className="text-[11px] font-semibold tracking-[0.18em] uppercase text-carbon/40">
+            {ts.startBrandLabel || 'Empieza tu marca'}
+          </h3>
+          <span className="text-[11px] text-carbon/35 italic">
+            {ts.startBrandByline || 'aimily se encarga de los seis ejes'}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <button
+            type="button"
+            onClick={onImport}
+            className="group bg-white rounded-[20px] p-8 flex flex-col min-h-[260px] text-left transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+          >
+            <Upload className="h-6 w-6 text-carbon/45 mb-4" />
+            <h4 className="text-[22px] font-semibold tracking-[-0.03em] text-carbon leading-tight">
+              {ts.addExistingBrand || 'Añadir marca existente'}
+            </h4>
+            <p className="text-[13px] text-carbon/55 leading-[1.6] tracking-[-0.01em] mt-2">
+              {ts.addExistingBrandDesc || 'Extrae los seis ejes desde la web oficial, Instagram o brandbook PDF.'}
+            </p>
+            <p className="text-[12px] text-carbon/35 italic leading-[1.6] tracking-[-0.01em] mt-2">
+              {ts.addExistingBrandByline || 'web · Instagram · brandbook PDF'}
+            </p>
+            <div className="flex-1" />
+            <div className="mt-6 inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-full text-[12px] font-semibold bg-carbon text-white group-hover:bg-carbon/90 transition-all self-start">
+              {ts.startImport || 'Empezar análisis'}
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onCreateNew}
+            disabled={busyCreate}
+            className="group bg-white rounded-[20px] p-8 flex flex-col min-h-[260px] text-left transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] disabled:opacity-60 disabled:cursor-wait"
+          >
+            <Compass className="h-6 w-6 text-carbon/45 mb-4" />
+            <h4 className="text-[22px] font-semibold tracking-[-0.03em] text-carbon leading-tight">
+              {ts.createNewBrand || 'Crear marca nueva'}
+            </h4>
+            <p className="text-[13px] text-carbon/55 leading-[1.6] tracking-[-0.01em] mt-2">
+              {ts.createNewBrandDesc || 'aimily sintetiza una marca completa a partir de tu consumidor, moodboard e investigación de mercado.'}
+            </p>
+            <p className="text-[12px] text-carbon/35 italic leading-[1.6] tracking-[-0.01em] mt-2">
+              {ts.createNewBrandByline || 'consumidor · moodboard · tendencias · referencias aspiracionales'}
+            </p>
+            <div className="flex-1" />
+            <div className="mt-6 inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-full text-[12px] font-semibold bg-carbon text-white group-hover:bg-carbon/90 transition-all self-start">
+              {busyCreate ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              {busyCreate ? (ts.proposing || 'Proponiendo…') : (ts.proposeNow || 'Proponer ahora')}
+              {!busyCreate && <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />}
+            </div>
+          </button>
+        </div>
+      </section>
+
+      {/* ── Saved brands zone (BOTTOM) ─────────────────────
+          Vault of brands the user has already curated. The brand
+          currently linked to this collection is highlighted with a
+          carbon ring + VINCULADA tag; clicking another card re-links
+          (replace). Same card anatomy as the actions above. */}
+      {brands.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-baseline justify-between gap-4">
+            <h3 className="text-[11px] font-semibold tracking-[0.18em] uppercase text-carbon/40">
+              {ts.savedBrandsLabel || 'Tus marcas'}
+            </h3>
+            <span className="text-[11px] text-carbon/35 italic">
+              {ts.savedBrandsByline || 'guardadas, reutilizables en toda colección'}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {sortedBrands.map((b) => {
+              const swatches = paletteHexes(b);
+              const isLinked = b.id === linkedBrandId;
+              return (
+                <div
+                  key={b.id}
+                  className={`group relative bg-white rounded-[20px] p-8 flex flex-col min-h-[260px] transition-all hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ${
+                    isLinked ? 'ring-2 ring-carbon/85 ring-offset-2 ring-offset-shade' : ''
+                  }`}
+                >
+                  {isLinked && (
+                    <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-[0.1em] uppercase bg-carbon text-white">
+                      <Check className="h-3 w-3" />
+                      {ts.linkedToCollection || 'vinculada'}
+                    </span>
+                  )}
+                  <div className="flex items-start justify-between gap-3 pr-20">
+                    <div>
+                      <h4 className="text-[22px] font-semibold tracking-[-0.03em] text-carbon leading-tight">{b.brand_name}</h4>
+                      {b.tagline && <p className="text-[12px] text-carbon/50 mt-1">{b.tagline}</p>}
+                    </div>
+                    {!isLinked && (
+                      <button
+                        onClick={() => onDelete(b.id)}
+                        className="opacity-0 group-hover:opacity-100 text-carbon/30 hover:text-red-500 transition-all shrink-0"
+                        aria-label="Delete"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {swatches.length > 0 && (
+                    <div className="flex gap-1.5 mt-4">
+                      {swatches.map((c, i) => (
+                        <div
+                          key={i}
+                          className="w-5 h-5 rounded-[6px] border border-carbon/[0.06]"
+                          style={{ backgroundColor: c.hex }}
+                          title={c.name}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex-1" />
+                  {isLinked ? (
+                    <div className="mt-6 flex items-center justify-between gap-3 flex-wrap">
+                      <button
+                        onClick={onUnlink}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all"
+                      >
+                        {ts.unlinkBrand || 'Desvincular'}
+                      </button>
+                      <button
+                        onClick={() => onModify(b)}
+                        className="inline-flex items-center gap-2 py-2.5 px-5 rounded-full text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-all"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        {ts.modifyBrand || 'Modificar'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => onPick(b)}
+                      className="mt-6 inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-full text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-all"
+                    >
+                      {ts.useThisBrand || 'Usar esta marca'}
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+    </div>
+  );
 }
 
-type BrandDNAOption = 'existing' | 'new' | null;
-type ExistingBrandMethod = 'extract' | 'manual';
-type NewBrandMethod = 'free' | 'assisted' | 'ai';
+function PreviewBoard({
+  chosenName, chosenTagline, displayFont, bodyFont, primaryColor, neutralColor, palette,
+  previewLabel, editLabel, editTaglineLabel,
+  onNameChange, onTaglineChange, onPaletteHexChange,
+}: {
+  chosenName: string;
+  chosenTagline: string;
+  displayFont: string;
+  bodyFont: string;
+  primaryColor: string;
+  neutralColor: string;
+  palette: BrandIdentityProposal['palette'];
+  previewLabel: string;
+  editLabel: string;
+  editTaglineLabel: string;
+  onNameChange: (v: string) => void;
+  onTaglineChange: (v: string) => void;
+  onPaletteHexChange: (idx: number, hex: string) => void;
+}) {
+  // Native <input>s styled to look identical to the rendered headlines.
+  // Uncontrolled focus styling — the input always lives there; clicking
+  // anywhere on the text just focuses it. No edit-button / mode toggle.
+  return (
+    <div
+      className="rounded-[20px] p-10 md:p-16 flex flex-col items-center justify-center min-h-[280px] gap-3"
+      style={{ backgroundColor: neutralColor }}
+    >
+      <span className="text-[11px] font-semibold tracking-[0.15em] uppercase" style={{ color: primaryColor, opacity: 0.5 }}>
+        {previewLabel}
+      </span>
+      <input
+        type="text"
+        value={chosenName}
+        onChange={(e) => onNameChange(e.target.value)}
+        placeholder={editLabel}
+        className="w-full max-w-[820px] text-[64px] md:text-[88px] leading-[0.95] tracking-[-0.04em] text-center break-words bg-transparent border-0 focus:outline-none focus:ring-0 placeholder:opacity-40"
+        style={{ fontFamily: displayFont, color: primaryColor }}
+      />
+      <input
+        type="text"
+        value={chosenTagline}
+        onChange={(e) => onTaglineChange(e.target.value)}
+        placeholder={editTaglineLabel}
+        className="w-full max-w-[640px] text-[16px] md:text-[20px] text-center bg-transparent border-0 focus:outline-none focus:ring-0 placeholder:italic"
+        style={{ fontFamily: bodyFont, color: primaryColor, opacity: chosenTagline ? 0.65 : 0.4 }}
+      />
+      <div className="flex gap-1 mt-4">
+        {palette.map((c, i) => {
+          const safeHex = c.hex.startsWith('#') ? c.hex : '#cccccc';
+          return (
+            <label
+              key={i}
+              className="relative w-8 h-8 md:w-10 md:h-10 rounded-[6px] cursor-pointer transition-transform hover:scale-110"
+              style={{ backgroundColor: safeHex }}
+              title={`${c.name} · ${c.hex} · ${c.role}`}
+            >
+              <input
+                type="color"
+                value={safeHex}
+                onChange={(e) => onPaletteHexChange(i, e.target.value)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-interface BrandProposal {
+function ApplicationMockup({
+  type, brandName, tagline, displayFont, bodyFont, primary, neutral, accent, paletteHexes,
+}: {
+  type: 'logo' | 'packaging' | 'hangtag' | 'social_square';
   brandName: string;
-  colors: string[];
-  tone: string;
-  typography: string;
-  style: string;
+  tagline?: string;
+  displayFont: string;
+  bodyFont: string;
+  primary: string;
+  neutral: string;
+  accent: string;
+  paletteHexes: string[];
+}) {
+  // Quick CSS mockups so the user FEELS the brand even before any
+  // image generation runs. Each variant uses palette + display font
+  // so editing the proposal updates the preview in real time.
+  if (type === 'logo') {
+    return (
+      <div className="aspect-square rounded-[10px] flex items-center justify-center px-3" style={{ backgroundColor: neutral }}>
+        <span
+          className="text-center leading-[0.95] tracking-[-0.04em] text-[28px]"
+          style={{ fontFamily: displayFont, color: primary }}
+        >
+          {brandName}
+        </span>
+      </div>
+    );
+  }
+  if (type === 'packaging') {
+    return (
+      <div className="aspect-square rounded-[10px] flex flex-col items-center justify-between p-4" style={{ backgroundColor: primary }}>
+        <span
+          className="text-[18px] leading-[0.95] tracking-[-0.03em]"
+          style={{ fontFamily: displayFont, color: neutral }}
+        >
+          {brandName}
+        </span>
+        <div className="flex gap-1">
+          {paletteHexes.slice(0, 4).map((h, i) => (
+            <div key={i} className="w-3 h-3 rounded-sm" style={{ backgroundColor: h }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  if (type === 'hangtag') {
+    return (
+      <div className="aspect-square rounded-[10px] flex items-center justify-center" style={{ backgroundColor: neutral }}>
+        <div className="bg-white rounded-[6px] px-3 py-4 flex flex-col items-center gap-1 shadow-sm" style={{ border: `1px solid ${primary}20` }}>
+          <span
+            className="text-[14px] leading-none tracking-[-0.03em]"
+            style={{ fontFamily: displayFont, color: primary }}
+          >
+            {brandName}
+          </span>
+          {tagline && (
+            <span
+              className="text-[8px] uppercase tracking-[0.1em]"
+              style={{ fontFamily: bodyFont, color: primary, opacity: 0.55 }}
+            >
+              {tagline.slice(0, 24)}
+            </span>
+          )}
+          <div className="w-6 h-px mt-1" style={{ backgroundColor: primary, opacity: 0.2 }} />
+          <span className="text-[7px] font-mono" style={{ color: primary, opacity: 0.4 }}>SS27</span>
+        </div>
+      </div>
+    );
+  }
+  // social_square
+  return (
+    <div className="aspect-square rounded-[10px] grid grid-cols-3 grid-rows-3 overflow-hidden">
+      <div className="col-span-3 row-span-2 flex items-center justify-center" style={{ backgroundColor: neutral }}>
+        <span
+          className="text-[22px] leading-[1] tracking-[-0.03em]"
+          style={{ fontFamily: displayFont, color: primary }}
+        >
+          {brandName}
+        </span>
+      </div>
+      <div style={{ backgroundColor: primary }} />
+      <div style={{ backgroundColor: accent }} />
+      <div style={{ backgroundColor: paletteHexes[1] || primary }} />
+    </div>
+  );
+}
+
+type DeepenAxis = 'nameOptions' | 'palette' | 'typography' | 'visualIdentity' | 'applications';
+
+function BrandMultiAxisRenderer({
+  proposal, onChange, chosenNameIdx, onChooseName, busy, error, onCancel, onConfirm,
+  onDeepenAxis, deepeningAxis,
+}: {
+  proposal: BrandIdentityProposal;
+  onChange: (p: BrandIdentityProposal) => void;
+  chosenNameIdx: number;
+  onChooseName: (idx: number) => void;
+  busy: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onDeepenAxis: (axis: DeepenAxis) => void;
+  deepeningAxis: DeepenAxis | null;
+}) {
+  const t = useTranslation();
+  const ts = t.creative as Record<string, string>;
+  const update = (patch: Partial<BrandIdentityProposal>) => onChange({ ...proposal, ...patch });
+
+  // "+ Más" pill — fires the deepen call for one axis and merges results
+  // into the proposal. Keeps the canonical pattern from the research lenses.
+  const DeepenPill = ({ axis, label }: { axis: DeepenAxis; label: string }) => {
+    const isBusy = deepeningAxis === axis;
+    const anyBusy = deepeningAxis !== null;
+    return (
+      <div className="flex justify-center pt-3">
+        <button
+          type="button"
+          onClick={() => onDeepenAxis(axis)}
+          disabled={anyBusy}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:text-carbon hover:border-carbon/30 transition-all disabled:opacity-30 disabled:cursor-wait"
+        >
+          {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+          {isBusy ? (ts.deepening || 'pidiendo más…') : label}
+        </button>
+      </div>
+    );
+  };
+
+  // Dynamically load Google Fonts for the proposed typography families so
+  // the specimens render in the actual font rather than a system fallback.
+  // Single <link> in <head>, deduped by id, refreshed when families change.
+  useEffect(() => {
+    const families = Array.from(new Set(proposal.typography.map(t => t.family).filter(Boolean)));
+    if (families.length === 0) return;
+    const linkId = 'brand-dna-fonts-link';
+    let link = document.getElementById(linkId) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    const params = families.map(f => `family=${encodeURIComponent(f.replace(/\s+/g, '+'))}:wght@400;600;700`).join('&');
+    link.href = `https://fonts.googleapis.com/css2?${params}&display=swap`;
+  }, [proposal.typography]);
+
+  // Resolve the chosen name + display font for the brand-board preview.
+  const chosenName = proposal.nameOptions[chosenNameIdx]?.name || '';
+  const chosenTagline = proposal.nameOptions[chosenNameIdx]?.tagline || '';
+  const displayFont = proposal.typography.find(tp => tp.role === 'display')?.family || proposal.typography[0]?.family || 'inherit';
+  const bodyFont = proposal.typography.find(tp => tp.role === 'body')?.family || displayFont;
+  const primaryColor = proposal.palette.find(c => c.role === 'primary')?.hex || proposal.palette[0]?.hex || '#000000';
+  const accentColor = proposal.palette.find(c => c.role === 'accent')?.hex || proposal.palette[2]?.hex || '#cccccc';
+  const neutralColor = proposal.palette.find(c => c.role === 'neutral')?.hex || proposal.palette[3]?.hex || '#f5f5f0';
+
+  return (
+    <div className="space-y-6">
+      {/* Brand-board preview — editable in place. Clicking the name or
+          tagline turns them into inputs styled to look identical (so the
+          edit feels seamless). Each swatch opens the native color picker
+          on click. The user gets a tactile editing surface that mirrors
+          the canonical brand-book preview. */}
+      <PreviewBoard
+        chosenName={chosenName}
+        chosenTagline={chosenTagline}
+        displayFont={displayFont}
+        bodyFont={bodyFont}
+        primaryColor={primaryColor}
+        neutralColor={neutralColor}
+        palette={proposal.palette}
+        previewLabel={ts.brandPreview || 'preview'}
+        editLabel={ts.editName || 'editar nombre'}
+        editTaglineLabel={ts.editTagline || 'añadir tagline'}
+        onNameChange={(v) => {
+          const next = [...proposal.nameOptions];
+          next[chosenNameIdx] = { ...next[chosenNameIdx], name: v };
+          update({ nameOptions: next });
+        }}
+        onTaglineChange={(v) => {
+          const next = [...proposal.nameOptions];
+          next[chosenNameIdx] = { ...next[chosenNameIdx], tagline: v };
+          update({ nameOptions: next });
+        }}
+        onPaletteHexChange={(idx, hex) => {
+          const next = [...proposal.palette];
+          next[idx] = { ...next[idx], hex };
+          update({ palette: next });
+        }}
+      />
+
+      <div className="bg-white rounded-[20px] p-10 md:p-12 space-y-6">
+        <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40">
+          {ts.axisName || '01 · Nombre + tagline'}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {proposal.nameOptions.map((opt, idx) => {
+            const isChosen = idx === chosenNameIdx;
+            return (
+              <button
+                key={idx}
+                onClick={() => onChooseName(idx)}
+                className={`text-left rounded-[16px] p-5 transition-all ${
+                  isChosen ? 'bg-carbon text-white' : 'bg-carbon/[0.03] hover:bg-carbon/[0.06] text-carbon'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span
+                    className="text-[26px] leading-[1] tracking-[-0.02em]"
+                    style={{ fontFamily: displayFont }}
+                  >
+                    {opt.name}
+                  </span>
+                  {isChosen && <Check className="h-4 w-4 mt-1" />}
+                </div>
+                {opt.tagline && <p className={`text-[13px] mb-2 ${isChosen ? 'text-white/70' : 'text-carbon/60'}`} style={{ fontFamily: bodyFont }}>{opt.tagline}</p>}
+                <p className={`text-[11px] ${isChosen ? 'text-white/50' : 'text-carbon/40'}`}>{opt.reasoning}</p>
+              </button>
+            );
+          })}
+        </div>
+        {proposal.nameOptions[chosenNameIdx] && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+            <input
+              type="text"
+              value={proposal.nameOptions[chosenNameIdx].name}
+              onChange={(e) => {
+                const next = [...proposal.nameOptions];
+                next[chosenNameIdx] = { ...next[chosenNameIdx], name: e.target.value };
+                update({ nameOptions: next });
+              }}
+              placeholder={ts.editName || 'Nombre de la marca'}
+              className="px-4 py-3 text-[14px] bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/30"
+            />
+            <input
+              type="text"
+              value={proposal.nameOptions[chosenNameIdx].tagline || ''}
+              onChange={(e) => {
+                const next = [...proposal.nameOptions];
+                next[chosenNameIdx] = { ...next[chosenNameIdx], tagline: e.target.value };
+                update({ nameOptions: next });
+              }}
+              placeholder={ts.editTagline || 'Tagline (opcional)'}
+              className="px-4 py-3 text-[14px] bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none placeholder:text-carbon/30"
+            />
+          </div>
+        )}
+        <DeepenPill axis="nameOptions" label={ts.moreNames || '+ Más nombres'} />
+      </div>
+
+      <div className="bg-white rounded-[20px] p-10 md:p-12 space-y-5">
+        <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40">
+          {ts.axisPalette || '02 · Paleta'}
+        </p>
+        {/* Full-width color band — large swatches that read at a glance */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {proposal.palette.map((c, idx) => {
+            const safeHex = c.hex.startsWith('#') ? c.hex : '#cccccc';
+            return (
+              <div key={idx} className="flex flex-col gap-2">
+                <div
+                  className="w-full aspect-[4/5] rounded-[12px] border border-carbon/[0.06] flex items-end p-3"
+                  style={{ backgroundColor: safeHex }}
+                >
+                  <span
+                    className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-white/85 text-carbon/70"
+                  >
+                    {c.role}
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={c.name}
+                  onChange={(e) => {
+                    const next = [...proposal.palette];
+                    next[idx] = { ...next[idx], name: e.target.value };
+                    update({ palette: next });
+                  }}
+                  className="px-2 py-1 text-[13px] font-medium bg-transparent text-carbon focus:outline-none focus:bg-carbon/[0.03] rounded-md"
+                />
+                <input
+                  type="text"
+                  value={c.hex}
+                  onChange={(e) => {
+                    const next = [...proposal.palette];
+                    next[idx] = { ...next[idx], hex: e.target.value };
+                    update({ palette: next });
+                  }}
+                  placeholder="#000000"
+                  className="px-2 py-1 text-[11px] font-mono bg-transparent text-carbon/60 focus:outline-none focus:bg-carbon/[0.03] rounded-md"
+                />
+              </div>
+            );
+          })}
+        </div>
+        <DeepenPill axis="palette" label={ts.moreColors || '+ Más colores'} />
+      </div>
+
+      <div className="bg-white rounded-[20px] p-10 md:p-12 space-y-5">
+        <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40">
+          {ts.axisVoice || '03 · Voz'}
+        </p>
+        <FichaRow label={ts.voicePersonality || 'Personalidad'}>
+          <textarea
+            value={proposal.voice.personality}
+            onChange={(e) => update({ voice: { ...proposal.voice, personality: e.target.value } })}
+            className="w-full px-4 py-3 text-[14px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none resize-none min-h-[60px]"
+          />
+        </FichaRow>
+        <FichaRow label={ts.voiceTone || 'Tono'}>
+          <textarea
+            value={proposal.voice.tone}
+            onChange={(e) => update({ voice: { ...proposal.voice, tone: e.target.value } })}
+            className="w-full px-4 py-3 text-[14px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none resize-none min-h-[60px]"
+          />
+        </FichaRow>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <FichaRow label={ts.voiceDo || 'Sí'}>
+            <EditableChipCloud
+              values={proposal.voice.do_rules}
+              onChange={(v) => update({ voice: { ...proposal.voice, do_rules: v } })}
+              placeholder={ts.addRule || 'añadir regla'}
+            />
+          </FichaRow>
+          <FichaRow label={ts.voiceDont || 'No'}>
+            <EditableChipCloud
+              values={proposal.voice.dont_rules}
+              onChange={(v) => update({ voice: { ...proposal.voice, dont_rules: v } })}
+              placeholder={ts.addRule || 'añadir regla'}
+            />
+          </FichaRow>
+        </div>
+        <FichaRow label={ts.voiceVocabulary || 'Vocabulario'}>
+          <EditableChipCloud
+            values={proposal.voice.vocabulary}
+            onChange={(v) => update({ voice: { ...proposal.voice, vocabulary: v } })}
+            placeholder={ts.addWord || 'añadir palabra'}
+          />
+        </FichaRow>
+      </div>
+
+      <div className="bg-white rounded-[20px] p-10 md:p-12 space-y-5">
+        <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40">
+          {ts.axisTypography || '04 · Tipografía'}
+        </p>
+        <div className="space-y-4">
+          {proposal.typography.map((tp, idx) => (
+            <div key={idx} className="rounded-[16px] bg-carbon/[0.03] p-6 md:p-8 space-y-4">
+              <div className="flex items-baseline justify-between gap-4 flex-wrap">
+                <span className="text-[10px] uppercase tracking-[0.15em] text-carbon/40 font-semibold">{tp.role}</span>
+                <span className="text-[12px] font-mono text-carbon/40">{tp.fallback}</span>
+              </div>
+              {/* Specimen — render an "Aa" + the chosen brand name in this font */}
+              <div className="bg-white rounded-[12px] p-6 md:p-8 flex items-baseline gap-6 flex-wrap">
+                <span
+                  className="text-[64px] md:text-[88px] leading-[0.9] text-carbon"
+                  style={{ fontFamily: tp.family }}
+                >
+                  Aa
+                </span>
+                <span
+                  className="text-[24px] md:text-[36px] leading-[1.05] tracking-[-0.02em] text-carbon/85"
+                  style={{ fontFamily: tp.family }}
+                >
+                  {chosenName || (tp.role === 'display' ? 'Display' : 'Body')}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={tp.family}
+                  onChange={(e) => {
+                    const next = [...proposal.typography];
+                    next[idx] = { ...next[idx], family: e.target.value };
+                    update({ typography: next });
+                  }}
+                  className="w-full px-3 py-2 text-[14px] font-medium text-carbon bg-white rounded-[8px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none"
+                />
+                <input
+                  type="text"
+                  value={tp.fallback}
+                  onChange={(e) => {
+                    const next = [...proposal.typography];
+                    next[idx] = { ...next[idx], fallback: e.target.value };
+                    update({ typography: next });
+                  }}
+                  placeholder="fallback stack"
+                  className="w-full px-3 py-2 text-[12px] font-mono text-carbon/60 bg-white rounded-[8px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none"
+                />
+              </div>
+              <textarea
+                value={tp.usage}
+                onChange={(e) => {
+                  const next = [...proposal.typography];
+                  next[idx] = { ...next[idx], usage: e.target.value };
+                  update({ typography: next });
+                }}
+                className="w-full px-3 py-2 text-[13px] text-carbon/70 bg-transparent rounded-[8px] focus:outline-none resize-none min-h-[40px]"
+              />
+            </div>
+          ))}
+        </div>
+        <DeepenPill axis="typography" label={ts.moreFonts || '+ Más fuentes'} />
+      </div>
+
+      <div className="bg-white rounded-[20px] p-10 md:p-12 space-y-5">
+        <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40">
+          {ts.axisVisual || '05 · Identidad visual'}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {proposal.visualIdentity.map((vi, idx) => (
+            <div key={idx} className="rounded-[16px] bg-carbon/[0.03] p-6 space-y-4">
+              <span className="text-[10px] uppercase tracking-[0.15em] text-carbon/40 font-semibold">{vi.axis}</span>
+              <textarea
+                value={vi.description}
+                onChange={(e) => {
+                  const next = [...proposal.visualIdentity];
+                  next[idx] = { ...next[idx], description: e.target.value };
+                  update({ visualIdentity: next });
+                }}
+                className="w-full px-3 py-2 text-[14px] text-carbon bg-white rounded-[8px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none resize-none min-h-[80px]"
+              />
+              {/* References as Pinterest search links — visual exploration without
+                  generating images. Each chip opens a Pinterest pins search in a
+                  new tab so the designer can scan the actual visual world the
+                  reference belongs to. */}
+              <FichaRow label={ts.references || 'Referencias visuales · abre Pinterest'}>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
+                  {vi.references.map((ref, ri) => {
+                    const query = encodeURIComponent(`${ref} ${vi.axis} fashion`);
+                    return (
+                      <a
+                        key={`${ref}-${ri}`}
+                        href={`https://pinterest.com/search/pins/?q=${query}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group inline-flex items-baseline gap-1.5 text-[13px] text-carbon/80 italic underline decoration-carbon/25 decoration-dotted underline-offset-[5px] hover:decoration-carbon hover:decoration-solid hover:text-carbon transition-all"
+                      >
+                        <span>{ref}</span>
+                        <ExternalLink className="h-3.5 w-3.5 text-carbon/40 group-hover:text-carbon/80 transition-colors translate-y-[1px]" />
+                      </a>
+                    );
+                  })}
+                  <EditableChipCloud
+                    values={[]}
+                    onChange={(v) => {
+                      const next = [...proposal.visualIdentity];
+                      next[idx] = { ...next[idx], references: [...vi.references, ...v] };
+                      update({ visualIdentity: next });
+                    }}
+                    placeholder={ts.addReference || 'añadir referencia'}
+                  />
+                </div>
+              </FichaRow>
+            </div>
+          ))}
+        </div>
+        <DeepenPill axis="visualIdentity" label={ts.moreVisualAxes || '+ Más ejes visuales'} />
+      </div>
+
+      <div className="bg-white rounded-[20px] p-10 md:p-12 space-y-5">
+        <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40">
+          {ts.axisApplications || '06 · Aplicaciones'}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {proposal.applications.map((app, idx) => (
+            <div key={idx} className="rounded-[16px] bg-carbon/[0.03] p-4 space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[10px] uppercase tracking-[0.15em] text-carbon/40 font-semibold">{app.type}</span>
+              </div>
+              {/* CSS mockup — quick visual sketch using brand palette + display font.
+                  Replaced with real generated assets later via /api/ai/freepik. */}
+              <ApplicationMockup
+                type={app.type}
+                brandName={chosenName || 'BRAND'}
+                tagline={chosenTagline}
+                displayFont={displayFont}
+                bodyFont={bodyFont}
+                primary={primaryColor}
+                neutral={neutralColor}
+                accent={accentColor}
+                paletteHexes={proposal.palette.map(p => p.hex.startsWith('#') ? p.hex : '#cccccc')}
+              />
+              <textarea
+                value={app.prompt}
+                onChange={(e) => {
+                  const next = [...proposal.applications];
+                  next[idx] = { ...next[idx], prompt: e.target.value };
+                  update({ applications: next });
+                }}
+                className="w-full px-3 py-2 text-[12px] text-carbon/70 bg-white rounded-[8px] border border-carbon/[0.06] focus:border-carbon/20 focus:outline-none resize-none min-h-[80px]"
+              />
+            </div>
+          ))}
+        </div>
+        <DeepenPill axis="applications" label={ts.moreApplications || '+ Más aplicaciones'} />
+      </div>
+
+      {error && <p className="text-[12px] text-red-600">{error}</p>}
+      <div className="flex items-center justify-between pt-2">
+        <button
+          onClick={onCancel}
+          disabled={busy}
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-40"
+        >
+          ← {ts.modify || 'Modificar'}
+        </button>
+        <button
+          onClick={onConfirm}
+          disabled={busy}
+          className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-all disabled:opacity-50 disabled:cursor-wait"
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+          {busy ? (ts.confirming || 'Confirmando…') : (ts.confirmBrandIdentity || 'Confirmar marca')}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function BrandDNAContent({ data, onChange, collectionContext }: { mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string } }) {
   const t = useTranslation();
   const { language } = useLanguage();
-  const [generating, setGenerating] = useState(false);
+  const { id } = useParams();
+  const collectionPlanId = id as string;
+
+  const [linkedBrandId, setLinkedBrandId] = useState<string | null>(null);
+  const [linkedBrand, setLinkedBrand] = useState<UserBrandRow | null>(null);
+  const [savedBrands, setSavedBrands] = useState<UserBrandRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [view, setView] = useState<'idle' | 'vault' | 'external-import' | 'editing'>('idle');
+  const [proposal, setProposal] = useState<BrandIdentityProposal | null>(null);
+  const [chosenNameIdx, setChosenNameIdx] = useState(0);
+  const [busy, setBusy] = useState<'none' | 'proposing' | 'confirming' | 'linking' | 'importing'>('none');
+  const [deepeningAxis, setDeepeningAxis] = useState<DeepenAxis | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [savedBrands, setSavedBrands] = useState<SavedBrand[]>([]);
-  const [loadingBrands, setLoadingBrands] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [savedMsg, setSavedMsg] = useState(false);
 
-  const hasResult = (data.extracted as boolean) || (data.generated as boolean);
-  const selectedOption = (data._brandOption as BrandDNAOption) || null;
-  const existingMethod = (data._existingMethod as ExistingBrandMethod) || 'extract';
-  const newMethod = (data._newMethod as NewBrandMethod) || 'free';
-  const brandProposals = (data._brandProposals as BrandProposal[]) || [];
-  const selectedProposalIdx = data._selectedProposal as number | null;
+  // Suppress unused warnings on legacy props kept for the registry signature.
+  void data; void onChange; void collectionContext;
 
-  // Fetch saved brands on mount
-  useEffect(() => {
-    fetch('/api/user-brands')
-      .then(res => res.json())
-      .then(res => setSavedBrands(res.brands || []))
-      .catch(() => setSavedBrands([]))
-      .finally(() => setLoadingBrands(false));
-  }, []);
+  const reload = useCallback(async () => {
+    const supabase = createClient();
+    const planRes = await supabase
+      .from('collection_plans')
+      .select('brand_id')
+      .eq('id', collectionPlanId)
+      .single();
+    const brandId = (planRes.data as { brand_id?: string | null } | null)?.brand_id ?? null;
+    const vaultRes = await fetch('/api/user-brands').then(r => r.json()).catch(() => ({ brands: [] }));
+    const brands = (vaultRes.brands || []) as UserBrandRow[];
+    setSavedBrands(brands);
+    setLinkedBrandId(brandId);
+    setLinkedBrand(brandId ? brands.find(b => b.id === brandId) || null : null);
+    setLoaded(true);
+  }, [collectionPlanId]);
 
-  const handleSaveBrand = async () => {
-    setSaving(true);
+  useEffect(() => { reload(); }, [reload]);
+
+  const handleProposeFromBlock1 = useCallback(async () => {
+    setError(null);
+    setBusy('proposing');
+    try {
+      const res = await fetch('/api/ai/brand-propose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionPlanId, language }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.result) throw new Error(json.error || 'Propose failed');
+      setProposal(json.result as BrandIdentityProposal);
+      setChosenNameIdx(0);
+      setView('editing');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setBusy('none');
+    }
+  }, [collectionPlanId, language]);
+
+  async function handlePickFromVault(brand: UserBrandRow) {
+    setError(null);
+    setBusy('linking');
     try {
       const res = await fetch('/api/user-brands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: brand.id, link_collection_plan_id: collectionPlanId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Link failed');
+      await reload();
+      setView('idle');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setBusy('none');
+    }
+  }
+
+  async function handleDeleteFromVault(brandId: string) {
+    setError(null);
+    try {
+      await fetch(`/api/user-brands?id=${brandId}`, { method: 'DELETE' });
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    }
+  }
+
+  async function handleConfirm() {
+    if (!proposal) return;
+    setError(null);
+    setBusy('confirming');
+    try {
+      const chosen = proposal.nameOptions[chosenNameIdx];
+      if (!chosen?.name?.trim()) throw new Error('Pick a name');
+      const res = await fetch('/api/brand-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          brand_name: (data.brandName as string) || 'Untitled Brand',
-          colors: (data.colors as string[]) || [],
-          tone: (data.tone as string) || '',
-          typography: (data.typography as string) || '',
-          style: (data.style as string) || '',
-          instagram: (data.instagram as string) || '',
-          website: (data.website as string) || '',
-          is_trend_driven: false,
-          brand_data: data,
+          collectionPlanId,
+          proposal,
+          chosenName: { name: chosen.name, tagline: chosen.tagline },
+          brandId: linkedBrandId ?? undefined,
         }),
       });
-      const result = await res.json();
-      if (result.brand) {
-        setSavedBrands(prev => [result.brand, ...prev]);
-        setSavedMsg(true);
-        setTimeout(() => setSavedMsg(false), 2500);
+      const json = await res.json();
+      if (!res.ok || !json.brand) throw new Error(json.error || 'Confirm failed');
+      await reload();
+      setProposal(null);
+      setView('idle');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setBusy('none');
+    }
+  }
+
+  async function handleUnlink() {
+    setError(null);
+    setBusy('linking');
+    try {
+      // Clear collection_plans.brand_id without deleting the brand from
+      // the vault. Reuses the user-brands POST endpoint via supabase
+      // direct call since user-brands.POST always sets the FK, never
+      // clears it. Direct supabase call is safe here — we already own
+      // the plan (visible in the hub) and RLS gates the row.
+      const supabase = createClient();
+      const { error: dbErr } = await supabase
+        .from('collection_plans')
+        .update({ brand_id: null })
+        .eq('id', collectionPlanId);
+      if (dbErr) throw new Error(dbErr.message);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setBusy('none');
+    }
+  }
+
+  // Read a File as a base64 string (no data: prefix). Used for PDF
+  // brandbook uploads in the external-import path. Caller already
+  // enforces the 4MB ceiling via `accept`/size check; this helper
+  // just does the encode.
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const comma = result.indexOf(',');
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleAnalyzeExternal(input: { url: string; instagram: string; pdfFile: File | null }) {
+    setError(null);
+    setBusy('importing');
+    try {
+      const body: Record<string, string> = { language: language ?? 'en' };
+      if (input.url.trim()) body.url = input.url.trim();
+      if (input.instagram.trim()) body.instagram = input.instagram.trim();
+      if (input.pdfFile) {
+        if (input.pdfFile.size > 4 * 1024 * 1024) {
+          throw new Error('El PDF supera 4MB. Comprime o usa solo URL/IG.');
+        }
+        body.pdfBase64 = await fileToBase64(input.pdfFile);
       }
-    } catch { /* silent */ }
-    setSaving(false);
-  };
+      const res = await fetch('/api/ai/brand-from-external', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.result) throw new Error(json.error || 'Import failed');
+      setProposal(json.result as BrandIdentityProposal);
+      setChosenNameIdx(0);
+      setView('editing');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setBusy('none');
+    }
+  }
 
-  const handleUseBrand = (brand: SavedBrand) => {
-    onChange({
-      ...data,
-      brandName: brand.brand_name,
-      colors: brand.colors || [],
-      tone: brand.tone || '',
-      typography: brand.typography || '',
-      style: brand.style || '',
-      instagram: brand.instagram || '',
-      website: brand.website || '',
-      trendDriven: false,
-      extracted: true,
-      _brandOption: 'existing',
-      _existingMethod: 'extract',
-    });
-  };
-
-  const handleDeleteBrand = async (id: string) => {
-    await fetch(`/api/user-brands?id=${id}`, { method: 'DELETE' });
-    setSavedBrands(prev => prev.filter(b => b.id !== id));
-  };
-
-  const goBackToLevel1 = () => {
-    onChange({ ...data, _brandOption: null, _existingMethod: 'extract', _newMethod: 'free', extracted: false, generated: false, _brandProposals: [], _selectedProposal: null });
-  };
-
-  // ── EXISTING BRAND: Extract with AI ──
-  const handleExtract = async () => {
-    setGenerating(true);
+  async function handleDeepenAxis(axis: DeepenAxis) {
+    if (!proposal || deepeningAxis) return;
     setError(null);
-    const { result, error: err } = await generateCreative('brand-extract', {
-      instagram: (data.instagram as string) || '',
-      website: (data.website as string) || '',
-    }, language);
-    if (err) { setError(err); setGenerating(false); return; }
-    const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
-    onChange({ ...data, extracted: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '' });
-    setGenerating(false);
-  };
+    setDeepeningAxis(axis);
+    try {
+      const res = await fetch('/api/ai/brand-propose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          language,
+          deepenAxis: axis,
+          existingProposal: proposal,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.result) throw new Error(json.error || 'Deepen failed');
+      const partial = json.result as Partial<BrandIdentityProposal>;
+      // Merge — append to existing array for the requested axis only.
+      const next: BrandIdentityProposal = { ...proposal };
+      if (axis === 'nameOptions' && Array.isArray(partial.nameOptions)) {
+        next.nameOptions = [...proposal.nameOptions, ...partial.nameOptions];
+      } else if (axis === 'palette' && Array.isArray(partial.palette)) {
+        next.palette = [...proposal.palette, ...partial.palette];
+      } else if (axis === 'typography' && Array.isArray(partial.typography)) {
+        next.typography = [...proposal.typography, ...partial.typography];
+      } else if (axis === 'visualIdentity' && Array.isArray(partial.visualIdentity)) {
+        next.visualIdentity = [...proposal.visualIdentity, ...partial.visualIdentity];
+      } else if (axis === 'applications' && Array.isArray(partial.applications)) {
+        next.applications = [...proposal.applications, ...partial.applications];
+      }
+      setProposal(next);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error');
+    } finally {
+      setDeepeningAxis(null);
+    }
+  }
 
-  // ── NEW BRAND: Assisted — extract reference + generate inspired brand ──
-  const handleAssisted = async () => {
-    setGenerating(true);
+  // Open the multi-axis editor with a vault brand pre-loaded. Used by
+  // the hub when the user clicks "Modificar" on the linked card.
+  function handleModify(brand: UserBrandRow) {
+    const restored = brandToProposal(brand);
+    const chosenIdx = restored.nameOptions.findIndex(o => o.name === brand.brand_name);
+    setProposal(restored);
+    setChosenNameIdx(chosenIdx >= 0 ? chosenIdx : 0);
     setError(null);
-    const { result, error: err } = await generateCreative('brand-assisted', {
-      website: (data.website as string) || '',
-      instagram: (data.instagram as string) || '',
-      brief: (data._brief as string) || '',
-      brandName: (data.brandName as string) || '',
-      ...collectionContext,
-    }, language);
-    if (err) { setError(err); setGenerating(false); return; }
-    const parsed = result as { brandName: string; colors: string[]; tone: string; typography: string; style?: string };
-    onChange({ ...data, generated: true, brandName: parsed.brandName, colors: parsed.colors, tone: parsed.tone, typography: parsed.typography, style: parsed.style || '' });
-    setGenerating(false);
-  };
+    setView('editing');
+  }
 
-  // ── NEW BRAND: AI Proposals — generate 3 brand proposals ──
-  const handleGenerateProposals = async () => {
-    setGenerating(true);
-    setError(null);
-    const { result, error: err } = await generateCreative('brand-proposals', {
-      brief: (data._brief as string) || '',
-      ...collectionContext,
-    }, language);
-    if (err) { setError(err); setGenerating(false); return; }
-    const parsed = result as { proposals: BrandProposal[] };
-    onChange({ ...data, _brandProposals: parsed.proposals || [], _selectedProposal: null });
-    setGenerating(false);
-  };
-
-  const selectProposal = (idx: number) => {
-    const p = brandProposals[idx];
-    onChange({
-      ...data,
-      _selectedProposal: idx,
-      generated: true,
-      brandName: p.brandName,
-      colors: p.colors,
-      tone: p.tone,
-      typography: p.typography,
-      style: p.style,
-    });
-  };
-
-  // ── Save + Back buttons (shared) ──
-  const renderSaveBar = () => (
-    <div className="flex items-center gap-3 mt-6">
-      <button
-        onClick={goBackToLevel1}
-        className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium text-carbon/40 hover:text-carbon/60 bg-carbon/[0.04] hover:bg-carbon/[0.06] transition-all"
-      >
-        {`\u2190 ${t.creative.changeOption || 'Change option'}`}
-      </button>
-      <button
-        onClick={handleSaveBrand}
-        disabled={saving}
-        className="ml-auto inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 hover:text-carbon transition-all disabled:opacity-40"
-      >
-        {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-        {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
-      </button>
-    </div>
-  );
-
-  // ══════════════════════════════════════════════
-  // RESULT VIEW — shown after extraction/generation/manual fill for both flows
-  // ══════════════════════════════════════════════
-  if (hasResult) {
+  if (!loaded) {
     return (
-      <div className="space-y-5">
-        <BrandResultEditor data={data} onChange={onChange} />
-        {renderSaveBar()}
+      <div className="bg-white rounded-[20px] p-10 flex items-center justify-center min-h-[200px]">
+        <Loader2 className="h-5 w-5 animate-spin text-carbon/40" />
       </div>
     );
   }
 
-  // ══════════════════════════════════════════════
-  // EXISTING BRAND FLOW
-  // ══════════════════════════════════════════════
-  if (selectedOption === 'existing') {
+  if (view === 'editing' && proposal) {
     return (
-      <div className="space-y-6">
-        {/* Back to Level 1 */}
-        <button onClick={goBackToLevel1} className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase">
-          {`\u2190 ${t.creative.backToSelection || 'Back'}`}
-        </button>
+      <BrandMultiAxisRenderer
+        proposal={proposal}
+        onChange={setProposal}
+        chosenNameIdx={chosenNameIdx}
+        onChooseName={setChosenNameIdx}
+        busy={busy === 'confirming'}
+        error={error}
+        onCancel={() => { setView('idle'); setProposal(null); setError(null); }}
+        onConfirm={handleConfirm}
+        onDeepenAxis={handleDeepenAxis}
+        deepeningAxis={deepeningAxis}
+      />
+    );
+  }
 
-        {/* Saved Brands */}
-        {!loadingBrands && savedBrands.length > 0 && (
-          <div className="space-y-3">
-            <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
-              {t.creative.savedBrands || 'Your saved brands'}
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {savedBrands.map((brand) => (
-                <div key={brand.id} className="flex items-center gap-3 px-4 py-3 border border-carbon/[0.08] hover:border-carbon/20 transition-all group">
-                  <div className="flex gap-1">
-                    {(brand.colors || []).slice(0, 4).map((c, i) => {
-                      const hex = c.replace(/\s*\(.*\)/, '').trim();
-                      return <div key={i} className="w-5 h-5 border border-carbon/[0.08]" style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }} />;
-                    })}
-                    {(!brand.colors || brand.colors.length === 0) && <div className="w-5 h-5 bg-carbon/[0.06] border border-carbon/[0.08]" />}
-                  </div>
-                  <span className="text-xs font-medium text-carbon">{brand.brand_name}</span>
-                  <button onClick={() => handleUseBrand(brand)} className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors px-2 py-1 border border-carbon/[0.08] hover:border-carbon/20">
-                    {t.creative.useBrand || 'Use'}
-                  </button>
-                  <button onClick={() => handleDeleteBrand(brand.id)} className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Method toggle */}
-        <SegmentedPill
-          options={[
-            { id: 'extract' as ExistingBrandMethod, label: t.creative.extractWithAI || 'Extract with AI' },
-            { id: 'manual' as ExistingBrandMethod, label: t.creative.enterManually || 'Enter manually' },
-          ]}
-          value={existingMethod}
-          onChange={(v) => onChange({ ...data, _existingMethod: v })}
-          size="md"
+  if (view === 'external-import') {
+    return (
+      <div className="space-y-4">
+        <BrandExternalImportFicha
+          busy={busy === 'importing'}
+          onCancel={() => { setView('idle'); setError(null); }}
+          onAnalyze={handleAnalyzeExternal}
         />
-
-        {/* Extract with AI */}
-        {existingMethod === 'extract' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.instagramLabel}</label>
-                <input
-                  type="text"
-                  value={(data.instagram as string) || ''}
-                  onChange={(e) => onChange({ ...data, instagram: e.target.value })}
-                  placeholder="@yourbrand"
-                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.websiteLabel}</label>
-                <input
-                  type="text"
-                  value={(data.website as string) || ''}
-                  onChange={(e) => onChange({ ...data, website: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleExtract}
-              disabled={generating || (!(data.instagram as string)?.trim() && !(data.website as string)?.trim())}
-              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              {t.creative.extractBrandDNA}
-            </button>
-            {error && <p className="text-xs text-red-600">{error}</p>}
-          </div>
-        )}
-
-        {/* Enter manually */}
-        {existingMethod === 'manual' && (
-          <div className="space-y-4">
-            <BrandResultEditor data={data} onChange={onChange} />
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onChange({ ...data, extracted: true })}
-                disabled={!(data.brandName as string)?.trim()}
-                className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <Check className="h-3.5 w-3.5" />
-                {t.creative.confirmBrand || "That's all."}
-              </button>
-              <button
-                onClick={handleSaveBrand}
-                disabled={saving || !(data.brandName as string)?.trim()}
-                className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
-              >
-                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
-              </button>
-            </div>
-          </div>
-        )}
+        {error && <p className="text-[12px] text-red-600">{error}</p>}
       </div>
     );
   }
 
-  // ══════════════════════════════════════════════
-  // NEW BRAND FLOW
-  // ══════════════════════════════════════════════
-  if (selectedOption === 'new') {
-    return (
-      <div className="space-y-6">
-        {/* Back to Level 1 */}
-        <button onClick={goBackToLevel1} className="text-xs text-carbon/40 hover:text-carbon/60 transition-colors tracking-wide uppercase">
-          {`\u2190 ${t.creative.backToSelection || 'Back'}`}
-        </button>
-
-        {/* Method toggle: Free / Assisted / AI Proposal */}
-        <SegmentedPill
-          options={[
-            { id: 'free' as NewBrandMethod, label: t.creative.freeMode || 'Free' },
-            { id: 'assisted' as NewBrandMethod, label: t.creative.assistedMode || 'Assisted' },
-            { id: 'ai' as NewBrandMethod, label: t.creative.aiProposalMode || 'AI Proposal' },
-          ]}
-          value={newMethod}
-          onChange={(v) => onChange({ ...data, _newMethod: v, _brandProposals: [], _selectedProposal: null })}
-          size="md"
-        />
-
-        {/* ── Free: empty BrandResultEditor ── */}
-        {newMethod === 'free' && (
-          <div className="space-y-4">
-            <BrandResultEditor data={data} onChange={onChange} />
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onChange({ ...data, generated: true })}
-                disabled={!(data.brandName as string)?.trim()}
-                className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <Check className="h-3.5 w-3.5" />
-                {t.creative.confirmBrand || "That's all."}
-              </button>
-              <button
-                onClick={handleSaveBrand}
-                disabled={saving || !(data.brandName as string)?.trim()}
-                className="ml-auto flex items-center gap-2 px-4 py-2 text-[11px] font-medium tracking-[0.1em] uppercase border border-carbon/20 text-carbon/70 hover:bg-carbon/[0.04] transition-colors disabled:opacity-40"
-              >
-                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                {savedMsg ? (t.creative.brandSaved || 'Brand saved!') : (t.creative.saveToMyBrands || 'Save to My Brands')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Assisted: reference brand + brief → AI generates inspired brand ── */}
-        {newMethod === 'assisted' && (
-          <div className="space-y-4">
-            <p className="text-xs text-carbon/50 leading-relaxed">
-              {t.creative.assistedBrandDesc || 'Provide a reference brand and a brief. aimily will extract the reference and generate a new brand inspired by it.'}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.referenceBrandIG || 'Reference Instagram'}</label>
-                <input
-                  type="text"
-                  value={(data.instagram as string) || ''}
-                  onChange={(e) => onChange({ ...data, instagram: e.target.value })}
-                  placeholder="@referencebrand"
-                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.referenceBrandURL || 'Reference Website'}</label>
-                <input
-                  type="text"
-                  value={(data.website as string) || ''}
-                  onChange={(e) => onChange({ ...data, website: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.yourBrandName || 'Your New Brand Name'}</label>
-              <input
-                type="text"
-                value={(data.brandName as string) || ''}
-                onChange={(e) => onChange({ ...data, brandName: e.target.value })}
-                placeholder={t.creative.brandNamePlaceholder || 'e.g. Maison Soleil'}
-                className="w-full px-3 py-2.5 text-sm text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors placeholder:text-carbon/40"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon mb-2 block">{t.creative.briefLabel || 'Brief'}</label>
-              <textarea
-                value={(data._brief as string) || ''}
-                onChange={(e) => onChange({ ...data, _brief: e.target.value })}
-                placeholder={t.creative.briefPlaceholder || 'Describe the brand you want to create: target audience, positioning, values, aesthetic...'}
-                className="w-full h-24 px-3 py-2.5 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
-              />
-            </div>
-            <button
-              onClick={handleAssisted}
-              disabled={generating || (!(data.instagram as string)?.trim() && !(data.website as string)?.trim())}
-              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              {t.creative.generateBrand || 'Generate Brand'}
-            </button>
-            {error && <p className="text-xs text-red-600">{error}</p>}
-          </div>
-        )}
-
-        {/* ── AI Proposal: generate 3 brand proposals ── */}
-        {newMethod === 'ai' && (
-          <div className="space-y-4">
-            <p className="text-xs text-carbon/50 leading-relaxed">
-              {t.creative.aiProposalBrandDesc || 'aimily will generate 3 brand proposals based on your collection context. Add an optional brief to guide the direction.'}
-            </p>
-            <div>
-              <label className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/40 mb-1.5 block">
-                {t.creative.optionalBrief || 'Brief (optional)'}
-              </label>
-              <textarea
-                value={(data._brief as string) || ''}
-                onChange={(e) => onChange({ ...data, _brief: e.target.value })}
-                placeholder={t.creative.briefPlaceholder || 'Describe the brand you want to create: target audience, positioning, values, aesthetic...'}
-                className="w-full h-24 px-3 py-2.5 text-xs text-carbon bg-carbon/[0.02] border border-carbon/[0.08] focus:border-carbon/20 focus:outline-none transition-colors resize-none leading-relaxed placeholder:text-carbon/40"
-              />
-            </div>
-            <button
-              onClick={handleGenerateProposals}
-              disabled={generating}
-              className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-medium tracking-[0.1em] uppercase bg-carbon text-crema hover:bg-carbon/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              {t.creative.generateProposals || 'Generate Proposals'}
-            </button>
-            {error && <p className="text-xs text-red-600">{error}</p>}
-
-            {/* Proposal cards */}
-            {brandProposals.length > 0 && selectedProposalIdx === null && (
-              <div className="space-y-3">
-                <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/60">
-                  {t.creative.selectOneDirection || 'Select one direction'}
-                </p>
-                {brandProposals.map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => selectProposal(i)}
-                    className="w-full text-left p-5 border border-carbon/[0.08] hover:border-carbon/30 transition-all group"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-carbon">{p.brandName}</span>
-                      <span className="text-xs tracking-[0.1em] uppercase text-carbon/40 opacity-0 group-hover:opacity-100 transition-opacity">{t.creative.selectAction || 'Select'}</span>
-                    </div>
-                    {/* Color preview */}
-                    <div className="flex gap-1.5 mb-2">
-                      {(p.colors || []).slice(0, 6).map((c, ci) => {
-                        const hex = c.replace(/\s*\(.*\)/, '').trim();
-                        return <div key={ci} className="w-6 h-6 border border-carbon/[0.08]" style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }} />;
-                      })}
-                    </div>
-                    <div className="text-xs text-carbon/70 leading-relaxed line-clamp-2">{p.tone}</div>
-                    <div className="text-[11px] text-carbon/40 mt-1">{p.typography}</div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ══════════════════════════════════════════════
-  // LEVEL 1 — "Do you already have a brand?"
-  // ══════════════════════════════════════════════
+  // Default landing: the unified Identity Hub. Always shows the user's
+  // vault + the two action cards (Añadir marca existente / Crear nueva
+  // marca). The currently-linked brand is highlighted; from its card
+  // the user can Modificar (open editor) or Desvincular (clear FK).
   return (
-    <div className="space-y-6">
-      {/* ── Saved Brands Section ── */}
-      {!loadingBrands && savedBrands.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50">
-            {t.creative.savedBrands || 'Your saved brands'}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {savedBrands.map((brand) => (
-              <div key={brand.id} className="flex items-center gap-3 px-4 py-3 border border-carbon/[0.08] hover:border-carbon/20 transition-all group">
-                <div className="flex gap-1">
-                  {(brand.colors || []).slice(0, 4).map((c, i) => {
-                    const hex = c.replace(/\s*\(.*\)/, '').trim();
-                    return <div key={i} className="w-5 h-5 border border-carbon/[0.08]" style={{ backgroundColor: hex.startsWith('#') ? hex : '#ccc' }} />;
-                  })}
-                  {(!brand.colors || brand.colors.length === 0) && <div className="w-5 h-5 bg-carbon/[0.06] border border-carbon/[0.08]" />}
-                </div>
-                <span className="text-xs font-medium text-carbon">{brand.brand_name}</span>
-                <button onClick={() => handleUseBrand(brand)} className="text-[10px] font-medium tracking-[0.1em] uppercase text-carbon/50 hover:text-carbon transition-colors px-2 py-1 border border-carbon/[0.08] hover:border-carbon/20">
-                  {t.creative.useBrand || 'Use'}
-                </button>
-                <button onClick={() => handleDeleteBrand(brand.id)} className="text-carbon/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Two Cards: Existing vs New ── */}
-      <div>
-        <p className="text-[11px] font-semibold tracking-[0.1em] uppercase text-carbon/50 mb-4">
-          {t.creative.doYouHaveBrand || 'Do you already have a brand?'}
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Card A: I already have my brand */}
-          <button
-            onClick={() => onChange({ ...data, _brandOption: 'existing', _existingMethod: 'extract' })}
-            className="text-left p-6 border border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm transition-all"
-          >
-            <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center mb-3">
-              <Fingerprint className="h-5 w-5 text-carbon/50" />
-            </div>
-            <p className="text-sm font-medium text-carbon mb-1">{t.creative.iHaveMyBrand || 'I already have my brand'}</p>
-            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.iHaveMyBrandDesc || 'Extract your brand identity from your website or Instagram, or enter it manually.'}</p>
-          </button>
-
-          {/* Card B: Create a new brand */}
-          <button
-            onClick={() => onChange({ ...data, _brandOption: 'new', _newMethod: 'free' })}
-            className="text-left p-6 border border-carbon/[0.08] hover:border-carbon/20 hover:shadow-sm transition-all"
-          >
-            <div className="w-10 h-10 bg-carbon/[0.04] flex items-center justify-center mb-3">
-              <Sparkles className="h-5 w-5 text-carbon/50" />
-            </div>
-            <p className="text-sm font-medium text-carbon mb-1">{t.creative.createNewBrand || 'Create a new brand'}</p>
-            <p className="text-[11px] text-carbon/50 leading-relaxed">{t.creative.createNewBrandDesc || 'Build a brand from scratch — manually, with AI assistance, or let aimily propose one for you.'}</p>
-          </button>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <BrandIdentityHub
+        brands={savedBrands}
+        linkedBrandId={linkedBrandId}
+        onPick={handlePickFromVault}
+        onModify={handleModify}
+        onUnlink={handleUnlink}
+        onDelete={handleDeleteFromVault}
+        onImport={() => setView('external-import')}
+        onCreateNew={handleProposeFromBlock1}
+        busyCreate={busy === 'proposing'}
+      />
+      {error && <p className="text-[12px] text-red-600">{error}</p>}
     </div>
   );
 }
@@ -3443,6 +4083,136 @@ function ExpandedBlockContent({ blockId, stepId, mode, data, onChange, collectio
    Creative Synthesis — Visual Creative Brief
    ═══════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════
+   Creative → Merchandising handoff overlay
+
+   Closes Bloque 1 with an editorial blackout. Tells the user
+   exactly what's been captured (brand · consumer · moodboard ·
+   market) and what's next (the four Block 2 mini-blocks by
+   name, in order). Dismissible via Esc or the X corner button.
+   ═══════════════════════════════════════════════════════════ */
+function CreativeHandoffOverlay({
+  collectionName, brandName, consumerCount, trendCount, competitorCount,
+  onContinue, onDismiss,
+}: {
+  collectionName: string;
+  brandName: string;
+  consumerCount: number;
+  trendCount: number;
+  competitorCount: number;
+  onContinue: () => void;
+  onDismiss: () => void;
+}) {
+  // Esc key dismisses the overlay so the user is never trapped.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onDismiss(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onDismiss]);
+
+  // Block 2 mini-blocks in canonical order — exactly the same names
+  // the sidebar shows so the user knows what they'll see when they
+  // continue. Each mini-block lists what Block 1 input it consumes.
+  const NEXT_STEPS = [
+    { label: 'Estrategia de Compra', uses: 'consumidor · marca · referencias aspiracionales' },
+    { label: 'Surtido & Precios', uses: 'tendencias · competidores · paleta' },
+    { label: 'Distribución', uses: 'consumidor · señales en vivo · marca' },
+    { label: 'Plan Financiero', uses: 'tier de competidores · sales target' },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-carbon/95"
+      style={{ animation: 'fadeIn 0.5s ease-out forwards' }}
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }}
+    >
+      {/* Top-right dismiss */}
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Cerrar"
+        className="absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center text-crema/40 hover:text-crema hover:bg-crema/[0.06] transition-all"
+      >
+        <X className="h-5 w-5" />
+      </button>
+
+      <div
+        className="relative max-w-[720px] w-full px-8 sm:px-12 py-12"
+        style={{ animation: 'slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both' }}
+      >
+        {/* Eyebrow — collection + close confirmation */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <div className="w-10 h-10 rounded-full border border-crema/25 flex items-center justify-center">
+            <Check className="h-4 w-4 text-crema" />
+          </div>
+          <span className="text-[10px] font-semibold tracking-[0.4em] uppercase text-crema/45">
+            {collectionName || 'Tu colección'}
+          </span>
+        </div>
+
+        {/* Headline */}
+        <h2 className="text-[32px] sm:text-[44px] lg:text-[52px] font-light text-crema tracking-[-0.03em] leading-[1.05] text-center mb-8">
+          Dirección Creativa<br />
+          <span className="italic">cerrada</span>.
+        </h2>
+
+        {/* Captured pieces */}
+        <p className="text-[14px] sm:text-[15px] font-light text-crema/70 leading-[1.7] text-center max-w-[560px] mx-auto mb-3">
+          {brandName ? <>Tu marca <span className="text-crema italic">{brandName}</span>, </> : <>Tu marca, </>}
+          {consumerCount > 0 ? `${consumerCount} ${consumerCount === 1 ? 'perfil de consumidor' : 'perfiles de consumidor'}, ` : 'tu consumidor, '}
+          tu moodboard
+          {trendCount > 0 ? `, ${trendCount} cards de tendencias` : ''}
+          {competitorCount > 0 ? ` y ${competitorCount} referencias competitivas` : ''}
+          {' '}quedan capturados como una sola visión.
+        </p>
+        <p className="text-[12px] text-crema/35 italic text-center mb-12">
+          Cada decisión que viene a partir de aquí se ancla en lo que acabas de construir.
+        </p>
+
+        {/* What's next — Block 2 mini-blocks */}
+        <div className="border-t border-crema/[0.10] pt-8 mb-10">
+          <p className="text-[10px] font-semibold tracking-[0.4em] uppercase text-crema/45 text-center mb-6">
+            Próximo · Merchandising y Planificación
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+            {NEXT_STEPS.map((s, i) => (
+              <div key={i} className="flex items-baseline gap-3">
+                <span className="text-[10px] font-mono text-crema/30 shrink-0 mt-0.5">0{i + 1}</span>
+                <div>
+                  <p className="text-[14px] font-medium text-crema/90 tracking-[-0.01em]">{s.label}</p>
+                  <p className="text-[11px] text-crema/40 italic mt-0.5">usa {s.uses}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button
+            type="button"
+            onClick={onContinue}
+            autoFocus
+            className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-[13px] font-semibold tracking-[-0.01em] bg-crema text-carbon hover:bg-white transition-colors"
+          >
+            Empezar Merchandising
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[12px] font-medium border border-crema/[0.20] text-crema/70 hover:text-crema hover:border-crema/40 transition-all"
+          >
+            Volver al Resumen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }: { blockData: BlockData; collectionContext: { season: string; collectionName: string }; updateBlockData: (blockId: string, updates: Partial<BlockData[string]>) => void }) {
   const t = useTranslation();
   const router = useRouter();
@@ -3450,10 +4220,55 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { id: collectionId } = useParams();
 
-  // ── Extract all confirmed data ──
+  // ── CIS + user_brands canonical loaders ──
+  // The Synthesis used to read everything from `blockData` (workspace
+  // state, frontend cache). Post Sprint A it reads from CIS for
+  // creative.* keys and from user_brands for the linked brand. That's
+  // the same source of truth Block 2/3/4 prompts read, so any edit
+  // here propagates downstream the moment we POST it.
+  type MarketCard = { title: string; brands?: string; desc: string; relevance?: string; dimension?: ResearchResult['dimension']; hex?: string };
+  const [cisLoaded, setCisLoaded] = useState(false);
+  const [cisVibe, setCisVibe] = useState('');
+  const [cisMarketTrends, setCisMarketTrends] = useState<MarketCard[]>([]);
+  const [cisMarketLiveSignals, setCisMarketLiveSignals] = useState<MarketCard[]>([]);
+  const [cisMarketCompetitors, setCisMarketCompetitors] = useState<MarketCard[]>([]);
+  const [linkedBrand, setLinkedBrand] = useState<UserBrandRow | null>(null);
+
+  const reloadCanonical = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const [cisRes, planRes, vaultRes] = await Promise.all([
+        fetch(`/api/collection-intelligence?planId=${collectionId}&domain=creative`).then(r => r.json()),
+        supabase.from('collection_plans').select('brand_id').eq('id', collectionId).single(),
+        fetch('/api/user-brands').then(r => r.json()),
+      ]);
+      const decisions: Array<{ subdomain: string; key: string; value: unknown }> = cisRes.decisions || [];
+      const get = (subdomain: string, key: string): unknown => {
+        return decisions.find(d => d.subdomain === subdomain && d.key === key)?.value;
+      };
+      setCisVibe((get('identity', 'collection_vibe') as string) || '');
+      setCisMarketTrends(Array.isArray(get('market', 'trends')) ? get('market', 'trends') as MarketCard[] : []);
+      setCisMarketLiveSignals(Array.isArray(get('market', 'live_signals')) ? get('market', 'live_signals') as MarketCard[] : []);
+      setCisMarketCompetitors(Array.isArray(get('market', 'competitors')) ? get('market', 'competitors') as MarketCard[] : []);
+      const brandId = (planRes.data as { brand_id?: string | null } | null)?.brand_id ?? null;
+      const brands = (vaultRes.brands || []) as UserBrandRow[];
+      setLinkedBrand(brandId ? brands.find(b => b.id === brandId) || null : null);
+    } catch (err) {
+      console.error('[CreativeSynthesis] reloadCanonical failed', err);
+    } finally {
+      setCisLoaded(true);
+    }
+  }, [collectionId]);
+
+  useEffect(() => { reloadCanonical(); }, [reloadCanonical]);
+
+  // ── Extract data from canonical sources ──
+  // Vibe still also has a local "vibeTitle / keywords" structure in
+  // workspace state; keep those for the hero header. The narrative
+  // body comes from CIS (the canonical text downstream prompts read).
   const vibeData = blockData.vibe?.data || {};
   const vibeTitle = (vibeData.vibeTitle as string) || '';
-  const vibeNarrative = (vibeData.vibe as string) || '';
+  const vibeNarrative = cisVibe || (vibeData.vibe as string) || '';
   const vibeKeywords = (vibeData.keywords as string) || '';
 
   const consumerData = blockData.consumer?.data || {};
@@ -3462,28 +4277,28 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
 
   const moodboardImages = (blockData.moodboard?.data?.images as string[]) || [];
 
-  const brandData = blockData['brand-dna']?.data || {};
-  const brandName = (brandData.brandName as string) || '';
-  const brandColors = (brandData.colors as string[]) || [];
-  const brandTone = (brandData.tone as string) || '';
-  const brandTypography = (brandData.typography as string) || '';
-  const brandStyle = (brandData.style as string) || '';
+  // Brand DNA from user_brands (canonical) — falls back to legacy
+  // text columns when the structured jsonb columns are missing.
+  const brandName = linkedBrand?.brand_name || '';
+  const brandTagline = linkedBrand?.tagline || '';
+  const brandPalette = (Array.isArray(linkedBrand?.colors) ? linkedBrand!.colors : []) as Array<{ name?: string; hex: string; role?: string; rationale?: string }>;
+  const brandColorHexes = brandPalette.map(c => (c?.hex || '#cccccc'));
+  const brandTone = (linkedBrand?.voice?.tone || linkedBrand?.tone || '') as string;
+  const brandTypography = (linkedBrand?.typography || '') as string;
+  const brandStyle = (linkedBrand?.style || '') as string;
 
-  const getSelectedResults = (blockId: string): ResearchResult[] => {
-    const results = (blockData[blockId]?.data?.results as ResearchResult[]) || [];
-    return results.filter(r => r.selected);
-  };
-
-  const globalTrends = getSelectedResults('global-trends');
-  const deepDive = getSelectedResults('deep-dive');
-  const liveSignals = getSelectedResults('live-signals');
-  const competitors = getSelectedResults('competitors');
-  const allTrends = [...globalTrends, ...deepDive, ...liveSignals];
+  // Market research with `dimension` tag preserved. Grouping the cards
+  // by dimension is what lets the Synthesis surface the axis structure
+  // the user built (theme / category / color / material for trends;
+  // street / social / retail / cultural for live signals; competitor
+  // vs reference for competitors). Flat list kept too for simple grids.
+  const allTrends: MarketCard[] = [...cisMarketTrends, ...cisMarketLiveSignals];
+  const competitors: MarketCard[] = cisMarketCompetitors;
 
   const hasVibe = !!(vibeTitle || vibeNarrative);
   const hasConsumer = consumerProposals.length > 0;
   const hasMoodboard = moodboardImages.length > 0;
-  const hasBrand = !!(brandName || brandColors.length > 0);
+  const hasBrand = !!(brandName || brandPalette.length > 0);
   const hasTrends = allTrends.length > 0;
   const hasCompetitors = competitors.length > 0;
   const hasAnything = hasVibe || hasConsumer || hasMoodboard || hasBrand || hasTrends;
@@ -3501,85 +4316,197 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
   const [addingConsumer, setAddingConsumer] = useState(false);
   const [newConsumer, setNewConsumer] = useState({ title: '', desc: '' });
 
-  // ── Research edit helpers ──
-  const updateResearchResults = (blockId: string, updatedResults: ResearchResult[]) => {
-    const currentData = blockData[blockId]?.data || {};
-    const allResults = (currentData.results as ResearchResult[]) || [];
-    // Rebuild: keep unselected as-is, replace selected with updated
-    const unselected = allResults.filter(r => !r.selected);
-    updateBlockData(blockId, { data: { ...currentData, results: [...unselected, ...updatedResults] } });
+  // ── Research edit helpers (write to CIS via /api/research-confirm) ──
+  // Each lens has its own CIS subdomain; this helper picks the right
+  // lens for a flat-list index (since the UI shows trends + live as
+  // one combined "Trend Direction" grid, and competitors separately).
+  // Optimistic: state updates first, network call in background;
+  // reloadCanonical() re-syncs on completion.
+  const persistMarketLens = useCallback(async (lensApi: 'global' | 'live' | 'competitors', cards: MarketCard[]) => {
+    try {
+      await fetch('/api/research-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId: collectionId,
+          lens: lensApi,
+          results: cards.map(c => ({ ...c, selected: true })),
+        }),
+      });
+    } catch (err) {
+      console.error('[CreativeSynthesis] persistMarketLens failed', lensApi, err);
+    }
+  }, [collectionId]);
+
+  const lensAt = (idx: number): { lensApi: 'global' | 'live'; localIdx: number; list: MarketCard[]; setList: (next: MarketCard[]) => void } => {
+    if (idx < cisMarketTrends.length) {
+      return { lensApi: 'global', localIdx: idx, list: cisMarketTrends, setList: setCisMarketTrends };
+    }
+    return { lensApi: 'live', localIdx: idx - cisMarketTrends.length, list: cisMarketLiveSignals, setList: setCisMarketLiveSignals };
   };
 
   const removeTrend = (idx: number) => {
-    // Find which block this trend belongs to and remove it
-    let offset = 0;
-    for (const blockId of ['global-trends', 'deep-dive', 'live-signals'] as const) {
-      const selected = getSelectedResults(blockId);
-      if (idx < offset + selected.length) {
-        const localIdx = idx - offset;
-        const updated = selected.filter((_, i) => i !== localIdx);
-        updateResearchResults(blockId, updated);
-        return;
-      }
-      offset += selected.length;
-    }
+    const { lensApi, localIdx, list, setList } = lensAt(idx);
+    const next = list.filter((_, i) => i !== localIdx);
+    setList(next);
+    persistMarketLens(lensApi, next);
   };
 
-  const updateTrend = (idx: number, updates: Partial<ResearchResult>) => {
-    let offset = 0;
-    for (const blockId of ['global-trends', 'deep-dive', 'live-signals'] as const) {
-      const selected = getSelectedResults(blockId);
-      if (idx < offset + selected.length) {
-        const localIdx = idx - offset;
-        const updated = [...selected];
-        updated[localIdx] = { ...updated[localIdx], ...updates };
-        updateResearchResults(blockId, updated);
-        return;
-      }
-      offset += selected.length;
-    }
+  const updateTrend = (idx: number, updates: Partial<MarketCard>) => {
+    const { lensApi, localIdx, list, setList } = lensAt(idx);
+    const next = [...list];
+    next[localIdx] = { ...next[localIdx], ...updates };
+    setList(next);
+    persistMarketLens(lensApi, next);
   };
 
   const addManualTrend = () => {
     if (!newCard.title.trim()) return;
-    const currentData = blockData['global-trends']?.data || {};
-    const results = (currentData.results as ResearchResult[]) || [];
-    const manual: ResearchResult = { title: newCard.title, brands: newCard.brands, desc: newCard.desc, relevance: 'high', selected: true };
-    updateBlockData('global-trends', { data: { ...currentData, results: [...results, manual] } });
+    const manual: MarketCard = { title: newCard.title, brands: newCard.brands, desc: newCard.desc, relevance: 'high' };
+    const next = [...cisMarketTrends, manual];
+    setCisMarketTrends(next);
+    persistMarketLens('global', next);
     setNewCard({ title: '', brands: '', desc: '' });
     setAddingTrend(false);
   };
 
   const removeCompetitor = (idx: number) => {
-    const selected = getSelectedResults('competitors');
-    const updated = selected.filter((_, i) => i !== idx);
-    updateResearchResults('competitors', updated);
+    const next = competitors.filter((_, i) => i !== idx);
+    setCisMarketCompetitors(next);
+    persistMarketLens('competitors', next);
   };
 
-  const updateCompetitor = (idx: number, updates: Partial<ResearchResult>) => {
-    const selected = getSelectedResults('competitors');
-    const updated = [...selected];
-    updated[idx] = { ...updated[idx], ...updates };
-    updateResearchResults('competitors', updated);
+  const updateCompetitor = (idx: number, updates: Partial<MarketCard>) => {
+    const next = [...competitors];
+    next[idx] = { ...next[idx], ...updates };
+    setCisMarketCompetitors(next);
+    persistMarketLens('competitors', next);
   };
 
   const addManualCompetitor = () => {
     if (!newCard.title.trim()) return;
-    const currentData = blockData['competitors']?.data || {};
-    const results = (currentData.results as ResearchResult[]) || [];
-    const manual: ResearchResult = { title: newCard.title, brands: newCard.brands, desc: newCard.desc, relevance: 'high', selected: true };
-    updateBlockData('competitors', { data: { ...currentData, results: [...results, manual] } });
+    const manual: MarketCard = { title: newCard.title, brands: newCard.brands, desc: newCard.desc, relevance: 'high', dimension: 'reference' };
+    const next = [...competitors, manual];
+    setCisMarketCompetitors(next);
+    persistMarketLens('competitors', next);
     setNewCard({ title: '', brands: '', desc: '' });
     setAddingCompetitor(false);
   };
 
-  // ── Brand DNA edit helpers ──
+  // ── Brand DNA edit helpers (write to user_brands + project to CIS) ──
+  // When the user edits any brand field in the Synthesis, we rebuild
+  // a BrandIdentityProposal from the linked brand row, apply the
+  // change, and POST to /api/brand-confirm. That endpoint persists to
+  // user_brands AND projects to CIS (creative.identity.* + marketing
+  // .voice.*) so downstream readers see the edit immediately.
+  // Typography / style legacy text columns are NOT structured (no
+  // brand-confirm field maps to them) — we PATCH user_brands directly
+  // for those, accepting that creative.identity.typography_pairings
+  // stays as the structured array until the user runs Modificar.
+  const persistBrandViaConfirm = useCallback(async (mutate: (p: BrandIdentityProposal, name: { name: string; tagline?: string }) => { proposal: BrandIdentityProposal; name: { name: string; tagline?: string } }) => {
+    if (!linkedBrand) return;
+    try {
+      const baseProposal = brandToProposal(linkedBrand);
+      const baseName = { name: linkedBrand.brand_name, tagline: linkedBrand.tagline || '' };
+      const { proposal, name } = mutate(baseProposal, baseName);
+      await fetch('/api/brand-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId: collectionId,
+          proposal,
+          chosenName: name,
+          brandId: linkedBrand.id,
+        }),
+      });
+      await reloadCanonical();
+    } catch (err) {
+      console.error('[CreativeSynthesis] persistBrandViaConfirm failed', err);
+    }
+  }, [linkedBrand, collectionId, reloadCanonical]);
+
+  const persistBrandLegacyText = useCallback(async (patch: { typography?: string; style?: string }) => {
+    if (!linkedBrand) return;
+    try {
+      await fetch('/api/user-brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: linkedBrand.id, ...patch }),
+      });
+      setLinkedBrand(prev => prev ? { ...prev, ...patch } : prev);
+    } catch (err) {
+      console.error('[CreativeSynthesis] persistBrandLegacyText failed', err);
+    }
+  }, [linkedBrand]);
+
   const updateBrandField = (field: string, value: string | string[]) => {
-    const current = blockData['brand-dna']?.data || {};
-    updateBlockData('brand-dna', { data: { ...current, [field]: value } });
+    if (!linkedBrand) return;
+    if (field === 'brandName') {
+      setLinkedBrand(prev => prev ? { ...prev, brand_name: value as string } : prev);
+      persistBrandViaConfirm((p, n) => {
+        const next = [...p.nameOptions];
+        next[0] = { ...(next[0] || { name: '', tagline: '', reasoning: '' }), name: value as string };
+        return { proposal: { ...p, nameOptions: next }, name: { ...n, name: value as string } };
+      });
+    } else if (field === 'tone') {
+      setLinkedBrand(prev => prev ? { ...prev, tone: value as string, voice: prev.voice ? { ...prev.voice, tone: value as string } : { personality: '', tone: value as string, do_rules: [], dont_rules: [], vocabulary: [] } } : prev);
+      persistBrandViaConfirm((p, n) => ({
+        proposal: { ...p, voice: { ...p.voice, tone: value as string } },
+        name: n,
+      }));
+    } else if (field === 'colors') {
+      // value can be string[] of hex (legacy) or palette object array (new).
+      // Legacy array is what the comma-separated input produces — map
+      // hex → palette entries with role inferred by index.
+      const roleByIdx: Array<'primary'|'secondary'|'accent'|'neutral'> = ['primary', 'secondary', 'accent', 'neutral', 'accent', 'accent'];
+      const arr = (Array.isArray(value) ? value : []).map((entry, i) => {
+        if (typeof entry === 'string') {
+          return { name: '', hex: entry.startsWith('#') ? entry : `#${entry}`, role: roleByIdx[i] || 'accent', rationale: '' };
+        }
+        return entry as { name: string; hex: string; role: 'primary'|'secondary'|'accent'|'neutral'; rationale: string };
+      });
+      setLinkedBrand(prev => prev ? { ...prev, colors: arr } : prev);
+      persistBrandViaConfirm((p, n) => ({ proposal: { ...p, palette: arr }, name: n }));
+    } else if (field === 'typography') {
+      persistBrandLegacyText({ typography: value as string });
+    } else if (field === 'style') {
+      persistBrandLegacyText({ style: value as string });
+    }
   };
 
-  // ── Consumer edit helpers ──
+  // ── Consumer edit helpers (workspace state + CIS projection) ──
+  // The consumer mini-block writes flat text fields (demographics /
+  // psychographics / lifestyle) to CIS at confirm time. Edits in the
+  // Synthesis update the workspace state proposals[] AND re-derive
+  // the CIS text fields so downstream prompts see the new wording.
+  const persistConsumerToCIS = useCallback(async (proposals: Array<{ title: string; desc: string; status: string }>) => {
+    const liked = proposals.filter(p => p.status === 'liked');
+    if (liked.length === 0) return;
+    // Write only `creative.target.proposals` (jsonb list) — leaves the
+    // demographics / psychographics / lifestyle text fields managed by
+    // the Consumer mini-block, so we don't overwrite the nuanced text
+    // it composed at confirm time. Downstream prompt consumers that
+    // want the proposal cards (e.g., a future "consumer-aware" reader)
+    // can pick up this list directly.
+    try {
+      await fetch('/api/collection-intelligence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId: collectionId,
+          domain: 'creative', subdomain: 'target', key: 'proposals',
+          value: liked,
+          valueType: 'list',
+          source: 'user_input',
+          sourcePhase: 'creative',
+          sourceComponent: 'CreativeSynthesisView',
+        }),
+      });
+    } catch (err) {
+      console.error('[CreativeSynthesis] persistConsumerToCIS failed', err);
+    }
+  }, [collectionId]);
+
   const getAllConsumerProposals = (): Array<{ title: string; desc: string; status: string }> => {
     return (consumerData.proposals as Array<{ title: string; desc: string; status: string }>) || [];
   };
@@ -3593,6 +4520,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
     const updated = [...all];
     updated[globalIdx] = { ...updated[globalIdx], ...updates };
     updateBlockData('consumer', { data: { ...consumerData, proposals: updated } });
+    persistConsumerToCIS(updated);
   };
 
   const removeConsumerProposal = (likedIdx: number) => {
@@ -3604,13 +4532,16 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
     const updated = [...all];
     updated[globalIdx] = { ...updated[globalIdx], status: 'rejected' };
     updateBlockData('consumer', { data: { ...consumerData, proposals: updated } });
+    persistConsumerToCIS(updated);
   };
 
   const addManualConsumer = () => {
     if (!newConsumer.title.trim()) return;
     const all = getAllConsumerProposals();
     const manual = { title: newConsumer.title, desc: newConsumer.desc, status: 'liked' };
-    updateBlockData('consumer', { data: { ...consumerData, proposals: [...all, manual] } });
+    const next = [...all, manual];
+    updateBlockData('consumer', { data: { ...consumerData, proposals: next } });
+    persistConsumerToCIS(next);
     setNewConsumer({ title: '', desc: '' });
     setAddingConsumer(false);
   };
@@ -3800,7 +4731,7 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
                 </div>
                 <div>
                   <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.colorsHexLabel || "Colors (hex, comma-separated)"}</div>
-                  <input type="text" value={brandColors.join(', ')} onChange={(e) => updateBrandField('colors', e.target.value.split(',').map(c => c.trim()).filter(Boolean))} className="w-full px-2 py-1.5 text-xs text-carbon border border-carbon/[0.12] focus:outline-none font-mono" />
+                  <input type="text" value={brandColorHexes.join(', ')} onChange={(e) => updateBrandField('colors', e.target.value.split(',').map(c => c.trim()).filter(Boolean))} className="w-full px-2 py-1.5 text-xs text-carbon border border-carbon/[0.12] focus:outline-none font-mono" />
                 </div>
                 <div>
                   <div className="text-[9px] font-medium tracking-[0.2em] uppercase text-carbon/30 mb-1">{(t.creative as Record<string, string>)?.voiceTone || "Voice & Tone"}</div>
@@ -3817,14 +4748,23 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
               </div>
             ) : (
               <>
-                {brandName && <h4 className="text-lg font-light text-carbon tracking-tight mb-4">{brandName}</h4>}
-                {brandColors.length > 0 && (
-                  <div className="flex gap-2 mb-5">
-                    {brandColors.map((c, i) => {
-                      const hex = c.replace(/\s*\(.*\)/, '').trim();
+                {brandName && (
+                  <div className="mb-4">
+                    <h4 className="text-lg font-light text-carbon tracking-tight">{brandName}</h4>
+                    {brandTagline && <p className="text-xs text-carbon/50 mt-0.5 italic">{brandTagline}</p>}
+                  </div>
+                )}
+                {brandPalette.length > 0 && (
+                  <div className="flex gap-2 mb-5 flex-wrap">
+                    {brandPalette.map((c, i) => {
+                      const hex = (c.hex || '#cccccc').startsWith('#') ? c.hex : '#cccccc';
                       return (
                         <div key={i} className="flex flex-col items-center gap-1.5">
-                          <div className="w-10 h-10 border border-carbon/[0.08]" style={{ backgroundColor: hex }} />
+                          <div
+                            className="w-10 h-10 rounded-[6px] border border-carbon/[0.08]"
+                            style={{ backgroundColor: hex }}
+                            title={c.name ? `${c.name} · ${c.role || ''}` : hex}
+                          />
                           <span className="text-[9px] text-carbon/40 font-mono">{hex}</span>
                         </div>
                       );
@@ -4012,64 +4952,22 @@ function CreativeSynthesisView({ blockData, collectionContext, updateBlockData }
         </div>
       )}
 
-      {/* ═══ Celebration Overlay ═══ */}
+      {/* ═══ Celebration Overlay — handoff to Block 2 ═══
+          Editorial dark surface that closes Bloque 1 and frames the
+          next step. Lists the four Block 2 mini-blocks by name so the
+          user understands what's about to be unlocked. Brand name is
+          rendered dynamically when a brand is linked (e.g., "Nudo").
+          Dismissible via the X corner button or pressing Esc. */}
       {showCelebration && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center"
-          style={{ animation: 'fadeIn 0.6s ease-out forwards' }}
-        >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-carbon/95" style={{ animation: 'fadeIn 0.4s ease-out forwards' }} />
-
-          {/* Content */}
-          <div className="relative z-10 text-center px-6 max-w-2xl" style={{ animation: 'slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both' }}>
-            {/* aimily logo mark */}
-            <div className="w-16 h-16 mx-auto mb-8 border border-crema/20 flex items-center justify-center" style={{ animation: 'scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both' }}>
-              <Check className="h-7 w-7 text-crema/80" />
-            </div>
-
-            <div className="text-[10px] font-medium tracking-[0.4em] uppercase text-crema/30 mb-4" style={{ animation: 'fadeIn 0.6s ease-out 0.8s both' }}>
-              {collectionContext.collectionName}
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-light text-crema tracking-tight leading-[1.1] mb-6" style={{ animation: 'fadeIn 0.6s ease-out 1s both' }}>
-              Your creative direction<br />is <span className="italic">validated</span>.
-            </h2>
-
-            <p className="text-sm sm:text-base font-light text-crema/60 leading-relaxed max-w-lg mx-auto mb-4" style={{ animation: 'fadeIn 0.6s ease-out 1.3s both' }}>
-              Consumer, vibe, brand DNA, moodboard, trends — everything is captured.
-              Your collection has a soul now. Time to give it structure.
-            </p>
-
-            <p className="text-xs text-crema/30 italic mb-10" style={{ animation: 'fadeIn 0.6s ease-out 1.5s both' }}>
-              Every great collection starts with a clear point of view. You have yours.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animation: 'fadeIn 0.6s ease-out 1.8s both' }}>
-              <button
-                onClick={() => router.push(`/collection/${collectionId}/merchandising`)}
-                className="flex items-center gap-3 px-8 py-3.5 bg-crema text-carbon text-[11px] font-medium tracking-[0.15em] uppercase hover:bg-white transition-colors"
-              >
-                Start Merchandising <ArrowRight className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => router.push(`/collection/${collectionId}`)}
-                className="flex items-center gap-2 px-6 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-crema/50 border border-crema/15 hover:text-crema/80 hover:border-crema/30 transition-colors"
-              >
-                Back to Dashboard
-              </button>
-            </div>
-
-            {/* Dismiss */}
-            <button
-              onClick={() => setShowCelebration(false)}
-              className="mt-8 text-[10px] tracking-[0.1em] uppercase text-crema/20 hover:text-crema/40 transition-colors"
-            >
-              Stay here and keep editing
-            </button>
-          </div>
-        </div>
+        <CreativeHandoffOverlay
+          collectionName={collectionContext.collectionName}
+          brandName={brandName}
+          consumerCount={consumerProposals.length}
+          trendCount={allTrends.length}
+          competitorCount={competitors.length}
+          onContinue={() => router.push(`/collection/${collectionId}/merchandising`)}
+          onDismiss={() => setShowCelebration(false)}
+        />
       )}
     </div>
   );
@@ -4376,7 +5274,8 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
               const block = found.block;
               const resolvedStepId = found.stepId;
               const state = getBlockState(block.id);
-              const hideModePillsClean = block.id === 'moodboard' || block.id === 'consumer';
+              const cleanModeBlocks = ['moodboard', 'consumer', 'brand-dna', 'research', 'global-trends', 'deep-dive', 'live-signals', 'competitors'];
+              const hideModePillsClean = cleanModeBlocks.includes(block.id);
               return (
                 <div>
                   {/* Mode selector — centered below title */}
@@ -4445,9 +5344,12 @@ export default function CreativeBrandPage({ blockParamOverride }: { blockParamOv
 
                   {/* Default centered Confirm — only for blocks that haven't
                       migrated to the canonical top nav bar yet. Consumer
-                      hides it because the top bar already has both controls. */}
+                      hides it because the top bar already has both controls.
+                      Brand DNA hides it because the multi-axis renderer
+                      ships its own Modificar / Confirmar marca bar. */}
                   {(() => {
                     if (block.id === 'consumer') return null;
+                    if (block.id === 'brand-dna') return null;
                     return (
                       <div className="mt-16 flex justify-center pt-8 border-t border-carbon/[0.06]">
                         <button
