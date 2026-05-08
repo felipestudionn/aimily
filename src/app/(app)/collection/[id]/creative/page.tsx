@@ -2328,9 +2328,12 @@ interface ResearchResult {
   relevance?: string;
   selected: boolean;
   editing?: boolean;
-  // For the merged Tendencias lens, Sonar tags each card with which
-  // axis it belongs to. The expanded view groups by this.
-  dimension?: 'theme' | 'category' | 'color' | 'material';
+  // For multi-axis lenses (Tendencias and Live Signals), Sonar tags
+  // each card with which axis it belongs to. The expanded view groups
+  // results by this dimension into section headers.
+  dimension?:
+    | 'theme' | 'category' | 'color' | 'material'
+    | 'street_style' | 'social_media' | 'retail_signals' | 'cultural_moments';
   // Color cards carry a hex string so the UI renders a swatch
   // alongside the title (only set when dimension === 'color').
   hex?: string;
@@ -2455,7 +2458,7 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     const existingTitles = results.map(r => r.title);
     const { result, error: err } = await callResearch(existingTitles);
     if (err) { setError(err); setGenerating(false); return; }
-    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: 'theme' | 'category' | 'color' | 'material'; hex?: string }> };
+    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: DimKey; hex?: string }> };
     const moreResults = (parsed.results || [])
       .filter(r => !existingTitles.includes(r.title)) // Extra safety: no duplicates
       .slice(0, 4)
@@ -2464,12 +2467,16 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     setGenerating(false);
   };
 
-  // Deepen one specific dimension (themes / categories / colors /
-  // materials). Used by the per-section "+ Más" buttons in the
-  // expanded Tendencias view. Sonar receives a targetDimension flag
-  // and returns only cards for that axis; we append them tagged.
-  const [generatingDim, setGeneratingDim] = useState<'theme' | 'category' | 'color' | 'material' | null>(null);
-  const handleLoadMoreDimension = async (dimension: 'theme' | 'category' | 'color' | 'material') => {
+  // Deepen one specific dimension. Tendencias has 4 axes (themes /
+  // categories / colors / materials); Live Signals has 4 axes
+  // (street_style / social_media / retail_signals / cultural_moments).
+  // The per-section "+ Más" buttons send a targetDimension flag and
+  // Sonar returns only cards for that axis; we append them tagged.
+  type DimKey =
+    | 'theme' | 'category' | 'color' | 'material'
+    | 'street_style' | 'social_media' | 'retail_signals' | 'cultural_moments';
+  const [generatingDim, setGeneratingDim] = useState<DimKey | null>(null);
+  const handleLoadMoreDimension = async (dimension: DimKey) => {
     setGeneratingDim(dimension);
     setError(null);
     // Two pieces of context flow into the deepen call:
@@ -2497,7 +2504,7 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     if (existingInDimension) inputPayload.existingInDimension = existingInDimension;
     const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', inputPayload, language);
     if (err) { setError(err); setGeneratingDim(null); return; }
-    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: 'theme' | 'category' | 'color' | 'material'; hex?: string }> };
+    const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: DimKey; hex?: string }> };
     // Filter against same-dimension titles only at this point (the
     // LLM has been told to avoid all titles already; this is just a
     // safety net for exact-match same-axis duplicates).
@@ -2608,12 +2615,26 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
           categories / colors / materials) with section headers; the
           other two lenses keep their flat list ─────────────────── */}
       {results.length > 0 && results.some((r) => r.dimension) && (() => {
-        const dimensionsOrder: Array<{ key: 'theme' | 'category' | 'color' | 'material'; label: string }> = [
-          { key: 'theme',    label: (t.creative as Record<string, string>).dimensionThemes     || 'Themes' },
-          { key: 'category', label: (t.creative as Record<string, string>).dimensionCategories || 'Categorías' },
-          { key: 'color',    label: (t.creative as Record<string, string>).dimensionColors     || 'Colores' },
-          { key: 'material', label: (t.creative as Record<string, string>).dimensionMaterials  || 'Materiales' },
-        ];
+        // Lens-aware dimension layout. Tendencias splits into 4
+        // editorial axes (themes/categories/colors/materials); Live
+        // Signals splits into 4 location-grounded axes (street/social/
+        // retail/cultural). Both share the same per-section grid +
+        // "+ Más" deepen button below — only the labels and keys change.
+        const tCreative = t.creative as Record<string, string>;
+        const dimensionsOrder: Array<{ key: DimKey; label: string }> =
+          blockId === 'live-signals'
+            ? [
+                { key: 'street_style',     label: tCreative.dimensionStreetStyle     || 'Street style' },
+                { key: 'social_media',     label: tCreative.dimensionSocialMedia     || 'Redes sociales' },
+                { key: 'retail_signals',   label: tCreative.dimensionRetailSignals   || 'Señales retail' },
+                { key: 'cultural_moments', label: tCreative.dimensionCulturalMoments || 'Momentos culturales' },
+              ]
+            : [
+                { key: 'theme',    label: tCreative.dimensionThemes     || 'Themes' },
+                { key: 'category', label: tCreative.dimensionCategories || 'Categorías' },
+                { key: 'color',    label: tCreative.dimensionColors     || 'Colores' },
+                { key: 'material', label: tCreative.dimensionMaterials  || 'Materiales' },
+              ];
         return (
           <div className="space-y-12">
             {dimensionsOrder.map(({ key, label }) => {
@@ -3141,52 +3162,42 @@ function MarketResearchUnified({
         </button>
       </div>
 
-      {/* ── Stepper · 3 lenses with state badges ─────────────────
-          Replaces the 3fr/1fr layout with mini cards on the right.
-          Sequence is explicit; clicking a step jumps to that lens.
-          State per step:
-          · activeIdx → active (filled black)
-          · confirmed → confirmed (border + check)
-          · neither   → pending (subtle gray) ──────────────────── */}
-      <div className="mb-8 flex items-center gap-3 max-w-[1100px] mx-auto">
-        {RESEARCH_BLOCKS.map((block, idx) => {
-          const blockState = blockData[block.id] || { confirmed: false, data: {} };
-          const results = (blockState.data?.results as Array<{ selected?: boolean }>) || [];
-          const keptCount = results.filter((r) => r.selected !== false).length;
-          const isActive = idx === activeIdx;
-          const isConfirmed = blockState.confirmed;
-          return (
-            <button
-              key={block.id}
-              type="button"
-              onClick={() => setActiveIdx(idx)}
-              className={`group flex-1 inline-flex items-center justify-between gap-3 px-5 py-3.5 rounded-[14px] text-left transition-all ${
-                isActive
-                  ? 'bg-carbon text-white shadow-[0_4px_16px_rgba(0,0,0,0.15)]'
-                  : isConfirmed
-                  ? 'bg-white border border-carbon/15 text-carbon hover:border-carbon/30'
-                  : 'bg-white border border-carbon/[0.08] text-carbon/55 hover:text-carbon hover:border-carbon/20'
-              }`}
-            >
-              <span className="flex items-center gap-2.5 min-w-0">
-                <span className={`text-[10px] tracking-[0.18em] uppercase font-semibold ${isActive ? 'text-white/55' : 'text-carbon/40'}`}>
-                  0{idx + 1}
-                </span>
-                <span className="text-[14px] font-medium tracking-[-0.01em] truncate">
-                  {block.label}
-                </span>
-              </span>
-              <span className="flex items-center gap-1.5 flex-shrink-0">
+      {/* ── Lens pill · canonical pattern (mirrors WizardSidebar mode
+          switcher Trabajo / Calendario / Presentación). White pill
+          track + sliding active state + icon + label + count dot.
+          Click a lens → setActiveIdx → ResearchBlockContent
+          remounts (key={blockId}) → autoFiredForBlockRef triggers
+          Sonar on first arrival. No invented variants. ──────────── */}
+      <div className="mb-8 flex justify-center">
+        <div className="inline-flex items-center gap-0.5 rounded-full bg-carbon/[0.04] p-1">
+          {RESEARCH_BLOCKS.map((block, idx) => {
+            const blockState = blockData[block.id] || { confirmed: false, data: {} };
+            const results = (blockState.data?.results as Array<{ selected?: boolean }>) || [];
+            const keptCount = results.filter((r) => r.selected !== false).length;
+            const isActive = idx === activeIdx;
+            const Icon = block.icon;
+            return (
+              <button
+                key={block.id}
+                type="button"
+                onClick={() => setActiveIdx(idx)}
+                className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold tracking-[-0.01em] transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] text-carbon'
+                    : 'text-carbon/50 hover:text-carbon/80'
+                }`}
+              >
+                <Icon className="h-[13px] w-[13px] shrink-0" strokeWidth={1.5} />
+                <span>{block.label}</span>
                 {keptCount > 0 && (
-                  <span className={`text-[10px] tracking-[0.1em] uppercase font-semibold ${isActive ? 'text-white/65' : 'text-carbon/45'}`}>
+                  <span className={`text-[10px] font-medium ${isActive ? 'text-carbon/45' : 'text-carbon/35'}`}>
                     ·{keptCount}
                   </span>
                 )}
-                {isConfirmed && !isActive && <Check className="h-3.5 w-3.5 text-carbon/55" />}
-              </span>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Active lens — full width, generous breathing room ─── */}

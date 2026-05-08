@@ -33,12 +33,22 @@ export interface TrendResult {
   brands: string;
   desc: string;
   relevance: 'high' | 'medium';
-  // For the merged Tendencias lens, Sonar groups its findings across
-  // four dimensions (themes / categories / colors / materials). We
-  // flatten the four buckets into a single results array with this
-  // tag so the UI can group by dimension while the existing select /
-  // edit / remove flow stays unchanged.
-  dimension?: 'theme' | 'category' | 'color' | 'material';
+  // For multi-axis lenses (Tendencias and Live Signals) Sonar groups
+  // its findings into multiple buckets. We flatten the buckets into a
+  // single results array with this tag so the UI can group by
+  // dimension while the existing select / edit / remove flow stays
+  // unchanged.
+  //   Tendencias  → theme | category | color | material
+  //   Live Signals → street_style | social_media | retail_signals | cultural_moments
+  dimension?:
+    | 'theme'
+    | 'category'
+    | 'color'
+    | 'material'
+    | 'street_style'
+    | 'social_media'
+    | 'retail_signals'
+    | 'cultural_moments';
   // Color cards carry a hex string so the UI can render a swatch
   // alongside the title. Format: "#RRGGBB" or a Pantone code that
   // the frontend can resolve against the local pantone_colors table.
@@ -112,11 +122,18 @@ export async function researchTrends(
   collectionContext?: { collectionName?: string; consumer?: string },
   excludeTitles?: string[],
   language?: string,
-  // When set, narrows the type='global' research to a single bucket.
-  // Used by the "+ Más temas / categorías / colores / materiales"
-  // buttons in the UI to deepen one axis without regenerating the
-  // whole multi-dimension grid.
-  targetDimension?: 'theme' | 'category' | 'color' | 'material',
+  // When set, narrows multi-axis research (Tendencias or Live Signals)
+  // to a single bucket. Used by the "+ Más {axis}" buttons in the UI
+  // to deepen one dimension without regenerating the whole grid.
+  targetDimension?:
+    | 'theme'
+    | 'category'
+    | 'color'
+    | 'material'
+    | 'street_style'
+    | 'social_media'
+    | 'retail_signals'
+    | 'cultural_moments',
   // Existing cards in the same axis. When the user clicks "+ Más",
   // we show Sonar what it already produced so it complements rather
   // than restates. Each entry is the user's view of an existing
@@ -276,33 +293,108 @@ ${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"..
       break;
 
     case 'live-signals':
-      prompt = `${collectionInfo}Find 6-8 LIVE FASHION SIGNALS — what real people are actually wearing, buying, and talking about right now in ${trendQuery ? trendQuery : 'fashion'}.
-${trendQuery ? `\nFocus specifically on ${trendQuery}. ALL signals must be about ${trendQuery}.\n` : ''}
-This is NOT about runway predictions. This is about what's HAPPENING ON THE GROUND:
+      // Live Signals is a LOCATION-FIRST scan structured across four
+      // axes — same canonical pattern as Tendencias but in the
+      // present-tense (last 3 months) and grounded in the user's city
+      // chips. Sonar searches each axis WITHIN the cities the user
+      // has on screen (whatever their framing chips are at trigger
+      // time) and returns four buckets we flatten with `dimension`.
+      //
+      // Audience reuses the consumer context that Tendencias already
+      // had — we don't repeat demographics here, we reference the
+      // SAME consumer profile.
+      {
+        const streetBlock = `STREET STYLE — what real people are wearing right now in the cities/neighborhoods listed.
+  HARD RULES:
+  · NOT a runway prediction. NOT a generic mood. Concrete pieces and looks people are wearing on the street.
+  · Sources: street-style coverage from Vogue.com, Tag Walk, Hypebae, The Cut, Highsnobiety, neighborhood-tagged Instagram accounts, TikTok #ootd / #streetstyle, Pinterest "spotted" boards.
+  · "title": Concrete look name (2-4 words). GOOD: "Sheer Layered Tights" · "Bermuda + Loafers" · "Slouchy Barrel Jeans" · "Knit Polo Tucked".
+  · "desc": 50-70 words — what it looks like, WHICH city/neighborhood it's been spotted in, type of person wearing it, when (last weeks), brands they're styling.`;
+        const socialBlock = `SOCIAL MEDIA — what's viral or trending on platforms tied to these locations.
+  HARD RULES:
+  · Pull only from publicly trackable platforms: TikTok hashtags / sounds / search trends, Instagram reels / accounts, Pinterest "most saved", Reddit r/femalefashionadvice / r/malefashionadvice / r/streetwear, X/Twitter fashion threads.
+  · "title": Hashtag, look name, or viral idea (2-4 words). GOOD: "#tabiflats" · "Mob Wife Aesthetic" · "Tomato Girl Summer" · "Quiet Luxury Backlash".
+  · "desc": 50-70 words — what the trend visually looks like, which platform / sub-platform drives it, hashtag count or view count if known, which cities/neighborhoods amplify it most, who started it.`;
+        const retailBlock = `RETAIL SIGNALS — what's selling out / new pop-ups / store changes in these cities right now.
+  HARD RULES:
+  · Concrete commerce signals only. NOT runway. NOT social.
+  · Examples to look for: items selling out at Zara/COS/Arket/&OS/Massimo Dutti/Uniqlo C/Mango/H&M Studio, sold-out drops at independents (Ssense / Mr Porter / End / Browns), new pop-ups, new flagship stores, brand entries / exits in given neighborhoods, resale heatmap on Vinted / Depop / Vestiaire.
+  · "title": Concrete commerce headline (2-5 words). GOOD: "COS Mesh Ballet Sold Out" · "Loewe Bushwick Pop-up" · "Vinted Bermuda Spike".
+  · "desc": 50-70 words — exact retailer/brand, the city/neighborhood, what's happening, why it matters (price tier, audience, what it signals about taste).`;
+        const culturalBlock = `CULTURAL MOMENTS — celebrity outfits / film / TV / music / events that are shaping fashion conversation.
+  HARD RULES:
+  · NOT a generic theme. NOT a runway. Concrete cultural moments with a wearer + a piece + a date.
+  · Examples: viral red-carpet moments, "as worn by" Instagram posts, costume design that's bleeding into street style, music-video looks, A-list paparazzi shots.
+  · "title": "[Wearer] in [piece] / [moment]" (2-5 words). GOOD: "Zendaya Vintage Mugler" · "The Bear Costume" · "Charli XCX Vinyl" · "Saltburn Jacket Revival".
+  · "desc": 50-70 words — who, what they wore, when, how it's reverberating in the cities listed, what's selling because of it.`;
 
-1. STREET STYLE — What are people wearing in fashion neighborhoods?
-   - London: Hackney, Shoreditch, Dalston
-   - NYC: Williamsburg, SoHo, Lower East Side
-   - Paris: Le Marais, Saint-Germain, Pigalle
-   - Tokyo: Daikanyama, Harajuku, Shimokitazawa
-   - Stockholm: Södermalm
-   - Barcelona: Born, Gràcia
-   - Copenhagen: Nørrebro, Vesterbro
-   - Milan: Brera, Navigli
+        type LiveDimSpec = { plural: string; block: string; jsonKey: string };
+        const liveTargetMap: Record<string, LiveDimSpec> = {
+          street_style:      { plural: 'street style looks',  block: streetBlock,    jsonKey: 'street_style' },
+          social_media:      { plural: 'social signals',      block: socialBlock,    jsonKey: 'social_media' },
+          retail_signals:    { plural: 'retail signals',      block: retailBlock,    jsonKey: 'retail_signals' },
+          cultural_moments:  { plural: 'cultural moments',    block: culturalBlock,  jsonKey: 'cultural_moments' },
+        };
 
-2. SOCIAL MEDIA — What's viral on TikTok fashion, Instagram style accounts, Reddit r/malefashionadvice and r/femalefashionadvice, Pinterest most-saved
+        const consumerLine = collectionContext?.consumer
+          ? `Consumer profile (already established for this collection — REUSE, don't repeat the demographics in your output):\n${collectionContext.consumer}\n`
+          : '';
 
-3. RETAIL SIGNALS — What's selling out at Zara, COS, & Other Stories, Massimo Dutti, Arket? What new stores or pop-ups have opened in key neighborhoods?
+        const liveContextHeader = `${collectionInfo}${seasonNote}
+${consumerLine}
+${trendQuery ? `LOCATIONS — search WITHIN these cities/neighborhoods the user has on screen: "${trendQuery}". EVERY card you return must be tied to ONE of these locations (named explicitly in title or desc). Don't generalise to "global street style".\n` : ''}
+RESEARCH SOURCES — pull from where live signals are tracked:
+  · Street style: Vogue.com street style, Tag Walk, Hypebae, The Cut, Highsnobiety, neighborhood-tagged Instagram, TikTok #ootd / #streetstyle.
+  · Social: TikTok hashtags / sounds, Instagram reels, Pinterest most-saved, r/femalefashionadvice / r/malefashionadvice / r/streetwear, X fashion threads.
+  · Retail: Zara / COS / Arket / & Other Stories / Massimo Dutti / Uniqlo C / Mango / H&M Studio "sold out" pages, Ssense / Mr Porter / End / Browns drops, Vinted / Depop / Vestiaire heatmaps, store openings press.
+  · Cultural: red-carpet coverage, costume design press, "as worn by" Instagram, music videos, paparazzi.
 
-4. CULTURAL MOMENTS — Which celebrity outfits went viral? Which TV shows or films are influencing style?
+Method: scan these sources for the LAST 3 MONTHS only. A card only counts if it's grounded in something concrete (a sold-out item, a viral hashtag with view count, a celebrity outfit on a known date, a real pop-up). NEVER invent. Reference real names, real cities, real platforms.`;
 
-For EACH signal:
-- "title": What people call it (e.g., "Cherry Red Everything", "Barn Jacket Revival", "Ballet Flat Comeback")
-- "brands": 3-5 brands, people, neighborhoods, or platforms driving this
-- "desc": 50-70 words — what it looks like, WHERE it's been spotted (city/neighborhood/platform), who's wearing it, how long it will last
-- "relevance": "high" or "medium"
+        let liveAskBody = '';
+        let liveJsonShape = '';
 
-${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
+        if (targetDimension && liveTargetMap[targetDimension]) {
+          const spec = liveTargetMap[targetDimension];
+          liveJsonShape = `{ "${spec.jsonKey}": [{"title":"...","brands":"...","desc":"..."}, ...] }`;
+          const existingBlock = existingInDimension && existingInDimension.length > 0
+            ? `\nThe user already has these ${spec.plural.toUpperCase()} from your earlier research:\n${existingInDimension.map(c => `  · ${c.title}${c.desc ? ` — ${c.desc.slice(0, 100)}` : ''}`).join('\n')}\n\nDeepen this axis: give me 3-5 MORE ${spec.plural} that COMPLEMENT (don't repeat or paraphrase) what's above.`
+            : `\nGive me 4-6 ${spec.plural}.`;
+          liveAskBody = `${spec.block}
+${existingBlock}
+
+For EVERY card include "brands" (3-5 names — brands, people, accounts, neighborhoods, or platforms driving this).`;
+        } else {
+          liveJsonShape = `{
+  "street_style":     [{"title":"...","brands":"...","desc":"..."}, ...],
+  "social_media":     [{"title":"...","brands":"...","desc":"..."}, ...],
+  "retail_signals":   [{"title":"...","brands":"...","desc":"..."}, ...],
+  "cultural_moments": [{"title":"...","brands":"...","desc":"..."}, ...]
+}`;
+          liveAskBody = `Research live fashion signals across FOUR DIMENSIONS — all grounded in the listed cities, all from the LAST 3 MONTHS. Each dimension is a separate bucket. NEVER mix. NEVER duplicate across dimensions.
+
+DIMENSION 1 · ${streetBlock}
+(produce 3-5 cards)
+
+DIMENSION 2 · ${socialBlock}
+(produce 3-5 cards)
+
+DIMENSION 3 · ${retailBlock}
+(produce 3-5 cards)
+
+DIMENSION 4 · ${culturalBlock}
+(produce 3-4 cards)
+
+For EVERY card across all dimensions, also include "brands" (3-5 names — brands, people, accounts, neighborhoods, or platforms driving this).`;
+        }
+
+        prompt = `${liveContextHeader}
+
+${liveAskBody}
+
+${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys, no extra wrapping):
+${liveJsonShape}`;
+      }
       break;
 
     case 'competitors':
@@ -502,11 +594,17 @@ async function callSonar(
     const flatten = (parsed: Record<string, unknown>): TrendResult[] => {
       if (Array.isArray(parsed.results)) return parsed.results as TrendResult[];
       const out: TrendResult[] = [];
-      const buckets: Array<['theme' | 'category' | 'color' | 'material', string]> = [
+      const buckets: Array<[NonNullable<TrendResult['dimension']>, string]> = [
+        // Tendencias
         ['theme', 'themes'],
         ['category', 'categories'],
         ['color', 'colors'],
         ['material', 'materials'],
+        // Live Signals
+        ['street_style', 'street_style'],
+        ['social_media', 'social_media'],
+        ['retail_signals', 'retail_signals'],
+        ['cultural_moments', 'cultural_moments'],
       ];
       for (const [dimension, key] of buckets) {
         const list = parsed[key];

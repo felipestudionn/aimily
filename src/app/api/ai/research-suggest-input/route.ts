@@ -147,7 +147,13 @@ export async function POST(req: NextRequest) {
       // BAD-examples list.
       userPrompt = `${collectionLine}\n\n${upstream}\n\nYou will return 5-8 chips. Each chip is a CONCEPT — the broadest possible noun. Strict rules:\n\nABSOLUTE LIMITS\n  · MAX 2 words per chip (only exception: a product family that genuinely is 2 words like "Calzado plano").\n  · NO numbers (no ages, no gsm, no thickness).\n  · NO adjectives chained ("deconstruida cuts" is forbidden, "arquitectónica" is forbidden, "fino" is forbidden, "creativa" is forbidden).\n  · NO multi-attribute phrases ("Mujer 28-45 creativa" is THREE attributes — split into one chip "Mujer" and drop the rest).\n  · NO technical fabric or construction language.\n\nThe chips include:\n  1. SEASON — just the code, like "SS27".\n  2. PRE-SEASON only if the moodboard says so — just the word "Pre-Fall", no adjective. Skip if not mentioned.\n  3. CONSUMER GENDER — exactly ONE word: "Mujer" OR "Hombre" OR "Unisex". Nothing else after it.\n  4. STYLE GENRE — 1-2 word concept like "Minimalismo" / "Lujo intelectual" / "Editorial" / "Streetwear". Stop there. No qualifying adjectives.\n  5-8. PRODUCT CATEGORIES (broad nouns) the moodboard surfaces. Examples: "Sastrería" "Knitwear" "Vestidos" "Bolsos" "Outerwear" "Sneakers" "Calzado plano" "Tabis" "Gabardinas" "Camisas".\n\nGOOD list (this is the level — copy this register):\n  "SS27" · "Pre-Fall" · "Mujer" · "Lujo intelectual" · "Sastrería" · "Knitwear" · "Vestidos" · "Calzado plano"\n\nBAD list (DO NOT produce anything like this):\n  "Mujer 28-45 creativa" · "Sastrería arquitectónica" · "Sastrería deconstruida cuts" · "Vestidos cropped midriff cutouts" · "Knitwear gauge fino" · "Lujo intelectual sin logo" · "Minimalismo serene de luge" · "Wool gabardine 280gsm"\n\nIf you produce ANY chip that contains an adjective beyond a 2-word genre name (like "Lujo intelectual"), it FAILS.\n\nReturn JSON:\n{ "focus": ["SS27", "Mujer", "Minimalismo", "Sastrería", "Knitwear", "Vestidos", ...] }`;
     } else if (lens === 'live') {
-      userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 4-6 chips that frame WHERE her world lives + WHAT cultural moments / hashtags relate to the moodboard. Sonar will then research live signals within those chips.\n\nMix:\n- 1-2 cities (pull verbatim from consumer.cities — e.g. "Copenhagen", "NYC Tribeca")\n- 1-2 lifestyle markers (distill from consumer.lifestyle — e.g. "vida en galerías", "cenas en terrazas")\n- 1-2 moodboard-related hashtags or hot topics (infer from moodboard.keyTrends + keyStyles — e.g. "#brutalistinteriors", "#tabiflats", "#liquidhemlines", "#biascutslip"). These are the social-media tags that align with the moodboard's visual language.\n\n1-3 words per chip. Hashtags lowercase, no spaces. Don't write full sentences.\n\nReturn JSON:\n{ "focus": ["chip 1", "chip 2", ...] }`;
+      // Live Signals is a LOCATION-BASED scan. We always start from a
+      // fixed set of 8 base cities (the editorial radar) and propose
+      // 2-3 EXTRA specific neighborhoods/cities the moodboard hints at.
+      // The user trims or extends from there. The LLM ONLY produces the
+      // extras — the 8 base chips are injected verbatim so the editor
+      // never depends on a model call to see the defaults.
+      userPrompt = `${collectionLine}\n\n${upstream}\n\nWe already have a fixed editorial radar of 8 cities (London, NYC, Paris, Tokyo, Stockholm, Barcelona, Copenhagen, Milan). Your job is ONLY to propose 2-3 EXTRA specific locations that the moodboard hints at — neighborhoods, districts, or smaller cities that aren't already in the base 8.\n\nHARD RULES\n  · DO NOT repeat or rephrase any of the 8 base cities (no "Shoreditch", no "SoHo", no "Le Marais", no "Daikanyama", no "Södermalm", no "Born", no "Nørrebro", no "Brera"). Those are already covered.\n  · The extras must be CONCRETE places — a neighborhood + city, or a smaller distinctive city — not lifestyle markers, not hashtags, not vibes.\n  · Pull from moodboard cultural references (locations, scenes, cities mentioned), or from consumer.cities IF it lists somewhere not already covered.\n  · 2-4 words per chip. Format: "City Neighborhood" (e.g. "Berlin Kreuzberg") or just "City" (e.g. "Lisbon", "LA Venice", "Mexico City Roma").\n\nGOOD extras examples:\n  "Berlin Mitte" · "LA Venice" · "Lisbon" · "Antwerp" · "Mexico City Roma" · "Seoul Hannam" · "Brooklyn Bushwick"\n\nBAD examples (DO NOT produce):\n  "vida en galerías" · "cenas en terrazas" · "#tabiflats" · "minimalismo brutalista" · "Shoreditch" (already in base) · "SoHo" (already in base)\n\nReturn JSON:\n{ "focus": ["Extra 1", "Extra 2", "Extra 3"] }`;
     } else {
       // competitors
       userPrompt = `${collectionLine}\n\n${upstream}\n\nReturn 6-8 BRAND chips spanning the FULL price spectrum competing for or aspiring this consumer's wallet. Mix:\n- 2-3 high-tier (€500+/piece) — aspirational brands she admires\n- 2-3 mid-tier (€150-400/piece) — direct competitors\n- 2 accessible-tier (€50-150/piece) — affordable equivalents (e.g. Mango, Massimo Dutti, Arket, Uniqlo C, COS Plus)\n\nReal brand names only. No descriptions. 1-3 words each.\n\nReturn JSON:\n{ "brands": ["Brand 1", "Brand 2", ...] }`;
@@ -186,6 +192,29 @@ export async function POST(req: NextRequest) {
         const alreadyPresent = out.focus.some((c) => c.toLowerCase().includes(mirror.toLowerCase()));
         if (!alreadyPresent) out.focus = [mirrorChip, ...out.focus];
       }
+    }
+
+    // Live Signals is location-based. The editor always shows 8 fixed
+    // editorial-radar cities up front, and the LLM-proposed extras
+    // (2-3 specific neighborhoods grounded in moodboard) follow them.
+    // The user can trim any chip they don't want before triggering
+    // Sonar. Order: bases first (familiar baseline) → extras (the
+    // moodboard-specific bonus picks).
+    if (lens === 'live') {
+      const BASE_LIVE_CITIES = [
+        'London',
+        'NYC',
+        'Paris',
+        'Tokyo',
+        'Stockholm',
+        'Barcelona',
+        'Copenhagen',
+        'Milan',
+      ];
+      const norm = (s: string) => s.toLowerCase().trim();
+      const baseSet = new Set(BASE_LIVE_CITIES.map(norm));
+      const extras = out.focus.filter((c) => !baseSet.has(norm(c)));
+      out.focus = [...BASE_LIVE_CITIES, ...extras];
     }
 
     console.log(`[ResearchSuggestInput:${lens}] result:`, { count: out.focus.length });
