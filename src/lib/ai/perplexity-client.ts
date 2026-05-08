@@ -119,7 +119,17 @@ export async function researchTrends(
   trendQuery: string,
   season?: string,
   type: 'global' | 'deep-dive' | 'live-signals' | 'competitors' = 'global',
-  collectionContext?: { collectionName?: string; consumer?: string },
+  collectionContext?: {
+    collectionName?: string;
+    consumer?: string;
+    // Live Signals reads the Tendencias framing chips (product
+    // categories, gender, style genre, season). Without these,
+    // Sonar searches "what's hot in {city} street style" globally
+    // and drifts to running sneakers / balletcore. With them, every
+    // axis (street/social/retail/cultural) stays anchored to the
+    // collection's product universe.
+    siblingTrendsFocus?: string;
+  },
   excludeTitles?: string[],
   language?: string,
   // When set, narrows multi-axis research (Tendencias or Live Signals)
@@ -340,8 +350,18 @@ ${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"..
           ? `Consumer profile (already established for this collection — REUSE, don't repeat the demographics in your output):\n${collectionContext.consumer}\n`
           : '';
 
+        // Tendencias' framing chips inherited verbatim. These are
+        // the product categories / gender / style genre / season the
+        // user already locked in on the trends lens. Live Signals'
+        // four axes MUST stay inside this universe — that's what
+        // makes the signals relevant to THIS collection rather than
+        // generic street-style hits (running sneakers, balletcore).
+        const siblingFramingLine = collectionContext?.siblingTrendsFocus
+          ? `PRODUCT UNIVERSE — Tendencias framing chips already locked in for this collection: "${collectionContext.siblingTrendsFocus}". EVERY card across every axis must intersect with this universe (e.g. if the chips include "Mujer · Sastrería · Knitwear · Vestidos · Calzado plano", do NOT return men's running sneakers, do NOT return basketball gear, do NOT return generic athleisure unless those chips include athleisure / sportswear). The signals are about WHO this consumer is and WHAT she wears — filter every street-style / social / retail / cultural finding through that lens.\n`
+          : '';
+
         const liveContextHeader = `${collectionInfo}${seasonNote}
-${consumerLine}
+${consumerLine}${siblingFramingLine}
 ${trendQuery ? `LOCATIONS — search WITHIN these cities/neighborhoods the user has on screen: "${trendQuery}". EVERY card you return must be tied to ONE of these locations (named explicitly in title or desc). Don't generalise to "global street style".\n` : ''}
 RESEARCH SOURCES — pull from where live signals are tracked:
   · Street style: Vogue.com street style, Tag Walk, Hypebae, The Cut, Highsnobiety, neighborhood-tagged Instagram, TikTok #ootd / #streetstyle.

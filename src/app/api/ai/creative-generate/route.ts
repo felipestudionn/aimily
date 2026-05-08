@@ -64,7 +64,10 @@ export async function POST(req: NextRequest) {
     const trendType = type.replace('trends-', '') as 'global' | 'deep-dive' | 'live-signals' | 'competitors';
     try {
       const excludeTitles = input.excludeTitles ? input.excludeTitles.split('|||') : undefined;
-      const validDims = ['theme', 'category', 'color', 'material'] as const;
+      const validDims = [
+        'theme', 'category', 'color', 'material',
+        'street_style', 'social_media', 'retail_signals', 'cultural_moments',
+      ] as const;
       type DimKey = typeof validDims[number];
       const targetDimension = (input.targetDimension && (validDims as readonly string[]).includes(input.targetDimension))
         ? (input.targetDimension as DimKey)
@@ -87,7 +90,16 @@ export async function POST(req: NextRequest) {
         input.input || '',
         input.season,
         trendType,
-        { collectionName: input.collectionName, consumer: input.consumer },
+        {
+          collectionName: input.collectionName,
+          consumer: input.consumer,
+          // Live Signals inherits Tendencias' framing chips so its
+          // location-grounded scan stays inside the same product
+          // universe (e.g. women / Sastrería / Knitwear / Calzado
+          // plano) rather than drifting to global running-sneaker
+          // street-style hits.
+          siblingTrendsFocus: input.siblingTrendsFocus,
+        },
         excludeTitles,
         language,
         targetDimension,

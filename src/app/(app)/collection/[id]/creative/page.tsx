@@ -2339,7 +2339,13 @@ interface ResearchResult {
   hex?: string;
 }
 
-function ResearchBlockContent({ blockId, data, onChange, collectionContext, consumerProfile }: { blockId: string; mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string }) {
+function ResearchBlockContent({ blockId, data, onChange, collectionContext, consumerProfile, siblingFraming }: { blockId: string; mode?: InputMode; data: Record<string, unknown>; onChange: (d: Record<string, unknown>) => void; collectionContext: { season: string; collectionName: string }; consumerProfile?: string;
+  // Framing chips inherited from sibling lenses (e.g. Live Signals
+  // reads the Tendencias chips so its searches stay tied to the same
+  // product universe — Sastrería · Knitwear · Vestidos · Calzado plano
+  // — instead of drifting to whatever's hot in global street style).
+  siblingFraming?: { trendsFocus?: string[] };
+ }) {
   const t = useTranslation();
   const { language } = useLanguage();
   const [generating, setGenerating] = useState(false);
@@ -2436,6 +2442,13 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     if (excludeTitles.length > 0) {
       inputPayload.excludeTitles = excludeTitles.join('|||');
     }
+    // Live Signals inherits the Tendencias framing chips so that
+    // its location-grounded scan stays inside the same product
+    // universe (women / Sastrería / Knitwear / Calzado plano) and
+    // doesn't drift to running-sneaker-of-the-month street style.
+    if (blockId === 'live-signals' && siblingFraming?.trendsFocus && siblingFraming.trendsFocus.length > 0) {
+      inputPayload.siblingTrendsFocus = siblingFraming.trendsFocus.join(', ');
+    }
     return generateCreative(typeMap[blockId] || 'trends-global', inputPayload, language);
   };
 
@@ -2502,6 +2515,9 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
     };
     if (allExistingTitles.length > 0) inputPayload.excludeTitles = allExistingTitles.join('|||');
     if (existingInDimension) inputPayload.existingInDimension = existingInDimension;
+    if (blockId === 'live-signals' && siblingFraming?.trendsFocus && siblingFraming.trendsFocus.length > 0) {
+      inputPayload.siblingTrendsFocus = siblingFraming.trendsFocus.join(', ');
+    }
     const { result, error: err } = await generateCreative(typeMap[blockId] || 'trends-global', inputPayload, language);
     if (err) { setError(err); setGeneratingDim(null); return; }
     const parsed = result as { results: Array<{ title: string; brands?: string; desc: string; relevance?: string; dimension?: DimKey; hex?: string }> };
@@ -2557,6 +2573,20 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
   const autoFiredForBlockRef = useRef<string | null>(null);
   useEffect(() => {
     if (autoFiredForBlockRef.current === blockId) return;
+    // Schema-old results migration: Tendencias and Live Signals are
+    // multi-axis lenses now, so any stored card without a `dimension`
+    // tag is from the pre-refactor flat-list era. Force a regen on
+    // first arrival so the user sees the new 4-axis grouping (and,
+    // for Live Signals, the location-grounded scan with sibling
+    // framing). Ref is set immediately so we don't loop on the
+    // intermediate state changes that handleGenerate triggers.
+    const isMultiAxisLens = blockId === 'global-trends' || blockId === 'live-signals';
+    const hasStaleSchema = results.length > 0 && !results.some((r) => r.dimension);
+    if (isMultiAxisLens && hasStaleSchema && canGenerate && !generating) {
+      autoFiredForBlockRef.current = blockId;
+      handleGenerate();
+      return;
+    }
     if (results.length > 0) {
       autoFiredForBlockRef.current = blockId;
       return;
@@ -3216,6 +3246,9 @@ function MarketResearchUnified({
           onChange={(newData) => updateBlockData(activeBlock.id, { data: newData })}
           collectionContext={collectionContext}
           consumerProfile={consumerProfile}
+          siblingFraming={{
+            trendsFocus: ((blockData['global-trends']?.data?.focus as string[]) || []),
+          }}
         />
       </div>
     </div>
