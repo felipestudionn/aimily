@@ -228,7 +228,7 @@ export const fr: Dictionary = {
     workingOn: 'Working on scenario',
     backToArchetypes: 'Change scenario',
     changeArchetype: 'Change scenario',
-    confirmStrategy: 'Confirm Strategy',
+    confirmStrategy: 'Confirm & continue to Assortment & Pricing',
     confirmedShort: 'Confirmed',
     deepenAxis: '+ More',
     volume: 'Total volume',

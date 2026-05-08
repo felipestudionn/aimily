@@ -229,7 +229,7 @@ export const es: Dictionary = {
     workingOn: 'Trabajando con escenario',
     backToArchetypes: 'Cambiar escenario',
     changeArchetype: 'Cambiar escenario',
-    confirmStrategy: 'Confirmar Estrategia',
+    confirmStrategy: 'Confirmar y continuar a Surtido & Precios',
     confirmedShort: 'Confirmado',
     deepenAxis: '+ Más',
     /* axis labels */
