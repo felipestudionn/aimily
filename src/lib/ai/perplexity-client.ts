@@ -166,9 +166,18 @@ export async function researchTrends(
     ? `The user is planning for ${seasonFull}, which hasn't been shown on runways yet. Research the most recent equivalent season (${previousSeason}) as the primary reference — those trends inform what's coming next. Also include any early forecasts or pre-collection signals for ${seasonFull}.`
     : `The user is researching ${seasonFull}. Search for runway coverage, trend reports, and street style from this season.`;
 
-  const collectionInfo = collectionContext?.collectionName
-    ? `Collection: "${collectionContext.collectionName}". `
-    : '';
+  // The collection name is intentionally NOT exposed to Sonar.
+  // Earlier we passed `Collection: "SS27 SLAIZ"` here and the LLM
+  // started using it as a brand placeholder in outputs ("brecha para
+  // SLAIZ" inside a competitor card), which is wrong twice over: it's
+  // a working title, not a brand, and it's also a privacy leak if the
+  // output ever leaves the workspace. Sonar gets season + consumer +
+  // framing chips — that's enough for grounded research.
+  const collectionInfo = '';
+  // Anti-leak rule appended to every research prompt. Forbids any
+  // output field from naming the user's collection or brand. The rule
+  // is explicit because Sonar will otherwise infer one from context.
+  const antiLeakRule = `\n\nANTI-LEAK RULE: Your output must NEVER name the user's collection, brand, working title, or any internal label (real or fictional). Refer to the user's side generically as "your collection", "this brand", or "the user". Never invent a brand name for the user. Never echo any string that looks like a working title.`;
 
   switch (type) {
     case 'global':
@@ -280,6 +289,7 @@ For EVERY card across all dimensions, also include "brands" (3-5 designer/brand 
         prompt = `${contextHeader}
 
 ${askBody}
+${antiLeakRule}
 
 ${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys, no extra wrapping):
 ${jsonShape}`;
@@ -287,9 +297,9 @@ ${jsonShape}`;
       break;
 
     case 'deep-dive':
-      prompt = `${collectionInfo}${seasonNote}
+      prompt = `${seasonNote}
 
-The user wants a deep dive on: "${trendQuery}"
+You are doing a deep dive on: "${trendQuery}"
 
 Find 6-8 SPECIFIC MICRO-TRENDS in this area from Vogue, Tag Walk, runway shows, and street style coverage. Design-level details — specific looks, constructions, materials, finishes.
 
@@ -298,6 +308,7 @@ For EACH micro-trend:
 - "brands": 3-5 brands doing this
 - "desc": 60-80 words — what it looks like, how to execute it, shelf life (flash/wave/staying)
 - "relevance": "high" or "medium"
+${antiLeakRule}
 
 ${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
@@ -411,6 +422,7 @@ For EVERY card across all dimensions, also include "brands" (3-5 names — brand
         prompt = `${liveContextHeader}
 
 ${liveAskBody}
+${antiLeakRule}
 
 ${exclusionNote}Return ONLY valid JSON in this EXACT shape (no other keys, no extra wrapping):
 ${liveJsonShape}`;
@@ -418,13 +430,20 @@ ${liveJsonShape}`;
       break;
 
     case 'competitors':
-      prompt = `${collectionInfo}Analyze these fashion brands/competitors: "${trendQuery}"
+      // Competitors prompt: the user passes a list of brand names in
+      // trendQuery. The model analyses positioning vs THEIR brand
+      // generically — never naming the user's collection or working
+      // title. The opportunity / gap field is phrased as "for a brand
+      // sitting in this space" so the LLM doesn't try to invent a
+      // placeholder name from context.
+      prompt = `Analyze these fashion brands as competitive landscape: "${trendQuery}"
 
 For EACH brand mentioned, provide:
 - "title": "Brand Name: Key Insight" (e.g., "COS: Affordable Minimalism Gap")
 - "brands": The brand + 2-3 closest competitors at same tier
-- "desc": 60-80 words — price range (real € numbers), positioning, what they do well, the gap/opportunity for the user
+- "desc": 60-80 words — price range (real € numbers), positioning, what they do well, and the gap or opportunity a NEW brand entering this space could exploit (refer to that new brand only as "a new entrant", "your collection", or "the user" — NEVER invent or echo any specific name)
 - "relevance": "high" or "medium"
+${antiLeakRule}
 
 ${exclusionNote}Return ONLY valid JSON: {"results": [{"title":"...","brands":"...","desc":"...","relevance":"high"}]}`;
       break;
