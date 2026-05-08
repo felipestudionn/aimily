@@ -458,14 +458,14 @@ ${liveJsonShape}`;
   HARD RULES:
   · Card focus: pricing, positioning gap, operational ops.
   · "title": "Brand Name: Key Insight" — the insight is a positioning angle (e.g., "COS: Quiet Luxury Slipping" · "Arket: Linen Becoming Their DNA" · "Mango Studio: Catalan Tailoring Push").
-  · "brands": The brand + 2-3 same-tier peers.
+  · "brands": "" — leave EMPTY string. The card is about ONE brand (already named in the title); we don't need a same-tier-peers list, it's noise.
   · "desc": 60-80 words. MUST include: actual price range in € (real numbers, not "affordable" — say €80-220 / €150-400), markdown rhythm (full-price discipline vs heavy sale), what they execute best, and the SPECIFIC gap a new entrant in this exact tier could exploit. Refer to the new entrant only as "a new entrant" / "your collection" — never invent a name.`;
 
         const referenceBlock = `REFERENCES — aspirational brands the consumer admires but rarely or never buys.
   HARD RULES:
   · Card focus: imagery, narrative, product execution. NEVER dwell on price (the user isn't competing on price with these).
   · "title": "Brand Name: Code/Lesson" — the lesson is a visual or narrative code (e.g., "The Row: Stillness as Authority" · "Lemaire: Beige as a Voice" · "Margiela: Wabi-Sabi in Tailoring").
-  · "brands": The brand + 2-3 same-tier peers in the aspirational bracket.
+  · "brands": "" — leave EMPTY string. The card is about ONE brand (already named in the title); we don't need a same-tier-peers list, it's noise.
   · "desc": 60-80 words. MUST include: the imagery code or campaign signature (lighting, set, casting, posture), the narrative voice (whose authority does this brand borrow?), the product execution detail worth stealing (a cut, a finish, a styling move), and how a new entrant can credibly reinterpret that code WITHOUT copying. Zero pricing language.`;
 
         type CompDimSpec = { plural: string; block: string; jsonKey: string };

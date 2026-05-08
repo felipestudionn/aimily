@@ -2333,7 +2333,8 @@ interface ResearchResult {
   // results by this dimension into section headers.
   dimension?:
     | 'theme' | 'category' | 'color' | 'material'
-    | 'street_style' | 'social_media' | 'retail_signals' | 'cultural_moments';
+    | 'street_style' | 'social_media' | 'retail_signals' | 'cultural_moments'
+    | 'competitor' | 'reference';
   // Color cards carry a hex string so the UI renders a swatch
   // alongside the title (only set when dimension === 'color').
   hex?: string;
@@ -2775,7 +2776,7 @@ function ResearchBlockContent({ blockId, data, onChange, collectionContext, cons
                             </h4>
                           )}
 
-                          {!r.editing && r.brands && (
+                          {!r.editing && r.brands && r.dimension !== 'competitor' && r.dimension !== 'reference' && (
                             <p className="text-[12.5px] xl:text-[13px] text-carbon/55 italic leading-[1.5] tracking-[-0.005em] mb-3">
                               {r.brands}
                             </p>
