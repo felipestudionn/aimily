@@ -1047,32 +1047,37 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </h1>
           </div>
 
-          {/* Mode selector — centered below title */}
-          <div className="mb-10 flex flex-col items-center gap-3">
-            <SegmentedPill
-              options={INPUT_MODE_IDS.map((modeId) => ({
-                id: modeId,
-                label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
-              }))}
-              value={state.mode}
-              onChange={(modeId) => {
-                updateCardData(cardId, { mode: modeId });
-                if (blockParam === 'families') updateCardData('pricing', { mode: modeId });
-              }}
-              size="md"
-            />
-            <p className="text-[13px] text-carbon/35 tracking-[-0.01em]">
-              {t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}
-            </p>
-          </div>
+          {/* Mode selector — Sprint B.1 dropped SegmentedPill for 02.1
+              scenarios; the canonical archetype-first flow owns its
+              own UX. Other 02.x mini-blocks still show the pill until
+              their B.x sprint lands. */}
+          {blockParam !== 'scenarios' && (
+            <div className="mb-10 flex flex-col items-center gap-3">
+              <SegmentedPill
+                options={INPUT_MODE_IDS.map((modeId) => ({
+                  id: modeId,
+                  label: t.merchandising[INPUT_MODE_KEYS[modeId].label as keyof typeof t.merchandising] as string,
+                }))}
+                value={state.mode}
+                onChange={(modeId) => {
+                  updateCardData(cardId, { mode: modeId });
+                  if (blockParam === 'families') updateCardData('pricing', { mode: modeId });
+                }}
+                size="md"
+              />
+              <p className="text-[13px] text-carbon/35 tracking-[-0.01em]">
+                {t.merchandising[INPUT_MODE_KEYS[state.mode].desc as keyof typeof t.merchandising] as string}
+              </p>
+            </div>
+          )}
 
-          {/* Content — Scenarios (Range Plan) */}
+          {/* Content — Scenarios (Estrategia de Compra · Sprint B.1 archetype-first) */}
           {blockParam === 'scenarios' && (
             <div className="min-h-[calc((100vh-380px)*0.8)]">
               <ScenariosContent
-                mode={state.mode}
                 data={state.data as Parameters<typeof ScenariosContent>[0]['data']}
                 onChange={(newData) => updateCardData('scenarios', { data: newData as Record<string, unknown> })}
+                onConfirmed={() => updateCardData('scenarios', { confirmed: true })}
                 collectionContext={{ collectionPlanId: collectionId, productCategory: collectionContext.productCategory, collectionName: collectionContext.collectionName }}
                 language={language}
               />
@@ -1119,20 +1124,24 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
             </div>
           )}
 
-          {/* Confirm — centered */}
-          <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
-            <Button
-              variant={state.confirmed ? 'outline' : 'default'}
-              onClick={() => {
-                handleConfirm(cardId);
-                if (blockParam === 'families') handleConfirm('pricing');
-              }}
-              className="rounded-full px-7"
-            >
-              <Check className="h-3.5 w-3.5 mr-2" />
-              {state.confirmed ? 'Confirmed' : t.merchandising.validateContinue}
-            </Button>
-          </div>
+          {/* Generic confirm bar — kept for 02.2/02.3/02.4 until their
+              canonical B.x sprints land. 02.1 owns its own canonical
+              confirm bar inside ScenariosContent. */}
+          {blockParam !== 'scenarios' && (
+            <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
+              <Button
+                variant={state.confirmed ? 'outline' : 'default'}
+                onClick={() => {
+                  handleConfirm(cardId);
+                  if (blockParam === 'families') handleConfirm('pricing');
+                }}
+                className="rounded-full px-7"
+              >
+                <Check className="h-3.5 w-3.5 mr-2" />
+                {state.confirmed ? 'Confirmed' : t.merchandising.validateContinue}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -11,16 +11,29 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { FinancialPlanSources } from './types';
-import type { Scenario } from '@/components/merchandising/ScenariosContent';
+import type { PrefilledEditor } from '@/lib/ai/scenarios-prompts';
 
 interface PricingRow {
   family: string;
   subcategories: { name: string; minPrice: number; maxPrice: number }[];
 }
 
+/**
+ * Sprint B.1 (2026-05-08) — scenarios shape changed from
+ * `{ scenarios[], selectedScenarioId }` to a single chosen archetype
+ * editor (`{ editor: PrefilledEditor, chosen_archetype, archetypes }`).
+ * Canonical source is now CIS (`merchandising.strategy.chosen_full`)
+ * written by /api/strategy-confirm; workspace cache is just the
+ * unsaved-draft fallback before confirm.
+ */
 interface MerchWorkspaceData {
   cardData?: {
-    scenarios?: { data?: { scenarios?: Scenario[]; selectedScenarioId?: string | null } };
+    scenarios?: {
+      data?: {
+        editor?: PrefilledEditor;
+        chosen_archetype?: { id: string; name: string };
+      };
+    };
     pricing?: { data?: { pricing?: PricingRow[] } };
     channels?: { data?: Record<string, unknown> };
   };
@@ -45,9 +58,28 @@ export async function loadFinancialPlanSources(collectionPlanId: string): Promis
     .maybeSingle();
 
   const merch = (merchRow?.data || {}) as MerchWorkspaceData;
-  const scenarios = merch.cardData?.scenarios?.data?.scenarios || [];
-  const selectedId = merch.cardData?.scenarios?.data?.selectedScenarioId;
-  const selected = scenarios.find(s => s.id === selectedId) || null;
+
+  // Prefer CIS (canonical, written by /api/strategy-confirm) over the
+  // workspace draft. Falls back to the in-progress editor for unsaved
+  // drafts (so 02.4 still has something to render mid-edit).
+  const { data: cisRows } = await supabaseAdmin
+    .from('collection_decisions')
+    .select('key, value')
+    .eq('collection_plan_id', collectionPlanId)
+    .eq('domain', 'merchandising')
+    .eq('subdomain', 'strategy')
+    .eq('is_current', true)
+    .in('key', ['chosen_full', 'archetype_name', 'chosen_archetype_id']);
+  const cisGet = <T = unknown>(k: string): T | undefined =>
+    cisRows?.find(r => r.key === k)?.value as T | undefined;
+  const cisChosenFull = cisGet<PrefilledEditor>('chosen_full');
+
+  const editor: PrefilledEditor | undefined = cisChosenFull || merch.cardData?.scenarios?.data?.editor;
+  const archetypeName = cisGet<string>('archetype_name')
+    || merch.cardData?.scenarios?.data?.chosen_archetype?.name
+    || undefined;
+  const archetypeId = (cisGet<string>('chosen_archetype_id')
+    || merch.cardData?.scenarios?.data?.chosen_archetype?.id) as string | undefined;
 
   const pricing = merch.cardData?.pricing?.data?.pricing || [];
   const channelsData = (merch.cardData?.channels?.data || {}) as Record<string, unknown>;
@@ -100,12 +132,12 @@ export async function loadFinancialPlanSources(collectionPlanId: string): Promis
     }));
 
   return {
-    scenarioId: selected?.id,
-    scenarioName: selected?.name,
-    productionBudget: selected?.financials?.productionBudget ?? 0,
-    targetRevenue: selected?.financials?.firstYearSalesTarget ?? 0,
-    targetMarginPct: selected?.financials?.targetMargin ?? 60,
-    totalSkus: selected?.skuCount ?? 0,
+    scenarioId: archetypeId,
+    scenarioName: archetypeName,
+    productionBudget: editor?.investment_split?.production ?? 0,
+    targetRevenue: editor?.sales_target_y1 ?? 0,
+    targetMarginPct: editor?.target_margin_pct ?? 60,
+    totalSkus: editor?.sku_count ?? 0,
     avgSellingPrice,
     channelMix,
     drops,
