@@ -11,6 +11,7 @@ import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { DecisionCard } from '@/components/workspace/DecisionCard';
 import { ScenariosContent } from '@/components/merchandising/ScenariosContent';
 import { AssortmentContent } from '@/components/merchandising/AssortmentContent';
+import { DistributionContent } from '@/components/merchandising/DistributionContent';
 import { WholesaleOrdersCard } from '@/components/merchandising/WholesaleOrdersCard';
 import { FinancialPlanContent } from '@/components/merchandising/FinancialPlanContent';
 import { Slider } from '@/components/ui/slider';
@@ -1063,7 +1064,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
               02.1 scenarios + 02.2 families; their canonical flows own
               their own UX. Other 02.x mini-blocks still show the pill
               until their B.x sprint lands. */}
-          {blockParam !== 'scenarios' && blockParam !== 'families' && (
+          {blockParam !== 'scenarios' && blockParam !== 'families' && blockParam !== 'channels' && (
             <div className="mb-10 flex flex-col items-center gap-3">
               <SegmentedPill
                 options={INPUT_MODE_IDS.map((modeId) => ({
@@ -1111,11 +1112,11 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
           )}
 
           {blockParam === 'channels' && (
-            <div className="max-w-[1100px] mx-auto min-h-[calc((100vh-380px)*0.8)]">
-              <ChannelsContent
-                mode={state.mode} data={state.data}
-                onChange={(newData) => updateCardData('channels', { data: newData })}
-                collectionContext={collectionContext}
+            <div className="min-h-[calc((100vh-380px)*0.8)]">
+              <DistributionContent
+                collectionContext={{ collectionPlanId: collectionId, collectionName: collectionContext.collectionName }}
+                language={language}
+                basePath={`/collection/${collectionId}/merchandising`}
               />
             </div>
           )}
@@ -1140,7 +1141,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
               canonical B.x sprints land. 02.1 + 02.2 own their own
               canonical confirm bar via CanonicalActionBar inside their
               dedicated content components. */}
-          {blockParam !== 'scenarios' && blockParam !== 'families' && (
+          {blockParam !== 'scenarios' && blockParam !== 'families' && blockParam !== 'channels' && (
             <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
               <Button
                 variant={state.confirmed ? 'outline' : 'default'}
