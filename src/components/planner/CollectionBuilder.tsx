@@ -209,6 +209,14 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   const [editingSkuTarget, setEditingSkuTarget] = useState<string | null>(null);
   const [pendingSkuTarget, setPendingSkuTarget] = useState<{ newCount: number; current: number; delta: number } | null>(null);
   const [applyingSkuTarget, setApplyingSkuTarget] = useState<'add' | 'trim' | null>(null);
+  /* Inline editable channel mix — 4 inputs, must sum to 100. Loaded once
+   * from CIS via /api/distribution-load on mount; edits write the whole
+   * channel_mix object back via /api/cis-update. */
+  type ChannelKey = 'dtc_online' | 'dtc_physical' | 'wholesale' | 'marketplace';
+  const [channelMix, setChannelMix] = useState<Record<ChannelKey, number> | null>(null);
+  const [editingChannelKey, setEditingChannelKey] = useState<ChannelKey | null>(null);
+  const [editingChannelValue, setEditingChannelValue] = useState<string>('');
+  const [savingChannelMix, setSavingChannelMix] = useState(false);
   /* Inline editable revenue + absorption strip. New target opens a 3-option
    * choice: add SKUs (Aimily auto-gen) / scale pvp (preserve count) / mixto. */
   const [editingRevenueK, setEditingRevenueK] = useState<string | null>(null);
@@ -642,6 +650,72 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   const dismissDriftModal = () => {
     setDriftModalOpen(false);
     setDriftDismissedAt(Date.now());
+  };
+
+  // Load the channel mix from CIS (02.3 Distribución) once on mount
+  useEffect(() => {
+    if (channelMix) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/distribution-load', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionPlanId }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const mix = data?.plan?.channel_mix;
+        if (mix && typeof mix.dtc_online === 'number') {
+          setChannelMix({
+            dtc_online: mix.dtc_online || 0,
+            dtc_physical: mix.dtc_physical || 0,
+            wholesale: mix.wholesale || 0,
+            marketplace: mix.marketplace || 0,
+          });
+        }
+      } catch (err) {
+        console.warn('[channelMix load]', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [collectionPlanId, channelMix]);
+
+  const applyChannelMixEdit = async (key: ChannelKey, raw: string) => {
+    const parsed = parseFloat(raw);
+    if (!channelMix || !Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      setEditingChannelKey(null);
+      return;
+    }
+    const next = { ...channelMix, [key]: Math.round(parsed) };
+    setEditingChannelKey(null);
+    if (next[key] === channelMix[key]) return;
+    setSavingChannelMix(true);
+    setChannelMix(next); // optimistic
+    try {
+      // Write to the canonical `mix` key (matches distribution-confirm's
+      // schema; channels.plan_full.channel_mix gets refreshed via the
+      // distribution-confirm flow when the user re-edits 02.3 explicitly).
+      await fetch('/api/cis-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          domain: 'merchandising',
+          subdomain: 'channels',
+          key: 'mix',
+          value: next,
+          valueType: 'object',
+        }),
+      });
+      setLastCascadeAt(Date.now());
+    } catch (err) {
+      console.error('[applyChannelMixEdit] failed', err);
+      setChannelMix(channelMix); // rollback
+    } finally {
+      setSavingChannelMix(false);
+    }
   };
 
   // ── Family edits (top-down knob, inline on each family pill) ───────────
@@ -1731,6 +1805,68 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
           </div>
           <SecondaryMetric label={sidebarT.metricFamilies || 'Families'} value={`${new Set(skus.map(s => s.family)).size}`} />
         </div>
+
+        {/* Channel mix row — 4 percentages, all editable inline.
+            Sourced from merchandising.channels.channel_mix in CIS. */}
+        {channelMix && (() => {
+          const total = channelMix.dtc_online + channelMix.dtc_physical + channelMix.wholesale + channelMix.marketplace;
+          const channels: Array<{ key: ChannelKey; label: string; color: string }> = [
+            { key: 'dtc_online',   label: 'DTC online',   color: '#b6c8c7' },
+            { key: 'dtc_physical', label: 'DTC propio',   color: '#c5caa8' },
+            { key: 'wholesale',    label: 'Wholesale',    color: '#fff4ce' },
+            { key: 'marketplace',  label: 'Marketplace',  color: '#f1efed' },
+          ];
+          return (
+            <div className="mt-5 pt-5 border-t border-carbon/[0.06]">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mr-2">
+                  {sidebarT.metricChannelMix || 'Mix de canales'}
+                </p>
+                {channels.map(({ key, label, color }) => (
+                  <div key={key} className="inline-flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-[12px] text-carbon/55">{label}</span>
+                    {editingChannelKey === key ? (
+                      <div className="inline-flex items-baseline gap-0.5">
+                        <input
+                          autoFocus
+                          type="text"
+                          inputMode="decimal"
+                          value={editingChannelValue}
+                          onChange={(e) => setEditingChannelValue(e.target.value.replace(/[^\d.]/g, ''))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                            if (e.key === 'Escape') setEditingChannelKey(null);
+                          }}
+                          onBlur={() => applyChannelMixEdit(key, editingChannelValue)}
+                          disabled={savingChannelMix}
+                          className="w-[28px] text-[12px] font-semibold text-carbon tabular-nums bg-carbon/[0.04] outline-none rounded px-0.5"
+                        />
+                        <span className="text-[10px] text-carbon/45">%</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingChannelKey(key);
+                          setEditingChannelValue(String(channelMix[key]));
+                        }}
+                        className="text-[12px] font-semibold text-carbon tabular-nums hover:bg-carbon/[0.04] rounded px-1 -mx-0.5 transition-colors cursor-text"
+                        title="Edita el % de este canal — debe sumar 100"
+                      >
+                        {channelMix[key]}%
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <span className={`ml-2 text-[11px] tabular-nums ${total === 100 ? 'text-carbon/35' : 'text-amber-700 font-semibold'}`}>
+                  {total === 100 ? '✓ 100%' : `Suma ${total}%`}
+                </span>
+                {savingChannelMix && <Loader2 className="h-3 w-3 animate-spin text-carbon/45 ml-1" />}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Analytics — expandable (Family Mix · Segmentation · Design Progress) */}
         {analyticsOpen && skus.length > 0 && (

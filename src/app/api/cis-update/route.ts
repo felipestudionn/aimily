@@ -46,8 +46,10 @@ const ALLOWED_KEYS: Record<string, { valueType: RecordDecisionParams['valueType'
   'merchandising:strategy:sales_target_y1':    { valueType: 'number', tags: ['affects_budget', 'affects_channels', 'affects_assortment'] },
   'merchandising:strategy:target_sku_count':   { valueType: 'number', tags: ['affects_assortment', 'affects_design'] },
   'merchandising:strategy:investment':         { valueType: 'object', tags: ['affects_budget'] },
-  // 02.3 Distribution
-  'merchandising:channels:channel_mix':        { valueType: 'object', tags: ['affects_channels', 'affects_budget'] },
+  // 02.3 Distribution — note: canonical key is `mix` (set by distribution-confirm),
+  // not `channel_mix`. Keep both aliases mapped to the same valueType + tags so
+  // callers can use either spelling without writing to the wrong row.
+  'merchandising:channels:mix':                { valueType: 'object', tags: ['affects_channels', 'affects_budget'] },
   'merchandising:channels:pricing_per_channel':{ valueType: 'object', tags: ['affects_channels', 'affects_pricing'] },
 };
 
