@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,80 @@ import { SkuLifecycleProvider, EMPTY_DESIGN_DATA, type DesignWorkspaceData } fro
  * macro enum here. Anything bag-shaped → ACCESORIOS, anything
  * shoe-shaped → CALZADO, everything else → ROPA.
  */
+/** Editable family header pill — used in both list and cards views.
+ * Click the name → rename inline (writes to CIS families.list + cascades
+ * SKU.family). Hover the pill → reveals X to delete the entire family. */
+function FamilyHeaderPill({
+  family, skuCount, revenue, onRename, onDelete,
+}: {
+  family: string;
+  skuCount: number;
+  revenue: number;
+  onRename: (newName: string) => Promise<void> | void;
+  onDelete: () => Promise<void> | void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(family);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    const trimmed = draft.trim();
+    setEditing(false);
+    if (!trimmed || trimmed === family) {
+      setDraft(family);
+      return;
+    }
+    setBusy(true);
+    try { await onRename(trimmed); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="flex items-center gap-3 group/fam">
+      {editing ? (
+        <input
+          autoFocus
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+            if (e.key === 'Escape') { setDraft(family); setEditing(false); }
+          }}
+          onBlur={submit}
+          disabled={busy}
+          className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/30 rounded-full bg-white outline-none w-[180px]"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => { setDraft(family); setEditing(true); }}
+          disabled={busy}
+          className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/[0.15] rounded-full hover:border-carbon/30 hover:bg-carbon/[0.02] transition-colors cursor-text disabled:opacity-50"
+          title="Renombrar familia (cascadea a todos sus SKUs)"
+        >
+          {busy ? <Loader2 className="h-3 w-3 animate-spin inline" /> : family}
+        </button>
+      )}
+      <span className="text-[11px] text-carbon/55 tabular-nums">{skuCount} SKUs</span>
+      <span className="text-[11px] text-carbon/35 tabular-nums">€{Math.round(revenue).toLocaleString()}</span>
+      <button
+        type="button"
+        onClick={() => {
+          if (window.confirm(`¿Eliminar la familia "${family}" y los ${skuCount} SKUs que contiene?`)) {
+            onDelete();
+          }
+        }}
+        disabled={busy}
+        className="ml-1 w-5 h-5 flex items-center justify-center rounded-full text-carbon/15 hover:text-destructive hover:bg-destructive/[0.04] opacity-0 group-hover/fam:opacity-100 transition-opacity"
+        title="Eliminar familia (borra todos sus SKUs)"
+      >
+        <Trash2 className="h-2.5 w-2.5" />
+      </button>
+    </div>
+  );
+}
+
 /** Display-only secondary KPI cell (mirrors the inline-editable pattern). */
 function SecondaryMetric({ label, value }: { label: string; value: string }) {
   return (
@@ -552,6 +626,60 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     setDriftModalOpen(false);
     setDriftDismissedAt(Date.now());
   };
+
+  // ── Family edits (top-down knob, inline on each family pill) ───────────
+  const writeFamiliesToCis = useCallback(async (updatedNames: string[]) => {
+    // Project the current SKU shape back into the families list shape
+    // (PrefilledFamily). We don't have subcategory info at this level —
+    // pass an empty subcategories array so families-confirm just refreshes
+    // the canonical list. Subcat detail still lives on the 02.2 confirm.
+    const families = updatedNames.map((name) => ({
+      name,
+      count: skus.filter(s => s.family === name).length,
+      subcategories: [] as Array<{ name: string; count: number; evidence?: string }>,
+    }));
+    await fetch('/api/families-confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ collectionPlanId, families }),
+    });
+  }, [collectionPlanId, skus]);
+
+  const renameFamily = useCallback(async (oldName: string, newName: string) => {
+    if (oldName === newName || !newName.trim()) return;
+    try {
+      // 1. Cascade SKUs (family + category)
+      await fetch('/api/skus/bulk-rename-family', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionPlanId, oldName, newName }),
+      });
+      // 2. Update CIS families list with the renamed entry
+      const currentNames = Array.from(new Set(skus.map(s => s.family)));
+      const updated = currentNames.map(n => (n === oldName ? newName : n));
+      await writeFamiliesToCis(updated);
+      await refetch();
+      setLastCascadeAt(Date.now());
+    } catch (err) {
+      console.error('[renameFamily] failed', err);
+    }
+  }, [collectionPlanId, skus, refetch, writeFamiliesToCis]);
+
+  const deleteFamily = useCallback(async (family: string) => {
+    try {
+      await fetch('/api/skus/bulk-delete-family', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionPlanId, family }),
+      });
+      const currentNames = Array.from(new Set(skus.map(s => s.family))).filter(n => n !== family);
+      await writeFamiliesToCis(currentNames);
+      await refetch();
+      setLastCascadeAt(Date.now());
+    } catch (err) {
+      console.error('[deleteFamily] failed', err);
+    }
+  }, [collectionPlanId, skus, refetch, writeFamiliesToCis]);
 
   // ── Inline-edit Revenue Y1 (espacio vivo · top-down) ────────────────
   // Open absorption strip so the user picks how to materialize the delta.
@@ -1662,13 +1790,15 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   const famRevenue = famSkus.reduce((s, sk) => s + sk.expected_sales, 0);
                   return (
                     <div key={fam}>
-                      {/* Family header with pill */}
+                      {/* Family header — editable inline (rename + delete cascade) */}
                       <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <span className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/[0.15] rounded-full">{fam}</span>
-                          <span className="text-[11px] text-carbon/50">{famSkus.length} SKUs</span>
-                        </div>
-                        <span className="text-xs text-carbon/45 font-light">€{Math.round(famRevenue).toLocaleString()}</span>
+                        <FamilyHeaderPill
+                          family={fam}
+                          skuCount={famSkus.length}
+                          revenue={famRevenue}
+                          onRename={(newName) => renameFamily(fam, newName)}
+                          onDelete={() => deleteFamily(fam)}
+                        />
                       </div>
                       {/* SKU rows */}
                       <div className="overflow-x-auto">
@@ -1726,13 +1856,15 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                   const famSkus = skus.filter(s => s.family === fam);
                   return (
                     <div key={fam}>
-                      {/* Family pill header — pill on left, totals on right */}
+                      {/* Family pill header — editable inline (rename + delete cascade) */}
                       <div className={`flex items-center justify-between gap-3 flex-wrap mb-4 ${fIdx > 0 ? 'pt-6 border-t border-carbon/[0.06]' : ''}`}>
-                        <div className="flex items-center gap-3">
-                          <span className="px-4 py-1.5 text-[11px] font-semibold tracking-[0.06em] uppercase text-carbon border border-carbon/[0.15] rounded-full">{fam}</span>
-                          <span className="text-[11px] text-carbon/55 tabular-nums">{famSkus.length} SKUs</span>
-                        </div>
-                        <span className="text-[12px] font-semibold text-carbon/70 tabular-nums tracking-[-0.01em]">€{Math.round(famSkus.reduce((s, sk) => s + sk.expected_sales, 0)).toLocaleString()}</span>
+                        <FamilyHeaderPill
+                          family={fam}
+                          skuCount={famSkus.length}
+                          revenue={famSkus.reduce((s, sk) => s + sk.expected_sales, 0)}
+                          onRename={(newName) => renameFamily(fam, newName)}
+                          onDelete={() => deleteFamily(fam)}
+                        />
                       </div>
                       <div
                         className="grid gap-5"
