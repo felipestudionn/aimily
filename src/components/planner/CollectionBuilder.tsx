@@ -1067,69 +1067,6 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
             <button
               onClick={async (e) => {
                 const btn = e.currentTarget;
-                const origText = btn.innerHTML;
-                btn.textContent = '...';
-                try {
-                  // Fetch latest creative workspace data
-                  const wsRes = await fetch(`/api/workspace-data?planId=${collectionPlanId}&workspace=creative`);
-                  if (!wsRes.ok) throw new Error(t.plannerSections?.creativeFetchFailed || 'Failed to fetch creative data');
-                  const wsData = await wsRes.json();
-                  const blockData = wsData?.data?.blockData || {};
-                  const vibe = blockData?.vibe?.data?.vibe || '';
-                  const brandName = blockData?.['brand-dna']?.data?.brandName || '';
-                  const consumer = blockData?.consumer?.data?.profile || '';
-
-                  if (!vibe && !brandName) {
-                    alert(t.plannerSections?.creativeMissing || 'No creative direction found. Complete the Creative block first.');
-                    return;
-                  }
-
-                  // Update SKUs that are still in concept phase (range_plan or sketch)
-                  const conceptSkus = skus.filter(s => s.design_phase === 'range_plan' || s.design_phase === 'sketch');
-                  if (conceptSkus.length === 0) {
-                    alert(t.plannerSections?.noConceptSkus || 'No SKUs in concept phase to update.');
-                    return;
-                  }
-
-                  // Use AI to refresh names based on new creative direction
-                  const res = await fetch('/api/ai/design-generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      type: 'refresh-names',
-                      input: {
-                        brandName,
-                        vibe: vibe.slice(0, 300),
-                        consumer: consumer.slice(0, 200),
-                        skus: conceptSkus.map(s => ({ id: s.id, name: s.name, family: s.family, category: s.category })),
-                      },
-                      language: 'es',
-                    }),
-                  });
-
-                  if (res.ok) {
-                    const { result } = await res.json();
-                    if (result?.updatedNames) {
-                      for (const item of result.updatedNames) {
-                        await updateSku(item.id, { name: item.name, notes: item.notes || '' });
-                      }
-                    }
-                  }
-
-                  window.location.reload();
-                } catch {
-                  alert(t.plannerSections?.creativeRefreshFailed || 'Could not refresh creative direction.');
-                } finally {
-                  btn.innerHTML = origText;
-                }
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium tracking-[0.06em] uppercase border border-carbon/[0.12] rounded-full text-carbon/50 hover:text-carbon hover:border-carbon/30 transition-colors whitespace-nowrap"
-            >
-              <Sparkles className="h-3 w-3" /> Refresh Creative
-            </button>
-            <button
-              onClick={async (e) => {
-                const btn = e.currentTarget;
                 btn.textContent = '...';
                 try {
                   const res = await fetch(`/api/collection-export?planId=${collectionPlanId}`);
