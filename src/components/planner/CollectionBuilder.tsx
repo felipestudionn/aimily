@@ -682,13 +682,61 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     return () => { cancelled = true; };
   }, [collectionPlanId, channelMix]);
 
+  // Redistribute the delta across the other non-zero channels in proportion
+  // to their existing share so the four values always sum to exactly 100.
+  // The user shouldn't have to do mental math — they tweak one knob and the
+  // mix self-balances.
+  const redistributeChannelMix = (prev: Record<ChannelKey, number>, key: ChannelKey, newValue: number): Record<ChannelKey, number> => {
+    const ALL: ChannelKey[] = ['dtc_online', 'dtc_physical', 'wholesale', 'marketplace'];
+    const clamped = Math.max(0, Math.min(100, Math.round(newValue)));
+    const delta = clamped - prev[key];
+    if (delta === 0) return prev;
+
+    const others = ALL.filter(k => k !== key && prev[k] > 0);
+    // Edge: the edited channel was the only non-zero one (e.g. user pushed
+    // 100→90, others all zero). Just keep it as-is and pad first non-edited
+    // with the remainder so the sum stays 100.
+    if (others.length === 0) {
+      const fallback: Record<ChannelKey, number> = { dtc_online: 0, dtc_physical: 0, wholesale: 0, marketplace: 0 };
+      fallback[key] = clamped;
+      const padTarget = ALL.find(k => k !== key)!;
+      fallback[padTarget] = 100 - clamped;
+      return fallback;
+    }
+
+    const otherSum = others.reduce((s, k) => s + prev[k], 0);
+    const next: Record<ChannelKey, number> = { ...prev, [key]: clamped };
+    let absorbed = 0;
+    for (let i = 0; i < others.length; i++) {
+      const k = others[i];
+      const isLast = i === others.length - 1;
+      // Last channel takes whatever's left so the sum lands on 100 exactly,
+      // avoiding rounding drift.
+      const adj = isLast
+        ? -delta - absorbed
+        : Math.round(-delta * (prev[k] / otherSum));
+      next[k] = Math.max(0, prev[k] + adj);
+      absorbed += adj;
+    }
+
+    // Final guard: if a channel went negative (large delta clamped to 0),
+    // re-normalise across the surviving non-zero channels.
+    const finalSum = ALL.reduce((s, k) => s + next[k], 0);
+    if (finalSum !== 100) {
+      const drift = 100 - finalSum;
+      const fixTarget = others.find(k => next[k] + drift >= 0) || key;
+      next[fixTarget] = Math.max(0, Math.min(100, next[fixTarget] + drift));
+    }
+    return next;
+  };
+
   const applyChannelMixEdit = async (key: ChannelKey, raw: string) => {
     const parsed = parseFloat(raw);
     if (!channelMix || !Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
       setEditingChannelKey(null);
       return;
     }
-    const next = { ...channelMix, [key]: Math.round(parsed) };
+    const next = redistributeChannelMix(channelMix, key, parsed);
     setEditingChannelKey(null);
     if (next[key] === channelMix[key]) return;
     setSavingChannelMix(true);
