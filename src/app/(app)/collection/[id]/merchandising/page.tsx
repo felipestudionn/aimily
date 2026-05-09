@@ -12,6 +12,7 @@ import { DecisionCard } from '@/components/workspace/DecisionCard';
 import { ScenariosContent } from '@/components/merchandising/ScenariosContent';
 import { AssortmentContent } from '@/components/merchandising/AssortmentContent';
 import { DistributionContent } from '@/components/merchandising/DistributionContent';
+import { FinancialPlanContentV2 } from '@/components/merchandising/FinancialPlanContentV2';
 import { WholesaleOrdersCard } from '@/components/merchandising/WholesaleOrdersCard';
 import { FinancialPlanContent } from '@/components/merchandising/FinancialPlanContent';
 import { Slider } from '@/components/ui/slider';
@@ -830,13 +831,16 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
   const { language } = useLanguage();
   const [expandedCard, setExpandedCard] = useState<string | null>(blockParam || null);
 
-  // Kill the legacy hub: direct nav to /merchandising (no `?block=...`)
-  // used to land on the old 4-card overview, which is not gold-standard.
-  // The canonical Block 2 hub lives at /collection/[id]?block=merchandising
-  // (rendered by CollectionOverview's sub-block grid). Sidebar mini-block
-  // links pass `?block=...` so they bypass this redirect.
+  // Kill the legacy hub: direct nav to /merchandising (no `?block=...`) or
+  // /merchandising?block=merchandising used to land on the old 4-card overview
+  // with the locked-card pill stepper, which is NOT gold-standard. The canonical
+  // Block 2 hub lives at /collection/[id]?block=merchandising rendered by
+  // CollectionOverview's sub-block grid. Sidebar mini-block links pass
+  // ?block=scenarios|families|channels|budget so they bypass this redirect.
   useEffect(() => {
-    if (blockParamOverride === undefined && !searchParams?.get('block')) {
+    const block = searchParams?.get('block');
+    const isHubRoute = !block || block === 'merchandising';
+    if (blockParamOverride === undefined && isHubRoute) {
       router.replace(`/collection/${collectionId}?block=merchandising`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1064,7 +1068,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
               02.1 scenarios + 02.2 families; their canonical flows own
               their own UX. Other 02.x mini-blocks still show the pill
               until their B.x sprint lands. */}
-          {blockParam !== 'scenarios' && blockParam !== 'families' && blockParam !== 'channels' && (
+          {blockParam !== 'scenarios' && blockParam !== 'families' && blockParam !== 'channels' && blockParam !== 'budget' && (
             <div className="mb-10 flex flex-col items-center gap-3">
               <SegmentedPill
                 options={INPUT_MODE_IDS.map((modeId) => ({
@@ -1123,16 +1127,10 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
 
           {blockParam === 'budget' && (
             <div className="min-h-[calc((100vh-380px)*0.8)]">
-              <FinancialPlanContent
-                mode={state.mode}
-                data={state.data as Parameters<typeof FinancialPlanContent>[0]['data']}
-                onChange={(newData) => updateCardData('budget', { data: newData as Record<string, unknown> })}
-                collectionContext={{
-                  collectionPlanId: collectionId,
-                  productCategory: collectionContext.productCategory,
-                  collectionName: collectionContext.collectionName,
-                }}
+              <FinancialPlanContentV2
+                collectionContext={{ collectionPlanId: collectionId, collectionName: collectionContext.collectionName }}
                 language={language}
+                basePath={`/collection/${collectionId}/merchandising`}
               />
             </div>
           )}
@@ -1141,7 +1139,7 @@ export default function MerchandisingPage({ blockParamOverride }: { blockParamOv
               canonical B.x sprints land. 02.1 + 02.2 own their own
               canonical confirm bar via CanonicalActionBar inside their
               dedicated content components. */}
-          {blockParam !== 'scenarios' && blockParam !== 'families' && blockParam !== 'channels' && (
+          {blockParam !== 'scenarios' && blockParam !== 'families' && blockParam !== 'channels' && blockParam !== 'budget' && (
             <div className="mt-12 flex justify-center pt-8 border-t border-carbon/[0.06]">
               <Button
                 variant={state.confirmed ? 'outline' : 'default'}

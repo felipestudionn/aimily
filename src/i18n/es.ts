@@ -332,6 +332,51 @@ export const es: Dictionary = {
     errPropose: 'No se pudo construir el plan de distribución.',
   },
 
+  /* Sprint B.4 · 02.4 Plan Financiero */
+  financial: {
+    loadingFinancial: 'Cargando tu plan financiero…',
+    proposingFinancial: 'Aimily está calculando tu P&L Y1, cash flow mensual y vigilando los riesgos del plan…',
+    financialEmptyStrategy: 'Define primero la estrategia de compra',
+    financialEmptyStrategyDesc: 'El plan financiero se construye sobre tu volumen y tu objetivo Y1. Confirma 02.1 Estrategia y volvemos aquí.',
+    financialEmptyDistribution: 'Define primero la distribución',
+    financialEmptyDistributionDesc: 'El plan financiero necesita tu mix de canales y el sell-through. Confirma 02.3 Distribución y volvemos aquí.',
+    goToStrategy: 'Ir a Estrategia de Compra',
+    goToDistribution: 'Ir a Distribución',
+    invested: 'invertidos',
+    drop: 'drop',
+    drops: 'drops',
+    regenerate: 'Regenerar narrativa',
+    retry: 'Reintentar',
+    /* P&L card */
+    pnlTitle: 'P&L Y1',
+    revenue: 'Revenue Y1',
+    cogs: 'COGS',
+    grossProfit: 'Beneficio bruto',
+    marketing: 'Marketing',
+    netContribution: 'Contribución neta',
+    /* Cash flow */
+    cashflowTitle: 'Cash flow mensual',
+    breakEven: 'Break-even',
+    weekShort: 'sem',
+    noBreakEven: 'No break-even Y1',
+    /* Channel revenue */
+    channelRevenueTitle: 'Revenue por canal',
+    units: 'unidades',
+    /* Markdown */
+    markdownTitle: 'Calendario de markdown',
+    initialMarkdown: 'Markdown inicial',
+    deepMarkdown: 'Markdown profundo',
+    /* Risks + levers */
+    risksLeversTitle: 'Riesgos · Palancas',
+    risks: 'Riesgos',
+    levers: 'Palancas a vigilar',
+    /* Footer */
+    backLabel: 'Atrás',
+    confirmFinancial: 'Confirmar y cerrar Bloque 2',
+    /* Errors */
+    errPropose: 'No se pudo construir el plan financiero.',
+  },
+
   cookie: {
     message: 'Usamos cookies esenciales para mantener tu sesión y cookies funcionales para mejorar tu experiencia.',
     cookiePolicy: 'Política de cookies',
