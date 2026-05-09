@@ -29,6 +29,16 @@ import { SkuLifecycleProvider, EMPTY_DESIGN_DATA, type DesignWorkspaceData } fro
  * macro enum here. Anything bag-shaped → ACCESORIOS, anything
  * shoe-shaped → CALZADO, everything else → ROPA.
  */
+/** Display-only secondary KPI cell (mirrors the inline-editable pattern). */
+function SecondaryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col">
+      <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-1.5 whitespace-nowrap">{label}</p>
+      <p className="text-[16px] font-semibold text-carbon/70 tabular-nums tracking-[-0.02em] leading-none">{value}</p>
+    </div>
+  );
+}
+
 function familyToCategory(family: string | undefined): 'CALZADO' | 'ROPA' | 'ACCESORIOS' {
   const f = (family || '').toLowerCase();
   if (!f) return 'ROPA';
@@ -111,6 +121,11 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   const [buyUnits, setBuyUnits] = useState(0);
   const [salePercentage, setSalePercentage] = useState(60);
   const [discount, setDiscount] = useState(0);
+  /* Inline editable margin (writes to strategy.target_margin_pct + cascades
+   * SKU costs). The "espacio vivo" pattern — edits at the point of
+   * consequence flow back to CIS without a "refresh" button. */
+  const [editingMarginPct, setEditingMarginPct] = useState<string | null>(null);
+  const [savingMargin, setSavingMargin] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [autoGenStep, setAutoGenStep] = useState(0);
@@ -390,6 +405,50 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
   // Use DTC margin as primary (most brands start DTC)
   const marginPercentage = dtcMargin;
+
+  // Inline-edit DTC margin → write to CIS + cascade SKU costs
+  const applyMarginEdit = async (raw: string) => {
+    const parsed = parseFloat(raw);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      setEditingMarginPct(null);
+      return;
+    }
+    const next = Math.round(parsed * 10) / 10;
+    if (Math.abs(next - dtcMargin) < 0.05) {
+      setEditingMarginPct(null);
+      return;
+    }
+    setSavingMargin(true);
+    try {
+      // 1. Persist the new target to CIS (single source of truth)
+      // 2. Cascade: rewrite every SKU's cost so the dashboard recomputes consistently
+      await Promise.all([
+        fetch('/api/cis-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            collectionPlanId,
+            domain: 'merchandising',
+            subdomain: 'strategy',
+            key: 'target_margin_pct',
+            value: next,
+            valueType: 'number',
+          }),
+        }),
+        fetch('/api/skus/bulk-update-margin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionPlanId, marginPct: next }),
+        }),
+      ]);
+      await refetch();
+    } catch (err) {
+      console.error('[applyMarginEdit] failed', err);
+    } finally {
+      setSavingMargin(false);
+      setEditingMarginPct(null);
+    }
+  };
 
   const handleAddSku = async () => {
     if (!name || pvp <= 0 || cost <= 0) return;
@@ -783,20 +842,46 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
             </div>
           ))}
         </div>
-        {/* Secondary KPIs — hairline row, smaller + muted */}
+        {/* Secondary KPIs — hairline row, smaller + muted. DTC margin is
+            editable inline (click to retype %): writes target_margin_pct to
+            CIS and cascades SKU costs. */}
         <div className="mt-7 pt-6 border-t border-carbon/[0.06] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8">
-          {[
-            { label: sidebarT.metricCogs || 'COGS', value: `€${Math.round(totalCOGS / 1000).toLocaleString()}K` },
-            { label: sidebarT.metricWsValue || 'WS value', value: `€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K` },
-            { label: sidebarT.metricDtcMargin || 'DTC margin', value: `${dtcMargin.toFixed(0)}%` },
-            { label: sidebarT.metricWsMargin || 'WS margin', value: `${wsMargin.toFixed(0)}%` },
-            { label: sidebarT.metricFamilies || 'Families', value: `${new Set(skus.map(s => s.family)).size}` },
-          ].map((metric) => (
-            <div key={metric.label} className="flex flex-col">
-              <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-1.5 whitespace-nowrap">{metric.label}</p>
-              <p className="text-[16px] font-semibold text-carbon/70 tabular-nums tracking-[-0.02em] leading-none">{metric.value}</p>
-            </div>
-          ))}
+          <SecondaryMetric label={sidebarT.metricCogs || 'COGS'} value={`€${Math.round(totalCOGS / 1000).toLocaleString()}K`} />
+          <SecondaryMetric label={sidebarT.metricWsValue || 'WS value'} value={`€${Math.round(totalWholesaleValue / 1000).toLocaleString()}K`} />
+          <div className="flex flex-col group/edit">
+            <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-1.5 whitespace-nowrap">{sidebarT.metricDtcMargin || 'DTC margin'}</p>
+            {editingMarginPct !== null ? (
+              <div className="flex items-baseline gap-1">
+                <input
+                  autoFocus
+                  type="text"
+                  inputMode="decimal"
+                  value={editingMarginPct}
+                  onChange={(e) => setEditingMarginPct(e.target.value.replace(/[^\d.]/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { (e.target as HTMLInputElement).blur(); }
+                    if (e.key === 'Escape') { setEditingMarginPct(null); }
+                  }}
+                  onBlur={() => editingMarginPct !== null && applyMarginEdit(editingMarginPct)}
+                  disabled={savingMargin}
+                  className="w-[44px] text-[16px] font-semibold text-carbon tabular-nums tracking-[-0.02em] leading-none bg-carbon/[0.04] outline-none rounded px-1 -mx-1"
+                />
+                <span className="text-[16px] font-semibold text-carbon/70 leading-none">%</span>
+                {savingMargin && <Loader2 className="h-3 w-3 animate-spin text-carbon/35 ml-1" />}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingMarginPct(dtcMargin.toFixed(0))}
+                className="text-[16px] font-semibold text-carbon/70 tabular-nums tracking-[-0.02em] leading-none text-left hover:text-carbon hover:bg-carbon/[0.03] rounded px-1 -mx-1 py-0.5 -my-0.5 transition-colors w-fit cursor-text"
+                title={sidebarT.editMarginHint || 'Edita el margen objetivo — los costes de los SKUs se reescalan automáticamente'}
+              >
+                {dtcMargin.toFixed(0)}%
+              </button>
+            )}
+          </div>
+          <SecondaryMetric label={sidebarT.metricWsMargin || 'WS margin'} value={`${wsMargin.toFixed(0)}%`} />
+          <SecondaryMetric label={sidebarT.metricFamilies || 'Families'} value={`${new Set(skus.map(s => s.family)).size}`} />
         </div>
 
         {/* Analytics — expandable (Family Mix · Segmentation · Design Progress) */}
