@@ -96,9 +96,11 @@ IMPORTANT: Product names, materials, and details MUST be inspired by the creativ
 
 PRICING MODEL (fashion industry standard):
 - "pvp" = Retail Price (what the end consumer pays)
-- "cogs" = Production Cost (materials + labor + packaging). This is the REAL cost to manufacture.
-- For premium/contemporary brands: COGS is typically 15-25% of PVP (markup chain: COGS ×2.5 = Wholesale, Wholesale ×2.2 = PVP)
-- Example: PVP €185 → Wholesale €84 → COGS €34
+- "cogs" = Production Cost (materials + labor + packaging). The REAL cost to manufacture.
+- This collection has a CONFIRMED target gross margin of ${targetMargin}% — set in 02.1 Strategy.
+  Therefore COGS MUST be exactly ${100 - targetMargin}% of PVP for every SKU.
+  Example with PVP €${setupData.avgPriceTarget || 200}: COGS ≈ €${Math.round((setupData.avgPriceTarget || 200) * (100 - targetMargin) / 100)}.
+  Do NOT default to a generic 15-25% rule of thumb — the brand's strategy is the truth.
 
 Return a JSON array with EXACTLY ${exactSkuCount} items:
 [
@@ -107,7 +109,7 @@ Return a JSON array with EXACTLY ${exactSkuCount} items:
     "family": "Family from productFamilies",
     "type": "REVENUE" | "IMAGEN" | "ENTRY",
     "pvp": number (retail price),
-    "cogs": number (production cost — materials + labor + packaging, typically 15-25% of PVP),
+    "cogs": number (= ${100 - targetMargin}% of pvp ± 2pp variation),
     "suggestedUnits": number,
     "drop": number (1 to ${setupData.dropsCount}),
     "salesWeight": number (all must sum to 100)
@@ -117,7 +119,7 @@ Return a JSON array with EXACTLY ${exactSkuCount} items:
 RULES:
 1. EXACTLY ${exactSkuCount} SKUs — no more, no less
 2. Distribute across families proportionally
-3. COGS should be realistic production costs (15-25% of PVP for premium)
+3. COGS must hit the ${targetMargin}% target margin (cogs ≈ pvp × ${(100 - targetMargin) / 100})
 4. salesWeight must sum to exactly 100`;
 
     const { data: rawSkus } = await generateJSON<unknown[]>({

@@ -20,6 +20,23 @@ import { useProductionOrders } from '@/hooks/useProductionOrders';
 import { SkuDetailView } from './SkuDetailView';
 import { SkuLifecycleProvider, EMPTY_DESIGN_DATA, type DesignWorkspaceData } from './sku-phases/SkuLifecycleContext';
 
+/**
+ * Map a Block 2 family name to the legacy macro-category enum.
+ * The DB column `category` is typed as 'CALZADO' | 'ROPA' | 'ACCESORIOS'
+ * (load-bearing for PO export, tech-pack labels, prototyping SLA, sketch
+ * material zones). Block 2's canonical pattern uses richer family names
+ * (Sastrería, Vestidos, Calzado, Bolsos…) so we project down to the
+ * macro enum here. Anything bag-shaped → ACCESORIOS, anything
+ * shoe-shaped → CALZADO, everything else → ROPA.
+ */
+function familyToCategory(family: string | undefined): 'CALZADO' | 'ROPA' | 'ACCESORIOS' {
+  const f = (family || '').toLowerCase();
+  if (!f) return 'ROPA';
+  if (/^calzad|shoe|footwear|zapato|botas?\b|sandalias?|mocasin/.test(f)) return 'CALZADO';
+  if (/bolso|bag|cluth|crossbody|tote|hobo|accesori|bisuter|joyeria|jewelry/.test(f)) return 'ACCESORIOS';
+  return 'ROPA';
+}
+
 interface CollectionBuilderProps {
   setupData: SetupData;
   collectionPlanId: string;
@@ -240,7 +257,14 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
               collection_plan_id: collectionPlanId,
               name: suggested.name,
               family: suggested.family || setupData.families?.[0] || 'General',
-              category: setupData.productCategory || 'ROPA',
+              // Map family → legacy CALZADO/ROPA/ACCESORIOS enum (used by
+              // PO export, tech-pack labels, prototyping SLA days, sketch
+              // material zones). Without per-SKU mapping we used to bunch
+              // all SKUs under setupData.productCategory (= the first
+              // family of the collection), which broke every downstream
+              // grouping. Bag-like and footwear-like family names route
+              // to their respective macros; anything else is ROPA.
+              category: familyToCategory(suggested.family || setupData.productCategory),
               type: suggested.type || 'REVENUE',
               channel: 'DTC',
               drop_number: suggested.drop || 1,
@@ -542,7 +566,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
           collection_plan_id: collectionPlanId,
           name: suggested.name,
           family: suggested.family || availableFamilies[0] || 'General',
-          category: (setupData.productCategory || 'ROPA') as 'CALZADO' | 'ROPA' | 'ACCESORIOS',
+          category: familyToCategory(suggested.family || setupData.productCategory),
           type: suggested.type || 'REVENUE',
           channel: 'DTC',
           drop_number: suggested.drop || 1,
