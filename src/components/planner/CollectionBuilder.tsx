@@ -133,6 +133,20 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     newTarget: number; current: number; delta: number;
   } | null>(null);
   const [applyingAbsorption, setApplyingAbsorption] = useState<'A' | 'B' | 'C' | null>(null);
+  /* Bottom-up drift modal — when the user edits SKUs (add/remove/change pvp,
+   * cost, units, family), the dashboard's actuals diverge from the CIS plan
+   * targets. After a 1.5s debounce we surface a modal that shows the impact
+   * and offers a one-click "Actualizar plan" to push the actuals back into
+   * CIS, closing the loop. The "espacio vivo" pattern in reverse. */
+  const [cisBaseline, setCisBaseline] = useState<{
+    sales_target_y1: number;
+    target_margin_pct: number;
+    target_sku_count: number;
+  } | null>(null);
+  const [driftDismissedAt, setDriftDismissedAt] = useState(0);
+  const [lastCascadeAt, setLastCascadeAt] = useState(0);
+  const [driftModalOpen, setDriftModalOpen] = useState(false);
+  const [driftSyncing, setDriftSyncing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [autoGenStep, setAutoGenStep] = useState(0);
@@ -413,6 +427,132 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   // Use DTC margin as primary (most brands start DTC)
   const marginPercentage = dtcMargin;
 
+  // ── Drift detection (bottom-up) ────────────────────────────────────────
+  // Capture the CIS baseline once, the first time we have stable SKU data.
+  // From then on, watch totalExpectedSales / dtcMargin / skus.length and
+  // open the drift modal when actuals diverge from the plan beyond
+  // tolerance. Cooldowns: skip during initial mount, skip for 5s after a
+  // knob-driven cascade, skip for 30s after the user dismisses the modal.
+  useEffect(() => {
+    if (cisBaseline !== null) return;
+    if (loading) return;
+    if (!setupData.totalSalesTarget && !setupData.targetMargin && !setupData.expectedSkus) return;
+    setCisBaseline({
+      sales_target_y1: setupData.totalSalesTarget || 0,
+      target_margin_pct: setupData.targetMargin || 0,
+      target_sku_count: setupData.expectedSkus || 0,
+    });
+  }, [loading, setupData.totalSalesTarget, setupData.targetMargin, setupData.expectedSkus, cisBaseline]);
+
+  const driftImpacts = useMemo(() => {
+    if (!cisBaseline) return [];
+    const impacts: Array<{ key: string; label: string; before: string; after: string; deltaPct: number; severity: 'low' | 'medium' | 'high' }> = [];
+    // Revenue drift
+    if (cisBaseline.sales_target_y1 > 0) {
+      const deltaPct = ((totalExpectedSales - cisBaseline.sales_target_y1) / cisBaseline.sales_target_y1) * 100;
+      if (Math.abs(deltaPct) >= 2) {
+        impacts.push({
+          key: 'revenue',
+          label: 'Revenue Y1',
+          before: `€${Math.round(cisBaseline.sales_target_y1 / 1000)}K`,
+          after: `€${Math.round(totalExpectedSales / 1000)}K`,
+          deltaPct,
+          severity: Math.abs(deltaPct) >= 10 ? 'high' : Math.abs(deltaPct) >= 5 ? 'medium' : 'low',
+        });
+      }
+    }
+    // Margin drift
+    if (cisBaseline.target_margin_pct > 0) {
+      const deltaPP = dtcMargin - cisBaseline.target_margin_pct;
+      if (Math.abs(deltaPP) >= 2) {
+        impacts.push({
+          key: 'margin',
+          label: 'Margen DTC',
+          before: `${Math.round(cisBaseline.target_margin_pct)}%`,
+          after: `${Math.round(dtcMargin)}%`,
+          deltaPct: deltaPP,
+          severity: Math.abs(deltaPP) >= 5 ? 'high' : Math.abs(deltaPP) >= 3 ? 'medium' : 'low',
+        });
+      }
+    }
+    // SKU count drift
+    if (cisBaseline.target_sku_count > 0 && skus.length !== cisBaseline.target_sku_count) {
+      impacts.push({
+        key: 'sku_count',
+        label: 'SKUs',
+        before: `${cisBaseline.target_sku_count}`,
+        after: `${skus.length}`,
+        deltaPct: ((skus.length - cisBaseline.target_sku_count) / cisBaseline.target_sku_count) * 100,
+        severity: 'low',
+      });
+    }
+    return impacts;
+  }, [cisBaseline, totalExpectedSales, dtcMargin, skus.length]);
+
+  // Open the modal when drift appears (with cooldowns). Debounced 1.5s
+  // so a series of edits collapse into one modal opening.
+  useEffect(() => {
+    if (driftImpacts.length === 0) {
+      if (driftModalOpen) setDriftModalOpen(false);
+      return;
+    }
+    if (driftModalOpen) return; // Already showing
+    const now = Date.now();
+    if (now - lastCascadeAt < 5000) return;       // Just applied an intentional knob change
+    if (now - driftDismissedAt < 30000) return;   // User dismissed recently
+    const handle = setTimeout(() => {
+      setDriftModalOpen(true);
+    }, 1500);
+    return () => clearTimeout(handle);
+  }, [driftImpacts.length, lastCascadeAt, driftDismissedAt, driftModalOpen]);
+
+  // Push the current actuals into CIS (closes the drift loop)
+  const applyDriftSync = async () => {
+    if (!cisBaseline || driftImpacts.length === 0) return;
+    setDriftSyncing(true);
+    try {
+      const writes: Array<{ key: string; value: number; valueType: 'number' }> = [];
+      for (const imp of driftImpacts) {
+        if (imp.key === 'revenue') {
+          writes.push({ key: 'sales_target_y1', value: Math.round(totalExpectedSales), valueType: 'number' });
+        } else if (imp.key === 'margin') {
+          writes.push({ key: 'target_margin_pct', value: Math.round(dtcMargin), valueType: 'number' });
+        } else if (imp.key === 'sku_count') {
+          writes.push({ key: 'target_sku_count', value: skus.length, valueType: 'number' });
+        }
+      }
+      await Promise.all(writes.map(w => fetch('/api/cis-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          domain: 'merchandising',
+          subdomain: 'strategy',
+          key: w.key,
+          value: w.value,
+          valueType: w.valueType,
+        }),
+      })));
+      // Refresh baseline so the modal stops firing
+      setCisBaseline({
+        sales_target_y1: Math.round(totalExpectedSales),
+        target_margin_pct: Math.round(dtcMargin),
+        target_sku_count: skus.length,
+      });
+      setLastCascadeAt(Date.now());
+      setDriftModalOpen(false);
+    } catch (err) {
+      console.error('[applyDriftSync] failed', err);
+    } finally {
+      setDriftSyncing(false);
+    }
+  };
+
+  const dismissDriftModal = () => {
+    setDriftModalOpen(false);
+    setDriftDismissedAt(Date.now());
+  };
+
   // ── Inline-edit Revenue Y1 (espacio vivo · top-down) ────────────────
   // Open absorption strip so the user picks how to materialize the delta.
   const proposeRevenueEdit = (rawK: string) => {
@@ -579,6 +719,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
       }
 
       await refetch();
+      setLastCascadeAt(Date.now());
     } catch (err) {
       console.error('[applyAbsorption] failed', err);
     } finally {
@@ -623,6 +764,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
         }),
       ]);
       await refetch();
+      setLastCascadeAt(Date.now());
     } catch (err) {
       console.error('[applyMarginEdit] failed', err);
     } finally {
@@ -2010,6 +2152,64 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
               )}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Drift modal — bottom-up feedback loop. Surfaces when actual SKU
+          numbers diverge from the CIS plan baseline. */}
+      {driftModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="absolute inset-0 bg-carbon/40 backdrop-blur-sm" onClick={dismissDriftModal} />
+          <div className="relative bg-white rounded-[20px] max-w-[520px] w-full p-7 shadow-[0_20px_60px_rgba(0,0,0,0.18)]" style={{ animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+            <p className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
+              {(t.plannerSections as Record<string, string>)?.driftLabel || 'Tu plan ha derivado'}
+            </p>
+            <h3 className="text-[22px] font-semibold text-carbon tracking-[-0.02em] leading-[1.2] mb-5">
+              {(t.plannerSections as Record<string, string>)?.driftTitle || 'Tus ediciones han movido el resumen'}
+            </h3>
+            <div className="space-y-3 mb-6">
+              {driftImpacts.map((imp) => {
+                const sevColor = imp.severity === 'high' ? 'text-red-700' : imp.severity === 'medium' ? 'text-amber-700' : 'text-emerald-700';
+                const sign = imp.deltaPct >= 0 ? '+' : '';
+                const deltaLabel = imp.label === 'Margen DTC'
+                  ? `${sign}${imp.deltaPct.toFixed(1)}pp`
+                  : `${sign}${imp.deltaPct.toFixed(1)}%`;
+                return (
+                  <div key={imp.key} className="flex items-baseline justify-between gap-3 py-2 border-b border-carbon/[0.05] last:border-0">
+                    <span className="text-[13px] text-carbon/65">{imp.label}</span>
+                    <div className="flex items-baseline gap-2 tabular-nums">
+                      <span className="text-[13px] text-carbon/35">{imp.before}</span>
+                      <span className="text-carbon/20">→</span>
+                      <span className="text-[14px] font-semibold text-carbon">{imp.after}</span>
+                      <span className={`text-[11px] font-semibold ${sevColor}`}>{deltaLabel}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[12px] text-carbon/55 leading-relaxed mb-5">
+              {(t.plannerSections as Record<string, string>)?.driftHelp || 'Si los nuevos números reflejan mejor el plan, actualízalo. Si fueron ajustes puntuales, ciérralo y el resumen seguirá comparando contra el target original.'}
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={dismissDriftModal}
+                disabled={driftSyncing}
+                className="px-4 py-2 rounded-full text-[13px] font-medium text-carbon/60 hover:bg-carbon/[0.03] transition-colors"
+              >
+                {(t.plannerSections as Record<string, string>)?.driftDismiss || 'Cerrar'}
+              </button>
+              <button
+                type="button"
+                onClick={applyDriftSync}
+                disabled={driftSyncing}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors disabled:opacity-60 disabled:cursor-wait"
+              >
+                {driftSyncing && <Loader2 className="h-3 w-3 animate-spin" />}
+                {(t.plannerSections as Record<string, string>)?.driftApply || 'Actualizar plan'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
