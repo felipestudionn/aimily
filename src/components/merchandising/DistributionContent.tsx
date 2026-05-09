@@ -505,6 +505,7 @@ function ExtrasCard({
                 type="button"
                 onClick={() => onMarketplaces(marketplaces.filter((_, j) => j !== i))}
                 className="text-carbon/15 hover:text-destructive opacity-0 group-hover/mp:opacity-100 transition-opacity"
+                title={labels.removeMarketplace || 'Eliminar marketplace'}
               >
                 <X className="h-2.5 w-2.5" />
               </button>
