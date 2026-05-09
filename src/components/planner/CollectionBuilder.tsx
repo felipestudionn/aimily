@@ -204,6 +204,11 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
    * formulas; the underlying knob from 02.3 Distribución). */
   const [editingWsDiscount, setEditingWsDiscount] = useState<string | null>(null);
   const [savingWsDiscount, setSavingWsDiscount] = useState(false);
+  /* Inline editable SKU target — opens a confirmation row when the new
+   * target diverges from skus.length (auto-generate diff or trim lowest). */
+  const [editingSkuTarget, setEditingSkuTarget] = useState<string | null>(null);
+  const [pendingSkuTarget, setPendingSkuTarget] = useState<{ newCount: number; current: number; delta: number } | null>(null);
+  const [applyingSkuTarget, setApplyingSkuTarget] = useState<'add' | 'trim' | null>(null);
   /* Inline editable revenue + absorption strip. New target opens a 3-option
    * choice: add SKUs (Aimily auto-gen) / scale pvp (preserve count) / mixto. */
   const [editingRevenueK, setEditingRevenueK] = useState<string | null>(null);
@@ -868,6 +873,103 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     }
   };
 
+  // ── Inline-edit SKU target (Block 2 strategy.target_sku_count) ─────
+  // Open a confirmation row: if delta > 0 → auto-gen N new SKUs;
+  // if delta < 0 → offer "Aimily trim lowest N" or "Tú los eliges" (cancel).
+  const proposeSkuTargetEdit = (raw: string) => {
+    const parsed = parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed < 1 || parsed > 200) {
+      setEditingSkuTarget(null);
+      return;
+    }
+    const newCount = parsed;
+    const current = skus.length;
+    const delta = newCount - current;
+    setEditingSkuTarget(null);
+    if (delta === 0) return;
+    setPendingSkuTarget({ newCount, current, delta });
+  };
+
+  const applySkuTargetEdit = async (mode: 'add' | 'trim') => {
+    if (!pendingSkuTarget) return;
+    const { newCount, delta } = pendingSkuTarget;
+    setApplyingSkuTarget(mode);
+    try {
+      // Always persist the new target to CIS first
+      await fetch('/api/cis-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          domain: 'merchandising',
+          subdomain: 'strategy',
+          key: 'target_sku_count',
+          value: newCount,
+          valueType: 'number',
+        }),
+      });
+      if (mode === 'add' && delta > 0) {
+        // Generate the diff via existing SKU generator
+        const adjustedSetup = {
+          ...setupData,
+          expectedSkus: delta,
+          targetMargin: Math.round(dtcMargin),
+          totalSalesTarget: Math.round((setupData.totalSalesTarget || 0) * (delta / Math.max(skus.length, 1))),
+        };
+        const res = await fetch('/api/ai/generate-skus', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            setupData: adjustedSetup,
+            count: delta,
+            language: 'es',
+            collectionPlanId,
+            creativeContext: {},
+          }),
+        });
+        if (res.ok) {
+          const { skus: newSkus } = await res.json();
+          const rows = (newSkus as Array<{ name: string; family?: string; type?: string; pvp: number; cogs: number; suggestedUnits: number; drop?: number; expectedSales: number }>).map((s) => ({
+            collection_plan_id: collectionPlanId,
+            name: s.name,
+            family: s.family || setupData.families?.[0] || 'General',
+            category: familyToCategory(s.family),
+            type: s.type || 'REVENUE',
+            channel: 'DTC',
+            drop_number: s.drop || 1,
+            pvp: s.pvp,
+            cost: s.cogs,
+            discount: 0,
+            final_price: s.pvp,
+            buy_units: s.suggestedUnits,
+            sale_percentage: 60,
+            expected_sales: s.expectedSales,
+            margin: Math.round(dtcMargin),
+            launch_date: new Date().toISOString().split('T')[0],
+          }));
+          await fetch('/api/skus/batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skus: rows }),
+          });
+        }
+      } else if (mode === 'trim' && delta < 0) {
+        await fetch('/api/skus/bulk-trim-lowest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionPlanId, count: -delta }),
+        });
+      }
+      await refetch();
+      setLastCascadeAt(Date.now());
+    } catch (err) {
+      console.error('[applySkuTargetEdit] failed', err);
+    } finally {
+      setApplyingSkuTarget(null);
+      setPendingSkuTarget(null);
+    }
+  };
+
   // Inline-edit DTC margin → write to CIS + cascade SKU costs
   const applyMarginEdit = async (raw: string) => {
     const parsed = parseFloat(raw);
@@ -1376,19 +1478,114 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
               </button>
             )}
           </div>
-          {/* Other 4 metrics (display-only for now) */}
+          {/* Gross profit + Avg price (derived) */}
           {[
             { label: sidebarT.metricGrossProfit || 'Gross profit', value: `€${Math.round((totalExpectedSales - totalCOGS) / 1000).toLocaleString()}K` },
             { label: sidebarT.metricAvgPrice || 'Avg price', value: `€${frameworkValidation.avgPrice}` },
-            { label: sidebarT.metricSkus || 'SKUs', value: `${skus.length}` },
-            { label: sidebarT.metricTotalUnits || 'Total units', value: `${skus.reduce((s, sk) => s + sk.buy_units, 0).toLocaleString()}` },
           ].map((metric) => (
             <div key={metric.label} className="flex flex-col">
               <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2.5 whitespace-nowrap">{metric.label}</p>
               <p className="text-[24px] md:text-[26px] font-semibold text-carbon tabular-nums tracking-[-0.03em] leading-none">{metric.value}</p>
             </div>
           ))}
+          {/* SKUs — editable target (auto-gen diff or trim lowest) */}
+          <div className="flex flex-col">
+            <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2.5 whitespace-nowrap">{sidebarT.metricSkus || 'SKUs'}</p>
+            {editingSkuTarget !== null ? (
+              <input
+                autoFocus
+                type="text"
+                inputMode="numeric"
+                value={editingSkuTarget}
+                onChange={(e) => setEditingSkuTarget(e.target.value.replace(/[^\d]/g, ''))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  if (e.key === 'Escape') setEditingSkuTarget(null);
+                }}
+                onBlur={() => editingSkuTarget !== null && proposeSkuTargetEdit(editingSkuTarget)}
+                className="w-[60px] text-[24px] md:text-[26px] font-semibold text-carbon tabular-nums tracking-[-0.03em] leading-none bg-carbon/[0.04] outline-none rounded px-1 -mx-1"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingSkuTarget(String(skus.length))}
+                className="text-[24px] md:text-[26px] font-semibold text-carbon tabular-nums tracking-[-0.03em] leading-none text-left hover:text-carbon hover:bg-carbon/[0.03] rounded px-1 -mx-1 py-0.5 -my-0.5 transition-colors w-fit cursor-text"
+                title="Edita el número objetivo de SKUs — Aimily añade o retira los necesarios"
+              >
+                {skus.length}
+              </button>
+            )}
+          </div>
+          {/* Total units (derived) */}
+          <div className="flex flex-col">
+            <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2.5 whitespace-nowrap">{sidebarT.metricTotalUnits || 'Total units'}</p>
+            <p className="text-[24px] md:text-[26px] font-semibold text-carbon tabular-nums tracking-[-0.03em] leading-none">{skus.reduce((s, sk) => s + sk.buy_units, 0).toLocaleString()}</p>
+          </div>
         </div>
+
+        {/* SKU target absorption strip — visible while user picks how to materialize a count delta */}
+        {pendingSkuTarget && (
+          <div className="mt-6 rounded-[16px] bg-carbon/[0.03] border border-carbon/[0.06] p-5">
+            <div className="flex items-baseline justify-between mb-4 flex-wrap gap-3">
+              <p className="text-[13px] text-carbon/70">
+                <span className="font-semibold text-carbon">{pendingSkuTarget.current} → {pendingSkuTarget.newCount} SKUs</span>
+                <span className="text-carbon/45 ml-2">
+                  {pendingSkuTarget.delta >= 0 ? '+' : ''}{pendingSkuTarget.delta}
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setPendingSkuTarget(null)}
+                className="text-[11px] text-carbon/45 hover:text-carbon"
+              >
+                {sidebarT.cancel || 'Cancelar'}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {pendingSkuTarget.delta > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => applySkuTargetEdit('add')}
+                  disabled={applyingSkuTarget !== null}
+                  className={`text-left rounded-[12px] border bg-white p-4 flex-1 min-w-[240px] transition-all ${
+                    applyingSkuTarget === 'add' ? 'border-carbon/30 ring-2 ring-carbon/15' : 'border-carbon/[0.08] hover:border-carbon/30 hover:shadow-sm'
+                  } disabled:opacity-50 disabled:cursor-wait`}
+                >
+                  <div className="flex items-baseline gap-2 mb-1.5">
+                    <span className="text-[13px] font-semibold text-carbon">+{pendingSkuTarget.delta} SKUs</span>
+                    {applyingSkuTarget === 'add' && <Loader2 className="h-3 w-3 animate-spin text-carbon/45" />}
+                  </div>
+                  <p className="text-[11px] text-carbon/55 leading-relaxed">Aimily auto-genera {pendingSkuTarget.delta} SKUs respetando familias y precios. ~30s.</p>
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => applySkuTargetEdit('trim')}
+                    disabled={applyingSkuTarget !== null}
+                    className={`text-left rounded-[12px] border bg-white p-4 flex-1 min-w-[240px] transition-all ${
+                      applyingSkuTarget === 'trim' ? 'border-carbon/30 ring-2 ring-carbon/15' : 'border-carbon/[0.08] hover:border-carbon/30 hover:shadow-sm'
+                    } disabled:opacity-50 disabled:cursor-wait`}
+                  >
+                    <div className="flex items-baseline gap-2 mb-1.5">
+                      <span className="text-[13px] font-semibold text-carbon">−{Math.abs(pendingSkuTarget.delta)} SKUs (menor venta)</span>
+                      {applyingSkuTarget === 'trim' && <Loader2 className="h-3 w-3 animate-spin text-carbon/45" />}
+                    </div>
+                    <p className="text-[11px] text-carbon/55 leading-relaxed">Aimily quita los {Math.abs(pendingSkuTarget.delta)} SKUs con menor expected sales (no toca production-approved).</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingSkuTarget(null)}
+                    className="text-left rounded-[12px] border border-carbon/[0.08] bg-white p-4 flex-1 min-w-[240px] hover:border-carbon/30 hover:shadow-sm transition-all"
+                  >
+                    <div className="text-[13px] font-semibold text-carbon mb-1.5">Tú los eliges</div>
+                    <p className="text-[11px] text-carbon/55 leading-relaxed">Cierra esto y elimina manualmente los SKUs que no quieras del grid.</p>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Absorption strip — visible while user picks how to materialize a revenue delta */}
         {pendingAbsorption && (
