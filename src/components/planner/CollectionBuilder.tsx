@@ -126,6 +126,13 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
    * consequence flow back to CIS without a "refresh" button. */
   const [editingMarginPct, setEditingMarginPct] = useState<string | null>(null);
   const [savingMargin, setSavingMargin] = useState(false);
+  /* Inline editable revenue + absorption strip. New target opens a 3-option
+   * choice: add SKUs (Aimily auto-gen) / scale pvp (preserve count) / mixto. */
+  const [editingRevenueK, setEditingRevenueK] = useState<string | null>(null);
+  const [pendingAbsorption, setPendingAbsorption] = useState<{
+    newTarget: number; current: number; delta: number;
+  } | null>(null);
+  const [applyingAbsorption, setApplyingAbsorption] = useState<'A' | 'B' | 'C' | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [autoGenStep, setAutoGenStep] = useState(0);
@@ -405,6 +412,180 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
 
   // Use DTC margin as primary (most brands start DTC)
   const marginPercentage = dtcMargin;
+
+  // ── Inline-edit Revenue Y1 (espacio vivo · top-down) ────────────────
+  // Open absorption strip so the user picks how to materialize the delta.
+  const proposeRevenueEdit = (rawK: string) => {
+    const parsed = parseFloat(rawK);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setEditingRevenueK(null);
+      return;
+    }
+    const newTarget = Math.round(parsed * 1000);  // K → €
+    const current = totalExpectedSales;
+    const delta = newTarget - current;
+    setEditingRevenueK(null);
+    if (Math.abs(delta) / Math.max(current, 1) < 0.01) return; // <1% drift, ignore
+    setPendingAbsorption({ newTarget, current, delta });
+  };
+
+  const applyAbsorption = async (option: 'A' | 'B' | 'C') => {
+    if (!pendingAbsorption) return;
+    const { newTarget, current } = pendingAbsorption;
+    setApplyingAbsorption(option);
+    try {
+      // 1. Persist new sales_target_y1 (always)
+      await fetch('/api/cis-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          domain: 'merchandising',
+          subdomain: 'strategy',
+          key: 'sales_target_y1',
+          value: newTarget,
+          valueType: 'number',
+        }),
+      });
+
+      const ratio = current > 0 ? newTarget / current : 1;
+      const factorB = ratio;          // full pvp scale
+      const factorC = Math.sqrt(ratio); // mixto: half via pvp, half via SKUs
+      const targetMarginPct = Math.round(dtcMargin);
+
+      if (option === 'A') {
+        // Add/remove SKUs proportionally — defer to existing auto-gen flow
+        const newCount = Math.round(skus.length * ratio);
+        await fetch('/api/cis-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            collectionPlanId,
+            domain: 'merchandising',
+            subdomain: 'strategy',
+            key: 'target_sku_count',
+            value: newCount,
+            valueType: 'number',
+          }),
+        });
+        // Generate the diff (positive: add N; negative: trim from least-selling)
+        const diff = newCount - skus.length;
+        if (diff > 0) {
+          // Reuse generate-skus for the additional batch
+          const adjustedSetup = {
+            ...setupData,
+            expectedSkus: diff,
+            totalSalesTarget: Math.round(newTarget - current),
+            targetMargin: targetMarginPct,
+          };
+          const res = await fetch('/api/ai/generate-skus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              setupData: adjustedSetup,
+              count: diff,
+              language: 'es',
+              collectionPlanId,
+              creativeContext: {},
+            }),
+          });
+          if (res.ok) {
+            const { skus: newSkus } = await res.json();
+            const rows = (newSkus as Array<{ name: string; family?: string; type?: string; pvp: number; cogs: number; suggestedUnits: number; drop?: number; expectedSales: number }>).map((s) => ({
+              collection_plan_id: collectionPlanId,
+              name: s.name,
+              family: s.family || setupData.families?.[0] || 'General',
+              category: familyToCategory(s.family),
+              type: s.type || 'REVENUE',
+              channel: 'DTC',
+              drop_number: s.drop || 1,
+              pvp: s.pvp,
+              cost: s.cogs,
+              discount: 0,
+              final_price: s.pvp,
+              buy_units: s.suggestedUnits,
+              sale_percentage: 60,
+              expected_sales: s.expectedSales,
+              margin: targetMarginPct,
+              launch_date: new Date().toISOString().split('T')[0],
+            }));
+            await fetch('/api/skus/batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ skus: rows }),
+            });
+          }
+        }
+        // diff < 0: not auto-trimming SKUs — user should review which to drop
+      } else if (option === 'B') {
+        await fetch('/api/skus/bulk-scale-pvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionPlanId, factor: factorB, targetMarginPct }),
+        });
+      } else {
+        // Mixto = √ratio of pvp + (skus.length × (√ratio − 1)) new SKUs
+        await fetch('/api/skus/bulk-scale-pvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collectionPlanId, factor: factorC, targetMarginPct }),
+        });
+        const addCount = Math.max(0, Math.round(skus.length * (factorC - 1)));
+        if (addCount > 0) {
+          const adjustedSetup = {
+            ...setupData,
+            expectedSkus: addCount,
+            totalSalesTarget: Math.round(newTarget - current * factorC),
+            targetMargin: targetMarginPct,
+          };
+          const res = await fetch('/api/ai/generate-skus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              setupData: adjustedSetup,
+              count: addCount,
+              language: 'es',
+              collectionPlanId,
+              creativeContext: {},
+            }),
+          });
+          if (res.ok) {
+            const { skus: newSkus } = await res.json();
+            const rows = (newSkus as Array<{ name: string; family?: string; type?: string; pvp: number; cogs: number; suggestedUnits: number; drop?: number; expectedSales: number }>).map((s) => ({
+              collection_plan_id: collectionPlanId,
+              name: s.name,
+              family: s.family || setupData.families?.[0] || 'General',
+              category: familyToCategory(s.family),
+              type: s.type || 'REVENUE',
+              channel: 'DTC',
+              drop_number: s.drop || 1,
+              pvp: s.pvp,
+              cost: s.cogs,
+              discount: 0,
+              final_price: s.pvp,
+              buy_units: s.suggestedUnits,
+              sale_percentage: 60,
+              expected_sales: s.expectedSales,
+              margin: targetMarginPct,
+              launch_date: new Date().toISOString().split('T')[0],
+            }));
+            await fetch('/api/skus/batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ skus: rows }),
+            });
+          }
+        }
+      }
+
+      await refetch();
+    } catch (err) {
+      console.error('[applyAbsorption] failed', err);
+    } finally {
+      setApplyingAbsorption(null);
+      setPendingAbsorption(null);
+    }
+  };
 
   // Inline-edit DTC margin → write to CIS + cascade SKU costs
   const applyMarginEdit = async (raw: string) => {
@@ -827,10 +1008,42 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
             </button>
           )}
         </div>
-        {/* Primary KPIs — single-word labels only so no line wrapping */}
+        {/* Primary KPIs — Revenue is editable inline; opens absorption strip. */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8">
+          {/* Revenue — editable */}
+          <div className="flex flex-col">
+            <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-2.5 whitespace-nowrap">{sidebarT.metricRevenue || 'Revenue'}</p>
+            {editingRevenueK !== null ? (
+              <div className="flex items-baseline gap-1">
+                <span className="text-[18px] font-semibold text-carbon/55">€</span>
+                <input
+                  autoFocus
+                  type="text"
+                  inputMode="decimal"
+                  value={editingRevenueK}
+                  onChange={(e) => setEditingRevenueK(e.target.value.replace(/[^\d.]/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setEditingRevenueK(null);
+                  }}
+                  onBlur={() => editingRevenueK !== null && proposeRevenueEdit(editingRevenueK)}
+                  className="w-[90px] text-[24px] md:text-[26px] font-semibold text-carbon tabular-nums tracking-[-0.03em] leading-none bg-carbon/[0.04] outline-none rounded px-1 -mx-1"
+                />
+                <span className="text-[18px] font-semibold text-carbon/55">K</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingRevenueK(String(Math.round(totalExpectedSales / 1000)))}
+                className="text-[24px] md:text-[26px] font-semibold text-carbon tabular-nums tracking-[-0.03em] leading-none text-left hover:text-carbon hover:bg-carbon/[0.03] rounded px-1 -mx-1 py-0.5 -my-0.5 transition-colors w-fit cursor-text"
+                title={sidebarT.editRevenueHint || 'Edita el target Y1 — Aimily ofrece 3 vías para absorberlo'}
+              >
+                €{Math.round(totalExpectedSales / 1000).toLocaleString()}K
+              </button>
+            )}
+          </div>
+          {/* Other 4 metrics (display-only for now) */}
           {[
-            { label: sidebarT.metricRevenue || 'Revenue', value: `€${Math.round(totalExpectedSales / 1000).toLocaleString()}K` },
             { label: sidebarT.metricGrossProfit || 'Gross profit', value: `€${Math.round((totalExpectedSales - totalCOGS) / 1000).toLocaleString()}K` },
             { label: sidebarT.metricAvgPrice || 'Avg price', value: `€${frameworkValidation.avgPrice}` },
             { label: sidebarT.metricSkus || 'SKUs', value: `${skus.length}` },
@@ -842,6 +1055,76 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
             </div>
           ))}
         </div>
+
+        {/* Absorption strip — visible while user picks how to materialize a revenue delta */}
+        {pendingAbsorption && (
+          <div className="mt-6 rounded-[16px] bg-carbon/[0.03] border border-carbon/[0.06] p-5">
+            <div className="flex items-baseline justify-between mb-4 flex-wrap gap-3">
+              <p className="text-[13px] text-carbon/70">
+                <span className="font-semibold text-carbon">€{Math.round(pendingAbsorption.current / 1000).toLocaleString()}K → €{Math.round(pendingAbsorption.newTarget / 1000).toLocaleString()}K</span>
+                <span className="text-carbon/45 ml-2">
+                  {pendingAbsorption.delta >= 0 ? '+' : ''}€{Math.round(pendingAbsorption.delta / 1000).toLocaleString()}K
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setPendingAbsorption(null)}
+                className="text-[11px] text-carbon/45 hover:text-carbon"
+              >
+                {sidebarT.cancel || 'Cancelar'}
+              </button>
+            </div>
+            <p className="text-[11px] tracking-[0.08em] uppercase text-carbon/45 font-medium mb-3">
+              {sidebarT.absorptionHowTo || 'Cómo absorber'}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {(() => {
+                const ratio = pendingAbsorption.current > 0 ? pendingAbsorption.newTarget / pendingAbsorption.current : 1;
+                const diffSkus = Math.round(skus.length * ratio) - skus.length;
+                const pvpPct = Math.round((ratio - 1) * 100);
+                const mixSqrt = Math.sqrt(ratio);
+                const mixSkus = Math.max(0, Math.round(skus.length * (mixSqrt - 1)));
+                const mixPvpPct = Math.round((mixSqrt - 1) * 100);
+                const opts = [
+                  {
+                    id: 'A' as const,
+                    title: diffSkus >= 0 ? `+${diffSkus} SKUs` : `${diffSkus} SKUs`,
+                    desc: diffSkus >= 0
+                      ? (sidebarT.absorptionAddSkus || `Aimily auto-genera ${diffSkus} SKUs nuevos respetando familias y precios.`)
+                      : (sidebarT.absorptionTrimSkus || `Tendrás que retirar ${Math.abs(diffSkus)} SKUs manualmente — pulsa para confirmar el target.`),
+                  },
+                  {
+                    id: 'B' as const,
+                    title: `${pvpPct >= 0 ? '+' : ''}${pvpPct}% pvp`,
+                    desc: sidebarT.absorptionScalePvp || `Reescala el precio de los ${skus.length} SKUs sin tocar el surtido.`,
+                  },
+                  {
+                    id: 'C' as const,
+                    title: `+${mixSkus} SKUs · ${mixPvpPct >= 0 ? '+' : ''}${mixPvpPct}% pvp`,
+                    desc: sidebarT.absorptionMixed || 'Reparto equilibrado entre nuevos SKUs y subida de precio.',
+                  },
+                ];
+                return opts.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => applyAbsorption(opt.id)}
+                    disabled={applyingAbsorption !== null}
+                    className={`text-left rounded-[12px] border bg-white p-4 transition-all ${
+                      applyingAbsorption === opt.id ? 'border-carbon/30 ring-2 ring-carbon/15' : 'border-carbon/[0.08] hover:border-carbon/30 hover:shadow-sm'
+                    } disabled:opacity-50 disabled:cursor-wait`}
+                  >
+                    <div className="flex items-baseline gap-2 mb-1.5">
+                      <span className="text-[13px] font-semibold text-carbon tracking-[-0.01em]">{opt.title}</span>
+                      {applyingAbsorption === opt.id && <Loader2 className="h-3 w-3 animate-spin text-carbon/45" />}
+                    </div>
+                    <p className="text-[11px] text-carbon/55 leading-relaxed">{opt.desc}</p>
+                  </button>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
         {/* Secondary KPIs — hairline row, smaller + muted. DTC margin is
             editable inline (click to retype %): writes target_margin_pct to
             CIS and cascades SKU costs. */}
