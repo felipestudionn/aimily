@@ -91,9 +91,37 @@ function ChannelMixCard({
     return { key, color, pct, dasharray, offset };
   });
 
+  // Auto-rebalance to 100: redistribute delta across non-zero peers
+  // (same pattern as MarketsCard + Collection Builder dashboard).
   const handleEdit = (key: keyof DistributionPlan['channel_mix'], value: number) => {
-    const next = Math.max(0, Math.min(100, value));
-    onChange({ ...mix, [key]: next });
+    const ALL = ['dtc_online', 'dtc_physical', 'wholesale', 'marketplace'] as const;
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    const delta = clamped - (mix[key] || 0);
+    if (delta === 0) return;
+    const others = ALL.filter(k => k !== key && (mix[k] || 0) > 0);
+    if (others.length === 0) {
+      const next: typeof mix = { dtc_online: 0, dtc_physical: 0, wholesale: 0, marketplace: 0, [key]: clamped };
+      const padTarget = ALL.find(k => k !== key)!;
+      next[padTarget] = 100 - clamped;
+      onChange(next);
+      return;
+    }
+    const otherSum = others.reduce((s, k) => s + (mix[k] || 0), 0);
+    const next: typeof mix = { ...mix, [key]: clamped };
+    let absorbed = 0;
+    others.forEach((k, i) => {
+      const isLast = i === others.length - 1;
+      const adj = isLast ? -delta - absorbed : Math.round(-delta * ((mix[k] || 0) / otherSum));
+      next[k] = Math.max(0, (mix[k] || 0) + adj);
+      absorbed += adj;
+    });
+    const finalSum = ALL.reduce((s, k) => s + next[k], 0);
+    if (finalSum !== 100) {
+      const drift = 100 - finalSum;
+      const fixKey = others.reduce((best, k) => (next[k] > next[best] ? k : best), others[0]);
+      next[fixKey] = Math.max(0, next[fixKey] + drift);
+    }
+    onChange(next);
   };
 
   return (
@@ -170,9 +198,46 @@ function MarketsCard({
   const total = markets.reduce((s, m) => s + (m.share_pct || 0), 0);
   const max = Math.max(1, ...markets.map(m => m.share_pct || 0));
 
+  // Auto-rebalance to 100: when one share_pct changes, the others absorb
+  // the delta proportional to their existing share so the user doesn't
+  // have to do mental math.
   const updateShare = (idx: number, value: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
+    const prev = markets[idx]?.share_pct || 0;
+    const delta = clamped - prev;
+    if (delta === 0) {
+      const next = [...markets];
+      next[idx] = { ...next[idx], share_pct: clamped };
+      onChange(next);
+      return;
+    }
+    const others = markets.map((m, i) => ({ m, i })).filter(({ m, i }) => i !== idx && (m.share_pct || 0) > 0);
+    if (others.length === 0) {
+      // No other non-zero markets — pad first non-edited with the remainder.
+      const next = markets.map((m, i) => ({ ...m, share_pct: i === idx ? clamped : 0 }));
+      const padTarget = next.find((_, i) => i !== idx);
+      if (padTarget) padTarget.share_pct = 100 - clamped;
+      onChange(next);
+      return;
+    }
+    const otherSum = others.reduce((s, { m }) => s + (m.share_pct || 0), 0);
     const next = [...markets];
-    next[idx] = { ...next[idx], share_pct: Math.max(0, Math.min(100, value)) };
+    next[idx] = { ...next[idx], share_pct: clamped };
+    let absorbed = 0;
+    others.forEach(({ i }, j) => {
+      const isLast = j === others.length - 1;
+      const cur = markets[i].share_pct || 0;
+      const adj = isLast ? -delta - absorbed : Math.round(-delta * (cur / otherSum));
+      next[i] = { ...next[i], share_pct: Math.max(0, cur + adj) };
+      absorbed += adj;
+    });
+    // Final guard: if rounding drifted, fix the largest other market.
+    const finalSum = next.reduce((s, m) => s + (m.share_pct || 0), 0);
+    if (finalSum !== 100) {
+      const drift = 100 - finalSum;
+      const fixIdx = others.reduce((bestIdx, { i }) => (next[i].share_pct > next[bestIdx].share_pct ? i : bestIdx), others[0].i);
+      next[fixIdx] = { ...next[fixIdx], share_pct: Math.max(0, next[fixIdx].share_pct + drift) };
+    }
     onChange(next);
   };
   const updateName = (idx: number, name: string) => {
@@ -380,8 +445,24 @@ function SellThroughCard({
     { key: 'week_12', label: 'Sem 12' },
     { key: 'week_24', label: 'Sem 24' },
   ];
-  const update = (key: keyof DistributionPlan['sell_through_targets'], v: number) =>
-    onChange({ ...curve, [key]: Math.max(0, Math.min(100, v)) });
+  // Sell-through must escalate (week_4 ≤ week_8 ≤ week_12 ≤ week_24).
+  // Auto-correct: if user types a value that breaks monotonicity, adjust
+  // neighbours so the curve stays valid without forcing them to think.
+  const update = (key: keyof DistributionPlan['sell_through_targets'], v: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(v)));
+    const next = { ...curve, [key]: clamped };
+    // Earlier points must be ≤ this one
+    const order: Array<keyof DistributionPlan['sell_through_targets']> = ['week_4', 'week_8', 'week_12', 'week_24'];
+    const idx = order.indexOf(key);
+    for (let i = 0; i < idx; i++) {
+      if (next[order[i]] > clamped) next[order[i]] = clamped;
+    }
+    // Later points must be ≥ this one
+    for (let i = idx + 1; i < order.length; i++) {
+      if (next[order[i]] < clamped) next[order[i]] = clamped;
+    }
+    onChange(next);
+  };
 
   // SVG line chart
   const W = 320;
