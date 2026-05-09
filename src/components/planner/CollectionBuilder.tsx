@@ -200,6 +200,10 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
    * consequence flow back to CIS without a "refresh" button. */
   const [editingMarginPct, setEditingMarginPct] = useState<string | null>(null);
   const [savingMargin, setSavingMargin] = useState(false);
+  /* Inline editable wholesale discount % (drives WS value + WS margin
+   * formulas; the underlying knob from 02.3 Distribución). */
+  const [editingWsDiscount, setEditingWsDiscount] = useState<string | null>(null);
+  const [savingWsDiscount, setSavingWsDiscount] = useState(false);
   /* Inline editable revenue + absorption strip. New target opens a 3-option
    * choice: add SKUs (Aimily auto-gen) / scale pvp (preserve count) / mixto. */
   const [editingRevenueK, setEditingRevenueK] = useState<string | null>(null);
@@ -480,13 +484,20 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     }, 0);
   }, [skus]);
 
-  // Wholesale value (COGS × 2.5 industry standard)
+  // Wholesale value reads the user's confirmed wholesale discount from CIS
+  // (02.3 channels.pricing_per_channel.wholesale_discount_pct, surfaced via
+  // derived.plannedDiscounts). Default 50% if CIS hasn't been seeded yet.
+  // Old formula `COGS × 2.5` ignored the strategy and inflated WS value
+  // → WS margin always read 60%, which is the markup-chain rule of thumb,
+  // not what the user actually negotiated.
+  const wholesaleDiscountPct = setupData.plannedDiscounts ?? 50;
   const totalWholesaleValue = useMemo(() => {
+    const factor = 1 - (wholesaleDiscountPct / 100);
     return skus.reduce((acc, sku) => {
       const soldUnits = Math.round(sku.buy_units * (sku.sale_percentage || 60) / 100);
-      return acc + (Math.round(sku.cost * 2.5) * soldUnits);
+      return acc + (sku.pvp * factor * soldUnits);
     }, 0);
-  }, [skus]);
+  }, [skus, wholesaleDiscountPct]);
 
   // DTC Margin = (Revenue - COGS) / Revenue
   const dtcMargin = useMemo(() => {
@@ -494,6 +505,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
   }, [totalExpectedSales, totalCOGS]);
 
   // Wholesale Margin = (WS Revenue - COGS) / WS Revenue
+  // Now driven by the actual CIS wholesale_discount_pct, not a hardcoded markup chain.
   const wsMargin = useMemo(() => {
     return totalWholesaleValue > 0 ? ((totalWholesaleValue - totalCOGS) / totalWholesaleValue) * 100 : 0;
   }, [totalWholesaleValue, totalCOGS]);
@@ -898,6 +910,58 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
     } finally {
       setSavingMargin(false);
       setEditingMarginPct(null);
+    }
+  };
+
+  // Inline-edit wholesale discount % → write to CIS channels.pricing_per_channel.
+  // Recomputes WS value + WS margin live (no SKU mutation needed; the dashboard
+  // re-renders from the new wholesaleDiscountPct).
+  const applyWsDiscountEdit = async (raw: string) => {
+    const parsed = parseFloat(raw);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      setEditingWsDiscount(null);
+      return;
+    }
+    const next = Math.round(parsed);
+    if (Math.abs(next - wholesaleDiscountPct) < 0.5) {
+      setEditingWsDiscount(null);
+      return;
+    }
+    setSavingWsDiscount(true);
+    try {
+      // Read existing pricing_per_channel object via /api/distribution-load
+      // so we don't clobber marketplace_discount_pct.
+      const loadRes = await fetch('/api/distribution-load', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionPlanId }),
+      });
+      const loadJson = loadRes.ok ? await loadRes.json() : null;
+      const currentChannelsPlan = loadJson?.plan;
+      const currentPricing = currentChannelsPlan?.pricing_per_channel || { wholesale_discount_pct: 50, marketplace_discount_pct: 35 };
+      const newPricing = { ...currentPricing, wholesale_discount_pct: next };
+
+      await fetch('/api/cis-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionPlanId,
+          domain: 'merchandising',
+          subdomain: 'channels',
+          key: 'pricing_per_channel',
+          value: newPricing,
+          valueType: 'object',
+        }),
+      });
+      // No SKU cascade — the dashboard formula reads wholesaleDiscountPct
+      // directly from setupData. Force a refetch of derived setup data via
+      // page reload (cleanest path until we wire setupData to live state).
+      window.location.reload();
+    } catch (err) {
+      console.error('[applyWsDiscountEdit] failed', err);
+    } finally {
+      setSavingWsDiscount(false);
+      setEditingWsDiscount(null);
     }
   };
 
@@ -1433,7 +1497,41 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
               </button>
             )}
           </div>
-          <SecondaryMetric label={sidebarT.metricWsMargin || 'WS margin'} value={`${wsMargin.toFixed(0)}%`} />
+          {/* WS margin — derived; sub-line is the editable knob (wholesale_discount_pct) */}
+          <div className="flex flex-col">
+            <p className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/35 mb-1.5 whitespace-nowrap">{sidebarT.metricWsMargin || 'WS margin'}</p>
+            <p className="text-[16px] font-semibold text-carbon/70 tabular-nums tracking-[-0.02em] leading-none mb-0.5">{wsMargin.toFixed(0)}%</p>
+            {editingWsDiscount !== null ? (
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-[10px] text-carbon/40">−</span>
+                <input
+                  autoFocus
+                  type="text"
+                  inputMode="decimal"
+                  value={editingWsDiscount}
+                  onChange={(e) => setEditingWsDiscount(e.target.value.replace(/[^\d.]/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setEditingWsDiscount(null);
+                  }}
+                  onBlur={() => editingWsDiscount !== null && applyWsDiscountEdit(editingWsDiscount)}
+                  disabled={savingWsDiscount}
+                  className="w-[28px] text-[10px] tabular-nums text-carbon/60 bg-carbon/[0.04] outline-none rounded px-0.5"
+                />
+                <span className="text-[10px] text-carbon/40">% off retail</span>
+                {savingWsDiscount && <Loader2 className="h-2.5 w-2.5 animate-spin text-carbon/35 ml-1" />}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingWsDiscount(String(wholesaleDiscountPct))}
+                className="text-[10px] text-carbon/40 hover:text-carbon/65 hover:bg-carbon/[0.03] rounded px-0.5 -mx-0.5 transition-colors w-fit text-left"
+                title="Edita el descuento wholesale — afecta WS value y WS margin"
+              >
+                −{wholesaleDiscountPct}% off retail
+              </button>
+            )}
+          </div>
           <SecondaryMetric label={sidebarT.metricFamilies || 'Families'} value={`${new Set(skus.map(s => s.family)).size}`} />
         </div>
 
