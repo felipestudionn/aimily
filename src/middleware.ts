@@ -71,6 +71,11 @@ const publicPagePrefixes = [
   '/presentation/export/',
   '/tech-pack/export/',
   '/vendor/',  // Phase 5 vendor portal (token-gated read-only access)
+  '/images/',  // public/ static images (PNGs aren't in the matcher exclusion
+              // because storefronts need /og.png routed through middleware;
+              // without this prefix, anonymous /images/aimily-logo-*.png
+              // requests redirect to / and the public landing renders a
+              // broken image in incognito).
 ];
 
 // API routes that DON'T require auth (webhooks, cron with secret, OAuth callbacks)
