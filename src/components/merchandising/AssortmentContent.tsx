@@ -356,7 +356,28 @@ export function AssortmentContent({ collectionContext, language = 'es', basePath
   const updateFamily = useCallback((idx: number, patch: Partial<Family>) => {
     setFamilies(prev => {
       const next = [...prev];
-      next[idx] = { ...next[idx], ...patch };
+      const cur = next[idx];
+      // If family.count is being edited, scale subcategorías proportionally
+      // so sum(sub.counts) = family.count (math stays correct on its own —
+      // user shouldn't have to rebalance subs by hand).
+      if (typeof patch.count === 'number' && cur.subcategories?.length) {
+        const newCount = Math.max(0, patch.count);
+        const oldSum = cur.subcategories.reduce((s, sb) => s + (sb.count || 0), 0);
+        if (oldSum > 0 && newCount !== oldSum) {
+          let absorbed = 0;
+          const subs = cur.subcategories.map((sb, i) => {
+            const isLast = i === cur.subcategories.length - 1;
+            const adj = isLast
+              ? newCount - absorbed
+              : Math.round(newCount * ((sb.count || 0) / oldSum));
+            absorbed += adj;
+            return { ...sb, count: Math.max(0, adj) };
+          });
+          next[idx] = { ...cur, ...patch, count: newCount, subcategories: subs };
+          return next;
+        }
+      }
+      next[idx] = { ...cur, ...patch };
       return next;
     });
   }, []);
@@ -367,7 +388,14 @@ export function AssortmentContent({ collectionContext, language = 'es', basePath
       const subs = [...next[fIdx].subcategories];
       const oldName = subs[sIdx].name;
       subs[sIdx] = { ...subs[sIdx], ...patch };
-      next[fIdx] = { ...next[fIdx], subcategories: subs };
+      // If sub.count changed, recompute family.count = sum(sub.counts) so
+      // the family card stays in sync without the user re-typing.
+      if (typeof patch.count === 'number') {
+        const newFamilyCount = subs.reduce((s, sb) => s + (sb.count || 0), 0);
+        next[fIdx] = { ...next[fIdx], subcategories: subs, count: newFamilyCount };
+      } else {
+        next[fIdx] = { ...next[fIdx], subcategories: subs };
+      }
       // Carry the price entry over when the subcategory is renamed
       if (patch.name && patch.name !== oldName) {
         setSubPrices(p => {

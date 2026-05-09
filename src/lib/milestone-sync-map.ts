@@ -41,6 +41,13 @@ export interface SyncSnapshot {
   /** Workspace data per workspace (creative · merchandising · design). */
   workspaceData: Record<string, Record<string, unknown> | undefined>;
 
+  /** Set of "workspace:card" identifiers whose canonical CIS key is present.
+   *  Block 2 canonical confirms (strategy / families / channels / budget) write
+   *  to collection_decisions, NOT to workspace_data.cardData[id].confirmed.
+   *  This set lets `cardConfirmed` recognize the canonical signal so the hub
+   *  progress + milestones flip without needing the legacy workspace flag. */
+  cisCardConfirmed: Set<string>;
+
   /** Counts of rows in tables, scoped to the collection. */
   counts: {
     skus: number;
@@ -109,6 +116,9 @@ const card = (workspace: string, cardName: string) =>
 
 const cardConfirmed = (workspace: string, cardName: string) =>
   (s: SyncSnapshot): boolean => {
+    // Prefer CIS canonical signal (Block 2 post-Sprint B.1-B.4), fall back to
+    // the legacy workspace_data.cardData[id].confirmed flag for older paths.
+    if (s.cisCardConfirmed.has(`${workspace}:${cardName}`)) return true;
     const ws = s.workspaceData[workspace] as { cardData?: Record<string, unknown> } | undefined;
     const cd = ws?.cardData?.[cardName] as { confirmed?: boolean } | undefined;
     return cd?.confirmed === true;
@@ -465,13 +475,15 @@ export async function loadSyncSnapshot(
     client.from('commercial_actions').select('id', { count: 'exact', head: true }).eq('collection_plan_id', planId),
     client.from('storefronts').select('published_at').eq('collection_plan_id', planId).maybeSingle(),
     client.from('brand_voice_config').select('id').eq('collection_plan_id', planId).maybeSingle(),
+    // Final selection (legacy single-subdomain query) + canonical Block 2
+    // confirm signals. Loaded as one row set; we filter per-purpose below.
     client
       .from('collection_decisions')
       .select('domain, subdomain, key, value')
       .eq('collection_plan_id', planId)
       .eq('is_current', true)
       .eq('domain', 'merchandising')
-      .eq('subdomain', 'final_selection'),
+      .in('subdomain', ['final_selection', 'strategy', 'families', 'channels', 'budget']),
   ]);
 
   // Derive workspace map keyed by workspace name.
@@ -498,11 +510,32 @@ export async function loadSyncSnapshot(
 
   // Final selection lock signal — read from collection_decisions only
   // (the workspace path was retired in the merchandising redesign).
-  const finalSelDecision = (decisionsRes.data as Array<{ key: string; value: unknown }> | null)?.find(
-    d => d.key === 'locked_at',
+  const decisionRows = (decisionsRes.data as Array<{ subdomain: string; key: string; value: unknown }> | null) || [];
+  const finalSelDecision = decisionRows.find(
+    d => d.subdomain === 'final_selection' && d.key === 'locked_at',
   );
   const finalSelectionLockedAt =
     (finalSelDecision?.value as string | null | undefined) ?? null;
+
+  // Build the CIS-canonical confirmed set for Block 2 mini-blocks. A
+  // mini-block is "confirmed" when its anchor key is present in CIS,
+  // independent of the legacy workspace_data.cardData[id].confirmed flag.
+  // Anchor keys mirror what the canonical confirm endpoints write:
+  //   merchandising:scenarios → strategy.chosen_archetype_id
+  //   merchandising:families  → families.list
+  //   merchandising:channels  → channels.plan_full
+  //   merchandising:budget    → budget.plan_full
+  // (02.2 also writes pricing.tiers; left out — families is the gate.)
+  const cisCardConfirmed = new Set<string>();
+  const has = (subdomain: string, key: string) =>
+    decisionRows.some(d => d.subdomain === subdomain && d.key === key);
+  if (has('strategy', 'chosen_archetype_id')) cisCardConfirmed.add('merchandising:scenarios');
+  if (has('families', 'list')) {
+    cisCardConfirmed.add('merchandising:families');
+    cisCardConfirmed.add('merchandising:pricing'); // rp-4 also keys off pricing
+  }
+  if (has('channels', 'plan_full')) cisCardConfirmed.add('merchandising:channels');
+  if (has('budget', 'plan_full')) cisCardConfirmed.add('merchandising:budget');
 
   // Post-launch analysis is the only narrow-scoped field still living
   // inside collection_plans.setup_data — see Sprint B.4 audit.
@@ -514,6 +547,7 @@ export async function loadSyncSnapshot(
     launchDate: planRes.data?.launch_date ?? null,
     now,
     workspaceData,
+    cisCardConfirmed,
     counts: {
       skus: skus.length,
       skusWithSketch,
