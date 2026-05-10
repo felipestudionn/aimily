@@ -52,6 +52,8 @@ const VALID_TYPES: MarketingGenerationType[] = [
   'dm-announcement',
   'email-teaser',
   'countdown-stories',
+  'drop-announcement',
+  'refresh-creative',
   'post-launch-check',
 ];
 

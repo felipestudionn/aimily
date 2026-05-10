@@ -314,22 +314,24 @@ function CurvaSection({ data, drops }: { data: DashboardData; drops: DropLite[] 
   const archetype = getArchetype(archetypeId);
 
   // Build aggregate curve summing per-SKU contributions from each drop's
-  // launch_date. Fallback to sku.launch_date if drop_id missing.
+  // launch_date. Drops are the canonical anchor — when an SKU belongs to a
+  // drop, override its (potentially legacy) sku.launch_date with the drop's
+  // launch_date. Fall back to sku.launch_date only for orphan SKUs.
   const aggregate = useMemo(() => {
-    // Map drop_id → launch_date for SKUs that belong to a drop
     const dropById = new Map<string, DropLite>();
     drops.forEach((d) => dropById.set(d.id, d));
 
     const skusWithDates = data.skus.map((s) => {
-      let launchDate = s.launch_date;
-      if (!launchDate && s.drop_id && dropById.has(s.drop_id)) {
-        launchDate = dropById.get(s.drop_id)!.launch_date;
+      let dropLaunch: string | undefined;
+      if (s.drop_id && dropById.has(s.drop_id)) {
+        dropLaunch = dropById.get(s.drop_id)!.launch_date;
+      } else if (s.drop_number) {
+        const matching = drops.find((d) => d.drop_number === s.drop_number);
+        if (matching) dropLaunch = matching.launch_date;
       }
-      // Fallback: if drop_number set but no drop_id, find by drop_number
-      if (!launchDate && s.drop_number) {
-        const drop = drops.find((d) => d.drop_number === s.drop_number);
-        if (drop) launchDate = drop.launch_date;
-      }
+      // Drop date is canonical when SKU is in a drop · sku.launch_date is
+      // the orphan fallback only.
+      const launchDate = dropLaunch || s.launch_date;
       return { ...s, launch_date: launchDate };
     });
 
@@ -738,7 +740,7 @@ function StationRow({
 }) {
   const isPast = station.status === 'past';
   const isLive = station.status === 'live';
-  const canGenerate = !!station.generator && station.generator !== 'drop-announcement' && station.generator !== 'refresh-creative';
+  const canGenerate = !!station.generator;
 
   return (
     <motion.div

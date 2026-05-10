@@ -21,6 +21,8 @@ export type MarketingGenerationType =
   | 'dm-announcement'
   | 'email-teaser'
   | 'countdown-stories'
+  | 'drop-announcement'
+  | 'refresh-creative'
   | 'post-launch-check';
 
 export interface MarketingGenerationInput {
@@ -291,7 +293,104 @@ Output ONLY valid JSON · no preamble.`,
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/* 6 · POST-LAUNCH CHECK (deterministic · NO AI)                           */
+/* 6 · DROP ANNOUNCEMENT (multi-channel orchestrator · Día 0 default)      */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function dropAnnouncementPrompt(input: MarketingGenerationInput): MarketingPrompt {
+  return {
+    system: `${PERSONA_BASE}
+
+You write drop-day multi-channel announcement scripts that ship simultaneously across the brand's active surfaces. Each surface gets its own native format (storefront banner short · IG/TikTok caption + visual brief · email subject + body short · paid ad headline). Spanish ES. Output STRICT JSON.`,
+    user: `${brandContextBlock(input)}
+
+TASK: Write a drop-day multi-channel announcement that goes live on the launch date across all active channels. JSON output:
+
+{
+  "storefront_banner": {
+    "headline": "max 8 words · top of homepage / hero overlay",
+    "subhead": "12-18 words · drop name + 1-line value prop",
+    "cta_label": "max 3 words · 'Compra ya' style"
+  },
+  "ig_post": {
+    "caption_first_line": "first line / hook · max 12 words · stop-the-scroll",
+    "caption_body": "60-90 words · brand voice · mentions 2 specific SKUs by name · ends with affiliate/CTA hashtag · 4-6 hashtags",
+    "visual_brief": "2-3 sentences · what to show in the carousel/reel · framing, lighting, model direction",
+    "post_at": "Launch day · 09:00 local"
+  },
+  "tiktok_post": {
+    "video_hook_3s": "first 3 seconds · stop-the-scroll text overlay",
+    "video_caption": "30-60 words · vertical video friendly · trend audio direction · 4-6 hashtags",
+    "visual_brief": "what to show in 15-30s vertical · brand voice match"
+  },
+  "email_blast": {
+    "subject": "max 50 chars · launch day excitement · brand voice",
+    "preview_text": "max 90 chars complementing subject",
+    "body_short_md": "150-200 words markdown · single hero CTA · sign with brand_name"
+  },
+  "press_snippet": {
+    "for_pickup": "30-50 word snippet ready to drop into press releases for last-minute pickup · cite drop name + launch date"
+  },
+  "send_sequence": [
+    "06:00 — internal team confirmation",
+    "08:00 — storefront banner goes live + email blast scheduled",
+    "09:00 — IG carousel + TikTok video published simultaneously",
+    "12:00 — paid social ads activated (if applicable)",
+    "18:00 — first sellthrough check"
+  ]
+}
+
+Output ONLY valid JSON · no preamble.`,
+    temperature: 0.65,
+    jsonMode: true,
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 7 · REFRESH CREATIVE WAVE (T+30 second wave)                            */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function refreshCreativePrompt(input: MarketingGenerationInput): MarketingPrompt {
+  return {
+    system: `${PERSONA_BASE}
+
+You design second-wave creative refreshes 30 days post-drop. The first content wave has fatigue · you propose 3 new creative angles + content briefs per top SKU + paid amplification recs + email re-engagement template. Spanish ES. JSON output.`,
+    user: `${brandContextBlock(input)}
+
+TASK: Write a T+30 refresh creative wave plan to re-energize sellthrough. JSON output:
+
+{
+  "diagnosis": "2-3 sentences · what the first wave did well + where fatigue likely set in (assume top SKUs sold through faster than tail)",
+  "refresh_angles": [
+    {"angle": "first new creative angle · 1 sentence", "why": "why this angle re-engages", "ig_post_hook": "hook for IG", "tiktok_hook": "hook for TikTok"},
+    {"angle": "second angle", "why": "...", "ig_post_hook": "...", "tiktok_hook": "..."},
+    {"angle": "third angle", "why": "...", "ig_post_hook": "...", "tiktok_hook": "..."}
+  ],
+  "content_per_top_sku": [
+    {"sku_name": "first top SKU", "refresh_brief": "specific re-shoot or re-angle direction · 1-2 sentences"},
+    {"sku_name": "second top SKU", "refresh_brief": "..."},
+    {"sku_name": "third top SKU", "refresh_brief": "..."}
+  ],
+  "paid_amplification": {
+    "what_to_boost": "which posts/videos from wave 1 to boost · which new wave 2 creative · which audience segments to retarget",
+    "estimated_budget_pct_of_drop_revenue": "recommendation · e.g. '3-5% of drop revenue · diminishing returns >7%'",
+    "platforms": ["primary platform", "secondary platform"]
+  },
+  "email_re_engagement": {
+    "segment": "audience segment to re-engage · e.g. 'opened email 1 but didn't purchase' or 'browsed PDP but no add-to-cart'",
+    "subject_line": "max 50 chars · curiosity or social proof",
+    "body_md_short": "100-150 words markdown · soft re-engagement · single CTA"
+  },
+  "next_milestone": "1-2 sentences · what to watch for week 5+ and signal to plan next drop"
+}
+
+Output ONLY valid JSON · no preamble.`,
+    temperature: 0.7,
+    jsonMode: true,
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* 8 · POST-LAUNCH CHECK (deterministic · NO AI)                           */
 /* ─────────────────────────────────────────────────────────────────────── */
 
 // post-launch-check is computed deterministically in the endpoint
@@ -315,6 +414,10 @@ export function buildMarketingPrompt(
       return emailTeaserPrompt(input);
     case 'countdown-stories':
       return countdownStoriesPrompt(input);
+    case 'drop-announcement':
+      return dropAnnouncementPrompt(input);
+    case 'refresh-creative':
+      return refreshCreativePrompt(input);
     case 'post-launch-check':
       return null; // deterministic, no AI
     default:

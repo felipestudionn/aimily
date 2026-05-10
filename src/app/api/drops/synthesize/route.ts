@@ -145,6 +145,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 5. Backfill collection_skus.drop_id by matching drop_number → drop.id.
+  // This ensures the dashboard's per-drop curve aggregation can find each
+  // SKU's anchor without falling back on legacy sku.launch_date.
+  if (inserted && inserted.length > 0) {
+    for (const drop of inserted) {
+      await supabaseAdmin
+        .from('collection_skus')
+        .update({ drop_id: drop.id })
+        .eq('collection_plan_id', collection_plan_id)
+        .eq('drop_number', drop.drop_number)
+        .is('drop_id', null);
+    }
+  }
+
   return NextResponse.json({
     result: { drops: inserted, synthesized: true },
   });
