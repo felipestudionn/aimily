@@ -78,23 +78,18 @@ export function DropScheduleSection({ collectionPlanId }: Props) {
     }
   }, [collectionPlanId]);
 
-  // Initial mount: fetch existing drops; if empty, auto-synthesize.
+  // Initial mount: ALWAYS call synthesize endpoint (idempotent · creates
+  // drops if empty, runs backfill of sku.drop_id either way).
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const existing = await fetchDrops();
-      if (cancelled) return;
-      if (existing.length === 0) {
-        await synthesizeIfEmpty();
-      } else {
-        setDrops(existing);
-      }
+      await synthesizeIfEmpty();
       if (!cancelled) setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [fetchDrops, synthesizeIfEmpty]);
+  }, [synthesizeIfEmpty]);
 
   const handleEditField = async (id: string, field: 'name' | 'launch_date', value: string) => {
     setSavingId(id);

@@ -53,6 +53,16 @@ export async function POST(req: NextRequest) {
     .order('position', { ascending: true });
 
   if (existing && existing.length > 0 && !force) {
+    // Backfill sku.drop_id for any unlinked SKUs (idempotent · catches
+    // SKUs created before drops were synthesized).
+    for (const drop of existing) {
+      await supabaseAdmin
+        .from('collection_skus')
+        .update({ drop_id: drop.id })
+        .eq('collection_plan_id', collection_plan_id)
+        .eq('drop_number', drop.drop_number)
+        .is('drop_id', null);
+    }
     return NextResponse.json({
       result: { drops: existing, synthesized: false },
     });
