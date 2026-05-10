@@ -3,31 +3,25 @@
 /**
  * 04.0 Estrategia de Venta · SalesStrategyContent
  *
- * Sprint B (Block 4) · canonical pattern verbatim from Block 2 ScenariosContent.
+ * Sprint B (Block 4) · canonical pattern from Block 2 ScenariosContent,
+ * but visually punchy: accent-tinted cards, BIG stats horizontal, benchmark
+ * avatars (not text lists), single tagline (not paragraph), compact channel
+ * toggles. Felipe feedback 2026-05-10: original was "antiguo, mucho texto,
+ * poco intuitivo" — this rewrite trades prose for visual hierarchy.
  *
- * Flow:
- *   archetypes (3 cards) → channels (multi-select) → editor (3 axis) → confirmed
- *
- * Persistence:
- *   - /api/sales-strategy-confirm writes marketing.sales_strategy.* to CIS
+ * Flow: archetypes → channels → editor → confirmed
  *
  * Reference: memory/spec_block-4-sales-strategy-archetypes.md
+ *            memory/design-accent-palette.md (linen · citronella · moss)
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslation } from '@/i18n';
 import {
   Loader2,
   RefreshCw,
   ArrowLeft,
   ArrowRight,
   Check,
-  TrendingDown,
-  Wallet,
-  Calendar,
-  Target,
-  Percent,
-  Layers,
   Store,
   Smartphone,
   MessageCircle,
@@ -67,14 +61,8 @@ interface Props {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-const fmtEur = (n: number) =>
-  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M€` : n >= 1000 ? `${Math.round(n / 1000)}K€` : `${n}€`;
-
 const fmtRange = (r: { min: number; max: number }, suffix = '') =>
   r.min === r.max ? `${r.min}${suffix}` : `${r.min}–${r.max}${suffix}`;
-
-const fmtEurRange = (r: { min: number; max: number }) =>
-  r.min === r.max ? fmtEur(r.min) : `${fmtEur(r.min)}–${fmtEur(r.max)}`;
 
 const CHANNEL_ICONS: Record<SalesChannelId, React.ElementType> = {
   own_storefront: Store,
@@ -85,14 +73,60 @@ const CHANNEL_ICONS: Record<SalesChannelId, React.ElementType> = {
   marketplaces: ShoppingBag,
 };
 
-const CAPITAL_LABEL: Record<string, string> = {
-  low: 'BAJA',
-  medium: 'MEDIA',
-  'medium-high': 'MEDIA-ALTA',
-  high: 'ALTA',
+// Archetype accent for benchmark avatars (paleta aimily)
+const ARCHETYPE_AVATAR_BG: Record<SalesArchetypeId, string> = {
+  A: 'bg-[#F1EFED]',  // linen
+  B: 'bg-[#FFF4CE]',  // citronella
+  C: 'bg-[#EDEEE7]',  // moss tint
 };
 
-// ── Archetype Card ─────────────────────────────────────────────────────────
+// One-line punchy description per archetype (replaces verbose narrative)
+const ARCHETYPE_SHORT_DESC: Record<SalesArchetypeId, string> = {
+  A: 'Tienda propia, brand voice como lever, in-stock. Tú construyes la audiencia.',
+  B: 'Tu cara es el brand. Drops capsule. Tu audiencia personal es el engine.',
+  C: 'Cliente paga primero, tú produces después. Capital-light. 4–20 semanas.',
+};
+
+// 2-3 stat pills inline (compact, not big tiles)
+function getStatPills(archetype: SalesArchetype): string[] {
+  const lev = archetype.levers;
+  const capLabel = { low: 'BAJO', medium: 'MEDIO', 'medium-high': 'MEDIO-ALTO', high: 'ALTO' }[lev.capital_initial] || lev.capital_initial.toUpperCase();
+  if (archetype.id === 'A') {
+    return [
+      `Capital ${capLabel}`,
+      `Margen ${fmtRange(lev.typical_margin_pct)}%`,
+      `CAC €${fmtRange(lev.cac_eur)}`,
+    ];
+  }
+  if (archetype.id === 'B') {
+    return [
+      `Capital ${capLabel}`,
+      `CVR ${fmtRange(lev.typical_cvr_pct)}%`,
+      `Día 1 launch`,
+    ];
+  }
+  // C · MTO
+  return [
+    `Capital ${capLabel}`,
+    `Lead ${lev.typical_lead_time_days?.min}–${lev.typical_lead_time_days?.max}d`,
+    `Margen ${fmtRange(lev.typical_margin_pct)}%`,
+  ];
+}
+
+// Benchmark avatar (initial in colored circle)
+function BenchmarkAvatar({ brand, archetypeId }: { brand: string; archetypeId: SalesArchetypeId }) {
+  const initial = brand.replace(/[^A-Za-z]/, '').charAt(0).toUpperCase() || brand.charAt(0).toUpperCase();
+  return (
+    <div
+      className={`w-7 h-7 rounded-full ${ARCHETYPE_AVATAR_BG[archetypeId]} ring-2 ring-white flex items-center justify-center text-carbon/80 text-[11px] font-semibold tracking-tight shrink-0`}
+      title={brand}
+    >
+      {initial}
+    </div>
+  );
+}
+
+// ── Archetype Card · gold standard (CollectionOverview pattern) ────────────
 
 function ArchetypeCard({
   archetype,
@@ -103,114 +137,79 @@ function ArchetypeCard({
   onSelect: () => void;
   loading: boolean;
 }) {
+  const stats = getStatPills(archetype);
+  const benchmarkBrands = archetype.benchmarks.slice(0, 5);
+
   return (
     <button
       type="button"
       onClick={onSelect}
       disabled={loading}
-      className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[600px] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ring-1 ring-carbon/[0.06] disabled:opacity-50 disabled:cursor-wait"
+      className="group relative bg-white rounded-[20px] p-10 md:p-14 flex flex-col min-h-[500px] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] text-left disabled:opacity-50 disabled:cursor-wait"
     >
-      <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
-        Estrategia {archetype.id}
+      {/* Ghost number — 72px, carbon/[0.05] (gold standard) */}
+      <div className="mb-10">
+        <span className="text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em]">
+          {archetype.id}.
+        </span>
       </div>
-      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-2">
+
+      {/* Title — 24-28px semibold (gold standard) */}
+      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-4">
         {archetype.name}
       </h3>
-      <p className="text-[12px] italic text-carbon/55 mb-4 leading-relaxed">
-        {archetype.tagline}
+
+      {/* Description — 14px, carbon/50 (gold standard) · ONE punchy line */}
+      <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em] mb-6">
+        {ARCHETYPE_SHORT_DESC[archetype.id]}
       </p>
-      <p className="text-[13px] text-carbon/65 leading-relaxed mb-5">
-        {archetype.narrative}
+
+      {/* Stat pills · compact inline */}
+      <div className="flex flex-wrap gap-1.5 mb-6">
+        {stats.map((s, i) => (
+          <span
+            key={i}
+            className="inline-flex items-center px-2.5 py-1 rounded-full bg-carbon/[0.04] text-[11px] font-medium text-carbon/65 tracking-[-0.01em]"
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+
+      {/* Benchmark avatars · subtle row */}
+      <div className="flex items-center gap-1.5 mb-1">
+        {benchmarkBrands.map((b) => (
+          <BenchmarkAvatar key={b.brand} brand={b.brand} archetypeId={archetype.id} />
+        ))}
+        {archetype.benchmarks.length > 5 && (
+          <span className="text-[10px] text-carbon/35 font-medium ml-1">
+            +{archetype.benchmarks.length - 5}
+          </span>
+        )}
+      </div>
+      <p className="text-[11px] text-carbon/35 leading-relaxed truncate">
+        {benchmarkBrands.map((b) => b.brand).join(' · ')}
       </p>
 
-      {/* 4 stat tiles */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="flex items-start gap-2">
-          <Wallet className="h-3.5 w-3.5 text-carbon/35 mt-0.5 shrink-0" />
-          <div>
-            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">
-              Capital inicial
-            </div>
-            <div className="text-[15px] font-semibold text-carbon tracking-[-0.02em] leading-tight">
-              {CAPITAL_LABEL[archetype.levers.capital_initial] || archetype.levers.capital_initial}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <Calendar className="h-3.5 w-3.5 text-carbon/35 mt-0.5 shrink-0" />
-          <div>
-            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">
-              Tiempo a primer revenue
-            </div>
-            <div className="text-[15px] font-semibold text-carbon tracking-[-0.02em] leading-tight">
-              {archetype.levers.time_to_first_revenue}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <Target className="h-3.5 w-3.5 text-carbon/35 mt-0.5 shrink-0" />
-          <div>
-            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">
-              CAC esperado
-            </div>
-            <div className="text-[15px] font-semibold text-carbon tracking-[-0.02em] leading-tight">
-              {fmtEurRange(archetype.levers.cac_eur)}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <Percent className="h-3.5 w-3.5 text-carbon/35 mt-0.5 shrink-0" />
-          <div>
-            <div className="text-[10px] tracking-[0.05em] uppercase text-carbon/35 font-medium">
-              Margen
-            </div>
-            <div className="text-[15px] font-semibold text-carbon tracking-[-0.02em] leading-tight">
-              {fmtRange(archetype.levers.typical_margin_pct, '%')}
-            </div>
-          </div>
+      <div className="flex-1" />
+
+      {/* CTA pill centered (gold standard) */}
+      <div className="flex justify-center mt-10">
+        <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all bg-carbon text-white group-hover:bg-carbon/90">
+          Empezar
+          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
         </div>
       </div>
 
-      {/* Benchmarks */}
-      <div className="pt-4 border-t border-carbon/[0.06] mb-4">
-        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-2">
-          Marcas similares
-        </div>
-        <div className="space-y-1.5">
-          {archetype.benchmarks.slice(0, 5).map((b, i) => (
-            <div key={i} className="text-[12px] text-carbon/70 leading-snug">
-              <span className="font-medium">{b.brand}</span>
-              <span className="text-carbon/50">
-                {' · '}
-                {b.country}
-                {' · '}
-                {b.scale}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Best for */}
-      <div className="mt-auto pt-3 border-t border-carbon/[0.06]">
-        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-1.5">
-          Mejor para
-        </div>
-        <p className="text-[12px] text-carbon/55 leading-relaxed">
-          {archetype.best_for}
-        </p>
-      </div>
-
-      {/* CTA */}
-      <div className="mt-5 flex items-center justify-end text-[12px] font-semibold text-carbon group-hover:gap-2 transition-all gap-1.5">
-        <span>Trabajar con esta estrategia</span>
-        <ArrowRight className="h-3.5 w-3.5" />
+      {/* Progress bar 120x6 (gold standard · empty for archetypes) */}
+      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+        <div className="h-full rounded-full bg-carbon/30 transition-all duration-1000 ease-out w-0" />
       </div>
     </button>
   );
 }
 
-// ── Channel multi-select card ──────────────────────────────────────────────
+// ── Channel Card · compact horizontal ─────────────────────────────────────
 
 function ChannelCard({
   channel,
@@ -229,52 +228,56 @@ function ChannelCard({
       type="button"
       onClick={onToggle}
       disabled={isLocked}
-      className={`group relative flex flex-col text-left bg-white rounded-[20px] p-7 ring-1 transition-all duration-300 ${
+      className={`group relative flex items-start gap-4 bg-white rounded-[18px] p-5 ring-1 transition-all duration-200 text-left ${
         isActive
-          ? 'ring-carbon shadow-[0_8px_24px_rgba(0,0,0,0.06)]'
-          : 'ring-carbon/[0.06] hover:ring-carbon/[0.18]'
-      } ${isLocked ? 'cursor-default' : 'cursor-pointer hover:scale-[1.01]'}`}
+          ? 'ring-carbon shadow-[0_4px_16px_rgba(0,0,0,0.05)]'
+          : 'ring-carbon/[0.06] hover:ring-carbon/[0.2]'
+      } ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-            isActive ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/55'
-          }`}>
-            <Icon className="h-4 w-4" />
-          </div>
-          <div>
-            <h4 className="text-[16px] font-semibold text-carbon tracking-[-0.02em]">
-              {channel.name}
-            </h4>
-            {channel.default_on && (
-              <p className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 font-medium mt-0.5">
-                Siempre activo
-              </p>
-            )}
-          </div>
-        </div>
-        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-          isActive
-            ? 'bg-carbon border-carbon'
-            : 'border-carbon/20 group-hover:border-carbon/40'
-        }`}>
-          {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-        </div>
+      {/* Icon */}
+      <div
+        className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${
+          isActive ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/55'
+        }`}
+      >
+        <Icon className="h-5 w-5" strokeWidth={1.75} />
       </div>
 
-      <p className="text-[12px] text-carbon/60 leading-relaxed mb-3">
-        {channel.description}
-      </p>
+      {/* Content */}
+      <div className="flex-1 min-w-0 pt-0.5">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <h4 className="text-[15px] font-semibold text-carbon tracking-[-0.02em] truncate">
+            {channel.name}
+          </h4>
+          <div
+            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+              isActive
+                ? 'bg-carbon border-carbon'
+                : 'border-carbon/20 group-hover:border-carbon/40'
+            }`}
+          >
+            {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+          </div>
+        </div>
 
-      {/* Benchmark scale signal */}
-      <div className="text-[11px] italic text-carbon/45 leading-relaxed mb-3">
-        {channel.benchmark_scale_signal}
-      </div>
+        {/* Single benchmark stat line */}
+        <p className="text-[11px] text-carbon/50 leading-snug line-clamp-2">
+          {channel.benchmark_scale_signal}
+        </p>
 
-      {/* Templates count */}
-      <div className="mt-auto pt-3 border-t border-carbon/[0.06] flex items-center gap-2 text-[10px] tracking-[0.05em] uppercase text-carbon/40 font-medium">
-        <Layers className="h-3 w-3" />
-        <span>{channel.templates.length} plantillas que aimily genera</span>
+        {/* Tag row */}
+        <div className="flex items-center gap-2 mt-2">
+          {channel.default_on && (
+            <span className="text-[9px] tracking-[0.1em] uppercase text-carbon/40 font-medium">
+              Siempre activo
+            </span>
+          )}
+          {!channel.default_on && (
+            <span className="text-[9px] tracking-[0.1em] uppercase text-carbon/35 font-medium">
+              {channel.templates.length} plantillas auto-generadas
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );
@@ -284,29 +287,17 @@ function ChannelCard({
 
 function EditorAxisCard({
   title,
-  description,
   children,
-  reasoning,
 }: {
   title: string;
-  description?: string;
   children: React.ReactNode;
-  reasoning?: string;
 }) {
   return (
     <div className="bg-white rounded-[20px] p-7 ring-1 ring-carbon/[0.06]">
-      <h4 className="text-[18px] font-semibold text-carbon tracking-[-0.02em] leading-tight mb-1">
+      <h4 className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/45 mb-4">
         {title}
       </h4>
-      {description && (
-        <p className="text-[12px] text-carbon/50 mb-4 leading-relaxed">{description}</p>
-      )}
       {children}
-      {reasoning && (
-        <p className="text-[11px] italic text-carbon/40 mt-4 pt-3 border-t border-carbon/[0.06] leading-relaxed">
-          aimily propone: {reasoning}
-        </p>
-      )}
     </div>
   );
 }
@@ -321,59 +312,49 @@ function VolumeAxis({
   onChange: (e: SalesStrategyEditorPrefill) => void;
 }) {
   return (
-    <EditorAxisCard
-      title="Volumen y catálogo"
-      description="¿Cuántos SKUs por drop y cómo gestionas el catálogo?"
-      reasoning={editor.reasoning?.volume}
-    >
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-[11px] tracking-[0.08em] uppercase text-carbon/45 font-medium mb-2 block">
-            SKUs por drop
-          </label>
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={editor.volume.skus_per_drop}
-            onChange={(e) =>
+    <EditorAxisCard title="Volumen y catálogo">
+      <div className="flex items-baseline gap-3 mb-4">
+        <input
+          type="number"
+          min={1}
+          max={500}
+          value={editor.volume.skus_per_drop}
+          onChange={(e) =>
+            onChange({
+              ...editor,
+              volume: {
+                ...editor.volume,
+                skus_per_drop: Math.max(1, Number(e.target.value) || 0),
+              },
+            })
+          }
+          className="bg-transparent border-0 outline-none text-[64px] md:text-[72px] font-semibold text-carbon tracking-[-0.04em] leading-none w-[160px] focus:text-carbon tabular-nums"
+        />
+        <span className="text-[14px] text-carbon/45 tracking-[-0.01em]">
+          SKUs por drop
+        </span>
+      </div>
+
+      <div className="flex gap-2">
+        {(['permanent', 'capsule'] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() =>
               onChange({
                 ...editor,
-                volume: {
-                  ...editor.volume,
-                  skus_per_drop: Math.max(1, Number(e.target.value) || 0),
-                },
+                volume: { ...editor.volume, catalog_mode: mode },
               })
             }
-            className="w-full px-4 py-3 text-[24px] font-semibold text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/30 focus:outline-none transition-colors tabular-nums tracking-[-0.02em]"
-          />
-        </div>
-        <div>
-          <label className="text-[11px] tracking-[0.08em] uppercase text-carbon/45 font-medium mb-2 block">
-            Modo de catálogo
-          </label>
-          <div className="flex gap-2">
-            {(['permanent', 'capsule'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() =>
-                  onChange({
-                    ...editor,
-                    volume: { ...editor.volume, catalog_mode: mode },
-                  })
-                }
-                className={`flex-1 px-4 py-3 rounded-[12px] text-[13px] font-medium transition-colors ${
-                  editor.volume.catalog_mode === mode
-                    ? 'bg-carbon text-white'
-                    : 'bg-carbon/[0.03] text-carbon/60 hover:bg-carbon/[0.06]'
-                }`}
-              >
-                {mode === 'permanent' ? 'Permanente' : 'Capsule'}
-              </button>
-            ))}
-          </div>
-        </div>
+            className={`px-4 py-2 rounded-full text-[12px] font-medium transition-colors ${
+              editor.volume.catalog_mode === mode
+                ? 'bg-carbon text-white'
+                : 'bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]'
+            }`}
+          >
+            {mode === 'permanent' ? 'Permanente' : 'Capsule'}
+          </button>
+        ))}
       </div>
     </EditorAxisCard>
   );
@@ -389,43 +370,32 @@ function CadenceAxis({
   onChange: (e: SalesStrategyEditorPrefill) => void;
 }) {
   return (
-    <EditorAxisCard
-      title="Cadencia de drops"
-      description="¿Cada cuánto lanzas y con qué frecuencia comunicas?"
-      reasoning={editor.reasoning?.cadence}
-    >
-      <div className="grid grid-cols-3 gap-3">
+    <EditorAxisCard title="Cadencia">
+      <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="text-[11px] tracking-[0.08em] uppercase text-carbon/45 font-medium mb-2 block">
-            Drops cada
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min={0}
-              max={52}
-              value={editor.cadence.drops_frequency_weeks}
-              onChange={(e) =>
-                onChange({
-                  ...editor,
-                  cadence: {
-                    ...editor.cadence,
-                    drops_frequency_weeks: Math.max(0, Number(e.target.value) || 0),
-                  },
-                })
-              }
-              className="w-full px-3 py-2.5 text-[18px] font-semibold text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/30 focus:outline-none transition-colors tabular-nums"
-            />
-            <span className="text-[12px] text-carbon/50 whitespace-nowrap">semanas</span>
+          <input
+            type="number"
+            min={0}
+            max={52}
+            value={editor.cadence.drops_frequency_weeks}
+            onChange={(e) =>
+              onChange({
+                ...editor,
+                cadence: {
+                  ...editor.cadence,
+                  drops_frequency_weeks: Math.max(0, Number(e.target.value) || 0),
+                },
+              })
+            }
+            className="bg-transparent border-0 outline-none text-[40px] md:text-[44px] font-semibold text-carbon tracking-[-0.03em] leading-none w-full focus:text-carbon tabular-nums"
+          />
+          <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 font-medium mt-1">
+            {editor.cadence.drops_frequency_weeks === 0
+              ? 'on-demand'
+              : 'sem entre drops'}
           </div>
-          {editor.cadence.drops_frequency_weeks === 0 && (
-            <p className="text-[10px] italic text-carbon/40 mt-1">on-demand</p>
-          )}
         </div>
         <div>
-          <label className="text-[11px] tracking-[0.08em] uppercase text-carbon/45 font-medium mb-2 block">
-            Posts/día
-          </label>
           <input
             type="number"
             min={0}
@@ -441,13 +411,13 @@ function CadenceAxis({
                 },
               })
             }
-            className="w-full px-3 py-2.5 text-[18px] font-semibold text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/30 focus:outline-none transition-colors tabular-nums"
+            className="bg-transparent border-0 outline-none text-[40px] md:text-[44px] font-semibold text-carbon tracking-[-0.03em] leading-none w-full focus:text-carbon tabular-nums"
           />
+          <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 font-medium mt-1">
+            posts/día
+          </div>
         </div>
         <div>
-          <label className="text-[11px] tracking-[0.08em] uppercase text-carbon/45 font-medium mb-2 block">
-            Emails/semana
-          </label>
           <input
             type="number"
             min={0}
@@ -463,8 +433,11 @@ function CadenceAxis({
                 },
               })
             }
-            className="w-full px-3 py-2.5 text-[18px] font-semibold text-carbon bg-carbon/[0.03] rounded-[10px] border border-carbon/[0.06] focus:border-carbon/30 focus:outline-none transition-colors tabular-nums"
+            className="bg-transparent border-0 outline-none text-[40px] md:text-[44px] font-semibold text-carbon tracking-[-0.03em] leading-none w-full focus:text-carbon tabular-nums"
           />
+          <div className="text-[10px] tracking-[0.1em] uppercase text-carbon/40 font-medium mt-1">
+            emails/sem
+          </div>
         </div>
       </div>
     </EditorAxisCard>
@@ -517,19 +490,15 @@ function KpisAxis({
   onChange: (e: SalesStrategyEditorPrefill) => void;
 }) {
   return (
-    <EditorAxisCard
-      title="KPIs primarios"
-      description="Los que vas a vigilar diariamente. Pre-fill por archetype + canales activados."
-      reasoning={editor.reasoning?.kpi_focus}
-    >
+    <EditorAxisCard title="KPIs primarios · los que vigilas a diario">
       <div className="flex flex-wrap gap-2">
         {editor.kpi_focus.map((kpi, idx) => (
           <div
             key={kpi}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-carbon text-white text-[12px] font-medium"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-carbon text-white text-[12px] font-medium"
           >
-            <span className="text-[10px] tracking-[0.05em] text-white/60 font-semibold">
-              {idx + 1}.
+            <span className="text-[10px] tracking-[0.05em] text-white/55 font-semibold tabular-nums">
+              {idx + 1}
             </span>
             <span>{KPI_LABELS[kpi] || kpi}</span>
             <button
@@ -540,7 +509,7 @@ function KpisAxis({
                   kpi_focus: editor.kpi_focus.filter((k) => k !== kpi),
                 })
               }
-              className="text-white/50 hover:text-white transition-colors text-[14px] leading-none"
+              className="text-white/50 hover:text-white transition-colors text-[16px] leading-none -mr-0.5"
               aria-label="Quitar"
             >
               ×
@@ -548,7 +517,9 @@ function KpisAxis({
           </div>
         ))}
         {editor.kpi_focus.length === 0 && (
-          <p className="text-[12px] italic text-carbon/40">Sin KPIs seleccionados</p>
+          <p className="text-[12px] italic text-carbon/40">
+            Sin KPIs seleccionados
+          </p>
         )}
       </div>
     </EditorAxisCard>
@@ -561,9 +532,6 @@ export default function SalesStrategyContent({
   collectionPlanId,
   onConfirmed,
 }: Props) {
-  const t = useTranslation();
-  void t; // i18n placeholder for Sprint H sweep
-
   const [data, setData] = useState<SalesStrategyData>({ phase: 'archetypes' });
   const [loadingArchetypes, setLoadingArchetypes] = useState(false);
   const [loadingPrefill, setLoadingPrefill] = useState(false);
@@ -574,7 +542,7 @@ export default function SalesStrategyContent({
   const archetypes = data.archetypes || [];
   const channelsActivated = data.channels_activated || [];
 
-  // ── Auto-load archetypes (deterministic, no AI) ─────────────────────────
+  // ── Auto-load archetypes ─────────────────────────────────────────────────
   const fetchArchetypes = useCallback(async () => {
     if (loadingArchetypes) return;
     setLoadingArchetypes(true);
@@ -598,7 +566,6 @@ export default function SalesStrategyContent({
       }));
     } catch (err) {
       console.error('[SalesStrategy] fetchArchetypes failed', err);
-      // Fallback to static data
       setData((d) => ({ ...d, archetypes: SALES_ARCHETYPES }));
       setError(null);
     } finally {
@@ -615,7 +582,6 @@ export default function SalesStrategyContent({
   // ── Phase: archetypes → channels ────────────────────────────────────────
 
   const handleSelectArchetype = (archetype: SalesArchetype) => {
-    // Initialize channelsActivated with own_storefront ON, others available
     const initial: ChannelActivation[] = SALES_CHANNELS.map((c) => ({
       channel: c.id,
       enabled: c.default_on,
@@ -632,9 +598,8 @@ export default function SalesStrategyContent({
   // ── Phase: channels → editor ────────────────────────────────────────────
 
   const toggleChannel = (channelId: SalesChannelId) => {
-    const current = channelsActivated.find((c) => c.channel === channelId);
-    if (current && SALES_CHANNELS.find((c) => c.id === channelId)?.default_on) {
-      return; // own_storefront cannot be disabled
+    if (SALES_CHANNELS.find((c) => c.id === channelId)?.default_on) {
+      return;
     }
     const next = channelsActivated.map((c) =>
       c.channel === channelId ? { ...c, enabled: !c.enabled } : c,
@@ -709,7 +674,6 @@ export default function SalesStrategyContent({
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  // Phase: archetypes loading
   if (phase === 'archetypes' && archetypes.length === 0) {
     if (loadingArchetypes) {
       return (
@@ -735,18 +699,17 @@ export default function SalesStrategyContent({
     }
   }
 
-  // Phase: archetypes (3 cards)
+  // Phase: archetypes
   if (phase === 'archetypes') {
     return (
-      <div className="max-w-[1600px] mx-auto">
-        <div className="max-w-[760px] mx-auto text-center mb-10">
+      <div className="max-w-[1400px] mx-auto">
+        <div className="max-w-[640px] mx-auto text-center mb-12">
           <p className="text-[14px] text-carbon/55 leading-relaxed italic">
-            Tres modelos económicos del mercado fashion 2025-2026. Elige el que se parezca a tu situación — luego
-            configuras los canales y la operación juntos.
+            Tres modelos económicos del mercado fashion 2025-2026. Reconócete en uno y configuramos el resto.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {archetypes.map((a) => (
             <ArchetypeCard
               key={a.id}
@@ -768,13 +731,14 @@ export default function SalesStrategyContent({
 
   const chosenArchetype = archetypes.find((a) => a.id === data.chosen_archetype_id);
 
-  // Phase: channels (multi-select)
+  // Phase: channels
   if (phase === 'channels' && chosenArchetype) {
     const compatibleChannels = getChannelsForArchetype(chosenArchetype.id);
+    const enabledCount = channelsActivated.filter((c) => c.enabled).length;
     return (
-      <div className="max-w-[1400px] mx-auto pb-32">
+      <div className="max-w-[1100px] mx-auto pb-32">
         {/* Working strategy header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-10 flex items-center justify-between">
           <button
             type="button"
             onClick={() => setData((d) => ({ ...d, phase: 'archetypes' }))}
@@ -793,17 +757,16 @@ export default function SalesStrategyContent({
           </div>
         </div>
 
-        <div className="max-w-[760px] mx-auto text-center mb-8">
-          <h2 className="text-[28px] md:text-[32px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] mb-3">
+        <div className="max-w-[640px] mx-auto text-center mb-10">
+          <h2 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.05] mb-3">
             ¿Por dónde vendes?
           </h2>
-          <p className="text-[14px] text-carbon/55 leading-relaxed italic">
-            Activa los canales que vas a operar. Tu tienda propia siempre está activa. Los demás son opt-in y se pueden
-            activar después.
+          <p className="text-[13px] text-carbon/55 leading-relaxed italic">
+            Activa los canales que vas a operar · {enabledCount} activo{enabledCount !== 1 ? 's' : ''}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {compatibleChannels.map((c) => {
             const activation = channelsActivated.find((a) => a.channel === c.id);
             const isActive = activation?.enabled ?? false;
@@ -837,13 +800,13 @@ export default function SalesStrategyContent({
     );
   }
 
-  // Phase: editor (3 axis)
+  // Phase: editor
   if ((phase === 'editor' || phase === 'confirmed') && chosenArchetype && data.editor) {
     const editor = data.editor;
     const enabledChannels = channelsActivated.filter((c) => c.enabled);
     return (
-      <div className="max-w-[1200px] mx-auto pb-32">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="max-w-[1100px] mx-auto pb-32">
+        <div className="mb-10 flex items-center justify-between">
           <button
             type="button"
             onClick={() => setData((d) => ({ ...d, phase: 'channels' }))}
@@ -855,7 +818,8 @@ export default function SalesStrategyContent({
           </button>
           <div className="text-right">
             <div className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/35">
-              Operación · Estrategia {chosenArchetype.id}
+              Estrategia {chosenArchetype.id} · {enabledChannels.length} canal
+              {enabledChannels.length !== 1 ? 'es' : ''}
             </div>
             <div className="text-[14px] font-semibold text-carbon tracking-[-0.02em]">
               {chosenArchetype.name}
@@ -863,16 +827,16 @@ export default function SalesStrategyContent({
           </div>
         </div>
 
-        <div className="max-w-[760px] mx-auto text-center mb-8">
-          <h2 className="text-[28px] md:text-[32px] font-medium text-carbon tracking-[-0.03em] leading-[1.15] mb-3">
+        <div className="max-w-[640px] mx-auto text-center mb-10">
+          <h2 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.05] mb-3">
             Configura tu operación
           </h2>
-          <p className="text-[14px] text-carbon/55 leading-relaxed italic">
-            Tres decisiones operacionales · {enabledChannels.length} canal{enabledChannels.length !== 1 ? 'es' : ''} activo{enabledChannels.length !== 1 ? 's' : ''}.
+          <p className="text-[13px] text-carbon/55 leading-relaxed italic">
+            Tres números que definen tu ritmo · ya pre-fillados desde tu estrategia
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <VolumeAxis editor={editor} onChange={handleEditorChange} />
           <CadenceAxis editor={editor} onChange={handleEditorChange} />
           <div className="lg:col-span-2">
@@ -907,8 +871,9 @@ export default function SalesStrategyContent({
             <div>
               <p className="font-medium mb-1">Estrategia confirmada</p>
               <p className="text-emerald-700/80">
-                {chosenArchetype.name} con {enabledChannels.length} canal{enabledChannels.length !== 1 ? 'es' : ''}.
-                Sales Dashboard, Content Studio y GTM se han pre-fillado con esta configuración.
+                {chosenArchetype.name} con {enabledChannels.length} canal
+                {enabledChannels.length !== 1 ? 'es' : ''}. Sales Dashboard, Content
+                Studio y GTM se han pre-fillado con esta configuración.
               </p>
             </div>
           </div>
@@ -917,12 +882,10 @@ export default function SalesStrategyContent({
     );
   }
 
-  // Loading prefill
   return (
     <div className="max-w-[700px] mx-auto py-20 text-center">
       <Loader2 className="h-6 w-6 mx-auto mb-4 text-carbon/30 animate-spin" />
       <p className="text-[14px] text-carbon/55">Cargando…</p>
-      <TrendingDown className="h-0 w-0 hidden" />
     </div>
   );
 }
