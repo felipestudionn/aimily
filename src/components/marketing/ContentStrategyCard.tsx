@@ -8,7 +8,7 @@ import {
   Edit3,
   Check,
   X,
-  Sparkles,
+  Wand2,
   Loader2,
   Copy,
   Hash,
@@ -502,7 +502,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
                 disabled={aiLoading}
                 className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
               >
-                {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
                 {t.marketingPage.generatePillarsVoiceBtn}
               </button>
             </div>
@@ -678,7 +678,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               disabled={aiLoading || !selectedSkuId}
               className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
-              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {t.marketingPage.generateCopyBtn}
             </button>
 
@@ -736,7 +736,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               disabled={aiLoading}
               className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
-              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {t.marketingPage.generateSocialTemplatesBtn}
             </button>
 
@@ -847,7 +847,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               disabled={aiLoading}
               className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
-              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {emailMode === 'single'
                 ? t.marketingPage.generateEmailBtn
                 : t.marketingPage.generateSequenceBtn}
@@ -923,7 +923,7 @@ export function ContentStrategyCard({ collectionPlanId }: ContentStrategyCardPro
               disabled={aiLoading || !selectedSkuId}
               className="flex items-center gap-2 bg-carbon text-white px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.12em] hover:bg-carbon/90 transition-colors disabled:opacity-40"
             >
-              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
               {t.marketingPage.generateSeoBtn}
             </button>
 

@@ -12,7 +12,7 @@ import {
   Star,
   Trash2,
   Upload,
-  Sparkles,
+  Wand2,
 } from 'lucide-react';
 import type { SKU } from '@/hooks/useSkus';
 import type { AiGeneration } from '@/types/studio';
@@ -157,7 +157,7 @@ export function ContentEvolutionStrip({
   };
 
   const handleEditorialGenerate = async () => {
-    if (!user || !sku.render_urls?.['3d']) return;
+    if (!user || !(sku.render_url || sku.render_urls?.['3d'])) return;
     setGenerating(true);
     onError(null);
     try {
@@ -165,7 +165,7 @@ export function ContentEvolutionStrip({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          product_image_url: sku.render_urls['3d'],
+          product_image_url: (sku.render_url || sku.render_urls!['3d']),
           style_reference_url: styleRefUrl || undefined,
           model_id: selectedModelId || undefined,
           product_name: sku.name,
@@ -211,7 +211,7 @@ export function ContentEvolutionStrip({
 
   /* ── Still Life (Block 04.2 level 2) ── */
   const handleStillLifeGenerate = async () => {
-    if (!user || !sku.render_urls?.['3d']) return;
+    if (!user || !(sku.render_url || sku.render_urls?.['3d'])) return;
     setGenerating(true);
     onError(null);
     try {
@@ -219,7 +219,7 @@ export function ContentEvolutionStrip({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          product_image_url: sku.render_urls['3d'],
+          product_image_url: (sku.render_url || sku.render_urls!['3d']),
           product_name: sku.name,
           category: sku.category,
           scene: 'still_life',
@@ -258,7 +258,7 @@ export function ContentEvolutionStrip({
 
   /* ── Video / Campaign (Block 04.2 level 4) ── */
   const handleVideoGenerate = async () => {
-    if (!user || !sku.render_urls?.['3d']) return;
+    if (!user || !(sku.render_url || sku.render_urls?.['3d'])) return;
     setGenerating(true);
     onError(null);
     try {
@@ -266,7 +266,7 @@ export function ContentEvolutionStrip({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image_url: sku.render_urls['3d'],
+          image_url: (sku.render_url || sku.render_urls!['3d']),
           product_name: sku.name,
           motion: 'subtle',
           duration: 5,
@@ -304,7 +304,7 @@ export function ContentEvolutionStrip({
     }
   };
 
-  const has3dRender = !!sku.render_urls?.['3d'];
+  const has3dRender = !!(sku.render_url || sku.render_urls?.['3d']);
 
   const countsByLevel = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -404,10 +404,10 @@ export function ContentEvolutionStrip({
               {has3dRender ? (
                 <div className="flex items-start gap-5">
                   <button
-                    onClick={() => onLightbox(sku.render_urls!['3d']!)}
+                    onClick={() => onLightbox((sku.render_url || sku.render_urls?.['3d']) as string)}
                     className="w-40 h-40 bg-white rounded-[16px] overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-carbon/15 transition-all"
                   >
-                    <img src={sku.render_urls!['3d']!} alt={sku.name} className="w-full h-full object-contain" />
+                    <img src={(sku.render_url || sku.render_urls?.['3d']) as string} alt={sku.name} className="w-full h-full object-contain" />
                   </button>
                   <div className="space-y-2">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C5CAA8]/35 text-carbon text-[10px] font-semibold tracking-[0.05em] uppercase">
@@ -591,7 +591,7 @@ export function ContentEvolutionStrip({
                       {generating ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
+                        <Wand2 className="h-3.5 w-3.5" />
                       )}
                       {m.generateEditorial || 'Generate editorial'}
                     </button>

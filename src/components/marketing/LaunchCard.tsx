@@ -6,7 +6,7 @@ import {
   ChevronLeft,
   Plus,
   Trash2,
-  Sparkles,
+  Wand2,
   Loader2,
   Filter,
   X,
@@ -431,7 +431,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
                 {retroLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Wand2 className="h-3.5 w-3.5" />
                 )}
                 {retro ? t.marketingPage.retroRegenerate : t.marketingPage.retroGenerate}
               </button>
@@ -500,7 +500,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               }`}
             >
               <span className="flex items-center gap-1.5">
-                {pillId !== 'libre' && <Sparkles className="h-3 w-3" />}
+                {pillId !== 'libre' && <Wand2 className="h-3 w-3" />}
                 {t.marketingPage[AI_PILL_LABEL_KEYS[pillId]]}
               </span>
             </button>
@@ -529,7 +529,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Wand2 className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
                 </Button>
               </div>
             </div>
@@ -554,7 +554,7 @@ export function LaunchCard({ collectionPlanId }: LaunchCardProps) {
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Wand2 className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
                 </Button>
               </div>
             </div>

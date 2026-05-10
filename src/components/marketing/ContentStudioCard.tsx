@@ -77,7 +77,7 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
 
   // 4-level content readiness used to render the dot strip on each SKU card.
   const skuContentStatus = (sku: SKU) => {
-    const has3d = !!sku.render_urls?.['3d'];
+    const has3d = !!(sku.render_url || sku.render_urls?.['3d']);
     const skuGens = generations.filter(
       (g) => g.input_data?.sku_id === sku.id && g.status === 'completed'
     );
@@ -177,8 +177,8 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
               const storyName = storyNameForSku(sku);
               const isSelected = effectiveSelectedSkuId === sku.id;
               const thumb =
-                sku.render_urls?.['3d'] ||
                 sku.render_url ||
+                sku.render_urls?.['3d'] ||
                 sku.reference_image_url;
 
               return (
@@ -260,10 +260,10 @@ export function ContentStudioCard({ collectionPlanId }: ContentStudioCardProps) 
             <div className="space-y-6">
               {/* Header */}
               <div className="flex items-center gap-5 pb-6 border-b border-carbon/[0.06]">
-                {selectedSku.render_urls?.['3d'] ? (
+                {(selectedSku.render_url || selectedSku.render_urls?.['3d']) ? (
                   <div className="w-20 h-20 rounded-[14px] bg-carbon/[0.04] overflow-hidden flex-shrink-0">
                     <img
-                      src={selectedSku.render_urls['3d']}
+                      src={selectedSku.render_url || selectedSku.render_urls?.['3d']}
                       alt={selectedSku.name}
                       className="w-full h-full object-contain"
                     />

@@ -7,7 +7,7 @@ import {
   ChevronRight,
   Plus,
   Trash2,
-  Sparkles,
+  Wand2,
   Loader2,
   Filter,
   Eye,
@@ -594,7 +594,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                   }`}
                 >
                   <span className="flex items-center gap-1.5">
-                    {pillId !== 'libre' && <Sparkles className="h-3 w-3" />}
+                    {pillId !== 'libre' && <Wand2 className="h-3 w-3" />}
                     {t.marketingPage[AI_PILL_LABEL_KEYS[pillId]]}
                   </span>
                 </button>
@@ -624,7 +624,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                       disabled={isGenerating || drops.length === 0}
                       className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase"
                     >
-                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
+                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Wand2 className="h-4 w-4 mr-2" />{t.marketingPage.generate}</>}
                     </Button>
                   </div>
                 </div>
@@ -693,7 +693,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                         </>
                       ) : (
                         <>
-                          <Sparkles className="h-4 w-4 mr-2" />
+                          <Wand2 className="h-4 w-4 mr-2" />
                           {t.marketingPage.repurposeGenerate}
                         </>
                       )}
@@ -747,7 +747,7 @@ export function ContentCalendarCard({ collectionPlanId }: ContentCalendarCardPro
                       disabled={isGenerating || !propuestaStartDate || !propuestaEndDate}
                       className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase"
                     >
-                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
+                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Wand2 className="h-4 w-4 mr-2" />{t.marketingPage.fullPlan}</>}
                     </Button>
                   </div>
                 </div>

@@ -6,7 +6,7 @@ import {
   ChevronLeft,
   Plus,
   Trash2,
-  Sparkles,
+  Wand2,
   Loader2,
   Filter,
   AlertTriangle,
@@ -407,7 +407,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               }`}
             >
               <span className="flex items-center gap-1.5">
-                {pillId !== 'libre' && <Sparkles className="h-3 w-3" />}
+                {pillId !== 'libre' && <Wand2 className="h-3 w-3" />}
                 {t.marketingPage[AI_PILL_LABEL_KEYS[pillId]]}
               </span>
             </button>
@@ -432,7 +432,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('asistido')} disabled={isGenerating} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generatePlan}</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Wand2 className="h-4 w-4 mr-2" />{t.marketingPage.generatePlan}</>}
                 </Button>
               </div>
             </div>
@@ -460,7 +460,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               </div>
               <div className="flex items-end">
                 <Button onClick={() => handleAiGenerate('propuesta')} disabled={isGenerating || !propuestaLaunchDate} className="bg-carbon hover:bg-carbon/90 rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.generateFullPlan}</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.generating}</> : <><Wand2 className="h-4 w-4 mr-2" />{t.marketingPage.generateFullPlan}</>}
                 </Button>
               </div>
             </div>
@@ -748,7 +748,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
               <p className="text-sm font-light text-carbon/40">{t.marketingPage.compareWithMarket}</p>
             </div>
             <Button onClick={handleGeneratePrediction} disabled={isGenerating || drops.length === 0} className="rounded-sm text-[11px] font-medium tracking-[0.08em] uppercase">
-              {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.analyzing}</> : <><Sparkles className="h-4 w-4 mr-2" />{t.marketingPage.validateWithAi}</>}
+              {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t.marketingPage.analyzing}</> : <><Wand2 className="h-4 w-4 mr-2" />{t.marketingPage.validateWithAi}</>}
             </Button>
           </div>
 
@@ -854,7 +854,7 @@ export function GoToMarketCard({ collectionPlanId }: GoToMarketCardProps) {
             </div>
           ) : (
             <div className="text-center py-8 text-carbon/30">
-              <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-20" />
+              <Wand2 className="h-12 w-12 mx-auto mb-4 opacity-20" />
               <p className="text-sm font-light">{t.marketingPage.clickValidate}</p>
             </div>
           )}
