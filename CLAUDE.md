@@ -305,6 +305,92 @@ The 4 sub-block cards in CollectionOverview (01.1, 01.2, etc.) define the visual
 - Optimal viewport: `calc((100vh-380px)*0.8)` — design to fit without scroll
 
 
+## Modo Telegram Bot (Aimily Dev)
+
+Cuando esta sesión corre como agente Telegram (cwd=~/aimily, --add-dir=~/alfred), opera en dos modos:
+
+### Mode 1: Bug Reporting (default)
+
+Cuando Felipe describe un bug, un problema visual o algo a arreglar:
+
+1. Añadirlo a `bugs.md` en la raíz del repo (crear el archivo si no existe).
+2. Formato: `- [ ] [descripción tal cual la escribió Felipe]` (una línea por bug).
+3. Confirmar por Telegram: "Apuntado. Llevas N bugs en la lista."
+4. NO investigar ni arreglar. Solo registrar.
+
+### Mode 2: Bug Execution
+
+Cuando Felipe dice "ejecuta", "arregla los bugs", "fix all", "ponte con los bugs" o similar:
+
+#### Pre: crear rama bugfix
+```bash
+git checkout main
+git pull
+git checkout -b bugfix/YYYY-MM-DD
+```
+Todas las correcciones van a esta rama. Tras terminar, merge a `main` con aprobación.
+
+#### Por cada bug:
+1. **Investigación**: leer la descripción, localizar archivos y causa raíz.
+2. **Plan**: describir cambios y archivos afectados, presentar a Felipe por Telegram, esperar aprobación (salvo que Felipe haya dicho "ejecuta todos sin preguntar").
+3. **Fix**: implementar mínimo, sin refactors colaterales. Respetar conventions del repo (auth-guard en API, bilingüe EN/ES, bg `bg-[#fff6dc]`, componentes canónicos en `memory/design-components-canonical.md`, NO tocar la AI Context Architecture).
+4. **Test**: `npm run build` para verificar que compila. Si hay tests, ejecutarlos.
+5. **Commit & push**: stage SOLO archivos del bug, commit `fix: [descripción]`, push a la rama bugfix. Marcar en bugs.md: `- [x] [descripción] (commit abc1234)`. Recordar la regla: cada `git commit` lleva su `git push`.
+6. **Confirmar por Telegram**: "Bug N/M arreglado: [desc]. Commit: [hash]. Siguiente..."
+
+#### Post: merge
+1. Resumen por Telegram: "N bugs arreglados en bugfix/YYYY-MM-DD. Hago merge a main?"
+2. Esperar aprobación de Felipe.
+3. Merge: `git checkout main && git merge bugfix/YYYY-MM-DD && git push`.
+4. Tarea de cierre en Alfred Web (projectId 26):
+```bash
+curl -X POST https://alfred-snowy.vercel.app/api/tasks \
+  -H "Authorization: Bearer $ALFRED_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Aimily: N bugs arreglados (fecha)","projectId":26,"completed":true}'
+```
+
+### Reglas críticas
+- ONE bug = ONE commit. Nunca agrupar varios bugs en un commit.
+- Push tras CADA bug (a la rama bugfix). Permite rollback granular.
+- Si un bug es ambiguo, preguntar por Telegram antes de adivinar.
+- Si una corrección requiere refactor grande, parar y consultar.
+- Si tests rompen y no se arreglan en 5 minutos, marcar el bug como blocked y seguir.
+- NUNCA merge a `main` sin aprobación explícita.
+
+### bugs.md formato
+```markdown
+# Bugs Aimily
+
+## Pendientes
+- [ ] El calendario Gantt no carga en mobile
+- [ ] Error de auth al cambiar de colección
+
+## Resueltos
+- [x] Timeline export a Excel falla con fechas vacías (commit abc1234, rama bugfix/2026-03-26)
+```
+
+### Aprobación requerida (Telegram)
+- Borrar archivos, ramas o datos
+- Force-push o reset de historia
+- Instalar o desinstalar paquetes
+- Push a `main`
+- Cualquier fix que toque más de 3 archivos
+- Cambios de schema o migraciones en Supabase
+
+Operaciones seguras (leer código, buscar, build, test, crear ramas): solo hacerlas.
+
+### Mensajería Telegram
+- Corto: "Apuntado. Llevas 4 bugs." o "Bug 2/5 arreglado: [desc]".
+- Sin tablas, sin code blocks salvo error específico.
+- Negrita en el número del bug: *Bug 3/7*.
+- Listas numeradas, una por línea.
+
+### Recovery de contexto
+Guardar progreso relevante en `~/alfred/shared/memory/convo_log_aimily-dev.md` tras cada exchange significativo: bugs en curso, hechos, qué commit corresponde a qué bug. En breakpoints naturales, no al final de la sesión.
+
+---
+
 ## Voice Messages (Whisper Transcription)
 
 When you receive a voice message (the inbound `<channel>` tag will have `attachment_file_id` and the text will be "(voice message)"):

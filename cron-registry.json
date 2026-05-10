@@ -1,0 +1,12 @@
+{
+  "description": "Aimily Dev cron registry - read on session restart.",
+  "crons": [
+    {
+      "id": "keepalive",
+      "name": "Keep-alive ping",
+      "cron": "*/20 * * * *",
+      "prompt": "Check channel connection is active. Process pending messages if any.",
+      "enabled": true
+    }
+  ]
+}
