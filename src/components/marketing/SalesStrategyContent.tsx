@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Plus,
   Store,
   Smartphone,
   MessageCircle,
@@ -209,7 +210,16 @@ function ArchetypeCard({
   );
 }
 
-// ── Channel Card · compact horizontal ─────────────────────────────────────
+// ── Channel Card · gold standard hub-of-cards pattern ─────────────────────
+
+const CHANNEL_SHORT_DESC: Record<SalesChannelId, string> = {
+  own_storefront: 'Tu propia web · Shopify, aimily.shop, o build custom. Posees el dominio y el customer data.',
+  tiktok_shop: 'Native checkout dentro de TikTok app. Creator-affiliate como engine de tráfico.',
+  community_dm: 'Catálogo en chat 1:1 vía WhatsApp · IG DM · Telegram. Bizum/Pix/MercadoPago como rail.',
+  wholesale_b2b: 'PO + line-sheet + Net30/60. Joor · NuOrder · FAIRE · directo a retailer.',
+  pop_ups_physical: 'Tour de pop-ups con POS portátil + IG event integration + post-event reconciliation.',
+  marketplaces: 'Depop · Vinted · Etsy · Grailed · Vestiaire. Discovery channel para audiencia nueva.',
+};
 
 function ChannelCard({
   channel,
@@ -223,61 +233,85 @@ function ChannelCard({
   onToggle: () => void;
 }) {
   const Icon = CHANNEL_ICONS[channel.id];
+  // Top 3 benchmark brands (extract before parenthesis if any)
+  const topBrands = channel.benchmark_brands
+    .slice(0, 3)
+    .map((b) => b.split(' (')[0].split(' broadcast')[0].split(' VIP')[0])
+    .join(' · ');
+
   return (
     <button
       type="button"
       onClick={onToggle}
       disabled={isLocked}
-      className={`group relative flex items-start gap-4 bg-white rounded-[18px] p-5 ring-1 transition-all duration-200 text-left ${
+      className={`group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[440px] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ring-1 ${
         isActive
-          ? 'ring-carbon shadow-[0_4px_16px_rgba(0,0,0,0.05)]'
-          : 'ring-carbon/[0.06] hover:ring-carbon/[0.2]'
+          ? 'ring-carbon/[0.18]'
+          : 'ring-carbon/[0.06] hover:ring-carbon/[0.18]'
       } ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
     >
-      {/* Icon */}
-      <div
-        className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${
-          isActive ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/55'
-        }`}
-      >
-        <Icon className="h-5 w-5" strokeWidth={1.75} />
+      {/* Icon block (replaces ghost number) */}
+      <div className="mb-8">
+        <div
+          className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${
+            isActive ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/55'
+          }`}
+        >
+          <Icon className="h-6 w-6" strokeWidth={1.6} />
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0 pt-0.5">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <h4 className="text-[15px] font-semibold text-carbon tracking-[-0.02em] truncate">
-            {channel.name}
-          </h4>
-          <div
-            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-              isActive
-                ? 'bg-carbon border-carbon'
-                : 'border-carbon/20 group-hover:border-carbon/40'
-            }`}
-          >
-            {isActive && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-          </div>
-        </div>
+      {/* Title — 24px semibold (gold standard) */}
+      <h4 className="text-[22px] md:text-[24px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-3">
+        {channel.name}
+      </h4>
 
-        {/* Single benchmark stat line */}
-        <p className="text-[11px] text-carbon/50 leading-snug line-clamp-2">
-          {channel.benchmark_scale_signal}
-        </p>
+      {/* Description — 14px carbon/50 leading-relaxed */}
+      <p className="text-[13px] text-carbon/50 leading-[1.65] tracking-[-0.02em] mb-5">
+        {CHANNEL_SHORT_DESC[channel.id]}
+      </p>
 
-        {/* Tag row */}
-        <div className="flex items-center gap-2 mt-2">
-          {channel.default_on && (
-            <span className="text-[9px] tracking-[0.1em] uppercase text-carbon/40 font-medium">
-              Siempre activo
-            </span>
-          )}
-          {!channel.default_on && (
-            <span className="text-[9px] tracking-[0.1em] uppercase text-carbon/35 font-medium">
-              {channel.templates.length} plantillas auto-generadas
-            </span>
+      {/* Templates count · subtle uppercase */}
+      <div className="text-[10px] tracking-[0.12em] uppercase text-carbon/30 font-medium mb-3">
+        {channel.templates.length} plantillas auto-generadas
+      </div>
+
+      {/* Benchmarks compact */}
+      <p className="text-[11px] text-carbon/45 leading-relaxed truncate mb-1">
+        {topBrands}
+      </p>
+
+      <div className="flex-1" />
+
+      {/* CTA pill — match archetype card pattern */}
+      <div className="flex justify-center mt-8">
+        <div
+          className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+            isActive
+              ? 'bg-carbon text-white'
+              : 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
+          }`}
+        >
+          {isActive ? (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              {isLocked ? 'Siempre activo' : 'Activo'}
+            </>
+          ) : (
+            <>
+              <Plus className="h-3.5 w-3.5" />
+              Activar
+            </>
           )}
         </div>
+      </div>
+
+      {/* Progress bar (gold standard) — full when active, empty when not */}
+      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-carbon/30 transition-all duration-500 ease-out"
+          style={{ width: isActive ? '100%' : '0%' }}
+        />
       </div>
     </button>
   );
@@ -736,7 +770,7 @@ export default function SalesStrategyContent({
     const compatibleChannels = getChannelsForArchetype(chosenArchetype.id);
     const enabledCount = channelsActivated.filter((c) => c.enabled).length;
     return (
-      <div className="max-w-[1100px] mx-auto pb-32">
+      <div className="max-w-[1400px] mx-auto pb-32">
         {/* Working strategy header */}
         <div className="mb-10 flex items-center justify-between">
           <button
@@ -757,7 +791,7 @@ export default function SalesStrategyContent({
           </div>
         </div>
 
-        <div className="max-w-[640px] mx-auto text-center mb-10">
+        <div className="max-w-[700px] mx-auto text-center mb-12">
           <h2 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.05] mb-3">
             ¿Por dónde vendes?
           </h2>
@@ -766,7 +800,7 @@ export default function SalesStrategyContent({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {compatibleChannels.map((c) => {
             const activation = channelsActivated.find((a) => a.channel === c.id);
             const isActive = activation?.enabled ?? false;
