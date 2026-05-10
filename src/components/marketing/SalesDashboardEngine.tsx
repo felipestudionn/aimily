@@ -349,12 +349,12 @@ function CurvaSection({ data }: { data: DashboardData }) {
       description={`${shapeText[expected.shape] || expected.shape} · ${durationDays} días desde ${fmtDate(anchorDate)}. ${expected.good_threshold.description.toLowerCase()}.`}
       delay={0.1}
     >
-      <div className="h-[220px] -mx-2">
+      <div className="h-[240px] -mx-2">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 12, right: 16, left: 0, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="gaussArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#282A29" stopOpacity={0.16} />
+              <linearGradient id="gaussInstant" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#282A29" stopOpacity={0.22} />
                 <stop offset="100%" stopColor="#282A29" stopOpacity={0.02} />
               </linearGradient>
             </defs>
@@ -366,12 +366,25 @@ function CurvaSection({ data }: { data: DashboardData }) {
               tickFormatter={(v) => `D+${v}`}
               interval={Math.floor(durationDays / 6)}
             />
+            {/* Left axis · daily revenue (scaled 0-max instant) */}
             <YAxis
+              yAxisId="left"
+              orientation="left"
               tick={{ fontSize: 10, fill: '#9CA3AF' }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => fmtEurCompact(v)}
-              width={56}
+              width={52}
+            />
+            {/* Right axis · cumulative (scaled 0-total revenue) */}
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{ fontSize: 10, fill: '#9CA3AF' }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => fmtEurCompact(v)}
+              width={52}
             />
             <Tooltip
               contentStyle={{
@@ -388,27 +401,31 @@ function CurvaSection({ data }: { data: DashboardData }) {
             />
             {todayInRange && (
               <ReferenceLine
+                yAxisId="left"
                 x={todayOffset}
                 stroke="#282A29"
                 strokeDasharray="3 3"
                 strokeOpacity={0.5}
               />
             )}
+            {/* Daily revenue · solid filled area (left axis, dominant visual) */}
             <Area
+              yAxisId="left"
               type="monotone"
               dataKey="instant"
               stroke="#282A29"
-              strokeWidth={1.75}
-              fill="url(#gaussArea)"
+              strokeWidth={2}
+              fill="url(#gaussInstant)"
               name="instant"
             />
+            {/* Cumulative · dashed line only (right axis, reference) */}
             <Area
+              yAxisId="right"
               type="monotone"
               dataKey="cumulative"
-              stroke="#282A29"
-              strokeWidth={1.25}
+              stroke="#B8A04C"
+              strokeWidth={1.5}
               strokeDasharray="4 4"
-              strokeOpacity={0.4}
               fill="none"
               name="cumulative"
             />
@@ -419,11 +436,11 @@ function CurvaSection({ data }: { data: DashboardData }) {
       <div className="mt-4 pt-4 border-t border-carbon/[0.06] flex items-center justify-between text-[11px] text-carbon/55">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-carbon/80" />
-          <span>Forecast diario</span>
+          <span>Forecast diario · eje izq</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-px border-t border-dashed border-carbon/40" />
-          <span>Acumulado</span>
+          <span className="w-3 h-px border-t border-dashed border-[#B8A04C]" />
+          <span>Acumulado · eje der</span>
         </div>
         {todayInRange && (
           <div className="flex items-center gap-2 tabular-nums">
