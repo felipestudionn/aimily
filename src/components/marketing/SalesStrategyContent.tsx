@@ -221,72 +221,74 @@ const CHANNEL_SHORT_DESC: Record<SalesChannelId, string> = {
   marketplaces: 'Depop · Vinted · Etsy · Grailed · Vestiaire. Discovery channel para audiencia nueva.',
 };
 
+// One-liner ultra-short per-channel description for compact card
+const CHANNEL_TINY_DESC: Record<SalesChannelId, string> = {
+  own_storefront: 'Tu propia web · Shopify o aimily.shop',
+  tiktok_shop: 'Checkout dentro de TikTok · creators a comisión',
+  community_dm: 'WhatsApp · IG DM + Bizum/Pix',
+  wholesale_b2b: 'Joor · NuOrder · Faire · directo',
+  pop_ups_physical: 'Tour de pop-ups + POS portátil',
+  marketplaces: 'Depop · Vinted · Etsy · Grailed',
+};
+
 function ChannelCard({
   channel,
   isActive,
-  isLocked,
   onToggle,
 }: {
   channel: SalesChannelDefinition;
   isActive: boolean;
-  isLocked: boolean;
   onToggle: () => void;
 }) {
   const Icon = CHANNEL_ICONS[channel.id];
-  // Top 3 benchmark brands (extract before parenthesis if any)
-  const topBrands = channel.benchmark_brands
-    .slice(0, 3)
-    .map((b) => b.split(' (')[0].split(' broadcast')[0].split(' VIP')[0])
-    .join(' · ');
+  // Top 3 benchmark brands · already clean in channels.ts
+  const topBrands = channel.benchmark_brands.slice(0, 3);
 
   return (
     <button
       type="button"
       onClick={onToggle}
-      disabled={isLocked}
-      className={`group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[440px] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ring-1 ${
+      className={`group relative bg-white rounded-[18px] p-6 xl:p-7 flex flex-col min-h-[360px] xl:min-h-[380px] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] ring-1 cursor-pointer ${
         isActive
           ? 'ring-carbon/[0.18]'
           : 'ring-carbon/[0.06] hover:ring-carbon/[0.18]'
-      } ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
+      }`}
     >
-      {/* Icon block (replaces ghost number) */}
-      <div className="mb-8">
-        <div
-          className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors ${
-            isActive ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/55'
-          }`}
-        >
-          <Icon className="h-6 w-6" strokeWidth={1.6} />
-        </div>
+      {/* Icon block */}
+      <div
+        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-colors mb-4 ${
+          isActive ? 'bg-carbon text-white' : 'bg-carbon/[0.04] text-carbon/55'
+        }`}
+      >
+        <Icon className="h-5 w-5" strokeWidth={1.6} />
       </div>
 
-      {/* Title — 24px semibold (gold standard) */}
-      <h4 className="text-[22px] md:text-[24px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-3">
+      {/* Title */}
+      <h4 className="text-[17px] xl:text-[18px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15] mb-2">
         {channel.name}
       </h4>
 
-      {/* Description — 14px carbon/50 leading-relaxed */}
-      <p className="text-[13px] text-carbon/50 leading-[1.65] tracking-[-0.02em] mb-5">
-        {CHANNEL_SHORT_DESC[channel.id]}
+      {/* Tiny description */}
+      <p className="text-[12px] text-carbon/50 leading-[1.5] tracking-[-0.01em] mb-4 line-clamp-2">
+        {CHANNEL_TINY_DESC[channel.id]}
       </p>
 
-      {/* Templates count · subtle uppercase */}
-      <div className="text-[10px] tracking-[0.12em] uppercase text-carbon/30 font-medium mb-3">
-        {channel.templates.length} plantillas auto-generadas
+      {/* Benchmark brands · explicit list */}
+      <div className="space-y-1">
+        {topBrands.map((brand, i) => (
+          <div key={i} className="text-[11px] text-carbon/55 leading-snug truncate">
+            <span className="text-carbon/30 mr-1.5">·</span>
+            {brand}
+          </div>
+        ))}
       </div>
-
-      {/* Benchmarks compact */}
-      <p className="text-[11px] text-carbon/45 leading-relaxed truncate mb-1">
-        {topBrands}
-      </p>
 
       <div className="flex-1" />
 
-      {/* CTA pill — match archetype card pattern */}
-      <div className="flex justify-center mt-8">
+      {/* CTA pill */}
+      <div className="flex justify-center mt-4">
         <div
-          className={`inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all ${
+          className={`inline-flex items-center justify-center gap-1.5 py-1.5 px-5 rounded-full text-[12px] font-semibold tracking-[-0.01em] transition-all ${
             isActive
               ? 'bg-carbon text-white'
               : 'border border-carbon/[0.15] text-carbon group-hover:bg-carbon/[0.04]'
@@ -294,20 +296,20 @@ function ChannelCard({
         >
           {isActive ? (
             <>
-              <Check className="h-3.5 w-3.5" />
-              {isLocked ? 'Siempre activo' : 'Activo'}
+              <Check className="h-3 w-3" />
+              Activo
             </>
           ) : (
             <>
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3 w-3" />
               Activar
             </>
           )}
         </div>
       </div>
 
-      {/* Progress bar (gold standard) — full when active, empty when not */}
-      <div className="mt-4 mx-auto w-[120px] h-[6px] rounded-full bg-carbon/[0.06] overflow-hidden">
+      {/* Progress bar */}
+      <div className="mt-3 mx-auto w-[80px] h-[4px] rounded-full bg-carbon/[0.06] overflow-hidden">
         <div
           className="h-full rounded-full bg-carbon/30 transition-all duration-500 ease-out"
           style={{ width: isActive ? '100%' : '0%' }}
@@ -632,9 +634,8 @@ export default function SalesStrategyContent({
   // ── Phase: channels → editor ────────────────────────────────────────────
 
   const toggleChannel = (channelId: SalesChannelId) => {
-    if (SALES_CHANNELS.find((c) => c.id === channelId)?.default_on) {
-      return;
-    }
+    // own_storefront has default_on=true (pre-checked) but is toggleable —
+    // some founders sell only via TikTok or only Community DM.
     const next = channelsActivated.map((c) =>
       c.channel === channelId ? { ...c, enabled: !c.enabled } : c,
     );
@@ -769,6 +770,14 @@ export default function SalesStrategyContent({
   if (phase === 'channels' && chosenArchetype) {
     const compatibleChannels = getChannelsForArchetype(chosenArchetype.id);
     const enabledCount = channelsActivated.filter((c) => c.enabled).length;
+    // Static class lookup so Tailwind JIT compiles all variants
+    const gridClass: Record<number, string> = {
+      4: 'grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4',
+      5: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4',
+      6: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4',
+    };
+    const channelGridClass =
+      gridClass[compatibleChannels.length] || 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4';
     return (
       <div className="max-w-[1400px] mx-auto pb-32">
         {/* Working strategy header */}
@@ -800,7 +809,7 @@ export default function SalesStrategyContent({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className={channelGridClass}>
           {compatibleChannels.map((c) => {
             const activation = channelsActivated.find((a) => a.channel === c.id);
             const isActive = activation?.enabled ?? false;
@@ -809,7 +818,6 @@ export default function SalesStrategyContent({
                 key={c.id}
                 channel={c}
                 isActive={isActive}
-                isLocked={c.default_on}
                 onToggle={() => toggleChannel(c.id)}
               />
             );
@@ -826,9 +834,11 @@ export default function SalesStrategyContent({
           onModify={() => setData((d) => ({ ...d, phase: 'archetypes' }))}
           onConfirm={handleChannelsConfirmed}
           modifyLabel="Cambiar estrategia"
-          confirmLabel="Configurar operación"
+          confirmLabel={
+            enabledCount === 0 ? 'Activa al menos 1 canal' : 'Configurar operación'
+          }
           loading={loadingPrefill}
-          confirmDisabled={loadingPrefill}
+          confirmDisabled={loadingPrefill || enabledCount === 0}
         />
       </div>
     );
