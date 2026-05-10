@@ -1,12 +1,12 @@
 'use client';
 
 import type { TimelineMilestone } from '@/types/timeline';
-import { SalesDashboardCard } from './SalesDashboardCard';
 import { ContentStudioCard } from './ContentStudioCard';
 import { CommunicationsCard } from './CommunicationsCard';
 import { EcomCard } from './EcomCard';
 import { GtmLaunchHub } from './GtmLaunchHub';
 import SalesStrategyContent from './SalesStrategyContent';
+import SalesDashboardEngine from './SalesDashboardEngine';
 import { useSearchParams } from 'next/navigation';
 
 interface Props {
@@ -45,7 +45,7 @@ export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }
           <div className="max-w-full">
             {blockParam === 'strategy' && <SalesStrategyContent collectionPlanId={collectionPlanId} />}
             {blockParam === 'gtm' && <GtmLaunchHub collectionPlanId={collectionPlanId} />}
-            {blockParam === 'sales' && <SalesDashboardCard collectionPlanId={collectionPlanId} />}
+            {blockParam === 'sales' && <SalesDashboardEngine collectionPlanId={collectionPlanId} />}
             {blockParam === 'content' && <ContentStudioCard collectionPlanId={collectionPlanId} />}
             {blockParam === 'comms' && <CommunicationsCard collectionPlanId={collectionPlanId} />}
             {blockParam === 'ecom' && <EcomCard collectionPlanId={collectionPlanId} />}
