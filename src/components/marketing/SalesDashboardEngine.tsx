@@ -20,7 +20,7 @@
  * the visual layer is rewritten.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
   AreaChart,
@@ -38,6 +38,8 @@ import {
   Check,
   ArrowRight,
   ArrowLeft,
+  X as XIcon,
+  Copy as CopyIcon,
 } from 'lucide-react';
 import {
   buildAggregateCurve,
@@ -618,6 +620,8 @@ interface ActionStation {
   title: string;
   description: string;
   status: 'pending' | 'live' | 'past';
+  /** Generator type passed to /api/marketing/generate/[type] */
+  generator: 'press-release' | 'creator-brief' | 'email-teaser' | 'dm-announcement' | 'countdown-stories' | 'drop-announcement' | 'post-launch-check' | 'refresh-creative' | null;
 }
 
 function getStations(data: DashboardData): ActionStation[] {
@@ -639,6 +643,33 @@ function getStations(data: DashboardData): ActionStation[] {
   };
 
   const archetypeId = data.archetype.id;
+  const enabledChannels = data.channelsActivated.filter((c) => c.enabled).map((c) => c.channel);
+  const hasTikTok = enabledChannels.includes('tiktok_shop');
+  const hasCommunityDM = enabledChannels.includes('community_dm');
+
+  // Choose T-3 sem generator based on archetype + active channels
+  let t3Generator: ActionStation['generator'] = 'email-teaser';
+  let t3Title = 'Email teaser segmentado';
+  let t3Description = 'VIP list + IG carousel reveal del lookbook.';
+  if (archetypeId === 'B' && hasTikTok) {
+    t3Generator = 'creator-brief';
+    t3Title = 'Creator brief + UGC seeding';
+    t3Description = '10-12 micro-creators TikTok Shop · brief generado desde brand voice.';
+  } else if (archetypeId === 'B') {
+    t3Generator = 'email-teaser';
+    t3Title = 'Email teaser + IG carousel';
+    t3Description = 'Drop teaser para tu VIP list · founder voice.';
+  } else if (archetypeId === 'C') {
+    t3Generator = 'email-teaser';
+    t3Title = 'Email waitlist + atelier teaser';
+    t3Description = 'Drip email para waitlist con atelier behind-the-scenes.';
+  }
+
+  // Choose Día 0 generator: DM if community_dm active, else drop announcement (TBD generator)
+  const dayZeroGenerator: ActionStation['generator'] = hasCommunityDM ? 'dm-announcement' : 'drop-announcement';
+  const dayZeroDesc = hasCommunityDM
+    ? 'DM broadcast a VIP list + IG/TikTok post simultáneo.'
+    : 'Storefront publish + multi-canal sync simultáneo.';
 
   return [
     {
@@ -647,13 +678,15 @@ function getStations(data: DashboardData): ActionStation[] {
       title: 'Editorial press push',
       description: archetypeId === 'C' ? 'Vogue · BoF · craft narrative editorial.' : 'Lookbook teaser · prensa target del nicho.',
       status: status(-42),
+      generator: 'press-release',
     },
     {
       offset: 'T-3 sem',
       date: at(-21),
-      title: archetypeId === 'B' ? 'Creator brief + UGC seeding' : 'Email teaser segmentado',
-      description: archetypeId === 'B' ? '10-12 micro-creators con brief generado desde brand voice.' : 'VIP list + IG carousel reveal del lookbook.',
+      title: t3Title,
+      description: t3Description,
       status: status(-21),
+      generator: t3Generator,
     },
     {
       offset: 'T-1 sem',
@@ -661,13 +694,15 @@ function getStations(data: DashboardData): ActionStation[] {
       title: 'Countdown IG Stories',
       description: 'Storyboard 5-day swipe-up sequence + paid social warmup.',
       status: status(-7),
+      generator: 'countdown-stories',
     },
     {
       offset: 'Día 0',
       date: at(0),
       title: 'Drop announcement',
-      description: 'Storefront publish + multi-canal sync simultáneo.',
+      description: dayZeroDesc,
       status: status(0),
+      generator: dayZeroGenerator,
     },
     {
       offset: 'T+7',
@@ -675,6 +710,7 @@ function getStations(data: DashboardData): ActionStation[] {
       title: 'Post-launch performance check',
       description: 'Curva real vs Gauss esperado · recommendation engine si desviación >10%.',
       status: status(7),
+      generator: 'post-launch-check',
     },
     {
       offset: 'T+30',
@@ -682,13 +718,27 @@ function getStations(data: DashboardData): ActionStation[] {
       title: 'Refresh creative wave',
       description: 'Segunda ola de contenido + re-engagement de waitlist.',
       status: status(30),
+      generator: 'refresh-creative',
     },
   ];
 }
 
-function StationRow({ station, index, isLast }: { station: ActionStation; index: number; isLast: boolean }) {
+function StationRow({
+  station,
+  index,
+  isLast,
+  generating,
+  onGenerate,
+}: {
+  station: ActionStation;
+  index: number;
+  isLast: boolean;
+  generating: boolean;
+  onGenerate: (station: ActionStation) => void;
+}) {
   const isPast = station.status === 'past';
   const isLive = station.status === 'live';
+  const canGenerate = !!station.generator && station.generator !== 'drop-announcement' && station.generator !== 'refresh-creative';
 
   return (
     <motion.div
@@ -741,10 +791,13 @@ function StationRow({ station, index, isLast }: { station: ActionStation; index:
         </div>
         <button
           type="button"
-          disabled={isPast}
+          disabled={isPast || generating || !canGenerate}
+          onClick={() => canGenerate && onGenerate(station)}
           className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
-            isPast
+            isPast || !canGenerate
               ? 'bg-carbon/[0.04] text-carbon/35 cursor-not-allowed'
+              : generating
+              ? 'bg-carbon/60 text-white cursor-wait'
               : 'bg-carbon text-white hover:bg-carbon/90'
           }`}
         >
@@ -752,6 +805,16 @@ function StationRow({ station, index, isLast }: { station: ActionStation; index:
             <>
               <Check className="h-3 w-3" />
               Hecho
+            </>
+          ) : generating ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Generando…
+            </>
+          ) : !canGenerate ? (
+            <>
+              <Wand2 className="h-3 w-3" />
+              Próximamente
             </>
           ) : (
             <>
@@ -765,7 +828,15 @@ function StationRow({ station, index, isLast }: { station: ActionStation; index:
   );
 }
 
-function PlanSection({ data }: { data: DashboardData }) {
+function PlanSection({
+  data,
+  generatingOffset,
+  onGenerate,
+}: {
+  data: DashboardData;
+  generatingOffset: string | null;
+  onGenerate: (station: ActionStation) => void;
+}) {
   const stations = getStations(data);
   if (stations.length === 0) return null;
   return (
@@ -782,6 +853,8 @@ function PlanSection({ data }: { data: DashboardData }) {
             station={s}
             index={i}
             isLast={i === stations.length - 1}
+            generating={generatingOffset === s.offset}
+            onGenerate={onGenerate}
           />
         ))}
       </div>
@@ -817,6 +890,111 @@ function EmptyStrategy() {
 
 // ── Main Engine ───────────────────────────────────────────────────────────
 
+interface GeneratedArtifact {
+  type: string;
+  format: 'json' | 'markdown';
+  content: unknown;
+  context: {
+    archetype: string;
+    archetypeName?: string;
+    channels: string[];
+    dropName: string;
+    dropLaunchDate: string;
+    skuCount: number;
+    totalRevenueEur: number;
+  };
+  station: ActionStation;
+}
+
+function ArtifactPreviewModal({
+  artifact,
+  onClose,
+}: {
+  artifact: GeneratedArtifact;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const contentString =
+    artifact.format === 'markdown'
+      ? (artifact.content as string)
+      : JSON.stringify(artifact.content, null, 2);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(contentString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-carbon/60 backdrop-blur-sm flex items-center justify-center p-6"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.2 }}
+        className="bg-white rounded-[20px] max-w-[860px] w-full max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 px-7 pt-6 pb-4 border-b border-carbon/[0.06]">
+          <div>
+            <div className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-1">
+              {artifact.station.offset} · {artifact.context.dropName}
+            </div>
+            <h3 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] leading-tight">
+              {artifact.station.title}
+            </h3>
+            <p className="text-[12px] text-carbon/50 mt-1">
+              Auto-generado desde tu Brand DNA · {artifact.context.archetypeName} · {artifact.context.skuCount} SKUs
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 w-8 h-8 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] flex items-center justify-center text-carbon/55 transition-colors"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-7 py-5">
+          <pre className="text-[13px] text-carbon/85 leading-[1.7] font-sans whitespace-pre-wrap break-words tracking-[-0.01em]">
+            {contentString}
+          </pre>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 px-7 py-4 border-t border-carbon/[0.06] bg-shade">
+          <div className="text-[11px] text-carbon/50">
+            {artifact.format === 'markdown' ? 'Markdown' : 'JSON'} · listo para editar y publicar
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold border border-carbon/[0.12] text-carbon/70 hover:bg-white transition-colors"
+            >
+              {copied ? <Check className="h-3.5 w-3.5" /> : <CopyIcon className="h-3.5 w-3.5" />}
+              {copied ? 'Copiado' : 'Copiar'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold bg-carbon text-white hover:bg-carbon/90 transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function SalesDashboardEngine({
   collectionPlanId,
 }: {
@@ -825,6 +1003,9 @@ export default function SalesDashboardEngine({
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [generatingOffset, setGeneratingOffset] = useState<string | null>(null);
+  const [artifact, setArtifact] = useState<GeneratedArtifact | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -851,6 +1032,43 @@ export default function SalesDashboardEngine({
     };
   }, [collectionPlanId]);
 
+  const handleGenerate = useCallback(
+    async (station: ActionStation) => {
+      if (!station.generator || !data) return;
+      setGeneratingOffset(station.offset);
+      setGenerationError(null);
+      try {
+        // Pick the earliest non-past drop as the dropId target. Future:
+        // let user pick which drop the action targets.
+        const today = Date.now();
+        const dropTarget =
+          data.drops.find((d) => new Date(d.launch_date).getTime() >= today) ||
+          data.drops[0];
+
+        const res = await fetch(`/api/marketing/generate/${station.generator}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            collectionPlanId,
+            dropId: dropTarget?.id,
+            language: 'es',
+          }),
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(j.error || `Error ${res.status}`);
+        }
+        const j = (await res.json()) as { result: Omit<GeneratedArtifact, 'station'> };
+        setArtifact({ ...j.result, station });
+      } catch (err) {
+        setGenerationError(err instanceof Error ? err.message : 'Error al generar');
+      } finally {
+        setGeneratingOffset(null);
+      }
+    },
+    [collectionPlanId, data],
+  );
+
   if (loading) {
     return (
       <div className="max-w-[640px] mx-auto py-20 text-center">
@@ -874,7 +1092,32 @@ export default function SalesDashboardEngine({
       <ResumenSection data={data} />
       <CurvaSection data={data} drops={data.drops} />
       <LineupSection data={data} />
-      <PlanSection data={data} />
+      <PlanSection
+        data={data}
+        generatingOffset={generatingOffset}
+        onGenerate={handleGenerate}
+      />
+
+      {generationError && (
+        <div className="bg-red-50 border border-red-200 rounded-[14px] p-4 text-[13px] text-red-800 flex items-start justify-between gap-3 max-w-[700px] mx-auto">
+          <span className="flex-1">{generationError}</span>
+          <button
+            type="button"
+            onClick={() => setGenerationError(null)}
+            className="text-red-700/70 hover:text-red-900"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {artifact && (
+        <ArtifactPreviewModal
+          artifact={artifact}
+          onClose={() => setArtifact(null)}
+        />
+      )}
+
       {/* Suppress unused-import warnings for canonical icons only used conditionally */}
       <span className="hidden">
         <TrendingDown />

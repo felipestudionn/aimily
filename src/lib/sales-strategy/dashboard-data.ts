@@ -196,17 +196,23 @@ export async function loadSalesDashboardData(
       }, 0) / skuCount
     : 0;
 
-  // Earliest entry date across drops or sku launch_dates
+  // Earliest entry date · prefer drops as canonical (Block 2.5 path B
+  // anchors the timeline to drops; sku.launch_date can be legacy/today
+  // and is only the fallback when no drops exist).
   const dropLaunchDates = drops
     .map((d) => (d.launch_date ? new Date(d.launch_date) : null))
     .filter((d): d is Date => d !== null);
-  const skuLaunchDates = skus
-    .map((s) => (s.launch_date ? new Date(s.launch_date) : null))
-    .filter((d): d is Date => d !== null);
-  const allDates = [...dropLaunchDates, ...skuLaunchDates];
-  const forecastEntryDate = allDates.length
-    ? new Date(Math.min(...allDates.map((d) => d.getTime())))
-    : null;
+  let forecastEntryDate: Date | null = null;
+  if (dropLaunchDates.length > 0) {
+    forecastEntryDate = new Date(Math.min(...dropLaunchDates.map((d) => d.getTime())));
+  } else {
+    const skuLaunchDates = skus
+      .map((s) => (s.launch_date ? new Date(s.launch_date) : null))
+      .filter((d): d is Date => d !== null);
+    if (skuLaunchDates.length > 0) {
+      forecastEntryDate = new Date(Math.min(...skuLaunchDates.map((d) => d.getTime())));
+    }
+  }
 
   // ── 6. Block 3 actuals ──
   const actualUnitsDispatched = productionDispatched;
