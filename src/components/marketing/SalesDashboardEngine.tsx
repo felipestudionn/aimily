@@ -172,21 +172,23 @@ function Section({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4, ease: 'easeOut' }}
-      className="bg-white rounded-[20px] p-10 md:p-12"
+      className="bg-white rounded-[20px] p-7 md:p-9"
     >
-      <div className="mb-8 flex items-end justify-between gap-6">
-        <div>
-          <span className="block text-[72px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em] mb-4">
+      <div className="mb-6 flex items-start justify-between gap-6">
+        <div className="flex items-baseline gap-4">
+          <span className="text-[44px] font-bold text-carbon/[0.05] leading-none tracking-[-0.04em] shrink-0">
             {number}.
           </span>
-          <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
-            {title}
-          </h3>
-          {description && (
-            <p className="text-[14px] text-carbon/50 leading-[1.7] tracking-[-0.02em] mt-3 max-w-[640px]">
-              {description}
-            </p>
-          )}
+          <div>
+            <h3 className="text-[20px] md:text-[22px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
+              {title}
+            </h3>
+            {description && (
+              <p className="text-[13px] text-carbon/50 leading-[1.6] tracking-[-0.02em] mt-1.5 max-w-[640px]">
+                {description}
+              </p>
+            )}
+          </div>
         </div>
       </div>
       {children}
@@ -212,40 +214,40 @@ function ResumenSection({ data }: { data: DashboardData }) {
       description={`${archetype.fulfillment_model === 'made_to_order' ? 'Made-to-Order' : archetype.fulfillment_model === 'pre_order' ? 'Pre-order capsule' : 'In-stock'} · drop ${archetype.drop_mechanic.replace(/_/g, ' ')} · ${data.actualLineupLocked ? 'lineup lockeado' : 'pre-aprobación'}.`}
       delay={0.05}
     >
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 pt-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
         <div>
-          <div className="text-[60px] md:text-[72px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
+          <div className="text-[40px] md:text-[44px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
             {fmtEurCompact(data.forecastRevenueEur)}
           </div>
-          <div className="text-[11px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-3">
+          <div className="text-[10px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-2">
             Revenue forecast
           </div>
           {data.actualRevenueEur > 0 && (
-            <div className="text-[12px] text-carbon/55 mt-1.5 tabular-nums">
+            <div className="text-[11px] text-carbon/55 mt-1 tabular-nums">
               {fmtEurCompact(data.actualRevenueEur)} real ·{' '}
               {Math.round((data.actualRevenueEur / data.forecastRevenueEur) * 100)}%
             </div>
           )}
         </div>
         <div>
-          <div className="text-[60px] md:text-[72px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
+          <div className="text-[40px] md:text-[44px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
             {data.skuCount}
           </div>
-          <div className="text-[11px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-3">
+          <div className="text-[10px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-2">
             SKUs en lineup
           </div>
-          <div className="text-[12px] text-carbon/55 mt-1.5 tabular-nums">
+          <div className="text-[11px] text-carbon/55 mt-1 tabular-nums">
             {approvedCount}/{data.skuCount} aprobados
           </div>
         </div>
         <div>
-          <div className="text-[60px] md:text-[72px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
+          <div className="text-[40px] md:text-[44px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
             €{Math.round(data.forecastAvgPvp)}
           </div>
-          <div className="text-[11px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-3">
+          <div className="text-[10px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-2">
             AOV medio
           </div>
-          <div className="text-[12px] text-carbon/55 mt-1.5 tabular-nums">
+          <div className="text-[11px] text-carbon/55 mt-1 tabular-nums">
             margen {Math.round(data.forecastAvgMargin)}%
             {data.actualMarginPct > 0 && (
               <span className="text-carbon/45"> · {Math.round(data.actualMarginPct)}% real</span>
@@ -253,37 +255,37 @@ function ResumenSection({ data }: { data: DashboardData }) {
           </div>
         </div>
         <div>
-          <div className="text-[60px] md:text-[72px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
+          <div className="text-[40px] md:text-[44px] font-semibold text-carbon tracking-[-0.04em] leading-none tabular-nums">
             {daysUntilLaunch !== null
               ? daysUntilLaunch >= 0
                 ? `${daysUntilLaunch}d`
                 : `+${Math.abs(daysUntilLaunch)}d`
               : '—'}
           </div>
-          <div className="text-[11px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-3">
+          <div className="text-[10px] tracking-[0.12em] uppercase text-carbon/40 font-medium mt-2">
             {daysUntilLaunch !== null && daysUntilLaunch < 0 ? 'desde el lanzamiento' : 'al lanzamiento'}
           </div>
           {anchorDate && (
-            <div className="text-[12px] text-carbon/55 mt-1.5">
+            <div className="text-[11px] text-carbon/55 mt-1">
               {fmtDate(anchorDate)}
             </div>
           )}
         </div>
       </div>
 
-      {/* KPI focus chips · subtle bottom row */}
+      {/* KPI focus chips · compact bottom row */}
       {data.kpiFocus.length > 0 && (
-        <div className="mt-10 pt-8 border-t border-carbon/[0.06]">
-          <div className="text-[10px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-4">
+        <div className="mt-6 pt-5 border-t border-carbon/[0.06]">
+          <div className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40 mb-3">
             KPIs primarios
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {data.kpiFocus.map((kpi, i) => (
               <span
                 key={kpi}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-carbon/[0.04] text-[12px] font-medium text-carbon/70"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-carbon/[0.04] text-[11px] font-medium text-carbon/70"
               >
-                <span className="text-[10px] text-carbon/40 font-semibold tabular-nums">
+                <span className="text-[9px] text-carbon/40 font-semibold tabular-nums">
                   {i + 1}
                 </span>
                 {KPI_LABEL[kpi] || kpi}
@@ -347,7 +349,7 @@ function CurvaSection({ data }: { data: DashboardData }) {
       description={`${shapeText[expected.shape] || expected.shape} · ${durationDays} días desde ${fmtDate(anchorDate)}. ${expected.good_threshold.description.toLowerCase()}.`}
       delay={0.1}
     >
-      <div className="h-[320px] -mx-2">
+      <div className="h-[220px] -mx-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 12, right: 16, left: 0, bottom: 0 }}>
             <defs>
@@ -414,7 +416,7 @@ function CurvaSection({ data }: { data: DashboardData }) {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-6 pt-6 border-t border-carbon/[0.06] flex items-center justify-between text-[11px] text-carbon/55">
+      <div className="mt-4 pt-4 border-t border-carbon/[0.06] flex items-center justify-between text-[11px] text-carbon/55">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-carbon/80" />
           <span>Forecast diario</span>
@@ -444,8 +446,8 @@ function LineupSection({ data }: { data: DashboardData }) {
       description={`${data.skuCount} SKUs · ${data.skus.filter((s) => s.production_approved).length} aprobados · ${fmtEurCompact(data.forecastRevenueEur)} forecast.`}
       delay={0.15}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {data.skus.slice(0, 10).map((sku) => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        {data.skus.slice(0, 12).map((sku) => {
           const launchDate = sku.launch_date ? new Date(sku.launch_date) : null;
           const daysUntil = launchDate
             ? Math.ceil((launchDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
@@ -470,28 +472,28 @@ function LineupSection({ data }: { data: DashboardData }) {
           return (
             <div
               key={sku.id}
-              className="bg-shade rounded-[16px] p-5 ring-1 ring-carbon/[0.04] hover:ring-carbon/[0.12] transition-all"
+              className="bg-shade rounded-[14px] p-3 ring-1 ring-carbon/[0.04] hover:ring-carbon/[0.12] transition-all"
             >
-              <div className="aspect-square w-full rounded-[10px] bg-white mb-4 overflow-hidden ring-1 ring-carbon/[0.04]">
+              <div className="aspect-square w-full rounded-[8px] bg-white mb-2.5 overflow-hidden ring-1 ring-carbon/[0.04]">
                 {sku.render_url ? (
                   <img src={sku.render_url} alt={sku.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-[36px] text-carbon/[0.08] font-bold tracking-[-0.04em]">
+                    <span className="text-[28px] text-carbon/[0.08] font-bold tracking-[-0.04em]">
                       {sku.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
               </div>
-              <h5 className="text-[14px] font-semibold text-carbon tracking-[-0.02em] leading-tight mb-1 line-clamp-1">
+              <h5 className="text-[12px] font-semibold text-carbon tracking-[-0.02em] leading-tight mb-0.5 line-clamp-1">
                 {sku.name}
               </h5>
-              <p className="text-[10px] tracking-[0.08em] uppercase text-carbon/35 font-medium mb-3 line-clamp-1">
+              <p className="text-[9px] tracking-[0.06em] uppercase text-carbon/35 font-medium mb-2 line-clamp-1">
                 {sku.category} · €{sku.pvp}
               </p>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-1.5">
                 <span
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-[-0.01em] ${
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-[-0.01em] ${
                     statusActive
                       ? 'bg-carbon text-white'
                       : 'bg-white text-carbon/55 ring-1 ring-carbon/[0.08]'
@@ -499,7 +501,7 @@ function LineupSection({ data }: { data: DashboardData }) {
                 >
                   {statusText}
                 </span>
-                <span className="text-[11px] text-carbon/55 font-medium tabular-nums">
+                <span className="text-[10px] text-carbon/55 font-medium tabular-nums">
                   {fmtEurCompact(sku.expected_sales || 0)}
                 </span>
               </div>
@@ -508,13 +510,13 @@ function LineupSection({ data }: { data: DashboardData }) {
         })}
       </div>
 
-      {data.skus.length > 10 && (
-        <div className="mt-6 flex justify-center">
+      {data.skus.length > 12 && (
+        <div className="mt-5 flex justify-center">
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/65 hover:bg-carbon/[0.04] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-medium border border-carbon/[0.12] text-carbon/65 hover:bg-carbon/[0.04] transition-colors"
           >
-            Ver los {data.skus.length - 10} restantes
+            Ver los {data.skus.length - 12} restantes
             <ArrowRight className="h-3 w-3" />
           </button>
         </div>
@@ -608,49 +610,54 @@ function StationRow({ station, index, isLast }: { station: ActionStation; index:
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 + index * 0.04, duration: 0.4 }}
-      className="relative pl-12 pb-6 last:pb-0"
+      className="relative pl-9 pb-3 last:pb-0"
     >
       {/* Timeline rail */}
       {!isLast && (
-        <div className="absolute left-[19px] top-8 bottom-0 w-px bg-carbon/[0.08]" />
+        <div className="absolute left-[13px] top-7 bottom-0 w-px bg-carbon/[0.08]" />
       )}
 
       {/* Status node */}
       <div
-        className={`absolute left-2 top-1.5 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+        className={`absolute left-1 top-1.5 w-[22px] h-[22px] rounded-full flex items-center justify-center transition-all ${
           isPast
             ? 'bg-carbon text-white'
             : isLive
-            ? 'bg-carbon text-white ring-4 ring-carbon/[0.12]'
-            : 'bg-white text-carbon/40 ring-1 ring-carbon/[0.12]'
+            ? 'bg-carbon text-white ring-2 ring-carbon/[0.12]'
+            : 'bg-white text-carbon/45 ring-1 ring-carbon/[0.14]'
         }`}
       >
         {isPast ? (
-          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+          <Check className="h-3 w-3" strokeWidth={2.5} />
         ) : (
-          <span className="text-[10px] font-semibold tabular-nums">
+          <span className="text-[9px] font-semibold tabular-nums">
             {String(index + 1).padStart(2, '0')}
           </span>
         )}
       </div>
 
-      {/* Card */}
-      <div className="rounded-[14px] p-5 bg-shade ring-1 ring-carbon/[0.04]">
-        <div className="flex items-baseline justify-between gap-3 mb-1.5">
-          <span className="text-[10px] tracking-[0.12em] uppercase font-semibold text-carbon/40">
-            {station.offset} · {fmtDate(station.date)}
-          </span>
+      {/* Card · horizontal compact layout */}
+      <div className="rounded-[12px] py-2.5 px-4 bg-shade ring-1 ring-carbon/[0.04] flex items-center gap-4">
+        <div className="shrink-0 w-[110px]">
+          <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40">
+            {station.offset}
+          </div>
+          <div className="text-[11px] text-carbon/55 mt-0.5">
+            {fmtDate(station.date)}
+          </div>
         </div>
-        <h4 className="text-[16px] font-semibold text-carbon tracking-[-0.02em] leading-tight mb-1.5">
-          {station.title}
-        </h4>
-        <p className="text-[12px] text-carbon/55 leading-relaxed mb-4">
-          {station.description}
-        </p>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-carbon tracking-[-0.02em] leading-tight truncate">
+            {station.title}
+          </div>
+          <p className="text-[11px] text-carbon/55 leading-snug line-clamp-1 mt-0.5">
+            {station.description}
+          </p>
+        </div>
         <button
           type="button"
           disabled={isPast}
-          className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[12px] font-semibold transition-all ${
+          className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${
             isPast
               ? 'bg-carbon/[0.04] text-carbon/35 cursor-not-allowed'
               : 'bg-carbon text-white hover:bg-carbon/90'
@@ -659,7 +666,7 @@ function StationRow({ station, index, isLast }: { station: ActionStation; index:
           {isPast ? (
             <>
               <Check className="h-3 w-3" />
-              Completado
+              Hecho
             </>
           ) : (
             <>
@@ -778,7 +785,7 @@ export default function SalesDashboardEngine({
   if (!data.hasStrategy) return <EmptyStrategy />;
 
   return (
-    <div className="space-y-5 pb-12">
+    <div className="space-y-4 pb-12">
       <ResumenSection data={data} />
       <CurvaSection data={data} />
       <LineupSection data={data} />
