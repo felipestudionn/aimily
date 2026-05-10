@@ -686,6 +686,7 @@ export const sv: Dictionary = {
     production: 'Produktion',
     finalSelection: 'Slutligt Urval',
     marketingSales: 'Marknad & Försäljning',
+    salesStrategy: 'Försäljningsstrategi',
     salesDashboard: 'Försäljningspanel',
     contentStudio: 'Innehållsstudio',
     communications: 'Kommunikation',

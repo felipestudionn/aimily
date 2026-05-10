@@ -65,7 +65,7 @@ type SidebarLabelKey =
   | 'colorways' | 'materialZones' | 'contentModels' | 'contentEditorial' | 'contentStillLife'
   | 'merchandisingPlanning' | 'buyingStrategy' | 'assortmentPricing' | 'familiesPricing' | 'distribution' | 'channelsMarkets' | 'wholesale' | 'financialPlan' | 'budgetFinancials' | 'collectionBuilder'
   | 'designDevelopment' | 'sketchColor' | 'techPack' | 'prototyping' | 'production' | 'finalSelection'
-  | 'marketingSales' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'ecom'
+  | 'marketingSales' | 'salesStrategy' | 'gtmLaunchPlan' | 'salesDashboard' | 'contentStudio' | 'communications' | 'ecom'
   | 'calendar' | 'presentation' | 'dashboard' | 'workspace';
 
 interface SidebarSubItem {
@@ -141,10 +141,18 @@ const SIDEBAR_BLOCKS: SidebarBlock[] = [
     route: 'marketing/creation',
     phaseIds: ['marketing-creation', 'marketing-distribution'],
     subItems: [
+      // Logical order matching Block 4 user flow:
+      // 1. Strategy (kick-off · pick archetype + channels)
+      // 2. Sales Dashboard (motor · plan + AI generators)
+      // 3. GTM (control tower · drop status + checklist)
+      // 4. Content Studio (visual content library)
+      // 5. Comms (scripts + voice library)
+      // 6. Ecom (publish surfaces · output)
+      { id: 'sales-strategy', labelKey: 'salesStrategy', route: 'marketing/creation?block=strategy', phaseId: 'marketing-creation' },
+      { id: 'sales', labelKey: 'salesDashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
       { id: 'gtm-launch', labelKey: 'gtmLaunchPlan', route: 'marketing/creation?block=gtm', phaseId: 'marketing-creation' },
       { id: 'content-studio', labelKey: 'contentStudio', route: 'marketing/creation?block=content', phaseId: 'marketing-creation' },
       { id: 'communications', labelKey: 'communications', route: 'marketing/creation?block=comms', phaseId: 'marketing-creation' },
-      { id: 'sales', labelKey: 'salesDashboard', route: 'marketing/creation?block=sales', phaseId: 'marketing-creation' },
       { id: 'ecom', labelKey: 'ecom', route: 'marketing/creation?block=ecom', phaseId: 'marketing-creation', isOutput: true },
     ],
   },

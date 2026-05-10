@@ -700,6 +700,7 @@ export const en = {
     production: 'Production',
     finalSelection: 'Final Selection',
     marketingSales: 'Marketing & Sales',
+    salesStrategy: 'Sales Strategy',
     salesDashboard: 'Sales Dashboard',
     contentStudio: 'Content Studio',
     communications: 'Communications',

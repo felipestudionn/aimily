@@ -705,6 +705,7 @@ export const es: Dictionary = {
     production: 'Producción',
     finalSelection: 'Selección Final',
     marketingSales: 'Marketing y Ventas',
+    salesStrategy: 'Estrategia de Venta',
     salesDashboard: 'Panel de Ventas',
     contentStudio: 'Estudio de Contenido',
     communications: 'Comunicaciones',

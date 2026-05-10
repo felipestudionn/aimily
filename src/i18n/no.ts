@@ -686,6 +686,7 @@ export const no: Dictionary = {
     production: 'Produksjon',
     finalSelection: 'Endelig Utvalg',
     marketingSales: 'Markedsføring & Salg',
+    salesStrategy: 'Salgsstrategi',
     salesDashboard: 'Salgspanel',
     contentStudio: 'Innholdsstudio',
     communications: 'Kommunikasjon',

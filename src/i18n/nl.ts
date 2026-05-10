@@ -694,6 +694,7 @@ export const nl: Dictionary = {
     production: 'Productie',
     finalSelection: 'Finale Selectie',
     marketingSales: 'Marketing & Verkoop',
+    salesStrategy: 'Verkoopstrategie',
     salesDashboard: 'Verkoop Dashboard',
     contentStudio: 'Content Studio',
     communications: 'Communicatie',
