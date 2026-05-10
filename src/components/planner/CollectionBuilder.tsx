@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Edit, Sparkles, Loader2, LayoutGrid, List, X, Download, ChevronDown, Kanban, Package, FlipHorizontal2, ArrowRight } from 'lucide-react';
 import { useSkus, type SKU, type DesignPhase } from '@/hooks/useSkus';
+import { DropScheduleSection } from './DropScheduleSection';
 import type { SetupData } from '@/types/planner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/i18n';
@@ -1504,6 +1505,9 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
           </p>
         )}
       </div>
+
+      {/* ── Drop schedule (auto-synthesizes on mount if drops table empty) ── */}
+      {!phaseFilter && <DropScheduleSection collectionPlanId={collectionPlanId} />}
 
       {/* ── Final Selection summary card (only on selection phase) ── */}
       {isFinalSelection && selectionStats && (

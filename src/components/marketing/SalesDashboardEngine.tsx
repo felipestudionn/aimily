@@ -40,9 +40,9 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import {
-  computeExpectedCurve,
-  cumulativeCurve,
+  buildAggregateCurve,
   fmtDate,
+  fmtDateLong,
 } from '@/lib/sales-strategy/gauss-curve';
 import { getArchetype } from '@/lib/sales-strategy/archetypes';
 import type {
@@ -53,6 +53,13 @@ import type {
 } from '@/types/sales-strategy';
 
 // ── Types matching API payload ─────────────────────────────────────────────
+
+interface DropLite {
+  id: string;
+  drop_number: number;
+  name: string;
+  launch_date: string;
+}
 
 interface SkuLite {
   id: string;
@@ -91,7 +98,7 @@ interface DashboardData {
   volume: { skus_per_drop: number; catalog_mode: 'permanent' | 'capsule' } | null;
   skus: SkuLite[];
   skuCount: number;
-  drops: unknown[];
+  drops: DropLite[];
   productionOrders: unknown[];
   productionDispatched: number;
   productionPendingDispatch: number;
@@ -298,47 +305,86 @@ function ResumenSection({ data }: { data: DashboardData }) {
   );
 }
 
-// ── 02. Curva esperada ─────────────────────────────────────────────────────
+// ── 02. Curva esperada · per-drop summed con fechas reales ─────────────────
 
-function CurvaSection({ data }: { data: DashboardData }) {
+function CurvaSection({ data, drops }: { data: DashboardData; drops: DropLite[] }) {
   const archetypeId = data.archetype?.id || 'A';
   const archetype = getArchetype(archetypeId);
-  const anchorDate = data.forecastEntryDate
-    ? new Date(data.forecastEntryDate)
-    : new Date();
-  const durationDays =
-    archetypeId === 'B' ? 30 : archetypeId === 'C' ? 140 : 180;
 
-  const expected = useMemo(
-    () =>
-      computeExpectedCurve({
-        archetypeId,
-        anchorDate,
-        totalRevenueEur: data.forecastRevenueEur,
-        totalUnits: data.forecastUnits,
-        durationDays,
-        leadTimeDays: data.archetype?.fulfillment_model === 'made_to_order' ? 56 : undefined,
-      }),
-    [archetypeId, anchorDate, data.forecastRevenueEur, data.forecastUnits, durationDays, data.archetype?.fulfillment_model],
-  );
+  // Build aggregate curve summing per-SKU contributions from each drop's
+  // launch_date. Fallback to sku.launch_date if drop_id missing.
+  const aggregate = useMemo(() => {
+    // Map drop_id → launch_date for SKUs that belong to a drop
+    const dropById = new Map<string, DropLite>();
+    drops.forEach((d) => dropById.set(d.id, d));
 
-  const cumulative = useMemo(() => cumulativeCurve(expected), [expected]);
+    const skusWithDates = data.skus.map((s) => {
+      let launchDate = s.launch_date;
+      if (!launchDate && s.drop_id && dropById.has(s.drop_id)) {
+        launchDate = dropById.get(s.drop_id)!.launch_date;
+      }
+      // Fallback: if drop_number set but no drop_id, find by drop_number
+      if (!launchDate && s.drop_number) {
+        const drop = drops.find((d) => d.drop_number === s.drop_number);
+        if (drop) launchDate = drop.launch_date;
+      }
+      return { ...s, launch_date: launchDate };
+    });
 
-  const chartData = expected.points.map((p, i) => ({
-    day: p.day_offset,
-    instant: p.expected_revenue_eur,
-    cumulative: cumulative[i].cumulative_revenue_eur,
+    return buildAggregateCurve(archetypeId, skusWithDates);
+  }, [archetypeId, data.skus, drops]);
+
+  if (!aggregate || drops.length === 0) {
+    // Empty state · no drops yet
+    return (
+      <Section
+        number="02"
+        title="Curva de ventas esperada"
+        description="La curva se calcula sumando la contribución de cada SKU desde la fecha de su drop. Para verla, primero define el calendario de drops en Constructor de Colección."
+        delay={0.1}
+      >
+        <div className="bg-shade rounded-[14px] p-8 text-center">
+          <p className="text-[13px] text-carbon/55 leading-relaxed mb-4">
+            No hay drops definidos para esta colección. Cuando confirmes el calendario en
+            <span className="text-carbon font-medium"> Constructor de Colección</span>, esta curva
+            mostrará picos por drop y la suma agregada con fechas reales.
+          </p>
+          <a
+            href="../merchandising?block=builder"
+            className="inline-flex items-center gap-2 py-2 px-5 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 transition-all"
+          >
+            Definir drops
+            <ArrowRight className="h-3 w-3" />
+          </a>
+        </div>
+      </Section>
+    );
+  }
+
+  const chartData = aggregate.points.map((p) => ({
+    timestamp: p.date.getTime(),
+    daily: p.daily_eur,
+    cumulative: p.cumulative_eur,
+    activeSkus: p.active_skus,
   }));
 
+  // Convert drop launch_dates to timestamps for ReferenceLine
+  const dropMarkers = drops
+    .filter((d) => d.launch_date)
+    .map((d) => ({
+      timestamp: new Date(d.launch_date).getTime(),
+      label: `${d.drop_number}. ${d.name}`,
+    }));
+
   const today = new Date();
-  const todayOffset = Math.round(
-    (today.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24),
-  );
-  const todayInRange = todayOffset >= 0 && todayOffset <= durationDays;
+  const todayMs = today.getTime();
+  const earliestMs = aggregate.earliest_launch.getTime();
+  const latestMs = aggregate.points[aggregate.points.length - 1].date.getTime();
+  const todayInRange = todayMs >= earliestMs && todayMs <= latestMs;
 
   const shapeText: Record<string, string> = {
     skewed_right_long_tail: 'cola larga · DTC continuous',
-    spike_decay_fast: 'pico día 0 · drop capsule',
+    spike_decay_fast: 'pico por drop · capsule',
     bimodal_deposit_balance: 'bimodal · deposit + balance',
   };
 
@@ -346,10 +392,10 @@ function CurvaSection({ data }: { data: DashboardData }) {
     <Section
       number="02"
       title="Curva de ventas esperada"
-      description={`${shapeText[expected.shape] || expected.shape} · ${durationDays} días desde ${fmtDate(anchorDate)}. ${expected.good_threshold.description.toLowerCase()}.`}
+      description={`${shapeText[aggregate.archetype_id === 'A' ? 'skewed_right_long_tail' : aggregate.archetype_id === 'B' ? 'spike_decay_fast' : 'bimodal_deposit_balance']} · ${drops.length} drop${drops.length !== 1 ? 's' : ''} · pico €${fmtEurCompact(aggregate.peak_daily_eur)}/día el ${aggregate.peak_day ? fmtDateLong(aggregate.peak_day) : '—'}.`}
       delay={0.1}
     >
-      <div className="h-[240px] -mx-2">
+      <div className="h-[260px] -mx-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
             <defs>
@@ -359,14 +405,15 @@ function CurvaSection({ data }: { data: DashboardData }) {
               </linearGradient>
             </defs>
             <XAxis
-              dataKey="day"
+              dataKey="timestamp"
+              type="number"
+              domain={['dataMin', 'dataMax']}
               tick={{ fontSize: 10, fill: '#9CA3AF' }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => `D+${v}`}
-              interval={Math.floor(durationDays / 6)}
+              tickFormatter={(ms: number) => fmtDate(new Date(ms))}
+              tickCount={7}
             />
-            {/* Left axis · daily revenue (scaled 0-max instant) */}
             <YAxis
               yAxisId="left"
               orientation="left"
@@ -376,7 +423,6 @@ function CurvaSection({ data }: { data: DashboardData }) {
               tickFormatter={(v) => fmtEurCompact(v)}
               width={52}
             />
-            {/* Right axis · cumulative (scaled 0-total revenue) */}
             <YAxis
               yAxisId="right"
               orientation="right"
@@ -393,32 +439,49 @@ function CurvaSection({ data }: { data: DashboardData }) {
                 borderRadius: 12,
                 padding: '8px 12px',
               }}
-              formatter={(value: number, name: string) => [
-                fmtEurCompact(value),
-                name === 'instant' ? 'Diario' : 'Acumulado',
-              ]}
-              labelFormatter={(d: number) => `Día +${d}`}
+              formatter={(value: number, name: string) => {
+                if (name === 'daily') return [fmtEurCompact(value), 'Diario'];
+                if (name === 'cumulative') return [fmtEurCompact(value), 'Acumulado'];
+                return [String(value), name];
+              }}
+              labelFormatter={(ms: number) => fmtDateLong(new Date(ms))}
             />
+            {/* Drop markers · vertical lines */}
+            {dropMarkers.map((m, i) => (
+              <ReferenceLine
+                key={i}
+                yAxisId="left"
+                x={m.timestamp}
+                stroke="#282A29"
+                strokeOpacity={0.18}
+                strokeWidth={1.5}
+                label={{
+                  value: `D${i + 1}`,
+                  position: 'top',
+                  fill: '#282A29',
+                  fontSize: 9,
+                  opacity: 0.5,
+                }}
+              />
+            ))}
             {todayInRange && (
               <ReferenceLine
                 yAxisId="left"
-                x={todayOffset}
+                x={todayMs}
                 stroke="#282A29"
                 strokeDasharray="3 3"
                 strokeOpacity={0.5}
               />
             )}
-            {/* Daily revenue · solid filled area (left axis, dominant visual) */}
             <Area
               yAxisId="left"
               type="monotone"
-              dataKey="instant"
+              dataKey="daily"
               stroke="#282A29"
               strokeWidth={2}
               fill="url(#gaussInstant)"
-              name="instant"
+              name="daily"
             />
-            {/* Cumulative · dashed line only (right axis, reference) */}
             <Area
               yAxisId="right"
               type="monotone"
@@ -433,18 +496,23 @@ function CurvaSection({ data }: { data: DashboardData }) {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-carbon/[0.06] flex items-center justify-between text-[11px] text-carbon/55">
+      <div className="mt-4 pt-4 border-t border-carbon/[0.06] flex items-center justify-between text-[11px] text-carbon/55 flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-carbon/80" />
-          <span>Forecast diario · eje izq</span>
+          <span>Forecast diario</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-px border-t border-dashed border-[#B8A04C]" />
-          <span>Acumulado · eje der</span>
+          <span>Acumulado</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-px h-3 bg-carbon/20" />
+          <span>Drop launch</span>
         </div>
         {todayInRange && (
-          <div className="flex items-center gap-2 tabular-nums">
-            <span>Hoy = D+{todayOffset}</span>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-px border-t border-dashed border-carbon/50" />
+            <span>Hoy · {fmtDate(today)}</span>
           </div>
         )}
       </div>
@@ -804,7 +872,7 @@ export default function SalesDashboardEngine({
   return (
     <div className="space-y-4 pb-12">
       <ResumenSection data={data} />
-      <CurvaSection data={data} />
+      <CurvaSection data={data} drops={data.drops} />
       <LineupSection data={data} />
       <PlanSection data={data} />
       {/* Suppress unused-import warnings for canonical icons only used conditionally */}
