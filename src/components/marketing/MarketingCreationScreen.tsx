@@ -6,6 +6,7 @@ import { ContentStudioCard } from './ContentStudioCard';
 import { CommunicationsCard } from './CommunicationsCard';
 import { EcomCard } from './EcomCard';
 import { GtmLaunchHub } from './GtmLaunchHub';
+import SalesStrategyContent from './SalesStrategyContent';
 import { useSearchParams } from 'next/navigation';
 
 interface Props {
@@ -15,10 +16,11 @@ interface Props {
 }
 
 const BLOCK_NAMES: Record<string, string> = {
-  gtm: 'GTM & Launch Plan',
+  strategy: 'Estrategia de Venta',
+  gtm: 'GTM y Lanzamiento',
   sales: 'Sales Dashboard',
   content: 'Content Studio',
-  comms: 'Communications',
+  comms: 'Comunicación',
   ecom: 'Ecom',
 };
 
@@ -33,7 +35,7 @@ export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }
         <div className="px-6 md:px-12 lg:px-16 pt-12 md:pt-16">
           <div className="text-center mb-10">
             <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
-              Marketing & Sales
+              Marketing y Ventas
             </p>
             <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
               {BLOCK_NAMES[blockParam]}
@@ -41,6 +43,7 @@ export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }
           </div>
 
           <div className="max-w-full">
+            {blockParam === 'strategy' && <SalesStrategyContent collectionPlanId={collectionPlanId} />}
             {blockParam === 'gtm' && <GtmLaunchHub collectionPlanId={collectionPlanId} />}
             {blockParam === 'sales' && <SalesDashboardCard collectionPlanId={collectionPlanId} />}
             {blockParam === 'content' && <ContentStudioCard collectionPlanId={collectionPlanId} />}
@@ -52,19 +55,19 @@ export function MarketingCreationScreen({ collectionPlanId, blockParamOverride }
     );
   }
 
-  /* ═══ Default: GTM hub (block-4 landing when no ?block= param) ═══ */
+  /* ═══ Default landing: 04.0 Estrategia de Venta (the kick-off) ═══ */
   return (
     <div className="min-h-[80vh]">
       <div className="px-6 md:px-12 lg:px-16 pt-12 md:pt-16">
         <div className="text-center mb-10">
           <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-3">
-            Marketing & Sales
+            Marketing y Ventas
           </p>
           <h1 className="text-[36px] md:text-[46px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-            GTM & Launch Plan
+            Estrategia de Venta
           </h1>
         </div>
-        <GtmLaunchHub collectionPlanId={collectionPlanId} />
+        <SalesStrategyContent collectionPlanId={collectionPlanId} />
       </div>
     </div>
   );
