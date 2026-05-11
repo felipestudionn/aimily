@@ -108,6 +108,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Price not configured' }, { status: 500 });
     }
 
+    // Value forwarded to the client for Google Ads conversion tracking
+    // (read by GtagEventFirer on /my-collections?billing=success).
+    const conversionValue = body.annual ? planConfig.priceAnnual * 12 : planConfig.price;
+
     // Public launch promo retired (May 2026). Outreach now uses private
     // coupon codes typed into Stripe's `allow_promotion_codes` field at
     // checkout. Customers who don't have a code pay regular price.
@@ -119,7 +123,7 @@ export async function POST(req: NextRequest) {
       subscription_data: { trial_period_days: 30 },
       allow_promotion_codes: true,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${req.nextUrl.origin}/my-collections?billing=success`,
+      success_url: `${req.nextUrl.origin}/my-collections?billing=success&value=${conversionValue}&currency=EUR&plan=${plan}`,
       cancel_url: `${req.nextUrl.origin}/?billing=canceled#pricing`,
       metadata: {
         supabase_user_id: user.id,

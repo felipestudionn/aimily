@@ -28,6 +28,7 @@ import { GlobalNav } from '@/components/layout/GlobalNav';
 import { ToastProvider } from '@/components/ui/toast';
 import { Analytics } from '@vercel/analytics/react';
 import { GoogleAdsTag } from '@/components/GoogleAdsTag';
+import { GtagEventFirer } from '@/components/GtagEventFirer';
 import { cn } from '@/lib/utils';
 import { Suspense } from 'react';
 import { AssistantMount } from '@/components/aimily-assistant/AssistantMount';
@@ -135,6 +136,7 @@ export default async function LocaleLayout({
                   <CookieConsent />
                   <Analytics />
                   <GoogleAdsTag />
+                  <Suspense fallback={null}><GtagEventFirer /></Suspense>
                 </ToastProvider>
               </SubscriptionProvider>
             </LanguageProvider>
