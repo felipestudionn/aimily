@@ -52,12 +52,17 @@ const nextConfig = {
               "img-src 'self' data: blob: https: http:",
               "frame-src 'self' https://js.stripe.com https://challenges.cloudflare.com https://td.doubleclick.net https://*.googletagmanager.com",
               "font-src 'self' https://fonts.gstatic.com",
-              // Google Ads enhanced conversions POST to https://www.google.com/ccm/collect
-              // (not google-analytics.com or googleadservices.com). Without
-              // www.google.com in connect-src the gtag library loads but the
-              // actual conversion network call is blocked client-side, so
-              // Smart Bidding receives ZERO signal even with active campaigns.
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://generativelanguage.googleapis.com https://api.fal.ai https://api.perplexity.ai https://api.stripe.com https://*.vercel.app https://*.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.posthog.com https://eu.i.posthog.com https://us.i.posthog.com https://www.googletagmanager.com https://*.googletagmanager.com https://www.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.googleadservices.com https://www.googleadservices.com https://*.g.doubleclick.net",
+              // Google Ads enhanced conversions POST to two endpoints:
+              //   1. https://www.google.com/ccm/collect (cross-domain CCM)
+              //   2. https://www.google.<TLD>/pagead/1p-conversion/<id> (first-party
+              //      conversion ping — the TLD matches the user's COUNTRY, not the
+              //      site domain). A user in Spain triggers google.es, a user in
+              //      France triggers google.fr, etc.
+              // Listing only google.com would silently drop conversions from every
+              // non-US user — exactly the European cold-traffic we're paying for.
+              // The list below covers the 9 locales we serve (en/es/fr/it/de/pt/nl/no/sv)
+              // plus US (.com) and UK (.co.uk).
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://generativelanguage.googleapis.com https://api.fal.ai https://api.perplexity.ai https://api.stripe.com https://*.vercel.app https://*.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.posthog.com https://eu.i.posthog.com https://us.i.posthog.com https://www.googletagmanager.com https://*.googletagmanager.com https://www.google.com https://www.google.co.uk https://www.google.es https://www.google.fr https://www.google.it https://www.google.de https://www.google.pt https://www.google.nl https://www.google.se https://www.google.no https://www.google-analytics.com https://*.google-analytics.com https://*.googleadservices.com https://www.googleadservices.com https://*.g.doubleclick.net",
               "object-src 'none'",
               "base-uri 'self'",
             ].join('; '),
