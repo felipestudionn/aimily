@@ -74,13 +74,6 @@ const CHANNEL_ICONS: Record<SalesChannelId, React.ElementType> = {
   marketplaces: ShoppingBag,
 };
 
-// Archetype accent for benchmark avatars (paleta aimily)
-const ARCHETYPE_AVATAR_BG: Record<SalesArchetypeId, string> = {
-  A: 'bg-[#F1EFED]',  // linen
-  B: 'bg-[#FFF4CE]',  // citronella
-  C: 'bg-[#EDEEE7]',  // moss tint
-};
-
 // One-line punchy description per archetype (replaces verbose narrative)
 const ARCHETYPE_SHORT_DESC: Record<SalesArchetypeId, string> = {
   A: 'Tienda propia, brand voice como lever, in-stock. Tú construyes la audiencia.',
@@ -112,19 +105,6 @@ function getStatPills(archetype: SalesArchetype): string[] {
     `Lead ${lev.typical_lead_time_days?.min}–${lev.typical_lead_time_days?.max}d`,
     `Margen ${fmtRange(lev.typical_margin_pct)}%`,
   ];
-}
-
-// Benchmark avatar (initial in colored circle)
-function BenchmarkAvatar({ brand, archetypeId }: { brand: string; archetypeId: SalesArchetypeId }) {
-  const initial = brand.replace(/[^A-Za-z]/, '').charAt(0).toUpperCase() || brand.charAt(0).toUpperCase();
-  return (
-    <div
-      className={`w-7 h-7 rounded-full ${ARCHETYPE_AVATAR_BG[archetypeId]} ring-2 ring-white flex items-center justify-center text-carbon/80 text-[11px] font-semibold tracking-tight shrink-0`}
-      title={brand}
-    >
-      {initial}
-    </div>
-  );
 }
 
 // ── Archetype Card · gold standard (CollectionOverview pattern) ────────────
@@ -177,20 +157,19 @@ function ArchetypeCard({
         ))}
       </div>
 
-      {/* Benchmark avatars · subtle row */}
-      <div className="flex items-center gap-1.5 mb-1">
-        {benchmarkBrands.map((b) => (
-          <BenchmarkAvatar key={b.brand} brand={b.brand} archetypeId={archetype.id} />
-        ))}
-        {archetype.benchmarks.length > 5 && (
-          <span className="text-[10px] text-carbon/35 font-medium ml-1">
-            +{archetype.benchmarks.length - 5}
-          </span>
-        )}
+      {/* Benchmark brands · editorial inline list (replaces initial-circles
+          that felt too schematic — names breathe better in one calm line). */}
+      <div>
+        <p className="text-[10px] tracking-[0.2em] uppercase text-carbon/35 font-medium mb-2">
+          Marcas similares
+        </p>
+        <p className="text-[13px] text-carbon/70 leading-[1.5] tracking-[-0.01em]">
+          {benchmarkBrands.map((b) => b.brand).join(' · ')}
+          {archetype.benchmarks.length > 5 && (
+            <span className="text-carbon/30"> · +{archetype.benchmarks.length - 5}</span>
+          )}
+        </p>
       </div>
-      <p className="text-[11px] text-carbon/35 leading-relaxed truncate">
-        {benchmarkBrands.map((b) => b.brand).join(' · ')}
-      </p>
 
       <div className="flex-1" />
 

@@ -148,24 +148,37 @@ function ArchetypeCard({
 }) {
   const t = useTranslation();
   const labels = (t.scenarios as Record<string, string>) || {};
+
+  // Cap benchmarks to 4 and render names only (the per-brand SKUs/inv/Y1
+  // metrics were ficha-técnica-dense and broke row alignment between cards
+  // because each archetype has a different number of benchmarks). The
+  // headline metrics already live in the stats grid above — readers can
+  // see them at a glance without scanning four lines of small text.
+  const topBrands = archetype.benchmarks.slice(0, 4);
+  const overflowBrands = Math.max(0, archetype.benchmarks.length - topBrands.length);
+
   return (
     <button
       type="button"
       onClick={onSelect}
       disabled={loading}
-      className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[480px] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ring-1 ring-carbon/[0.06] disabled:opacity-50 disabled:cursor-wait"
+      className="group relative bg-white rounded-[20px] p-8 md:p-10 flex flex-col min-h-[560px] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] ring-1 ring-carbon/[0.06] disabled:opacity-50 disabled:cursor-wait"
     >
-      <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
-        {labels.archetypeLabel || 'Escenario'} {archetype.id}
+      {/* Header — fixed-height block so the 4 cards share the same Y-axis
+          for every section below. The previous layout flowed narratives of
+          varying length (2–5 lines) which pushed everything underneath out
+          of alignment between cards. */}
+      <div className="min-h-[120px] mb-6">
+        <div className="text-[11px] tracking-[0.15em] uppercase font-semibold text-carbon/40 mb-3">
+          {labels.archetypeLabel || 'Escenario'} {archetype.id}
+        </div>
+        <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-[1.15]">
+          {archetype.name}
+        </h3>
       </div>
-      <h3 className="text-[24px] md:text-[28px] font-semibold text-carbon tracking-[-0.03em] leading-tight mb-3">
-        {archetype.name}
-      </h3>
-      <p className="text-[13px] text-carbon/55 leading-relaxed mb-5">
-        {archetype.narrative}
-      </p>
 
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      {/* Stats 2×2 — already fixed height, just isolated for clarity */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-4 mb-7">
         <div className="flex items-start gap-2">
           <Target className="h-3.5 w-3.5 text-carbon/35 mt-0.5 shrink-0" />
           <div>
@@ -204,38 +217,41 @@ function ArchetypeCard({
         </div>
       </div>
 
-      <div className="pt-4 border-t border-carbon/[0.06] mb-4">
-        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-2">
+      {/* Marcas similares — editorial inline, fixed height. Same pattern
+          we use in Sales Strategy archetypes — names only, calm typography. */}
+      <div className="pt-5 border-t border-carbon/[0.06] mb-6 min-h-[90px]">
+        <div className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-2.5">
           {labels.benchmarksY1 || 'Marcas similares en Y1'}
         </div>
-        <div className="space-y-1.5">
-          {archetype.benchmarks.map((b, i) => (
-            <div key={i} className="text-[12px] text-carbon/70 leading-snug">
-              <span className="font-medium">{b.brand}</span>
-              <span className="text-carbon/50">
-                {' · '}
-                {b.skus} SKUs
-                {' · '}
-                {fmtEur(b.investment_eur)} inv
-                {' · '}
-                {fmtEur(b.y1_sales_eur)} Y1
-                {b.year ? ` (${b.year})` : ''}
-              </span>
-            </div>
-          ))}
-        </div>
+        <p className="text-[13px] text-carbon/70 leading-[1.5] tracking-[-0.01em]">
+          {topBrands.map((b) => b.brand).join(' · ')}
+          {overflowBrands > 0 && (
+            <span className="text-carbon/30"> · +{overflowBrands}</span>
+          )}
+        </p>
       </div>
 
-      <div className="mt-auto pt-3 border-t border-carbon/[0.06]">
-        <div className="text-[10px] tracking-[0.1em] uppercase font-semibold text-carbon/40 mb-1.5">
+      {/* Mejor para — capped to 3 lines so a verbose archetype can't push
+          the CTA out of vertical alignment. */}
+      <div className="pt-5 border-t border-carbon/[0.06] mb-6 min-h-[100px]">
+        <div className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-2">
           {labels.bestFor || 'Mejor para'}
         </div>
-        <p className="text-[12px] text-carbon/55 leading-relaxed">{archetype.best_for}</p>
+        <p className="text-[12px] text-carbon/55 leading-[1.6] line-clamp-3">
+          {archetype.best_for}
+        </p>
       </div>
 
-      <div className="mt-5 flex items-center justify-end text-[12px] font-semibold text-carbon group-hover:gap-2 transition-all gap-1.5">
-        <span>{labels.workOnThis || 'Trabajar en este escenario'}</span>
-        <ArrowRight className="h-3.5 w-3.5" />
+      <div className="flex-1" />
+
+      {/* CTA pill centered (gold standard) — replaces the tiny right-aligned
+          "Trabajar en este escenario" link, which read more as a footnote
+          than a decision. */}
+      <div className="flex justify-center mt-2">
+        <div className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full text-[13px] font-semibold tracking-[-0.01em] transition-all bg-carbon text-white group-hover:bg-carbon/90">
+          {labels.workOnThis || 'Trabajar en este escenario'}
+          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+        </div>
       </div>
     </button>
   );
