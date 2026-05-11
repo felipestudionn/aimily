@@ -3883,6 +3883,8 @@ export const es: Dictionary = {
     progress: {
       step: "Paso {n} de {total}",
     },
+
+    onboardingError: "No pudimos terminar de configurar tu cuenta. Vuelve a intentarlo — tus datos están a salvo.",
   },
 
   emails: {

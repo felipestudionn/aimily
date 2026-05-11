@@ -3835,6 +3835,8 @@ export const nl: Dictionary = {
     progress: {
       step: "Stap {n} van {total}",
     },
+
+    onboardingError: "We konden je account niet voltooien. Probeer het opnieuw — je gegevens zijn veilig.",
   },
 
   emails: {

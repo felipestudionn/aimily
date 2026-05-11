@@ -3721,6 +3721,8 @@ export const no: Dictionary = {
     progress: {
       step: "Steg {n} av {total}",
     },
+
+    onboardingError: "Vi klarte ikke å fullføre kontoinnstillingen. Prøv på nytt — dataene dine er trygge.",
   },
 
   emails: {

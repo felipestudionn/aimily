@@ -3721,6 +3721,8 @@ export const sv: Dictionary = {
     progress: {
       step: "Steg {n} av {total}",
     },
+
+    onboardingError: "Vi kunde inte slutföra kontoinställningen. Försök igen — dina data är säkra.",
   },
 
   emails: {

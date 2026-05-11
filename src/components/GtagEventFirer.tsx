@@ -31,23 +31,53 @@ export function GtagEventFirer() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const gtag = (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag;
-    if (typeof gtag !== 'function') return;
 
-    if (params.get('signup') === '1') {
-      gtag('event', 'conversion', { send_to: CONV.SIGN_UP, value: 0, currency: 'EUR' });
-      gtag('event', 'conversion', { send_to: CONV.TRIAL_START, value: 0, currency: 'EUR' });
-    }
+    const wantsSignup = params.get('signup') === '1';
+    const wantsPurchase = params.get('billing') === 'success';
+    if (!wantsSignup && !wantsPurchase) return;
 
-    if (params.get('billing') === 'success') {
-      const value = Number(params.get('value') ?? 0);
-      const currency = params.get('currency') ?? 'EUR';
-      gtag('event', 'conversion', {
-        send_to: CONV.PURCHASE,
-        value: Number.isFinite(value) && value > 0 ? value : undefined,
-        currency,
-      });
-    }
+    const value = Number(params.get('value') ?? 0);
+    const currency = params.get('currency') ?? 'EUR';
+
+    const fire = (gtag: (...args: unknown[]) => void) => {
+      if (wantsSignup) {
+        gtag('event', 'conversion', { send_to: CONV.SIGN_UP, value: 0, currency: 'EUR' });
+        gtag('event', 'conversion', { send_to: CONV.TRIAL_START, value: 0, currency: 'EUR' });
+      }
+      if (wantsPurchase) {
+        gtag('event', 'conversion', {
+          send_to: CONV.PURCHASE,
+          value: Number.isFinite(value) && value > 0 ? value : undefined,
+          currency,
+        });
+      }
+    };
+
+    // The Google Ads <Script strategy="afterInteractive"> can finish loading
+    // AFTER this effect first runs — most often on slow mobile networks,
+    // which is exactly the cold-traffic profile Google Ads sends. Without
+    // a retry, the conversion is silently lost. Poll every 200ms up to 5s
+    // until window.gtag becomes a function, then fire. Bail if the
+    // component unmounts before gtag arrives.
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 25; // 25 × 200ms = 5s
+    const tryFire = () => {
+      if (cancelled) return;
+      const gtag = (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag;
+      if (typeof gtag === 'function') {
+        fire(gtag);
+        return;
+      }
+      attempts += 1;
+      if (attempts >= maxAttempts) return;
+      window.setTimeout(tryFire, 200);
+    };
+    tryFire();
+
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
   return null;

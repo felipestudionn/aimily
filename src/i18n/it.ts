@@ -3836,6 +3836,8 @@ export const it: Dictionary = {
     progress: {
       step: "Passo {n} di {total}",
     },
+
+    onboardingError: "Non siamo riusciti a completare la configurazione del tuo account. Riprova — i tuoi dati sono al sicuro.",
   },
 
   emails: {

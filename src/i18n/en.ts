@@ -3915,6 +3915,8 @@ export const en = {
     progress: {
       step: "Step {n} of {total}",
     },
+
+    onboardingError: "We couldn't finish setting up your account. Please try again — your data is safe.",
   },
 
   emails: {

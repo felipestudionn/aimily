@@ -81,23 +81,54 @@ export function OnboardingFlow({ fullName, initialLanguage = null }: Props) {
   async function complete(target: '/new-collection' | '/my-collections') {
     if (saving) return;
     setSaving(true);
+
+    // /api/onboarding/complete is the gate that flips
+    // `subscriptions.onboarding_completed_at`. If it fails we MUST stop —
+    // otherwise the /my-collections hard-gate sends the user back to
+    // /welcome on the next paint, creating an onboarding loop. The previous
+    // silent-catch let users into the dashboard with an unset flag and
+    // they bounced right back here.
     try {
-      await fetch('/api/onboarding/complete', {
+      const res = await fetch('/api/onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language }),
       });
-    } catch {
-      // Soft fail — server-side defensive redirect will still let them in.
+      if (!res.ok) throw new Error(`onboarding/complete returned ${res.status}`);
+    } catch (err) {
+      console.error('[onboarding] complete failed:', err);
+      setSaving(false);
+      // Surface the failure to the user so they can retry, instead of
+      // dumping them into the welcome loop.
+      const msg = (t.welcome as { onboardingError?: string }).onboardingError
+        ?? 'Could not finish onboarding. Please try again.';
+      alert(msg);
+      return;
     }
+
     // Onboarding done — clear the resume marker so the next user on this
     // browser (a refresh, a different test account, etc.) starts clean.
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STEP_STORAGE_KEY);
     }
+
+    // Preserve `?signup=1` if it was set by /auth/callback. The
+    // GtagEventFirer mounted on the target page reads this flag to
+    // fire the Google Ads SIGN_UP + TRIAL_START conversions. Losing
+    // it here is what blinds Smart Bidding for cold-traffic signups —
+    // every confirmed user goes through onboarding before landing on
+    // /my-collections, so without forwarding the flag the conversion
+    // never fires.
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    const incoming = new URLSearchParams(search);
+    const outgoing = new URLSearchParams();
+    if (incoming.get('signup') === '1') outgoing.set('signup', '1');
+    const qs = outgoing.toString();
+    const dest = qs ? `${target}?${qs}` : target;
+
     // Hard navigation so AuthContext / SubscriptionContext re-fetch fresh
     // user metadata (including the freshly written language).
-    window.location.assign(target);
+    window.location.assign(dest);
   }
 
   function handleLanguageClick(lang: Language) {
