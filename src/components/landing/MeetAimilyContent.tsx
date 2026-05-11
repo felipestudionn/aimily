@@ -157,15 +157,30 @@ export function MeetAimilyContent({ openAuth }: MeetAimilyContentProps) {
         </Reveal>
 
         <Reveal delay={1100}>
-          <div className="mt-24 flex flex-col items-center gap-3 text-crema/55">
-            <ChevronDown className="h-5 w-5 animate-bounce" />
-            <span className="text-[12px] tracking-[0.3em] uppercase">{h.meet.scrollCue}</span>
-          </div>
+          {/* Scroll cue — pill with pulse halo. Same pattern as the portada
+              hero so the discovery affordance reads consistently across
+              both above-the-fold heroes. */}
+          <a
+            href="#silogism"
+            className="mt-24 group inline-block"
+            aria-label={h.meet.scrollCue}
+          >
+            <span className="relative inline-flex items-center gap-2.5 px-5 py-3 rounded-full border border-crema/25 bg-crema/[0.04] text-crema/80 group-hover:border-crema/50 group-hover:text-crema group-hover:bg-crema/[0.08] transition-all backdrop-blur-sm">
+              <span
+                className="absolute inset-0 rounded-full border border-crema/40 animate-scroll-cue-halo pointer-events-none"
+                aria-hidden="true"
+              />
+              <ChevronDown className="w-4 h-4 animate-scroll-cue-bounce" />
+              <span className="text-[11px] tracking-[0.25em] uppercase font-medium">
+                {h.meet.scrollCue}
+              </span>
+            </span>
+          </a>
         </Reveal>
       </section>
 
       {/* Silogism */}
-      <section className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
+      <section id="silogism" className="px-6 py-32 md:py-44 border-t border-crema/[0.06]">
         <div className="max-w-7xl mx-auto">
           <Reveal>
             <div className="text-[12px] tracking-[0.3em] uppercase text-crema/55 font-medium mb-6 text-center">

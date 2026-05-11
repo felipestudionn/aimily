@@ -121,14 +121,26 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Scroll cue */}
+        {/* Scroll cue — pill with pulse halo. The bare chevron was too easy
+            to miss for cold paid traffic that doesn't recognize "tiny arrow
+            at the bottom of a magazine cover" as an invitation. The pill +
+            label + pulsing ring reads unambiguously as "there's more, come
+            here" without competing with the primary CTA. */}
         <a
           href="#meet-aimily"
-          className="absolute bottom-10 z-20 flex flex-col items-center gap-2 text-crema/55 hover:text-crema transition-colors"
-          aria-label="Scroll to content"
+          className="absolute bottom-10 z-20 group"
+          aria-label={h.hero.scrollCue}
         >
-          <ChevronDown className="w-5 h-5 animate-bounce" />
-          <span className="text-[11px] tracking-[0.3em] uppercase">{h.hero.scrollCue}</span>
+          <span className="relative inline-flex items-center gap-2.5 px-5 py-3 rounded-full border border-crema/25 bg-crema/[0.04] text-crema/80 group-hover:border-crema/50 group-hover:text-crema group-hover:bg-crema/[0.08] transition-all backdrop-blur-sm">
+            <span
+              className="absolute inset-0 rounded-full border border-crema/40 animate-scroll-cue-halo pointer-events-none"
+              aria-hidden="true"
+            />
+            <ChevronDown className="w-4 h-4 animate-scroll-cue-bounce" />
+            <span className="text-[11px] tracking-[0.25em] uppercase font-medium">
+              {h.hero.scrollCue}
+            </span>
+          </span>
         </a>
       </section>
 

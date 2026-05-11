@@ -534,6 +534,28 @@ input, textarea, select {
 .animate-delay-400 { animation-delay: 400ms; }
 .animate-delay-500 { animation-delay: 500ms; }
 
+/* Soft outward halo used by the hero scroll-cue. Distinct from Tailwind's
+   built-in `animate-ping` because (a) it's slower (2.4s vs 1s) so it reads
+   as ambient invitation rather than urgent notification, and (b) opacity
+   only fades 0.55 → 0 so a faint ring is always visible. */
+@keyframes scroll-cue-halo {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+.animate-scroll-cue-halo {
+  animation: scroll-cue-halo 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Slower vertical bounce for the chevron. Tailwind's built-in animate-bounce
+   is 1s which feels frantic on a hero cue; 2s reads as a calm "down here" wink. */
+@keyframes scroll-cue-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+.animate-scroll-cue-bounce {
+  animation: scroll-cue-bounce 2s ease-in-out infinite;
+}
+
 /* ── Workspace content transitions ── */
 @keyframes content-fade-in {
   from { opacity: 0; }
