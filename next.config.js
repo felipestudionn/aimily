@@ -52,7 +52,12 @@ const nextConfig = {
               "img-src 'self' data: blob: https: http:",
               "frame-src 'self' https://js.stripe.com https://challenges.cloudflare.com https://td.doubleclick.net https://*.googletagmanager.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://generativelanguage.googleapis.com https://api.fal.ai https://api.perplexity.ai https://api.stripe.com https://*.vercel.app https://*.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.posthog.com https://eu.i.posthog.com https://us.i.posthog.com https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.googleadservices.com https://www.googleadservices.com https://*.g.doubleclick.net",
+              // Google Ads enhanced conversions POST to https://www.google.com/ccm/collect
+              // (not google-analytics.com or googleadservices.com). Without
+              // www.google.com in connect-src the gtag library loads but the
+              // actual conversion network call is blocked client-side, so
+              // Smart Bidding receives ZERO signal even with active campaigns.
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://generativelanguage.googleapis.com https://api.fal.ai https://api.perplexity.ai https://api.stripe.com https://*.vercel.app https://*.vercel-insights.com https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://*.posthog.com https://eu.i.posthog.com https://us.i.posthog.com https://www.googletagmanager.com https://*.googletagmanager.com https://www.google.com https://www.google-analytics.com https://*.google-analytics.com https://*.googleadservices.com https://www.googleadservices.com https://*.g.doubleclick.net",
               "object-src 'none'",
               "base-uri 'self'",
             ].join('; '),
