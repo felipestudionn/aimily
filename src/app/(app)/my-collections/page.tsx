@@ -323,18 +323,17 @@ export default function MyCollectionsPage() {
   }, [enrichedCollections]);
 
 
-  if (authLoading || !user) {
-    return (
-      <div className="min-h-screen bg-crema flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-carbon/40" />
-      </div>
-    );
-  }
-
   const c = t.collections as Record<string, string>;
-  const firstName = (user.user_metadata?.full_name as string | undefined)?.split(' ')[0]
-    || user.email?.split('@')[0]
-    || '';
+  const firstName = user
+    ? ((user.user_metadata?.full_name as string | undefined)?.split(' ')[0]
+        || user.email?.split('@')[0]
+        || '')
+    : '';
+
+  // Single combined loading state — covers the auth check, the subscription
+  // gate, and the page's own data fetch. The shell (Navbar) stays mounted
+  // throughout so the user never sees a blank flash between transitions.
+  const isLoading = authLoading || !user || loading;
 
   const subtitle = (() => {
     const parts: string[] = [];
@@ -359,7 +358,7 @@ export default function MyCollectionsPage() {
 
         <main className="pt-24 pb-20 px-6 md:px-10 lg:px-14">
           <div className="max-w-[1440px] mx-auto">
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-6 w-6 animate-spin text-carbon/40" />
               </div>

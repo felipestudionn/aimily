@@ -26,10 +26,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
 
   useEffect(() => {
+    // Supabase fires both getSession() AND onAuthStateChange(INITIAL_SESSION)
+    // on mount, producing two different User object references for the same
+    // identity. Downstream effects keyed on `user` (e.g. fetchData) would
+    // double-fire and flash the loading spinner. We dedupe by id so the
+    // reference only changes when the actual user changes.
+    const setUserStable = (next: User | null) =>
+      setUser((prev) => (prev?.id === next?.id ? prev : next));
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      setUserStable(session?.user ?? null);
       setLoading(false);
     });
 
@@ -37,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        setUserStable(session?.user ?? null);
         setLoading(false);
       }
     );
