@@ -25,6 +25,7 @@ import { ObservabilityBootstrap } from '@/components/ObservabilityBootstrap';
 import { GlobalNav } from '@/components/layout/GlobalNav';
 import { ToastProvider } from '@/components/ui/toast';
 import { Analytics } from '@vercel/analytics/react';
+import { GoogleAdsTag } from '@/components/GoogleAdsTag';
 import { cn } from '@/lib/utils';
 import { Suspense } from 'react';
 import { AssistantMount } from '@/components/aimily-assistant/AssistantMount';
@@ -60,6 +61,7 @@ export default function AppLayout({
                 </Suspense>
                 <CookieConsent />
                 <Analytics />
+                <GoogleAdsTag />
               </ToastProvider>
             </SubscriptionProvider>
           </LanguageProvider>
