@@ -389,7 +389,7 @@ export const es: Dictionary = {
     tagline: 'Planifica, diseña y lanza tu colección de moda.',
     plansAndPricing: 'Planes y precios',
     allPlansInclude: 'Todos los planes incluyen todas las herramientas de IA. La diferencia es la escala.',
-    trialBadge: '14 días de prueba gratis — acceso completo, sin tarjeta de crédito',
+    trialBadge: '30 días de prueba gratis — acceso completo, sin tarjeta de crédito',
     monthly: 'Mensual',
     annual: 'Anual',
     savePercent: 'Ahorra ~20%',
@@ -550,7 +550,7 @@ export const es: Dictionary = {
     permanentlyDelete: 'Eliminar mi cuenta permanentemente',
     deleting: 'Eliminando...',
     deleteFailed: 'Error al eliminar cuenta. Inténtalo de nuevo.',
-    planTrial: 'Prueba (14 días)',
+    planTrial: 'Prueba (30 días)',
     planStarter: 'Starter',
     planProfessional: 'Professional',
     planEnterprise: 'Enterprise',
@@ -1216,7 +1216,7 @@ export const es: Dictionary = {
     transformAfter5: 'Una plataforma conectada',
     // CTA
     ctaTitle: 'Eso es todo lo que necesitas.',
-    ctaDesc: 'Únete a diseñadores, marcas y estudios que gestionan sus colecciones con Aimily. Prueba gratuita de 14 días — sin tarjeta de crédito.',
+    ctaDesc: 'Únete a diseñadores, marcas y estudios que gestionan sus colecciones con Aimily. Prueba gratuita de 30 días — sin tarjeta de crédito.',
   },
 
   // ─── Página de Precios (standalone) ───
@@ -1224,7 +1224,7 @@ export const es: Dictionary = {
     title: 'Planes y Precios',
     subtitle: 'Todo lo que necesitas para gestionar tus colecciones con AI',
     faq: 'Preguntas frecuentes',
-    trialTitle: '14 días de prueba gratis',
+    trialTitle: '30 días de prueba gratis',
     trialSubtitle: 'Acceso completo a todas las funcionalidades. Sin tarjeta de crédito.',
     fullComparison: 'Comparativa completa',
     feature: 'Funcionalidad',
@@ -1271,7 +1271,7 @@ export const es: Dictionary = {
     aimilyFromSave: 'aimily desde 159€/mes — ahorra un 95%',
     // ── V2 (2026-04-28) — modelo de cuota imagery + Créditos aimily + 4 tiers ──
     subtitleV2: 'Los mismos modelos de calidad superior en todos los planes. Diferenciación por cantidad, nunca por calidad.',
-    bannerTitle: 'Prueba gratuita de 14 días',
+    bannerTitle: 'Prueba gratuita de 30 días',
     bannerSubtitle: 'Acceso completo. Sin tarjeta.',
     saveAnnual: 'Ahorra 20%',
     mostPopular: 'Más popular',
@@ -1327,7 +1327,7 @@ export const es: Dictionary = {
     countVideo: 'Vídeo Kling Pro',
     countText: 'Generación de texto (briefs, copy, planes, …)',
     countResearch: 'Investigación y análisis',
-    bottomNote: 'Todos los planes incluyen 14 días de prueba gratuita. Sin tarjeta.',
+    bottomNote: 'Todos los planes incluyen 30 días de prueba gratuita. Sin tarjeta.',
     pricesExclVat: 'Precios sin IVA.',
   },
 
@@ -1619,7 +1619,7 @@ export const es: Dictionary = {
     s4Title: '4. Suscripciones y Facturación',
     s4Text: 'El acceso a las funcionalidades avanzadas de aimily está sujeto a la contratación de un plan de suscripción. Los planes disponibles son:',
     s4Item1Trial: 'Trial',
-    s4Item1Desc: ' — 14 días de acceso completo a todas las funcionalidades, sin coste. No requiere tarjeta de crédito para iniciarse.',
+    s4Item1Desc: ' — 30 días de acceso completo a todas las funcionalidades, sin coste. No requiere tarjeta de crédito para iniciarse.',
     s4Item2Starter: 'Starter',
     s4Item2Desc: ' — €199/mes (o €159/mes con facturación anual). Incluye el conjunto completo de herramientas de IA.',
     s4Item3Pro: 'Professional',
@@ -1634,7 +1634,7 @@ export const es: Dictionary = {
     s4_1AccountLink: 'configuración de cuenta',
     s4_1TextCont: ' o a través del portal de cliente de Stripe. Tras la cancelación:',
     s4_1Item1: 'El Usuario conservará el acceso activo hasta el final del período de facturación en curso, ya abonado.',
-    s4_1Item2: 'Garantía de devolución: dentro de los primeros 7 días tras el primer cobro, puedes solicitar el reembolso íntegro si aimily no te convence — escríbenos a hello@aimily.app. Pasados los 7 días no se realizan reembolsos por fracciones de período no consumidas; al cancelar dejarás de pagar los siguientes cobros. Se mantiene el derecho de desistimiento de 14 días para consumidores en la UE conforme al Real Decreto Legislativo 1/2007 y a la Directiva 2011/83/UE, siempre que no se haya iniciado el uso efectivo del servicio.',
+    s4_1Item2: 'Garantía de devolución: dentro de los primeros 7 días tras el primer cobro, puedes solicitar el reembolso íntegro si aimily no te convence — escríbenos a hello@aimily.app. Pasados los 7 días no se realizan reembolsos por fracciones de período no consumidas; al cancelar dejarás de pagar los siguientes cobros. Se mantiene el derecho de desistimiento de 30 días para consumidores en la UE conforme al Real Decreto Legislativo 1/2007 y a la Directiva 2011/83/UE, siempre que no se haya iniciado el uso efectivo del servicio.',
     s4_1Item3: 'Finalizado el período contratado, la cuenta pasará a modo de solo lectura. Los datos se conservarán durante 30 días adicionales antes de ser eliminados de forma permanente, salvo solicitud expresa del Usuario.',
     // Sección 4.2
     s4_2Title: '4.2 Eliminación de Cuenta',
@@ -3895,10 +3895,10 @@ export const es: Dictionary = {
     },
 
     welcome: {
-      subject: "Bienvenido a aimily — empiezan tus 14 días",
+      subject: "Bienvenido a aimily — empiezan tus 30 días",
       headline: "Bienvenido a aimily.",
       greeting: "Hola {name},",
-      intro: "Acabas de conseguir 14 días de acceso completo a la plataforma que construimos para marcas de moda en <strong>StudioNN</strong>. Mismos modelos, misma calidad, sin tarjeta.",
+      intro: "Acabas de conseguir 30 días de acceso completo a la plataforma que construimos para marcas de moda en <strong>StudioNN</strong>. Mismos modelos, misma calidad, sin tarjeta.",
       eyebrowSteps: "Tres cosas para empezar",
       step1Title: "Crea una colección",
       step1Desc: "Elige una temporada, ponle nombre. El brief se hace en ~2 min.",
@@ -3952,7 +3952,7 @@ export const es: Dictionary = {
     trialExpired: {
       subject: "Tu prueba de aimily ha terminado · todo sigue aquí",
       headline: "Tu prueba ha terminado.",
-      intro1: "Tus 14 días han terminado hoy. Nada de lo tuyo se ha tocado: tus colecciones, moodboards, datos de CIS, bocetos — todo sigue ahí esperándote, exactamente como lo dejaste.",
+      intro1: "Tus 30 días han terminado hoy. Nada de lo tuyo se ha tocado: tus colecciones, moodboards, datos de CIS, bocetos — todo sigue ahí esperándote, exactamente como lo dejaste.",
       intro2: "Elige un plan cuando estés listo y tu trabajo retoma justo donde se paró. Sin re-importar, sin volver a configurar, sin perder ningún moodboard.",
       eyebrowPlans: "Tres planes · precio anual mostrado",
       cadenceAnnual: "/mes · anual",
@@ -3967,7 +3967,7 @@ export const es: Dictionary = {
       confirmSignup: {
         subject: "Confirma tu dirección de aimily",
         headline: "Confirma tu dirección.",
-        intro: "Un clic rápido y empiezan tus 14 días de prueba.",
+        intro: "Un clic rápido y empiezan tus 30 días de prueba.",
         detail: "Lo enviamos a {email}. Confirmar verifica que la dirección es tuya y desbloquea la plataforma.",
         cta: "Confirmar mi email",
         footer: "¿No te registraste? Puedes ignorar este email.",

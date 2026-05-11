@@ -40,8 +40,12 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   const bomLines = (tp?.bom as { lines?: Array<{ material?: string }> } | null)?.lines ?? [];
-  const materialZones =
-    (sku.material_zones as { zones?: Array<{ material?: string }> } | null)?.zones ?? [];
+  // sku.material_zones is a jsonb ARRAY of MaterialZone, not nested under
+  // a `zones` key. The previous shape assumption silently dropped every
+  // zone-level material from the compliance roll-up.
+  const materialZones: Array<{ material?: string }> = Array.isArray(sku.material_zones)
+    ? (sku.material_zones as Array<{ material?: string }>)
+    : [];
 
   const materials: string[] = [
     ...bomLines.map((l) => l.material ?? '').filter(Boolean),

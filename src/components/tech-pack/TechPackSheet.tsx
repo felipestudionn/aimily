@@ -25,7 +25,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
-  ArrowLeft, Plus, Trash2, MessageSquare, Download, Printer,
+  ArrowLeft, Plus, Trash2, MessageSquare, Download, Printer, Share2,
   Loader2, Check, Upload, MapPin, X, Sparkles,
 } from 'lucide-react';
 import type { SKU } from '@/hooks/useSkus';
@@ -52,7 +52,7 @@ type CommentBlock =
 
 interface MeasurementRow { point: string; xs: string; s: string; m: string; l: string; xl: string }
 interface BomLine { type: string; material: string; qty: string; unit: string; supplier: string; cost: string; cost_currency?: string; material_id?: string }
-interface MaterialZone { name: string; pantone: string; supplier: string; swatchUrl: string; notes: string; material_id?: string }
+interface MaterialZone { name: string; pantone: string; supplier: string; swatchUrl: string; notes: string; hex?: string; material_id?: string }
 interface Callout { url: string; label: string }
 
 interface TechPackDataRow {
@@ -368,6 +368,41 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
             >
               <Printer className="h-3.5 w-3.5" strokeWidth={2} />
               {tp.print || 'Print'}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const email = window.prompt(tp.shareVendorEmailPrompt || 'Email de la fábrica:', '');
+                if (!email) return;
+                try {
+                  const res = await fetch('/api/vendor-invitations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      collection_plan_id: collectionId,
+                      vendor_email: email,
+                      vendor_name: null,
+                      sku_ids: [sku.id],
+                      ttl_days: 60,
+                    }),
+                  });
+                  if (!res.ok) throw new Error('Failed to create vendor invitation');
+                  const json = await res.json();
+                  const token = json.token || (json.data?.token);
+                  if (!token) throw new Error('Token missing in response');
+                  const link = `${window.location.origin}/vendor/${token}/sku/${sku.id}`;
+                  await navigator.clipboard.writeText(link).catch(() => {});
+                  alert(`${tp.vendorLinkReady || 'Enlace de fábrica copiado al portapapeles'}\n${link}`);
+                } catch (err) {
+                  alert(tp.vendorLinkFailed || 'No se pudo crear el enlace para la fábrica.');
+                  console.error('[VendorPortal] invitation create failed', err);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-carbon/[0.12] text-carbon/70 text-[12px] font-medium hover:bg-carbon/[0.04] transition-colors"
+              title={tp.shareVendorHint || 'Generate a private read-only link for the factory'}
+            >
+              <Share2 className="h-3.5 w-3.5" strokeWidth={2} />
+              {tp.shareVendor || 'Compartir con fábrica'}
             </button>
             <button
               type="button"
@@ -1074,13 +1109,25 @@ function MaterialsSection({
               <X className="w-3 h-3" strokeWidth={2.5} />
             </button>
 
-            {/* Swatch */}
-            <div className="aspect-[5/4] rounded-[10px] bg-white border border-carbon/[0.06] overflow-hidden mb-3 relative">
+            {/* Swatch — image OR colorway hex fallback OR upload placeholder */}
+            <div className="aspect-[5/4] rounded-[10px] bg-white border border-carbon/[0.06] overflow-hidden mb-3 relative group">
               {z.swatchUrl ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={z.swatchUrl} alt={z.name} className="absolute inset-0 w-full h-full object-cover" />
                 </>
+              ) : z.hex ? (
+                <label className="absolute inset-0 cursor-pointer" style={{ backgroundColor: z.hex }}>
+                  <span className="absolute inset-x-0 bottom-0 px-2 py-1 text-[9px] font-semibold uppercase tracking-wider text-white bg-black/35 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    {tp.uploadSwatch || 'Upload swatch'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(i, f); e.target.value = ''; }}
+                  />
+                </label>
               ) : (
                 <label className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 cursor-pointer hover:bg-carbon/[0.04] transition-colors">
                   {uploadingIdx === i ? (

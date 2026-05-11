@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Palette, Ruler, Package, ShieldCheck, Check, AlertCircle,
   ChevronRight, Loader2, Sparkles,
@@ -11,6 +11,7 @@ import type { SKU } from '@/hooks/useSkus';
 import { useSkuLifecycle } from './SkuLifecycleContext';
 import { ImageUploadArea, MetricCell, SizeRunEditor } from './shared';
 import { useToast } from '@/components/ui/toast';
+import { ProductionTimelineCard } from './ProductionTimelineCard';
 
 interface ProductionPhaseProps {
   sku: SKU;
@@ -32,8 +33,26 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
   const t = useTranslation();
   const { language } = useLanguage();
   const { toast } = useToast();
-  const { colorways } = useSkuLifecycle();
+  const { colorways, collectionPlanId } = useSkuLifecycle();
   const skuColorways = colorways.filter(c => c.sku_id === sku.id);
+
+  // Resolve drop launch date for the production timeline pill. Single
+  // fetch on mount; the calendar route is the source of truth.
+  const [launchDate, setLaunchDate] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/collection-timelines?planId=${collectionPlanId}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (cancelled) return;
+        const ld = json?.timeline?.launch_date || json?.launch_date;
+        if (ld) setLaunchDate(ld);
+      } catch { /* non-blocking */ }
+    })();
+    return () => { cancelled = true; };
+  }, [collectionPlanId]);
 
   // Persisted production data
   const pd = sku.production_data || {};
@@ -69,8 +88,28 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
   const isStepConfirmed = (id: string) => confirmedStepIds.has(id);
   const bothApproved = colorStatus === 'approved' && fitStatus === 'approved';
 
+  // Pull factory tier + base lead from the cost_breakdown that the Sourcing
+  // step persists. If absent, the timeline calculator uses sensible defaults.
+  const cb = (sku as { cost_breakdown?: { labor?: { hours?: number }; freight?: { method?: string; origin?: string } } }).cost_breakdown || {};
+  const sourcingNotes = (sku as { sourcing_data?: { notes?: string } }).sourcing_data?.notes || '';
+  const factoryTypeMatch = sourcingNotes.match(/(artisan|semi-industrial|vertical|OEM)/i);
+  const factoryType = factoryTypeMatch?.[1];
+  // labor.hours × industry-standard ~6-8h/day per worker → derive a base
+  // factory lead in days. When absent, fall back to 45d default.
+  const factoryLeadDays = cb.labor?.hours
+    ? Math.max(7, Math.round((cb.labor.hours * (sku.buy_units || 100)) / 8))
+    : undefined;
+
   return (
     <div className="space-y-4">
+
+      {/* ── Production timeline at a glance — derived from BOM + sourcing ── */}
+      <ProductionTimelineCard
+        sku={sku}
+        launchDate={launchDate}
+        factoryType={factoryType}
+        factoryLeadDays={factoryLeadDays}
+      />
 
       {/* ── Step breadcrumbs (EvolutionStrip handles the visual context now) ── */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
@@ -484,9 +523,32 @@ export function ProductionPhase({ sku, onUpdate, onImageUpload, uploading }: Pro
                 {bothApproved && sku.production_sample_url ? (
                   <button
                     onClick={async () => {
-                      if (!pd.po_number) {
-                        const poNum = `PO-${sku.family?.slice(0, 3).toUpperCase() || 'SKU'}-${sku.name?.slice(0, 4).toUpperCase() || '0000'}-${Date.now().toString(36).toUpperCase()}`;
+                      let poNum = pd.po_number;
+                      if (!poNum) {
+                        poNum = `PO-${sku.family?.slice(0, 3).toUpperCase() || 'SKU'}-${sku.name?.slice(0, 4).toUpperCase() || '0000'}-${Date.now().toString(36).toUpperCase()}`;
                         await updatePD({ po_number: poNum, po_generated_at: new Date().toISOString() });
+                      }
+                      // Insert a production_orders row so the milestone-sync-map
+                      // picks it up and flips dd-15..dd-18 from pending to
+                      // in_progress / completed automatically.
+                      try {
+                        await fetch('/api/production-orders', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            collection_plan_id: sku.collection_plan_id,
+                            sku_id: sku.id,
+                            order_number: poNum,
+                            factory_name: pd.factory_name || sku.sourcing_data?.factory || '',
+                            status: 'open',
+                            target_delivery_date: pd.target_delivery_date || null,
+                            total_units: pd.order_quantity || sku.buy_units || 0,
+                            unit_cost_final: pd.unit_cost_final || sku.cost || 0,
+                            currency: 'EUR',
+                          }),
+                        });
+                      } catch (err) {
+                        console.warn('[Production] production_orders insert failed', err);
                       }
                       await onUpdate({ production_approved: true, design_phase: 'completed' as SKU['design_phase'] });
                       toast(stepLabel('productionApproved') || 'Production approved!', 'success');

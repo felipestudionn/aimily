@@ -157,6 +157,18 @@ export function buildInheritedContext(input: Record<string, string>): string {
   if (input.moodboard) {
     parts.push(`MOODBOARD & VISUAL RESEARCH:\n${input.moodboard}`);
   }
+  if (input.market_trends) {
+    parts.push(`MARKET TRENDS (Block 1 research):\n${input.market_trends}`);
+  }
+  if (input.market_deep_dive) {
+    parts.push(`MARKET DEEP DIVE:\n${input.market_deep_dive}`);
+  }
+  if (input.market_live_signals) {
+    parts.push(`LIVE MARKET SIGNALS:\n${input.market_live_signals}`);
+  }
+  if (input.market_competitors) {
+    parts.push(`COMPETITORS / REFERENCE BRANDS:\n${input.market_competitors}`);
+  }
   if (input.creativeSynthesis) {
     parts.push(`CREATIVE SYNTHESIS (Block 1 validated output):\n${input.creativeSynthesis}`);
   }
@@ -168,6 +180,15 @@ export function buildInheritedContext(input: Record<string, string>): string {
   }
   if (input.pricing) {
     parts.push(`PRICING ARCHITECTURE:\n${input.pricing}`);
+  }
+  if (input.priceRange) {
+    parts.push(`PRICE RANGE (Block 2 confirmed): ${input.priceRange}`);
+  }
+  if (input.targetMargin) {
+    parts.push(`TARGET MARGIN (Block 2 confirmed): ${input.targetMargin}`);
+  }
+  if (input.salesTarget) {
+    parts.push(`COLLECTION SALES TARGET (Y1): ${input.salesTarget}`);
   }
   if (input.channels) {
     parts.push(`DISTRIBUTION CHANNELS: ${input.channels}`);

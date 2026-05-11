@@ -408,7 +408,7 @@ const en: HomeDict = {
     titleLine1: 'The AI assistant',
     titleLine2Italic: 'Miranda would have hired.',
     subtitle: 'One platform takes a fashion idea from the spark of a moodboard to a sold-out launch. Brand DNA. Range plan. Tech packs. Campaigns. Every block, connected.',
-    cta: 'Start your collection — free 14 days',
+    cta: 'Start your collection — free 30 days',
     noCard: 'No credit card required',
     scrollCue: 'See the journey',
   },
@@ -627,7 +627,7 @@ const en: HomeDict = {
   },
   finalCta: {
     title: "That's all.",
-    subtitle: 'Start a collection in 90 seconds. Free 14 days. No credit card required.',
+    subtitle: 'Start a collection in 90 seconds. Free 30 days. No credit card required.',
     button: 'Try aimily free',
   },
   pricing: {
@@ -781,7 +781,7 @@ const es: HomeDict = {
     titleLine1: 'La asistente IA',
     titleLine2Italic: 'que Miranda habría contratado.',
     subtitle: 'Una plataforma lleva una idea de moda desde el primer moodboard hasta el sold-out. ADN de marca. Range plan. Tech packs. Campañas. Cada bloque, conectado.',
-    cta: 'Empieza tu colección — 14 días gratis',
+    cta: 'Empieza tu colección — 30 días gratis',
     noCard: 'Sin tarjeta de crédito',
     scrollCue: 'Ver el recorrido',
   },
@@ -1000,7 +1000,7 @@ const es: HomeDict = {
   },
   finalCta: {
     title: 'Eso es todo.',
-    subtitle: 'Empieza una colección en 90 segundos. 14 días gratis. Sin tarjeta de crédito.',
+    subtitle: 'Empieza una colección en 90 segundos. 30 días gratis. Sin tarjeta de crédito.',
     button: 'Prueba aimily gratis',
   },
   pricing: {
@@ -1154,7 +1154,7 @@ const fr: HomeDict = {
     titleLine1: 'L\'assistante IA',
     titleLine2Italic: 'que Miranda aurait engagée.',
     subtitle: 'Une seule plateforme transforme une idée mode du moodboard initial à un drop sold-out. Brand DNA. Range plan. Tech packs. Campagnes. Chaque bloc, connecté.',
-    cta: 'Lancez votre collection — 14 jours gratuits',
+    cta: 'Lancez votre collection — 30 jours gratuits',
     noCard: 'Sans carte de crédit',
     scrollCue: 'Voir le parcours',
   },
@@ -1370,7 +1370,7 @@ const fr: HomeDict = {
   },
   finalCta: {
     title: 'C\'est tout.',
-    subtitle: 'Lancez une collection en 90 secondes. 14 jours gratuits. Sans carte de crédit.',
+    subtitle: 'Lancez une collection en 90 secondes. 30 jours gratuits. Sans carte de crédit.',
     button: 'Essayer aimily gratuitement',
   },
   pricing: {
@@ -1526,7 +1526,7 @@ const it: HomeDict = {
     titleLine1: 'L\'assistente IA',
     titleLine2Italic: 'che Miranda avrebbe assunto.',
     subtitle: 'Una sola piattaforma porta un\'idea moda dalla scintilla del moodboard a un drop sold-out. Brand DNA. Range plan. Tech packs. Campagne. Ogni blocco, connesso.',
-    cta: 'Inizia la tua collezione — 14 giorni gratis',
+    cta: 'Inizia la tua collezione — 30 giorni gratis',
     noCard: 'Senza carta di credito',
     scrollCue: 'Vedi il percorso',
   },
@@ -1742,7 +1742,7 @@ const it: HomeDict = {
   },
   finalCta: {
     title: 'È tutto.',
-    subtitle: 'Inizia una collezione in 90 secondi. 14 giorni gratis. Senza carta di credito.',
+    subtitle: 'Inizia una collezione in 90 secondi. 30 giorni gratis. Senza carta di credito.',
     button: 'Prova aimily gratis',
   },
   pricing: {
@@ -2270,7 +2270,7 @@ const pt: HomeDict = {
     titleLine1: 'A assistente de IA',
     titleLine2Italic: 'que Miranda teria contratado.',
     subtitle: 'Uma plataforma leva uma ideia de moda do primeiro moodboard a um drop sold-out. Brand DNA. Range plan. Tech packs. Campanhas. Cada bloco, ligado.',
-    cta: 'Começa a tua coleção — 14 dias grátis',
+    cta: 'Começa a tua coleção — 30 dias grátis',
     noCard: 'Sem cartão de crédito',
     scrollCue: 'Ver o percurso',
   },
@@ -2486,7 +2486,7 @@ const pt: HomeDict = {
   },
   finalCta: {
     title: 'É tudo.',
-    subtitle: 'Começa uma coleção em 90 segundos. 14 dias grátis. Sem cartão de crédito.',
+    subtitle: 'Começa uma coleção em 90 segundos. 30 dias grátis. Sem cartão de crédito.',
     button: 'Experimenta a aimily grátis',
   },
   pricing: {

@@ -177,8 +177,11 @@ export function computeDerivedSetupData(
     ? [4, 8, 12, 14, 14, 12, 10, 8, 6, 5, 4, 3]
     : [3, 4, 5, 6, 8, 10, 12, 14, 14, 12, 8, 4];
 
-  /* productCategory: first family or first SKU category */
-  const productCategory = familyNames[0] || skuCategories[0] || undefined;
+  /* productCategory: prefer macro (CALZADO/ROPA/ACCESORIOS) over family name —
+   * the prompt foundations categoryMap only translates macros into FOOTWEAR/
+   * APPAREL/ACCESSORIES; a family name like "Sastrería" leaks raw and produces
+   * a nonsensical "ALL families MUST be within Sastrería" constraint. */
+  const productCategory = skuCategories[0] || familyNames[0] || undefined;
 
   /* expectedSkus: rough estimate (matches old bridge logic) */
   const expectedSkus = subcatCount > 0 ? subcatCount * 4 : undefined;
@@ -380,7 +383,7 @@ function computeDerivedFromCis(
     plannedDiscounts,
     expectedSkus,
     dropsCount: dropsObj?.count,
-    productCategory: familyNames[0] || skuCategories[0],
+    productCategory: skuCategories[0] || familyNames[0],
     families: familyNames.length > 0 ? familyNames : undefined,
     productFamilies: productFamilies.length > 0 ? productFamilies : undefined,
     priceSegments: priceSegments.length > 0 ? priceSegments : undefined,

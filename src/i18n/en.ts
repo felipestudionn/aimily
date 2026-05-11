@@ -384,7 +384,7 @@ export const en = {
     tagline: 'Plan, design, and launch your fashion collection.',
     plansAndPricing: 'Plans & Pricing',
     allPlansInclude: 'All plans include every AI tool. The difference is scale.',
-    trialBadge: '14-day free trial — full access, no credit card',
+    trialBadge: '30-day free trial — full access, no credit card',
     monthly: 'Monthly',
     annual: 'Annual',
     savePercent: 'Save ~20%',
@@ -545,7 +545,7 @@ export const en = {
     permanentlyDelete: 'Permanently Delete My Account',
     deleting: 'Deleting...',
     deleteFailed: 'Failed to delete account. Please try again.',
-    planTrial: 'Trial (14 days)',
+    planTrial: 'Trial (30 days)',
     planStarter: 'Starter',
     planProfessional: 'Professional',
     planEnterprise: 'Enterprise',
@@ -1219,7 +1219,7 @@ export const en = {
     transformAfter5: 'One connected platform',
     // CTA
     ctaTitle: "That's all you need.",
-    ctaDesc: 'Join designers, brands, and studios managing their collections with Aimily. 14-day free trial — no credit card required.',
+    ctaDesc: 'Join designers, brands, and studios managing their collections with Aimily. 30-day free trial — no credit card required.',
   },
 
   // ─── Pricing Page (standalone) ───
@@ -1227,7 +1227,7 @@ export const en = {
     title: 'Plans & Pricing',
     subtitle: 'Everything you need to manage your collections with AI',
     faq: 'Frequently Asked Questions',
-    trialTitle: '14-day free trial',
+    trialTitle: '30-day free trial',
     trialSubtitle: 'Full access to all features. No credit card required.',
     fullComparison: 'Full comparison',
     feature: 'Feature',
@@ -1274,7 +1274,7 @@ export const en = {
     aimilyFromSave: 'aimily from €159/mo — save 95%',
     // ── V2 (2026-04-28) — imagery quota model + Aimily Credits + 4 tiers ──
     subtitleV2: 'Same top-quality models on every plan. Differentiation by quantity, never by quality.',
-    bannerTitle: '14-day free trial',
+    bannerTitle: '30-day free trial',
     bannerSubtitle: 'Full access. No card required.',
     saveAnnual: 'Save 20%',
     mostPopular: 'Most popular',
@@ -1330,7 +1330,7 @@ export const en = {
     countVideo: 'Video Kling Pro',
     countText: 'Text generation (briefs, copy, plans, …)',
     countResearch: 'Research & analysis',
-    bottomNote: 'All plans include a 14-day free trial. No card required.',
+    bottomNote: 'All plans include a 30-day free trial. No card required.',
     pricesExclVat: 'Prices exclude VAT.',
   },
 
@@ -1407,7 +1407,7 @@ export const en = {
     s4Title: '4. Subscriptions & Billing',
     s4Text: 'Access to advanced features requires a subscription plan. Available plans:',
     s4Item1Trial: 'Trial',
-    s4Item1Desc: ' — 14 days of full access to all features at no cost. No credit card required to start.',
+    s4Item1Desc: ' — 30 days of full access to all features at no cost. No credit card required to start.',
     s4Item2Starter: 'Starter',
     s4Item2Desc: ' — \u20ac199/month (or \u20ac159/month billed annually). Includes the full AI toolset.',
     s4Item3Pro: 'Professional',
@@ -1421,7 +1421,7 @@ export const en = {
     s4_1AccountLink: 'account settings',
     s4_1TextCont: ' or via the Stripe customer portal. Upon cancellation:',
     s4_1Item1: 'You retain access until the end of your current paid billing period.',
-    s4_1Item2: 'Money-back guarantee: within the first 7 days after your first paid charge, you may request a full refund if aimily is not the right fit — write to hello@aimily.app. After day 7, no refunds are provided for unused portions of a billing period; cancelling stops future charges. The EU 14-day right of withdrawal under Directive 2011/83/EU still applies where the service has not been used.',
+    s4_1Item2: 'Money-back guarantee: within the first 7 days after your first paid charge, you may request a full refund if aimily is not the right fit — write to hello@aimily.app. After day 7, no refunds are provided for unused portions of a billing period; cancelling stops future charges. The EU 30-day right of withdrawal under Directive 2011/83/EU still applies where the service has not been used.',
     s4_1Item3: 'After the period ends, your account becomes read-only. Data is retained for 30 additional days before permanent deletion.',
     s4_2Title: '4.2 Account Deletion',
     s4_2Text: 'You may permanently delete your account and all associated data from your',
@@ -3128,7 +3128,7 @@ export const en = {
     dayLeft: 'day left in your trial',
     daysLeft: 'days left in your trial',
     chooseAPlan: 'Choose a plan',
-    trialEnded: 'Your 14-day trial has ended',
+    trialEnded: 'Your 30-day trial has ended',
     trialEndedDesc: 'Choose a plan to continue creating collections, using AI tools, and managing your fashion workflow.',
     seePlans: 'See Plans',
     contactSales: 'Contact Sales',
@@ -3929,10 +3929,10 @@ export const en = {
 
     // 1. Welcome — Day 0 (signup confirmation)
     welcome: {
-      subject: "Welcome to aimily — your 14 days start now",
+      subject: "Welcome to aimily — your 30 days start now",
       headline: "Welcome to aimily.",
       greeting: "Hi {name},",
-      intro: "You just got 14 days of full access to the platform we built for fashion brands at <strong>StudioNN</strong>. Same models, same quality, no card required.",
+      intro: "You just got 30 days of full access to the platform we built for fashion brands at <strong>StudioNN</strong>. Same models, same quality, no card required.",
       eyebrowSteps: "Three things to try first",
       step1Title: "Start a collection",
       step1Desc: "Pick a season, name your idea. The brief takes ~2 min.",
@@ -3990,7 +3990,7 @@ export const en = {
     trialExpired: {
       subject: "Your aimily trial ended · everything is still here",
       headline: "Your trial ended.",
-      intro1: "Your 14 days finished today. Nothing of yours has been touched: your collections, your moodboards, your CIS facts, your sketches — all of it is still there waiting, exactly as you left it.",
+      intro1: "Your 30 days finished today. Nothing of yours has been touched: your collections, your moodboards, your CIS facts, your sketches — all of it is still there waiting, exactly as you left it.",
       intro2: "Pick a plan whenever you're ready and your work picks up where it stopped. No re-import, no setup again, no lost moodboard.",
       eyebrowPlans: "Three plans · annual price shown",
       cadenceAnnual: "/mo · annual",
@@ -4010,7 +4010,7 @@ export const en = {
       confirmSignup: {
         subject: "Confirm your aimily address",
         headline: "Confirm your address.",
-        intro: "One quick click and your 14-day trial begins.",
+        intro: "One quick click and your 30-day trial begins.",
         detail: "We sent this to {email}. Confirming verifies the address is yours and unlocks the platform.",
         cta: "Confirm my email",
         footer: "Didn't sign up? You can ignore this email.",

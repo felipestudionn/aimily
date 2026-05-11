@@ -26,8 +26,59 @@ const STEPS = [
   { id: 'sketch', label: 'Drawing' },
   { id: 'colorways', label: 'Colorways' },
   { id: 'materials', label: 'Materials' },
-  { id: 'techpack', label: 'Tech Pack' },
 ];
+
+/* Industry-standard share of COGS that the materials line typically takes.
+   Used to compute the materials budget that constrains the AI proposal. */
+const MATERIALS_RATIO_BY_CATEGORY: Record<string, number> = {
+  CALZADO: 0.50,
+  ROPA: 0.55,
+  ACCESORIOS: 0.45,
+};
+
+/* Shape returned by `design-generate` materials-suggest after the cost-aware
+   refactor. The frontend treats every cost field as optional so the UI
+   degrades gracefully if the model omits them. */
+interface AiMaterialSuggestion {
+  name: string;
+  zone?: string;
+  type?: string;
+  description?: string;
+  sustainability?: string;
+  consumption?: string;
+  cost_per_unit?: string;
+  cost_total?: number | string;
+  cost_currency?: string;
+  priceImpact?: string;
+}
+
+function buildMaterialsBudget(sku: { cost?: number | string | null; category?: string | null }) {
+  const cost = Number(sku.cost) || 0;
+  const ratio = MATERIALS_RATIO_BY_CATEGORY[sku.category || ''] ?? 0.50;
+  const budget = cost > 0 ? +(cost * ratio).toFixed(2) : 0;
+  return { cost, ratio, budget, budgetLabel: budget > 0 ? `€${budget.toFixed(2)}` : '' };
+}
+
+/* Match an AI suggestion to a material zone. Tries exact zone-name match
+   first (the new prompt asks the model to set `zone` explicitly), then
+   falls back to type-string overlap (legacy behavior). */
+function matchSuggestionToZone(
+  zoneName: string,
+  suggestions: AiMaterialSuggestion[],
+  alreadyConsumed: Set<string>,
+): AiMaterialSuggestion | null {
+  const lower = zoneName.toLowerCase();
+  const exact = suggestions.find(s => s.zone && s.zone.toLowerCase() === lower && !alreadyConsumed.has(s.name));
+  if (exact) return exact;
+  const partial = suggestions.find(s => {
+    if (alreadyConsumed.has(s.name)) return false;
+    const sZone = (s.zone || '').toLowerCase();
+    const sType = (s.type || '').toLowerCase();
+    return (sZone && (sZone.includes(lower) || lower.includes(sZone))) ||
+      (sType && (sType.includes(lower) || lower.includes(sType)));
+  });
+  return partial || null;
+}
 
 interface SketchPhaseProps {
   sku: SKU;
@@ -106,8 +157,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   const [aiColorways, setAiColorways] = useState<AiColorway[] | null>(null);
   const [detectedZones, setDetectedZones] = useState<DetectedZone[] | null>(null);
   const [detectingZones, setDetectingZones] = useState(false);
-  const [paletteMode, setPaletteMode] = useState<'wada' | 'manual'>('wada');
-  const [seedColors, setSeedColors] = useState<[string, string, string]>(['#B22222', '#F5F0E6', '#2B2B2B']);
   // When colorize calls fail (OpenAI 5xx, network, etc.), the per-card placeholder
   // is not always enough. Track the most recent error globally so we can show a
   // persistent banner above the grid until the user retries successfully.
@@ -256,7 +305,6 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           throw new Error('empty zones response');
         }
       } catch {
-        // Fallback: use the hardcoded category template so the step is still usable.
         if (!cancelled) {
           const fallback = getDefaultZones(sku.category).map((z, i) => ({
             id: `zone-${i}`,
@@ -268,15 +316,119 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           setDetectedZones(fallback);
         }
       } finally {
-        if (!cancelled) {
-          setDetectingZones(false);
-          zoneDetectInflightFor.current = null;
-        }
+        // Always clear the spinner — even when the effect was cancelled by
+        // StrictMode's double-invocation, the user still needs the UI unstuck.
+        setDetectingZones(false);
+        zoneDetectInflightFor.current = null;
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      // Clear the inflight lock on cleanup so StrictMode's second invocation
+      // can re-fire the fetch (the first invocation's fetch will be cancelled
+      // by the `cancelled` flag above and won't write stale state).
+      zoneDetectInflightFor.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sku.id, sku.sketch_url, sku.name, sku.family, sku.category]);
+
+  // ── Auto-propose materials when entering the Materials sub-step ──
+  // Canonical pattern: aimily proposes on open, user edits inline. Triggered
+  // exactly once per SKU when zones are still empty. The user can always click
+  // "Regenerar materiales" to refresh.
+  const materialsAutoFiredFor = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (activeStep !== 2) return;
+    if (!sku.id || !collectionPlanId) return;
+    if (materialsAutoFiredFor.current === sku.id) return;
+    const matZones = sku.material_zones || [];
+    const hasAnyMaterial = matZones.some(z => z?.material);
+    if (hasAnyMaterial) return;
+    materialsAutoFiredFor.current = sku.id;
+    let cancelled = false;
+    (async () => {
+      try {
+        const skuColorwaysLocal = colorways.filter(c => c.sku_id === sku.id);
+        const colorwayContext = skuColorwaysLocal.map(c => {
+          const zones = c.zones && c.zones.length > 0 ? c.zones : [];
+          return `${c.name}: ${zones.map(z => `${z.zone}=${z.hex}`).join(', ')}`;
+        }).join(' | ');
+        // Build zone list from detected zones if matZones is empty.
+        const seedZones = matZones.length > 0
+          ? matZones
+          : getDefaultZones(sku.category).map(z => ({ zone: z.zone, material: '' } as MaterialZone));
+        const zoneContext = seedZones.map(m => m.zone).join(', ');
+        const { budget, budgetLabel } = buildMaterialsBudget(sku);
+        const res = await fetch('/api/ai/design-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'materials-suggest',
+            input: {
+              productCategory: sku.category,
+              productType: sku.category || sku.type || '',
+              subcategory: sku.name || '',
+              family: sku.family,
+              concept: sku.notes || '',
+              priceRange: `€${sku.pvp}`,
+              targetCogs: sku.cost != null ? `€${sku.cost}` : '',
+              targetPvp: sku.pvp != null ? `€${sku.pvp}` : '',
+              targetMargin: sku.margin != null ? `${Math.round(sku.margin)}%` : '',
+              materialsBudget: budgetLabel,
+              designDirection: `${sku.name} — ${sku.family}. ${sku.notes || ''}`,
+              colorways: colorwayContext,
+              zones: zoneContext,
+            },
+            collectionPlanId,
+            language,
+          }),
+        });
+        if (!res.ok) return;
+        const { result } = await res.json();
+        const suggestions: AiMaterialSuggestion[] = result?.materials || [];
+        if (!suggestions.length) return;
+        const consumed = new Set<string>();
+        const filled = seedZones.map(mz => {
+          const suggestion = matchSuggestionToZone(mz.zone, suggestions, consumed);
+          if (!suggestion) return mz;
+          consumed.add(suggestion.name);
+          const costNum = typeof suggestion.cost_total === 'number'
+            ? suggestion.cost_total
+            : Number(String(suggestion.cost_total || '').replace(/[^0-9.\-]/g, '')) || undefined;
+          return {
+            ...mz,
+            material: suggestion.name,
+            composition: suggestion.description || mz.composition || '',
+            finish: suggestion.sustainability || mz.finish || '',
+            consumption: suggestion.consumption || mz.consumption,
+            cost_per_unit: suggestion.cost_per_unit || mz.cost_per_unit,
+            cost_total: costNum != null ? costNum : mz.cost_total,
+            cost_currency: suggestion.cost_currency || mz.cost_currency || 'EUR',
+          };
+        });
+        if (!cancelled) {
+          await onUpdate({ material_zones: filled } as Partial<SKU>);
+          // Telemetry: log overshoot so we can see it in the console while
+          // we tune the prompt. Doesn't alert the user — the cost-aware
+          // prompt already keeps things in budget.
+          const totalCost = filled.reduce((acc, z) => acc + (z.cost_total || 0), 0);
+          if (budget > 0 && totalCost > budget * 1.05) {
+            console.warn(`[Materials] overshoot: ${totalCost.toFixed(2)} > budget ${budget} (+${(((totalCost - budget) / budget) * 100).toFixed(1)}%)`);
+          }
+        }
+      } catch (err) {
+        console.error('[Materials auto-propose]', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      // Clear the inflight ref so StrictMode's second invocation can re-fire.
+      // The first invocation's response is gated by `cancelled` and won't
+      // write stale state.
+      materialsAutoFiredFor.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStep, sku.id, collectionPlanId]);
 
   return (
     <div className="h-full flex flex-col gap-4">
@@ -335,9 +487,10 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         </div>
       )}
 
-      {/* ── Mode selector ── (hidden on Colorways: that step has its own
-           Sanzo Wada / Your Colors picker, two pickers would be confusing). */}
-      {activeStep < 3 && activeStep !== 1 && (
+      {/* ── Mode selector ── only on Sketch (Drawing) sub-step; Colorways has
+           its own picker, Materials is canonical (auto-propose + edit inline),
+           Tech Pack is auto-generated. */}
+      {activeStep === 0 && (
         <SegmentedPill
           options={[
             { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Manual' },
@@ -668,6 +821,23 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               setAiColorways(prev => prev?.map((p, pi) => pi === idx ? { ...p, colorizedUrl: imageUrl, colorizing: false, lastError: undefined } : p) || null);
               // If everything finally went through, clear the global banner.
               setColorizeError(null);
+              // Regenerate name + description so they match the new distribution.
+              // Fire-and-forget — failure here is non-blocking (the user already
+              // has a fresh image; stale name is only mildly annoying).
+              callDesignAI('color-rename', {
+                productCategory: sku.category,
+                productType: sku.category,
+                family: sku.family,
+                subcategory: sku.name,
+                designDirection: sku.notes || sku.name,
+                zoneAssignments: JSON.stringify(cw.zoneAssignments || []),
+              }).then(result => {
+                if (result?.name && result?.description) {
+                  setAiColorways(prev => prev?.map((p, pi) =>
+                    pi === idx ? { ...p, name: result.name, description: result.description } : p
+                  ) || null);
+                }
+              }).catch(() => { /* non-blocking */ });
             } catch (err) {
               console.error('[Colorize]', err);
               const reason = err instanceof Error ? err.message : 'network error';
@@ -717,15 +887,15 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
           const launchGenerate = async () => {
             const zonesPayload = effectiveZones.map(z => ({ name: z.name, semanticRole: z.semanticRole, description: z.description }));
             const input: Record<string, string> = {
+              productCategory: sku.category,
               productType: sku.category,
               family: sku.family,
+              subcategory: sku.name,
               concept: sku.notes || '',
-              designDirection: notes || sku.notes || '',
+              designDirection: notes || sku.notes || sku.name,
+              priceRange: `€${sku.pvp}`,
               zones: JSON.stringify(zonesPayload),
             };
-            if (paletteMode === 'manual') {
-              input.manualSeedColors = seedColors.join(', ');
-            }
             setGenerating(true);
             try {
               const result = await callDesignAI('color-suggest', input);
@@ -803,63 +973,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   </p>
                 </div>
 
-                {/* ── Path picker: Sanzo Wada vs Your colors ── */}
+                {/* ── Generate from brand palette ── */}
                 <div className="space-y-3">
-                  <SegmentedPill
-                    options={[
-                      { id: 'wada', label: stepLabel('pathWada') || 'Sanzo Wada inspiration' },
-                      { id: 'manual', label: stepLabel('pathManual') || 'Your colors' },
-                    ]}
-                    value={paletteMode}
-                    onChange={(v) => setPaletteMode(v as 'wada' | 'manual')}
-                  />
-
-                  {paletteMode === 'wada' ? (
-                    <p className="text-[11px] text-carbon/40 leading-relaxed">
-                      {stepLabel('aiColorProposalDesc') || 'Aimily will propose 4 colorway combinations inspired by Sanzo Wada and colorize your sketch with each one.'}
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-[11px] text-carbon/40 leading-relaxed">
-                        {stepLabel('manualSeedDesc') || 'Pick 3 colors. Aimily will generate 4 colorways using exactly these hex values, distributing them across the zones above.'}
-                      </p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {(['primary', 'secondary', 'tertiary'] as const).map((label, i) => (
-                          <div key={label} className="space-y-1">
-                            <p className="text-[9px] tracking-[0.1em] uppercase text-carbon/35">
-                              {stepLabel(`seed${label.charAt(0).toUpperCase() + label.slice(1)}`) || label}
-                            </p>
-                            <div className="relative h-10 rounded-[8px] border border-carbon/[0.08] overflow-hidden cursor-pointer"
-                              style={{ backgroundColor: seedColors[i] }}>
-                              <input type="color" value={seedColors[i]}
-                                onChange={(e) => {
-                                  const next = [...seedColors] as [string, string, string];
-                                  next[i] = e.target.value;
-                                  setSeedColors(next);
-                                }}
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                            </div>
-                            <input type="text" value={seedColors[i]}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) {
-                                  const next = [...seedColors] as [string, string, string];
-                                  next[i] = v;
-                                  setSeedColors(next);
-                                }
-                              }}
-                              className="w-full text-[10px] font-mono text-carbon/55 bg-transparent border-b border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.20]"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   <button onClick={launchGenerate}
                     disabled={generating || effectiveZones.length === 0}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-carbon text-crema text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-30">
-                    {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    className="inline-flex items-center justify-center gap-2 py-2.5 px-7 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-all disabled:opacity-30">
+                    {generating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     {aiColorways
                       ? (stepLabel('regenerateColorways') || 'Regenerate proposals')
                       : (stepLabel('proposeColorways') || 'Generate proposals')}
@@ -1087,7 +1206,10 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             onUpdate({ material_zones: updated } as Partial<SKU>);
           };
 
-          // AI auto-fill: replaces entire table at once
+          // AI auto-fill: cost-aware materials proposal that respects the
+          // SKU's COGS target. The AI receives the materials budget as a
+          // hard constraint and returns per-material cost, which is wired
+          // into the BOM downstream.
           const autoFillMaterials = async () => {
             setGenerating(true);
             try {
@@ -1096,43 +1218,55 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                 const zones = c.zones && c.zones.length > 0 ? c.zones : [];
                 return `${c.name}: ${zones.map(z => `${z.zone}=${z.hex}`).join(', ')}`;
               }).join(' | ');
+              const { budget, budgetLabel } = buildMaterialsBudget(sku);
               const result = await callDesignAI('materials-suggest', {
+                productCategory: sku.category,
                 productType: sku.category || sku.type || '',
                 subcategory: sku.name || '',
                 family: sku.family,
                 concept: sku.notes || '',
                 priceRange: `€${sku.pvp}`,
+                targetCogs: sku.cost != null ? `€${sku.cost}` : '',
+                targetPvp: sku.pvp != null ? `€${sku.pvp}` : '',
+                targetMargin: sku.margin != null ? `${Math.round(sku.margin)}%` : '',
+                materialsBudget: budgetLabel,
                 designDirection: `${sku.name} — ${sku.family}. ${sku.notes || ''}`,
                 colorways: colorwayContext,
                 zones: zoneContext,
               });
-              if (result?.materials && result.materials.length > 0) {
-                // Map AI suggestions to zones
-                const filled = matZones.map(mz => {
-                  const suggestion = result.materials.find((m: any) =>
-                    m.type?.toLowerCase().includes(mz.zone.toLowerCase()) ||
-                    mz.zone.toLowerCase().includes(m.type?.toLowerCase() || '')
-                  ) || result.materials.find((m: any) => !matZones.some(existing => existing.material && existing.zone.toLowerCase().includes(m.type?.toLowerCase() || '')));
-                  if (suggestion && !mz.material) {
-                    return { ...mz, material: suggestion.name, composition: suggestion.description || '', finish: suggestion.sustainability || '' };
-                  }
-                  return mz;
-                });
-                // If any zones still empty, fill from remaining suggestions
-                const usedNames = new Set(filled.filter(m => m.material).map(m => m.material));
-                const remaining = result.materials.filter((m: any) => !usedNames.has(m.name));
-                let remainIdx = 0;
-                const finalFilled = filled.map(mz => {
-                  if (!mz.material && remainIdx < remaining.length) {
-                    const s = remaining[remainIdx++];
-                    return { ...mz, material: s.name, composition: s.description || '' };
-                  }
-                  return mz;
-                });
-                onUpdate({ material_zones: finalFilled } as Partial<SKU>);
-                toast('Materials suggested — review and edit as needed', 'success');
-              } else {
+              const suggestions: AiMaterialSuggestion[] = result?.materials || [];
+              if (suggestions.length === 0) {
                 toast('No material suggestions returned', 'warning');
+                return;
+              }
+              const consumed = new Set<string>();
+              const filled = matZones.map(mz => {
+                const suggestion = matchSuggestionToZone(mz.zone, suggestions, consumed);
+                if (!suggestion) return mz;
+                consumed.add(suggestion.name);
+                const costNum = typeof suggestion.cost_total === 'number'
+                  ? suggestion.cost_total
+                  : Number(String(suggestion.cost_total || '').replace(/[^0-9.\-]/g, '')) || undefined;
+                return {
+                  ...mz,
+                  material: suggestion.name,
+                  composition: suggestion.description || mz.composition || '',
+                  finish: suggestion.sustainability || mz.finish || '',
+                  consumption: suggestion.consumption || mz.consumption,
+                  cost_per_unit: suggestion.cost_per_unit || mz.cost_per_unit,
+                  cost_total: costNum != null ? costNum : mz.cost_total,
+                  cost_currency: suggestion.cost_currency || mz.cost_currency || 'EUR',
+                };
+              });
+              onUpdate({ material_zones: filled } as Partial<SKU>);
+              const totalCost = filled.reduce((acc, z) => acc + (z.cost_total || 0), 0);
+              const overshoot = budget > 0 ? ((totalCost - budget) / budget) * 100 : 0;
+              if (totalCost > 0 && Math.abs(overshoot) <= 5) {
+                toast(`Materials proposed · €${totalCost.toFixed(2)} of €${budget.toFixed(2)} budget`, 'success');
+              } else if (totalCost > budget * 1.05) {
+                toast(`Materials over budget by ${overshoot.toFixed(0)}% — review costs`, 'warning');
+              } else {
+                toast('Materials suggested — review and edit as needed', 'success');
               }
             } catch (err) {
               console.error('[Materials]', err);
@@ -1161,19 +1295,15 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               )}
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] text-carbon/40">
-                    {mode === 'free'
-                      ? 'Define materials for each product zone. Specify material name and finish.'
-                      : 'AI will suggest materials based on your product type, price point, and design direction.'}
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[11px] text-carbon/40 leading-relaxed">
+                    {stepLabel('materialsCanonicalDesc') || 'Aimily ha propuesto materiales basados en tu paleta y dirección de diseño. Edita lo que necesites.'}
                   </p>
-                  {mode === 'ai' && (
-                    <button onClick={autoFillMaterials} disabled={generating}
-                      className="shrink-0 flex items-center gap-2 px-4 py-2 bg-carbon text-crema text-[10px] font-medium tracking-[0.1em] uppercase hover:bg-carbon/90 transition-colors disabled:opacity-30">
-                      {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                      {'Suggest Materials'}
-                    </button>
-                  )}
+                  <button onClick={autoFillMaterials} disabled={generating}
+                    className="shrink-0 inline-flex items-center justify-center gap-2 py-2 px-5 rounded-full border border-carbon/[0.12] text-carbon/60 text-[12px] font-medium tracking-[-0.01em] hover:bg-carbon hover:text-white transition-all disabled:opacity-30">
+                    {generating && <Loader2 className="h-3 w-3 animate-spin" />}
+                    {stepLabel('regenerateMaterials') || 'Regenerar materiales'}
+                  </button>
                 </div>
 
                 {/* Simplified BOM table: Zone + Material + Finish */}
@@ -1261,21 +1391,21 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
                   {/* Sketch views with numbered callouts */}
                   <div className="grid grid-cols-2 border-b border-carbon/[0.08]">
-                    <div className="border-r border-carbon/[0.08] p-4">
+                    <div className="border-r border-carbon/[0.08] p-4 flex flex-col">
                       <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('sideProfile') || 'Side Profile'}{sku.render_url ? ' (colored)' : ''}</p>
                       {(sku.render_url || sku.sketch_url) ? (
-                        <div className="relative">
-                          <img src={sku.render_url || sku.sketch_url} alt="Side profile" className="w-full object-contain" />
+                        <div className="relative flex items-center justify-center bg-white aspect-[4/3] max-h-[40vh]">
+                          <img src={sku.render_url || sku.sketch_url} alt="Side profile" className="max-w-full max-h-full object-contain" />
                         </div>
                       ) : (
                         <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No sketch</div>
                       )}
                     </div>
-                    <div className="p-4">
+                    <div className="p-4 flex flex-col">
                       <p className="text-[8px] text-carbon/25 uppercase tracking-wider mb-2">{stepLabel('topDown') || 'Top Down'}</p>
                       {(sku.sketch_top_url || sketchTopView) ? (
-                        <div className="relative">
-                          <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="w-full object-contain" />
+                        <div className="relative flex items-center justify-center bg-white aspect-[4/3] max-h-[40vh]">
+                          <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="max-w-full max-h-full object-contain" />
                         </div>
                       ) : (
                         <div className="h-40 flex items-center justify-center text-[10px] text-carbon/15">No top-down view</div>
@@ -1300,24 +1430,32 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                         </tr>
                       </thead>
                       <tbody>
-                        {cwZones.map((z, i) => {
-                          const mat = mZones.find(m => m.zone === z.zone);
-                          return (
-                            <tr key={i} className="border-b border-carbon/[0.03]">
-                              <td className="py-1.5 pr-2 text-[9px] font-semibold text-carbon/40">{i + 1}</td>
-                              <td className="py-1.5 pr-2"><div className="w-3.5 h-3.5 border border-carbon/[0.08]" style={{ backgroundColor: z.hex }} /></td>
-                              <td className="py-1.5 pr-3 text-carbon/60 font-medium">{z.zone}</td>
-                              <td className="py-1.5 pr-3 text-carbon/30">{z.pantone || '—'}</td>
-                              <td className="py-1.5 pr-3 text-carbon/50">{mat?.material || <span className="text-carbon/15 italic">Factory discretion</span>}</td>
-                              <td className="py-1.5 pr-3 text-carbon/35">{mat?.composition || '—'}</td>
-                              <td className="py-1.5 pr-3 text-carbon/35">{mat?.weight || '—'}</td>
-                              <td className="py-1.5 text-carbon/35">{mat?.finish || '—'}</td>
-                            </tr>
-                          );
-                        })}
-                        {cwZones.length === 0 && (
-                          <tr><td colSpan={8} className="py-4 text-center text-carbon/15">{stepLabel('noZonesConfigured') || 'No zones configured — go to Colorways step'}</td></tr>
-                        )}
+                        {(() => {
+                          // Iterate the union of material zones (which carry the
+                          // material/composition/finish data filled in the Materials
+                          // sub-step) and colorway zones (which carry color/pantone).
+                          // mZones is the canonical row source: every material zone
+                          // gets a row, even if no colorway hex is assigned.
+                          const rows = mZones.length > 0 ? mZones : cwZones.map(z => ({ zone: z.zone, material: '', composition: '', finish: '', weight: '' } as MaterialZone));
+                          if (rows.length === 0) {
+                            return <tr><td colSpan={8} className="py-4 text-center text-carbon/15">{stepLabel('noZonesConfigured') || 'No hay zonas configuradas — vuelve al paso Colorways'}</td></tr>;
+                          }
+                          return rows.map((mat, i) => {
+                            const cwz = cwZones.find(z => z.zone === mat.zone);
+                            return (
+                              <tr key={i} className="border-b border-carbon/[0.03]">
+                                <td className="py-1.5 pr-2 text-[9px] font-semibold text-carbon/40">{i + 1}</td>
+                                <td className="py-1.5 pr-2">{cwz?.hex ? <div className="w-3.5 h-3.5 border border-carbon/[0.08]" style={{ backgroundColor: cwz.hex }} /> : <div className="w-3.5 h-3.5 border border-dashed border-carbon/[0.08]" />}</td>
+                                <td className="py-1.5 pr-3 text-carbon/60 font-medium">{mat.zone}</td>
+                                <td className="py-1.5 pr-3 text-carbon/30">{cwz?.pantone || '—'}</td>
+                                <td className="py-1.5 pr-3 text-carbon/50">{mat.material || <span className="text-carbon/15 italic">{stepLabel('factoryDiscretion') || 'Decisión fábrica'}</span>}</td>
+                                <td className="py-1.5 pr-3 text-carbon/35">{mat.composition || '—'}</td>
+                                <td className="py-1.5 pr-3 text-carbon/35">{mat.weight || '—'}</td>
+                                <td className="py-1.5 text-carbon/35">{mat.finish || '—'}</td>
+                              </tr>
+                            );
+                          });
+                        })()}
                       </tbody>
                     </table>
                     {skuColorways.length > 1 && (

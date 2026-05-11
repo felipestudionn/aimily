@@ -50,6 +50,70 @@ async function generateWithOpenAI(prompt: string, photoBase64: string, size = '1
   throw new Error('No image in OpenAI response');
 }
 
+/* Detect whether the line-drawing silhouette extends to (or crosses) the
+   canvas edge. A flat sketch must always have at least ~3% empty margin
+   on every side; if the dark-pixel bounding box hugs an edge, the model
+   cropped the heel/toe/sleeve and the result is unusable. */
+async function detectCrop(dataUrl: string): Promise<{ cropped: boolean; reason?: string; marginPct?: { l: number; r: number; t: number; b: number } }> {
+  const b64 = dataUrl.split(',')[1] || dataUrl;
+  const buf = Buffer.from(b64, 'base64');
+  const { data, info } = await sharp(buf).greyscale().raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  // Threshold: pixels darker than 220 count as "drawing".
+  const THRESHOLD = 220;
+  let minX = width, maxX = -1, minY = height, maxY = -1;
+  for (let y = 0; y < height; y++) {
+    const row = y * width;
+    for (let x = 0; x < width; x++) {
+      if (data[row + x] < THRESHOLD) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return { cropped: false }; // empty canvas — generation failed in another way
+  const marginL = minX / width;
+  const marginR = (width - 1 - maxX) / width;
+  const marginT = minY / height;
+  const marginB = (height - 1 - maxY) / height;
+  const MIN_MARGIN = 0.03;
+  const margins = { l: marginL, r: marginR, t: marginT, b: marginB };
+  if (marginL < MIN_MARGIN) return { cropped: true, reason: `left edge (${(marginL * 100).toFixed(1)}%)`, marginPct: margins };
+  if (marginR < MIN_MARGIN) return { cropped: true, reason: `right edge (${(marginR * 100).toFixed(1)}%)`, marginPct: margins };
+  if (marginT < MIN_MARGIN) return { cropped: true, reason: `top edge (${(marginT * 100).toFixed(1)}%)`, marginPct: margins };
+  if (marginB < MIN_MARGIN) return { cropped: true, reason: `bottom edge (${(marginB * 100).toFixed(1)}%)`, marginPct: margins };
+  return { cropped: false, marginPct: margins };
+}
+
+/* Generate with up to 3 attempts; reject any image whose silhouette was
+   cropped at the canvas edge. The third attempt prepends an ever-stronger
+   anti-crop preamble to bias the model away from zoomed-in renders. */
+async function generateUncropped(label: string, prompt: string, photoBase64: string, size: string): Promise<string> {
+  let lastDataUrl: string | null = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const reinforced = attempt === 1 ? prompt
+      : attempt === 2 ? `RETRY — the previous render cropped the silhouette at the canvas edge. Pull the camera back so the COMPLETE shoe is visible with at least 10% margin on every side.\n\n${prompt}`
+      : `URGENT FRAMING — two prior attempts cropped the shoe. Render the silhouette at no more than 70% of canvas size, perfectly centered, with at least 15% empty margin on every side. The full silhouette MUST be visible end-to-end.\n\n${prompt}`;
+    const dataUrl = await generateWithOpenAI(reinforced, photoBase64, size);
+    lastDataUrl = dataUrl;
+    try {
+      const check = await detectCrop(dataUrl);
+      if (!check.cropped) {
+        if (attempt > 1) console.log(`[Sketch:${label}] uncropped on attempt ${attempt}`);
+        return dataUrl;
+      }
+      console.warn(`[Sketch:${label}] attempt ${attempt} cropped at ${check.reason} — retrying`);
+    } catch (err) {
+      console.warn(`[Sketch:${label}] crop detection failed on attempt ${attempt}:`, err);
+      return dataUrl; // fall through with this image rather than spinning forever
+    }
+  }
+  console.warn(`[Sketch:${label}] all 3 attempts cropped — returning last image`);
+  return lastDataUrl!;
+}
+
 /* ── Footwear prompts ── */
 /* ── IP Protection clause (shared across all sketch prompts) ── */
 const IP_CLAUSE = `
@@ -75,10 +139,16 @@ const TOP_PROMPT = `From this reference shoe, generate a TECHNICAL FLAT SKETCH i
 
 MANDATORY VIEW: The shoe must be drawn as seen from DIRECTLY ABOVE, bird's eye perspective, looking straight down. The toe points upward.
 
+CRITICAL FRAMING — the most common failure mode is cropping the heel or toe:
+- The COMPLETE shoe outline (from heel-most point to toe-most point) MUST fit entirely inside the canvas with at least 8% empty margin on every side.
+- Center the shoe in the frame. Do NOT zoom in on the upper or the toe — the entire silhouette must be visible end-to-end.
+- The shoe is elongated; render it as a tall vertical shape (heel at bottom, toe at top) that uses about 75-85% of the canvas height. Width follows from the shoe's actual top-down width — do NOT stretch.
+- If the reference photo crops the shoe, EXTEND the missing portions so the complete shoe is shown — do not reproduce the crop.
+
 DRAWING RULES:
 - Black line drawing on pure white background
 - Single shoe (not a pair), top-down only
-- Show collar opening, tongue, lacing/strap system, toe box contour, upper panel layout
+- Show collar opening, tongue, lacing/strap system, toe box contour, upper panel layout, heel cup outline
 - Solid lines for seams, dashed lines for stitching
 - No color, no shading, no fills
 - Factory tech pack quality, patternmaker precision
@@ -139,10 +209,15 @@ export async function POST(req: NextRequest) {
     };
 
     if (isFootwear) {
-      // Two parallel OpenAI image edits — same photo, different angle prompts
+      // Two parallel OpenAI image edits — same photo, different angle prompts.
+      // Top-down uses portrait 1024x1536 because the shoe runs vertically in
+      // top-down view; a square canvas was cropping the heel/toe.
+      // Both go through generateUncropped which retries up to 3x if the
+      // silhouette touches a canvas edge — structural guarantee against
+      // cropped flat sketches.
       const [sideResult, topResult] = await Promise.allSettled([
-        generateWithOpenAI(SIDE_PROMPT, photoBase64),
-        generateWithOpenAI(TOP_PROMPT, photoBase64),
+        generateUncropped('side', SIDE_PROMPT, photoBase64, '1024x1024'),
+        generateUncropped('top', TOP_PROMPT, photoBase64, '1024x1536'),
       ]);
 
       const sideImage = sideResult.status === 'fulfilled' ? sideResult.value : null;
@@ -165,9 +240,9 @@ export async function POST(req: NextRequest) {
         persisted: true,
       });
     } else {
-      // Apparel: single front-view edit
+      // Apparel: single front-view edit (also goes through anti-crop retry).
       const prompt = `${FRONT_PROMPT}\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}`;
-      const sketch = await generateWithOpenAI(prompt, photoBase64);
+      const sketch = await generateUncropped('front', prompt, photoBase64, '1024x1024');
       const persisted = await persist(sketch, 'Front');
 
       return NextResponse.json({

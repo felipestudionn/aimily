@@ -35,6 +35,8 @@ export interface SkuLifecycleContextValue {
   orders: ProductionOrder[];
   // Collection context
   collectionPlanId: string;
+  collectionName?: string;
+  season?: string;
 }
 
 const SkuLifecycleContext = createContext<SkuLifecycleContextValue | null>(null);

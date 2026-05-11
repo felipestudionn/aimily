@@ -180,7 +180,7 @@ export default async function HowToPage({
             href={`/${locale}#pricing`}
             className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
           >
-            Try aimily free — 14 days
+            Try aimily free — 30 days
             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </Link>
           <p className="text-crema/60 text-[13px] mt-4">No credit card required.</p>

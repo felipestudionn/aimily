@@ -18,6 +18,13 @@ export interface MaterialZone {
   swatchUrl?: string;   // Material sample image
   supplier?: string;    // "Tannery XYZ"
   notes?: string;
+  /** Cost-aware AI proposal fields — populated when the materials AI
+   *  proposes a material with a budget constraint. Industry-realistic
+   *  prices that respect the SKU's target COGS + margin. */
+  consumption?: string;     // "0.32 m²" or "1 unit" or "12 cm"
+  cost_per_unit?: string;   // "€7.50 / m²" — average market price
+  cost_total?: number;      // EUR — consumption × cost_per_unit (numeric for BOM)
+  cost_currency?: string;   // "EUR" by default
 }
 
 export interface SkuColorway {

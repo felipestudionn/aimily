@@ -70,7 +70,7 @@ export async function generateMetadata({
       template: '%s · aimily',
     },
     description:
-      'Brand DNA → Range Plan → Tech Packs → Campaigns in one platform. The only AI-native fashion software that connects every block — replaces PLM + design tool + ERP + marketing software. 14-day free trial.',
+      'Brand DNA → Range Plan → Tech Packs → Campaigns in one platform. The only AI-native fashion software that connects every block — replaces PLM + design tool + ERP + marketing software. 30-day free trial.',
     manifest: '/manifest.json',
     appleWebApp: {
       capable: true,

@@ -190,12 +190,18 @@ export function FinalSelectionWorkspace({ collectionPlanId, collectionName, deri
                   const approved = sku.production_approved === true;
                   const image = coverImage(sku);
                   const isPending = pending.has(sku.id);
+                  // Soft-archive visual when locked + not approved: greyed
+                  // out, "Out of lineup" badge. SKU stays in DB for revival
+                  // if the user un-locks; never destructive.
+                  const isOutOfLineup = isLocked && !approved;
                   return (
                     <div
                       key={sku.id}
                       className={`group bg-white rounded-[20px] overflow-hidden transition-all duration-300 ${
                         approved
                           ? 'ring-1 ring-[#4c7c6c]/40 shadow-[0_8px_24px_rgba(76,124,108,0.12)]'
+                          : isOutOfLineup
+                          ? 'opacity-55 grayscale'
                           : 'hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
                       }`}
                     >
@@ -213,6 +219,12 @@ export function FinalSelectionWorkspace({ collectionPlanId, collectionName, deri
                           <div className="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#4c7c6c] text-white text-[10px] font-bold tracking-[0.1em] uppercase">
                             <Check className="h-3 w-3" strokeWidth={2.75} />
                             {w.approvedChip || 'Approved'}
+                          </div>
+                        )}
+                        {isOutOfLineup && (
+                          <div className="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-carbon/70 text-white text-[10px] font-bold tracking-[0.1em] uppercase">
+                            <X className="h-3 w-3" strokeWidth={2.75} />
+                            {w.outOfLineupChip || 'Fuera de lineup'}
                           </div>
                         )}
                       </div>

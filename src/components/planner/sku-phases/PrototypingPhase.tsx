@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Factory, Camera, ArrowLeftRight, Check, X, Plus, Loader2,
   Sparkles, Globe, MapPin, ChevronRight,
@@ -94,17 +94,10 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
                 </p>
               </div>
 
-              {/* Mode selector */}
-              <SegmentedPill
-                options={[
-                  { id: 'free' as InputMode, label: stepLabel('modeFree') || 'Manual' },
-                  { id: 'ai' as InputMode, label: stepLabel('aiProposal') || 'AI' },
-                ]}
-                value={mode}
-                onChange={(m) => setModes(prev => ({ ...prev, sourcing: m }))}
-              />
-
-              <SourcingStepContent sku={sku} mode={mode} onUpdate={onUpdate} language={language} t={t} />
+              {/* Canonical pattern: aimily auto-proposes the sourcing strategy
+                  on entry and the user edits the manual fields inline. No
+                  Manual/AI toggle — both surfaces co-exist. */}
+              <SourcingStepContent sku={sku} onUpdate={onUpdate} language={language} t={t} />
             </div>
           )}
 
@@ -161,15 +154,21 @@ export function PrototypingPhase({ sku, onUpdate, onImageUpload, uploading }: Pr
 }
 
 /* ═══ SOURCING ═══ */
-function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
-  sku: SKU; mode: InputMode; onUpdate: (u: Partial<SKU>) => Promise<void>;
+function SourcingStepContent({ sku, onUpdate, language, t }: {
+  sku: SKU; onUpdate: (u: Partial<SKU>) => Promise<void>;
   language: string; t: ReturnType<typeof useTranslation>;
 }) {
   const [generating, setGenerating] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<number | null>(null);
   const [aiResult, setAiResult] = useState<{
     factoryType?: { recommended: string; description: string; capabilities: string[] };
-    regions?: { name: string; fit: string; moq: string; leadTime: string; cogsRange: string }[];
+    regions?: {
+      name: string; fit: string; moq: string; leadTime: string; cogsRange: string;
+      originCompatibility?: 'high' | 'medium' | 'low';
+      laborRate?: number; laborHours?: number; overheadPct?: number;
+      freightMethod?: 'sea' | 'air' | 'rail' | 'road'; freightTotal?: number;
+      dutiesPct?: number;
+    }[];
     tradeShows?: { name: string; location: string; dates: string; focus: string }[];
     tips?: string[];
   } | null>(null);
@@ -177,11 +176,34 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
   const generateSourcing = useCallback(async () => {
     setGenerating(true);
     try {
+      const materialsSummary = (sku.material_zones || [])
+        .filter(z => z?.material)
+        .map(z => `${z.zone}: ${z.material}${z.composition ? ` (${z.composition})` : ''}`)
+        .join(', ');
+      // Accepts both 'ENTRY' (canonical TS enum) and 'ENTRADA' (legacy Spanish
+       // value still present in some pre-migration SKUs).
+      const skuTypeNorm = String(sku.type).toUpperCase();
+      const qualityLevel =
+        skuTypeNorm === 'IMAGEN' ? 'premium' :
+        (skuTypeNorm === 'ENTRY' || skuTypeNorm === 'ENTRADA') ? 'accessible' :
+        skuTypeNorm === 'REVENUE' ? 'mid-to-premium' :
+        'mid-to-premium';
       const res = await fetch('/api/ai/design-generate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'sourcing-suggest',
-          input: { productType: sku.category, family: sku.family, materials: sku.notes || '', targetCogs: `€${sku.cost}`, targetPvp: `€${sku.pvp}`, units: String(sku.buy_units), qualityLevel: sku.type === 'IMAGEN' ? 'premium' : sku.type === 'ENTRY' ? 'accessible' : 'mid-to-premium' },
+          input: {
+            productCategory: sku.category,
+            productType: sku.category,
+            family: sku.family,
+            subcategory: sku.name,
+            materials: materialsSummary || sku.notes || '',
+            targetCogs: `€${sku.cost}`,
+            targetPvp: `€${sku.pvp}`,
+            units: String(sku.buy_units),
+            qualityLevel,
+          },
+          collectionPlanId: sku.collection_plan_id,
           language,
         }),
       });
@@ -191,10 +213,25 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
 
   const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
 
+  // Auto-fire on mount when no sourcing proposal yet AND we have enough
+  // context to make it useful (BOM filled with cost-aware materials).
+  const autoFiredFor = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (autoFiredFor.current === sku.id) return;
+    if (aiResult) return;
+    if (generating) return;
+    if (!sku.cost || !sku.pvp) return;
+    autoFiredFor.current = sku.id;
+    generateSourcing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sku.id]);
+
   return (
     <div className="space-y-4">
-      {mode === 'free' && (
-        <div className="space-y-4">
+      {/* Manual fields — always visible. User edits inline as the canonical
+          pattern: aimily proposes regions below, user edits the active
+          factory contact + notes here. */}
+      <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[10px] text-carbon/50 uppercase tracking-wide font-medium mb-1.5">{t.skuPhases?.factoryName || 'Factory / Supplier'}</p>
@@ -223,17 +260,19 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
               placeholder={t.skuPhases?.sourcingNotesPlaceholder || 'MOQ discussed, lead times, payment terms...'} />
           </div>
         </div>
-      )}
 
-      {mode === 'ai' && (
-        <div className="space-y-4">
-          <p className="text-[12px] text-carbon/50">{t.skuPhases?.sourcingAiDesc || 'Aimily will analyze your product specs, materials, and price point to recommend the best sourcing strategy.'}</p>
-
-          {!aiResult && (
+      {/* AI proposal — auto-fires on entry. No mode toggle, both surfaces co-exist. */}
+      <div className="space-y-4 pt-2">
+          {generating && !aiResult && (
+            <div className="flex items-center gap-2 text-[12px] text-carbon/50">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              {(t.skuPhases as Record<string, string>)?.sourcingGenerating || 'Aimily está proponiendo regiones de producción...'}
+            </div>
+          )}
+          {!generating && !aiResult && (
             <button onClick={generateSourcing} disabled={generating}
-              className="flex items-center gap-2 px-5 py-2.5 border border-carbon/[0.12] text-carbon/60 text-[11px] font-medium tracking-[0.06em] uppercase hover:bg-carbon hover:text-crema transition-colors rounded-full disabled:opacity-30">
-              {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-              {t.skuPhases?.proposeSourcing || 'Propose Sourcing Strategy'}
+              className="inline-flex items-center justify-center gap-2 py-2 px-5 rounded-full border border-carbon/[0.12] text-carbon/60 text-[12px] font-medium tracking-[-0.01em] hover:bg-carbon hover:text-white transition-all disabled:opacity-30">
+              {t.skuPhases?.proposeSourcing || 'Proponer estrategia de sourcing'}
             </button>
           )}
 
@@ -263,9 +302,38 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
                       return (
                         <button
                           key={i}
-                          onClick={() => {
+                          onClick={async () => {
                             setSelectedRegion(i);
-                            onUpdate({ sourcing_data: { ...sku.sourcing_data, origin: region.name, notes: `${sku.sourcing_data?.notes || ''}${sku.sourcing_data?.notes ? '\n' : ''}MOQ: ${region.moq} · Lead: ${region.leadTime} · COGS: ${region.cogsRange}` } } as Partial<SKU>);
+                            // 1) Persist sourcing_data with the user-visible region facts.
+                            await onUpdate({
+                              sourcing_data: {
+                                ...sku.sourcing_data,
+                                origin: region.name,
+                                notes: `${sku.sourcing_data?.notes || ''}${sku.sourcing_data?.notes ? '\n' : ''}MOQ: ${region.moq} · Lead: ${region.leadTime} · COGS: ${region.cogsRange}`,
+                              },
+                            } as Partial<SKU>);
+                            // 2) Persist the cost-stack the region implies into
+                            //    cost_breakdown so the costing engine can recompute
+                            //    landed_cost vs. target COGS — this is what closes
+                            //    the loop between sourcing and costing.
+                            const cb = (sku as { cost_breakdown?: Record<string, unknown> }).cost_breakdown || {};
+                            const updatedBreakdown = {
+                              ...cb,
+                              labor: { factory_rate: region.laborRate ?? 0, hours: region.laborHours ?? 0, total: (region.laborRate ?? 0) * (region.laborHours ?? 0) },
+                              overhead_pct: region.overheadPct ?? 0,
+                              freight: { origin: region.name, destination: '', method: region.freightMethod || 'sea', total: region.freightTotal ?? 0 },
+                              duties_pct: region.dutiesPct ?? 0,
+                              last_recalc_at: new Date().toISOString(),
+                            };
+                            try {
+                              await fetch(`/api/skus/${sku.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ cost_breakdown: updatedBreakdown }),
+                              });
+                            } catch (err) {
+                              console.warn('[Sourcing] cost_breakdown persist failed', err);
+                            }
                           }}
                           className={`border bg-white p-3 space-y-2 text-left transition-all ${
                             isSelected ? 'border-carbon shadow-sm' : 'border-carbon/[0.06] hover:border-carbon/[0.15]'
@@ -321,8 +389,7 @@ function SourcingStepContent({ sku, mode, onUpdate, language, t }: {
               </button>
             </div>
           )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

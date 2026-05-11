@@ -1264,7 +1264,7 @@ export const de: Dictionary = {
     aimilyFromSave: 'aimily ab 159 €/Monat — 95 % sparen',
     // ── V2 (2026-04-28) — imagery quota model + Aimily Credits + 4 tiers ──
     subtitleV2: 'Same top-quality models on every plan. Differentiation by quantity, never by quality.',
-    bannerTitle: '14-day free trial',
+    bannerTitle: '30-day free trial',
     bannerSubtitle: 'Full access. No card required.',
     saveAnnual: 'Save 20%',
     mostPopular: 'Most popular',
@@ -1320,7 +1320,7 @@ export const de: Dictionary = {
     countVideo: 'Video Kling Pro',
     countText: 'Text generation (briefs, copy, plans, …)',
     countResearch: 'Research & analysis',
-    bottomNote: 'All plans include a 14-day free trial. No card required.',
+    bottomNote: 'All plans include a 30-day free trial. No card required.',
     pricesExclVat: 'Prices exclude VAT.',
   },
 

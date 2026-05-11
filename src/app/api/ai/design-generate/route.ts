@@ -12,6 +12,7 @@ import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-conte
 type GenerationType =
   | 'sketch-suggest'
   | 'color-suggest'
+  | 'color-rename'
   | 'materials-suggest'
   | 'catalog-description'
   | 'sourcing-suggest';

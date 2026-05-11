@@ -7,6 +7,7 @@ export type EvolutionStep =
   | 'concept'
   | 'sketch'
   | 'colorways'
+  | 'techpack'
   | 'render3d'
   | 'prototype'
   | 'production';
@@ -15,6 +16,7 @@ export const EVOLUTION_STEPS: { id: EvolutionStep; label: string; icon: React.El
   { id: 'concept', label: 'Concept', icon: FileText },
   { id: 'sketch', label: 'Sketch', icon: Pencil },
   { id: 'colorways', label: 'Color & Materials', icon: Palette },
+  { id: 'techpack', label: 'Ficha Técnica', icon: FileText },
   { id: 'render3d', label: '3D Render', icon: Box },
   { id: 'prototype', label: 'Prototype', icon: Factory },
   { id: 'production', label: 'Production', icon: Package },
@@ -47,7 +49,7 @@ export function EvolutionStrip({ active, onSelect, thumbnails, textPreviews, com
 
   return (
     <div className="bg-white rounded-[20px] border border-carbon/[0.06] p-3">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2">
         {EVOLUTION_STEPS.map((step, idx) => {
           const isActive = step.id === active;
           const isCompleted = completed.has(step.id);
@@ -174,13 +176,13 @@ export function computeEvolutionState(sku: {
     thumbnails.production = sku.production_sample_url;
   }
 
-  const order: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+  const order: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'techpack', 'render3d', 'prototype', 'production'];
   const phaseGate: Record<string, number> = {
     range_plan: 0,
-    sketch: 3,
-    prototyping: 4,
-    production: 5,
-    completed: 5,
+    sketch: 4,
+    prototyping: 5,
+    production: 6,
+    completed: 6,
   };
   const maxByPhase = phaseGate[sku.design_phase || 'range_plan'] ?? 0;
 

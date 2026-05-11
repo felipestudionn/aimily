@@ -26,8 +26,8 @@
  *     the user has a final number from the factory
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
-import { ChevronDown, Sparkles, Lock, Unlock, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { ChevronDown, Lock, Unlock, Loader2, TrendingDown, Wand2 } from 'lucide-react';
 import {
   recalculateCostBreakdown,
   marginSeverity,
@@ -126,6 +126,23 @@ export function CostingPanel({
   const severity = marginSeverity(breakdown);
   const shouldOfferAi = shouldOfferMarginProtection(breakdown);
 
+  // Auto-trigger AI substitution scan ONCE when the variance crosses the
+  // protection threshold. The user can still manually re-run with the
+  // "Proponer alternativas" button. Guard via ref so we don't fire on
+  // every save (each cost edit recomputes the breakdown).
+  const autoFiredFor = React.useRef<string>('');
+  useEffect(() => {
+    if (!shouldOfferAi) return;
+    if (breakdown.ai_suggestions && breakdown.ai_suggestions.length > 0) return;
+    if (aiBusy) return;
+    // Variance signature so we only refire if the variance changes meaningfully.
+    const sig = `${skuId}:${Math.round((breakdown.variance_pct || 0) * 10) / 10}`;
+    if (autoFiredFor.current === sig) return;
+    autoFiredFor.current = sig;
+    handleSuggestSubstitutions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldOfferAi, breakdown.variance_pct, breakdown.ai_suggestions]);
+
   const handleSuggestSubstitutions = useCallback(async () => {
     setAiBusy(true);
     setAiError(null);
@@ -204,8 +221,8 @@ export function CostingPanel({
         </div>
 
         {shouldOfferAi && !breakdown.ai_suggestions?.length && (
-          <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#c77000]/[0.08] text-[10px] font-semibold text-[#c77000]">
-            <Sparkles className="h-2.5 w-2.5" />
+          <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#c77000]/[0.08] text-[10px] font-semibold tracking-[-0.01em] text-[#c77000]">
+            <TrendingDown className="h-3 w-3" strokeWidth={2.25} />
             Margin alert
           </span>
         )}
@@ -299,14 +316,14 @@ export function CostingPanel({
             <div className="rounded-[10px] border border-[#c77000]/15 bg-[#c77000]/[0.04] p-3">
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5">
-                  <Sparkles className="h-4 w-4 text-[#c77000]" />
+                  <TrendingDown className="h-4 w-4 text-[#c77000]" strokeWidth={2} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-carbon">
-                    Margin {Math.abs(breakdown.variance_pct).toFixed(1)}pp below target
+                    Margen {Math.abs(breakdown.variance_pct).toFixed(1)}pp por debajo del objetivo
                   </p>
                   <p className="text-[11px] text-carbon/60 mt-0.5 leading-relaxed">
-                    Aimily can scan the catalog for cheaper alternatives that stay on-brand.
+                    Aimily puede revisar el catálogo y proponer alternativas más asequibles dentro del lenguaje de marca.
                   </p>
                   {aiError && (
                     <p className="text-[10px] text-[#A0463C] mt-1">{aiError}</p>
@@ -317,8 +334,8 @@ export function CostingPanel({
                   disabled={aiBusy}
                   className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-carbon text-white text-[10px] font-semibold tracking-[-0.005em] hover:bg-carbon/90 disabled:opacity-50 transition-colors"
                 >
-                  {aiBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                  {aiBusy ? 'Analysing…' : 'Suggest substitutions'}
+                  {aiBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" strokeWidth={2.25} />}
+                  {aiBusy ? 'Analizando…' : 'Proponer alternativas'}
                 </button>
               </div>
             </div>

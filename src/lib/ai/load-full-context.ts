@@ -37,11 +37,14 @@ export async function loadFullContext(collectionPlanId: string): Promise<Record<
   if (likedProposals.length > 0) {
     ctx.consumer = likedProposals.map(p => `${p.title}\n${p.desc}`).join('\n\n');
   } else {
-    const consumerParts = [
+    // Block 1's closure pipeline writes the same multi-persona text into all
+    // three target.* fields, so naive concatenation duplicates content 3x.
+    // Dedupe by exact equality before joining.
+    const consumerParts = Array.from(new Set([
       promptCtx.consumer_profile.demographics,
       promptCtx.consumer_profile.psychographics,
       promptCtx.consumer_profile.lifestyle,
-    ].filter(Boolean);
+    ].filter(Boolean)));
     if (consumerParts.length) ctx.consumer = consumerParts.join('\n');
   }
 
@@ -64,6 +67,14 @@ export async function loadFullContext(collectionPlanId: string): Promise<Record<
     promptCtx.reference_brands?.length ? `Reference brands: ${promptCtx.reference_brands.join(', ')}` : '',
   ].filter(Boolean);
   if (dnaParts.length) ctx.brandDNA = dnaParts.join('\n');
+
+  // Brand palette as structured JSON — consumed by prompt builders that
+  // need per-color rationale + role (e.g. color-suggest uses brand palette
+  // as the SOURCE of every proposal, with Sanzo Wada acting only as a
+  // harmony helper, never as the dictating dictionary).
+  if (promptCtx.brand_dna.colors?.length) {
+    ctx.brandPalette = JSON.stringify(promptCtx.brand_dna.colors);
+  }
 
   // Trends from CIS
   if (promptCtx.selected_trends?.length) ctx.trends = promptCtx.selected_trends.join('\n');

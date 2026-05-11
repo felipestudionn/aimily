@@ -12,6 +12,43 @@ import { SketchPhase } from './sku-phases/SketchPhase';
 import { PrototypingPhase } from './sku-phases/PrototypingPhase';
 import { ProductionPhase } from './sku-phases/ProductionPhase';
 import { EvolutionStrip, computeEvolutionState, EVOLUTION_STEPS, type EvolutionStep } from './sku-phases/EvolutionStrip';
+import { TechPackInline } from '@/components/tech-pack/TechPackInline';
+import { useSkuLifecycle } from './sku-phases/SkuLifecycleContext';
+
+/* Inline wrapper that pulls collection context + colorways from
+   SkuLifecycle and renders the full TechPack editor inside the modal —
+   no page navigation. Also resolves the current user for the
+   header.designer auto-fill. */
+function TechPackInlineWrapper({ sku }: { sku: SKU }) {
+  const { collectionPlanId, collectionName, colorways } = useSkuLifecycle();
+  const [designerName, setDesignerName] = useState<string>('');
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const sb = createClient();
+        const { data } = await sb.auth.getUser();
+        const u = data.user;
+        if (cancelled || !u) return;
+        const meta = (u.user_metadata || {}) as Record<string, string>;
+        setDesignerName(meta.full_name || meta.name || u.email || '');
+      } catch { /* non-blocking */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  const skuColorways = colorways.filter(c => c.sku_id === sku.id);
+  return (
+    <TechPackInline
+      sku={sku}
+      collectionId={collectionPlanId}
+      collectionName={collectionName || ''}
+      season=""
+      colorways={skuColorways}
+      designerName={designerName}
+    />
+  );
+}
 
 /* ── Phase config (kept for DB mapping) ── */
 const PHASES: { id: DesignPhase; stepNumber: number }[] = [
@@ -30,7 +67,7 @@ function phaseIndex(phase: DesignPhase): number {
 function stepToPhase(step: EvolutionStep): DesignPhase {
   switch (step) {
     case 'concept': return 'range_plan';
-    case 'sketch': case 'colorways': case 'render3d': return 'sketch';
+    case 'sketch': case 'colorways': case 'techpack': case 'render3d': return 'sketch';
     case 'prototype': return 'prototyping';
     case 'production': return 'production';
   }
@@ -61,7 +98,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   const evolution = computeEvolutionState(localSku);
   // Open on the next step after the last completed one (not always concept)
   const [activeStep, setActiveStepRaw] = useState<EvolutionStep>(() => {
-    const order: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+    const order: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'techpack', 'render3d', 'prototype', 'production'];
     // Find the last completed step
     let lastCompleted = -1;
     order.forEach((s, i) => { if (evolution.completed.has(s)) lastCompleted = i; });
@@ -294,7 +331,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
   };
 
   /* ── Footer navigation — 3 actions: navigate, validate, undo ── */
-  const STEP_ORDER: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'render3d', 'prototype', 'production'];
+  const STEP_ORDER: EvolutionStep[] = ['concept', 'sketch', 'colorways', 'techpack', 'render3d', 'prototype', 'production'];
   const activeStepIdx = STEP_ORDER.indexOf(activeStep);
   const prevStepLabel = activeStepIdx > 0 ? EVOLUTION_STEPS[activeStepIdx - 1]?.label : null;
 
@@ -324,6 +361,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
       concept: { clear: {} }, // Can't undo concept
       sketch: { clear: { sketch_url: null, sketch_top_url: null } as unknown as Partial<SKU>, revertPhase: 'range_plan' },
       colorways: { clear: { render_url: null, material_zones: [] } as unknown as Partial<SKU>, deleteColorways: true },
+      techpack: { clear: {} }, // Tech Pack data lives in tech_pack_data table; no SKU-level fields to clear
       render3d: { clear: { render_urls: {} } },
       prototype: { clear: { proto_iterations: [], sourcing_data: {} } as unknown as Partial<SKU>, revertPhase: 'sketch' },
       production: { clear: { production_data: {}, size_run: {}, production_sample_url: null, production_approved: false } as unknown as Partial<SKU>, revertPhase: 'prototyping' },
@@ -371,45 +409,86 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
       className={`fixed inset-0 z-[80] flex flex-col ${closing ? 'sku-zoom-out' : 'sku-zoom-in'}`}
       style={{ background: '#F3F2F0' }}
     >
-      {/* ── Header — gold-standard centered title + back link ── */}
+      {/* ── Header — gold-standard centered title + back link
+           Tech Pack uses a compact header to claim more vertical space.  ── */}
       <div className="shrink-0">
-        <div className="relative px-6 md:px-10 pt-8 pb-5">
-          <button
-            onClick={handleClose}
-            className="absolute left-6 md:left-10 top-8 inline-flex items-center gap-2 text-carbon/50 hover:text-carbon transition-colors group"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-[13px] font-medium tracking-[-0.01em]">{t.skuPhases?.backToCollection || 'Back to Collection'}</span>
-          </button>
-          <div className="text-center">
-            <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
-              {localSku.family} · Drop {localSku.drop_number} · {localSku.type === 'IMAGEN' ? 'Image' : localSku.type === 'REVENUE' ? 'Revenue' : 'Entry'}
-            </p>
-            <h1 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
-              {localSku.name}
-            </h1>
+        {activeStep === 'techpack' ? (
+          /* Compact header for Tech Pack — back link + SKU breadcrumb on a single row */
+          <div className="relative px-6 md:px-10 py-4 border-b border-carbon/[0.06] flex items-center gap-4">
+            <button
+              onClick={handleClose}
+              className="inline-flex items-center gap-2 text-carbon/50 hover:text-carbon transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-[13px] font-medium tracking-[-0.01em]">{t.skuPhases?.backToCollection || 'Back to Collection'}</span>
+            </button>
+            <div className="flex-1 text-center">
+              <p className="text-[12px] text-carbon/35 tracking-[-0.01em]">
+                {localSku.family} · Drop {localSku.drop_number} · <span className="text-carbon/60 font-medium">{localSku.name}</span> · Ficha Técnica
+              </p>
+            </div>
+            {/* EvolutionStrip mini-rail — single row of dots so user can still navigate */}
+            <div className="flex items-center gap-1.5">
+              {EVOLUTION_STEPS.map(s => {
+                const isActive = s.id === activeStep;
+                const isCompleted = evolution.completed.has(s.id);
+                const isReachable = evolution.completed.has(s.id) || s.id === evolution.reachable ||
+                  EVOLUTION_STEPS.findIndex(x => x.id === s.id) <= EVOLUTION_STEPS.findIndex(x => x.id === evolution.reachable);
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => isReachable && setActiveStep(s.id)}
+                    disabled={!isReachable}
+                    title={s.label}
+                    className={`h-2 rounded-full transition-all ${
+                      isActive ? 'w-8 bg-carbon' : isCompleted ? 'w-2 bg-carbon/60' : isReachable ? 'w-2 bg-carbon/20' : 'w-2 bg-carbon/[0.08] cursor-default'
+                    }`}
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
-
-        {/* Evolution Strip — gold standard card rail */}
-        <div className="px-6 md:px-10 pb-4">
-          <div className="max-w-5xl mx-auto">
-            <EvolutionStrip
-              active={activeStep}
-              onSelect={setActiveStep}
-              thumbnails={evolution.thumbnails}
-              textPreviews={evolution.textPreviews}
-              completed={evolution.completed}
-              reachable={evolution.reachable}
-            />
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="relative px-6 md:px-10 pt-8 pb-5">
+              <button
+                onClick={handleClose}
+                className="absolute left-6 md:left-10 top-8 inline-flex items-center gap-2 text-carbon/50 hover:text-carbon transition-colors group"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="text-[13px] font-medium tracking-[-0.01em]">{t.skuPhases?.backToCollection || 'Back to Collection'}</span>
+              </button>
+              <div className="text-center">
+                <p className="text-[13px] font-medium text-carbon/35 tracking-[-0.02em] mb-2">
+                  {localSku.family} · Drop {localSku.drop_number} · {localSku.type === 'IMAGEN' ? 'Image' : localSku.type === 'REVENUE' ? 'Revenue' : 'Entry'}
+                </p>
+                <h1 className="text-[32px] md:text-[40px] font-medium text-carbon tracking-[-0.03em] leading-[1.15]">
+                  {localSku.name}
+                </h1>
+              </div>
+            </div>
+            {/* Evolution Strip — gold standard card rail */}
+            <div className="px-6 md:px-10 pb-4">
+              <div className="max-w-5xl mx-auto">
+                <EvolutionStrip
+                  active={activeStep}
+                  onSelect={setActiveStep}
+                  thumbnails={evolution.thumbnails}
+                  textPreviews={evolution.textPreviews}
+                  completed={evolution.completed}
+                  reachable={evolution.reachable}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* ── Content — scrollable, content wrapped in a white card ── */}
-      <div className="flex-1 min-h-0 px-6 md:px-10 pb-6 overflow-y-auto">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-[20px] p-6 md:p-10">
+      {/* ── Content — scrollable. Tech Pack goes full-bleed: no max-w, no
+           outer card padding, no rounded corners — claim every pixel. ── */}
+      <div className={`flex-1 min-h-0 overflow-y-auto ${activeStep === 'techpack' ? '' : 'px-4 md:px-8 pb-6'}`}>
+        <div className={`mx-auto ${activeStep === 'techpack' ? 'w-full' : 'max-w-6xl'}`}>
+          <div className={activeStep === 'techpack' ? '' : 'bg-white rounded-[20px] p-6 md:p-10'}>
             {activeStep === 'concept' && (
               <RangePlanPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} onDelete={handleDeleteSku} />
             )}
@@ -417,6 +496,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
               <SketchPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading}
                 onFooterAction={setChildFooterAction} onAdvancePhase={advancePhase} evolutionStep={activeStep} />
             )}
+            {activeStep === 'techpack' && <TechPackInlineWrapper sku={localSku} />}
             {activeStep === 'prototype' && (
               <PrototypingPhase sku={localSku} onUpdate={async (u) => { await update(u); }} onImageUpload={(f, field) => handleImageUpload(f, field)} uploading={uploading} />
             )}

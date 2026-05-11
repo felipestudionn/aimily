@@ -276,6 +276,7 @@ export function SketchColorWorkspace({ collectionPlanId, collectionName }: Props
           designData, saveDesignData,
           orders,
           collectionPlanId,
+          collectionName,
         }}>
           <SkuDetailView
             sku={selectedSku}

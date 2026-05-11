@@ -267,6 +267,7 @@ export function PrototypingWorkspace({ collectionPlanId, collectionName }: Props
           designData, saveDesignData,
           orders,
           collectionPlanId,
+          collectionName,
         }}>
           <SkuDetailView
             sku={selectedSku}

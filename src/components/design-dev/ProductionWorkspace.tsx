@@ -346,6 +346,7 @@ export function ProductionWorkspace({ collectionPlanId, collectionName }: Props)
           designData, saveDesignData,
           orders,
           collectionPlanId,
+          collectionName,
         }}>
           <SkuDetailView
             sku={selectedSku}

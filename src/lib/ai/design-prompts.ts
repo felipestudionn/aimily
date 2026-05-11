@@ -29,6 +29,7 @@ export interface DesignPrompt {
 type DesignPromptType =
   | 'sketch-suggest'
   | 'color-suggest'
+  | 'color-rename'
   | 'materials-suggest'
   | 'catalog-description'
   | 'sourcing-suggest';
@@ -109,12 +110,44 @@ Return:
             .join('\n')
         : '  (no zones provided — return one entry per major part of this product)';
 
+      // Parse the brand palette emitted by loadFullContext. This is the
+      // canonical SOURCE for every proposal — Sanzo Wada is only a harmony
+      // helper, never the lead voice. Falls back to Wada-only when no brand
+      // palette has been confirmed yet.
+      type BrandColor = { hex: string; name?: string; role?: string; rationale?: string };
+      let brandPalette: BrandColor[] = [];
+      try {
+        const raw = (input.brandPalette as string | undefined) || '';
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) brandPalette = parsed;
+        }
+      } catch { /* fall through */ }
+
+      const brandPaletteBlock = brandPalette.length
+        ? brandPalette
+            .map((c, i) =>
+              `  ${i + 1}. ${c.name || 'Color'} — ${c.hex}${c.role ? ` (${c.role})` : ''}${c.rationale ? `\n     ${c.rationale}` : ''}`
+            )
+            .join('\n')
+        : '';
+
       const seedBlock = isManualSeed
         ? `THE USER HAS LOCKED THESE THREE COLORS AS THE PALETTE FOUNDATION:
 ${seedColorsRaw}
 
 You MUST build all 4 proposals around these exact hex values. Each proposal uses these 3 colors as anchors — you decide how to distribute them across the zones above (which one becomes the identity, which the structural ground, which the accent), and you may add neutral support colors (white, off-white, black, cream) where the product needs more than 3 distinct zones. Do NOT substitute the anchor hex values; they are non-negotiable. Do NOT pull from Sanzo Wada — the user has already picked the palette.`
-        : `THE PALETTE FOUNDATION IS SANZO WADA:
+        : brandPalette.length
+        ? `THE PALETTE FOUNDATION IS THE BRAND'S OWN CONFIRMED COLORS (DO NOT REPLACE):
+
+${brandPaletteBlock}
+
+These ${brandPalette.length} hex values ARE the palette of this collection. Every one of the 4 proposals MUST be built primarily from this set. Each proposal is a different DISTRIBUTION of these colors across the zones — which becomes the identity, which the structural ground, which the accent. You may use 3-5 of these colors per proposal (not always all of them), and you may include up to ONE additional neutral or harmony helper per proposal — pulled from Sanzo Wada ONLY IF it produces a more elegant combination with the brand colors. The Wada helper is a *modulator*, not a source.
+
+${formatPalettesForPrompt(6)}
+
+Use the Wada palettes above ONLY as reference for harmony principles or to source one optional helper hex per proposal. NEVER lead a proposal with a Wada palette — the brand colors above are non-negotiable. If the SKU name or design direction explicitly references a color (e.g. "Rosa Pastel", "Verde Salvia", "Azul Cemento"), match it to the closest brand color above and feature that color prominently.`
+        : `THE PALETTE FOUNDATION IS SANZO WADA (no brand palette confirmed yet):
 
 ${formatPalettesForPrompt(8)}
 
@@ -132,20 +165,20 @@ The user needs colorway options for a specific product:
 - Design direction: ${input.designDirection || 'not specified'}
 - Season: ${input.season || 'current season'}
 
-PRODUCT ZONES TO COLOR (assign one hex per zone, every zone in every proposal):
+PRODUCT ZONES TO COLOR:
 ${zonesBlock}
 
 ${seedBlock}
 
-YOUR TASK: Generate 4 colorway proposals. Each proposal must include a hex value for EVERY zone listed above — do not skip zones, do not collapse them.
+YOUR TASK: Generate 4 colorway proposals. Each proposal includes a hex value for every zone — but multiple zones SHOULD share the same hex when they form a continuous surface or when the silhouette is meant to read as monochromatic.
 
 MANDATORY RULES:
-1. ZONE-BY-ZONE MAPPING — For every zone, return its assigned hex AND a 4–10 word rationale explaining why that color fits that specific zone (e.g. "echoes the upper for monochrome calm", "neutral ground for the bold vamp"). The rationale is what proves you actually thought about each zone.
-2. SEMANTIC LOGIC — Respect the role tag on each zone. Identity zones get the dominant color. Structural zones contrast with identity. Accents pop. Neutral zones recede. Hardware reads metallic or matches branding.
-3. ${isManualSeed ? 'USER-LOCKED HEX — The 3 anchor colors above must each appear in every proposal. The proposal is a different *distribution* of the same locked palette across zones, not a different palette.' : 'WADA HARMONY — Each proposal pulls from a different Wada palette above. Preserve that palette’s harmony when adapting.'}
-4. PRINTABLE ON A SKETCH — Imagine the result colorized on a black-and-white drawing. If three adjacent zones share the same hex the sketch becomes mush. Vary tone across adjacent zones.
-5. VISUAL DIVERSITY ACROSS PROPOSALS — The 4 proposals must feel meaningfully different from each other (mood, distribution, contrast). Not 4 variants of the same combo.
-6. PRODUCTION FEASIBILITY — Hex codes must translate to real dyeable colors on the implied material.
+1. ELEGANCE OVER COLOR-BLOCKING — A real elegant product (think a leather ballerina, a minimal blazer, a knit dress) is rarely a patchwork of 5 different colors. It's typically MONOCHROMATIC or near-monochromatic: one dominant color covering 70-90% of the visible surface, ONE subtle accent in 1-2 small zones (heel counter, stitching, branding, lining), and at most one structural contrast (sole vs upper, lining vs shell). Force yourself to use the SAME hex across continuous surfaces — upper + quarters + topline are usually one piece of leather, not three different leathers. The 4 proposals should feel like 4 styled products, not 4 color-blocking experiments.
+2. ZONE-BY-ZONE MAPPING — For every zone, return its assigned hex AND a 4–10 word rationale. The rationale must justify the choice: "shares the upper for monochrome calm" / "subtle accent only on stitching" / "structural sole contrasts the leather body". Repeating the same hex on multiple zones is GOOD when it's the body color — say so in the rationale.
+3. SEMANTIC LOGIC — Identity zones get the dominant color (often shared across them). Structural zones can contrast OR share the dominant color depending on the silhouette. Accent zones (heel counter, stitching, branding, lining) are where 1 subtle pop lives — but only in 1 or 2 of the 4 proposals; the other proposals can be fully monochromatic with no accent at all.
+4. ${isManualSeed ? 'USER-LOCKED HEX — The 3 anchor colors must appear across the 4 proposals. Distributions vary, but the palette is non-negotiable.' : 'PALETTE FIDELITY — Each proposal is built from the brand palette above. Different proposals use different dominant colors from that palette, not different palettes.'}
+5. VISUAL DIVERSITY ACROSS PROPOSALS — The 4 proposals must feel meaningfully different in MOOD (calm vs bold, warm vs cool, restrained vs expressive). Not 4 variants of the same combo. But "different" comes from a different DOMINANT color or different accent placement, not from spreading more colors per proposal.
+6. PRODUCTION FEASIBILITY — Hex codes must translate to real dyeable/printable colors on the implied material.
 
 ${QUALITY_GATES.designSpecificity}
 ${QUALITY_GATES.antiGeneric}
@@ -166,59 +199,134 @@ Return ONLY valid JSON, no preamble:
   ]
 }
 
-The "zoneAssignments" array MUST contain one entry per zone listed above, in the same order. No exceptions.`,
+The "zoneAssignments" array MUST contain one entry per zone in the same order. Repeating the same hex across continuous zones is encouraged when the proposal is meant to read as monochromatic — that's elegance, not laziness. Use distinct hex values only where the silhouette truly demands a contrast (e.g. sole vs upper, accent zone vs body).`,
       };
     }
 
-    case 'materials-suggest':
+    case 'color-rename': {
+      // The user has edited zone hexes after the initial proposal. Regenerate
+      // ONLY the name + description for that single colorway, given the new
+      // distribution. Brand palette + product context come from buildInheritedContext.
+      let zoneAssignments: { zoneName: string; hex: string }[] = [];
+      try {
+        const raw = (input.zoneAssignments as string | undefined) || '';
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) zoneAssignments = parsed;
+        }
+      } catch { /* fall through */ }
+      const distributionBlock = zoneAssignments.length
+        ? zoneAssignments.map(za => `  - ${za.zoneName}: ${za.hex}`).join('\n')
+        : '  (no zones provided)';
       return {
-        temperature: 0.6,
-        system: PERSONAS.designConsultant,
+        temperature: 0.7,
+        system: `${PERSONAS.designConsultant}
+
+You are a master at naming colorways. You think in evocative 2-3 word names that conjure a world (Sanzo Wada-style: "Spinel Red", "Dusty Sage", "Architectural Linen") and concise descriptions that justify the combination in the brand's voice.`,
         user: `${ctx}
 
-The user needs material recommendations for a specific product:
+The user has edited a colorway. Regenerate ONLY the name and description to match this exact new color distribution.
+
+PRODUCT CONTEXT:
+- Product: ${input.subcategory || input.productType || 'this product'}
+- Family: ${input.family || 'not specified'}
+- Design direction: ${input.designDirection || 'not specified'}
+
+UPDATED ZONE-COLOR DISTRIBUTION:
+${distributionBlock}
+
+Your task: write a NEW name (2-3 words, evocative) and a NEW description (20-35 words) that ACCURATELY reflect this distribution. If the dominant color is now red, the name and description must speak to red — not to the previous palette. Reference the brand's confirmed colors by name where they appear (Rosa Arcilla, Negro Estructura, Hueso Natural, Verde Salvia, Azul Cemento, etc.) so the user recognizes their own palette in the rationale.
+
+${OUTPUT_RULES}
+
+Return ONLY valid JSON:
+{
+  "name": "2-3 word evocative colorway name",
+  "description": "20-35 words describing the color story — what world this combination evokes, who it speaks to, why these tones together"
+}`,
+      };
+    }
+
+    case 'materials-suggest': {
+      // Cost-aware proposal: the AI receives the target COGS + margin AND the
+      // computed materials budget (industry-standard ratio of COGS), and must
+      // return per-material consumption + cost_per_unit + cost_total whose
+      // SUM stays within the budget. This is the structural fix to the
+      // "materiales bonitos pero impagables" problem.
+      const targetCogs = input.targetCogs || '';
+      const targetPvp = input.targetPvp || input.priceRange || '';
+      const targetMargin = input.targetMargin || '';
+      const materialsBudget = input.materialsBudget || ''; // e.g. "€30.00"
+      const zonesContext = input.zones || '';
+      const knownZones = zonesContext.split(',').map(z => z.trim()).filter(Boolean);
+      return {
+        temperature: 0.55,
+        system: `${PERSONAS.designConsultant}
+
+You are also a product cost engineer. Every material you propose has to be PAYABLE inside the SKU's cost structure — bourgeois-sounding leather from an Italian conceria is NOT a valid suggestion if its market price + consumption blows the materials budget. You think like a sourcing manager: you know average market prices for fabrics (linen €8-22/m², cotton twill €4-14/m², premium nappa leather €25-55/m², mid-tier nappa €10-20/m², canvas €4-9/m², jersey €6-15/m², silk €18-45/m²), trims (zippers €0.40-2.50, eyelets €0.05-0.20, buttons €0.10-1.00), and consumption (a flat shoe upper takes ~0.3 m² leather, an oversize blazer takes ~2.4 m² wool). You propose only materials whose total roll-up fits the brand's price-per-unit reality.`,
+        user: `${ctx}
+
+The user needs material recommendations for a specific product, FRAMED BY THE COST STRUCTURE.
+
+PRODUCT CONTEXT:
 - Product name: ${input.subcategory || 'not specified'}
 - Product type / category: ${input.productType || 'not specified'}
 - Product family: ${input.family || 'not specified'}
-- Price range: ${input.priceRange || 'not specified'}
 - Design direction: ${input.designDirection || 'not specified'}
 - Colorways selected: ${input.colorways || 'not specified'}
 - Additional notes: ${input.concept || ''}
 
-CRITICAL: Your material suggestions must be SPECIFIC to this exact product and its design context. Use the inherited brand DNA, vibe, and collection context above to inform material choices. Do NOT suggest generic fashion materials — suggest materials that make sense for THIS product at THIS price point within THIS collection's world.
+COST FRAME (NON-NEGOTIABLE):
+- Target retail price (PVP): ${targetPvp || 'not specified'}
+- Target unit cost (COGS): ${targetCogs || 'not specified'}
+- Target margin: ${targetMargin || 'not specified'}
+- MATERIALS BUDGET (must not be exceeded): ${materialsBudget || 'not specified'}
 
-Suggest the complete material specification for this product. Think like a product developer preparing a tech pack.
+The materials budget is the slice of COGS the brand can spend on materials BEFORE labor, overhead, freight and duties. Industry-standard ratios that produced this number:
+- Footwear (CALZADO): materials = ~50% of COGS
+- Apparel (ROPA):     materials = ~55% of COGS
+- Accessories:        materials = ~45% of COGS
 
-MATERIAL METHODOLOGY:
-1. PRICE-QUALITY ALIGNMENT — Materials must be appropriate for the target retail price. A €120 sneaker uses different leather than a €450 boot. Be realistic.
-2. TRADE NAMES — Use actual material trade names when possible: "Italian Vitello Crust from Conceria Walpier" not just "leather". "Japanese Cupro twill 100g/m²" not just "lining".
-3. SUSTAINABILITY SIGNAL — For each material, note if there's a credible sustainability angle (certified, recycled, biodegradable, local sourcing). Don't force it if there isn't one.
-4. TACTILE DESCRIPTION — How does the material FEEL? The hand-feel matters for consumer perception: "dry, papery hand" vs "buttery, supple hand" vs "crisp, structured hand"
-5. COMPLETE BOM — Cover all material positions for this product type:
-   - Primary (outer material)
-   - Secondary (contrasting or accent material)
-   - Lining
-   - Sole/base (if applicable)
-   - Hardware (if applicable)
-   - Trim/binding (if applicable)
+ZONES PRESENT IN THIS PRODUCT (one material proposal per zone — re-use a single material across multiple zones when sensible):
+${knownZones.length > 0 ? knownZones.map(z => `  - ${z}`).join('\n') : '  (zones not provided — propose ~6 standard positions)'}
 
+YOUR TASK:
+1. Propose ONE material per zone listed above (or one per standard BOM position when no zones provided).
+2. For EACH material return: name, zone, type, description, sustainability, an estimated consumption per unit (with its unit), an average market price per unit (cost_per_unit), and the resulting cost_total = consumption × cost_per_unit rounded to 2 decimals.
+3. The SUM of cost_total across all materials MUST be ≤ the materials budget above. If the budget is tight, downgrade to mid-tier suppliers (Spanish/Portuguese tanneries instead of Italian; Turkish cotton instead of Japanese), simpler finishes, lower GSM, smaller hardware. NEVER propose premium materials that blow the budget.
+4. Use realistic market prices (EUR). Be conservative — when unsure, pick the cheaper end of the realistic range. Premium ranges only when the budget allows.
+5. Trade names where reasonable, but only when they fit the price. "Italian Vitello Crust from Conceria Walpier" is fine for a €350 boot; for a €60 ballerina propose a Spanish vegetable-tanned nappa €8-12/m² instead.
+
+QUALITY RULES:
 ${QUALITY_GATES.designSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Return:
+Return ONLY valid JSON:
 {
+  "budget_summary": {
+    "materials_budget": "€X.XX",
+    "materials_total": "€X.XX",
+    "headroom": "€X.XX",
+    "rationale": "30-50 words: why this proposal fits the cost frame and the brand"
+  },
   "materials": [
     {
-      "name": "Material Name (trade/specific name)",
+      "name": "Material trade/specific name",
+      "zone": "Zone name from the list above",
       "type": "Primary" | "Secondary" | "Lining" | "Sole" | "Hardware" | "Trim",
-      "description": "25-40 words: specific qualities, origin if notable, hand-feel, visual appearance",
-      "sustainability": "Sustainability note — or empty string if not applicable",
+      "description": "25-40 words: specific qualities, origin, hand-feel, visual appearance",
+      "sustainability": "Sustainability note — empty string if not applicable",
+      "consumption": "0.32 m²"  // numeric + unit (m², m, units, cm, g)
+      "cost_per_unit": "€8.50 / m²",
+      "cost_total": 2.72,        // EUR, numeric
+      "cost_currency": "EUR",
       "priceImpact": "low" | "medium" | "high"
     }
   ]
 }`,
       };
+    }
 
     case 'catalog-description':
       return {
@@ -258,48 +366,49 @@ Return:
 
     case 'sourcing-suggest':
       return {
-        temperature: 0.65,
+        temperature: 0.55,
         system: `${PERSONAS.designConsultant}
 
-You are also an expert in fashion supply chain and manufacturing sourcing. You have deep knowledge of global production hubs, factory capabilities, trade shows, and minimum order requirements across all fashion product categories.`,
+You are also an expert in fashion supply chain and manufacturing sourcing. You have deep knowledge of global production hubs, factory capabilities, trade shows, MOQs and the FULL cost stack — labor rate by region (CN €3-7/hr · IN €2-5 · TR €6-10 · PT €9-14 · IT €18-30 · ES €15-22), overhead percentages typical to each (10-18% in Asia, 15-25% in Europe), freight per unit by method and corridor (sea CN→EU ~€0.80-1.40 / 35d · air €4-7 / 5d · road IT→EU €0.30-0.60 / 5d), import duties (EU MFN ~12% on apparel/footwear from non-FTA, 0% from PT/IT/ES/Morocco/Turkey under FTA). You factor MATERIAL ORIGIN: if a SKU's BOM is dominated by materials from a specific region, the matching factory region is usually the most efficient pick — you don't recommend producing Italian Vitello in Vietnam if the lead time and freight kill the margin.`,
         user: `${ctx}
 
-The user needs sourcing recommendations for producing a specific product:
+The user needs sourcing recommendations FRAMED BY THE COST STRUCTURE AND MATERIALS ALREADY CHOSEN.
+
+PRODUCT CONTEXT:
 - Product type: ${input.productType || 'not specified'}
 - Family: ${input.family || 'not specified'}
-- Materials: ${input.materials || 'not specified'}
-- Target COGS: ${input.targetCogs || 'not specified'}
-- Target PVP: ${input.targetPvp || 'not specified'}
+- Subcategory: ${input.subcategory || 'not specified'}
 - Estimated units: ${input.units || 'not specified'}
 - Quality level: ${input.qualityLevel || 'mid-to-premium'}
 
-Generate a comprehensive sourcing recommendation:
+COST FRAME:
+- Target COGS: ${input.targetCogs || 'not specified'}
+- Target PVP: ${input.targetPvp || 'not specified'}
+- Materials already locked in BOM: ${input.materials || '(none yet)'}
 
-1. FACTORY TYPE — What kind of factory is ideal? (artisan workshop, semi-industrial, full industrial, vertical manufacturer). Be specific about capabilities needed.
+The COGS minus the materials roll-up = budget for labor + overhead + freight + duties. Reverse-solve: which region(s) deliver a labor+overhead+freight+duties stack that lands inside that remainder?
 
-2. RECOMMENDED REGIONS — 3-4 production regions ranked by fit. For each:
-   - Country/region name
-   - Why it fits (specialization, price point, quality, lead times)
-   - Typical MOQs (minimum order quantities) for this product type
-   - Approximate lead times (proto + production)
-   - Price range for COGS
+YOUR TASK:
+1. FACTORY TYPE — artisan workshop / semi-industrial / full industrial / vertical manufacturer. Specific about capabilities the BOM demands (e.g. Blake stitch for footwear → factories with Blake-stitch Goodyear lasting capability).
+2. RECOMMENDED REGIONS — 3-4 ranked. For EACH, return numbers we can persist directly to cost_breakdown:
+   - laborRate (EUR/hour, single number)
+   - laborHours (estimated hours per unit for THIS product)
+   - overheadPct (%, single number)
+   - freightMethod ("sea" | "air" | "rail" | "road")
+   - freightTotal (EUR per unit)
+   - dutiesPct (%, single number — FTA-aware)
+   - moq + leadTime (text)
+   - originCompatibility ("high" | "medium" | "low" — does the factory region match the BOM's material origin?)
+3. TRADE SHOWS — 2-3.
+4. SOURCING TIPS — 3-4.
 
-3. TRADE SHOWS — 2-3 relevant trade shows where the user can find suppliers:
-   - Show name + location + typical dates
-   - What to look for there
-   - Whether it's for discovery, sourcing, or both
-
-4. SOURCING TIPS — 3-4 practical tips specific to this product:
-   - What to ask for in a first meeting
-   - Red flags to watch
-   - How to evaluate quality from a first sample
-   - Typical payment terms in this segment
+Be conservative and grounded. When unsure between two regions, prefer the one with higher originCompatibility and lower duties.
 
 ${QUALITY_GATES.designSpecificity}
 ${QUALITY_GATES.antiGeneric}
 ${OUTPUT_RULES}
 
-Return:
+Return ONLY valid JSON:
 {
   "factoryType": {
     "recommended": "Factory type name",
@@ -309,10 +418,17 @@ Return:
   "regions": [
     {
       "name": "Country/Region",
-      "fit": "Why it fits (20-30 words)",
+      "fit": "Why it fits (20-30 words). Mention which BOM materials this region can locally source.",
       "moq": "Typical MOQ range",
       "leadTime": "Proto + production timeline",
-      "cogsRange": "€XX-€XX per unit"
+      "cogsRange": "€XX-€XX per unit",
+      "originCompatibility": "high" | "medium" | "low",
+      "laborRate": 0,
+      "laborHours": 0,
+      "overheadPct": 0,
+      "freightMethod": "sea" | "air" | "rail" | "road",
+      "freightTotal": 0,
+      "dutiesPct": 0
     }
   ],
   "tradeShows": [
