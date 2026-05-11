@@ -2,6 +2,27 @@
 
 Fashion collection management platform for planning, designing, and launching clothing/footwear collections.
 
+## Session Startup (gbrain Aimily ↔ StudioNN)
+
+Activado 2026-05-11. Sistema bidireccional de awareness entre este repo (producto) y `~/studionn-agency/` (marketing) vía gbrain.
+
+Al arrancar la sesión, ANTES de tocar nada:
+
+1. Llamar `mcp__gbrain__get_timeline slug=aimily-events`
+2. Filtrar eventos últimas 168h (7 días)
+3. Si hay `[BREAKING]` no leído desde el lado marketing → reportar como 🚩 antes de cualquier acción (puede afectar promesas a usuarios, campañas activas, etc.)
+4. Para contexto marketing vivo: `mcp__gbrain__query "<tema> aimily"` (visual, tono, pricing campaign, SEO strategy, calendario editorial)
+5. Convención completa del sistema: `mcp__gbrain__get_page slug=gbrain-convention-studionn-aimily`
+
+**Publicar eventos** cuando hagas cambios relevantes que marketing necesite saber:
+- `[BREAKING]` — pricing cambia, schema cambia, locales activos cambian, URL structure cambia, identidad visible cambia, dominio nuevo público
+- `[WARN]` — decisión pendiente con impacto en marketing, dependencia detectada
+- `[INFO]` — feature shipped no-breaking, copy en producto actualizado, asset nuevo
+
+Llamada: `mcp__gbrain__add_timeline_entry slug=aimily-events date=YYYY-MM-DD summary="[SEVERITY] desc" detail="..." source="aimily/<contexto>"`
+
+Páginas canónicas en gbrain (consultar antes de afirmar estado actual): `aimily-product-context` · `aimily-pricing-current` · `aimily-seo-status` · `aimily-marketing-context` · `aimily-marketing-status` · `aimily-ecom-shop` · `aimily-events` · `gbrain-convention-studionn-aimily`.
+
 ## Tech Stack
 - **Framework**: Next.js 16 (App Router) + React 19 + TypeScript
 - **Styling**: Tailwind CSS 4.2 + shadcn/ui (radix-nova) + Lucide icons
