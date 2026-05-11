@@ -6,16 +6,26 @@ import { useSearchParams } from 'next/navigation';
 /**
  * Fires Google Ads conversion events based on URL query params.
  *
- * - `?signup=1`         → `sign_up` (set by auth/callback after email confirm)
- * - `?billing=success`  → `purchase` (set by Stripe success_url)
+ * - `?signup=1`         → fires Sign Up + Trial Start conversions
+ *                          (set by auth/callback after email confirm)
+ * - `?billing=success`  → fires Purchase conversion with value + currency
+ *                          (set by Stripe success_url in /api/billing/checkout)
  *
  * For Aimily, "trial_start" is identical to "sign_up" because the 30-day
- * trial begins at signup without a card. We expose both event names so
- * Google Ads can use either as its conversion action.
+ * trial begins at signup without a card. Both fire on the same event so
+ * Google Ads can use either as its primary conversion action.
  *
- * Value attribution: `?value=` and `?currency=` params on `billing=success`
- * (set in /api/billing/checkout) feed the conversion value.
+ * Conversion labels point to the conversion actions created in the Aimily
+ * Google Ads account (customer 9058278352). If a label rotates after a
+ * conversion-action delete + recreate, update the constants here.
  */
+
+const CONV = {
+  SIGN_UP: 'AW-18155964844/AK7mCLittascEKyTuNFD',
+  TRIAL_START: 'AW-18155964844/Ec6DCLuttascEKyTuNFD',
+  PURCHASE: 'AW-18155964844/aAUhCL6ttascEKyTuNFD',
+};
+
 export function GtagEventFirer() {
   const params = useSearchParams();
 
@@ -25,14 +35,15 @@ export function GtagEventFirer() {
     if (typeof gtag !== 'function') return;
 
     if (params.get('signup') === '1') {
-      gtag('event', 'sign_up');
-      gtag('event', 'trial_start');
+      gtag('event', 'conversion', { send_to: CONV.SIGN_UP, value: 0, currency: 'EUR' });
+      gtag('event', 'conversion', { send_to: CONV.TRIAL_START, value: 0, currency: 'EUR' });
     }
 
     if (params.get('billing') === 'success') {
       const value = Number(params.get('value') ?? 0);
       const currency = params.get('currency') ?? 'EUR';
-      gtag('event', 'purchase', {
+      gtag('event', 'conversion', {
+        send_to: CONV.PURCHASE,
         value: Number.isFinite(value) && value > 0 ? value : undefined,
         currency,
       });
