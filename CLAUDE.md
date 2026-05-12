@@ -2,6 +2,21 @@
 
 Fashion collection management platform for planning, designing, and launching clothing/footwear collections.
 
+## Sync lazy con remote (al recibir mensaje tras pausa)
+
+Antes de procesar un mensaje del usuario, comprueba la última entrada en `~/alfred/shared/memory/convo_log_aimily.md` (si existe) o tu cron-registry:
+- Si han pasado **>30 minutos** desde tu última respuesta, ejecuta primero:
+  ```bash
+  cd ~/aimily && git fetch && git pull --rebase 2>&1 | head -10
+  cd ~/alfred && git fetch && git pull --rebase 2>&1 | head -10
+  ```
+- Si el pull trae cambios en `.mcp.json` o `CLAUDE.md` → avisa a Felipe: *"⚠️ Cambios en mi config — necesito relaunch."*
+- Si <30 min idle → procede directo, sin pull.
+
+## Email/Calendar — eres Reader (Ailfred es Owner)
+
+Tienes acceso de **lectura** a Gmail/Calendar via `--add-dir ~/alfred`. Puedes leer emails de Aimily como cliente piloto SLAIZ, o consultar calendar de Felipe. **NO escribas drafts ni agendes meetings** — eso es responsabilidad de Ailfred. Si Felipe te pide gestión email/calendar, derívale a Ailfred.
+
 ## Session Startup (gbrain Aimily ↔ StudioNN)
 
 Activado 2026-05-11. Sistema bidireccional de awareness entre este repo (producto) y `~/studionn-agency/` (marketing) vía gbrain.
