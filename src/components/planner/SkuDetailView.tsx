@@ -359,7 +359,7 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     const step = activeStep;
     const undoMap: Record<EvolutionStep, { clear: Partial<SKU>; revertPhase?: DesignPhase; deleteColorways?: boolean }> = {
       concept: { clear: {} }, // Can't undo concept
-      sketch: { clear: { sketch_url: null, sketch_top_url: null } as unknown as Partial<SKU>, revertPhase: 'range_plan' },
+      sketch: { clear: { sketch_url: null, sketch_top_url: null, sketch_back_url: null } as unknown as Partial<SKU>, revertPhase: 'range_plan' },
       colorways: { clear: { render_url: null, material_zones: [] } as unknown as Partial<SKU>, deleteColorways: true },
       techpack: { clear: {} }, // Tech Pack data lives in tech_pack_data table; no SKU-level fields to clear
       render3d: { clear: { render_urls: {} } },
