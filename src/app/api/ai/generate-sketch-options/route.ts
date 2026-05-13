@@ -57,9 +57,14 @@ async function generateWithOpenAI(prompt: string, photoBase64: string, size = '1
 }
 
 /* Detect whether the line-drawing silhouette extends to (or crosses) the
-   canvas edge. A flat sketch must always have at least ~3% empty margin
+   canvas edge. A flat sketch must always have at least ~8% empty margin
    on every side; if the dark-pixel bounding box hugs an edge, the model
-   cropped the heel/toe/sleeve and the result is unusable. */
+   cropped the heel/toe/sleeve/hem and the result is unusable.
+
+   Bumped from 3% → 8% on 2026-05-13 after apparel back-view dresses
+   were coming back with 0% top/bottom margin (silhouette touching both
+   horizontal edges). 3% was permissive enough that the detector passed
+   the canvas-edge image without retry. */
 async function detectCrop(dataUrl: string): Promise<{ cropped: boolean; reason?: string; marginPct?: { l: number; r: number; t: number; b: number } }> {
   const b64 = dataUrl.split(',')[1] || dataUrl;
   const buf = Buffer.from(b64, 'base64');
@@ -84,7 +89,7 @@ async function detectCrop(dataUrl: string): Promise<{ cropped: boolean; reason?:
   const marginR = (width - 1 - maxX) / width;
   const marginT = minY / height;
   const marginB = (height - 1 - maxY) / height;
-  const MIN_MARGIN = 0.03;
+  const MIN_MARGIN = 0.08;
   const margins = { l: marginL, r: marginR, t: marginT, b: marginB };
   if (marginL < MIN_MARGIN) return { cropped: true, reason: `left edge (${(marginL * 100).toFixed(1)}%)`, marginPct: margins };
   if (marginR < MIN_MARGIN) return { cropped: true, reason: `right edge (${(marginR * 100).toFixed(1)}%)`, marginPct: margins };
@@ -95,13 +100,17 @@ async function detectCrop(dataUrl: string): Promise<{ cropped: boolean; reason?:
 
 /* Generate with up to 3 attempts; reject any image whose silhouette was
    cropped at the canvas edge. The third attempt prepends an ever-stronger
-   anti-crop preamble to bias the model away from zoomed-in renders. */
+   anti-crop preamble to bias the model away from zoomed-in renders.
+
+   Reinforcement messages are subject-agnostic ("the subject") since the
+   same helper now serves apparel as well as footwear. Saying "the shoe"
+   on a dress was producing junk retries that didn't fix the framing. */
 async function generateUncropped(label: string, prompt: string, photoBase64: string, size: string): Promise<string> {
   let lastDataUrl: string | null = null;
   for (let attempt = 1; attempt <= 3; attempt++) {
     const reinforced = attempt === 1 ? prompt
-      : attempt === 2 ? `RETRY — the previous render cropped the silhouette at the canvas edge. Pull the camera back so the COMPLETE shoe is visible with at least 10% margin on every side.\n\n${prompt}`
-      : `URGENT FRAMING — two prior attempts cropped the shoe. Render the silhouette at no more than 70% of canvas size, perfectly centered, with at least 15% empty margin on every side. The full silhouette MUST be visible end-to-end.\n\n${prompt}`;
+      : attempt === 2 ? `RETRY — the previous render cropped the subject at the canvas edge. Pull the camera back so the COMPLETE subject is visible with at least 12% empty margin on every side (top, bottom, left, right).\n\n${prompt}`
+      : `URGENT FRAMING — two prior attempts cropped the subject. Render the silhouette at NO MORE than 70% of canvas size, perfectly centered, with at least 15% empty white margin on every side. The full silhouette MUST be visible end-to-end, with clear white space above the highest point and below the lowest point.\n\n${prompt}`;
     const dataUrl = await generateWithOpenAI(reinforced, photoBase64, size);
     lastDataUrl = dataUrl;
     try {
@@ -160,25 +169,50 @@ DRAWING RULES:
 - Factory tech pack quality, patternmaker precision
 ${IP_CLAUSE}`;
 
-const FRONT_PROMPT = `From this reference garment, generate a TECHNICAL FLAT SKETCH.
+const FRONT_PROMPT = `From this reference garment, generate a TECHNICAL FLAT SKETCH in FRONT VIEW.
 
-RULES:
+CRITICAL FRAMING — the most common failure mode is cropping the hem, sleeve, or shoulder:
+- The COMPLETE garment outline (from highest shoulder point to lowest hem point) MUST fit entirely inside the canvas with at least 10% empty white margin on every side.
+- Center the garment in the frame. Render the silhouette at roughly 70-80% of canvas height — never edge-to-edge.
+- If the reference photo crops the garment, EXTEND the missing portions so the complete piece is shown — do NOT reproduce the crop.
+
+DRAWING RULES:
 - Technical flat sketch for tech pack, front view
 - Pure white background, clean thin black linework
 - No human body, no perspective, no shading, no color
-- All construction details: closures, pockets, seams, panels
+- All construction details: closures, pockets, seams, panels, neckline curve, sleeve / strap construction, hem shape
+- Solid lines for seams, dashed lines for stitching
 - Factory-grade detail level
 ${IP_CLAUSE}`;
 
 const BACK_APPAREL_PROMPT = `From this reference garment, generate a TECHNICAL FLAT SKETCH in BACK VIEW.
 
-MANDATORY VIEW: The garment must be drawn from BEHIND (rear view), as the patternmaker sees it laid flat. If the reference only shows the front, INFER the back from standard garment construction for this type — back yoke, center-back seam, back darts, back hem shape, rear closures (if applicable), neckline back curve, sleeve cuffs from behind. Match the design language and proportions of the front view so the two read as the same garment.
+INTENT: Render the EXACT SAME GARMENT rotated 180°. The back must read as the same piece as the front — same silhouette, same length, same proportions, same strap / sleeve / hem placement. The patternmaker should be able to lay the front and back side by side and see ONE garment, not two.
 
-RULES:
+WHAT MUST STAY IDENTICAL TO THE FRONT (do NOT redesign):
+- Overall silhouette and outer outline (shoulder slope, side seams, waist shape, hem curve)
+- Garment length (hem position relative to overall canvas)
+- Strap / sleeve width and where they attach to the shoulder
+- Hem shape (straight / curved / asymmetric — match exactly)
+- Any visible front print or pattern density: if the front has a polka-dot lower half, the back has the SAME polka-dot lower half in the SAME position
+- Construction style (fitted vs flared, bodice/skirt proportion split)
+
+WHAT CHANGES (only the things physically required by the rear view):
+- Neckline: replace the front neckline curve with the rear neckline curve
+- Closures: if the garment closes at the back (zipper, hooks), show them along the center-back seam
+- Back yoke / back darts: ONLY if implied by the garment's structure (e.g. shirts often have a yoke); do NOT add yokes to dresses that don't need them
+- Any front-only details (front pockets, front zipper, front buttons, front graphics asymmetric to back) disappear
+
+DO NOT INVENT details not implied by the front. When in doubt, mirror.
+
+CRITICAL FRAMING (same as front):
+- Complete garment outline MUST fit entirely inside canvas with at least 10% empty white margin on every side
+- Center the silhouette; render at 70-80% of canvas height
+
+DRAWING RULES:
 - Technical flat sketch for tech pack, back view
 - Pure white background, clean thin black linework
 - No human body, no perspective, no shading, no color
-- Show: back yoke, center-back seam, back darts/pleats, back hem, rear closures, neckline back, sleeve cuffs from behind
 - Solid lines for seams, dashed lines for stitching
 - Factory-grade detail level
 ${IP_CLAUSE}`;
@@ -281,14 +315,18 @@ export async function POST(req: NextRequest) {
         persisted: true,
       });
     } else {
-      // Apparel: front + back in parallel. Both go through anti-crop retry.
+      // Apparel: front + back in parallel. Portrait canvas (1024x1536)
+      // matches the natural aspect of a garment — square canvas was
+      // forcing the model to stretch dresses/tops edge-to-edge with no
+      // headroom, defeating the anti-crop guardrail. Both go through
+      // generateUncropped which enforces ≥8% margin on every side.
       const typeSuffix = `\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}`;
       const frontPrompt = `${FRONT_PROMPT}${typeSuffix}`;
       const backPrompt = `${BACK_APPAREL_PROMPT}${typeSuffix}`;
 
       const [frontResult, backResult] = await Promise.allSettled([
-        generateUncropped('front', frontPrompt, photoBase64, '1024x1024'),
-        generateUncropped('back', backPrompt, photoBase64, '1024x1024'),
+        generateUncropped('front', frontPrompt, photoBase64, '1024x1536'),
+        generateUncropped('back', backPrompt, photoBase64, '1024x1536'),
       ]);
 
       const frontImage = frontResult.status === 'fulfilled' ? frontResult.value : null;
