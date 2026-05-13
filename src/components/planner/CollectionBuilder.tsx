@@ -2359,12 +2359,12 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                 const displayImage = sku.production_sample_url || protoImg || sku.render_url || sku.sketch_url || sku.reference_image_url;
                 const renderImage = (sku.render_urls as Record<string, string>)?.['3d'] || (sku.render_urls as Record<string, string>)?.['preview'];
                 const showRender = aiViewSkus.has(sku.id) && renderImage;
-                // Reference images are user-uploaded inspiration shots (editorial framing) — they
-                // look right with object-cover. Everything else (3D render, sketch, proto, sample)
-                // is a product photo on white that we MUST show whole; object-contain keeps the
-                // shoe visible in full instead of cropping the bottom off.
-                const displayIsReference = !!displayImage && displayImage === sku.reference_image_url;
-                const displayFit = displayIsReference ? 'object-cover' : 'object-contain';
+                // No cropping policy (Felipe, 2026-05-13): the frontend never
+                // crops what the API returns. Reference photos, sketches, 3D
+                // renders, proto and production shots all render with
+                // object-contain. Letterboxing is preferable to silently
+                // losing pixels off any side.
+                const displayFit = 'object-contain';
                 // Phase progress
                 const phaseProgress: Record<string, number> = {
                   range_plan: 0, sketch: 25, prototyping: 50, production: 75, completed: 100,
@@ -2720,7 +2720,7 @@ export function CollectionBuilder({ setupData, collectionPlanId, initialPhaseFil
                                 className="rounded"
                               />
                               {sku.reference_image_url ? (
-                                <img src={sku.reference_image_url} alt="" className="w-10 h-10 object-cover rounded" />
+                                <img src={sku.reference_image_url} alt="" className="w-10 h-10 object-contain rounded bg-carbon/[0.02]" />
                               ) : (
                                 <div className="w-10 h-10 bg-muted rounded flex items-center justify-center text-[8px] text-muted-foreground">IMG</div>
                               )}
@@ -3005,13 +3005,13 @@ function PipelineView({ skus, onSkuClick, t }: { skus: SKU[]; onSkuClick: (sku: 
                 {/* Image thumbnail */}
                 <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden relative">
                   {(phase.id === 'completed' || phase.id === 'production') && sku.production_sample_url ? (
-                    <img src={sku.production_sample_url} alt="" className="w-full h-full object-cover" />
+                    <img src={sku.production_sample_url} alt="" className="w-full h-full object-contain" />
                   ) : phase.id === 'prototyping' && sku.proto_iterations?.length > 0 && sku.proto_iterations[sku.proto_iterations.length - 1]?.images?.[0] ? (
-                    <img src={sku.proto_iterations[sku.proto_iterations.length - 1].images[0]} alt="" className="w-full h-full object-cover" />
+                    <img src={sku.proto_iterations[sku.proto_iterations.length - 1].images[0]} alt="" className="w-full h-full object-contain" />
                   ) : phase.id === 'sketch' && sku.sketch_url ? (
-                    <img src={sku.sketch_url} alt="" className="w-full h-full object-cover" />
+                    <img src={sku.sketch_url} alt="" className="w-full h-full object-contain" />
                   ) : sku.reference_image_url ? (
-                    <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
+                    <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <p className="text-[12px] text-carbon/60 text-center px-2">{sku.name}</p>

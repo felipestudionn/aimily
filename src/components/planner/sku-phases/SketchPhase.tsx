@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  Sparkles, Loader2, Plus, Trash2,
+  Wand2, Loader2, Plus, Trash2,
   Check, X, RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
@@ -83,12 +83,67 @@ function matchSuggestionToZone(
 interface SketchPhaseProps {
   sku: SKU;
   onUpdate: (updates: Partial<SKU>) => Promise<void>;
-  onImageUpload: (file: File, field: 'sketch_url' | 'sketch_top_url' | 'reference_image_url') => void;
+  onImageUpload: (file: File, field: 'sketch_url' | 'sketch_top_url' | 'sketch_back_url' | 'reference_image_url') => void;
   uploading: string | null;
   onFooterAction?: (action: FooterAction | null) => void;
   onAdvancePhase?: () => void;
   /** When set by EvolutionStrip, forces the active sub-step (0=sketch, 1=colorways, 2=materials, 3=techpack) */
   evolutionStep?: 'sketch' | 'colorways' | 'render3d';
+}
+
+/* Render a single flat-sketch panel (side / top / back / front). Same shape
+ * for footwear views and apparel views — keeps the layout DRY now that every
+ * category renders multiple panels. object-contain everywhere: per Felipe's
+ * 2026-05-13 rule, the frontend never crops a sketch. */
+function SketchPanel({
+  label,
+  imageUrl,
+  uploadField,
+  placeholder,
+  emptyPlaceholder,
+  mode,
+  uploading,
+  onImageUpload,
+  onRemove,
+}: {
+  label: string;
+  imageUrl: string | null | undefined;
+  uploadField: 'sketch_url' | 'sketch_top_url' | 'sketch_back_url';
+  placeholder: string;
+  emptyPlaceholder: string;
+  mode: InputMode;
+  uploading: string | null;
+  onImageUpload: SketchPhaseProps['onImageUpload'];
+  onRemove?: () => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{label}</p>
+      {imageUrl ? (
+        <div className="border border-carbon/[0.06] bg-white relative group aspect-[4/5] max-h-[50vh] flex items-center justify-center">
+          <img src={imageUrl} alt={label} className="max-w-[92%] max-h-[92%] object-contain" />
+          {mode === 'free' && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
+              <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
+                Replace
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, uploadField); }} />
+              </label>
+            </div>
+          )}
+        </div>
+      ) : mode === 'free' ? (
+        <ImageUploadArea imageUrl={undefined} uploading={uploading === uploadField}
+          placeholder={placeholder}
+          onUpload={(file) => onImageUpload(file, uploadField)}
+          onRemove={onRemove || (() => {})} aspectClass="aspect-[4/5] max-h-[50vh]" />
+      ) : (
+        <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[50vh] flex items-center justify-center">
+          <p className="text-[10px] text-carbon/15">{emptyPlaceholder}</p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterAction, onAdvancePhase, evolutionStep }: SketchPhaseProps) {
@@ -124,7 +179,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
       setActiveStep(evolutionStepMap[evolutionStep]);
     }
   }, [evolutionStep]);
-  const [modes, setModes] = useState<Record<string, InputMode>>({ sketch: 'free', colorways: 'free', materials: 'free', techpack: 'free' });
+  // Canonical pattern: aimily proposes first, user can switch to manual.
+  // Sketch defaults to 'ai' so the wow-effect is the first thing the user
+  // sees — same intent as Materials auto-propose. Other sub-steps either
+  // own their picker (colorways) or are auto-generated (techpack); their
+  // defaults are kept on 'free' as a no-op.
+  const [modes, setModes] = useState<Record<string, InputMode>>({ sketch: 'ai', colorways: 'free', materials: 'free', techpack: 'free' });
   const [notes, setNotes] = useState(sku.notes || '');
 
   // AI state
@@ -510,7 +570,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
             <div className="flex items-center gap-3 p-2.5 bg-white border border-carbon/[0.04]">
               {sku.reference_image_url ? (
                 <div className="w-12 h-12 border border-carbon/[0.06] overflow-hidden shrink-0 bg-white">
-                  <img src={sku.reference_image_url} alt="" className="w-full h-full object-cover" />
+                  <img src={sku.reference_image_url} alt="" className="w-full h-full object-contain" />
                 </div>
               ) : (
                 <div className="shrink-0">
@@ -550,12 +610,21 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                     if (res.ok) {
                       const data = await res.json();
                       const views = data.sketchOptions || [];
-                      const sideView = views.find((v: { id: string }) => v.id === 'side')?.frontImageBase64 || views[0]?.frontImageBase64;
+                      // Footwear: side / top / back. Apparel: front / back.
+                      // sketch_url holds the primary view (side for footwear,
+                      // front for apparel); sketch_top_url is footwear-only;
+                      // sketch_back_url is universal.
+                      const primaryView =
+                        views.find((v: { id: string }) => v.id === 'side')?.frontImageBase64 ||
+                        views.find((v: { id: string }) => v.id === 'front')?.frontImageBase64 ||
+                        views[0]?.frontImageBase64;
                       const topView = views.find((v: { id: string }) => v.id === 'top')?.frontImageBase64;
-                      if (sideView) {
+                      const backView = views.find((v: { id: string }) => v.id === 'back')?.frontImageBase64;
+                      if (primaryView) {
                         await onUpdate({
-                          sketch_url: sideView,
+                          sketch_url: primaryView,
                           ...(topView ? { sketch_top_url: topView } : {}),
+                          ...(backView ? { sketch_back_url: backView } : {}),
                         } as Partial<SKU>);
                         if (topView) setSketchTopView(topView);
                         toast(stepLabel('sketchGenerated') || 'Sketch generated from reference', 'success');
@@ -570,7 +639,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   } finally { setGenerating(false); }
                 }} disabled={generating || !sku.reference_image_url}
                   className="flex items-center justify-center gap-2 px-5 py-2.5 text-[10px] font-medium tracking-[0.1em] uppercase border border-carbon/[0.08] text-carbon/50 hover:bg-carbon hover:text-crema transition-colors disabled:opacity-30 w-full">
-                  {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {generating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" strokeWidth={2.25} />}
                   {generating ? (stepLabel('generatingSketch') || 'Generating sketch...') : (stepLabel('generateFlat') || 'Generate Flat Sketch from Reference')}
               </button>
             )}
@@ -582,86 +651,67 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
               </div>
             )}
 
-            {/* Sketch views — SAME layout for both modes */}
+            {/* Sketch views — SAME layout for both modes.
+                FOOTWEAR: side + top + back (3 panels).
+                APPAREL:  front + back (2 panels). */}
             {sku.category === 'CALZADO' ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('sideProfile') || 'Side Profile'}</p>
-                  {sku.sketch_url ? (
-                    <div className="border border-carbon/[0.06] bg-white relative group aspect-[4/5] max-h-[50vh] flex items-center justify-center">
-                      <img src={sku.sketch_url} alt="Side profile" className="max-w-[92%] max-h-[92%] object-contain" />
-                      {mode === 'free' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
-                            {stepLabel('replace') || 'Replace'}
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_url'); }} />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  ) : mode === 'free' ? (
-                    <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_url'}
-                      placeholder={stepLabel('uploadSideSketch') || 'Upload side profile sketch'}
-                      onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                      onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[50vh]" />
-                  ) : (
-                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[50vh] flex items-center justify-center">
-                      <p className="text-[10px] text-carbon/15">{stepLabel('sideProfilePlaceholder') || 'Side profile'}</p>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1.5">
-                  <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('topDown') || 'Top Down'}</p>
-                  {(sku.sketch_top_url || sketchTopView) ? (
-                    <div className="border border-carbon/[0.06] bg-white relative group aspect-[4/5] max-h-[50vh] flex items-center justify-center">
-                      <img src={sku.sketch_top_url || sketchTopView || ''} alt="Top down" className="max-w-[92%] max-h-[92%] object-contain" />
-                      {mode === 'free' && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
-                            {stepLabel('replace') || 'Replace'}
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_top_url'); }} />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                  ) : mode === 'free' ? (
-                    <ImageUploadArea imageUrl={undefined} uploading={uploading === 'sketch_top_url'}
-                      placeholder={stepLabel('uploadTopSketch') || 'Upload top-down sketch'}
-                      onUpload={(file) => onImageUpload(file, 'sketch_top_url')}
-                      onRemove={() => {}} aspectClass="aspect-[4/5] max-h-[50vh]" />
-                  ) : (
-                    <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[50vh] flex items-center justify-center">
-                      <p className="text-[10px] text-carbon/15">{stepLabel('topDownPlaceholder') || 'Top-down view'}</p>
-                    </div>
-                  )}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <SketchPanel
+                  label={stepLabel('sideProfile') || 'Side Profile'}
+                  imageUrl={sku.sketch_url}
+                  uploadField="sketch_url"
+                  placeholder={stepLabel('uploadSideSketch') || 'Upload side profile sketch'}
+                  emptyPlaceholder={stepLabel('sideProfilePlaceholder') || 'Side profile'}
+                  mode={mode}
+                  uploading={uploading}
+                  onImageUpload={onImageUpload}
+                />
+                <SketchPanel
+                  label={stepLabel('topDown') || 'Top Down'}
+                  imageUrl={sku.sketch_top_url || sketchTopView}
+                  uploadField="sketch_top_url"
+                  placeholder={stepLabel('uploadTopSketch') || 'Upload top-down sketch'}
+                  emptyPlaceholder={stepLabel('topDownPlaceholder') || 'Top-down view'}
+                  mode={mode}
+                  uploading={uploading}
+                  onImageUpload={onImageUpload}
+                />
+                <SketchPanel
+                  label={stepLabel('backView') || 'Back'}
+                  imageUrl={sku.sketch_back_url}
+                  uploadField="sketch_back_url"
+                  placeholder={stepLabel('uploadBackSketch') || 'Upload back sketch'}
+                  emptyPlaceholder={stepLabel('backPlaceholder') || 'Back view'}
+                  mode={mode}
+                  uploading={uploading}
+                  onImageUpload={onImageUpload}
+                />
               </div>
             ) : (
-              /* Non-footwear: single sketch view */
-              <div className="space-y-1.5">
-                <p className="text-[9px] text-carbon/30 uppercase tracking-wider">{stepLabel('designSketch') || 'Design Sketch'}</p>
-                {sku.sketch_url ? (
-                  <div className="border border-carbon/[0.06] bg-white p-3 max-w-md relative group">
-                    <img src={sku.sketch_url} alt="Sketch" className="w-full h-auto object-contain" />
-                    {mode === 'free' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label className="px-3 py-1.5 text-[9px] font-medium tracking-[0.08em] uppercase border border-carbon/[0.08] text-carbon/40 hover:bg-carbon hover:text-crema transition-colors cursor-pointer">
-                          {stepLabel('replace') || 'Replace'}
-                          <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageUpload(f, 'sketch_url'); }} />
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                ) : mode === 'free' ? (
-                  <ImageUploadArea imageUrl={sku.sketch_url} uploading={uploading === 'sketch_url'}
-                    placeholder={stepLabel('uploadSketch') || 'Upload your sketch'}
-                    onUpload={(file) => onImageUpload(file, 'sketch_url')}
-                    onRemove={() => onUpdate({ sketch_url: undefined })} aspectClass="aspect-[4/5] max-h-[55vh] max-w-md" />
-                ) : (
-                  <div className="border border-dashed border-carbon/[0.08] bg-carbon/[0.01] aspect-[4/5] max-h-[55vh] max-w-md flex items-center justify-center">
-                    <p className="text-[11px] text-carbon/15">{stepLabel('sketchWillAppear') || 'Sketch will appear here'}</p>
-                  </div>
-                )}
+              /* Apparel: front + back side-by-side */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
+                <SketchPanel
+                  label={stepLabel('frontView') || 'Front'}
+                  imageUrl={sku.sketch_url}
+                  uploadField="sketch_url"
+                  placeholder={stepLabel('uploadFrontSketch') || 'Upload front sketch'}
+                  emptyPlaceholder={stepLabel('frontPlaceholder') || 'Front view'}
+                  mode={mode}
+                  uploading={uploading}
+                  onImageUpload={onImageUpload}
+                  onRemove={() => onUpdate({ sketch_url: undefined })}
+                />
+                <SketchPanel
+                  label={stepLabel('backView') || 'Back'}
+                  imageUrl={sku.sketch_back_url}
+                  uploadField="sketch_back_url"
+                  placeholder={stepLabel('uploadBackSketch') || 'Upload back sketch'}
+                  emptyPlaceholder={stepLabel('backPlaceholder') || 'Back view'}
+                  mode={mode}
+                  uploading={uploading}
+                  onImageUpload={onImageUpload}
+                  onRemove={() => onUpdate({ sketch_back_url: undefined })}
+                />
               </div>
             )}
 
@@ -1586,7 +1636,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                           disabled={generating}
                           className="flex items-center gap-2 px-4 py-2 border border-carbon/[0.08] text-carbon/40 text-[10px] font-medium tracking-[0.08em] uppercase hover:bg-carbon hover:text-crema transition-colors"
                         >
-                          <Sparkles className="h-3 w-3" /> {stepLabel('generate3d') || 'Generate 3D Render'}
+                          <Wand2 className="h-3 w-3" strokeWidth={2.25} /> {stepLabel('generate3d') || 'Generate 3D Render'}
                         </button>
                       )}
                     </div>

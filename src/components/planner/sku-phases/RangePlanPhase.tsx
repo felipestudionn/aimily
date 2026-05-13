@@ -1,10 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTranslation } from '@/i18n';
 import type { SKU } from '@/hooks/useSkus';
 import { ImageUploadArea, MetricCell } from './shared';
+
+/* ═══════════════════════════════════════════════════════════════════
+   Concept (RangePlanPhase) — fully editable product details.
+
+   Felipe (2026-05-13): "esta vista debería ser editable, todo." No
+   field is allowed to be static anymore. Family is a dropdown bound to
+   the families confirmed in Block 2 (02.1 Surtido & Precios) so the
+   value here always stays in sync with the canonical merch structure.
+   Drop is a dropdown of the collection's actual drops.
+
+   All edits PATCH /api/skus/[id] (via the parent's onUpdate callback).
+   Downstream readers (kanban, dashboard, presentation, AI prompt
+   context) consume sku.* at render time, so changes propagate as soon
+   as the SKU row updates — no extra fan-out needed.
+   ═══════════════════════════════════════════════════════════════════ */
 
 interface RangePlanPhaseProps {
   sku: SKU;
@@ -14,15 +29,69 @@ interface RangePlanPhaseProps {
   onDelete?: () => void;
 }
 
+interface FamilyOption {
+  name: string;
+}
+interface DropOption {
+  drop_number: number;
+  name?: string;
+}
+
+const SELECT_CLASS =
+  'w-full bg-white border border-carbon/[0.08] rounded-[10px] px-2.5 py-2 text-[13px] font-medium text-carbon tracking-[-0.01em] focus:outline-none focus:border-carbon/30 transition-colors appearance-none cursor-pointer';
+const INPUT_CLASS =
+  'w-full bg-white border border-carbon/[0.08] rounded-[10px] px-2.5 py-2 text-[13px] font-medium text-carbon tracking-[-0.01em] focus:outline-none focus:border-carbon/30 transition-colors';
+const FIELD_LABEL_CLASS =
+  'text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5';
+
 export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDelete }: RangePlanPhaseProps) {
   const t = useTranslation();
   const [notes, setNotes] = useState(sku.notes || '');
+  const [name, setName] = useState(sku.name);
+  const [families, setFamilies] = useState<FamilyOption[]>([]);
+  const [drops, setDrops] = useState<DropOption[]>([]);
+
+  // Keep local name in sync if the SKU prop changes (e.g. parent reload).
+  useEffect(() => { setName(sku.name); }, [sku.name]);
+  useEffect(() => { setNotes(sku.notes || ''); }, [sku.notes]);
+
+  // Load the canonical families confirmed in 02.1 + the drops calendar.
+  // Falls back to the SKU's own family/drop when the lists are empty so
+  // the dropdowns still show the current value.
+  useEffect(() => {
+    if (!sku.collection_plan_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [famRes, dropRes] = await Promise.all([
+          fetch('/api/families-load', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ collectionPlanId: sku.collection_plan_id }),
+          }),
+          fetch(`/api/drops?planId=${sku.collection_plan_id}`),
+        ]);
+        if (famRes.ok && !cancelled) {
+          const json = await famRes.json();
+          const list = Array.isArray(json?.families) ? json.families : [];
+          setFamilies(list.filter((f: { name?: string }) => f?.name).map((f: { name: string }) => ({ name: f.name })));
+        }
+        if (dropRes.ok && !cancelled) {
+          const json = await dropRes.json();
+          setDrops(Array.isArray(json) ? json : []);
+        }
+      } catch {
+        // Non-blocking: dropdowns fall back to the current value only.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [sku.collection_plan_id]);
+
   const categoryMap: Record<string, string> = {
     CALZADO: (t.skuPhases as Record<string, string>)?.categoryFootwear || 'Footwear',
     ROPA: (t.skuPhases as Record<string, string>)?.categoryApparel || 'Apparel',
     ACCESORIOS: (t.skuPhases as Record<string, string>)?.categoryAccessories || 'Accessories',
   };
-  const categoryLabel = categoryMap[sku.category] || sku.category;
 
   const handleFinancialChange = async (field: string, raw: string) => {
     const val = Number(raw.replace(/[^0-9.]/g, ''));
@@ -39,6 +108,57 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDele
     await onUpdate(updates);
   };
 
+  // Dropdown options. Each list ensures the current SKU value is always
+  // selectable, even when the canonical source doesn't include it (e.g.
+  // legacy data or freshly-edited families that haven't been confirmed).
+  const familyOptions: string[] = (() => {
+    const names = families.map(f => f.name);
+    if (sku.family && !names.includes(sku.family)) names.unshift(sku.family);
+    return names;
+  })();
+  const dropOptions: { value: number; label: string }[] = (() => {
+    const opts = drops.map(d => ({
+      value: d.drop_number,
+      label: d.name ? `${d.name}` : `Drop ${d.drop_number}`,
+    }));
+    if (sku.drop_number != null && !opts.find(o => o.value === sku.drop_number)) {
+      opts.unshift({ value: sku.drop_number, label: `Drop ${sku.drop_number}` });
+    }
+    return opts;
+  })();
+
+  const CHANNELS: { value: SKU['channel']; label: string }[] = [
+    { value: 'DTC', label: 'DTC' },
+    { value: 'WHOLESALE', label: 'Wholesale' },
+    { value: 'BOTH', label: 'DTC + Wholesale' },
+  ];
+  const ORIGINS: { value: NonNullable<SKU['origin']>; label: string }[] = [
+    { value: 'LOCAL', label: 'Local' },
+    { value: 'CHINA', label: 'China' },
+    { value: 'EUROPE', label: 'Europe' },
+    { value: 'OTHER', label: 'Other' },
+  ];
+  const ROLES: { value: NonNullable<SKU['sku_role']>; label: string }[] = [
+    { value: 'NEW', label: (t.skuPhases as Record<string, string>)?.roleNew || 'New' },
+    { value: 'BESTSELLER_REINVENTION', label: (t.skuPhases as Record<string, string>)?.roleBestseller || 'Bestseller' },
+    { value: 'CARRYOVER', label: (t.skuPhases as Record<string, string>)?.roleCarryover || 'Carry-over' },
+    { value: 'CAPSULE', label: (t.skuPhases as Record<string, string>)?.roleCapsule || 'Capsule' },
+  ];
+  const SEGMENTS: { value: SKU['type']; label: string }[] = [
+    { value: 'IMAGEN', label: (t.skuPhases as Record<string, string>)?.segImage || 'Image' },
+    { value: 'REVENUE', label: (t.skuPhases as Record<string, string>)?.segRevenue || 'Revenue' },
+    { value: 'ENTRY', label: (t.skuPhases as Record<string, string>)?.segEntry || 'Entry' },
+  ];
+  const CATEGORIES: { value: string; label: string }[] = [
+    { value: 'CALZADO', label: categoryMap.CALZADO },
+    { value: 'ROPA', label: categoryMap.ROPA },
+    { value: 'ACCESORIOS', label: categoryMap.ACCESORIOS },
+  ];
+  // Make sure the current category value is always in the list
+  if (sku.category && !CATEGORIES.find(c => c.value === sku.category)) {
+    CATEGORIES.unshift({ value: sku.category, label: categoryMap[sku.category] || sku.category });
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6">
@@ -52,38 +172,101 @@ export function RangePlanPhase({ sku, onUpdate, onImageUpload, uploading, onDele
             <div className="bg-carbon/[0.02] rounded-[16px] p-5 space-y-3">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.name || "Name"}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.name}</p>
+                  <p className={FIELD_LABEL_CLASS}>{(t.fieldLabels as Record<string, string>)?.name || 'Name'}</p>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onBlur={() => { if (name.trim() && name !== sku.name) onUpdate({ name: name.trim() }); }}
+                    className={INPUT_CLASS}
+                  />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.family || "Family"}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.family}</p>
+                  <p className={FIELD_LABEL_CLASS}>{(t.fieldLabels as Record<string, string>)?.family || 'Family'}</p>
+                  <select
+                    value={sku.family || ''}
+                    onChange={(e) => onUpdate({ family: e.target.value })}
+                    className={SELECT_CLASS}
+                  >
+                    {familyOptions.length === 0 && <option value="">—</option>}
+                    {familyOptions.map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.category || "Category"}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{categoryLabel}</p>
+                  <p className={FIELD_LABEL_CLASS}>{(t.fieldLabels as Record<string, string>)?.category || 'Category'}</p>
+                  <select
+                    value={sku.category || ''}
+                    onChange={(e) => onUpdate({ category: e.target.value as SKU['category'] })}
+                    className={SELECT_CLASS}
+                  >
+                    {CATEGORIES.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.skuPhases?.channel || 'Channel'}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.channel}</p>
+                  <p className={FIELD_LABEL_CLASS}>{t.skuPhases?.channel || 'Channel'}</p>
+                  <select
+                    value={sku.channel}
+                    onChange={(e) => onUpdate({ channel: e.target.value as SKU['channel'] })}
+                    className={SELECT_CLASS}
+                  >
+                    {CHANNELS.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.skuPhases?.origin || 'Origin'}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.origin || '—'}</p>
+                  <p className={FIELD_LABEL_CLASS}>{t.skuPhases?.origin || 'Origin'}</p>
+                  <select
+                    value={sku.origin || ''}
+                    onChange={(e) => onUpdate({ origin: (e.target.value || undefined) as SKU['origin'] })}
+                    className={SELECT_CLASS}
+                  >
+                    <option value="">—</option>
+                    {ORIGINS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{t.skuPhases?.role || 'Role'}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">
-                    {sku.sku_role === 'BESTSELLER_REINVENTION' ? 'Bestseller' : sku.sku_role === 'CARRYOVER' ? 'Carry-over' : sku.sku_role || 'New'}
-                  </p>
+                  <p className={FIELD_LABEL_CLASS}>{t.skuPhases?.role || 'Role'}</p>
+                  <select
+                    value={sku.sku_role || 'NEW'}
+                    onChange={(e) => onUpdate({ sku_role: e.target.value as SKU['sku_role'] })}
+                    className={SELECT_CLASS}
+                  >
+                    {ROLES.map(r => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.segmentation || "Segmentation"}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">{sku.type === 'IMAGEN' ? 'Image' : sku.type === 'REVENUE' ? 'Revenue' : 'Entry'}</p>
+                  <p className={FIELD_LABEL_CLASS}>{(t.fieldLabels as Record<string, string>)?.segmentation || 'Segmentation'}</p>
+                  <select
+                    value={sku.type}
+                    onChange={(e) => onUpdate({ type: e.target.value as SKU['type'] })}
+                    className={SELECT_CLASS}
+                  >
+                    {SEGMENTS.map(s => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold tracking-[0.15em] uppercase text-carbon/40 mb-1.5">{(t.fieldLabels as Record<string, string>)?.drop || "Drop"}</p>
-                  <p className="text-[14px] font-medium text-carbon tracking-[-0.01em]">Drop {sku.drop_number}</p>
+                  <p className={FIELD_LABEL_CLASS}>{(t.fieldLabels as Record<string, string>)?.drop || 'Drop'}</p>
+                  <select
+                    value={String(sku.drop_number ?? '')}
+                    onChange={(e) => onUpdate({ drop_number: Number(e.target.value) })}
+                    className={SELECT_CLASS}
+                  >
+                    {dropOptions.length === 0 && <option value="">—</option>}
+                    {dropOptions.map(d => (
+                      <option key={d.value} value={d.value}>{d.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>

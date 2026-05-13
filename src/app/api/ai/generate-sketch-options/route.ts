@@ -7,9 +7,15 @@ import { normalizeAiError } from '@/lib/ai/error-messages';
 /* ═══════════════════════════════════════════════════════════
    Sketch from Reference Photo — OpenAI gpt-image-1
 
-   APPAREL: 1x image edit → front view
-   FOOTWEAR: 2x image edits in parallel → side profile + top-down
-   Same reference photo, different angle instructions.
+   APPAREL:  2x image edits in parallel → front + back
+   FOOTWEAR: 3x image edits in parallel → side + top + back
+
+   Same reference photo, different angle instructions. The BACK view
+   is always generated even when the reference photo only shows the
+   front/side — the prompt instructs the model to infer the back from
+   common construction conventions of the garment/shoe type, keeping
+   the brand-consistent aesthetic intact. Felipe (2026-05-13): a tech
+   pack without a back view is not a tech pack.
    ═══════════════════════════════════════════════════════════ */
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -164,6 +170,36 @@ RULES:
 - Factory-grade detail level
 ${IP_CLAUSE}`;
 
+const BACK_APPAREL_PROMPT = `From this reference garment, generate a TECHNICAL FLAT SKETCH in BACK VIEW.
+
+MANDATORY VIEW: The garment must be drawn from BEHIND (rear view), as the patternmaker sees it laid flat. If the reference only shows the front, INFER the back from standard garment construction for this type — back yoke, center-back seam, back darts, back hem shape, rear closures (if applicable), neckline back curve, sleeve cuffs from behind. Match the design language and proportions of the front view so the two read as the same garment.
+
+RULES:
+- Technical flat sketch for tech pack, back view
+- Pure white background, clean thin black linework
+- No human body, no perspective, no shading, no color
+- Show: back yoke, center-back seam, back darts/pleats, back hem, rear closures, neckline back, sleeve cuffs from behind
+- Solid lines for seams, dashed lines for stitching
+- Factory-grade detail level
+${IP_CLAUSE}`;
+
+const BACK_FOOTWEAR_PROMPT = `From this reference shoe, generate a TECHNICAL FLAT SKETCH in BACK VIEW (heel view).
+
+MANDATORY VIEW: The shoe must be drawn from DIRECTLY BEHIND, looking at the heel counter as the wearer would see it from behind. Single shoe, heel pointing toward the camera. If the reference doesn't show the back of the shoe, INFER it from common footwear construction for this category — heel counter shape, heel tab/pull, rear midsole curve, back panel seams, ankle collar from behind. Match the design language and proportions of the side view so the two read as the same shoe.
+
+CRITICAL FRAMING — common failure mode is cropping the heel cup top:
+- The COMPLETE heel silhouette MUST fit entirely inside the canvas with at least 10% empty margin on every side.
+- Center the shoe in the frame; the heel counter sits at roughly 55-65% of the canvas height.
+
+DRAWING RULES:
+- Black line drawing on pure white background
+- Single shoe (not a pair), back view only
+- Show: heel counter shape, heel tab/pull, rear midsole curve, back panel seams, ankle collar from behind, outsole rear edge
+- Solid lines for seams, dashed lines for stitching
+- No color, no shading, no fills
+- Factory tech pack quality, patternmaker precision
+${IP_CLAUSE}`;
+
 export async function POST(req: NextRequest) {
   let userId: string | undefined;
   let planConsumed = 0;
@@ -209,44 +245,69 @@ export async function POST(req: NextRequest) {
     };
 
     if (isFootwear) {
-      // Two parallel OpenAI image edits — same photo, different angle prompts.
-      // Top-down uses portrait 1024x1536 because the shoe runs vertically in
-      // top-down view; a square canvas was cropping the heel/toe.
-      // Both go through generateUncropped which retries up to 3x if the
+      // Three parallel OpenAI image edits — same photo, different angle
+      // prompts. Top-down uses portrait 1024x1536 because the shoe runs
+      // vertically; a square canvas was cropping the heel/toe. Back view
+      // uses square 1024x1024 — the heel silhouette is roughly square.
+      // All go through generateUncropped which retries up to 3x if the
       // silhouette touches a canvas edge — structural guarantee against
       // cropped flat sketches.
-      const [sideResult, topResult] = await Promise.allSettled([
+      const [sideResult, topResult, backResult] = await Promise.allSettled([
         generateUncropped('side', SIDE_PROMPT, photoBase64, '1024x1024'),
         generateUncropped('top', TOP_PROMPT, photoBase64, '1024x1536'),
+        generateUncropped('back', BACK_FOOTWEAR_PROMPT, photoBase64, '1024x1024'),
       ]);
 
       const sideImage = sideResult.status === 'fulfilled' ? sideResult.value : null;
       const topImage = topResult.status === 'fulfilled' ? topResult.value : null;
+      const backImage = backResult.status === 'fulfilled' ? backResult.value : null;
 
-      if (!sideImage && !topImage) {
+      if (!sideImage && !topImage && !backImage) {
         await refundImageryUnits(userId, planConsumed, packConsumed);
-        const err = sideResult.status === 'rejected' ? String(sideResult.reason) : 'Both views failed';
+        const err = sideResult.status === 'rejected' ? String(sideResult.reason) : 'All views failed';
         return NextResponse.json({ error: err }, { status: 500 });
       }
 
       const sidePersisted = sideImage ? await persist(sideImage, 'Side Profile') : null;
       const topPersisted = topImage ? await persist(topImage, 'Top Down') : null;
+      const backPersisted = backImage ? await persist(backImage, 'Back') : null;
 
       return NextResponse.json({
         sketchOptions: [
           ...(sidePersisted ? [{ id: 'side', description: 'Side Profile', frontImageBase64: sidePersisted }] : []),
           ...(topPersisted ? [{ id: 'top', description: 'Top Down', frontImageBase64: topPersisted }] : []),
+          ...(backPersisted ? [{ id: 'back', description: 'Back', frontImageBase64: backPersisted }] : []),
         ],
         persisted: true,
       });
     } else {
-      // Apparel: single front-view edit (also goes through anti-crop retry).
-      const prompt = `${FRONT_PROMPT}\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}`;
-      const sketch = await generateUncropped('front', prompt, photoBase64, '1024x1024');
-      const persisted = await persist(sketch, 'Front');
+      // Apparel: front + back in parallel. Both go through anti-crop retry.
+      const typeSuffix = `\n\nTIPO: ${body.garmentType}${body.fabric ? `\nTEJIDO: ${body.fabric}` : ''}${body.additionalNotes ? `\nNOTAS: ${body.additionalNotes}` : ''}`;
+      const frontPrompt = `${FRONT_PROMPT}${typeSuffix}`;
+      const backPrompt = `${BACK_APPAREL_PROMPT}${typeSuffix}`;
+
+      const [frontResult, backResult] = await Promise.allSettled([
+        generateUncropped('front', frontPrompt, photoBase64, '1024x1024'),
+        generateUncropped('back', backPrompt, photoBase64, '1024x1024'),
+      ]);
+
+      const frontImage = frontResult.status === 'fulfilled' ? frontResult.value : null;
+      const backImage = backResult.status === 'fulfilled' ? backResult.value : null;
+
+      if (!frontImage && !backImage) {
+        await refundImageryUnits(userId, planConsumed, packConsumed);
+        const err = frontResult.status === 'rejected' ? String(frontResult.reason) : 'Both apparel views failed';
+        return NextResponse.json({ error: err }, { status: 500 });
+      }
+
+      const frontPersisted = frontImage ? await persist(frontImage, 'Front') : null;
+      const backPersisted = backImage ? await persist(backImage, 'Back') : null;
 
       return NextResponse.json({
-        sketchOptions: [{ id: 'front', description: 'Front', frontImageBase64: persisted }],
+        sketchOptions: [
+          ...(frontPersisted ? [{ id: 'front', description: 'Front', frontImageBase64: frontPersisted }] : []),
+          ...(backPersisted ? [{ id: 'back', description: 'Back', frontImageBase64: backPersisted }] : []),
+        ],
         persisted: true,
       });
     }

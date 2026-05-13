@@ -53,6 +53,10 @@ export interface SKU {
   design_phase: DesignPhase;
   sketch_url?: string;
   sketch_top_url?: string;
+  /** BACK-view flat sketch. Populated by /api/ai/generate-sketch-options
+   *  (or manual upload). Apparel uses sketch_url=front + sketch_back_url;
+   *  footwear uses sketch_url=side + sketch_top_url + sketch_back_url. */
+  sketch_back_url?: string;
   proto_iterations: ProtoIteration[];
   production_sample_url?: string;
   render_url?: string; // flat colorized sketch (set by colorway acceptance only)
