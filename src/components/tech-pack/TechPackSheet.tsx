@@ -36,7 +36,6 @@ import type { Zone } from '@/lib/materials-library';
 import { CostingPanel } from '@/components/tech-pack/CostingPanel';
 import type { CostBreakdown } from '@/lib/costing/landed-cost';
 import { RevisionPill } from '@/components/tech-pack/RevisionPill';
-import { CompliancePill } from '@/components/tech-pack/CompliancePill';
 import {
   ConstructionDetailsSection,
   type ConstructionDetails,
@@ -438,15 +437,19 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
           </div>
 
           {/* Technical Drawings — 2 category-aware views, auto-prefilled
-              from the SKU's flat sketches (sketch_url + sketch_top_url),
-              with optional upload override + pin comments. */}
+              from the SKU's flat sketches:
+                · Footwear: viewA = sketch_url (side), viewB = sketch_top_url
+                · Apparel:  viewA = sketch_url (front), viewB = sketch_back_url
+              The previous code reused sketch_top_url as the back fallback,
+              which is only populated for footwear — leaving apparel back
+              panels empty even when the SKU had a back sketch on file. */}
           <div className="border-t border-carbon/[0.06] p-8 md:p-10">
             <TechnicalDrawings
               collectionPlanId={collectionId}
               category={sku.category}
               drawings={data.drawings || {}}
               fallbackA={sku.sketch_url}
-              fallbackB={sku.sketch_top_url}
+              fallbackB={sku.category === 'CALZADO' ? sku.sketch_top_url : sku.sketch_back_url}
               onChange={updateDrawings}
               saving={savingSection === 'drawings'}
               tp={tp}
@@ -572,8 +575,12 @@ function HeaderBlock({ sku, collectionName, season, tp, revisionRefreshKey }: {
             {sku.name}
           </h1>
         </div>
+        {/* Compliance is a vendor / production-stage concern — it has its
+            own dedicated workspace under Block 3 > Compliance and does NOT
+            belong in the design-stage tech pack header. The pill was firing
+            "VIOLATION" badges based on partial BOM data and creating noise
+            the designer can't act on at this step. Removed 2026-05-13. */}
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <CompliancePill skuId={sku.id} refreshKey={revisionRefreshKey} />
           <RevisionPill skuId={sku.id} fallback={tp.version || 'v1.0'} refreshKey={revisionRefreshKey} />
         </div>
       </div>
