@@ -186,7 +186,7 @@ export default function AccountPage() {
   // Billing CTA: depends on the user's billing state. Derived from BD
   // so it survives a full page reload (no in-memory state required).
   //   - admin            → no button + admin note (no Stripe customer)
-  //   - trial            → "Ver planes" → /#pricing
+  //   - trial            → "Ver planes" → /?pricing=1#pricing
   //   - canceled         → cancellation notice + "Ver planes" to resubscribe
   //   - active paid      → "Gestionar suscripción" → Stripe Portal
   const isCanceled = subscription?.status === 'canceled' || subscription?.status === 'unpaid';
@@ -304,7 +304,7 @@ export default function AccountPage() {
                           : t.account.canceledNote}
                       </p>
                       <Link
-                        href="/#pricing"
+                        href="/?pricing=1#pricing"
                         className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
                       >
                         {t.billing.seePlans}
@@ -334,7 +334,7 @@ export default function AccountPage() {
                   {billingState === 'no-subscription' && (
                     <div className="mt-8 flex justify-end">
                       <Link
-                        href="/#pricing"
+                        href="/?pricing=1#pricing"
                         className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold bg-carbon text-crema hover:bg-carbon/90 transition-colors whitespace-nowrap"
                       >
                         {t.billing.seePlans}

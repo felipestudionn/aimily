@@ -21,6 +21,7 @@ import { geist, instrumentSerif } from '@/lib/fonts';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { getServerSession } from '@/lib/auth/server-session';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { CookieConsent } from '@/components/CookieConsent';
 import { ObservabilityBootstrap } from '@/components/ObservabilityBootstrap';
@@ -109,6 +110,14 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
 
+  // SSR the user so the marketing Navbar (and the home-page redirect for
+  // logged-in users) doesn't have to wait on a client-side getSession()
+  // round-trip. Without this, every marketing page flashed a "Log in /
+  // Sign up" header for ~200-500ms before the avatar swapped in. The
+  // home-page redirect to /my-collections also fires immediately on
+  // first commit instead of after the auth check resolves.
+  const { user } = await getServerSession();
+
   return (
     <html lang={locale} className={cn('font-sans', geist.variable, instrumentSerif.variable)}>
       <head>
@@ -121,7 +130,7 @@ export default async function LocaleLayout({
       </head>
       <body className="min-h-screen antialiased">
         <NextIntlClientProvider messages={messages} locale={locale}>
-          <AuthProvider>
+          <AuthProvider initialUser={user}>
             <LanguageProvider initialLanguage={locale as Locale}>
               <SubscriptionProvider>
                 <ToastProvider>

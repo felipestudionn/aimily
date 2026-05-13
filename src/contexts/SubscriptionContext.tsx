@@ -17,7 +17,7 @@ interface PlanLimits {
   ssoEnabled: boolean;
 }
 
-interface SubscriptionData {
+export interface SubscriptionData {
   plan: PlanId;
   status: string;
   currentPeriodEnd: string | null;
@@ -87,11 +87,30 @@ const TRIAL_DEFAULTS: SubscriptionData = {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
-export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
+interface SubscriptionProviderProps {
+  children: React.ReactNode;
+  /**
+   * Server-resolved subscription. When provided, the provider starts in a
+   * "ready" state (loading: false) and skips the initial `/api/billing/
+   * subscription` round-trip — eliminating the subscription-flash that
+   * used to delay paywall/banner decisions on first paint. Realtime
+   * updates and post-checkout refreshes still fire normally.
+   *
+   * Pass `null` for "server checked, no auth / no row". Omit to fall back
+   * to the legacy client-side flow for routes that haven't been migrated
+   * to SSR yet.
+   */
+  initialSubscription?: SubscriptionData | null;
+}
+
+export function SubscriptionProvider({ children, initialSubscription }: SubscriptionProviderProps) {
   const { user } = useAuth();
   const supabase = createClient();
-  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const hasServerSubscription = initialSubscription !== undefined;
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(
+    initialSubscription ?? null,
+  );
+  const [loading, setLoading] = useState(!hasServerSubscription);
 
   const fetchSubscription = useCallback(async () => {
     if (!user) {
@@ -116,7 +135,15 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     }
   }, [user]);
 
+  // Initial fetch — skipped when the server already provided the
+  // subscription. Subsequent user changes (sign-in / sign-out within the
+  // SPA) still trigger a refetch.
+  const initialFetchSkippedRef = React.useRef(hasServerSubscription);
   useEffect(() => {
+    if (initialFetchSkippedRef.current) {
+      initialFetchSkippedRef.current = false;
+      return;
+    }
     fetchSubscription();
   }, [fetchSubscription]);
 

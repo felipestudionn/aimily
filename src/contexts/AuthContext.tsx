@@ -18,10 +18,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+interface AuthProviderProps {
+  children: React.ReactNode;
+  /**
+   * Server-resolved user. When provided, the provider arrives in a
+   * "ready" state (loading: false) and skips the client `getSession()`
+   * round-trip — eliminating the auth-flash that used to repaint the
+   * Navbar and every consumer of `useAuth()` on first mount.
+   *
+   * Pass `null` explicitly to mean "server checked, no session". Pass
+   * `undefined` (or omit) to fall back to the legacy client-side flow
+   * for routes that haven't been migrated to SSR yet.
+   */
+  initialUser?: User | null;
+}
+
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+  const hasServerSession = initialUser !== undefined;
+
+  const [user, setUser] = useState<User | null>(initialUser ?? null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!hasServerSession);
 
   const supabase = createClient();
 
@@ -34,12 +51,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const setUserStable = (next: User | null) =>
       setUser((prev) => (prev?.id === next?.id ? prev : next));
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUserStable(session?.user ?? null);
-      setLoading(false);
-    });
+    // When the server already resolved the user, skip the explicit
+    // getSession() round-trip. The onAuthStateChange listener below still
+    // mounts, so login/logout/refresh events propagate normally; we just
+    // don't force the page through a redundant pending state on first
+    // paint. For legacy callers without `initialUser`, behavior is
+    // unchanged.
+    if (!hasServerSession) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUserStable(session?.user ?? null);
+        setLoading(false);
+      });
+    } else {
+      // Still pull the session reference once so consumers that read it
+      // get a populated value. The user is already authoritative from SSR,
+      // so we don't touch `user` here — that would just create a stable
+      // no-op ref change anyway.
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+      });
+    }
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -51,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signUp = async (email: string, password: string) => {

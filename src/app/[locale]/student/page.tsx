@@ -261,7 +261,7 @@ export default function StudentPage() {
           <ArrowRight className="w-4 h-4" />
         </button>
         <p className="text-[12px] text-crema/55 mt-4">
-          <Link href="/#pricing" className="underline hover:text-crema transition-colors">
+          <Link href="/?pricing=1#pricing" className="underline hover:text-crema transition-colors">
             Ver todos los planes
           </Link>
         </p>

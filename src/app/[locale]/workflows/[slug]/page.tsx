@@ -182,7 +182,7 @@ export default async function WorkflowPage({
 
         <section className="px-6 pb-24 max-w-3xl mx-auto">
           <Link
-            href={`/${locale}#pricing`}
+            href={`/${locale}?pricing=1#pricing`}
             className="group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-crema text-carbon text-[14px] font-semibold tracking-[-0.01em] hover:bg-crema/90 transition-all"
           >
             Try aimily free — 30 days
