@@ -34,6 +34,8 @@ import {
   shouldOfferMarginProtection,
   DEFAULT_FACTORY_RATE_BY_REGION,
   DEFAULT_DUTIES_PCT_BY_ORIGIN_TO_EU,
+  DEFAULT_LABOR_HOURS_BY_CATEGORY,
+  DEFAULT_FREIGHT_EUR_BY_ORIGIN,
   type BomLine,
   type CostBreakdown,
   type AiSubstitutionSuggestion,
@@ -56,6 +58,8 @@ interface CostingPanelProps {
   defaultTargetMarginPct?: number;
   /** Optional sourcing region for default rate / duties (e.g. 'CN'). */
   sourcingRegion?: string;
+  /** SKU category — drives labor-hour defaults (apparel ≠ footwear ≠ accessories). */
+  category?: 'ROPA' | 'CALZADO' | 'ACCESORIOS';
 }
 
 export function CostingPanel({
@@ -67,6 +71,7 @@ export function CostingPanel({
   onChange,
   defaultTargetMarginPct = 65,
   sourcingRegion = 'default',
+  category,
 }: CostingPanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
@@ -76,9 +81,18 @@ export function CostingPanel({
   const [factoryRate, setFactoryRate] = useState<number>(
     initial?.labor?.factory_rate ?? (DEFAULT_FACTORY_RATE_BY_REGION[sourcingRegion] ?? DEFAULT_FACTORY_RATE_BY_REGION.default),
   );
-  const [laborHours, setLaborHours] = useState<number>(initial?.labor?.hours ?? 0);
+  // Industry-typical defaults by category (labor hours) + origin (freight).
+  // The previous defaults were 0 across the board, which made every tech
+  // pack ship with labor=€0 and freight=€0 — Felipe (2026-05-13): "no
+  // estamos presuponiendo nada de trabajo, overhead, freight, duties".
+  // Now the panel arrives with realistic mid-points the user can fine-
+  // tune. See TYPICAL_COGS_SPLIT_PCT in landed-cost.ts for sources.
+  const defaultLaborHours = DEFAULT_LABOR_HOURS_BY_CATEGORY[category || 'default'] ?? DEFAULT_LABOR_HOURS_BY_CATEGORY.default;
+  const defaultFreight = DEFAULT_FREIGHT_EUR_BY_ORIGIN[sourcingRegion] ?? DEFAULT_FREIGHT_EUR_BY_ORIGIN.default;
+
+  const [laborHours, setLaborHours] = useState<number>(initial?.labor?.hours ?? defaultLaborHours);
   const [overheadPct, setOverheadPct] = useState<number>(initial?.overhead_pct ?? 15);
-  const [freightTotal, setFreightTotal] = useState<number>(initial?.freight?.total ?? 0);
+  const [freightTotal, setFreightTotal] = useState<number>(initial?.freight?.total ?? defaultFreight);
   const [freightOrigin, setFreightOrigin] = useState<string>(initial?.freight?.origin ?? sourcingRegion);
   const [freightDestination, setFreightDestination] = useState<string>(initial?.freight?.destination ?? 'ES');
   const [freightMethod, setFreightMethod] = useState<'sea' | 'air' | 'rail' | 'road'>(
@@ -215,9 +229,21 @@ export function CostingPanel({
           <Pill label="Duties" value={breakdown.duties_total} />
         </div>
 
+        {/* Target COGS = pvp × (1 − targetMargin). Compares head-to-head
+            with the landed-cost roll-up so the user sees "how far under
+            (or over) target are we?" at a glance. */}
+        {pvp > 0 && (
+          <div className="shrink-0 text-right">
+            <p className="text-[8px] tracking-[0.15em] uppercase font-semibold text-carbon/40">Target COGS</p>
+            <p className="text-[12px] font-medium tabular-nums text-carbon/60">€{(pvp * (1 - targetMarginPct / 100)).toFixed(2)}</p>
+          </div>
+        )}
+
         <div className="shrink-0 text-right">
           <p className="text-[8px] tracking-[0.15em] uppercase font-semibold text-carbon/40">Landed</p>
-          <p className="text-[14px] font-semibold tabular-nums text-carbon">€{breakdown.total_landed.toFixed(2)}</p>
+          <p className={`text-[14px] font-semibold tabular-nums ${pvp > 0 && breakdown.total_landed > pvp * (1 - targetMarginPct / 100) ? 'text-[#A0463C]' : 'text-carbon'}`}>
+            €{breakdown.total_landed.toFixed(2)}
+          </p>
         </div>
 
         {shouldOfferAi && !breakdown.ai_suggestions?.length && (

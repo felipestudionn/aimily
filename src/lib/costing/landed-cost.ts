@@ -309,3 +309,55 @@ export const DEFAULT_DUTIES_PCT_BY_ORIGIN_TO_EU: Record<string, number> = {
   US: 12,
   default: 12,
 };
+
+/**
+ * Industry-typical labor hours per unit by garment category.
+ *
+ * Sourced from PLM industry benchmarks (apparel: WGSN cost-engineering
+ * tables · footwear: Footwear News production studies) — these are
+ * conservative midpoints for a moderately-detailed garment / shoe.
+ * The user can override per-SKU in the CostingPanel.
+ *
+ * The previous default was 0h, which made labor cost = €0 across the
+ * board and produced unrealistically rosy margins on every tech pack.
+ */
+export const DEFAULT_LABOR_HOURS_BY_CATEGORY: Record<string, number> = {
+  ROPA: 1.4,        // simple dress / shirt / pants — a blazer would be ~3.5h, basic tee ~0.4h
+  CALZADO: 1.0,     // mid-complexity shoe — sneaker ~0.5h, leather Oxford ~1.5h
+  ACCESORIOS: 0.6,  // small leather goods / soft accessories
+  default: 1.0,
+};
+
+/**
+ * Industry-typical per-unit freight cost (EUR) by origin → EU.
+ *
+ * Defaults assume sea freight for far origins (default carrier mix for
+ * fashion brands). The CostingPanel surfaces these so freight isn't
+ * silently zero on every SKU.
+ */
+export const DEFAULT_FREIGHT_EUR_BY_ORIGIN: Record<string, number> = {
+  IT: 0.8,
+  PT: 1.0,
+  ES: 0.5,
+  TR: 1.5,
+  TN: 1.2,
+  CN: 3.0,
+  VN: 3.5,
+  IN: 3.2,
+  MX: 4.0,
+  US: 4.5,
+  default: 2.5,
+};
+
+/**
+ * Industry-typical COGS composition for fashion goods. Percentages of
+ * total landed cost — used to seed sane initial values when nothing has
+ * been entered yet AND to surface a "missing inputs" hint when the
+ * user's breakdown is suspiciously skewed (e.g. 99% materials, 0% labor).
+ */
+export const TYPICAL_COGS_SPLIT_PCT = {
+  ROPA:       { materials: 50, labor: 22, overhead: 14, freight: 6, duties: 8 },
+  CALZADO:    { materials: 48, labor: 20, overhead: 14, freight: 8, duties: 10 },
+  ACCESORIOS: { materials: 55, labor: 18, overhead: 13, freight: 6, duties: 8 },
+  default:    { materials: 50, labor: 20, overhead: 14, freight: 7, duties: 9 },
+} as const;

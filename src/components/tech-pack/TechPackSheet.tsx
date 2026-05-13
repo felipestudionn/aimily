@@ -433,6 +433,7 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               initial={costBreakdown}
               onChange={updateCostBreakdown}
               sourcingRegion={sku.origin || 'default'}
+              category={sku.category}
             />
           </div>
 
@@ -494,6 +495,18 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               generating={aiBusyScope === 'bom' || aiBusyScope === 'both'}
               skuCategory={sku.category}
             />
+            {/* Pointer to the dedicated supplier address book. The BOM holds
+                per-line supplier names but the directory is where contacts,
+                MOQs, certifications, and origin codes live — the value the
+                costing panel reads via sku.origin comes from there. */}
+            <div className="mt-3 flex items-center justify-end">
+              <a
+                href={`/collection/${collectionId}/suppliers`}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-carbon/55 hover:text-carbon tracking-[-0.01em] transition-colors"
+              >
+                {tp.manageSuppliers || 'Manage suppliers & origins'} →
+              </a>
+            </div>
           </div>
 
           {/* Construction Details — Phase 6 structured stitching/pressing/finishing */}
