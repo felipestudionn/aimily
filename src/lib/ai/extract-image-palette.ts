@@ -55,26 +55,39 @@ export async function extractImagePalette(
     .toBuffer({ resolveWithObject: true });
   const { width, height, channels } = info;
 
-  /* Bucket by 5-bit RGB (≤ 32k buckets) and tally pixel counts. */
+  /* Bucket by 5-bit RGB (≤ 32k buckets) and tally pixel counts.
+   * Pixels closer to the image center weigh more, on the assumption
+   * that the subject (garment, shoe, accessory) lives in the central
+   * 60% of the frame and the edges are sky / floor / studio. Without
+   * this bias a model in a polka-dot dress against the sky produced
+   * a palette dominated by sky tones, not the dress. */
   const buckets = new Map<number, { r: number; g: number; b: number; n: number }>();
-  for (let i = 0; i < width * height * channels; i += channels) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
+  const cx = width / 2;
+  const cy = height / 2;
+  const maxDist = Math.sqrt(cx * cx + cy * cy);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * channels;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
 
-    /* Background filter: near-white (every channel > 240) and near-black
-       (every channel < 15) almost always come from the seamless / studio
-       lighting / shadow under the subject. Skip them so they don't crowd
-       out the actual subject colors. */
-    if (r > 240 && g > 240 && b > 240) continue;
-    if (r < 15 && g < 15 && b < 15) continue;
+      /* Background filter: near-white (every channel > 240) and near-black
+         (every channel < 15) are almost always seamless / shadow. Skip. */
+      if (r > 240 && g > 240 && b > 240) continue;
+      if (r < 15 && g < 15 && b < 15) continue;
 
-    const key = (r >> 3) * 1024 + (g >> 3) * 32 + (b >> 3);
-    const entry = buckets.get(key);
-    if (entry) {
-      entry.r += r; entry.g += g; entry.b += b; entry.n += 1;
-    } else {
-      buckets.set(key, { r, g, b, n: 1 });
+      /* Center-weight: 1.0 at the center, 0.25 at the corners. */
+      const dist = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+      const weight = 0.25 + 0.75 * (1 - dist / maxDist);
+
+      const key = (r >> 3) * 1024 + (g >> 3) * 32 + (b >> 3);
+      const entry = buckets.get(key);
+      if (entry) {
+        entry.r += r * weight; entry.g += g * weight; entry.b += b * weight; entry.n += weight;
+      } else {
+        buckets.set(key, { r: r * weight, g: g * weight, b: b * weight, n: weight });
+      }
     }
   }
 

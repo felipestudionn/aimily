@@ -148,11 +148,17 @@ Return:
       } catch { /* fall through */ }
 
       const referencePaletteBlock = referencePalette.length
-        ? `REFERENCE PHOTO PALETTE (extracted from the SKU's reference image):
+        ? `🔒 PROPOSAL 0 IS FROZEN — REFERENCE PHOTO PALETTE (extracted from the SKU's reference image, after background filter):
 
-${referencePalette.map((c, i) => `  ${i + 1}. ${c.hex.toUpperCase()}${typeof c.share === 'number' ? ` (${(c.share * 100).toFixed(0)}% of the photo)` : ''}`).join('\n')}
+${referencePalette.map((c, i) => `  ${i + 1}. ${c.hex.toUpperCase()}${typeof c.share === 'number' ? ` (${(c.share * 100).toFixed(1)}% of the subject)` : ''}`).join('\n')}
 
-NON-NEGOTIABLE — the FIRST proposal (index 0 in your output array) MUST be a faithful read of these exact hex values. Use the most dominant 2-4 hex values from the list as the body/identity colors, and the remaining as subtle accents. Name this first proposal in a way that evokes the reference photo (the inspiration source). The other 3 proposals fall back to the brand/Wada logic below.`
+ABSOLUTE RULES FOR PROPOSAL 0 (the FIRST proposal in your output array):
+1. The hex values you assign to zones MUST come from the list above. Do NOT modify a single hex digit. Do NOT round to a "nearby" brand color. Do NOT substitute with anything from the brand palette block below.
+2. Map the colors so the GARMENT BODY reads as the reference photo would: pick the 1-2 most-dominant non-neutral hex values as the dominant body color(s); use the remaining as subtle accents on small zones (stitching, lining, trim, prints).
+3. The NAME of proposal 0 must be 2-3 words evoking the reference photo's mood and the specific color of the dominant hex. Never use a bare color word — never "Azul", "Verde", "Rojo". Always a qualified, Sanzo Wada-style name: "Marino Profundo", "Indigo Nocturno", "Atardecer Costero", "Cobalto Lavado". The name should sound like a Pantone reference, not a crayon.
+4. The DESCRIPTION (20-35 words) must reference the photo's atmosphere — the light, the setting, the mood — not the brand identity.
+
+PROPOSALS 1, 2, 3: follow the brand-palette / Wada logic below. Do NOT use proposal 0's hex values in proposals 1-3 (unless they happen to coincide with the brand palette).`
         : '';
 
       const seedBlock = isManualSeed
@@ -202,6 +208,7 @@ MANDATORY RULES:
 4. ${isManualSeed ? 'USER-LOCKED HEX — The 3 anchor colors must appear across the 4 proposals. Distributions vary, but the palette is non-negotiable.' : 'PALETTE FIDELITY — Each proposal is built from the brand palette above. Different proposals use different dominant colors from that palette, not different palettes.'}
 5. VISUAL DIVERSITY ACROSS PROPOSALS — The 4 proposals must feel meaningfully different in MOOD (calm vs bold, warm vs cool, restrained vs expressive). Not 4 variants of the same combo. But "different" comes from a different DOMINANT color or different accent placement, not from spreading more colors per proposal.
 6. PRODUCTION FEASIBILITY — Hex codes must translate to real dyeable/printable colors on the implied material.
+7. EXQUISITE NAMING — Every colorway name is 2-3 words, Sanzo Wada / Pantone precision. NEVER a bare color word ("Azul", "Verde", "Rojo", "Beige", "Negro" alone are FORBIDDEN). Always qualified and evocative: "Marino Profundo", "Verde Salvia", "Indigo Nocturno", "Rosa Adobe", "Negro Tinta", "Hueso Lino", "Cobalto Lavado", "Ladrillo Tostado". A patternmaker should read the name and know within ±5% which Pantone reference to pull. Treat each name as the colorway's spec — not its marketing.
 
 ${QUALITY_GATES.designSpecificity}
 ${QUALITY_GATES.antiGeneric}

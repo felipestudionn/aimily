@@ -96,14 +96,25 @@ STEP 3 — EXECUTION RULES (CRITICAL — READ CAREFULLY):
     // gpt-image-1.5: 4x faster, 20% cheaper, better edit precision than gpt-image-1
     // Convert any format to PNG for OpenAI compatibility (handles AVIF, WEBP, HEIC, etc.)
     const inputBuffer = Buffer.from(sketchBase64, 'base64');
-    const pngBuffer = await sharp(inputBuffer).png().toBuffer();
+    const sharpInput = sharp(inputBuffer);
+    const meta = await sharpInput.metadata();
+    const pngBuffer = await sharpInput.png().toBuffer();
+    /* Pick the OpenAI output size that matches the input sketch's
+     * aspect so we don't squash a 1024×1536 portrait apparel sketch
+     * into a 1024×1024 square and lose the hem. Apparel sketches are
+     * portrait; footwear side is square; footwear top is portrait.
+     * gpt-image-1.5 supports 1024×1024, 1024×1536, 1536×1024. */
+    const w = meta.width ?? 1024;
+    const h = meta.height ?? 1024;
+    const ratio = w / h;
+    const outputSize = ratio < 0.85 ? '1024x1536' : ratio > 1.15 ? '1536x1024' : '1024x1024';
     const blob = new Blob([pngBuffer], { type: 'image/png' });
     const formData = new FormData();
     formData.append('model', 'gpt-image-1.5');
     formData.append('image', blob, 'sketch.png');
     formData.append('prompt', prompt);
     formData.append('n', '1');
-    formData.append('size', '1024x1024');
+    formData.append('size', outputSize);
     formData.append('quality', is_3d_render ? 'high' : 'medium');
     if (is_3d_render) formData.append('input_fidelity', 'high');
 
