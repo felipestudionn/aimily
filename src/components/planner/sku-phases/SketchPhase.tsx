@@ -323,12 +323,15 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   }, [activeStep, onFooterAction, confirmAndNext, onAdvancePhase, t.skuPhases, evolutionStep]);
 
   const callDesignAI = useCallback(async (type: string, input: Record<string, string>) => {
+    // Pass skuId so server-side handlers (e.g. color-suggest reference-
+    // palette extraction) can look up the SKU's reference image and cache
+    // the extracted palette back to the row.
     const res = await fetch('/api/ai/design-generate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, input, language, collectionPlanId }),
+      body: JSON.stringify({ type, input, language, collectionPlanId, skuId: sku.id }),
     });
     return res.ok ? (await res.json()).result : null;
-  }, [language, collectionPlanId]);
+  }, [language, collectionPlanId, sku.id]);
 
   // ── Background zone detection ──
   // Fires as soon as we have a sketch + product info, regardless of which
@@ -1069,7 +1072,13 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   const za = cw.zoneAssignments || [];
                   return (
                   <div key={idx} className="border border-carbon/[0.06] bg-white overflow-hidden">
-                    <div className="aspect-[4/3] bg-carbon/[0.02] overflow-hidden relative">
+                    {/* Portrait aspect matches the apparel front (2:3) and is
+                        wide enough to letterbox a square footwear side view
+                        without clipping. The old 4:3 landscape container was
+                        forcing dresses into a narrow strip and people read
+                        that as the hem getting cropped — even though it was
+                        object-contain. */}
+                    <div className="aspect-[3/4] bg-carbon/[0.02] overflow-hidden relative">
                       {cw.colorizedUrl && (
                         <img src={cw.colorizedUrl} alt={cw.name} className="w-full h-full object-contain" />
                       )}

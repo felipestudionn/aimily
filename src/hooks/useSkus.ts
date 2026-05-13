@@ -48,6 +48,12 @@ export interface SKU {
   launch_date: string;
   notes?: string;
   reference_image_url?: string;
+  /** Dominant colors extracted from reference_image_url by
+   *  /api/ai/design-generate (color-suggest). Reused as the seed for
+   *  the first colorway proposal so it always reads back the reference
+   *  photo faithfully. Wiped automatically when reference_image_url
+   *  changes — server-side migration 052 owns this column. */
+  reference_palette?: { hex: string; share?: number }[];
   source_sku_id?: string;
   // ── Design lifecycle ──
   design_phase: DesignPhase;

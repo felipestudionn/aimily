@@ -132,6 +132,29 @@ Return:
             .join('\n')
         : '';
 
+      /* Reference photo palette — injected by /api/ai/design-generate when
+       * the SKU has a reference_image_url. Felipe's rule (2026-05-13):
+       * proposal #1 always reads back the colors of the reference photo.
+       * The remaining 3 proposals still follow brand/Wada logic so the
+       * collection stays anchored in the confirmed brand palette. */
+      type RefColor = { hex: string; share?: number };
+      let referencePalette: RefColor[] = [];
+      try {
+        const raw = (input.referencePalette as string | undefined) || '';
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) referencePalette = parsed;
+        }
+      } catch { /* fall through */ }
+
+      const referencePaletteBlock = referencePalette.length
+        ? `REFERENCE PHOTO PALETTE (extracted from the SKU's reference image):
+
+${referencePalette.map((c, i) => `  ${i + 1}. ${c.hex.toUpperCase()}${typeof c.share === 'number' ? ` (${(c.share * 100).toFixed(0)}% of the photo)` : ''}`).join('\n')}
+
+NON-NEGOTIABLE — the FIRST proposal (index 0 in your output array) MUST be a faithful read of these exact hex values. Use the most dominant 2-4 hex values from the list as the body/identity colors, and the remaining as subtle accents. Name this first proposal in a way that evokes the reference photo (the inspiration source). The other 3 proposals fall back to the brand/Wada logic below.`
+        : '';
+
       const seedBlock = isManualSeed
         ? `THE USER HAS LOCKED THESE THREE COLORS AS THE PALETTE FOUNDATION:
 ${seedColorsRaw}
@@ -168,7 +191,7 @@ The user needs colorway options for a specific product:
 PRODUCT ZONES TO COLOR:
 ${zonesBlock}
 
-${seedBlock}
+${referencePaletteBlock ? referencePaletteBlock + '\n\n' : ''}${seedBlock}
 
 YOUR TASK: Generate 4 colorway proposals. Each proposal includes a hex value for every zone — but multiple zones SHOULD share the same hex when they form a continuous surface or when the silhouette is meant to read as monochromatic.
 

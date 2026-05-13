@@ -3,6 +3,8 @@ import { getAuthenticatedUser, checkAuthOnly, usageDeniedResponse, verifyCollect
 import { generateJSON } from '@/lib/ai/llm-client';
 import { buildDesignPrompt } from '@/lib/ai/design-prompts';
 import { loadFullContext, mergeContextWithInput } from '@/lib/ai/load-full-context';
+import { extractImagePalette } from '@/lib/ai/extract-image-palette';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 /* ═══════════════════════════════════════════════════════════
    Design & Dev Block — AI Generation Endpoint
@@ -43,6 +45,45 @@ export async function POST(req: NextRequest) {
     if (!ownership.authorized) return ownership.error;
     const serverCtx = await loadFullContext(collectionPlanId);
     mergeContextWithInput(serverCtx, input);
+  }
+
+  /* Reference-photo palette injection (color-suggest only).
+   *
+   * Felipe's rule: the FIRST colorway proposal must read back the actual
+   * colors of the SKU's reference photo. We extract them with sharp +
+   * bucket clustering once, cache them on collection_skus.reference_palette,
+   * and pass them to the prompt as `referencePalette`. Re-extraction
+   * happens automatically when the cache is empty or stale.
+   */
+  if (type === 'color-suggest' && body.skuId) {
+    try {
+      const { data: skuRow } = await supabaseAdmin
+        .from('collection_skus')
+        .select('reference_image_url, reference_palette')
+        .eq('id', body.skuId)
+        .single();
+      let palette = (skuRow?.reference_palette as { hex: string; share?: number }[] | null) ?? null;
+      if (!palette && skuRow?.reference_image_url) {
+        const extracted = await extractImagePalette(skuRow.reference_image_url, 6);
+        if (extracted.length > 0) {
+          palette = extracted;
+          // Fire-and-forget cache — failure is non-blocking (next call retries).
+          supabaseAdmin
+            .from('collection_skus')
+            .update({ reference_palette: palette })
+            .eq('id', body.skuId)
+            .then(({ error }) => {
+              if (error) console.error('[design-generate] cache reference_palette failed', error);
+            });
+        }
+      }
+      if (palette && palette.length > 0) {
+        input.referencePalette = JSON.stringify(palette);
+      }
+    } catch (err) {
+      // Non-blocking: the prompt falls back to brand/Wada when no palette.
+      console.error('[design-generate] reference palette extraction failed', err);
+    }
   }
 
   const prompt = buildDesignPrompt(type, input);

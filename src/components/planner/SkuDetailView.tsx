@@ -201,7 +201,14 @@ export function SkuDetailView({ sku, onClose, onUpdate, onDelete, onImageUpload 
     try {
       const url = await onImageUpload(localSku.id, file, field);
       if (url) {
-        const result = await onUpdate(localSku.id, { [field]: url } as Partial<SKU>);
+        // Replacing the reference image invalidates the cached palette
+        // (used to seed the first colorway proposal). Wipe it so the
+        // next color-suggest call re-extracts from the new image.
+        const patch: Partial<SKU> = { [field]: url } as Partial<SKU>;
+        if (field === 'reference_image_url') {
+          (patch as Record<string, unknown>).reference_palette = null;
+        }
+        const result = await onUpdate(localSku.id, patch);
         if (result) setLocalSku(result);
       }
     } finally {
