@@ -43,6 +43,12 @@ export interface SKU {
   margin: number;
   channel: 'DTC' | 'WHOLESALE' | 'BOTH';
   origin?: 'LOCAL' | 'CHINA' | 'EUROPE' | 'OTHER';
+  /** ISO 3166-1 alpha-2 country code where the SKU is produced. Set by
+   *  the OriginSelector in the Materials sub-step. Drives the costing
+   *  panel defaults (factory rate / freight / duties) and the timeline
+   *  lead-time math. When null, the legacy `origin` enum is used as a
+   *  coarse fallback. */
+  production_origin?: string;
   size_run?: Record<string, number>;
   sku_role?: 'NEW' | 'BESTSELLER_REINVENTION' | 'CARRYOVER' | 'CAPSULE';
   launch_date: string;

@@ -11,6 +11,7 @@ import type { SKU } from '@/hooks/useSkus';
 import type { SkuColorway, ColorwayZone, MaterialZone } from '@/types/design';
 import { useSkuLifecycle } from './SkuLifecycleContext';
 import { ImageUploadArea } from './shared';
+import { OriginSelector } from './OriginSelector';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
@@ -1345,6 +1346,18 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
           return (
           <div className="space-y-4">
+            {/* Production origin — gates realistic cost + lead time before
+                the user even sees the BOM. The selection cascades into the
+                tech-pack costing panel (factory rate / freight / duties)
+                and the production calendar (lead time weeks). */}
+            {collectionPlanId && (
+              <OriginSelector
+                collectionId={collectionPlanId}
+                productionOrigin={sku.production_origin}
+                onChange={async (code) => { await onUpdate({ production_origin: code } as Partial<SKU>); }}
+              />
+            )}
+
             {/* Context: sketch + colorway strip */}
             <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4 items-start">
               {sku.sketch_url && (

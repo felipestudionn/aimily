@@ -361,3 +361,68 @@ export const TYPICAL_COGS_SPLIT_PCT = {
   ACCESORIOS: { materials: 55, labor: 18, overhead: 13, freight: 6, duties: 8 },
   default:    { materials: 50, labor: 20, overhead: 14, freight: 7, duties: 9 },
 } as const;
+
+/**
+ * Lead time defaults (in weeks) per production origin → EU destination.
+ *
+ * Two phases:
+ *   - production: cutting + sewing + finishing inside the factory
+ *   - transit:    from factory dock to EU warehouse (sea is the default
+ *                 carrier for fashion; air would shave 4-5 weeks but
+ *                 typically reserves for catwalk samples or capsules)
+ *
+ * Sourced from production-planning benchmarks (apparel supply-chain
+ * studies; published Sourcing Journal lead-time matrices). Numbers are
+ * conservative midpoints for moderately-complex apparel; bespoke /
+ * couture would add 2-4 weeks on top.
+ */
+export const DEFAULT_LEAD_TIME_WEEKS_BY_ORIGIN: Record<string, { production: number; transit: number }> = {
+  IT: { production: 6, transit: 1 },
+  PT: { production: 6, transit: 1 },
+  ES: { production: 5, transit: 1 },
+  FR: { production: 7, transit: 1 },
+  TR: { production: 8, transit: 2 },
+  TN: { production: 8, transit: 1 },
+  MA: { production: 8, transit: 1 },
+  IN: { production: 12, transit: 5 },
+  BD: { production: 12, transit: 5 },
+  CN: { production: 12, transit: 5 },
+  VN: { production: 11, transit: 5 },
+  MX: { production: 9, transit: 3 },
+  US: { production: 8, transit: 3 },
+  default: { production: 10, transit: 3 },
+};
+
+/**
+ * Curated list of production origins surfaced to the user in the Origin
+ * Selector. Grouped by region so the dropdown reads naturally — Europe
+ * (premium, fast turnaround), Mediterranean (mid-cost, fast), Asia
+ * (low-cost, longer lead). The `factoryRate` and `dutiesPct` are echoed
+ * from the constants above so the UI can render a quick impact preview
+ * without re-importing them. The `leadTimeWeeks` is production + transit.
+ */
+export interface ProductionHub {
+  code: string;       // ISO 3166-1 alpha-2
+  label: string;      // user-facing display
+  region: 'EU' | 'MED' | 'ASIA' | 'AMERICAS';
+  factoryRate: number;
+  freight: number;
+  duties: number;
+  leadTimeWeeks: number;
+  notes: string;      // 1-line UX hint
+}
+
+export const PRODUCTION_HUBS: ProductionHub[] = [
+  { code: 'IT', label: 'Italy',     region: 'EU',   factoryRate: 25, freight: 0.8, duties: 0,  leadTimeWeeks: 7,  notes: 'Premium leather + tailoring · short lead' },
+  { code: 'PT', label: 'Portugal',  region: 'EU',   factoryRate: 18, freight: 1.0, duties: 0,  leadTimeWeeks: 7,  notes: 'Knitwear + light apparel · short lead' },
+  { code: 'ES', label: 'Spain',     region: 'EU',   factoryRate: 18, freight: 0.5, duties: 0,  leadTimeWeeks: 6,  notes: 'Local · shortest lead, premium rate' },
+  { code: 'FR', label: 'France',    region: 'EU',   factoryRate: 25, freight: 0.8, duties: 0,  leadTimeWeeks: 8,  notes: 'Couture-grade workshops · premium rate' },
+  { code: 'TR', label: 'Turkey',    region: 'MED',  factoryRate: 8,  freight: 1.5, duties: 0,  leadTimeWeeks: 10, notes: 'Denim + jersey strength · duty-free to EU' },
+  { code: 'TN', label: 'Tunisia',   region: 'MED',  factoryRate: 6,  freight: 1.2, duties: 0,  leadTimeWeeks: 9,  notes: 'Mid-cost · duty-free to EU' },
+  { code: 'MA', label: 'Morocco',   region: 'MED',  factoryRate: 7,  freight: 1.3, duties: 0,  leadTimeWeeks: 9,  notes: 'Mid-cost · short lead · duty-free' },
+  { code: 'IN', label: 'India',     region: 'ASIA', factoryRate: 4,  freight: 3.2, duties: 12, leadTimeWeeks: 17, notes: 'Embroidery + naturals · longest lead' },
+  { code: 'BD', label: 'Bangladesh',region: 'ASIA', factoryRate: 3,  freight: 3.2, duties: 0,  leadTimeWeeks: 17, notes: 'High-volume basics · EBA duty-free' },
+  { code: 'VN', label: 'Vietnam',   region: 'ASIA', factoryRate: 4.5,freight: 3.5, duties: 0,  leadTimeWeeks: 16, notes: 'EVFTA duty-free · technical apparel' },
+  { code: 'CN', label: 'China',     region: 'ASIA', factoryRate: 5,  freight: 3.0, duties: 12, leadTimeWeeks: 17, notes: 'Broadest capability · 12% EU duty' },
+  { code: 'MX', label: 'Mexico',    region: 'AMERICAS', factoryRate: 6.5, freight: 4.0, duties: 12, leadTimeWeeks: 12, notes: 'Nearshore Americas · denim + cotton' },
+];

@@ -432,7 +432,10 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
               bomLines={bomLines}
               initial={costBreakdown}
               onChange={updateCostBreakdown}
-              sourcingRegion={sku.origin || 'default'}
+              /* production_origin (ISO code, set in Materials sub-step)
+                 wins. Legacy `origin` enum (LOCAL/CHINA/EUROPE/OTHER)
+                 stays as a coarse fallback for pre-053 SKUs. */
+              sourcingRegion={sku.production_origin || sku.origin || 'default'}
               category={sku.category}
             />
           </div>
