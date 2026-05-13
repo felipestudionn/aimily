@@ -273,7 +273,12 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
   }, [doClearStep]);
 
   const mode = modes[STEPS[activeStep]?.id] || 'free';
-  const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || key;
+  // Returns the i18n value for the given skuPhases key, or '' when the key
+  // is missing. Empty string lets `stepLabel('x') || 'Fallback'` work as
+  // intended — the previous "|| key" fallback was leaking raw camelCase
+  // keys like "materialsCanonicalDesc" into the UI whenever the
+  // translation hadn't shipped yet.
+  const stepLabel = (key: string): string => (t.skuPhases as Record<string, string>)?.[key] || '';
 
   // Sync footer CTA with parent
   // When evolutionStep === 'colorways': sub-step navigation (Continue through Colorways→Materials→TechPack)
@@ -409,6 +414,7 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
     if (hasAnyMaterial) return;
     materialsAutoFiredFor.current = sku.id;
     let cancelled = false;
+    setGenerating(true);
     (async () => {
       try {
         const skuColorwaysLocal = colorways.filter(c => c.sku_id === sku.id);
@@ -481,6 +487,8 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
         }
       } catch (err) {
         console.error('[Materials auto-propose]', err);
+      } finally {
+        if (!cancelled) setGenerating(false);
       }
     })();
     return () => {
@@ -1361,12 +1369,30 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
                   <button onClick={autoFillMaterials} disabled={generating}
                     className="shrink-0 inline-flex items-center justify-center gap-2 py-2 px-5 rounded-full border border-carbon/[0.12] text-carbon/60 text-[12px] font-medium tracking-[-0.01em] hover:bg-carbon hover:text-white transition-all disabled:opacity-30">
                     {generating && <Loader2 className="h-3 w-3 animate-spin" />}
-                    {stepLabel('regenerateMaterials') || 'Regenerar materiales'}
+                    {generating
+                      ? (stepLabel('generatingMaterials') || 'Generando materiales…')
+                      : (stepLabel('regenerateMaterials') || 'Regenerar materiales')}
                   </button>
                 </div>
 
+                {/* Empty-loading state — first auto-propose hasn't returned yet
+                    and zones haven't been seeded. Replaces the bare table that
+                    used to flash 8 empty rows + raw i18n keys while the LLM
+                    was still thinking. */}
+                {generating && matZones.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 gap-3 bg-white border border-carbon/[0.04] rounded-[12px]">
+                    <Loader2 className="h-5 w-5 animate-spin text-carbon/30" />
+                    <p className="text-[12px] text-carbon/45 tracking-[-0.01em]">
+                      {stepLabel('generatingMaterials') || 'Generando materiales…'}
+                    </p>
+                    <p className="text-[10px] text-carbon/25 max-w-[280px] text-center leading-relaxed">
+                      {stepLabel('generatingMaterialsHint') || 'Aimily está proponiendo materiales cost-aware. Podrás cambiarlos en un momento.'}
+                    </p>
+                  </div>
+                )}
+
                 {/* Simplified BOM table: Zone + Material + Finish */}
-                <div className="space-y-1">
+                <div className={`space-y-1 ${generating && matZones.length === 0 ? 'hidden' : ''}`}>
                   <div className="grid grid-cols-[20px_minmax(80px,1.2fr)_minmax(120px,2fr)_minmax(80px,1fr)_20px] gap-x-2 px-3">
                     <span />
                     <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zoneLabel') || 'Zone'}</span>
