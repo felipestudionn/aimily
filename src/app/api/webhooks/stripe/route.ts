@@ -117,6 +117,54 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  // Aimily Studio pack purchase (one-time payment, mode='payment', metadata.type='studio_pack')
+  // Allocates the bundle of outputs into the project's studio_purchases pool.
+  if (session.mode === 'payment' && session.metadata?.type === 'studio_pack') {
+    const studioProjectId = session.metadata?.studio_project_id;
+    const tier = session.metadata?.tier;
+    const outputsRaw = session.metadata?.outputs;
+    const outputs = outputsRaw ? parseInt(outputsRaw, 10) : 0;
+
+    if (!studioProjectId || !tier || !outputs || outputs <= 0) {
+      console.error('[Stripe webhook] Invalid studio_pack metadata:', session.metadata);
+      return;
+    }
+    if (!['capsule', 'editorial', 'full_campaign'].includes(tier)) {
+      console.error('[Stripe webhook] Invalid studio_pack tier:', tier);
+      return;
+    }
+
+    // session.payment_intent is the PaymentIntent ID; use it as the idempotency key
+    const paymentIntentId = typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+    if (!paymentIntentId) {
+      console.error('[Stripe webhook] No payment_intent on studio_pack session');
+      return;
+    }
+
+    const amountCents = typeof session.amount_total === 'number' ? session.amount_total : null;
+
+    const { error } = await supabaseAdmin.rpc('allocate_studio_outputs', {
+      p_user_id: userId,
+      p_studio_project_id: studioProjectId,
+      p_pack_tier: tier,
+      p_outputs_count: outputs,
+      p_stripe_payment_intent_id: paymentIntentId,
+      p_amount_eur_cents: amountCents,
+    });
+
+    if (error) {
+      console.error('[Stripe webhook] Failed to allocate studio outputs:', error);
+    } else {
+      console.log(
+        `[Stripe webhook] Allocated ${outputs} ${tier} outputs to studio_project ${studioProjectId} for user ${userId}`
+      );
+    }
+    return;
+  }
+
   // Aimily Credits pack purchase (one-time payment, mode='payment')
   if (session.mode === 'payment' && session.metadata?.pack) {
     const imagery = parseInt(session.metadata.imagery || '0', 10);
