@@ -25,7 +25,8 @@ export interface StudioFormat {
   width: number;
   height: number;
   fit: 'cover' | 'contain' | 'inside';
-  position: sharp.Strategy | sharp.Gravity;
+  /** Sharp position: a strategy enum value (smart crop) or a gravity string ('centre', etc.) */
+  position: number | string;
   quality: number;
 }
 
