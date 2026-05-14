@@ -12,6 +12,12 @@ const intlMiddleware = createIntlMiddleware(routing);
 // (/, /contact, ...) to /[locale]/... and emit hreflang Link headers.
 // All marketing routing is delegated to next-intl — no auth check.
 const MARKETING_BARE_PATHS = ['', '/contact', '/trust', '/privacy', '/terms', '/cookies'];
+// Public marketing pages that LIVE under [locale]/ but DON'T need a bare-path
+// redirect (because there's an authenticated route at the same name). Anyone
+// linking to /[locale]/studio must do so with the locale prefix explicitly.
+// This avoids the routing conflict between (app)/studio (authenticated
+// dashboard at /studio) and [locale]/studio (public landing at /es/studio).
+const MARKETING_LOCALE_ONLY_PATHS = ['/studio'];
 
 // Marketing path PREFIXES — content-driven sub-trees (workflows, vs, etc.)
 // added in Wave 1+. Anything under these is public and should be delegated
@@ -34,6 +40,11 @@ function isMarketingPath(pathname: string): boolean {
     // Locale + content prefix (/en/workflows/brand-dna, /es/vs/centric, …)
     if (MARKETING_PREFIXES.some((p) => pathname === `/${locale}${p}` || pathname.startsWith(`/${locale}${p}/`))) {
       return true;
+    }
+    // Locale-only marketing paths (no bare-path equivalent — avoids conflict
+    // with authenticated routes that own the bare path).
+    for (const mp of MARKETING_LOCALE_ONLY_PATHS) {
+      if (pathname === `/${locale}${mp}` || pathname.startsWith(`/${locale}${mp}/`)) return true;
     }
   }
   return false;

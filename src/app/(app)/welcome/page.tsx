@@ -19,7 +19,12 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function WelcomePage() {
+interface WelcomePageProps {
+  searchParams: Promise<{ next?: string; tier?: string }>;
+}
+
+export default async function WelcomePage({ searchParams }: WelcomePageProps) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,6 +32,32 @@ export default async function WelcomePage() {
 
   if (!user) {
     redirect('/');
+  }
+
+  // ─── Studio fork ─────────────────────────────────────────────────────
+  // If the user signed up from the Studio funnel (?next=/studio/...),
+  // skip the Aimily-360 OnboardingFlow entirely. Mark their onboarding
+  // as completed (so future logins don't bounce them back here) and
+  // redirect to the requested Studio destination, propagating `tier` if
+  // provided.
+  //
+  // Business plan §5.6 rule "solo ves lo tuyo": Studio buyers don't see
+  // the collection onboarding because they didn't ask for a collection.
+  // ─────────────────────────────────────────────────────────────────────
+  if (params.next && params.next.startsWith('/studio')) {
+    try {
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({ onboarding_completed_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+    } catch (err) {
+      console.error('[welcome] failed to mark onboarding complete for Studio fork:', err);
+      // Soft-fail — we still redirect them; worst case they revisit /welcome later.
+    }
+    const dest = params.tier
+      ? `${params.next}${params.next.includes('?') ? '&' : '?'}tier=${encodeURIComponent(params.tier)}`
+      : params.next;
+    redirect(dest);
   }
 
   // Check whether onboarding is already done. We use the admin client so
