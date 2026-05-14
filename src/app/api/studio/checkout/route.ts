@@ -34,19 +34,19 @@ const STUDIO_TIER_CONFIG: Record<
   capsule: {
     priceIdEnv: 'STRIPE_STUDIO_CAPSULE_PRICE_ID',
     outputs: 10,
-    amountEur: 99,
+    amountEur: 49,
     label: 'Aimily Studio · Capsule',
   },
   editorial: {
     priceIdEnv: 'STRIPE_STUDIO_EDITORIAL_PRICE_ID',
     outputs: 25,
-    amountEur: 199,
+    amountEur: 99,
     label: 'Aimily Studio · Editorial',
   },
   full_campaign: {
     priceIdEnv: 'STRIPE_STUDIO_FULL_CAMPAIGN_PRICE_ID',
     outputs: 50,
-    amountEur: 399,
+    amountEur: 199,
     label: 'Aimily Studio · Full Campaign',
   },
 };

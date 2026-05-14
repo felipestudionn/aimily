@@ -5,6 +5,7 @@ import {
   getAuthenticatedUser,
   enforceAiUserRateLimit,
 } from '@/lib/api-auth';
+import { ADMIN_EMAILS } from '@/lib/stripe';
 import { persistStudioAsset } from '@/lib/storage';
 import { loadStudioContext } from '@/lib/ai/load-studio-context';
 import {
@@ -146,13 +147,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── 4. Consume output budget atomically ──────────────────────────────
-    const budget = await consumeStudioOutput(userId, body.studio_project_id);
-    if (!budget.allowed) {
-      return studioPoolEmptyResponse(body.studio_project_id);
+    // ── 4. Consume output budget atomically (admin bypass) ───────────────
+    // Admin emails (per src/lib/stripe.ts ADMIN_EMAILS) and users with
+    // subscriptions.is_admin=true bypass the budget entirely. They can
+    // generate without owning a pack — pure testing privilege.
+    const isAdmin = ADMIN_EMAILS.includes(user!.email || '');
+    let isAdminFromDb = false;
+    if (!isAdmin) {
+      const { data: sub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('is_admin')
+        .eq('user_id', userId)
+        .maybeSingle();
+      isAdminFromDb = !!sub?.is_admin;
     }
-    purchaseId = budget.purchaseId;
-    consumed = true;
+    const adminBypass = isAdmin || isAdminFromDb;
+
+    let outputsRemaining = -1; // -1 sentinel = unlimited (admin)
+    if (!adminBypass) {
+      const budget = await consumeStudioOutput(userId, body.studio_project_id);
+      if (!budget.allowed) {
+        return studioPoolEmptyResponse(body.studio_project_id);
+      }
+      purchaseId = budget.purchaseId;
+      consumed = true;
+      outputsRemaining = Math.max(budget.outputsRemaining - 1, 0);
+    }
 
     // ── 5. Look up aimily model if provided ──────────────────────────────
     let aiModel: AimilyModel | null = null;
@@ -334,10 +354,11 @@ export async function POST(req: NextRequest) {
       asset_id: persisted.assetId,
       master_url: persisted.publicUrl,
       formats,
-      outputs_remaining: Math.max(budget.outputsRemaining - 1, 0),
+      outputs_remaining: outputsRemaining, // -1 = unlimited (admin)
       provider: 'openai-gpt-image-1.5',
       background_removal: bgRemoval,
       type: body.type,
+      admin_bypass: adminBypass || undefined,
     });
   } catch (error) {
     // Catch-all refund path

@@ -113,7 +113,7 @@ export default async function StudioLandingPage(props: {
               {
                 tier: 'capsule',
                 label: 'Capsule',
-                price: 99,
+                price: 49,
                 outputs: 10,
                 description: 'Tu primer test.',
                 highlight: ['10 fotos editoriales', '12 formatos por foto', 'Brand-locked', 'Casting completo'],
@@ -121,7 +121,7 @@ export default async function StudioLandingPage(props: {
               {
                 tier: 'editorial',
                 label: 'Editorial',
-                price: 199,
+                price: 99,
                 outputs: 25,
                 description: 'Una campaña completa.',
                 highlight: ['25 fotos editoriales', '12 formatos por foto', 'Brand-locked', 'Casting completo'],
@@ -130,7 +130,7 @@ export default async function StudioLandingPage(props: {
               {
                 tier: 'full_campaign',
                 label: 'Full Campaign',
-                price: 399,
+                price: 199,
                 outputs: 50,
                 description: 'Multi-uso: campaña + ecom + social.',
                 highlight: ['50 fotos editoriales multi-uso', '12 formatos por foto', 'Brand-locked', 'Casting completo'],
