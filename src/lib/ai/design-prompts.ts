@@ -289,6 +289,29 @@ Return ONLY valid JSON:
       const materialsBudget = input.materialsBudget || ''; // e.g. "€30.00"
       const zonesContext = input.zones || '';
       const knownZones = zonesContext.split(',').map(z => z.trim()).filter(Boolean);
+
+      /* Retail price tier — Felipe (2026-05-14): "una persona que no es
+       * diseñadora se puede perder, debería ser una decisión de calidad,
+       * material y precio." The materials budget alone is a one-sided
+       * constraint (don't go OVER); add the tier floor so the AI doesn't
+       * propose €5/m² jersey for a €320 retail dress. This calibrates
+       * material quality to the brand's actual price point. */
+      const pvpNum = Number((targetPvp.match(/[\d.]+/) || ['0'])[0]) || 0;
+      let priceTier = '';
+      let tierFloor = '';
+      if (pvpNum > 0 && pvpNum < 50) {
+        priceTier = 'BUDGET (< €50 retail)';
+        tierFloor = 'turkish cotton jersey €5-8/m² · basic polyester thread · injected polyurethane sole · simple plastic trims · standard zippers. NO premium leather, NO italian fabrics, NO trade-name finishes.';
+      } else if (pvpNum < 150) {
+        priceTier = 'MID-MARKET (€50-149 retail)';
+        tierFloor = 'european cotton €8-14/m² · cotton-blend linen €9-15/m² · basic vegetable-tanned nappa €10-15/m² · mid-grade trims · YKK zippers · poliester/cotton blend thread. Premium materials only as a single accent.';
+      } else if (pvpNum < 400) {
+        priceTier = 'PREMIUM (€150-399 retail)';
+        tierFloor = 'portuguese / spanish premium cotton €15-25/m² · italian linen €18-30/m² · OEKO-TEX or GOTS-certified fabrics · italian vegetable-tanned nappa €18-30/m² · brass / aged-bronze hardware · trade-name thread (Aurifil, Gütermann premium) · 80%+ natural fibres. Cheap synthetic substitutes blow the brand promise — do not propose them.';
+      } else {
+        priceTier = 'LUXURY (€400+ retail)';
+        tierFloor = 'italian conceria leather €35-65/m² (Conceria Walpier, Tempesti, Vergelio) · mulberry silk €40-80/m² · linen Italia or Belgian linen €30-50/m² · couture-grade construction · solid-brass / silver-plated hardware · italian thread (Filo Aurifil 50wt+) · mother-of-pearl buttons. NEVER propose budget-tier substitutes.';
+      }
       return {
         temperature: 0.55,
         system: `${PERSONAS.designConsultant}
@@ -306,11 +329,15 @@ PRODUCT CONTEXT:
 - Colorways selected: ${input.colorways || 'not specified'}
 - Additional notes: ${input.concept || ''}
 
-COST FRAME (NON-NEGOTIABLE):
+COST FRAME (NON-NEGOTIABLE — two-sided constraint):
 - Target retail price (PVP): ${targetPvp || 'not specified'}
 - Target unit cost (COGS): ${targetCogs || 'not specified'}
 - Target margin: ${targetMargin || 'not specified'}
-- MATERIALS BUDGET (must not be exceeded): ${materialsBudget || 'not specified'}
+- MATERIALS BUDGET (CEILING — total must not exceed): ${materialsBudget || 'not specified'}
+${priceTier ? `- PRICE TIER (FLOOR — materials must match this quality grade):
+  ${priceTier}
+  Tier examples: ${tierFloor}
+  This is the FLOOR. Going BELOW it breaks the brand promise just as badly as going over the ceiling. A €${pvpNum.toFixed(0)} retail piece in cheap-tier materials reads instantly as a counterfeit — propose materials whose perceived quality matches the price the customer is paying.` : ''}
 
 The materials budget is the slice of COGS the brand can spend on materials BEFORE labor, overhead, freight and duties. Industry-standard ratios that produced this number:
 - Footwear (CALZADO): materials = ~50% of COGS
@@ -323,9 +350,11 @@ ${knownZones.length > 0 ? knownZones.map(z => `  - ${z}`).join('\n') : '  (zones
 YOUR TASK:
 1. Propose ONE material per zone listed above (or one per standard BOM position when no zones provided).
 2. For EACH material return: name, zone, type, description, sustainability, an estimated consumption per unit (with its unit), an average market price per unit (cost_per_unit), and the resulting cost_total = consumption × cost_per_unit rounded to 2 decimals.
-3. The SUM of cost_total across all materials MUST be ≤ the materials budget above. If the budget is tight, downgrade to mid-tier suppliers (Spanish/Portuguese tanneries instead of Italian; Turkish cotton instead of Japanese), simpler finishes, lower GSM, smaller hardware. NEVER propose premium materials that blow the budget.
-4. Use realistic market prices (EUR). Be conservative — when unsure, pick the cheaper end of the realistic range. Premium ranges only when the budget allows.
-5. Trade names where reasonable, but only when they fit the price. "Italian Vitello Crust from Conceria Walpier" is fine for a €350 boot; for a €60 ballerina propose a Spanish vegetable-tanned nappa €8-12/m² instead.
+3. The SUM of cost_total across all materials MUST be ≤ the materials budget above.
+4. SIMULTANEOUSLY each material MUST meet the PRICE TIER FLOOR above. A premium-retail piece needs premium-grade materials — going cheap to "save margin" is wrong (it sinks the brand's perceived value, not the brand's costs).
+5. When ceiling and floor collide (budget too tight for tier-appropriate materials), CHOOSE THE FLOOR: stay in tier, propose fewer accent materials, simplify construction. Never substitute with a lower tier — flag the tension in the rationale instead so the user can re-price.
+6. Use realistic market prices (EUR). Anchor on the tier's example range above.
+7. Trade names where they exist in the tier ("Italian Vitello Crust from Conceria Walpier" for luxury; "Spanish vegetable-tanned nappa from Curtidos Boxcalf" for mid-market). Generic descriptions for budget tier.
 
 QUALITY RULES:
 ${QUALITY_GATES.designSpecificity}

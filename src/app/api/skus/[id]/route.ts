@@ -134,6 +134,24 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       }
     }
 
+    /* Auto-sync sku.cost from BOM whenever a cost-shaping field
+     * changes. This is the structural fix for the "phantom sku.cost"
+     * problem: Range Plan, financial recap, the AI materialsBudget
+     * anchor, the sales dashboard — every downstream consumer reads
+     * sku.cost as the canonical SKU economic figure. If we don't sync
+     * it to the BOM, those consumers drift. Awaited so a follow-up AI
+     * call (e.g. regenerate-materials) sees the fresh number. */
+    const costAffectingFields = ['material_zones', 'production_origin', 'origin'];
+    const touchedCostField = costAffectingFields.some(f => f in updates);
+    if (touchedCostField && data?.id) {
+      try {
+        const { syncSkuCost } = await import('@/lib/costing/sync-sku-cost');
+        await syncSkuCost(data.id);
+      } catch (err) {
+        console.error('[syncSkuCost] failed (non-blocking):', err);
+      }
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('PATCH SKU error:', error);

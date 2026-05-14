@@ -10,6 +10,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { TeamPermission } from '@/lib/team-permissions';
 import {
   recalculateCostBreakdown,
+  DEFAULT_FACTORY_RATE_BY_REGION,
+  DEFAULT_DUTIES_PCT_BY_ORIGIN_TO_EU,
+  DEFAULT_LABOR_HOURS_BY_CATEGORY,
+  DEFAULT_FREIGHT_EUR_BY_ORIGIN,
   type BomLine,
   type CostBreakdown,
 } from '@/lib/costing/landed-cost';
@@ -132,7 +136,7 @@ async function recomputeAndSyncCost(
 ): Promise<CostBreakdown | null> {
   const { data: sku } = await supabaseAdmin
     .from('collection_skus')
-    .select('id, pvp, cost_breakdown')
+    .select('id, pvp, cost_breakdown, category, origin, production_origin')
     .eq('id', skuId)
     .maybeSingle();
   if (!sku) return null;
@@ -149,20 +153,42 @@ async function recomputeAndSyncCost(
   }
 
   const prev = (sku.cost_breakdown ?? {}) as Partial<CostBreakdown>;
+  // Stale-zero promotion (Felipe 2026-05-13): legacy breakdowns persisted
+  // labor=0 / freight=0 / overhead=0 because the CostingPanel defaults
+  // were 0 at the time. Treat any stored zero as "still on the legacy
+  // default" and substitute the industry midpoint, indexed by category
+  // (labor hours) and origin (factory rate / freight / duties). This is
+  // the structural fix that lets the BOM-driven sku.cost reflect reality.
+  const sourcingRegion = (sku.production_origin as string) || (sku.origin as string) || 'default';
+  const category = (sku.category as string) || 'default';
+  const factoryRate = (prev.labor?.factory_rate && prev.labor.factory_rate > 0)
+    ? prev.labor.factory_rate
+    : (DEFAULT_FACTORY_RATE_BY_REGION[sourcingRegion] ?? DEFAULT_FACTORY_RATE_BY_REGION.default);
+  const laborHours = (prev.labor?.hours && prev.labor.hours > 0)
+    ? prev.labor.hours
+    : (DEFAULT_LABOR_HOURS_BY_CATEGORY[category] ?? DEFAULT_LABOR_HOURS_BY_CATEGORY.default);
+  const overheadPct = (prev.overhead_pct && prev.overhead_pct > 0) ? prev.overhead_pct : 15;
+  const freightTotal = (prev.freight?.total && prev.freight.total > 0)
+    ? prev.freight.total
+    : (DEFAULT_FREIGHT_EUR_BY_ORIGIN[sourcingRegion] ?? DEFAULT_FREIGHT_EUR_BY_ORIGIN.default);
+  const dutiesPct = (prev.duties_pct && prev.duties_pct > 0)
+    ? prev.duties_pct
+    : (DEFAULT_DUTIES_PCT_BY_ORIGIN_TO_EU[sourcingRegion] ?? DEFAULT_DUTIES_PCT_BY_ORIGIN_TO_EU.default);
+
   const breakdown = recalculateCostBreakdown({
     bomLines,
     fxRates,
     manualMaterialOverride: prev.materials?.manual_override ?? null,
     materialSourceOfTruth: prev.materials?.source_of_truth ?? 'bom',
-    factoryRate: prev.labor?.factory_rate ?? 0,
-    laborHours: prev.labor?.hours ?? 0,
-    overheadPct: prev.overhead_pct ?? 0,
-    freightOrigin: prev.freight?.origin ?? '',
-    freightDestination: prev.freight?.destination ?? '',
+    factoryRate,
+    laborHours,
+    overheadPct,
+    freightOrigin: prev.freight?.origin ?? sourcingRegion,
+    freightDestination: prev.freight?.destination ?? 'ES',
     freightMethod: prev.freight?.method ?? 'sea',
-    freightTotal: prev.freight?.total ?? 0,
-    dutiesPct: prev.duties_pct ?? 0,
-    targetMarginPct: prev.target_margin_pct ?? 0,
+    freightTotal,
+    dutiesPct,
+    targetMarginPct: prev.target_margin_pct ?? 65,
     pvp: typeof sku.pvp === 'number' ? sku.pvp : 0,
   });
   // Preserve the AI suggestions panel if it was already populated — the
