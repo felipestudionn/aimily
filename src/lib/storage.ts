@@ -171,7 +171,18 @@ export interface UploadResult {
 
 export interface AssetRecord {
   id?: string;
-  collection_plan_id: string;
+  /**
+   * Required for Aimily 360 (collection-scoped). Migration 055 made this
+   * NULLABLE at the DB level so Studio assets (which have studio_project_id)
+   * can omit it. The DB CHECK constraint enforces exactly one of the two.
+   */
+  collection_plan_id?: string;
+  /**
+   * Required for Aimily Studio (project-scoped). Set when the asset is
+   * generated via /api/studio/generate. Mutually exclusive with
+   * collection_plan_id per migration 055.
+   */
+  studio_project_id?: string;
   phase: string;
   asset_type: string;
   name: string;
@@ -336,6 +347,57 @@ export async function persistAsset(opts: {
 
   const assetId = await saveAssetRecord({
     collection_plan_id: opts.collectionPlanId,
+    phase: opts.phase || opts.assetType,
+    asset_type: opts.assetType,
+    name: opts.name,
+    description: opts.description,
+    url: upload.publicUrl,
+    metadata: {
+      ...opts.metadata,
+      storage_path: upload.storagePath,
+    },
+    uploaded_by: opts.uploadedBy,
+  });
+
+  return { publicUrl: upload.publicUrl, assetId };
+}
+
+/**
+ * Aimily Studio variant of persistAsset.
+ *
+ * Same flow as persistAsset but the storage path uses studio_project_id as
+ * the container prefix, and the DB row is inserted with studio_project_id
+ * (collection_plan_id stays NULL — migration 055 allows this).
+ *
+ * Used by /api/studio/generate to persist Studio outputs.
+ */
+export async function persistStudioAsset(opts: {
+  studioProjectId: string;
+  assetType: AssetType;
+  name: string;
+  description?: string;
+  sourceUrl?: string;
+  base64?: string;
+  mimeType?: string;
+  phase?: string;
+  metadata?: Record<string, unknown>;
+  uploadedBy?: string;
+}): Promise<{ publicUrl: string; assetId: string }> {
+  let upload: UploadResult;
+
+  // We reuse the existing upload helpers — they use the first arg as the
+  // path prefix in storage. For Studio we pass studioProjectId as that
+  // prefix so paths look like `{studioProjectId}/{assetType}/{filename}`.
+  if (opts.sourceUrl) {
+    upload = await uploadFromUrl(opts.studioProjectId, opts.assetType, opts.sourceUrl);
+  } else if (opts.base64) {
+    upload = await uploadBase64(opts.studioProjectId, opts.assetType, opts.base64, opts.mimeType);
+  } else {
+    throw new Error('Either sourceUrl or base64 is required');
+  }
+
+  const assetId = await saveAssetRecord({
+    studio_project_id: opts.studioProjectId,
     phase: opts.phase || opts.assetType,
     asset_type: opts.assetType,
     name: opts.name,
