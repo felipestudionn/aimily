@@ -87,12 +87,22 @@ export function CostingPanel({
   // estamos presuponiendo nada de trabajo, overhead, freight, duties".
   // Now the panel arrives with realistic mid-points the user can fine-
   // tune. See TYPICAL_COGS_SPLIT_PCT in landed-cost.ts for sources.
+  //
+  // Stale-zero promotion: legacy SKUs persisted laborHours=0 / freight=0
+  // before the defaults shipped. `?? default` only catches undefined, so
+  // those stored zeros leaked through and produced 89%+ phantom margins.
+  // We now treat 0 as "still on the legacy default" and substitute the
+  // industry midpoint, while any explicit non-zero edit stays untouched.
   const defaultLaborHours = DEFAULT_LABOR_HOURS_BY_CATEGORY[category || 'default'] ?? DEFAULT_LABOR_HOURS_BY_CATEGORY.default;
   const defaultFreight = DEFAULT_FREIGHT_EUR_BY_ORIGIN[sourcingRegion] ?? DEFAULT_FREIGHT_EUR_BY_ORIGIN.default;
 
-  const [laborHours, setLaborHours] = useState<number>(initial?.labor?.hours ?? defaultLaborHours);
+  const [laborHours, setLaborHours] = useState<number>(
+    initial?.labor?.hours && initial.labor.hours > 0 ? initial.labor.hours : defaultLaborHours,
+  );
   const [overheadPct, setOverheadPct] = useState<number>(initial?.overhead_pct ?? 15);
-  const [freightTotal, setFreightTotal] = useState<number>(initial?.freight?.total ?? defaultFreight);
+  const [freightTotal, setFreightTotal] = useState<number>(
+    initial?.freight?.total && initial.freight.total > 0 ? initial.freight.total : defaultFreight,
+  );
   const [freightOrigin, setFreightOrigin] = useState<string>(initial?.freight?.origin ?? sourcingRegion);
   const [freightDestination, setFreightDestination] = useState<string>(initial?.freight?.destination ?? 'ES');
   const [freightMethod, setFreightMethod] = useState<'sea' | 'air' | 'rail' | 'road'>(

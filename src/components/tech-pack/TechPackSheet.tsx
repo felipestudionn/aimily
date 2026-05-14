@@ -34,6 +34,7 @@ import { PantonePicker } from '@/components/materials/PantonePicker';
 import { MaterialCombobox } from '@/components/materials/MaterialCombobox';
 import type { Zone } from '@/lib/materials-library';
 import { CostingPanel } from '@/components/tech-pack/CostingPanel';
+import { OriginSelector } from '@/components/planner/sku-phases/OriginSelector';
 import type { CostBreakdown } from '@/lib/costing/landed-cost';
 import { RevisionPill } from '@/components/tech-pack/RevisionPill';
 import {
@@ -155,7 +156,30 @@ async function uploadImage(
   return j.publicUrl ?? null;
 }
 
-export function TechPackSheet({ collectionId, collectionName, season, sku, initialData, initialComments }: Props) {
+export function TechPackSheet({ collectionId, collectionName, season, sku: skuProp, initialData, initialComments }: Props) {
+  /* Local SKU state — Sheet edits sku.production_origin in-place via the
+     OriginSelector. The cascading reactivity (costing panel reads
+     sku.production_origin) needs the change to be visible without a
+     full route refetch. */
+  const [sku, setSku] = useState<SKU>(skuProp);
+  useEffect(() => { setSku(skuProp); }, [skuProp]);
+
+  const persistSkuPatch = useCallback(async (patch: Partial<SKU>) => {
+    setSku(s => ({ ...s, ...patch }));
+    try {
+      const res = await fetch(`/api/skus/${skuProp.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const fresh = await res.json();
+        setSku(fresh);
+      }
+    } catch (err) {
+      console.error('[TechPackSheet] SKU patch failed', err);
+    }
+  }, [skuProp.id]);
   const t = useTranslation();
   const tp = (t as unknown as { techPack?: Record<string, string> }).techPack || {};
   const [data, setData] = useState<TechPackDataRow>(initialData || {});
@@ -422,6 +446,20 @@ export function TechPackSheet({ collectionId, collectionName, season, sku, initi
         <div className="bg-white rounded-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden">
           {/* Header block */}
           <HeaderBlock sku={sku} collectionName={collectionName} season={season} tp={tp} revisionRefreshKey={revisionRefreshKey} />
+
+          {/* Production origin — mirrors the OriginSelector in the inline
+              Materials sub-step. Sheet and inline views share the same
+              SKU column, so editing here updates everywhere. The selector
+              sits ABOVE the costing panel so the user can pick the country
+              and watch the freight / duties / lead-time pills update the
+              numbers below in real time. */}
+          <div className="border-t border-carbon/[0.06] px-8 md:px-10 py-6">
+            <OriginSelector
+              collectionId={collectionId}
+              productionOrigin={sku.production_origin}
+              onChange={async (code) => { await persistSkuPatch({ production_origin: code } as Partial<SKU>); }}
+            />
+          </div>
 
           {/* Phase 2 Costing Panel — BOM-driven landed cost + AI margin protection */}
           <div className="border-t border-carbon/[0.06] px-8 md:px-10 py-6">
