@@ -1406,38 +1406,97 @@ export function SketchPhase({ sku, onUpdate, onImageUpload, uploading, onFooterA
 
                 {/* Simplified BOM table: Zone + Material + Finish */}
                 <div className={`space-y-1 ${generating && matZones.length === 0 ? 'hidden' : ''}`}>
-                  <div className="grid grid-cols-[20px_minmax(80px,1.2fr)_minmax(120px,2fr)_minmax(80px,1fr)_20px] gap-x-2 px-3">
+                  {(() => {
+                    /* Running total — gives the user a live cost-of-materials
+                     * read against the target. Felipe (2026-05-14): "una
+                     * persona que no es diseñadora se puede perder, debería
+                     * ser una decisión de calidad + material + precio". The
+                     * total + target-share is the precio anchor. */
+                    const materialsTotal = matZones.reduce((acc, z) => {
+                      const ct = (z as { cost_total?: number }).cost_total;
+                      return acc + (typeof ct === 'number' ? ct : 0);
+                    }, 0);
+                    // Target materials = pvp × (1 − margin) × industry materials ratio.
+                    // Same ratio used by the cost-aware AI prompt so the two stay aligned.
+                    const matRatio = sku.category === 'CALZADO' ? 0.50 : sku.category === 'ACCESORIOS' ? 0.45 : 0.55;
+                    const targetMaterials = sku.pvp > 0 ? sku.pvp * 0.35 * matRatio : 0;
+                    const share = targetMaterials > 0 ? Math.round((materialsTotal / targetMaterials) * 100) : 0;
+                    const isOver = targetMaterials > 0 && materialsTotal > targetMaterials * 1.1;
+                    return (
+                      <div className="flex items-center justify-between gap-3 px-3 py-2 bg-carbon/[0.02] rounded-[10px] mb-2">
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-[10px] text-carbon/45 tracking-[-0.01em]">
+                            {stepLabel('materialsRunningTotal') || 'Materials total'}
+                          </p>
+                          <p className="text-[14px] font-semibold tabular-nums text-carbon">€{materialsTotal.toFixed(2)}</p>
+                          {targetMaterials > 0 && (
+                            <p className={`text-[10px] tabular-nums ${isOver ? 'text-[#A0463C]' : 'text-carbon/40'}`}>
+                              {stepLabel('ofTargetMaterials') || 'of'} €{targetMaterials.toFixed(2)} {stepLabel('targetShort') || 'target'} · {share}%
+                            </p>
+                          )}
+                        </div>
+                        {targetMaterials > 0 && !isOver && (
+                          <p className="text-[10px] text-[#2d6a4f] tabular-nums">
+                            €{(targetMaterials - materialsTotal).toFixed(2)} {stepLabel('budgetLeft') || 'budget left'}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  <div className="grid grid-cols-[20px_minmax(80px,1.2fr)_minmax(120px,2fr)_70px_20px] gap-x-2 px-3">
                     <span />
                     <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('zoneLabel') || 'Zone'}</span>
                     <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('materialLabel') || 'Material'}</span>
-                    <span className="text-[8px] text-carbon/20 uppercase tracking-wider">{stepLabel('finishLabel') || 'Finish'}</span>
+                    <span className="text-[8px] text-carbon/20 uppercase tracking-wider text-right">{stepLabel('costShort') || 'Cost'}</span>
                     <span />
                   </div>
 
                   {matZones.map((mz, idx) => {
                     const hex = zoneColor(mz.zone);
+                    const costTotal = (mz as { cost_total?: number }).cost_total;
+                    const costPerUnit = (mz as { cost_per_unit?: string }).cost_per_unit;
+                    const finish = mz.finish || '';
+                    // Finish text from the AI can be verbose ("Algodón
+                    // convencional; alternativa GOTS disponible a +€1.20/m²
+                    // si presupuesto lo permite"). Truncate visibly; hover
+                    // shows the full text via title.
+                    const finishShort = finish.length > 32 ? finish.slice(0, 30) + '…' : finish;
                     return (
-                      <div key={idx} className="grid grid-cols-[20px_minmax(80px,1.2fr)_minmax(120px,2fr)_minmax(80px,1fr)_20px] gap-x-2 items-center px-3 py-2 bg-white border border-carbon/[0.04]">
+                      <div key={idx} className="grid grid-cols-[20px_minmax(80px,1.2fr)_minmax(120px,2fr)_70px_20px] gap-x-2 items-center px-3 py-2 bg-white border border-carbon/[0.04]">
                         <div>{hex ? <div className="w-4 h-4 border border-carbon/[0.08]" style={{ backgroundColor: hex }} /> : <div className="w-4 h-4 border border-dashed border-carbon/[0.06]" />}</div>
                         <input value={mz.zone} onChange={(e) => updateMatZone(idx, 'zone', e.target.value)}
                           className="text-[11px] font-light text-carbon bg-transparent border-b border-transparent hover:border-carbon/[0.06] focus:outline-none focus:border-carbon/[0.12]" />
-                        <MaterialCombobox
-                          value={mz.material}
-                          onChange={(val, picked) => {
-                            updateMatZone(idx, 'material', val);
-                            // Auto-fill finish from picked material's defaultFinish
-                            // when the user hasn't already typed one. Reduces busywork.
-                            if (picked?.defaultFinish && !mz.finish) {
-                              updateMatZone(idx, 'finish', picked.defaultFinish);
-                            }
-                          }}
-                          category={sku.category}
-                          zone={mz.zone as Zone}
-                          size="compact"
-                          placeholder={stepLabel('materialPlaceholder') || 'e.g. Italian linen 230gsm'}
-                        />
-                        <input value={mz.finish || ''} onChange={(e) => updateMatZone(idx, 'finish', e.target.value)}
-                          placeholder="Tumbled, Matte..." className="text-[10px] text-carbon/35 bg-transparent border-b border-carbon/[0.04] focus:outline-none focus:border-carbon/[0.12]" />
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <MaterialCombobox
+                            value={mz.material}
+                            onChange={(val, picked) => {
+                              updateMatZone(idx, 'material', val);
+                              if (picked?.defaultFinish && !mz.finish) {
+                                updateMatZone(idx, 'finish', picked.defaultFinish);
+                              }
+                            }}
+                            category={sku.category}
+                            zone={mz.zone as Zone}
+                            size="compact"
+                            placeholder={stepLabel('materialPlaceholder') || 'e.g. Italian linen 230gsm'}
+                          />
+                          {finishShort && (
+                            <p className="text-[9px] text-carbon/30 truncate" title={finish}>{finishShort}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          {typeof costTotal === 'number' ? (
+                            <>
+                              <p className="text-[11px] font-semibold tabular-nums text-carbon">€{costTotal.toFixed(2)}</p>
+                              {costPerUnit && (
+                                <p className="text-[9px] text-carbon/30 tabular-nums" title={costPerUnit}>{costPerUnit}</p>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-[10px] text-carbon/20">—</span>
+                          )}
+                        </div>
                         <button onClick={() => removeMatZone(idx)} className="text-carbon/10 hover:text-[#A0463C]/40"><X className="h-3 w-3" /></button>
                       </div>
                     );

@@ -206,28 +206,50 @@ export function CostingPanel({
         onClick={() => setExpanded((x) => !x)}
         className="w-full px-4 py-3 flex items-center gap-4 hover:bg-carbon/[0.02] transition-colors text-left"
       >
-        {/* Margin gauge */}
-        <div className="shrink-0 flex flex-col gap-1">
-          <p className="text-[8px] tracking-[0.15em] uppercase font-semibold text-carbon/40">Margin</p>
+        {/* Margin gauge — dual bar (current vs target) with EUR headroom.
+            Felipe (2026-05-14): "tendrían que haber dos barras y verse que
+            estamos muy por encima del margen. La diferencia de euros que
+            nos faltan también tendría que mostrarse." Two stacked rows
+            now: actual margin bar over a thinner target reference bar, so
+            the gap reads instantly. The headroom line below states it in
+            EUR ("€80 headroom" / "€12 over target") which is more
+            actionable than a percentage abstraction. */}
+        <div className="shrink-0 flex flex-col gap-1.5 min-w-[180px]">
           <div className="flex items-center gap-2">
-            <div className={`relative h-1.5 w-24 rounded-full bg-carbon/[0.06] ring-1 ${c.ring} overflow-hidden`}>
+            <p className="text-[8px] tracking-[0.15em] uppercase font-semibold text-carbon/40">Margin</p>
+            <span className={`text-[12px] font-semibold tabular-nums ${c.text}`}>
+              {breakdown.current_margin_pct.toFixed(1)}%
+            </span>
+            <span className="text-[9px] text-carbon/35 tabular-nums">vs {targetMarginPct}%</span>
+          </div>
+          <div className="space-y-1">
+            <div className={`relative h-1.5 w-full rounded-full bg-carbon/[0.06] ring-1 ${c.ring} overflow-hidden`}>
               <div
                 className={`absolute inset-y-0 left-0 ${c.bar} transition-all`}
                 style={{ width: `${gaugePct}%` }}
               />
-              {/* Target marker */}
+            </div>
+            <div className="relative h-1 w-full rounded-full bg-carbon/[0.04] overflow-hidden">
               <div
-                className="absolute inset-y-0 w-px bg-carbon/30"
-                style={{ left: `${targetMarginPct}%` }}
+                className="absolute inset-y-0 left-0 bg-carbon/40"
+                style={{ width: `${targetMarginPct}%` }}
               />
             </div>
-            <span className={`text-[12px] font-semibold tabular-nums ${c.text}`}>
-              {breakdown.current_margin_pct.toFixed(1)}%
-            </span>
-            <span className="text-[10px] text-carbon/40 tabular-nums">
-              tgt {targetMarginPct}%
-            </span>
           </div>
+          {pvp > 0 && (() => {
+            const targetCogs = pvp * (1 - targetMarginPct / 100);
+            const headroom = targetCogs - breakdown.total_landed;
+            const isOver = headroom < 0;
+            return (
+              <p className={`text-[10px] tabular-nums leading-tight ${
+                isOver ? 'text-[#A0463C]' : 'text-[#2d6a4f]'
+              }`}>
+                {isOver
+                  ? `€${Math.abs(headroom).toFixed(2)} over target`
+                  : `€${headroom.toFixed(2)} headroom`}
+              </p>
+            );
+          })()}
         </div>
 
         {/* Waterfall — inline summary */}
