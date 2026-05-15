@@ -547,6 +547,12 @@ function buildStudioGptPrompt(p: {
       style_reference_url
         ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
         : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
+      // HEAD INTEGRATION — fixes the "pasted-on head" artefact when Image 3
+      // has dynamic body movement. Tells GPT to keep face identity but
+      // re-generate head angle/tilt/gaze to flow with the body.
+      style_reference_url
+        ? `HEAD INTEGRATION (critical): the face is the identity from Image 2 — same features, same hair, same skin tone. But the HEAD POSITION, ANGLE, TILT, and GAZE must be GENERATED to flow naturally with the body's pose and energy in Image 3. The neck must read as continuous with the shoulders. If the body twists, reaches, or leans, the head follows organically. Do NOT paste a locked front-facing head onto a body in motion. Generate the head's angle from the body's energy; the face's identity from Image 2.`
+        : '',
       category === 'CALZADO'
         ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
         : '',
@@ -567,6 +573,10 @@ function buildStudioGptPrompt(p: {
       style_reference_url
         ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
         : `Clean editorial studio setting with soft professional lighting.`,
+      // HEAD INTEGRATION — same fix as editorial (see comment above).
+      style_reference_url
+        ? `HEAD INTEGRATION (critical): the face is the identity from Image 2 — same features, same hair, same skin tone. But the HEAD POSITION, ANGLE, TILT, and GAZE must be GENERATED to flow naturally with the body's pose and energy in Image 3. The neck must read as continuous with the shoulders. If the body twists, reaches, or leans, the head follows organically. Do NOT paste a locked front-facing head onto a body in motion. Generate the head's angle from the body's energy; the face's identity from Image 2.`
+        : '',
       `The model is wearing or carrying the product from Image 1. Natural fit, realistic draping, appropriate shadows where the product meets the body.`,
       category === 'CALZADO'
         ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
