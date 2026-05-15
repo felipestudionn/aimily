@@ -1320,7 +1320,7 @@ export default function ProjectWorkspaceClient(props: Props) {
   const applyVideo = async (
     sourceAsset: Asset,
     motion: 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly',
-    duration: '5' | '10',
+    duration: '5' | '10' | '15',
     userPrompt?: string
   ): Promise<{ ok: boolean; error?: StudioError }> => {
     setVideoInFlight(true);
@@ -2160,7 +2160,7 @@ interface OutputLightboxProps {
   variationInFlight: 'color' | 'background' | 'model' | null;
   onApplyVideo: (
     motion: 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly',
-    duration: '5' | '10',
+    duration: '5' | '10' | '15',
     userPrompt?: string
   ) => Promise<{ ok: boolean; error?: StudioError }>;
   videoInFlight: boolean;
@@ -2183,7 +2183,7 @@ function OutputLightbox({
   // Video form state
   const [videoFormOpen, setVideoFormOpen] = useState(false);
   const [videoMotion, setVideoMotion] = useState<'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly'>('subtle');
-  const [videoDuration, setVideoDuration] = useState<'5' | '10'>('5');
+  const [videoDuration, setVideoDuration] = useState<'5' | '10' | '15'>('5');
   const [videoPrompt, setVideoPrompt] = useState('');
   const [videoError, setVideoError] = useState<StudioError | null>(null);
 
@@ -2434,10 +2434,11 @@ function OutputLightbox({
                       <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
                         {t.vidDurationLabel}
                       </p>
-                      <SegmentedPill<'5' | '10'>
+                      <SegmentedPill<'5' | '10' | '15'>
                         options={[
                           { id: '5', label: '5s' },
                           { id: '10', label: '10s' },
+                          { id: '15', label: '15s' },
                         ]}
                         value={videoDuration}
                         onChange={setVideoDuration}
