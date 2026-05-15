@@ -50,13 +50,20 @@ export interface VideoGenInput {
 }
 
 export interface VideoGenResult {
-  videoUrl: string;
+  /* Both providers now return the raw video bytes + mime so the calling
+   * route can persist them uniformly via uploadBase64 / persistStudioAsset.
+   * Sora's /v1/videos/{id}/content endpoint requires Bearer auth so a
+   * public-URL approach doesn't work for it; Kling's upstream URL is
+   * public but ephemeral, so we copy the bytes anyway to get a stable
+   * 1-year signed URL inside our own bucket. */
+  videoBuffer: Buffer;
+  mimeType: string;
   providerLabel: string;
 }
 
 export interface VideoProvider {
   name: 'kling' | 'sora';
-  /** Returns the upstream-hosted video URL on success, throws on failure. */
+  /** Returns the raw video bytes on success, throws on failure. */
   generate(input: VideoGenInput): Promise<VideoGenResult>;
 }
 
@@ -122,8 +129,12 @@ export const klingProvider: VideoProvider = {
       if (status === 'COMPLETED') {
         const url: string | undefined = sd.data?.generated?.[0] || sd.data?.video_url;
         if (!url) throw new Error('Kling COMPLETED but returned no video URL');
+        const videoRes = await fetch(url);
+        if (!videoRes.ok) throw new Error(`Kling video fetch failed: ${videoRes.status}`);
+        const videoBuffer = Buffer.from(await videoRes.arrayBuffer());
         return {
-          videoUrl: url,
+          videoBuffer,
+          mimeType: videoRes.headers.get('content-type') || 'video/mp4',
           providerLabel: input.tier === 'pro' ? 'freepik-kling-2.1-pro' : 'freepik-kling-2.1-std',
         };
       }
@@ -134,22 +145,27 @@ export const klingProvider: VideoProvider = {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Provider 2 · Sora 2 (OpenAI direct)
+   Provider 2 · Sora 2 (OpenAI direct, via official SDK)
 
-   Implemented against OpenAI's Sora 2 API as documented late 2025/early
-   2026. The exact request shape may evolve — this adapter follows the
-   patterns OpenAI uses for other async generation endpoints (jobs +
-   polling + completion). If the production response shape differs,
-   adjust the field paths inside the polling loop.
+   Uses the openai SDK (already a dependency for the rest of the stack):
+     • client.videos.create({ model, prompt, seconds, size, input_reference })
+       — multipart upload handled by the SDK + toFile() helper
+     • client.videos.retrieve(id) — poll status until 'completed'
+     • client.videos.downloadContent(id) — fetch the MP4 bytes (requires
+       Bearer auth, hence we always download server-side in the provider
+       and return a Buffer — there is no public URL to hand back)
 
-   Pricing (rough): $0.10-0.50 per second of generated video for high
-   quality. A 5s clip ≈ $0.50-2.50.
+   Sora 2 spec (as of the v6.35 SDK):
+     - model: 'sora-2'
+     - seconds: '4' | '8' | '12'
+     - size: '720x1280' | '1280x720' | '1024x1024'  (portrait / landscape / square)
+     - input_reference: uploadable image file (for image-to-video)
 
-   Endpoint family:
-     POST  https://api.openai.com/v1/videos        (create job)
-     GET   https://api.openai.com/v1/videos/{id}   (poll status)
+   Studio's UI exposes 5s / 10s — we map to the closest legal Sora
+   duration (5 → 4, 10 → 8).
+
+   Pricing (rough): $0.10-0.50/second @ high quality. A 4s clip ≈ $0.40-2.00.
    ═══════════════════════════════════════════════════════════════════════════ */
-const SORA_CREATE_ENDPOINT = 'https://api.openai.com/v1/videos';
 
 export const soraProvider: VideoProvider = {
   name: 'sora',
@@ -157,67 +173,72 @@ export const soraProvider: VideoProvider = {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-    const prompt = buildVideoPrompt(input);
-    const seconds = input.duration === '10' ? 10 : 5;
+    // Dynamic import keeps the SDK out of edge bundles where it wouldn't
+    // load anyway. Both this provider and the rest of Studio are node-only.
+    const { default: OpenAI, toFile } = await import('openai');
+    const client = new OpenAI({ apiKey });
 
-    /* Sora 2 accepts an input image via input_reference. The exact field
-     * name may be `input_reference`, `image_reference`, or `image_url`
-     * depending on the API version — current docs use input_reference.
-     * If OpenAI returns a 400 with "unknown_parameter", swap the key. */
-    const createRes = await fetch(SORA_CREATE_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const prompt = buildVideoPrompt(input);
+    const seconds = input.duration === '10' ? '8' : '4'; // Sora legal durations
+    const size = '720x1280'; // Studio default is vertical 1024x1536
+
+    // Pull the source image into a File-like for the multipart upload.
+    const imgRes = await fetch(input.imageUrl);
+    if (!imgRes.ok) throw new Error(`Sora source image fetch failed: ${imgRes.status}`);
+    const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
+    const imageFile = await toFile(imgBuffer, 'source.png', { type: 'image/png' });
+
+    /* Create the video job. The SDK marshals this as multipart/form-data
+     * with `input_reference` as the file part. If a future Sora release
+     * renames the param, the SDK's typed CreateParams will fail at the
+     * tsc step here, giving us an obvious surface to update. */
+    let job;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      job = await (client.videos as any).create({
         model: 'sora-2',
         prompt,
         seconds,
-        // size — Sora 2 default is 1280x720 (16:9). For fashion vertical
-        // we'd want 720x1280. Picking based on whether the source image
-        // is taller than wide would be ideal, but we don't have metadata
-        // here — default to 720x1280 (portrait) since most Studio assets
-        // are 1024x1536.
-        size: '720x1280',
-        input_reference: { image_url: input.imageUrl },
-      }),
-    });
-
-    if (!createRes.ok) {
-      const errText = await createRes.text();
-      throw new Error(`Sora create failed (${createRes.status}): ${errText.slice(0, 300)}`);
-    }
-
-    const created = await createRes.json();
-    const jobId: string | undefined = created?.id;
-    if (!jobId) throw new Error('Sora create returned no job id');
-
-    // Initial status may already be `completed` for very short clips
-    if (created.status === 'completed') {
-      const url: string | undefined = created.video_url || created.output?.[0]?.url;
-      if (!url) throw new Error('Sora returned completed without video URL');
-      return { videoUrl: url, providerLabel: 'openai-sora-2' };
-    }
-
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 5000));
-      const statusRes = await fetch(`${SORA_CREATE_ENDPOINT}/${jobId}`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
+        size,
+        input_reference: imageFile,
       });
-      if (!statusRes.ok) continue;
-      const sd = await statusRes.json();
-      const status: string | undefined = sd?.status;
-      if (status === 'completed' || status === 'succeeded') {
-        const url: string | undefined = sd.video_url || sd.output?.[0]?.url;
-        if (!url) throw new Error('Sora completed but returned no video URL');
-        return { videoUrl: url, providerLabel: 'openai-sora-2' };
-      }
-      if (status === 'failed' || status === 'cancelled') {
-        throw new Error(`Sora ${status}: ${sd.error?.message || 'no detail'}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`Sora create failed: ${msg.slice(0, 300)}`);
+    }
+
+    if (!job?.id) throw new Error('Sora create returned no job id');
+
+    // Poll status — Sora 2 video gen is async, typical 60-180s for 4s clips.
+    let last = job;
+    if (last.status !== 'completed') {
+      for (let i = 0; i < 60; i++) {
+        await new Promise((r) => setTimeout(r, 5000));
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          last = await (client.videos as any).retrieve(job.id);
+        } catch {
+          continue; // transient — try again
+        }
+        if (last.status === 'completed') break;
+        if (last.status === 'failed') {
+          throw new Error(`Sora failed: ${last.error?.message || 'no detail'}`);
+        }
       }
     }
-    throw new Error('Sora polling timed out after 5 minutes');
+
+    if (last.status !== 'completed') {
+      throw new Error(`Sora polling timed out after 5 min, last status: ${last.status}`);
+    }
+
+    // Download the actual video bytes. /v1/videos/{id}/content requires
+    // Bearer auth, so we can't hand back a URL — we return a Buffer.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contentRes: Response = await (client.videos as any).downloadContent(job.id);
+    const videoBuffer = Buffer.from(await contentRes.arrayBuffer());
+    const mimeType = contentRes.headers.get('content-type') || 'video/mp4';
+
+    return { videoBuffer, mimeType, providerLabel: 'openai-sora-2' };
   },
 };
 

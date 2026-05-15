@@ -137,7 +137,8 @@ export async function POST(req: NextRequest) {
 
     // ── 6. Invoke the active provider (Kling | Sora) ─────────────────────
     const provider = getActiveVideoProvider();
-    let videoUrl: string;
+    let videoBuffer: Buffer;
+    let mimeType: string;
     let providerLabel: string;
     try {
       const result = await provider.generate({
@@ -148,7 +149,8 @@ export async function POST(req: NextRequest) {
         tier,
         userPrompt: body.user_prompt,
       });
-      videoUrl = result.videoUrl;
+      videoBuffer = result.videoBuffer;
+      mimeType = result.mimeType;
       providerLabel = result.providerLabel;
     } catch (e) {
       console.error(`[Studio video] provider ${provider.name} failed:`, e);
@@ -163,12 +165,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── 7. Persist video — copy bytes from provider URL into our bucket ──
+    // ── 7. Persist video — base64 the buffer into our studio-outputs bucket ─
     const persisted = await persistStudioAsset({
       studioProjectId: sourceAsset.studio_project_id,
       assetType: 'video',
       name: `Video — ${sourceAsset.name} (${tier} ${duration}s)`,
-      sourceUrl: videoUrl,
+      base64: videoBuffer.toString('base64'),
+      mimeType,
       phase: 'studio',
       metadata: {
         provider: providerLabel,
@@ -178,7 +181,6 @@ export async function POST(req: NextRequest) {
         parent_asset_id: sourceAsset.id,
         purchase_id: purchaseId,
         user_prompt: body.user_prompt,
-        upstream_video_url: videoUrl,
       },
       uploadedBy: userId,
     });
