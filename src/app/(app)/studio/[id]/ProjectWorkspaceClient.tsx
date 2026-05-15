@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Download,
   User,
+  Play,
 } from 'lucide-react';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
@@ -87,6 +88,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   varBgPh: string;
   varGenerate: string;
   varProcessing: string;
+  varVideoLabel: string;
+  vidDurationLabel: string;
+  vidMotionLabel: string;
+  vidGenerate: string;
+  vidProcessing: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -150,6 +156,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'warm beige plaster wall · afternoon light…',
     varGenerate: 'Generate variation',
     varProcessing: 'Generating variation…',
+    varVideoLabel: 'Make video',
+    vidDurationLabel: 'Duration',
+    vidMotionLabel: 'Motion',
+    vidGenerate: 'Create video',
+    vidProcessing: 'Creating video… (2-4 min)',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -213,6 +224,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'pared yeso beige · luz de tarde…',
     varGenerate: 'Generar variación',
     varProcessing: 'Generando variación…',
+    varVideoLabel: 'Hacer vídeo',
+    vidDurationLabel: 'Duración',
+    vidMotionLabel: 'Movimiento',
+    vidGenerate: 'Crear vídeo',
+    vidProcessing: 'Creando vídeo… (2-4 min)',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -276,6 +292,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'mur en plâtre beige · lumière après-midi…',
     varGenerate: 'Générer la variation',
     varProcessing: 'Génération de la variation…',
+    varVideoLabel: 'Créer une vidéo',
+    vidDurationLabel: 'Durée',
+    vidMotionLabel: 'Mouvement',
+    vidGenerate: 'Créer la vidéo',
+    vidProcessing: 'Création de la vidéo… (2-4 min)',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -339,6 +360,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'muro in intonaco beige · luce pomeridiana…',
     varGenerate: 'Genera variazione',
     varProcessing: 'Generazione variazione…',
+    varVideoLabel: 'Crea video',
+    vidDurationLabel: 'Durata',
+    vidMotionLabel: 'Movimento',
+    vidGenerate: 'Crea video',
+    vidProcessing: 'Creazione video… (2-4 min)',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -402,6 +428,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'warme beige Putzwand · Nachmittagslicht…',
     varGenerate: 'Variation erstellen',
     varProcessing: 'Variation wird erstellt…',
+    varVideoLabel: 'Video erstellen',
+    vidDurationLabel: 'Dauer',
+    vidMotionLabel: 'Bewegung',
+    vidGenerate: 'Video erstellen',
+    vidProcessing: 'Video wird erstellt… (2-4 min)',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -465,6 +496,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'parede de estuque bege · luz de tarde…',
     varGenerate: 'Gerar variação',
     varProcessing: 'A gerar variação…',
+    varVideoLabel: 'Criar vídeo',
+    vidDurationLabel: 'Duração',
+    vidMotionLabel: 'Movimento',
+    vidGenerate: 'Criar vídeo',
+    vidProcessing: 'A criar vídeo… (2-4 min)',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -528,6 +564,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'warme beige pleisterwand · middaglicht…',
     varGenerate: 'Variatie genereren',
     varProcessing: 'Variatie wordt gegenereerd…',
+    varVideoLabel: 'Video maken',
+    vidDurationLabel: 'Duur',
+    vidMotionLabel: 'Beweging',
+    vidGenerate: 'Video maken',
+    vidProcessing: 'Video wordt gemaakt… (2-4 min)',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -591,6 +632,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'varm beige putsvägg · eftermiddagsljus…',
     varGenerate: 'Generera variation',
     varProcessing: 'Genererar variation…',
+    varVideoLabel: 'Skapa video',
+    vidDurationLabel: 'Längd',
+    vidMotionLabel: 'Rörelse',
+    vidGenerate: 'Skapa video',
+    vidProcessing: 'Skapar video… (2-4 min)',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -654,6 +700,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     varBgPh: 'varm beige pussvegg · ettermiddagslys…',
     varGenerate: 'Generer variasjon',
     varProcessing: 'Genererer variasjon…',
+    varVideoLabel: 'Lag video',
+    vidDurationLabel: 'Varighet',
+    vidMotionLabel: 'Bevegelse',
+    vidGenerate: 'Lag video',
+    vidProcessing: 'Lager video… (2-4 min)',
   },
 };
 
@@ -987,6 +1038,7 @@ export default function ProjectWorkspaceClient(props: Props) {
   // Variation in-flight indicator (shown in the lightbox while a /variation
   // request is running). null = idle.
   const [variationInFlight, setVariationInFlight] = useState<'color' | 'background' | 'model' | null>(null);
+  const [videoInFlight, setVideoInFlight] = useState(false);
   // Derived so the lightbox re-renders when the underlying asset changes
   // (e.g. after a Style Memory toggle updates recentAssets).
   const lightboxAsset = lightboxAssetId
@@ -1257,6 +1309,75 @@ export default function ProjectWorkspaceClient(props: Props) {
       return { ok: false, error: { code } };
     } finally {
       setVariationInFlight(null);
+    }
+  };
+
+  /* Called from the lightbox when the user wants a video from the
+   * confirmed image. Hits /api/studio/video, which routes to the active
+   * provider (Kling 2.1 by default, Sora 2 when STUDIO_VIDEO_PROVIDER=sora).
+   * On success prepends the new video asset and switches the lightbox
+   * to it so the video player auto-shows. */
+  const applyVideo = async (
+    sourceAsset: Asset,
+    motion: 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly',
+    duration: '5' | '10',
+    userPrompt?: string
+  ): Promise<{ ok: boolean; error?: StudioError }> => {
+    setVideoInFlight(true);
+    try {
+      const res = await fetch('/api/studio/video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_asset_id: sourceAsset.id,
+          motion,
+          duration,
+          tier: 'pro',
+          user_prompt: userPrompt || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const code: StudioErrorCode =
+          res.status === 401 ? 'unauthorized' :
+          res.status === 402 ? 'pool_empty' :
+          res.status === 429 ? 'rate_limit' :
+          res.status === 502 || res.status === 500 ? 'ai_failed' : 'generic';
+        const detail = typeof errBody.details === 'string' && errBody.details
+          ? errBody.details
+          : typeof errBody.error === 'string' ? errBody.error : undefined;
+        return { ok: false, error: { code, detail } };
+      }
+      const json = await res.json();
+      const sourceMeta = (sourceAsset.metadata || {}) as Record<string, unknown>;
+      const newAsset: Asset = {
+        id: json.asset_id,
+        asset_type: 'video',
+        name: `Video — ${sourceAsset.name}`,
+        url: json.master_url,
+        metadata: {
+          provider: json.provider,
+          motion,
+          duration,
+          parent_asset_id: sourceAsset.id,
+          product_image_url: sourceMeta.product_image_url,
+          reference_image_url: sourceAsset.url,
+          product_name: sourceMeta.product_name,
+        },
+        is_style_memory: false,
+        style_memory_role: null,
+        created_at: new Date().toISOString(),
+      };
+      setRecentAssets((prev) => [newAsset, ...prev]);
+      if (typeof json.outputs_remaining === 'number') setOutputsRemaining(json.outputs_remaining);
+      setLightboxAssetId(newAsset.id);
+      return { ok: true };
+    } catch (e) {
+      console.error('[Studio] applyVideo threw:', e);
+      const code: StudioErrorCode = e instanceof TypeError ? 'network' : 'generic';
+      return { ok: false, error: { code } };
+    } finally {
+      setVideoInFlight(false);
     }
   };
 
@@ -1759,8 +1880,26 @@ export default function ProjectWorkspaceClient(props: Props) {
                 }}
               >
                 <div className="relative aspect-[3/4]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.url} alt={a.name} className="h-full w-full object-cover" />
+                  {a.asset_type === 'video' ? (
+                    <>
+                      <video
+                        src={a.url}
+                        className="h-full w-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                      {/* Play overlay so users see at a glance which thumbs are videos */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="h-12 w-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center">
+                          <Play className="h-5 w-5 text-white" fill="white" />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={a.url} alt={a.name} className="h-full w-full object-cover" />
+                  )}
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleStyleMemory(a.id, a.is_style_memory); }}
                     className={`absolute top-3 right-3 h-9 w-9 rounded-full flex items-center justify-center transition-all ${
@@ -1794,6 +1933,8 @@ export default function ProjectWorkspaceClient(props: Props) {
             onApplyVariation={(type, target) => applyVariation(lightboxAsset, type, target)}
             onOpenCastingForVariation={() => setCastingPickerForVariationAssetId(lightboxAsset.id)}
             variationInFlight={variationInFlight}
+            onApplyVideo={(motion, duration, userPrompt) => applyVideo(lightboxAsset, motion, duration, userPrompt)}
+            videoInFlight={videoInFlight}
           />
         )}
 
@@ -2017,11 +2158,18 @@ interface OutputLightboxProps {
   onApplyVariation: (type: 'color' | 'background', target: string) => Promise<{ ok: boolean; error?: StudioError }>;
   onOpenCastingForVariation: () => void;
   variationInFlight: 'color' | 'background' | 'model' | null;
+  onApplyVideo: (
+    motion: 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly',
+    duration: '5' | '10',
+    userPrompt?: string
+  ) => Promise<{ ok: boolean; error?: StudioError }>;
+  videoInFlight: boolean;
 }
 
 function OutputLightbox({
   asset, t, onClose, onToggleStyleMemory, onRegenerate,
   onApplyVariation, onOpenCastingForVariation, variationInFlight,
+  onApplyVideo, videoInFlight,
 }: OutputLightboxProps) {
   const [formats, setFormats] = useState<FormatRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2032,6 +2180,14 @@ function OutputLightbox({
   const [variationFormType, setVariationFormType] = useState<'color' | 'background' | null>(null);
   const [variationInput, setVariationInput] = useState('');
   const [variationError, setVariationError] = useState<StudioError | null>(null);
+  // Video form state
+  const [videoFormOpen, setVideoFormOpen] = useState(false);
+  const [videoMotion, setVideoMotion] = useState<'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly'>('subtle');
+  const [videoDuration, setVideoDuration] = useState<'5' | '10'>('5');
+  const [videoPrompt, setVideoPrompt] = useState('');
+  const [videoError, setVideoError] = useState<StudioError | null>(null);
+
+  const isVideo = asset.asset_type === 'video';
 
   const canRegenerate = (() => {
     const meta = (asset.metadata || {}) as Record<string, unknown>;
@@ -2058,6 +2214,17 @@ function OutputLightbox({
       setVariationInput('');
     } else if (result.error) {
       setVariationError(result.error);
+    }
+  };
+
+  const submitVideo = async () => {
+    setVideoError(null);
+    const result = await onApplyVideo(videoMotion, videoDuration, videoPrompt.trim() || undefined);
+    if (result.ok) {
+      setVideoFormOpen(false);
+      setVideoPrompt('');
+    } else if (result.error) {
+      setVideoError(result.error);
     }
   };
 
@@ -2117,12 +2284,23 @@ function OutputLightbox({
           {/* LEFT — master image */}
           <div className="flex flex-col">
             <div className="flex-1 flex items-center justify-center rounded-[20px] overflow-hidden bg-black/30 min-h-[400px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={asset.url}
-                alt={asset.name}
-                className="max-h-[80vh] max-w-full object-contain"
-              />
+              {isVideo ? (
+                <video
+                  src={asset.url}
+                  className="max-h-[80vh] max-w-full"
+                  controls
+                  autoPlay
+                  loop
+                  playsInline
+                />
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={asset.url}
+                  alt={asset.name}
+                  className="max-h-[80vh] max-w-full object-contain"
+                />
+              )}
             </div>
             {/* Master meta + primary actions — wraps individually on narrow
                 screens so CTAs never get clipped by the master thumb caption */}
@@ -2143,13 +2321,15 @@ function OutputLightbox({
                   <Star className={`h-3.5 w-3.5 ${asset.is_style_memory ? 'fill-current' : ''}`} />
                   Style Memory
                 </button>
-                <a
-                  href={`/api/studio/download-zip?asset_id=${asset.id}`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  {t.lightboxDownloadAllZip}
-                </a>
+                {!isVideo && (
+                  <a
+                    href={`/api/studio/download-zip?asset_id=${asset.id}`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    {t.lightboxDownloadAllZip}
+                  </a>
+                )}
                 <a
                   href={downloadHref('master')}
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white text-carbon text-[13px] font-semibold tracking-[-0.01em] hover:bg-white/90 transition-colors"
@@ -2167,25 +2347,28 @@ function OutputLightbox({
               image area stays anchored. */}
           <aside className="bg-white rounded-[20px] p-6 md:p-7 lg:overflow-y-auto lg:max-h-[85vh]">
 
-            {/* Variation in-flight overlay — takes over the panel while a
-                /variation call is in flight. Simpler than the full shooting
-                checklist since variations finish in 20-40s typically. */}
-            {variationInFlight && (
+            {/* In-flight overlay — takes over the panel while a /variation
+                or /video call is in flight. Variations finish in 20-40s,
+                videos in 2-4 minutes. */}
+            {(variationInFlight || videoInFlight) && (
               <div className="py-10 flex flex-col items-center text-center">
                 <Loader2 className="h-7 w-7 text-carbon/50 animate-spin mb-4" />
                 <p className="text-[14px] font-medium text-carbon mb-1">
-                  {t.varProcessing}
+                  {videoInFlight ? t.vidProcessing : t.varProcessing}
                 </p>
-                <p className="text-[12px] text-carbon/50">
-                  {variationInFlight === 'color' ? t.varColorLabel :
-                   variationInFlight === 'background' ? t.varBgLabel :
-                   t.varModelLabel}
-                </p>
+                {!videoInFlight && variationInFlight && (
+                  <p className="text-[12px] text-carbon/50">
+                    {variationInFlight === 'color' ? t.varColorLabel :
+                     variationInFlight === 'background' ? t.varBgLabel :
+                     t.varModelLabel}
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Variations on this confirmed photo (color / bg / model). */}
-            {!variationInFlight && (
+            {/* Variations on this confirmed photo (color / bg / model / video).
+                Hidden for video sources (can't variation a video itself). */}
+            {!variationInFlight && !videoInFlight && !isVideo && (
               <div className="mb-6 pb-6 border-b border-carbon/[0.06]">
                 <h3 className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
                   {t.variationsTitle}
@@ -2230,8 +2413,87 @@ function OutputLightbox({
                       </button>
                     </div>
                   </div>
+                ) : videoFormOpen ? (
+                  /* Video form — duration toggle + motion preset chips + optional text */
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
+                        {t.vidDurationLabel}
+                      </p>
+                      <SegmentedPill<'5' | '10'>
+                        options={[
+                          { id: '5', label: '5s' },
+                          { id: '10', label: '10s' },
+                        ]}
+                        value={videoDuration}
+                        onChange={setVideoDuration}
+                        size="sm"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
+                        {t.vidMotionLabel}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(['subtle', 'walk', 'pan', 'zoom', 'turn', 'dolly'] as const).map((m) => {
+                          const active = videoMotion === m;
+                          return (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => setVideoMotion(m)}
+                              className={`px-3 py-1.5 rounded-full text-[11px] font-medium capitalize transition-colors ${
+                                active
+                                  ? 'bg-carbon text-white'
+                                  : 'bg-carbon/[0.04] text-carbon hover:bg-carbon/[0.08]'
+                              }`}
+                            >
+                              {m === 'subtle' ? 'Subtle' :
+                               m === 'walk' ? 'Walk' :
+                               m === 'pan' ? 'Pan' :
+                               m === 'zoom' ? 'Zoom' :
+                               m === 'turn' ? 'Turn' : 'Dolly'}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      value={videoPrompt}
+                      onChange={(e) => setVideoPrompt(e.target.value)}
+                      placeholder="opcional · matiz adicional"
+                      className="w-full px-4 py-3 text-[13px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none transition-colors placeholder:text-carbon/30"
+                    />
+                    {videoError && (
+                      <p className="text-[12px] text-red-700 leading-relaxed">
+                        {videoError.code === 'pool_empty' ? t.errPoolEmpty :
+                         videoError.code === 'ai_failed' ? t.errAiFailed :
+                         videoError.code === 'rate_limit' ? t.errRateLimit :
+                         videoError.code === 'network' ? t.errNetwork :
+                         t.errGeneric}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setVideoFormOpen(false); setVideoError(null); }}
+                        className="px-4 py-2 rounded-full text-[12px] font-medium text-carbon/55 hover:text-carbon transition-colors"
+                      >
+                        {t.castingCancel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void submitVideo()}
+                        className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-carbon text-white text-[12px] font-semibold hover:bg-carbon/90 transition-colors"
+                      >
+                        {t.vidGenerate}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button
                       type="button"
                       onClick={() => { setVariationFormType('color'); setVariationError(null); }}
@@ -2264,14 +2526,28 @@ function OutputLightbox({
                         {t.varModelLabel}
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => { setVideoFormOpen(true); setVideoError(null); }}
+                      className="flex flex-col items-center gap-2 px-2 py-4 rounded-[14px] bg-carbon hover:bg-carbon/90 text-white transition-colors text-center"
+                    >
+                      <div className="h-8 w-8 rounded-full bg-white/15 flex items-center justify-center">
+                        <Play className="h-4 w-4 text-white" fill="white" />
+                      </div>
+                      <span className="text-[11px] font-medium tracking-[-0.01em] leading-tight">
+                        {t.varVideoLabel}
+                      </span>
+                    </button>
                   </div>
                 )}
               </div>
             )}
 
             {/* Quick variation regen pills (only when source metadata
-                preserves the inputs — legacy assets hide the row). */}
-            {!variationInFlight && canRegenerate && (
+                preserves the inputs — legacy assets hide the row).
+                Hidden for video sources (regen would produce an image, not
+                a video — that's a UX trap). */}
+            {!variationInFlight && !videoInFlight && !isVideo && canRegenerate && (
               <div className="mb-6 pb-6 border-b border-carbon/[0.06]">
                 <h3 className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
                   {t.regenerateLabel}
@@ -2326,7 +2602,7 @@ function OutputLightbox({
               </div>
             )}
 
-            {!variationInFlight && (loading ? (
+            {!variationInFlight && !videoInFlight && !isVideo && (loading ? (
               <div className="flex items-center gap-3 text-carbon/55 py-4">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-[13px]">{t.lightboxLoading}</span>
