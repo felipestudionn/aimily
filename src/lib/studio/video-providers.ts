@@ -208,10 +208,46 @@ export interface VideoGenResult {
   providerLabel: string;
 }
 
+/* ── Async/job-based interface ─────────────────────────────────────────
+ * Long-running video gen on Vercel cannot sit on a synchronous HTTP
+ * connection — Cloudflare closes it after ~100s of no bytes, and even
+ * with streaming heartbeats the Vercel maxDuration ceiling (800s) is
+ * less than Kling's real-world peak times (12+ min for 10s clips).
+ *
+ * Three-op pattern:
+ *   startJob       → kick off upstream generation, get a provider task_id.
+ *                    Returns instantly (<5s), so the POST route returns
+ *                    immediately too. No waiting.
+ *   checkStatus    → poll upstream for the current state. Cheap, fast.
+ *                    Called by the client every 8s via a separate GET.
+ *   downloadResult → once status='completed', fetch the video bytes.
+ *                    Called by the same status endpoint that detected
+ *                    completion, so the persist step is server-side.
+ *
+ * The client never waits on the POST — it polls a status endpoint that
+ * is each individual call <1s. The video appears in the gallery when
+ * the status endpoint sees completion and persists it. */
+export type JobStatus = 'pending' | 'completed' | 'failed';
+
+export interface JobStartResult {
+  taskId: string;
+  providerLabel: string;
+}
+
+export interface JobStatusResult {
+  status: JobStatus;
+  videoUrl?: string; // present when status === 'completed'
+  error?: string;    // present when status === 'failed'
+}
+
 export interface VideoProvider {
   name: 'kling' | 'sora';
-  /** Returns the raw video bytes on success, throws on failure. */
-  generate(input: VideoGenInput): Promise<VideoGenResult>;
+  /** Kick off generation, return upstream task id (no waiting). */
+  startJob(input: VideoGenInput): Promise<JobStartResult>;
+  /** Cheap check — returns current status + URL if completed. */
+  checkStatus(taskId: string): Promise<JobStatusResult>;
+  /** Once status='completed', fetch the actual MP4 bytes. */
+  downloadResult(videoUrl: string): Promise<{ videoBuffer: Buffer; mimeType: string }>;
 }
 
 /* ── Shared prompt builder ──────────────────────────────────────────────── */
@@ -286,29 +322,25 @@ function buildVideoPrompt(input: VideoGenInput, variant: PromptVariant = 'rich')
 const KLING_PRO_ENDPOINT = 'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1-pro';
 const KLING_STD_ENDPOINT = 'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1-std';
 
+function klingEndpoint(tier: VideoTier): string {
+  return tier === 'std' ? KLING_STD_ENDPOINT : KLING_PRO_ENDPOINT;
+}
+
 export const klingProvider: VideoProvider = {
   name: 'kling',
-  async generate(input) {
+
+  async startJob(input) {
     const apiKey = process.env.FREEPIK_API_KEY;
     if (!apiKey) throw new Error('FREEPIK_API_KEY not configured');
 
-    const endpoint = input.tier === 'std' ? KLING_STD_ENDPOINT : KLING_PRO_ENDPOINT;
-    /* Kling has no aggressive person-animation moderation → use the
-     * rich subject-action prompt vocabulary. */
+    const endpoint = klingEndpoint(input.tier);
     const prompt = buildVideoPrompt(input, 'rich');
-    /* Kling 2.1 only accepts 5 or 10. If the user picked 15 (longer than
-     * Kling supports), cap at 10 silently. The provider abstraction
-     * means each adapter handles its own legal duration range. */
     const klingDuration: '5' | '10' = input.duration === '5' ? '5' : '10';
 
     const createRes = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-freepik-api-key': apiKey },
-      body: JSON.stringify({
-        image: input.imageUrl,
-        prompt,
-        duration: klingDuration,
-      }),
+      body: JSON.stringify({ image: input.imageUrl, prompt, duration: klingDuration }),
     });
 
     if (!createRes.ok) {
@@ -320,34 +352,50 @@ export const klingProvider: VideoProvider = {
     const taskId: string | undefined = data?.task_id;
     if (!taskId) throw new Error('Kling create returned no task_id');
 
-    /* Kling 2.1 Pro takes 2-5 min typically, up to 7 min at peak. The
-     * route's maxDuration is 800s (Vercel Pro ceiling) so we have room
-     * to poll generously. 5s × 140 = 700s = 11m40s covers even worst-
-     * case peak load on Magnific — the function still has 100s of
-     * headroom to upload the video to Supabase after the poll succeeds. */
-    for (let i = 0; i < 140; i++) {
-      await new Promise((r) => setTimeout(r, 5000));
-      const statusRes = await fetch(`${endpoint}/${taskId}`, {
+    return {
+      taskId,
+      providerLabel: input.tier === 'pro' ? 'freepik-kling-2.1-pro' : 'freepik-kling-2.1-std',
+    };
+  },
+
+  async checkStatus(taskId) {
+    const apiKey = process.env.FREEPIK_API_KEY;
+    if (!apiKey) throw new Error('FREEPIK_API_KEY not configured');
+
+    /* Kling endpoint is tier-specific for create but task status is
+     * available on either — try Pro first, fall back to Std. Most
+     * Studio gens are Pro so this rarely costs the second roundtrip. */
+    const tryUrl = async (endpoint: string) => {
+      const res = await fetch(`${endpoint}/${taskId}`, {
         headers: { 'x-freepik-api-key': apiKey },
       });
-      if (!statusRes.ok) continue;
-      const sd = await statusRes.json();
-      const status: string | undefined = sd.data?.status;
-      if (status === 'COMPLETED') {
-        const url: string | undefined = sd.data?.generated?.[0] || sd.data?.video_url;
-        if (!url) throw new Error('Kling COMPLETED but returned no video URL');
-        const videoRes = await fetch(url);
-        if (!videoRes.ok) throw new Error(`Kling video fetch failed: ${videoRes.status}`);
-        const videoBuffer = Buffer.from(await videoRes.arrayBuffer());
-        return {
-          videoBuffer,
-          mimeType: videoRes.headers.get('content-type') || 'video/mp4',
-          providerLabel: input.tier === 'pro' ? 'freepik-kling-2.1-pro' : 'freepik-kling-2.1-std',
-        };
-      }
-      if (status === 'FAILED') throw new Error('Kling FAILED');
+      return res.ok ? res.json() : null;
+    };
+
+    const data = (await tryUrl(KLING_PRO_ENDPOINT)) ?? (await tryUrl(KLING_STD_ENDPOINT));
+    if (!data) return { status: 'pending' }; // 404/other — treat as still-in-progress
+
+    const sd = data.data || {};
+    const status = sd.status as string | undefined;
+    if (status === 'COMPLETED') {
+      const url: string | undefined = sd.generated?.[0] || sd.video_url;
+      if (!url) return { status: 'failed', error: 'COMPLETED but no video URL' };
+      return { status: 'completed', videoUrl: url };
     }
-    throw new Error(`Kling polling timed out after 11m40s (task_id: ${taskId})`);
+    if (status === 'FAILED') {
+      return { status: 'failed', error: sd.error || 'Kling FAILED' };
+    }
+    return { status: 'pending' };
+  },
+
+  async downloadResult(videoUrl) {
+    const res = await fetch(videoUrl);
+    if (!res.ok) throw new Error(`Kling video fetch failed: ${res.status}`);
+    const videoBuffer = Buffer.from(await res.arrayBuffer());
+    return {
+      videoBuffer,
+      mimeType: res.headers.get('content-type') || 'video/mp4',
+    };
   },
 };
 
@@ -376,65 +424,40 @@ export const klingProvider: VideoProvider = {
 
 export const soraProvider: VideoProvider = {
   name: 'sora',
-  async generate(input) {
+
+  async startJob(input) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
 
-    // Dynamic imports keep node-only deps out of edge bundles.
     const { default: OpenAI, toFile } = await import('openai');
     const { default: sharp } = await import('sharp');
     const client = new OpenAI({ apiKey });
 
-    /* Sora 2 originally needed SAFE camera-only prompts to dodge its
-     * image-to-video moderation classifier. With the new RICH path that
-     * uses preserve-mode preambles ("subject stays in pose, micro-motion
-     * only"), the language is much milder than the old "model walks
-     * forward, head lifts mid-step" — worth retesting if Sora accepts
-     * it. If moderation refuses again, swap back to 'safe'. */
     const prompt = buildVideoPrompt(input, 'rich');
-    /* Sora 2 only accepts 4, 8, or 12. Map UI pills:
-     *   5  → 4  · 10 → 8 · 15 → 12 (closest legal Sora duration each). */
     const seconds: '4' | '8' | '12' =
       input.duration === '15' ? '12' :
       input.duration === '10' ? '8' : '4';
 
-    /* Sora 2 requires the input_reference image to have dimensions that
-     * EXACTLY match the requested `size`. Studio sources are typically
-     * 1024x1536 (vertical, 2:3) — different ratio than Sora's 9:16. So:
-     *   1. Detect the source orientation
-     *   2. Pick the closest Sora-legal size (portrait | landscape | square)
-     *   3. sharp-resize to those exact dimensions with smart-crop
-     *      ('attention' = saliency-based, keeps faces/products in frame) */
+    /* Sora 2 requires input_reference dimensions to EXACTLY match `size`.
+     * Detect source orientation → pick closest Sora-legal size → resize. */
     const imgRes = await fetch(input.imageUrl);
     if (!imgRes.ok) throw new Error(`Sora source image fetch failed: ${imgRes.status}`);
     const rawBuffer = Buffer.from(await imgRes.arrayBuffer());
     const meta = await sharp(rawBuffer).metadata();
-    const srcW = meta.width || 1024;
-    const srcH = meta.height || 1024;
-    const aspect = srcW / srcH;
+    const aspect = (meta.width || 1024) / (meta.height || 1024);
 
     let size: '720x1280' | '1280x720' | '1024x1024';
-    let targetW: number;
-    let targetH: number;
-    if (aspect < 0.95) {
-      size = '720x1280'; targetW = 720; targetH = 1280;        // portrait
-    } else if (aspect > 1.05) {
-      size = '1280x720'; targetW = 1280; targetH = 720;        // landscape
-    } else {
-      size = '1024x1024'; targetW = 1024; targetH = 1024;      // square
-    }
+    let targetW: number, targetH: number;
+    if (aspect < 0.95) { size = '720x1280'; targetW = 720; targetH = 1280; }
+    else if (aspect > 1.05) { size = '1280x720'; targetW = 1280; targetH = 720; }
+    else { size = '1024x1024'; targetW = 1024; targetH = 1024; }
 
     const resizedBuffer = await sharp(rawBuffer)
       .resize(targetW, targetH, { fit: 'cover', position: sharp.strategy.attention })
       .png()
       .toBuffer();
-
     const imageFile = await toFile(resizedBuffer, 'source.png', { type: 'image/png' });
 
-    /* Create the video job. The SDK marshals this as multipart/form-data
-     * with `input_reference` as the file part. If a future Sora release
-     * renames the param, the SDK's typed CreateParams will fail at the
-     * tsc step here, giving us an obvious surface to update. */
     let job;
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -452,72 +475,65 @@ export const soraProvider: VideoProvider = {
 
     if (!job?.id) throw new Error('Sora create returned no job id');
 
-    /* Sora 2 typically completes in 1-3 min for 4s clips, 3-6 min for
-     * 12s. With Vercel maxDuration of 800s we can poll generously:
-     * 5s × 144 = 720s = 12 min cap. */
-    let last = job;
-    if (last.status !== 'completed') {
-      for (let i = 0; i < 144; i++) {
-        await new Promise((r) => setTimeout(r, 5000));
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          last = await (client.videos as any).retrieve(job.id);
-        } catch {
-          continue; // transient — try again
-        }
-        if (last.status === 'completed') break;
-        if (last.status === 'failed') {
-          throw new Error(`Sora failed: ${last.error?.message || 'no detail'}`);
-        }
-      }
+    return { taskId: job.id as string, providerLabel: 'openai-sora-2' };
+  },
+
+  async checkStatus(taskId) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+
+    const { default: OpenAI } = await import('openai');
+    const client = new OpenAI({ apiKey });
+
+    let job;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      job = await (client.videos as any).retrieve(taskId);
+    } catch {
+      return { status: 'pending' }; // transient — try again next poll
     }
 
-    if (last.status !== 'completed') {
-      throw new Error(`Sora polling timed out after 12 min, last status: ${last.status}`);
+    if (job.status === 'completed') {
+      /* Sora's download URL is not in the job response — we construct it
+       * from the standard /content endpoint. The downloadResult method
+       * adds the Bearer auth header when fetching. */
+      return {
+        status: 'completed',
+        videoUrl: `https://api.openai.com/v1/videos/${taskId}/content?variant=video`,
+      };
     }
+    if (job.status === 'failed') {
+      return { status: 'failed', error: job.error?.message || 'Sora failed' };
+    }
+    return { status: 'pending' };
+  },
 
-    /* Download the video bytes. Using raw fetch instead of the SDK's
-     * downloadContent() because the SDK's return shape is opaque and
-     * we kept getting unplayable buffers — direct fetch lets us inspect
-     * status, content-type and byte count predictably.
-     *
-     * `?variant=video` is explicit so Sora returns the MP4 binary, not
-     * an alternate output (thumbnail / spritesheet) that may share the
-     * same endpoint family. */
-    const downloadRes = await fetch(
-      `https://api.openai.com/v1/videos/${job.id}/content?variant=video`,
-      { headers: { Authorization: `Bearer ${apiKey}` } }
-    );
+  async downloadResult(videoUrl) {
+    /* Sora's /v1/videos/{id}/content requires Bearer auth, hence the
+     * fetch here adds Authorization. Other providers use plain public
+     * URLs but we keep them all under one interface. */
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+
+    const downloadRes = await fetch(videoUrl, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
 
     if (!downloadRes.ok) {
       const errBody = await downloadRes.text().catch(() => '');
-      throw new Error(
-        `Sora content download failed (${downloadRes.status}): ${errBody.slice(0, 300)}`
-      );
+      throw new Error(`Sora content download failed (${downloadRes.status}): ${errBody.slice(0, 300)}`);
     }
 
     const mimeType = downloadRes.headers.get('content-type') || 'video/mp4';
     const videoBuffer = Buffer.from(await downloadRes.arrayBuffer());
 
-    console.log(
-      `[Sora] downloaded ${videoBuffer.length} bytes, content-type: ${mimeType}`
-    );
-
-    /* Sanity check — if the body is suspiciously small, it's almost
-     * certainly a JSON error response that slipped past the !ok check
-     * (some OpenAI error paths return 200 with an error object). */
     if (videoBuffer.length < 10_000) {
       const preview = videoBuffer.toString('utf-8').slice(0, 200);
-      throw new Error(
-        `Sora download returned ${videoBuffer.length} bytes (expected video, got: ${preview})`
-      );
+      throw new Error(`Sora download returned ${videoBuffer.length} bytes (got: ${preview})`);
     }
 
-    /* Defensive: if Sora returns video/* but a generic application/octet-
-     * stream, normalise to mp4 since Sora 2's output is always H.264 MP4. */
     const finalMime = mimeType.startsWith('video/') ? mimeType : 'video/mp4';
-
-    return { videoBuffer, mimeType: finalMime, providerLabel: 'openai-sora-2' };
+    return { videoBuffer, mimeType: finalMime };
   },
 };
 
@@ -542,29 +558,22 @@ const HAPPY_HORSE_ENDPOINT =
   'https://api.magnific.com/v1/ai/image-to-video/happy-horse-1';
 
 export const happyHorseProvider: VideoProvider = {
-  // Reusing the kling slot in the union type — TS doesn't let us add a new
-  // literal without a wider refactor; the runtime label is what matters.
+  // TS union currently allows kling/sora — runtime label is what we use.
   name: 'kling',
-  async generate(input) {
+
+  async startJob(input) {
     const apiKey = process.env.FREEPIK_API_KEY;
     if (!apiKey) throw new Error('FREEPIK_API_KEY not configured');
 
-    /* Happy Horse has no person-animation moderation friction → rich
-     * subject-action vocabulary. This is the path Felipe wants to
-     * privilege for "the subject moves, not just the camera". */
     const prompt = buildVideoPrompt(input, 'rich');
-    /* Happy Horse accepts 3-15 inclusive. Studio UI exposes 5/10/15. */
     const duration = input.duration === '15' ? 15 : input.duration === '10' ? 10 : 5;
 
     const createRes = await fetch(HAPPY_HORSE_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Magnific docs say x-magnific-api-key; the rebrand from Freepik
-        // means the same key value should work either way. If api.magnific
-        // rejects with 401, swap header name to x-freepik-api-key.
         'x-magnific-api-key': apiKey,
-        'x-freepik-api-key': apiKey, // defensive: send both headers
+        'x-freepik-api-key': apiKey,
       },
       body: JSON.stringify({
         image_url: input.imageUrl,
@@ -583,39 +592,43 @@ export const happyHorseProvider: VideoProvider = {
     const taskId: string | undefined = data?.task_id;
     if (!taskId) throw new Error('Happy Horse create returned no task_id');
 
-    /* Poll for completion. 15s clips at 1080p typically take 4-6 min,
-     * up to 8-10 min at peak. With Vercel maxDuration of 800s we have
-     * headroom: 8s × 80 = 640s = 10m40s covers all observed cases plus
-     * margin for the Supabase upload after. */
-    for (let i = 0; i < 80; i++) {
-      await new Promise((r) => setTimeout(r, 8000));
-      const statusRes = await fetch(`${HAPPY_HORSE_ENDPOINT}/${taskId}`, {
-        headers: {
-          'x-magnific-api-key': apiKey,
-          'x-freepik-api-key': apiKey,
-        },
-      });
-      if (!statusRes.ok) continue;
-      const sd = await statusRes.json();
-      const status: string | undefined = sd.data?.status;
-      if (status === 'COMPLETED') {
-        const url: string | undefined =
-          sd.data?.generated?.[0] || sd.data?.video_url || sd.data?.output_url;
-        if (!url) throw new Error('Happy Horse COMPLETED but returned no video URL');
-        const videoRes = await fetch(url);
-        if (!videoRes.ok) throw new Error(`Happy Horse video fetch failed: ${videoRes.status}`);
-        const videoBuffer = Buffer.from(await videoRes.arrayBuffer());
-        return {
-          videoBuffer,
-          mimeType: videoRes.headers.get('content-type') || 'video/mp4',
-          providerLabel: 'magnific-happy-horse-1',
-        };
-      }
-      if (status === 'FAILED') {
-        throw new Error(`Happy Horse FAILED: ${sd.data?.error || 'no detail'}`);
-      }
+    return { taskId, providerLabel: 'magnific-happy-horse-1' };
+  },
+
+  async checkStatus(taskId) {
+    const apiKey = process.env.FREEPIK_API_KEY;
+    if (!apiKey) throw new Error('FREEPIK_API_KEY not configured');
+
+    const res = await fetch(`${HAPPY_HORSE_ENDPOINT}/${taskId}`, {
+      headers: {
+        'x-magnific-api-key': apiKey,
+        'x-freepik-api-key': apiKey,
+      },
+    });
+    if (!res.ok) return { status: 'pending' };
+
+    const data = await res.json();
+    const sd = data.data || {};
+    const status = sd.status as string | undefined;
+    if (status === 'COMPLETED') {
+      const url: string | undefined = sd.generated?.[0] || sd.video_url || sd.output_url;
+      if (!url) return { status: 'failed', error: 'COMPLETED but no video URL' };
+      return { status: 'completed', videoUrl: url };
     }
-    throw new Error('Happy Horse polling timed out after 10m40s');
+    if (status === 'FAILED') {
+      return { status: 'failed', error: sd.error || 'Happy Horse FAILED' };
+    }
+    return { status: 'pending' };
+  },
+
+  async downloadResult(videoUrl) {
+    const res = await fetch(videoUrl);
+    if (!res.ok) throw new Error(`Happy Horse video fetch failed: ${res.status}`);
+    const videoBuffer = Buffer.from(await res.arrayBuffer());
+    return {
+      videoBuffer,
+      mimeType: res.headers.get('content-type') || 'video/mp4',
+    };
   },
 };
 

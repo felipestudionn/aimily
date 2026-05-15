@@ -5,7 +5,6 @@ import {
   enforceAiUserRateLimit,
 } from '@/lib/api-auth';
 import { ADMIN_EMAILS } from '@/lib/stripe';
-import { persistStudioAsset } from '@/lib/storage';
 import {
   consumeStudioOutput,
   refundStudioOutput,
@@ -21,43 +20,39 @@ import {
 import { normalizeAiError } from '@/lib/ai/error-messages';
 
 export const runtime = 'nodejs';
-/* Vercel Pro plan allows up to 800s. Video providers (Kling, Happy Horse)
- * can take 5-10 min at peak load — we set the function ceiling near the
- * Pro max so the polling has room to run without prematurely abandoning
- * a paid generation that's still processing upstream. */
-export const maxDuration = 800;
+// Async pattern — function exits in <10s after starting the upstream job.
+// No long-running polling on this route.
+export const maxDuration = 30;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Aimily Studio · /api/studio/video
+   Aimily Studio · /api/studio/video (POST — async start)
 
-   Image-to-video for a confirmed Studio output. Uses the active provider
-   (Kling 2.1 via Freepik by default, Sora 2 direct from OpenAI when
-   STUDIO_VIDEO_PROVIDER=sora) to animate the source image.
+   Kicks off a video generation upstream and returns IMMEDIATELY with the
+   asset_id. The client then polls /api/studio/video/status?asset_id=X
+   every 8s until the asset's status flips from 'pending' to 'completed'
+   (or 'failed').
 
-   Request:
-     {
-       source_asset_id: UUID,
-       motion: 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly',
-       duration: '5' | '10',
-       tier?: 'pro' | 'std',           // Kling-only; ignored by Sora
-       user_prompt?: string,
-     }
+   This decouples our Vercel function lifetime (max 800s) from the upstream
+   provider's actual generation time (Kling Pro 10s clips routinely run
+   12+ min on Magnific at peak load). The proper architectural fix —
+   previously we tried streaming heartbeats but Kling was just genuinely
+   slower than Vercel's hard ceiling.
 
-   Budget: counts as 1 Studio output (same as an image). Felipe can
-   change this to 5 outputs later by adding a loop around consumeStudio
-   Output if the economics shift. With the current Capsule €49 / 10
-   outputs pricing, 1 video at ~$1-2 cost still maintains ~80% margin.
+   Pending asset persistence:
+     - Asset row created with `status = 'pending'`
+     - Metadata includes external_task_id + external_provider so the
+       status endpoint can resume polling from any future request
+     - `url` field uses placeholder `pending:<task_id>` (collection_assets
+       has NOT NULL on url). When completed, replaced with real signed URL.
 
-   The video bytes are downloaded from the provider and re-uploaded into
-   the Studio's own studio-outputs bucket so the URL is stable (Kling
-   URLs expire after some time; Supabase signed URLs last a year).
+   Refund path:
+     - If startJob throws (upstream rejected the create) → refund immediately
+     - If pending asset later fails on status endpoint → that endpoint refunds
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface VideoBody {
   source_asset_id: string;
-  /* Canonical style (preferred). When set, motion is ignored. */
   video_style?: VideoStyle;
-  /* Legacy motion preset — kept for backwards compat. */
   motion?: VideoMotion;
   duration?: VideoDuration;
   tier?: VideoTier;
@@ -84,7 +79,6 @@ export async function POST(req: NextRequest) {
     const rateLimited = enforceAiUserRateLimit(userId, 'video');
     if (rateLimited) return rateLimited;
 
-    // ── 2. Parse + validate body ─────────────────────────────────────────
     const body = (await req.json()) as VideoBody;
 
     if (!body.source_asset_id) {
@@ -101,28 +95,25 @@ export async function POST(req: NextRequest) {
       body.duration === '10' ? '10' : '5';
     const tier: VideoTier = body.tier === 'std' ? 'std' : 'pro';
 
-    // ── 3. Load source asset + verify ownership ──────────────────────────
+    // ── 2. Source asset + ownership ──────────────────────────────────────
     const { data: sourceAsset } = await supabaseAdmin
       .from('collection_assets')
       .select('id, studio_project_id, url, name, asset_type, metadata')
       .eq('id', body.source_asset_id)
       .single();
-
     if (!sourceAsset || !sourceAsset.studio_project_id) {
       return NextResponse.json({ error: 'source asset not found' }, { status: 404 });
     }
-
     const { data: project } = await supabaseAdmin
       .from('studio_projects')
       .select('id, user_id, brand_name')
       .eq('id', sourceAsset.studio_project_id)
       .single();
-
     if (!project || project.user_id !== userId) {
       return NextResponse.json({ error: 'source asset not found' }, { status: 404 });
     }
 
-    // ── 4. Admin bypass + budget ─────────────────────────────────────────
+    // ── 3. Admin bypass + budget ─────────────────────────────────────────
     const isAdmin = ADMIN_EMAILS.includes(user!.email || '');
     let isAdminFromDb = false;
     if (!isAdmin) {
@@ -146,120 +137,95 @@ export async function POST(req: NextRequest) {
       outputsRemaining = Math.max(budget.outputsRemaining - 1, 0);
     }
 
-    // ── 5. Read product name from source metadata ────────────────────────
+    // ── 4. Source meta + product name ────────────────────────────────────
     const sourceMeta = (sourceAsset.metadata || {}) as Record<string, unknown>;
     const productName = typeof sourceMeta.product_name === 'string' && sourceMeta.product_name
       ? sourceMeta.product_name
       : sourceAsset.name || 'fashion product';
 
-    /* ═════════════════════════════════════════════════════════════════
-       STREAMING RESPONSE WITH HEARTBEAT
-       ─────────────────────────────────
-       Cloudflare (Vercel's edge proxy) closes HTTP connections that go
-       ~100s without any bytes flowing — even if our Node function is
-       still running. For 4-10 min Kling/Happy Horse polls, we MUST emit
-       periodic bytes to keep the connection alive.
-
-       Pattern: send a single space character every 15s while polling.
-       At the end, emit the final JSON. The client reads the whole body
-       as text, strips leading whitespace, and parses the final JSON.
-
-       Status is always 200; success/failure is signalled by the body's
-       `error` field instead of the HTTP status. This is because once
-       we've started streaming, the status code is committed.
-       ═════════════════════════════════════════════════════════════════ */
+    // ── 5. Start upstream job — fast, no polling ─────────────────────────
     const provider = getActiveVideoProvider();
-    const encoder = new TextEncoder();
+    let taskId: string;
+    let providerLabel: string;
+    try {
+      const startResult = await provider.startJob({
+        imageUrl: sourceAsset.url,
+        productName,
+        style: videoStyle,
+        motion,
+        duration,
+        tier,
+        userPrompt: body.user_prompt,
+      });
+      taskId = startResult.taskId;
+      providerLabel = startResult.providerLabel;
+    } catch (e) {
+      console.error(`[Studio video] startJob ${provider.name} failed:`, e);
+      if (purchaseId) await refundStudioOutput(userId, purchaseId);
+      return NextResponse.json(
+        {
+          error: 'Video job creation failed',
+          details: e instanceof Error ? e.message.slice(0, 200) : undefined,
+          provider: provider.name,
+        },
+        { status: 502 }
+      );
+    }
 
-    const stream = new ReadableStream({
-      async start(controller) {
-        let heartbeat: ReturnType<typeof setInterval> | null = setInterval(() => {
-          try { controller.enqueue(encoder.encode(' ')); } catch { /* closed */ }
-        }, 15_000);
+    // ── 6. Create pending asset row ──────────────────────────────────────
+    const { data: pendingAsset, error: insertError } = await supabaseAdmin
+      .from('collection_assets')
+      .insert({
+        studio_project_id: sourceAsset.studio_project_id,
+        phase: 'studio',
+        asset_type: 'video',
+        status: 'pending',
+        name: `Video — ${sourceAsset.name} (${tier} ${duration}s)`,
+        url: `pending:${taskId}`, // placeholder; collection_assets.url is NOT NULL
+        metadata: {
+          provider: providerLabel,
+          provider_name: provider.name, // 'kling' or 'sora' for status endpoint dispatch
+          external_task_id: taskId,
+          video_style: videoStyle,
+          motion,
+          duration,
+          tier,
+          parent_asset_id: sourceAsset.id,
+          purchase_id: purchaseId,
+          user_prompt: body.user_prompt,
+          started_at: new Date().toISOString(),
+        },
+        uploaded_by: userId,
+      })
+      .select('id')
+      .single();
 
-        const finish = (payload: Record<string, unknown>) => {
-          if (heartbeat) { clearInterval(heartbeat); heartbeat = null; }
-          try {
-            controller.enqueue(encoder.encode(JSON.stringify(payload)));
-            controller.close();
-          } catch { /* already closed */ }
-        };
+    if (insertError || !pendingAsset) {
+      console.error('[Studio video] pending asset insert failed:', insertError);
+      if (purchaseId) await refundStudioOutput(userId, purchaseId);
+      return NextResponse.json(
+        { error: 'Could not persist pending asset', details: insertError?.message },
+        { status: 500 }
+      );
+    }
 
-        try {
-          const result = await provider.generate({
-            imageUrl: sourceAsset.url,
-            productName,
-            style: videoStyle,
-            motion,
-            duration,
-            tier,
-            userPrompt: body.user_prompt,
-          });
-
-          const persisted = await persistStudioAsset({
-            studioProjectId: sourceAsset.studio_project_id,
-            assetType: 'video',
-            name: `Video — ${sourceAsset.name} (${tier} ${duration}s)`,
-            base64: result.videoBuffer.toString('base64'),
-            mimeType: result.mimeType,
-            phase: 'studio',
-            metadata: {
-              provider: result.providerLabel,
-              video_style: videoStyle,
-              motion,
-              duration,
-              tier,
-              parent_asset_id: sourceAsset.id,
-              purchase_id: purchaseId,
-              user_prompt: body.user_prompt,
-            },
-            uploadedBy: userId,
-          });
-
-          finish({
-            asset_id: persisted.assetId,
-            master_url: persisted.publicUrl,
-            asset_type: 'video',
-            outputs_remaining: outputsRemaining,
-            provider: result.providerLabel,
-            parent_asset_id: sourceAsset.id,
-            duration,
-            motion,
-            tier,
-            video_style: videoStyle,
-            admin_bypass: adminBypass || undefined,
-          });
-        } catch (e) {
-          console.error(`[Studio video] provider ${provider.name} failed:`, e);
-          if (purchaseId && userId) {
-            try { await refundStudioOutput(userId, purchaseId); }
-            catch (rErr) { console.error('[Studio video] refund inside stream failed:', rErr); }
-          }
-          finish({
-            error: 'Video generation failed',
-            details: e instanceof Error ? e.message.slice(0, 200) : undefined,
-            provider: provider.name,
-          });
-        }
-      },
-    });
-
-    return new Response(stream, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        // Disable any proxy buffering — we need bytes to flow immediately
-        'Cache-Control': 'no-cache, no-transform',
-        'X-Accel-Buffering': 'no',
-      },
+    // ── 7. Done — client polls /status from here ─────────────────────────
+    return NextResponse.json({
+      asset_id: pendingAsset.id,
+      status: 'pending',
+      provider: providerLabel,
+      external_task_id: taskId,
+      outputs_remaining: outputsRemaining,
+      duration,
+      motion,
+      tier,
+      video_style: videoStyle,
+      admin_bypass: adminBypass || undefined,
     });
   } catch (error) {
     if (consumed && userId && purchaseId) {
-      try {
-        await refundStudioOutput(userId, purchaseId);
-      } catch (refundErr) {
-        console.error('[Studio video] refund failed in catch:', refundErr);
-      }
+      try { await refundStudioOutput(userId, purchaseId); }
+      catch (refundErr) { console.error('[Studio video] refund failed in catch:', refundErr); }
     }
     console.error('[Studio video] fatal:', error);
     const norm = normalizeAiError(error);

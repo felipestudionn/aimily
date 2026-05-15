@@ -1383,7 +1383,13 @@ export default function ProjectWorkspaceClient(props: Props) {
   ): Promise<{ ok: boolean; error?: StudioError }> => {
     setVideoInFlight(true);
     try {
-      const res = await fetch('/api/studio/video', {
+      /* Async pattern (since 2026-05-15):
+       *   1. POST /api/studio/video → kicks off upstream job, returns
+       *      {asset_id, status: 'pending'} in <10s.
+       *   2. Poll GET /api/studio/video/status?asset_id=X every 8s
+       *      until status flips to 'completed' or 'failed'.
+       * No more long-running synchronous HTTP. */
+      const startRes = await fetch('/api/studio/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1394,42 +1400,54 @@ export default function ProjectWorkspaceClient(props: Props) {
           user_prompt: userPrompt || undefined,
         }),
       });
-      /* The video route streams heartbeat whitespace every 15s while
-       * polling the upstream provider (Kling / Happy Horse / Sora —
-       * 4-10 min waits). When the job finishes, the final JSON is
-       * appended. So we read as text, strip the leading whitespace
-       * heartbeats, and parse the trailing JSON. Status is always 200;
-       * success/failure is encoded as a body field. */
-      const fullText = await res.text();
-      let json: {
-        asset_id?: string;
-        master_url?: string;
-        provider?: string;
-        outputs_remaining?: number;
-        error?: string;
-        details?: string;
-      } = {};
-      try { json = JSON.parse(fullText.trim()); } catch {
-        return { ok: false, error: { code: 'generic', detail: 'malformed_response' } };
-      }
-      if (typeof json.error === 'string') {
-        const detail = typeof json.details === 'string' && json.details
-          ? json.details
-          : json.error;
-        const lowerDetail = detail.toLowerCase();
+      if (!startRes.ok) {
+        const errBody = await startRes.json().catch(() => ({}));
         const code: StudioErrorCode =
-          lowerDetail.includes('unauth') ? 'unauthorized' :
-          lowerDetail.includes('pool') || lowerDetail.includes('outputs') ? 'pool_empty' :
-          lowerDetail.includes('rate') ? 'rate_limit' :
-          lowerDetail.includes('network') || lowerDetail.includes('fetch') ? 'network' :
-          'ai_failed';
+          startRes.status === 401 ? 'unauthorized' :
+          startRes.status === 402 ? 'pool_empty' :
+          startRes.status === 429 ? 'rate_limit' :
+          startRes.status === 502 || startRes.status === 500 ? 'ai_failed' : 'generic';
+        const detail = typeof errBody.details === 'string' && errBody.details
+          ? errBody.details
+          : typeof errBody.error === 'string' ? errBody.error : undefined;
         return { ok: false, error: { code, detail } };
       }
-      if (!res.ok) {
-        return { ok: false, error: { code: 'generic', detail: 'unexpected_status_' + res.status } };
+      const startJson = await startRes.json();
+      const pendingAssetId = startJson.asset_id as string | undefined;
+      if (!pendingAssetId) {
+        return { ok: false, error: { code: 'generic', detail: 'no asset_id in start response' } };
+      }
+
+      // Poll status until completed/failed. Max 30 min of polling — well
+      // beyond any provider's worst-case generation time. Each poll is
+      // <5s so we're not consuming function quota client-side.
+      let json: { asset_id?: string; master_url?: string; provider?: string; error?: string } = {};
+      const MAX_POLLS = 225; // 225 × 8s = 30 min
+      let polls = 0;
+      while (polls < MAX_POLLS) {
+        await new Promise((r) => setTimeout(r, 8000));
+        polls++;
+        const sRes = await fetch(`/api/studio/video/status?asset_id=${pendingAssetId}`);
+        if (!sRes.ok) {
+          // Transient — retry next iteration
+          continue;
+        }
+        const sJson = await sRes.json();
+        if (sJson.status === 'completed' && sJson.master_url) {
+          json = { asset_id: sJson.asset_id, master_url: sJson.master_url, provider: sJson.provider };
+          break;
+        }
+        if (sJson.status === 'failed') {
+          const detail = typeof sJson.error === 'string' ? sJson.error : 'upstream failed';
+          return {
+            ok: false,
+            error: { code: detail.toLowerCase().includes('moderation') ? 'ai_failed' : 'ai_failed', detail },
+          };
+        }
+        // 'pending' → keep polling
       }
       if (!json.asset_id || !json.master_url) {
-        return { ok: false, error: { code: 'generic', detail: 'response_missing_fields' } };
+        return { ok: false, error: { code: 'generic', detail: `polling exhausted after ${polls} attempts` } };
       }
       const sourceMeta = (sourceAsset.metadata || {}) as Record<string, unknown>;
       const newAsset: Asset = {
@@ -1451,7 +1469,8 @@ export default function ProjectWorkspaceClient(props: Props) {
         created_at: new Date().toISOString(),
       };
       setRecentAssets((prev) => [newAsset, ...prev]);
-      if (typeof json.outputs_remaining === 'number') setOutputsRemaining(json.outputs_remaining);
+      // outputs_remaining is set at job start (POST response), not at completion
+      if (typeof startJson.outputs_remaining === 'number') setOutputsRemaining(startJson.outputs_remaining);
       setLightboxAssetId(newAsset.id);
       return { ok: true };
     } catch (e) {
