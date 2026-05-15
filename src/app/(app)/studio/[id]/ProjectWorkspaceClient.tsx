@@ -1394,19 +1394,43 @@ export default function ProjectWorkspaceClient(props: Props) {
           user_prompt: userPrompt || undefined,
         }),
       });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
+      /* The video route streams heartbeat whitespace every 15s while
+       * polling the upstream provider (Kling / Happy Horse / Sora —
+       * 4-10 min waits). When the job finishes, the final JSON is
+       * appended. So we read as text, strip the leading whitespace
+       * heartbeats, and parse the trailing JSON. Status is always 200;
+       * success/failure is encoded as a body field. */
+      const fullText = await res.text();
+      let json: {
+        asset_id?: string;
+        master_url?: string;
+        provider?: string;
+        outputs_remaining?: number;
+        error?: string;
+        details?: string;
+      } = {};
+      try { json = JSON.parse(fullText.trim()); } catch {
+        return { ok: false, error: { code: 'generic', detail: 'malformed_response' } };
+      }
+      if (typeof json.error === 'string') {
+        const detail = typeof json.details === 'string' && json.details
+          ? json.details
+          : json.error;
+        const lowerDetail = detail.toLowerCase();
         const code: StudioErrorCode =
-          res.status === 401 ? 'unauthorized' :
-          res.status === 402 ? 'pool_empty' :
-          res.status === 429 ? 'rate_limit' :
-          res.status === 502 || res.status === 500 ? 'ai_failed' : 'generic';
-        const detail = typeof errBody.details === 'string' && errBody.details
-          ? errBody.details
-          : typeof errBody.error === 'string' ? errBody.error : undefined;
+          lowerDetail.includes('unauth') ? 'unauthorized' :
+          lowerDetail.includes('pool') || lowerDetail.includes('outputs') ? 'pool_empty' :
+          lowerDetail.includes('rate') ? 'rate_limit' :
+          lowerDetail.includes('network') || lowerDetail.includes('fetch') ? 'network' :
+          'ai_failed';
         return { ok: false, error: { code, detail } };
       }
-      const json = await res.json();
+      if (!res.ok) {
+        return { ok: false, error: { code: 'generic', detail: 'unexpected_status_' + res.status } };
+      }
+      if (!json.asset_id || !json.master_url) {
+        return { ok: false, error: { code: 'generic', detail: 'response_missing_fields' } };
+      }
       const sourceMeta = (sourceAsset.metadata || {}) as Record<string, unknown>;
       const newAsset: Asset = {
         id: json.asset_id,

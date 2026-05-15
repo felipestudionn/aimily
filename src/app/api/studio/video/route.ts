@@ -152,68 +152,106 @@ export async function POST(req: NextRequest) {
       ? sourceMeta.product_name
       : sourceAsset.name || 'fashion product';
 
-    // ── 6. Invoke the active provider (Kling | Sora) ─────────────────────
-    const provider = getActiveVideoProvider();
-    let videoBuffer: Buffer;
-    let mimeType: string;
-    let providerLabel: string;
-    try {
-      const result = await provider.generate({
-        imageUrl: sourceAsset.url,
-        productName,
-        style: videoStyle,
-        motion,
-        duration,
-        tier,
-        userPrompt: body.user_prompt,
-      });
-      videoBuffer = result.videoBuffer;
-      mimeType = result.mimeType;
-      providerLabel = result.providerLabel;
-    } catch (e) {
-      console.error(`[Studio video] provider ${provider.name} failed:`, e);
-      if (purchaseId) await refundStudioOutput(userId, purchaseId);
-      return NextResponse.json(
-        {
-          error: 'Video generation failed',
-          details: e instanceof Error ? e.message.slice(0, 200) : undefined,
-          provider: provider.name,
-        },
-        { status: 502 }
-      );
-    }
+    /* ═════════════════════════════════════════════════════════════════
+       STREAMING RESPONSE WITH HEARTBEAT
+       ─────────────────────────────────
+       Cloudflare (Vercel's edge proxy) closes HTTP connections that go
+       ~100s without any bytes flowing — even if our Node function is
+       still running. For 4-10 min Kling/Happy Horse polls, we MUST emit
+       periodic bytes to keep the connection alive.
 
-    // ── 7. Persist video — base64 the buffer into our studio-outputs bucket ─
-    const persisted = await persistStudioAsset({
-      studioProjectId: sourceAsset.studio_project_id,
-      assetType: 'video',
-      name: `Video — ${sourceAsset.name} (${tier} ${duration}s)`,
-      base64: videoBuffer.toString('base64'),
-      mimeType,
-      phase: 'studio',
-      metadata: {
-        provider: providerLabel,
-        motion,
-        duration,
-        tier,
-        parent_asset_id: sourceAsset.id,
-        purchase_id: purchaseId,
-        user_prompt: body.user_prompt,
+       Pattern: send a single space character every 15s while polling.
+       At the end, emit the final JSON. The client reads the whole body
+       as text, strips leading whitespace, and parses the final JSON.
+
+       Status is always 200; success/failure is signalled by the body's
+       `error` field instead of the HTTP status. This is because once
+       we've started streaming, the status code is committed.
+       ═════════════════════════════════════════════════════════════════ */
+    const provider = getActiveVideoProvider();
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let heartbeat: ReturnType<typeof setInterval> | null = setInterval(() => {
+          try { controller.enqueue(encoder.encode(' ')); } catch { /* closed */ }
+        }, 15_000);
+
+        const finish = (payload: Record<string, unknown>) => {
+          if (heartbeat) { clearInterval(heartbeat); heartbeat = null; }
+          try {
+            controller.enqueue(encoder.encode(JSON.stringify(payload)));
+            controller.close();
+          } catch { /* already closed */ }
+        };
+
+        try {
+          const result = await provider.generate({
+            imageUrl: sourceAsset.url,
+            productName,
+            style: videoStyle,
+            motion,
+            duration,
+            tier,
+            userPrompt: body.user_prompt,
+          });
+
+          const persisted = await persistStudioAsset({
+            studioProjectId: sourceAsset.studio_project_id,
+            assetType: 'video',
+            name: `Video — ${sourceAsset.name} (${tier} ${duration}s)`,
+            base64: result.videoBuffer.toString('base64'),
+            mimeType: result.mimeType,
+            phase: 'studio',
+            metadata: {
+              provider: result.providerLabel,
+              video_style: videoStyle,
+              motion,
+              duration,
+              tier,
+              parent_asset_id: sourceAsset.id,
+              purchase_id: purchaseId,
+              user_prompt: body.user_prompt,
+            },
+            uploadedBy: userId,
+          });
+
+          finish({
+            asset_id: persisted.assetId,
+            master_url: persisted.publicUrl,
+            asset_type: 'video',
+            outputs_remaining: outputsRemaining,
+            provider: result.providerLabel,
+            parent_asset_id: sourceAsset.id,
+            duration,
+            motion,
+            tier,
+            video_style: videoStyle,
+            admin_bypass: adminBypass || undefined,
+          });
+        } catch (e) {
+          console.error(`[Studio video] provider ${provider.name} failed:`, e);
+          if (purchaseId && userId) {
+            try { await refundStudioOutput(userId, purchaseId); }
+            catch (rErr) { console.error('[Studio video] refund inside stream failed:', rErr); }
+          }
+          finish({
+            error: 'Video generation failed',
+            details: e instanceof Error ? e.message.slice(0, 200) : undefined,
+            provider: provider.name,
+          });
+        }
       },
-      uploadedBy: userId,
     });
 
-    return NextResponse.json({
-      asset_id: persisted.assetId,
-      master_url: persisted.publicUrl,
-      asset_type: 'video',
-      outputs_remaining: outputsRemaining,
-      provider: providerLabel,
-      parent_asset_id: sourceAsset.id,
-      duration,
-      motion,
-      tier,
-      admin_bypass: adminBypass || undefined,
+    return new Response(stream, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        // Disable any proxy buffering — we need bytes to flow immediately
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
+      },
     });
   } catch (error) {
     if (consumed && userId && purchaseId) {
