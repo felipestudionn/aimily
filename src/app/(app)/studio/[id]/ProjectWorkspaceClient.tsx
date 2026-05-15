@@ -64,6 +64,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   regenLessBg: string;
   regenBetterLight: string;
   regenerating: string;
+  castingUseModel: string;
+  castingCancel: string;
+  castingSelected: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -105,6 +108,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Less background',
     regenBetterLight: 'Better light',
     regenerating: 'Regenerating…',
+    castingUseModel: 'Use this model',
+    castingCancel: 'Cancel',
+    castingSelected: 'Selected',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -146,6 +152,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Menos fondo',
     regenBetterLight: 'Mejor luz',
     regenerating: 'Regenerando…',
+    castingUseModel: 'Usar este modelo',
+    castingCancel: 'Cancelar',
+    castingSelected: 'Seleccionado',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -187,6 +196,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Moins de fond',
     regenBetterLight: 'Meilleure lumière',
     regenerating: 'Régénération…',
+    castingUseModel: 'Utiliser ce mannequin',
+    castingCancel: 'Annuler',
+    castingSelected: 'Sélectionné',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -228,6 +240,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Meno sfondo',
     regenBetterLight: 'Luce migliore',
     regenerating: 'Rigenerazione…',
+    castingUseModel: 'Usa questo modello',
+    castingCancel: 'Annulla',
+    castingSelected: 'Selezionato',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -269,6 +284,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Weniger Hintergrund',
     regenBetterLight: 'Besseres Licht',
     regenerating: 'Wird neu generiert…',
+    castingUseModel: 'Dieses Modell verwenden',
+    castingCancel: 'Abbrechen',
+    castingSelected: 'Ausgewählt',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -310,6 +328,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Menos fundo',
     regenBetterLight: 'Melhor luz',
     regenerating: 'A regenerar…',
+    castingUseModel: 'Usar este modelo',
+    castingCancel: 'Cancelar',
+    castingSelected: 'Selecionado',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -351,6 +372,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Minder achtergrond',
     regenBetterLight: 'Beter licht',
     regenerating: 'Regenereren…',
+    castingUseModel: 'Dit model gebruiken',
+    castingCancel: 'Annuleren',
+    castingSelected: 'Geselecteerd',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -392,6 +416,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Mindre bakgrund',
     regenBetterLight: 'Bättre ljus',
     regenerating: 'Genererar om…',
+    castingUseModel: 'Använd denna modell',
+    castingCancel: 'Avbryt',
+    castingSelected: 'Vald',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -433,6 +460,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     regenLessBg: 'Mindre bakgrunn',
     regenBetterLight: 'Bedre lys',
     regenerating: 'Genererer på nytt…',
+    castingUseModel: 'Bruk denne modellen',
+    castingCancel: 'Avbryt',
+    castingSelected: 'Valgt',
   },
 };
 
@@ -617,6 +647,10 @@ export default function ProjectWorkspaceClient(props: Props) {
   const [orientation, setOrientation] = useState<Orientation>('vertical');
   const [framing, setFraming] = useState<Framing>('medium');
   const [light, setLight] = useState<LightDirection>('soft');
+  const [castingDrawerId, setCastingDrawerId] = useState<string | null>(null);
+  const castingDrawerModel = castingDrawerId
+    ? props.models.find((m) => m.id === castingDrawerId) ?? null
+    : null;
   // Derived so the lightbox re-renders when the underlying asset changes
   // (e.g. after a Style Memory toggle updates recentAssets).
   const lightboxAsset = lightboxAssetId
@@ -1126,16 +1160,28 @@ export default function ProjectWorkspaceClient(props: Props) {
                       <button
                         key={m.id}
                         type="button"
-                        onClick={() => setModelId(m.id)}
-                        className={`group relative aspect-[3/4] rounded-[10px] overflow-hidden transition-all ${
-                          modelId === m.id ? 'ring-2 ring-carbon ring-offset-2 ring-offset-shade scale-[1.03]' : 'opacity-80 hover:opacity-100'
+                        onClick={() => setCastingDrawerId(m.id)}
+                        className={`group relative aspect-[3/4] rounded-[10px] overflow-hidden transition-all duration-200 hover:scale-[1.05] hover:z-10 hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)] ${
+                          modelId === m.id
+                            ? 'ring-2 ring-carbon ring-offset-2 ring-offset-shade'
+                            : 'opacity-85 hover:opacity-100'
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={m.headshot_url} alt={m.name} className="h-full w-full object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[11px] py-1 px-1.5 text-center truncate">
-                          {m.name}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pt-6 pb-2 px-2">
+                          <p className="text-white text-[11px] font-medium tracking-[-0.01em] truncate">{m.name}</p>
+                          {(m.complexion || m.hair_style) && (
+                            <p className="text-white/70 text-[9px] uppercase tracking-[0.08em] truncate">
+                              {[m.complexion, m.hair_style].filter(Boolean).join(' · ')}
+                            </p>
+                          )}
                         </div>
+                        {modelId === m.id && (
+                          <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-carbon text-white flex items-center justify-center">
+                            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -1321,6 +1367,20 @@ export default function ProjectWorkspaceClient(props: Props) {
             onClose={() => setLightboxAssetId(null)}
             onToggleStyleMemory={() => toggleStyleMemory(lightboxAsset.id, lightboxAsset.is_style_memory)}
             onRegenerate={(variation) => regenerateVariation(lightboxAsset, variation)}
+          />
+        )}
+
+        {/* Casting drawer — preview a model before committing */}
+        {castingDrawerModel && (
+          <CastingDrawer
+            model={castingDrawerModel}
+            isSelected={modelId === castingDrawerModel.id}
+            t={t}
+            onClose={() => setCastingDrawerId(null)}
+            onUse={() => {
+              setModelId(castingDrawerModel.id);
+              setCastingDrawerId(null);
+            }}
           />
         )}
       </div>
@@ -1760,6 +1820,125 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
           </aside>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CastingDrawer — right-anchored slide-in drawer showing a richer view of
+// a single aimily_model: bigger headshot, attribute pills (gender,
+// complexion, hair style/color), description, and a primary "Use this
+// model" CTA. Lets the user inspect before committing — the casting bank
+// thumbnails now open this drawer instead of selecting directly.
+// ─────────────────────────────────────────────────────────────────────────
+interface CastingDrawerProps {
+  model: AimilyModel;
+  isSelected: boolean;
+  t: (typeof STUDIO_WORKSPACE_I18N)[Language];
+  onClose: () => void;
+  onUse: () => void;
+}
+
+function CastingDrawer({ model, isSelected, t, onClose, onUse }: CastingDrawerProps) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  const genderLabel = model.gender === 'female' ? 'Mujer' : model.gender === 'male' ? 'Hombre' : null;
+  const pills: string[] = [
+    ...(genderLabel ? [genderLabel] : []),
+    ...(model.complexion ? [model.complexion] : []),
+    ...(model.hair_color ? [model.hair_color] : []),
+    ...(model.hair_style ? [model.hair_style] : []),
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex justify-end"
+      onClick={onClose}
+    >
+      <aside
+        className="bg-white w-full max-w-[460px] h-full overflow-y-auto shadow-[-12px_0_40px_rgba(0,0,0,0.15)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close X */}
+        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-between border-b border-carbon/[0.06]">
+          <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+            Casting Aimily
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t.castingCancel}
+            className="h-9 w-9 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/55 flex items-center justify-center transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-6 py-6">
+          <div className="rounded-[16px] overflow-hidden bg-carbon/[0.04] aspect-[3/4]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={model.headshot_url} alt={model.name} className="h-full w-full object-cover" />
+          </div>
+
+          <h2 className="mt-5 text-[24px] font-semibold text-carbon tracking-[-0.03em] leading-tight">
+            {model.name}
+          </h2>
+
+          {pills.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {pills.map((p, i) => (
+                <span
+                  key={`${p}-${i}`}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-carbon/[0.04] text-[11px] text-carbon/70 capitalize"
+                >
+                  {p}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {model.description && (
+            <p className="mt-5 text-[13px] text-carbon/65 leading-[1.7]">
+              {model.description}
+            </p>
+          )}
+
+          {isSelected && (
+            <div className="mt-5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-carbon/[0.04] text-[11px] font-medium text-carbon/60">
+              <Check className="h-3 w-3" strokeWidth={2.5} />
+              {t.castingSelected}
+            </div>
+          )}
+        </div>
+
+        {/* Footer CTAs — sticky so they're always reachable on long descriptions */}
+        <div className="sticky bottom-0 bg-white border-t border-carbon/[0.06] px-6 py-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
+          >
+            {t.castingCancel}
+          </button>
+          <button
+            type="button"
+            onClick={onUse}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors"
+          >
+            {t.castingUseModel}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </aside>
     </div>
   );
 }
