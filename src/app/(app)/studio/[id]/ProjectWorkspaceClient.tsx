@@ -545,6 +545,141 @@ const FORMAT_NAMES: Record<string, string> = {
   'email-banner': 'Email banner',
 };
 
+/* ── Shooting-style progress stages ───────────────────────────────────────
+ * Per Felipe: durante los ~60s que tarda gpt-image-1.5, mostrar todos los
+ * pasos de un shooting real pasando ultra rápido — como si Aimily fuera un
+ * estudio fotográfico que monta el set, el maquillaje, el casting, etc. en
+ * 60 segundos. 12 stages, ~4s entre cada uno. El último ("Disparando") se
+ * queda en loop con spinner hasta que la AI responde. */
+const SHOOTING_STAGES_I18N: Record<Language, string[]> = {
+  en: [
+    'Studio set up',
+    'Lighting rigged',
+    'Camera & tripod ready',
+    'Makeup artist on set',
+    'Makeup done',
+    'Stylist checking wardrobe',
+    'Wardrobe selected',
+    'Model in dressing room',
+    'Model on set',
+    'Light test',
+    'Pose check',
+    'Rolling',
+  ],
+  es: [
+    'Preparando el estudio',
+    'Iluminación montada',
+    'Cámara y trípode listos',
+    'Maquillador en zona',
+    'Maquillaje listo',
+    'Estilista revisando vestuario',
+    'Vestuario seleccionado',
+    'Modelo en cabina',
+    'Modelo en zona',
+    'Test de luz',
+    'Test de pose',
+    'Disparando',
+  ],
+  fr: [
+    'Studio préparé',
+    'Éclairage installé',
+    'Caméra et trépied prêts',
+    'Maquilleur sur le plateau',
+    'Maquillage terminé',
+    'Styliste vérifie la garde-robe',
+    'Vêtements sélectionnés',
+    'Mannequin en loge',
+    'Mannequin sur le plateau',
+    'Test de lumière',
+    'Test de pose',
+    'Tournage',
+  ],
+  it: [
+    'Studio allestito',
+    'Luci montate',
+    'Camera e treppiede pronti',
+    'Truccatore sul set',
+    'Trucco completato',
+    'Stilista controlla i capi',
+    'Vestiti selezionati',
+    'Modello in cabina',
+    'Modello sul set',
+    'Test luci',
+    'Prova di posa',
+    'Si gira',
+  ],
+  de: [
+    'Studio eingerichtet',
+    'Lichtsetup montiert',
+    'Kamera & Stativ bereit',
+    'Visagist am Set',
+    'Make-up fertig',
+    'Stylist prüft Garderobe',
+    'Outfit gewählt',
+    'Model in der Garderobe',
+    'Model am Set',
+    'Lichttest',
+    'Posencheck',
+    'Aufnahme läuft',
+  ],
+  pt: [
+    'Estúdio preparado',
+    'Iluminação montada',
+    'Câmara e tripé prontos',
+    'Maquilhador em zona',
+    'Maquilhagem pronta',
+    'Estilista a rever o guarda-roupa',
+    'Roupa selecionada',
+    'Modelo na cabina',
+    'Modelo no set',
+    'Teste de luz',
+    'Teste de pose',
+    'A disparar',
+  ],
+  nl: [
+    'Studio opgebouwd',
+    'Belichting opgesteld',
+    'Camera & statief klaar',
+    'Visagist op de set',
+    'Make-up klaar',
+    'Stylist controleert garderobe',
+    'Outfit gekozen',
+    'Model in de kleedkamer',
+    'Model op de set',
+    'Lichttest',
+    'Pose check',
+    'Opname',
+  ],
+  sv: [
+    'Studio riggad',
+    'Ljussättning klar',
+    'Kamera & stativ redo',
+    'Sminkös på plats',
+    'Smink klart',
+    'Stylist kollar garderoben',
+    'Outfit vald',
+    'Modell i omklädningsrum',
+    'Modell på plats',
+    'Ljustest',
+    'Pose-check',
+    'Rullar',
+  ],
+  no: [
+    'Studio rigget',
+    'Lyssetting montert',
+    'Kamera & stativ klare',
+    'Sminkør på sett',
+    'Sminke ferdig',
+    'Stylist sjekker garderoben',
+    'Antrekk valgt',
+    'Modell i garderoben',
+    'Modell på sett',
+    'Lystest',
+    'Posesjekk',
+    'Tar opp',
+  ],
+};
+
 /* ── Quick variation hints ────────────────────────────────────────────────
  * Appended (in English) to user_prompt when the user clicks one of the
  * regenerate-variation pills in the lightbox. The LLM understands these
@@ -688,13 +823,12 @@ export default function ProjectWorkspaceClient(props: Props) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [studioError, setStudioError] = useState<StudioError | null>(null);
-  const [progressStage, setProgressStage] = useState<0 | 1 | 2 | 3>(0);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [allStagesDone, setAllStagesDone] = useState(false);
   const lastPayloadRef = useRef<GeneratePayload | null>(null);
   const [recentAssets, setRecentAssets] = useState<Asset[]>(props.assets);
   const [outputsRemaining, setOutputsRemaining] = useState(props.outputs_remaining);
   const [lightboxAssetId, setLightboxAssetId] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [orientation, setOrientation] = useState<Orientation>('vertical');
   const [framing, setFraming] = useState<Framing>('medium');
   const [light, setLight] = useState<LightDirection>('soft');
@@ -705,21 +839,16 @@ export default function ProjectWorkspaceClient(props: Props) {
     ? recentAssets.find((a) => a.id === lightboxAssetId) ?? null
     : null;
 
-  /* Drive elapsed timer + auto-advance stages while a request is in flight.
-   * Stage 0 → 1 at 1.6s (preparing → AI), stage 2 (formats) fires after the
-   * fetch resolves, stage 3 = done (then close after a brief flash). */
+  /* Drive elapsed timer while a request is in flight. The shooting-stage
+   * index is derived purely from elapsedSec in <GenerationProgress />, so
+   * here we only tick the timer. */
   useEffect(() => {
     if (!generating) return;
     const startedAt = Date.now();
     setElapsedSec(0);
-    setProgressStage(0);
+    setAllStagesDone(false);
     const id = window.setInterval(() => {
-      const s = Math.floor((Date.now() - startedAt) / 1000);
-      setElapsedSec(s);
-      setProgressStage((prev) => {
-        if (prev === 0 && s >= 2) return 1;
-        return prev;
-      });
+      setElapsedSec(Math.floor((Date.now() - startedAt) / 1000));
     }, 250);
     return () => window.clearInterval(id);
   }, [generating]);
@@ -818,11 +947,10 @@ export default function ProjectWorkspaceClient(props: Props) {
       }
       const json = await res.json();
 
-      // Stage 2 (formats) flash, then stage 3 (done), then close.
-      setProgressStage(2);
+      // Response arrived — mark every stage complete with a quick flash
+      // before closing the panel so the checklist feels resolved.
+      setAllStagesDone(true);
       await new Promise((r) => setTimeout(r, 600));
-      setProgressStage(3);
-      await new Promise((r) => setTimeout(r, 400));
 
       // Optimistic add to recent — mirror everything the server persists so
       // the lightbox "Regenerate variation" controls work on this asset
@@ -866,7 +994,7 @@ export default function ProjectWorkspaceClient(props: Props) {
       setStudioError(err);
     } finally {
       setGenerating(false);
-      setProgressStage(0);
+      setAllStagesDone(false);
     }
   };
 
@@ -1065,7 +1193,12 @@ export default function ProjectWorkspaceClient(props: Props) {
                 isAdmin={!!props.isAdmin}
               />
             ) : generating ? (
-              <GenerationProgress t={t} stage={progressStage} elapsed={elapsedSec} />
+              <GenerationProgress
+                language={language}
+                t={t}
+                elapsed={elapsedSec}
+                allDone={allStagesDone}
+              />
             ) : (
             <>
             <h2 className="text-[20px] font-semibold text-carbon tracking-[-0.03em] mb-6">
@@ -1127,7 +1260,7 @@ export default function ProjectWorkspaceClient(props: Props) {
                   'grid-cols-1 max-w-[340px]'
                 }`}>
                   <UploadSquare
-                    label="Foto del producto"
+                    label="Producto"
                     required
                     imageUrl={productImageUrl}
                     uploading={productUploading}
@@ -1142,7 +1275,7 @@ export default function ProjectWorkspaceClient(props: Props) {
                   />
                   {type === 'editorial' && (
                     <UploadSquare
-                      label="Foto de referencia"
+                      label="Referencia"
                       required
                       imageUrl={referenceImageUrl}
                       uploading={referenceUploading}
@@ -1218,61 +1351,52 @@ export default function ProjectWorkspaceClient(props: Props) {
                 />
               </div>
 
-              {/* "More options" accordion — orientation / framing / light. Closed
-                  by default so first-time users aren't overwhelmed. */}
+              {/* Creative controls — always visible (no accordion). Felipe
+                  directive: "las opciones de sacar carteles ocultas estén
+                  visibles". Each row: section label left, pill right. */}
               <div className="md:col-span-2">
-                <button
-                  type="button"
-                  onClick={() => setMoreOpen((v) => !v)}
-                  className="inline-flex items-center gap-1.5 text-[12px] font-medium text-carbon/55 hover:text-carbon transition-colors"
-                >
-                  {moreOpen ? t.hideOptions : t.moreOptions}
-                  <ArrowRight className={`h-3 w-3 transition-transform ${moreOpen ? 'rotate-90' : ''}`} />
-                </button>
-                {moreOpen && (
-                  <div className="mt-4 space-y-4 bg-carbon/[0.02] rounded-[14px] p-5">
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <span className="text-[12px] font-medium text-carbon/70">{t.optOrientation}</span>
-                      <SegmentedPill<Orientation>
-                        options={[
-                          { id: 'vertical', label: 'Vertical' },
-                          { id: 'horizontal', label: 'Horizontal' },
-                          { id: 'square', label: 'Square' },
-                        ]}
-                        value={orientation}
-                        onChange={setOrientation}
-                        size="sm"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <span className="text-[12px] font-medium text-carbon/70">{t.optFraming}</span>
-                      <SegmentedPill<Framing>
-                        options={[
-                          { id: 'close', label: 'Close-up' },
-                          { id: 'medium', label: 'Medium' },
-                          { id: 'full', label: 'Full' },
-                        ]}
-                        value={framing}
-                        onChange={setFraming}
-                        size="sm"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-4 flex-wrap">
-                      <span className="text-[12px] font-medium text-carbon/70">{t.optLight}</span>
-                      <SegmentedPill<LightDirection>
-                        options={[
-                          { id: 'soft', label: 'Soft' },
-                          { id: 'golden', label: 'Golden' },
-                          { id: 'studio', label: 'Studio' },
-                          { id: 'dramatic', label: 'Dramatic' },
-                        ]}
-                        value={light}
-                        onChange={setLight}
-                        size="sm"
-                      />
-                    </div>
+                <div className="space-y-3 bg-carbon/[0.02] rounded-[14px] p-5">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{t.optOrientation}</span>
+                    <SegmentedPill<Orientation>
+                      options={[
+                        { id: 'vertical', label: 'Vertical' },
+                        { id: 'horizontal', label: 'Horizontal' },
+                        { id: 'square', label: 'Square' },
+                      ]}
+                      value={orientation}
+                      onChange={setOrientation}
+                      size="sm"
+                    />
                   </div>
-                )}
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{t.optFraming}</span>
+                    <SegmentedPill<Framing>
+                      options={[
+                        { id: 'close', label: 'Close-up' },
+                        { id: 'medium', label: 'Medium' },
+                        { id: 'full', label: 'Full' },
+                      ]}
+                      value={framing}
+                      onChange={setFraming}
+                      size="sm"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                    <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">{t.optLight}</span>
+                    <SegmentedPill<LightDirection>
+                      options={[
+                        { id: 'soft', label: 'Soft' },
+                        { id: 'golden', label: 'Golden' },
+                        { id: 'studio', label: 'Studio' },
+                        { id: 'dramatic', label: 'Dramatic' },
+                      ]}
+                      value={light}
+                      onChange={setLight}
+                      size="sm"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1407,96 +1531,89 @@ export default function ProjectWorkspaceClient(props: Props) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// GenerationProgress — overlay shown inside the generator panel while a
-// /api/studio/generate call is in flight. Three pseudo-stages driven by
-// elapsed time, with a typical-ETA countdown for the long AI step.
-// gpt-image-1.5 quality=high usually finishes in 30–60s; pick 45 as the
-// baseline so the countdown reads honestly for most users.
+// GenerationProgress — shooting-style checklist that ticks through the
+// stages of a real photoshoot ultra-fast during the ~60s gpt-image-1.5
+// wait. Each row gets checked off in sequence. The last stage ("Rolling")
+// stays in a spinning state perpetually until the AI returns; when the
+// response arrives, allDone flips every row to checked and we close.
+//
+// Felipe directive: "una lista de todas las cosas que se hacen en un
+// shooting normal y como nosotros, de manera ficticia, pasamos por todas
+// ellas ultra rápido en 60 segundos."
 // ─────────────────────────────────────────────────────────────────────────
-const ETA_BASELINE_SECONDS = 45;
+const SECONDS_PER_STAGE = 4; // 12 stages × 4s = 48s, last stays in loop
 
 interface GenerationProgressProps {
+  language: Language;
   t: (typeof STUDIO_WORKSPACE_I18N)[Language];
-  stage: 0 | 1 | 2 | 3;
   elapsed: number;
+  allDone: boolean;
 }
 
-function GenerationProgress({ t, stage, elapsed }: GenerationProgressProps) {
-  // The AI stage starts at ~2s. Countdown estimate from there.
-  const aiSecondsElapsed = Math.max(elapsed - 2, 0);
-  const etaLeft = Math.max(ETA_BASELINE_SECONDS - aiSecondsElapsed, 0);
-  const showAlmostThere = stage >= 1 && etaLeft === 0;
-
-  const stages = [
-    { idx: 0, label: t.stagePreparing },
-    { idx: 1, label: t.stageGenerating },
-    { idx: 2, label: t.stageFormats },
-  ] as const;
+function GenerationProgress({ language, t, elapsed, allDone }: GenerationProgressProps) {
+  const stages = SHOOTING_STAGES_I18N[language] ?? SHOOTING_STAGES_I18N.en;
+  const lastIdx = stages.length - 1;
+  // Active stage advances every SECONDS_PER_STAGE, capped at the last index.
+  const activeIdx = Math.min(Math.floor(elapsed / SECONDS_PER_STAGE), lastIdx);
 
   return (
-    <div className="flex flex-col items-center text-center py-8">
+    <div className="flex flex-col items-center text-center py-6">
       <h2 className="text-[22px] md:text-[24px] font-semibold text-carbon tracking-[-0.03em] mb-2">
         {t.generatingTitle}
       </h2>
-      <p className="text-[13px] text-carbon/50 max-w-md leading-[1.7] mb-10">
+      <p className="text-[13px] text-carbon/50 max-w-md leading-[1.7] mb-8">
         {t.generatingSub}
       </p>
 
-      <div className="w-full max-w-md space-y-3">
-        {stages.map((s) => {
-          // stage 3 = done flash → mark all stages completed
-          const completed = stage > s.idx || stage === 3;
-          const active = stage === s.idx;
+      <div className="w-full max-w-md space-y-1.5">
+        {stages.map((label, idx) => {
+          const completed = allDone || idx < activeIdx;
+          const active = !allDone && idx === activeIdx;
           return (
             <div
-              key={s.idx}
-              className={`flex items-center gap-3 rounded-[14px] px-4 py-3 transition-colors ${
+              key={idx}
+              className={`flex items-center gap-3 rounded-[12px] px-3.5 py-2.5 transition-all duration-300 ${
                 active
                   ? 'bg-carbon/[0.04]'
                   : completed
-                  ? 'bg-carbon/[0.02]'
-                  : 'bg-transparent'
+                  ? 'bg-transparent'
+                  : 'bg-transparent opacity-50'
               }`}
             >
               <div
-                className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
+                className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                   completed
                     ? 'bg-carbon text-white'
                     : active
-                    ? 'bg-white text-carbon ring-1 ring-carbon/15'
+                    ? 'bg-white text-carbon ring-1 ring-carbon/20'
                     : 'bg-carbon/[0.05] text-carbon/30'
                 }`}
               >
                 {completed ? (
-                  <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  <Check className="h-3 w-3" strokeWidth={2.5} />
                 ) : active ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
-                  <div className="h-1.5 w-1.5 rounded-full bg-current" />
+                  <div className="h-1 w-1 rounded-full bg-current" />
                 )}
               </div>
               <span
-                className={`text-[13px] font-medium tracking-[-0.01em] ${
+                className={`text-[13px] tracking-[-0.01em] text-left flex-1 ${
                   completed
-                    ? 'text-carbon/60'
+                    ? 'text-carbon/55 line-through decoration-carbon/20'
                     : active
-                    ? 'text-carbon'
-                    : 'text-carbon/30'
+                    ? 'text-carbon font-medium'
+                    : 'text-carbon/35'
                 }`}
               >
-                {s.label}
+                {label}
               </span>
-              {active && s.idx === 1 && (
-                <span className="ml-auto text-[12px] text-carbon/45 tabular-nums">
-                  {showAlmostThere ? t.etaAlmostThere : t.etaSecondsLeft(etaLeft)}
-                </span>
-              )}
             </div>
           );
         })}
       </div>
 
-      <p className="mt-8 text-[11px] text-carbon/35 tabular-nums">
+      <p className="mt-6 text-[11px] text-carbon/35 tabular-nums">
         {t.elapsedSeconds(elapsed)}
       </p>
     </div>
@@ -1871,72 +1988,92 @@ interface ModelBlockProps {
 function ModelBlock({ label, required, model, onOpenPicker, onClear, t }: ModelBlockProps) {
   const hasModel = !!model;
   return (
-    <div className="flex flex-col">
-      <div className="mb-2 flex items-baseline gap-1.5">
-        <span className="text-[13px] font-medium text-carbon tracking-[-0.02em]">{label}</span>
-        {required && <span className="text-[11px] text-carbon/40">·  obligatorio</span>}
+    <button
+      type="button"
+      onClick={onOpenPicker}
+      className={`relative aspect-square rounded-[20px] overflow-hidden cursor-pointer transition-all duration-300 text-left group
+        ${hasModel
+          ? 'bg-carbon/[0.04] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
+          : 'bg-carbon/[0.03] border-2 border-dashed border-carbon/15 hover:border-carbon/40 hover:bg-carbon/[0.05]'}
+      `}
+    >
+      {/* Large editorial title — INSIDE the card, gold-standard typography */}
+      <div className="absolute top-5 md:top-7 left-5 md:left-7 z-10">
+        <h3
+          className={`text-[26px] md:text-[34px] font-semibold tracking-[-0.04em] leading-[0.95] ${
+            hasModel ? 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]' : 'text-carbon'
+          }`}
+        >
+          {label}
+        </h3>
+        <div className="mt-1.5">
+          {required && (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] tracking-[0.15em] uppercase font-semibold ${
+                hasModel ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-carbon text-white'
+              }`}
+            >
+              Obligatorio
+            </span>
+          )}
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onOpenPicker}
-        className={`relative aspect-square rounded-[16px] overflow-hidden cursor-pointer transition-all text-left
-          ${hasModel
-            ? 'bg-carbon/[0.04]'
-            : 'bg-carbon/[0.03] border-2 border-dashed border-carbon/15 hover:border-carbon/35 hover:bg-carbon/[0.06]'}
-        `}
-      >
-        {hasModel && model ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={model.headshot_url} alt={model.name} className="h-full w-full object-cover" />
-            {/* Clear pill — same affordance as UploadSquare */}
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); onClear(); }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onClear();
-                }
-              }}
-              className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors cursor-pointer"
-              aria-label="Quitar modelo"
-            >
-              <X className="h-4 w-4 text-carbon" />
-            </span>
-            {/* Name + change CTA, gradient overlay at the bottom */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent pt-10 pb-3 px-4">
-              <p className="text-white text-[14px] font-semibold tracking-[-0.01em] truncate">
-                {model.name}
+      {hasModel && model ? (
+        <>
+          {/* Headshot full-bleed */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={model.headshot_url} alt={model.name} className="h-full w-full object-cover" />
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 via-black/15 to-transparent pointer-events-none" />
+
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onClear();
+              }
+            }}
+            className="absolute top-4 right-4 z-20 h-9 w-9 rounded-full bg-white/95 hover:bg-white flex items-center justify-center shadow-md transition-all hover:scale-105 cursor-pointer"
+            aria-label="Quitar modelo"
+          >
+            <X className="h-4 w-4 text-carbon" />
+          </span>
+
+          {/* Model name + traits + change CTA — at the bottom over a gradient */}
+          <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/50 to-transparent pt-14 pb-4 md:pb-5 px-5 md:px-7">
+            <p className="text-white text-[18px] md:text-[22px] font-semibold tracking-[-0.02em] truncate">
+              {model.name}
+            </p>
+            {(model.complexion || model.hair_style) && (
+              <p className="text-white/75 text-[10px] uppercase tracking-[0.12em] truncate mt-1">
+                {[model.complexion, model.hair_style].filter(Boolean).join(' · ')}
               </p>
-              {(model.complexion || model.hair_style) && (
-                <p className="text-white/70 text-[10px] uppercase tracking-[0.08em] truncate mt-0.5">
-                  {[model.complexion, model.hair_style].filter(Boolean).join(' · ')}
-                </p>
-              )}
-              <span
-                className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/90 text-carbon text-[11px] font-medium"
-              >
-                {t.modelBlockChange}
-              </span>
-            </div>
-          </>
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <div className="h-12 w-12 rounded-full bg-carbon/[0.06] flex items-center justify-center">
-              <User className="h-5 w-5 text-carbon/50" />
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-[13px] font-medium text-carbon">{t.modelBlockEmpty}</p>
-              <p className="text-[11px] text-carbon/45">{t.modelBlockSub}</p>
+            )}
+            <span className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 text-carbon text-[11px] font-semibold tracking-[-0.01em]">
+              {t.modelBlockChange}
+              <ArrowRight className="h-3 w-3" />
+            </span>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Empty state — invitation, decorative ghost initial bottom-left */}
+          <div className="absolute bottom-5 md:bottom-7 right-5 md:right-7 flex items-center gap-2 text-carbon/45">
+            <span className="text-[11px] tracking-[0.1em] uppercase font-medium">{t.modelBlockEmpty}</span>
+            <div className="h-9 w-9 rounded-full bg-carbon/[0.06] flex items-center justify-center group-hover:bg-carbon/[0.1] transition-colors">
+              <User className="h-4 w-4 text-carbon/60" />
             </div>
           </div>
-        )}
-      </button>
-    </div>
+          <div className="absolute bottom-3 left-5 md:left-7 text-[68px] md:text-[88px] font-bold text-carbon/[0.04] leading-none tracking-[-0.05em] pointer-events-none select-none">
+            ✦
+          </div>
+        </>
+      )}
+    </button>
   );
 }
 
@@ -2096,73 +2233,109 @@ function UploadSquare({ label, sublabel, required, imageUrl, uploading, onUpload
 
   const hasImage = !!imageUrl;
 
+  /* Gold-standard editorial card — title INSIDE the box, large display
+   * typography. No more "form de un médico" external micro-labels. */
   return (
-    <div className="flex flex-col">
-      <div className="mb-2 flex items-baseline gap-1.5">
-        <span className="text-[13px] font-medium text-carbon tracking-[-0.02em]">{label}</span>
-        {required && <span className="text-[11px] text-carbon/40">·  obligatorio</span>}
-        {sublabel && !required && <span className="text-[11px] text-carbon/40">·  {sublabel}</span>}
-      </div>
+    <div
+      onClick={() => !uploading && inputRef.current?.click()}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={onDrop}
+      className={`relative aspect-square rounded-[20px] overflow-hidden cursor-pointer transition-all duration-300 group
+        ${hasImage
+          ? 'bg-carbon/[0.04] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]'
+          : `bg-carbon/[0.03] border-2 border-dashed ${
+              dragOver
+                ? 'border-carbon/50 bg-carbon/[0.06] scale-[1.01]'
+                : 'border-carbon/15 hover:border-carbon/40 hover:bg-carbon/[0.05]'
+            }`}
+      `}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif"
+        className="hidden"
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
 
-      <div
-        onClick={() => !uploading && inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
-        className={`relative aspect-square rounded-[16px] overflow-hidden cursor-pointer transition-all
-          ${hasImage
-            ? 'bg-carbon/[0.04]'
-            : `bg-carbon/[0.03] border-2 border-dashed ${
-                dragOver ? 'border-carbon/50 bg-carbon/[0.06]' : 'border-carbon/15 hover:border-carbon/35'
+      {uploading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-carbon/40 backdrop-blur-sm z-20">
+          <Loader2 className="h-8 w-8 text-white animate-spin" />
+        </div>
+      )}
+
+      {/* Large editorial title — INSIDE the box, gold-standard typography */}
+      <div className={`absolute top-5 md:top-7 left-5 md:left-7 z-10 ${hasImage ? '' : ''}`}>
+        <h3
+          className={`text-[26px] md:text-[34px] font-semibold tracking-[-0.04em] leading-[0.95] ${
+            hasImage ? 'text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]' : 'text-carbon'
+          }`}
+        >
+          {label}
+        </h3>
+        <div className="mt-1.5 flex items-center gap-1.5">
+          {required && (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] tracking-[0.15em] uppercase font-semibold ${
+                hasImage
+                  ? 'bg-white/20 text-white backdrop-blur-sm'
+                  : 'bg-carbon text-white'
               }`}
-        `}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif"
-          className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0])}
-        />
-
-        {uploading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-carbon/40 z-10">
-            <Loader2 className="h-7 w-7 text-white animate-spin" />
-          </div>
-        )}
-
-        {hasImage ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageUrl} alt={label} className="h-full w-full object-cover" />
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onClear(); }}
-              className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors"
-              aria-label="Quitar imagen"
             >
-              <X className="h-4 w-4 text-carbon" />
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 hover:bg-white text-[11px] font-medium text-carbon shadow-sm transition-colors"
+              Obligatorio
+            </span>
+          )}
+          {sublabel && !required && (
+            <span
+              className={`text-[10px] tracking-[0.12em] uppercase font-medium ${
+                hasImage ? 'text-white/80' : 'text-carbon/40'
+              }`}
             >
-              <Upload className="h-3 w-3" /> Cambiar
-            </button>
-          </>
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
-            <div className="h-12 w-12 rounded-full bg-carbon/[0.06] flex items-center justify-center">
-              <Upload className="h-5 w-5 text-carbon/50" />
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-[13px] font-medium text-carbon">Arrastra una foto aquí</p>
-              <p className="text-[11px] text-carbon/45">o haz click para elegir un archivo</p>
-            </div>
-          </div>
-        )}
+              {sublabel}
+            </span>
+          )}
+        </div>
       </div>
+
+      {hasImage ? (
+        <>
+          {/* Image fills the card, dark gradient ensures the title is readable */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imageUrl} alt={label} className="h-full w-full object-cover" />
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 via-black/15 to-transparent pointer-events-none" />
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            className="absolute top-4 right-4 z-20 h-9 w-9 rounded-full bg-white/95 hover:bg-white flex items-center justify-center shadow-md transition-all hover:scale-105"
+            aria-label="Quitar imagen"
+          >
+            <X className="h-4 w-4 text-carbon" />
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/95 hover:bg-white text-[12px] font-semibold tracking-[-0.01em] text-carbon shadow-md transition-all opacity-0 group-hover:opacity-100"
+          >
+            <Upload className="h-3.5 w-3.5" /> Cambiar
+          </button>
+        </>
+      ) : (
+        <>
+          {/* Empty-state visual cue: subtle icon bottom-right, doesn't fight with title */}
+          <div className="absolute bottom-5 md:bottom-7 right-5 md:right-7 flex items-center gap-2 text-carbon/45">
+            <span className="text-[11px] tracking-[0.1em] uppercase font-medium">Arrastra o pulsa</span>
+            <div className="h-9 w-9 rounded-full bg-carbon/[0.06] flex items-center justify-center group-hover:bg-carbon/[0.1] transition-colors">
+              <Upload className="h-4 w-4 text-carbon/60" />
+            </div>
+          </div>
+          {/* Decorative ghost number bottom-left — adds the "cañero" editorial vibe */}
+          <div className="absolute bottom-3 left-5 md:left-7 text-[68px] md:text-[88px] font-bold text-carbon/[0.04] leading-none tracking-[-0.05em] pointer-events-none select-none">
+            +
+          </div>
+        </>
+      )}
     </div>
   );
 }
