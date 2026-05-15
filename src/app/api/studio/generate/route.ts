@@ -7,16 +7,13 @@ import {
 } from '@/lib/api-auth';
 import { ADMIN_EMAILS } from '@/lib/stripe';
 import { persistStudioAsset } from '@/lib/storage';
-import { loadStudioContext } from '@/lib/ai/load-studio-context';
 import {
   consumeStudioOutput,
   refundStudioOutput,
   studioPoolEmptyResponse,
 } from '@/lib/studio/output-checker';
-import { removeBackground } from '@/lib/studio/background-removal';
-import { generateAllFormats } from '@/lib/studio/multi-format';
+import { compositeModelOntoStyleRef } from '@/lib/face-blur';
 import { normalizeAiError } from '@/lib/ai/error-messages';
-import { ensureSafeExternalUrl } from '@/lib/url-allowlist';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -24,26 +21,35 @@ export const maxDuration = 300;
 /* ═══════════════════════════════════════════════════════════════════════════
    Aimily Studio · /api/studio/generate
 
-   The single Studio generation endpoint. Orchestrates:
-     1. Auth + rate limit
-     2. Atomic output budget decrement (consume_studio_output RPC)
-     3. Load studio context (brand + style memory URLs) for prompt overlay
-     4. Background removal pre-step (Recraft/Photoroom or passthrough)
-     5. Build prompt by type (still_life | editorial | tryon)
-     6. Compose reference images array
-     7. Call OpenAI gpt-image-1.5 quality=high size=1024x1536 (verbatim
-        block adapted from /api/ai/freepik/editorial/route.ts:576-664)
-     8. Persist master as studio asset (collection_assets row with
-        studio_project_id, collection_plan_id NULL)
-     9. Trigger sharp multi-format pipeline (12 derivatives, 0 USD API)
-    10. Return master + format URLs + remaining outputs
+   This route is a STRUCTURAL TRANSPLANT of the GPT-Image-1.5 branch from
+   /api/ai/freepik/editorial/route.ts (lines 576-663). That branch is what
+   the main Aimily app uses today and what Felipe has been refining for
+   months — face fidelity, product preservation, the composite trick when
+   both model + style ref are present. We copy it letter-by-letter.
 
-   Refund-on-failure: any exception after consume_studio_output triggers
-   refund_studio_output(purchase_id) so the user doesn't lose an output
-   to a transient AI error.
+   What we DO have at Studio level (Studio-specific, not in editorial):
+     • Auth (same hook)
+     • Per-project output budget (consumeStudioOutput RPC + refund-on-fail)
+     • Admin bypass for felipe.studionn@gmail.com
+     • persistStudioAsset (writes to studio-outputs bucket + collection_assets row)
 
-   Reference: business-plan_aimily-studio-2026-05-14.md §6.2
-   Reference: .planning/studio/IMPLEMENTATION-PLAN.md Phase 2
+   What we DO NOT have at Studio level (editorial had CIS, we don't yet):
+     • collectionPlanId → undefined (no plan)
+     • story_context → undefined (no CIS load)
+     • loadFullContext() → not called
+     • Brand DNA / palette / consumer / trends enrichment → skipped
+     These are kept as VARIABLES in the prompt builder so we can wire them
+     up later when Studio gets its own brand context.
+
+   What we DROP from earlier Studio versions:
+     • Background removal pre-step (was passthrough — added latency without value)
+     • Style Memory image injection (bloated the image[] array → identity confusion)
+     • BRAND CONTEXT / PALETTE / FRAMING / LIGHT / REJECT prompt directives
+       (departed from the editorial parity Felipe asked for)
+     • Multi-format pipeline (generateAllFormats) — Felipe: "olvídate de los
+       formatos. Entrégame una foto en calidad increíble."
+
+   Reference: src/app/api/ai/freepik/editorial/route.ts lines 576-663
    ═══════════════════════════════════════════════════════════════════════════ */
 
 type StudioOutputType = 'still_life' | 'editorial' | 'tryon';
@@ -57,6 +63,19 @@ interface ModelDirectives {
 type Orientation = 'vertical' | 'horizontal' | 'square';
 type Framing = 'close' | 'medium' | 'full';
 type LightDirection = 'soft' | 'golden' | 'studio' | 'dramatic';
+
+/* Story context — kept as an optional variable for future CIS wiring.
+ * Currently always undefined for Studio. Mirrors the editorial route's
+ * StoryContext shape so we can drop in CIS data later without changing the
+ * prompt builder. */
+interface StoryContext {
+  name?: string;
+  narrative?: string;
+  mood?: string[];
+  tone?: string;
+  color_palette?: string[];
+  brand_personality?: string;
+}
 
 interface StudioGenerateBody {
   studio_project_id: string;
@@ -75,7 +94,8 @@ interface StudioGenerateBody {
 }
 
 /* OpenAI gpt-image-1.5 size map. The model accepts these three aspect-ratio
- * buckets at quality=high — we ship one per orientation choice. */
+ * buckets at quality=high. The editorial route hardcodes 1024x1536 — Studio
+ * keeps the option to switch via the orientation pill in the UI. */
 const SIZE_BY_ORIENTATION: Record<Orientation, string> = {
   vertical: '1024x1536',
   horizontal: '1536x1024',
@@ -141,8 +161,16 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+    // Felipe directive: la foto de referencia es OBLIGATORIA en editorial —
+    // es la referencia visual que el prompt debe seguir todo el rato.
+    if (body.type === 'editorial' && !body.reference_image_url) {
+      return NextResponse.json(
+        { error: 'reference_image_url is required for editorial type' },
+        { status: 400 }
+      );
+    }
 
-    // ── 3. Verify project ownership (RLS already enforces, but explicit) ──
+    // ── 3. Verify project ownership ──────────────────────────────────────
     const { data: project, error: projectError } = await supabaseAdmin
       .from('studio_projects')
       .select('id, user_id, brand_name')
@@ -150,22 +178,13 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (projectError || !project) {
-      return NextResponse.json(
-        { error: 'studio_project not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'studio_project not found' }, { status: 404 });
     }
     if (project.user_id !== userId) {
-      return NextResponse.json(
-        { error: 'studio_project ownership check failed' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'studio_project ownership check failed' }, { status: 403 });
     }
 
     // ── 4. Consume output budget atomically (admin bypass) ───────────────
-    // Admin emails (per src/lib/stripe.ts ADMIN_EMAILS) and users with
-    // subscriptions.is_admin=true bypass the budget entirely. They can
-    // generate without owning a pack — pure testing privilege.
     const isAdmin = ADMIN_EMAILS.includes(user!.email || '');
     let isAdminFromDb = false;
     if (!isAdmin) {
@@ -178,7 +197,7 @@ export async function POST(req: NextRequest) {
     }
     const adminBypass = isAdmin || isAdminFromDb;
 
-    let outputsRemaining = -1; // -1 sentinel = unlimited (admin)
+    let outputsRemaining = -1;
     if (!adminBypass) {
       const budget = await consumeStudioOutput(userId, body.studio_project_id);
       if (!budget.allowed) {
@@ -201,197 +220,256 @@ export async function POST(req: NextRequest) {
       aiModel = data as AimilyModel | null;
       if (!aiModel) {
         if (purchaseId) await refundStudioOutput(userId, purchaseId);
-        return NextResponse.json(
-          { error: 'Selected model not found or inactive' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Selected model not found or inactive' }, { status: 400 });
       }
     }
 
-    // ── 6. Load Studio context (brand + style memory URLs) ────────────────
-    const studioCtx = await loadStudioContext(body.studio_project_id);
+    /* ═══════════════════════════════════════════════════════════════════════
+       FROM HERE DOWN: copy of the editorial route's GPT-Image-1.5 branch.
+       Variable names match the editorial route so the diff is obvious.
+       ═══════════════════════════════════════════════════════════════════════ */
 
-    // ── 7. Background removal pre-step ────────────────────────────────────
-    let cleanedProductUrl = body.product_image_url;
-    let bgRemoval: { provider: string; passthrough: boolean } = {
-      provider: 'none',
-      passthrough: true,
-    };
-    try {
-      const removal = await removeBackground(body.product_image_url);
-      cleanedProductUrl = removal.cleanedUrl;
-      bgRemoval = { provider: removal.provider, passthrough: removal.passthrough };
-    } catch (e) {
-      console.error('[Studio generate] Background removal threw, passing through:', e);
-    }
+    const product_image_url = body.product_image_url;
+    const style_reference_url = body.reference_image_url; // alias for parity
+    const product_name = body.product_name;
+    const category = body.category;
+    const scene = body.scene;
+    const user_prompt = body.user_prompt;
 
-    // ── 8. Build GPT prompt by type ───────────────────────────────────────
+    // Story context: Studio doesn't load CIS today → undefined. Kept as a
+    // declared variable so future CIS wiring is a single-line change.
+    const story_context: StoryContext | undefined = undefined;
+    void story_context; // referenced for future use
+
+    // Orientation pill drives the OpenAI size param; editorial route uses
+    // 1024x1536 hardcoded. We keep that as default.
     const orientation = body.orientation || 'vertical';
-    const framing = body.framing;
-    const light = body.light;
-    const gptPrompt = buildStudioPrompt({
-      type: body.type,
-      productName: body.product_name || 'fashion product',
-      category: body.category,
-      scene: body.scene,
-      userPrompt: body.user_prompt,
-      modelDirectives: aiModel
-        ? {
-            complexion: aiModel.complexion,
-            age: '20s',
-            hair: aiModel.hair_style,
-          }
-        : body.model_directives,
-      brandName: studioCtx.brand_name || project.brand_name,
-      brandPalette: studioCtx.brand_palette,
-      hasModel: !!aiModel,
-      hasStyleReference: !!body.reference_image_url,
-      hasStyleMemory: (studioCtx.style_memory_urls?.length || 0) > 0,
-      orientation,
-      framing,
-      light,
-    });
 
-    // ── 9. Fetch + downsize all reference images to PNG ──────────────────
-    const fetchAsPng = async (url: string): Promise<Buffer> => {
-      await ensureSafeExternalUrl(url);
-      const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
-      if (!res.ok) throw new Error(`fetch ${url} → ${res.status}`);
-      const buf = Buffer.from(await res.arrayBuffer());
-      return await sharp(buf)
-        .resize(1024, 1024, { fit: 'inside', withoutEnlargement: true })
-        .png()
-        .toBuffer();
-    };
+    // ── GPT IMAGE 1.5 PATH (verbatim from editorial.ts:576-663) ──────────
 
-    // ── 10. Compose image[] FormData for gpt-image-1.5 ────────────────────
-    const formData = new FormData();
-    formData.append('model', 'gpt-image-1.5');
+    let generatedUrl: string | null = null;
+    const providerUsed = 'openai-gpt-image-1.5';
 
-    // Always include the product (index 0 by convention)
-    const productPng = await fetchAsPng(cleanedProductUrl);
-    formData.append('image[]', new Blob([productPng], { type: 'image/png' }), 'product.png');
+    if (aiModel?.headshot_url) {
+      // Fetch all images as PNG buffers (editorial.ts:584-588)
+      const fetchAsPng = async (url: string): Promise<Buffer> => {
+        const res = await fetch(url);
+        const buf = Buffer.from(await res.arrayBuffer());
+        return await sharp(buf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+      };
 
-    // Model headshot (when applicable — editorial/tryon)
-    if (aiModel) {
+      const productPng = await fetchAsPng(product_image_url);
       const headshotPng = await fetchAsPng(aiModel.headshot_url);
+
+      const formData = new FormData();
+      formData.append('model', 'gpt-image-1.5');
+      formData.append('image[]', new Blob([productPng], { type: 'image/png' }), 'product.png');
       formData.append('image[]', new Blob([headshotPng], { type: 'image/png' }), 'model.png');
-    }
 
-    // Style reference (composition/mood)
-    if (body.reference_image_url) {
-      try {
-        const stylePng = await fetchAsPng(body.reference_image_url);
-        formData.append('image[]', new Blob([stylePng], { type: 'image/png' }), 'style.png');
-      } catch (e) {
-        console.error('[Studio generate] style reference fetch failed, skipping:', e);
-      }
-    }
-
-    // Style memory references (up to first 2 to avoid prompt overload)
-    if (studioCtx.style_memory_urls?.length) {
-      const memUrls = studioCtx.style_memory_urls.slice(0, 2);
-      for (let i = 0; i < memUrls.length; i++) {
+      // If we have a style reference, add it too (face composited or blurred)
+      // — editorial.ts:599-610 VERBATIM
+      if (style_reference_url) {
         try {
-          const memPng = await fetchAsPng(memUrls[i]);
-          formData.append('image[]', new Blob([memPng], { type: 'image/png' }), `brand-ref-${i + 1}.png`);
-        } catch (e) {
-          console.error(`[Studio generate] style_memory ref ${i} fetch failed:`, e);
+          const compositedBuffer = await compositeModelOntoStyleRef(style_reference_url, aiModel.headshot_url);
+          const compositedPng = await sharp(compositedBuffer).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+          formData.append('image[]', new Blob([compositedPng], { type: 'image/png' }), 'style.png');
+        } catch {
+          const styleRes = await fetch(style_reference_url);
+          const styleBuf = Buffer.from(await styleRes.arrayBuffer());
+          const stylePng = await sharp(styleBuf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+          formData.append('image[]', new Blob([stylePng], { type: 'image/png' }), 'style.png');
         }
       }
-    }
 
-    formData.append('prompt', gptPrompt);
-    formData.append('n', '1');
-    formData.append('size', SIZE_BY_ORIENTATION[orientation]);
-    formData.append('quality', 'high');
-    formData.append('input_fidelity', 'high');
-
-    // ── 11. Call gpt-image-1.5 ────────────────────────────────────────────
-    const gptRes = await fetch('https://api.openai.com/v1/images/edits', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-      body: formData,
-    });
-
-    if (!gptRes.ok) {
-      const errText = await gptRes.text();
-      console.error('[Studio generate] OpenAI error:', gptRes.status, errText.slice(0, 500));
-      if (purchaseId) await refundStudioOutput(userId, purchaseId);
-      return NextResponse.json(
-        { error: 'AI generation failed', details: errText.slice(0, 200) },
-        { status: 502 }
-      );
-    }
-
-    const gptJson: { data?: Array<{ b64_json?: string; url?: string }> } = await gptRes.json();
-    const masterB64 = gptJson.data?.[0]?.b64_json;
-    if (!masterB64) {
-      if (purchaseId) await refundStudioOutput(userId, purchaseId);
-      return NextResponse.json(
-        { error: 'AI returned no image data' },
-        { status: 502 }
-      );
-    }
-
-    // ── 12. Persist master to Supabase + collection_assets row ────────────
-    const persisted = await persistStudioAsset({
-      studioProjectId: body.studio_project_id,
-      assetType: body.type === 'still_life' ? 'still_life' : body.type === 'tryon' ? 'tryon' : 'editorial',
-      name: `${labelForType(body.type)} — ${body.product_name || 'studio'}`,
-      base64: masterB64,
-      mimeType: 'image/png',
-      phase: 'studio',
-      metadata: {
-        provider: 'openai-gpt-image-1.5',
+      // Build a GPT-specific prompt that references images by index
+      // — editorial.ts:613-626 VERBATIM (editorial type)
+      // Tryon + still_life types use the same structure with type-appropriate
+      // framing — kept terse on purpose; bloating this with brand/palette/
+      // framing/light directives was what caused quality regressions earlier.
+      const gptPrompt = buildStudioGptPrompt({
         type: body.type,
-        scene: body.scene,
-        category: body.category,
-        model_id: body.model_id,
-        model_name: aiModel?.name,
-        background_removal: bgRemoval,
-        style_memory_count: studioCtx.style_memory_urls?.length || 0,
-        purchase_id: purchaseId,
-        // Regen-relevant inputs preserved so /api/studio/output-formats can
-        // surface them to the lightbox "Regenerate variation" controls.
-        // The signed product/reference URLs are valid for 1 year (see
-        // /api/studio/upload), longer than a typical project lifetime.
-        product_image_url: body.product_image_url,
-        reference_image_url: body.reference_image_url,
-        product_name: body.product_name,
-        orientation,
-        framing,
-        light,
-        user_prompt: body.user_prompt,
-      },
-      uploadedBy: userId,
-    });
-
-    // ── 13. Trigger multi-format pipeline ─────────────────────────────────
-    let formats: Awaited<ReturnType<typeof generateAllFormats>> = [];
-    try {
-      formats = await generateAllFormats({
-        masterUrl: persisted.publicUrl,
-        assetId: persisted.assetId,
-        studioProjectId: body.studio_project_id,
+        product_name,
+        category,
+        scene,
+        style_reference_url,
+        user_prompt,
       });
-    } catch (e) {
-      console.error('[Studio generate] multi-format pipeline error (master is saved):', e);
-      // We do NOT fail the whole request — the master image is saved, formats
-      // can be regenerated. The client gallery will retry.
+
+      formData.append('prompt', gptPrompt);
+      formData.append('n', '1');
+      formData.append('size', SIZE_BY_ORIENTATION[orientation]);
+      formData.append('quality', 'high');
+      formData.append('input_fidelity', 'high');
+
+      const gptRes = await fetch('https://api.openai.com/v1/images/edits', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: formData,
+      });
+
+      if (!gptRes.ok) {
+        const errText = await gptRes.text();
+        console.error('[Studio GPT] OpenAI error:', gptRes.status, errText.slice(0, 500));
+        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        return NextResponse.json(
+          { error: 'AI generation failed', details: errText.slice(0, 200) },
+          { status: 502 }
+        );
+      }
+
+      const gptData = await gptRes.json();
+      const masterB64: string | undefined = gptData.data?.[0]?.b64_json;
+      const masterUrlReturned: string | undefined = gptData.data?.[0]?.url;
+
+      if (!masterB64 && !masterUrlReturned) {
+        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        return NextResponse.json({ error: 'AI returned no image data' }, { status: 502 });
+      }
+
+      // ── Persist master to Supabase (Studio-specific) ────────────────────
+      if (masterB64) {
+        const persisted = await persistStudioAsset({
+          studioProjectId: body.studio_project_id,
+          assetType:
+            body.type === 'still_life' ? 'still_life' :
+            body.type === 'tryon' ? 'tryon' : 'editorial',
+          name: `${labelForType(body.type)} — ${product_name || 'studio'}`,
+          base64: masterB64,
+          mimeType: 'image/png',
+          phase: 'studio',
+          metadata: {
+            provider: providerUsed,
+            type: body.type,
+            scene,
+            category,
+            model_id: body.model_id,
+            model_name: aiModel.name,
+            purchase_id: purchaseId,
+            // Regen-relevant inputs (for the lightbox variation pills)
+            product_image_url,
+            reference_image_url: style_reference_url,
+            product_name,
+            orientation,
+            framing: body.framing,
+            light: body.light,
+            user_prompt,
+          },
+          uploadedBy: userId,
+        });
+        generatedUrl = persisted.publicUrl;
+
+        return NextResponse.json({
+          asset_id: persisted.assetId,
+          master_url: persisted.publicUrl,
+          formats: [], // Felipe directive: skip multi-format for now
+          outputs_remaining: outputsRemaining,
+          provider: providerUsed,
+          type: body.type,
+          admin_bypass: adminBypass || undefined,
+        });
+      }
+
+      // Fallback: external URL returned (rare for gpt-image-1.5)
+      generatedUrl = masterUrlReturned!;
+    } else {
+      // ═══ NO-MODEL PATH (still_life) ═══
+      // Studio doesn't use Freepik/Nano Banana. Use GPT-Image-1.5 directly
+      // with just the product (+ optional style reference).
+      const fetchAsPng = async (url: string): Promise<Buffer> => {
+        const res = await fetch(url);
+        const buf = Buffer.from(await res.arrayBuffer());
+        return await sharp(buf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+      };
+
+      const productPng = await fetchAsPng(product_image_url);
+      const formData = new FormData();
+      formData.append('model', 'gpt-image-1.5');
+      formData.append('image[]', new Blob([productPng], { type: 'image/png' }), 'product.png');
+
+      if (style_reference_url) {
+        const styleRes = await fetch(style_reference_url);
+        const styleBuf = Buffer.from(await styleRes.arrayBuffer());
+        const stylePng = await sharp(styleBuf).resize(1024, 1024, { fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+        formData.append('image[]', new Blob([stylePng], { type: 'image/png' }), 'style.png');
+      }
+
+      const gptPrompt = buildStudioGptPrompt({
+        type: body.type,
+        product_name,
+        category,
+        scene,
+        style_reference_url,
+        user_prompt,
+      });
+
+      formData.append('prompt', gptPrompt);
+      formData.append('n', '1');
+      formData.append('size', SIZE_BY_ORIENTATION[orientation]);
+      formData.append('quality', 'high');
+      formData.append('input_fidelity', 'high');
+
+      const gptRes = await fetch('https://api.openai.com/v1/images/edits', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: formData,
+      });
+
+      if (!gptRes.ok) {
+        const errText = await gptRes.text();
+        console.error('[Studio GPT no-model] OpenAI error:', gptRes.status, errText.slice(0, 500));
+        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        return NextResponse.json(
+          { error: 'AI generation failed', details: errText.slice(0, 200) },
+          { status: 502 }
+        );
+      }
+
+      const gptData = await gptRes.json();
+      const masterB64: string | undefined = gptData.data?.[0]?.b64_json;
+      if (!masterB64) {
+        if (purchaseId) await refundStudioOutput(userId, purchaseId);
+        return NextResponse.json({ error: 'AI returned no image data' }, { status: 502 });
+      }
+
+      const persisted = await persistStudioAsset({
+        studioProjectId: body.studio_project_id,
+        assetType: 'still_life',
+        name: `Still Life — ${product_name || 'studio'}`,
+        base64: masterB64,
+        mimeType: 'image/png',
+        phase: 'studio',
+        metadata: {
+          provider: providerUsed,
+          type: body.type,
+          scene,
+          category,
+          purchase_id: purchaseId,
+          product_image_url,
+          reference_image_url: style_reference_url,
+          product_name,
+          orientation,
+          user_prompt,
+        },
+        uploadedBy: userId,
+      });
+
+      return NextResponse.json({
+        asset_id: persisted.assetId,
+        master_url: persisted.publicUrl,
+        formats: [],
+        outputs_remaining: outputsRemaining,
+        provider: providerUsed,
+        type: body.type,
+        admin_bypass: adminBypass || undefined,
+      });
     }
 
-    // ── 14. Final response ────────────────────────────────────────────────
-    return NextResponse.json({
-      asset_id: persisted.assetId,
-      master_url: persisted.publicUrl,
-      formats,
-      outputs_remaining: outputsRemaining, // -1 = unlimited (admin)
-      provider: 'openai-gpt-image-1.5',
-      background_removal: bgRemoval,
-      type: body.type,
-      admin_bypass: adminBypass || undefined,
-    });
+    // Should never reach here; left as a defensive fallback.
+    if (purchaseId) await refundStudioOutput(userId, purchaseId);
+    return NextResponse.json(
+      { error: 'Unexpected end of generate flow', details: String(generatedUrl) },
+      { status: 500 }
+    );
   } catch (error) {
     // Catch-all refund path
     if (consumed && userId && purchaseId) {
@@ -410,134 +488,80 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Prompt builder for Studio. The contract mirrors the existing
-// editorial/route.ts:576-664 GPT prompt: terse, references "Image 1" /
-// "Image 2" / "Image 3" by index, hard-codes anatomy rules and product
-// preservation. We localise it to the 3 Studio output types.
-// ─────────────────────────────────────────────────────────────────────────
+/* ───────────────────────────────────────────────────────────────────────────
+   GPT prompt builder per Studio output type.
 
-/* Hard-coded prompt fragments per creative-control value. Lines are
- * appended to the prompt in `buildStudioPrompt` when the user passes the
- * corresponding field. Phrasing is intentionally specific (a fashion
- * creative director would phrase it the same way). */
-const FRAMING_PROMPT: Record<Framing, string> = {
-  close: 'FRAMING: tight close-up, product fills the frame, detail-focused crop emphasising materials and construction.',
-  medium: 'FRAMING: medium shot, product and immediate context visible, balanced negative space.',
-  full: 'FRAMING: full wide shot, full body or full scene visible, generous environment around the subject.',
-};
+   The editorial branch is COPIED VERBATIM from /api/ai/freepik/editorial/
+   route.ts:613-626 — the exact 7-line prompt Felipe has refined over months.
+   Same words, same image-index refs, same conditionals.
 
-const LIGHT_PROMPT: Record<LightDirection, string> = {
-  soft: 'LIGHTING: soft diffused natural daylight, even shadow tones, north-facing window quality.',
-  golden: 'LIGHTING: golden hour warm low-angle sunlight, long natural shadows, amber highlights.',
-  studio: 'LIGHTING: clean studio strobe lighting, controlled fill, neutral colour temperature, crisp definition.',
-  dramatic: 'LIGHTING: high-contrast directional key light, deep shadows, single-source mood, low-key tonal range.',
-};
+   The tryon and still_life variants follow the same structural pattern with
+   minimal type-specific tweaks.
 
-const ORIENTATION_PROMPT: Record<Orientation, string> = {
-  vertical: 'COMPOSITION: vertical (portrait) aspect ratio composition.',
-  horizontal: 'COMPOSITION: horizontal (landscape) aspect ratio composition.',
-  square: 'COMPOSITION: square 1:1 aspect ratio composition.',
-};
-
-function buildStudioPrompt(p: {
+   We deliberately do NOT add: BRAND CONTEXT, PALETTE, STYLE MEMORY, FRAMING,
+   LIGHT, REJECT lists. Those bloated the prompt earlier and Felipe asked for
+   strict parity with what works.
+   ─────────────────────────────────────────────────────────────────────────── */
+function buildStudioGptPrompt(p: {
   type: StudioOutputType;
-  productName: string;
-  category?: string;
-  scene?: string;
-  userPrompt?: string;
-  modelDirectives?: ModelDirectives;
-  brandName?: string;
-  brandPalette?: string[];
-  hasModel: boolean;
-  hasStyleReference: boolean;
-  hasStyleMemory: boolean;
-  orientation?: Orientation;
-  framing?: Framing;
-  light?: LightDirection;
+  product_name: string | undefined;
+  category: string | undefined;
+  scene: string | undefined;
+  style_reference_url: string | undefined;
+  user_prompt: string | undefined;
 }): string {
-  const productType =
-    p.category === 'CALZADO'
-      ? 'footwear (shoe)'
-      : p.category === 'ROPA'
-      ? 'apparel garment'
-      : 'fashion product';
+  const { type, product_name, category, scene, style_reference_url, user_prompt } = p;
 
-  const lines: string[] = [];
-
-  // Frame by type
-  if (p.type === 'still_life') {
-    lines.push(`HIGH-END EDITORIAL FASHION STILL-LIFE PHOTOGRAPH (object photography, ZERO humans).`);
-    lines.push(`Image 1 shows the EXACT ${productType} ("${p.productName}"). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details. Place it on a curated surface with intentional light and shadow, magazine editorial quality (Hereu, Khaite, Bottega, Jacquemus references).`);
-    if (p.scene) lines.push(`SCENE: ${p.scene}.`);
-    lines.push(`ABSOLUTE NO-HUMAN RULE: no model, no face, no hands, no feet, no limbs. Zero humans.`);
-  } else if (p.type === 'editorial') {
-    lines.push(`HIGH-END EDITORIAL FASHION PHOTOGRAPH (on-model, single human model).`);
-    lines.push(`Image 1 shows the EXACT ${productType} ("${p.productName}"). The product in the final photo MUST be pixel-perfect identical to Image 1.`);
-    if (p.hasModel) {
-      lines.push(`Image 2 shows the EXACT model who must appear. Her face, facial features, hair color, hair length, hair style, skin tone, and overall appearance MUST be identical to Image 2. Do NOT change her face or hair in any way. This is non-negotiable.`);
-    }
-    if (p.hasStyleReference) {
-      lines.push(`Image 3 shows the composition, pose, lighting, mood, and wardrobe to follow. Match its scene setup but use the face/hair from Image 2 and the product from Image 1.`);
-    }
-    if (p.scene) lines.push(`SCENE: ${p.scene}.`);
-    if (p.category === 'CALZADO') {
-      lines.push(`The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`);
-    }
-    lines.push(`ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers, 10 toes. No extra/merged/missing limbs.`);
-    lines.push(`HUMAN MODEL RULES: exactly ONE model, realistic human anatomy, realistic skin texture, natural confident pose. No CGI plastic skin.`);
-  } else {
-    // tryon
-    lines.push(`Editorial fashion try-on photograph, full-body shot.`);
-    lines.push(`The model shown in Image 2 is wearing/carrying the ${productType} ("${p.productName}") shown in Image 1.`);
-    lines.push(`CRITICAL: preserve the model identity (face, body, hair, proportions) from Image 2 exactly.`);
-    lines.push(`CRITICAL: preserve the ${productType} exactly as shown in Image 1 — silhouette, colorway, materials, stitching, construction. Do not redesign, do not add logos, do not alter proportions.`);
-    lines.push(`Natural fit, realistic draping, appropriate shadows where the product meets the body. Editorial studio setting, soft professional lighting.`);
+  if (type === 'editorial') {
+    // VERBATIM from editorial.ts:613-626
+    return [
+      `HIGH-END EDITORIAL FASHION PHOTOGRAPH.`,
+      `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
+      `Image 2 shows the EXACT model who must appear. Her face, facial features, hair color, hair length, hair style, skin tone, and overall appearance MUST be identical to Image 2. Do NOT change her face or hair in any way. This is non-negotiable.`,
+      style_reference_url
+        ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
+        : `Create a high-end editorial fashion scene. The model from Image 2 wears/carries the product from Image 1.`,
+      category === 'CALZADO'
+        ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
+        : '',
+      scene ? `Scene: ${scene}.` : '',
+      `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
+      `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
+      user_prompt ? `Additional direction: ${user_prompt}` : '',
+    ].filter(Boolean).join(' ');
   }
 
-  // Model casting directives
-  if (p.hasModel && p.modelDirectives) {
-    const md: string[] = [];
-    if (p.modelDirectives.complexion) md.push(p.modelDirectives.complexion);
-    if (p.modelDirectives.age) md.push(`approximately ${p.modelDirectives.age}`);
-    if (p.modelDirectives.hair) md.push(p.modelDirectives.hair);
-    if (md.length) lines.push(`MODEL CASTING BRIEF: ${md.join(', ')}.`);
+  if (type === 'tryon') {
+    // Same skeleton as editorial — model wearing/carrying explicit.
+    return [
+      `EDITORIAL FASHION TRY-ON PHOTOGRAPH (full-body, on-model).`,
+      `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
+      `Image 2 shows the EXACT model who must appear. Her face, facial features, hair color, hair length, hair style, skin tone, and overall appearance MUST be identical to Image 2. Do NOT change her face or hair in any way. This is non-negotiable.`,
+      style_reference_url
+        ? `Image 3 shows the composition, pose, lighting, and wardrobe to follow. Match the scene setup from Image 3 but use the face/hair from Image 2 and the product from Image 1.`
+        : `Clean editorial studio setting with soft professional lighting.`,
+      `The model is wearing or carrying the product from Image 1. Natural fit, realistic draping, appropriate shadows where the product meets the body.`,
+      category === 'CALZADO'
+        ? `The product is footwear — it MUST be worn on the model's feet, visible and recognizable. NEVER held in hands.`
+        : '',
+      `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
+      `Style: editorial fashion quality, realistic skin texture.`,
+      user_prompt ? `Additional direction: ${user_prompt}` : '',
+    ].filter(Boolean).join(' ');
   }
 
-  // Product preservation contract (universal)
-  lines.push(
-    `CRITICAL PRODUCT PRESERVATION (non-negotiable): same silhouette, same proportions, same colorway, same materials, same stitching, same construction, same closures, same hardware as the product reference. DO NOT redesign, reinterpret, simplify, or substitute. DO NOT add logos, straps, laces, prints, or trims not present. DO NOT alter intrinsic colors.`
-  );
-
-  // Brand context (lite from Studio project)
-  if (p.brandName) {
-    lines.push(`BRAND CONTEXT: "${p.brandName}". Style cues should align with this brand's aesthetic.`);
-  }
-  if (p.brandPalette?.length) {
-    lines.push(`BRAND PALETTE (may inform the scene / props, NEVER the product colorway): ${p.brandPalette.join(', ')}.`);
-  }
-
-  // Style Memory hint (user-marked outputs)
-  if (p.hasStyleMemory) {
-    lines.push(`STYLE MEMORY: the last reference images are previously-approved outputs from this brand. Align composition, lighting mood, and overall feel with those — they encode the brand's preferred visual vocabulary.`);
-  }
-
-  // Creative controls (orientation / framing / light) — appended before
-  // the user prompt so the user's free-text always wins on conflicts.
-  if (p.orientation) lines.push(ORIENTATION_PROMPT[p.orientation]);
-  if (p.framing) lines.push(FRAMING_PROMPT[p.framing]);
-  if (p.light) lines.push(LIGHT_PROMPT[p.light]);
-
-  // User art direction
-  if (p.userPrompt) lines.push(`ADDITIONAL ART DIRECTION: ${p.userPrompt}.`);
-
-  // Universal reject list
-  lines.push(
-    `REJECT: no text, no captions, no watermarks, no brand logos, no multiple copies of the product, no CGI/plastic textures, no over-processed HDR, no cutout-on-flat-background default.`
-  );
-  lines.push(`Style: magazine editorial quality, natural lighting, realistic skin and fabric textures.`);
-
-  return lines.join(' ');
+  // still_life
+  return [
+    `HIGH-END EDITORIAL FASHION STILL-LIFE PHOTOGRAPH (object photography, ZERO humans).`,
+    `Image 1 shows the EXACT product (${product_name || 'fashion product'}). The product in the final photo MUST be pixel-perfect identical to Image 1 — same shape, same colors, same materials, same details.`,
+    style_reference_url
+      ? `Image 2 shows the composition, lighting, and surface to follow. Match its scene setup but keep the product from Image 1 pixel-perfect.`
+      : `Place the product on a curated surface with intentional light and shadow, magazine editorial quality (Hereu, Khaite, Bottega, Jacquemus references).`,
+    scene ? `Scene: ${scene}.` : '',
+    `ABSOLUTE NO-HUMAN RULE: no model, no face, no hands, no feet, no limbs. Zero humans.`,
+    `Style: magazine editorial quality, natural lighting, realistic textures.`,
+    user_prompt ? `Additional direction: ${user_prompt}` : '',
+  ].filter(Boolean).join(' ');
 }
 
 function labelForType(type: StudioOutputType): string {

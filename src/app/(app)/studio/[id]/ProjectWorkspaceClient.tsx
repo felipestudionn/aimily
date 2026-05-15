@@ -49,6 +49,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   valNoProduct: string;
   valNoModel: string;
   valNoOutputs: string;
+  valNoReference: string;
   lightboxDownloadMaster: string;
   lightboxDownloadFormat: string;
   lightboxClose: string;
@@ -97,6 +98,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Upload a product photo first.',
     valNoModel: 'Pick a model from the casting bank.',
     valNoOutputs: "You're out of outputs. Buy another pack.",
+    valNoReference: 'Upload a reference photo — it drives the whole composition.',
     lightboxDownloadMaster: 'Download master',
     lightboxDownloadFormat: 'Download',
     lightboxClose: 'Close',
@@ -145,6 +147,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Sube primero una foto del producto.',
     valNoModel: 'Selecciona un modelo del casting.',
     valNoOutputs: 'No tienes outputs disponibles. Compra otro pack.',
+    valNoReference: 'Sube una foto de referencia — es la que guía toda la composición.',
     lightboxDownloadMaster: 'Descargar master',
     lightboxDownloadFormat: 'Descargar',
     lightboxClose: 'Cerrar',
@@ -193,6 +196,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: "Charge d'abord une photo du produit.",
     valNoModel: 'Choisis un mannequin du casting.',
     valNoOutputs: "Tu n'as plus d'outputs. Achète un autre pack.",
+    valNoReference: 'Charge une photo de référence — elle guide toute la composition.',
     lightboxDownloadMaster: 'Télécharger le master',
     lightboxDownloadFormat: 'Télécharger',
     lightboxClose: 'Fermer',
@@ -241,6 +245,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Carica prima una foto del prodotto.',
     valNoModel: 'Scegli un modello dal casting.',
     valNoOutputs: 'Non hai output disponibili. Compra un altro pack.',
+    valNoReference: 'Carica una foto di riferimento — guida tutta la composizione.',
     lightboxDownloadMaster: 'Scarica master',
     lightboxDownloadFormat: 'Scarica',
     lightboxClose: 'Chiudi',
@@ -289,6 +294,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Lade zuerst ein Produktfoto hoch.',
     valNoModel: 'Wähle ein Modell aus dem Casting.',
     valNoOutputs: 'Keine Outputs mehr übrig. Kaufe ein weiteres Pack.',
+    valNoReference: 'Lade ein Referenzfoto hoch — es leitet die ganze Komposition.',
     lightboxDownloadMaster: 'Master herunterladen',
     lightboxDownloadFormat: 'Herunterladen',
     lightboxClose: 'Schließen',
@@ -337,6 +343,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Carrega primeiro uma foto do produto.',
     valNoModel: 'Escolhe um modelo do casting.',
     valNoOutputs: 'Não tens outputs disponíveis. Compra outro pack.',
+    valNoReference: 'Carrega uma foto de referência — guia toda a composição.',
     lightboxDownloadMaster: 'Descarregar master',
     lightboxDownloadFormat: 'Descarregar',
     lightboxClose: 'Fechar',
@@ -385,6 +392,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Upload eerst een productfoto.',
     valNoModel: 'Kies een model uit de casting.',
     valNoOutputs: 'Je hebt geen outputs meer. Koop een ander pack.',
+    valNoReference: 'Upload een referentiefoto — die stuurt de hele compositie.',
     lightboxDownloadMaster: 'Master downloaden',
     lightboxDownloadFormat: 'Downloaden',
     lightboxClose: 'Sluiten',
@@ -433,6 +441,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Ladda upp ett produktfoto först.',
     valNoModel: 'Välj en modell från castingen.',
     valNoOutputs: 'Du har inga outputs kvar. Köp ett annat pack.',
+    valNoReference: 'Ladda upp ett referensfoto — det styr hela kompositionen.',
     lightboxDownloadMaster: 'Ladda ner master',
     lightboxDownloadFormat: 'Ladda ner',
     lightboxClose: 'Stäng',
@@ -481,6 +490,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Last opp et produktbilde først.',
     valNoModel: 'Velg en modell fra castingen.',
     valNoOutputs: 'Du har ingen outputs igjen. Kjøp en annen pakke.',
+    valNoReference: 'Last opp et referansebilde — det styrer hele komposisjonen.',
     lightboxDownloadMaster: 'Last ned master',
     lightboxDownloadFormat: 'Last ned',
     lightboxClose: 'Lukk',
@@ -736,6 +746,8 @@ export default function ProjectWorkspaceClient(props: Props) {
    * form is incomplete — the caller surfaces a validation message. */
   const buildPayload = (): GeneratePayload | { _validation: string } => {
     if (!productImageUrl) return { _validation: 'no_product' };
+    if (type === 'editorial' && !referenceImageUrl)
+      return { _validation: 'no_reference' };
     if ((type === 'editorial' || type === 'tryon') && !modelId)
       return { _validation: 'no_model' };
     if (!props.isAdmin && outputsRemaining <= 0)
@@ -862,6 +874,7 @@ export default function ProjectWorkspaceClient(props: Props) {
     const built = buildPayload();
     if ('_validation' in built) {
       if (built._validation === 'no_product') setError(t.valNoProduct);
+      else if (built._validation === 'no_reference') setError(t.valNoReference);
       else if (built._validation === 'no_model') setError(t.valNoModel);
       else setError(t.valNoOutputs);
       return;
@@ -1130,7 +1143,7 @@ export default function ProjectWorkspaceClient(props: Props) {
                   {type === 'editorial' && (
                     <UploadSquare
                       label="Foto de referencia"
-                      sublabel="opcional · mood / composición"
+                      required
                       imageUrl={referenceImageUrl}
                       uploading={referenceUploading}
                       onUpload={async (file) => {
