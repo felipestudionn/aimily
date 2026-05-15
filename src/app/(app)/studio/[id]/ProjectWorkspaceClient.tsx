@@ -59,6 +59,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   optOrientation: string;
   optFraming: string;
   optLight: string;
+  regenerateLabel: string;
+  regenCloser: string;
+  regenLessBg: string;
+  regenBetterLight: string;
+  regenerating: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -95,6 +100,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Orientation',
     optFraming: 'Framing',
     optLight: 'Light',
+    regenerateLabel: 'Quick variations',
+    regenCloser: 'Closer',
+    regenLessBg: 'Less background',
+    regenBetterLight: 'Better light',
+    regenerating: 'Regenerating…',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -131,6 +141,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Orientación',
     optFraming: 'Encuadre',
     optLight: 'Luz',
+    regenerateLabel: 'Variaciones rápidas',
+    regenCloser: 'Más cerca',
+    regenLessBg: 'Menos fondo',
+    regenBetterLight: 'Mejor luz',
+    regenerating: 'Regenerando…',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -167,6 +182,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Orientation',
     optFraming: 'Cadrage',
     optLight: 'Lumière',
+    regenerateLabel: 'Variations rapides',
+    regenCloser: 'Plus près',
+    regenLessBg: 'Moins de fond',
+    regenBetterLight: 'Meilleure lumière',
+    regenerating: 'Régénération…',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -203,6 +223,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Orientamento',
     optFraming: 'Inquadratura',
     optLight: 'Luce',
+    regenerateLabel: 'Variazioni rapide',
+    regenCloser: 'Più vicino',
+    regenLessBg: 'Meno sfondo',
+    regenBetterLight: 'Luce migliore',
+    regenerating: 'Rigenerazione…',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -239,6 +264,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Ausrichtung',
     optFraming: 'Bildausschnitt',
     optLight: 'Licht',
+    regenerateLabel: 'Schnelle Variationen',
+    regenCloser: 'Näher',
+    regenLessBg: 'Weniger Hintergrund',
+    regenBetterLight: 'Besseres Licht',
+    regenerating: 'Wird neu generiert…',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -275,6 +305,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Orientação',
     optFraming: 'Enquadramento',
     optLight: 'Luz',
+    regenerateLabel: 'Variações rápidas',
+    regenCloser: 'Mais perto',
+    regenLessBg: 'Menos fundo',
+    regenBetterLight: 'Melhor luz',
+    regenerating: 'A regenerar…',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -311,6 +346,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Oriëntatie',
     optFraming: 'Kadrering',
     optLight: 'Licht',
+    regenerateLabel: 'Snelle variaties',
+    regenCloser: 'Dichterbij',
+    regenLessBg: 'Minder achtergrond',
+    regenBetterLight: 'Beter licht',
+    regenerating: 'Regenereren…',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -347,6 +387,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Orientering',
     optFraming: 'Bildutsnitt',
     optLight: 'Ljus',
+    regenerateLabel: 'Snabba variationer',
+    regenCloser: 'Närmare',
+    regenLessBg: 'Mindre bakgrund',
+    regenBetterLight: 'Bättre ljus',
+    regenerating: 'Genererar om…',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -383,6 +428,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     optOrientation: 'Retning',
     optFraming: 'Bildeutsnitt',
     optLight: 'Lys',
+    regenerateLabel: 'Raske variasjoner',
+    regenCloser: 'Nærmere',
+    regenLessBg: 'Mindre bakgrunn',
+    regenBetterLight: 'Bedre lys',
+    regenerating: 'Genererer på nytt…',
   },
 };
 
@@ -412,6 +462,19 @@ const FORMAT_NAMES: Record<string, string> = {
   'ecommerce-pdp': 'E-commerce PDP',
   'print-a4': 'Print A4',
   'email-banner': 'Email banner',
+};
+
+/* ── Quick variation hints ────────────────────────────────────────────────
+ * Appended (in English) to user_prompt when the user clicks one of the
+ * regenerate-variation pills in the lightbox. The LLM understands these
+ * directives directly. Kept short to leave room for the rest of the
+ * prompt + the user's own art direction. */
+type VariationKey = 'closer' | 'less_bg' | 'better_light';
+
+const VARIATION_PROMPT: Record<VariationKey, string> = {
+  closer: 'Zoom in tighter, the product fills more of the frame, more detail visible, less surrounding context.',
+  less_bg: 'Minimize the background — remove decorative scene elements and add clean negative space around the subject. Keep the subject and pose intact.',
+  better_light: 'Improve the lighting quality — softer, more flattering, magazine-grade light. Same composition, better light.',
 };
 
 const FORMAT_GROUPS: Array<{ label: string; formats: string[] }> = [
@@ -681,14 +744,30 @@ export default function ProjectWorkspaceClient(props: Props) {
       setProgressStage(3);
       await new Promise((r) => setTimeout(r, 400));
 
-      // Optimistic add to recent
+      // Optimistic add to recent — mirror everything the server persists so
+      // the lightbox "Regenerate variation" controls work on this asset
+      // immediately (without a reload).
       setRecentAssets((prev) => [
         {
           id: json.asset_id,
           asset_type: payload.type,
           name: `${payload.type} — ${payload.product_name || 'output'}`,
           url: json.master_url,
-          metadata: { provider: json.provider, formats: json.formats },
+          metadata: {
+            provider: json.provider,
+            formats: json.formats,
+            type: payload.type,
+            category: payload.category,
+            scene: payload.scene,
+            model_id: payload.model_id,
+            product_image_url: payload.product_image_url,
+            reference_image_url: payload.reference_image_url,
+            product_name: payload.product_name,
+            orientation: payload.orientation,
+            framing: payload.framing,
+            light: payload.light,
+            user_prompt: payload.user_prompt,
+          },
           is_style_memory: false,
           style_memory_role: null,
           created_at: new Date().toISOString(),
@@ -729,6 +808,95 @@ export default function ProjectWorkspaceClient(props: Props) {
       return;
     }
     await runGenerate(lastPayloadRef.current);
+  };
+
+  /* Called from inside the lightbox when the user clicks a variation pill.
+   * Rebuilds a GeneratePayload from the source asset's stored metadata,
+   * appends the variation hint to user_prompt, fires a fresh generation.
+   * On success: prepend the new asset and switch the lightbox to it. */
+  const regenerateVariation = async (
+    asset: Asset,
+    variation: VariationKey
+  ): Promise<{ ok: boolean; error?: StudioError }> => {
+    const meta = (asset.metadata || {}) as Record<string, unknown>;
+    if (typeof meta.product_image_url !== 'string' || !meta.product_image_url) {
+      return { ok: false, error: { code: 'generic', detail: 'legacy_asset_no_regen' } };
+    }
+
+    const existing = typeof meta.user_prompt === 'string' ? meta.user_prompt : '';
+    const hint = VARIATION_PROMPT[variation];
+    const newUserPrompt = existing ? `${existing}. VARIATION: ${hint}` : `VARIATION: ${hint}`;
+
+    const payload: GeneratePayload = {
+      studio_project_id: props.project.id,
+      type:
+        (meta.type as GeneratePayload['type']) ||
+        (asset.asset_type as GeneratePayload['type']) ||
+        'editorial',
+      product_image_url: meta.product_image_url,
+      reference_image_url:
+        typeof meta.reference_image_url === 'string' ? meta.reference_image_url : undefined,
+      model_id: typeof meta.model_id === 'string' ? meta.model_id : undefined,
+      scene: typeof meta.scene === 'string' ? meta.scene : undefined,
+      category:
+        (meta.category as GeneratePayload['category']) ||
+        (asset.asset_type === 'still_life' ? 'ROPA' : 'ROPA'),
+      product_name: typeof meta.product_name === 'string' ? meta.product_name : undefined,
+      user_prompt: newUserPrompt,
+      orientation: (meta.orientation as Orientation) || 'vertical',
+      framing: (meta.framing as Framing) || undefined,
+      light: (meta.light as LightDirection) || undefined,
+    };
+
+    try {
+      const res = await fetch('/api/studio/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const code: StudioErrorCode =
+          res.status === 401 ? 'unauthorized' :
+          res.status === 402 ? 'pool_empty' :
+          res.status === 429 ? 'rate_limit' :
+          res.status === 502 || res.status === 500 ? 'ai_failed' : 'generic';
+        return { ok: false, error: { code, detail: typeof errBody.error === 'string' ? errBody.error : undefined } };
+      }
+      const json = await res.json();
+      const newAsset: Asset = {
+        id: json.asset_id,
+        asset_type: payload.type,
+        name: `${payload.type} — ${payload.product_name || 'variation'}`,
+        url: json.master_url,
+        metadata: {
+          provider: json.provider,
+          formats: json.formats,
+          type: payload.type,
+          category: payload.category,
+          scene: payload.scene,
+          model_id: payload.model_id,
+          product_image_url: payload.product_image_url,
+          reference_image_url: payload.reference_image_url,
+          product_name: payload.product_name,
+          orientation: payload.orientation,
+          framing: payload.framing,
+          light: payload.light,
+          user_prompt: payload.user_prompt,
+        },
+        is_style_memory: false,
+        style_memory_role: null,
+        created_at: new Date().toISOString(),
+      };
+      setRecentAssets((prev) => [newAsset, ...prev]);
+      if (typeof json.outputs_remaining === 'number') setOutputsRemaining(json.outputs_remaining);
+      setLightboxAssetId(newAsset.id);
+      return { ok: true };
+    } catch (e) {
+      console.error('[Studio] regenerate threw:', e);
+      const code: StudioErrorCode = e instanceof TypeError ? 'network' : 'generic';
+      return { ok: false, error: { code } };
+    }
   };
 
   const toggleStyleMemory = async (assetId: string, currentlyMarked: boolean) => {
@@ -1152,6 +1320,7 @@ export default function ProjectWorkspaceClient(props: Props) {
             t={t}
             onClose={() => setLightboxAssetId(null)}
             onToggleStyleMemory={() => toggleStyleMemory(lightboxAsset.id, lightboxAsset.is_style_memory)}
+            onRegenerate={(variation) => regenerateVariation(lightboxAsset, variation)}
           />
         )}
       </div>
@@ -1350,12 +1519,30 @@ interface OutputLightboxProps {
   t: (typeof STUDIO_WORKSPACE_I18N)[Language];
   onClose: () => void;
   onToggleStyleMemory: () => void;
+  onRegenerate: (variation: VariationKey) => Promise<{ ok: boolean; error?: StudioError }>;
 }
 
-function OutputLightbox({ asset, t, onClose, onToggleStyleMemory }: OutputLightboxProps) {
+function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }: OutputLightboxProps) {
   const [formats, setFormats] = useState<FormatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [, setReloadKey] = useState(0);
+  const [regenInFlight, setRegenInFlight] = useState<VariationKey | null>(null);
+  const [regenError, setRegenError] = useState<StudioError | null>(null);
+
+  const canRegenerate = (() => {
+    const meta = (asset.metadata || {}) as Record<string, unknown>;
+    return typeof meta.product_image_url === 'string' && !!meta.product_image_url;
+  })();
+
+  const fireRegenerate = async (variation: VariationKey) => {
+    setRegenInFlight(variation);
+    setRegenError(null);
+    const result = await onRegenerate(variation);
+    setRegenInFlight(null);
+    if (!result.ok && result.error) setRegenError(result.error);
+    // On success the parent updates lightboxAssetId → this component
+    // remounts with the new asset (key changes), so no extra cleanup needed.
+  };
 
   // Lazy-load formats. Re-runs when reloadKey changes (manual retry).
   useEffect(() => {
@@ -1449,8 +1636,65 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory }: OutputLightb
             </div>
           </div>
 
-          {/* RIGHT — formats panel */}
+          {/* RIGHT — formats panel + regenerate variations */}
           <aside className="bg-white rounded-[20px] p-6 md:p-7 overflow-y-auto max-h-[85vh]">
+            {/* Quick variation regen pills (only when source metadata
+                preserves the inputs — legacy assets hide the row). */}
+            {canRegenerate && (
+              <div className="mb-6 pb-6 border-b border-carbon/[0.06]">
+                <h3 className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
+                  {t.regenerateLabel}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      { key: 'closer' as VariationKey, label: t.regenCloser },
+                      { key: 'less_bg' as VariationKey, label: t.regenLessBg },
+                      { key: 'better_light' as VariationKey, label: t.regenBetterLight },
+                    ]
+                  ).map((v) => {
+                    const isThis = regenInFlight === v.key;
+                    const anyInFlight = regenInFlight !== null;
+                    return (
+                      <button
+                        key={v.key}
+                        type="button"
+                        onClick={() => fireRegenerate(v.key)}
+                        disabled={anyInFlight}
+                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium transition-colors ${
+                          isThis
+                            ? 'bg-carbon text-white'
+                            : anyInFlight
+                            ? 'bg-carbon/[0.03] text-carbon/30'
+                            : 'bg-carbon/[0.04] text-carbon hover:bg-carbon/[0.08]'
+                        }`}
+                      >
+                        {isThis ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
+                        {isThis ? t.regenerating : v.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {regenError && (
+                  <p className="mt-3 text-[12px] text-red-700 leading-relaxed">
+                    {regenError.code === 'pool_empty'
+                      ? t.errPoolEmpty
+                      : regenError.code === 'ai_failed'
+                      ? t.errAiFailed
+                      : regenError.code === 'rate_limit'
+                      ? t.errRateLimit
+                      : regenError.code === 'network'
+                      ? t.errNetwork
+                      : t.errGeneric}
+                  </p>
+                )}
+              </div>
+            )}
+
             {loading ? (
               <div className="flex items-center gap-3 text-carbon/55 py-4">
                 <Loader2 className="h-4 w-4 animate-spin" />

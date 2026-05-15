@@ -352,6 +352,17 @@ export async function POST(req: NextRequest) {
         background_removal: bgRemoval,
         style_memory_count: studioCtx.style_memory_urls?.length || 0,
         purchase_id: purchaseId,
+        // Regen-relevant inputs preserved so /api/studio/output-formats can
+        // surface them to the lightbox "Regenerate variation" controls.
+        // The signed product/reference URLs are valid for 1 year (see
+        // /api/studio/upload), longer than a typical project lifetime.
+        product_image_url: body.product_image_url,
+        reference_image_url: body.reference_image_url,
+        product_name: body.product_name,
+        orientation,
+        framing,
+        light,
+        user_prompt: body.user_prompt,
       },
       uploadedBy: userId,
     });

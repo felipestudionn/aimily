@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
       url: asset.url,
       asset_type: asset.asset_type,
       created_at: asset.created_at,
+      metadata: asset.metadata || null,
     },
     formats: formats || [],
   });
