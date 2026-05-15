@@ -2280,18 +2280,24 @@ function OutputLightbox({
           <X className="h-5 w-5" />
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 lg:gap-8 min-h-[80vh]">
-          {/* LEFT — master image */}
+        <div className={`grid gap-6 lg:gap-8 min-h-[80vh] ${
+          isVideo
+            ? 'grid-cols-1 max-w-[900px] mx-auto'    // single column, centred, narrower
+            : 'grid-cols-1 lg:grid-cols-[1fr_420px]' // image + aside
+        }`}>
+          {/* LEFT — master image / video */}
           <div className="flex flex-col">
             <div className="flex-1 flex items-center justify-center rounded-[20px] overflow-hidden bg-black/30 min-h-[400px]">
               {isVideo ? (
                 <video
                   src={asset.url}
-                  className="max-h-[80vh] max-w-full"
+                  className="w-full h-auto max-h-[80vh] object-contain"
                   controls
                   autoPlay
                   loop
+                  muted          /* required by Chrome/Safari for autoPlay to fire */
                   playsInline
+                  preload="auto" /* download metadata immediately so duration shows */
                 />
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -2344,7 +2350,9 @@ function OutputLightbox({
           {/* RIGHT — formats panel + regenerate variations + ON-IMAGE variations.
               On mobile the aside expands naturally and the OUTER overlay
               handles scroll. On lg+ the aside scrolls internally so the
-              image area stays anchored. */}
+              image area stays anchored. Hidden entirely for video sources
+              (the grid switches to single-col above so the video centres). */}
+          {!isVideo && (
           <aside className="bg-white rounded-[20px] p-6 md:p-7 lg:overflow-y-auto lg:max-h-[85vh]">
 
             {/* In-flight overlay — takes over the panel while a /variation
@@ -2679,6 +2687,7 @@ function OutputLightbox({
               </div>
             ))}
           </aside>
+          )}
         </div>
       </div>
     </div>
