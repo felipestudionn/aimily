@@ -2290,14 +2290,13 @@ function OutputLightbox({
             <div className="flex-1 flex items-center justify-center rounded-[20px] overflow-hidden bg-black/30 min-h-[400px]">
               {isVideo ? (
                 <video
+                  key={asset.url}
                   src={asset.url}
-                  className="w-full h-auto max-h-[80vh] object-contain"
+                  className="w-full max-h-[80vh]"
+                  style={{ display: 'block' }}
                   controls
-                  autoPlay
-                  loop
-                  muted          /* required by Chrome/Safari for autoPlay to fire */
                   playsInline
-                  preload="auto" /* download metadata immediately so duration shows */
+                  preload="auto"
                 />
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
