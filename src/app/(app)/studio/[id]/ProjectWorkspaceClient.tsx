@@ -93,6 +93,11 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   vidMotionLabel: string;
   vidGenerate: string;
   vidProcessing: string;
+  /* Title + subtitle shown over the shooting-stages checklist during
+   * video generation. Sub is a function so we can format the expected
+   * minutes inline. */
+  vidGenTitle: string;
+  vidGenSubMin: (n: number) => string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -160,7 +165,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Duration',
     vidMotionLabel: 'Motion',
     vidGenerate: 'Create video',
-    vidProcessing: 'Creating video… (2-4 min)',
+    vidProcessing: 'Creating video…',
+    vidGenTitle: 'Creating your video',
+    vidGenSubMin: (n) => `Approximately ${n} minutes. Your output is safe if anything fails.`,
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -228,7 +235,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Duración',
     vidMotionLabel: 'Movimiento',
     vidGenerate: 'Crear vídeo',
-    vidProcessing: 'Creando vídeo… (2-4 min)',
+    vidProcessing: 'Creando vídeo…',
+    vidGenTitle: 'Creando tu vídeo',
+    vidGenSubMin: (n) => `Aproximadamente ${n} minutos. Tu output está intacto si algo falla.`,
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -296,7 +305,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Durée',
     vidMotionLabel: 'Mouvement',
     vidGenerate: 'Créer la vidéo',
-    vidProcessing: 'Création de la vidéo… (2-4 min)',
+    vidProcessing: 'Création de la vidéo…',
+    vidGenTitle: 'Création de ta vidéo',
+    vidGenSubMin: (n) => `Environ ${n} minutes. Ton output est en sécurité si quelque chose échoue.`,
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -364,7 +375,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Durata',
     vidMotionLabel: 'Movimento',
     vidGenerate: 'Crea video',
-    vidProcessing: 'Creazione video… (2-4 min)',
+    vidProcessing: 'Creazione video…',
+    vidGenTitle: 'Creazione del tuo video',
+    vidGenSubMin: (n) => `Circa ${n} minuti. Il tuo output è al sicuro se qualcosa va storto.`,
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -432,7 +445,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Dauer',
     vidMotionLabel: 'Bewegung',
     vidGenerate: 'Video erstellen',
-    vidProcessing: 'Video wird erstellt… (2-4 min)',
+    vidProcessing: 'Video wird erstellt…',
+    vidGenTitle: 'Dein Video wird erstellt',
+    vidGenSubMin: (n) => `Etwa ${n} Minuten. Dein Output bleibt sicher, falls etwas schiefgeht.`,
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -500,7 +515,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Duração',
     vidMotionLabel: 'Movimento',
     vidGenerate: 'Criar vídeo',
-    vidProcessing: 'A criar vídeo… (2-4 min)',
+    vidProcessing: 'A criar vídeo…',
+    vidGenTitle: 'A criar o teu vídeo',
+    vidGenSubMin: (n) => `Aproximadamente ${n} minutos. O teu output fica seguro se algo falhar.`,
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -568,7 +585,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Duur',
     vidMotionLabel: 'Beweging',
     vidGenerate: 'Video maken',
-    vidProcessing: 'Video wordt gemaakt… (2-4 min)',
+    vidProcessing: 'Video wordt gemaakt…',
+    vidGenTitle: 'Je video wordt gemaakt',
+    vidGenSubMin: (n) => `Ongeveer ${n} minuten. Je output blijft veilig als er iets misgaat.`,
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -636,7 +655,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Längd',
     vidMotionLabel: 'Rörelse',
     vidGenerate: 'Skapa video',
-    vidProcessing: 'Skapar video… (2-4 min)',
+    vidProcessing: 'Skapar video…',
+    vidGenTitle: 'Skapar din video',
+    vidGenSubMin: (n) => `Ungefär ${n} minuter. Din output är säker om något skulle gå fel.`,
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -704,7 +725,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     vidDurationLabel: 'Varighet',
     vidMotionLabel: 'Bevegelse',
     vidGenerate: 'Lag video',
-    vidProcessing: 'Lager video… (2-4 min)',
+    vidProcessing: 'Lager video…',
+    vidGenTitle: 'Lager videoen din',
+    vidGenSubMin: (n) => `Cirka ${n} minutter. Outputen din er trygg hvis noe feiler.`,
   },
 };
 
@@ -1961,6 +1984,7 @@ export default function ProjectWorkspaceClient(props: Props) {
           <OutputLightbox
             key={lightboxAsset.id}
             asset={lightboxAsset}
+            language={language}
             t={t}
             onClose={() => setLightboxAssetId(null)}
             onToggleStyleMemory={() => toggleStyleMemory(lightboxAsset.id, lightboxAsset.is_style_memory)}
@@ -2016,28 +2040,46 @@ export default function ProjectWorkspaceClient(props: Props) {
 // shooting normal y como nosotros, de manera ficticia, pasamos por todas
 // ellas ultra rápido en 60 segundos."
 // ─────────────────────────────────────────────────────────────────────────
-const SECONDS_PER_STAGE = 4; // 12 stages × 4s = 48s, last stays in loop
+const IMAGE_EXPECTED_SECONDS = 48; // image gen: 12 stages × 4s
+
+/* Video gen — proportional to clip length. Used to scale the shooting-
+ * stages pacing AND the "approximately N minutes" subtitle. Picked to
+ * land in the middle of the real-world distribution (Kling Pro / Happy
+ * Horse / Sora all fall within these envelopes). */
+const VIDEO_EXPECTED_SECONDS_BY_DURATION: Record<'5' | '10' | '15', number> = {
+  '5': 4 * 60,   // 4 min
+  '10': 6 * 60,  // 6 min
+  '15': 9 * 60,  // 9 min
+};
 
 interface GenerationProgressProps {
   language: Language;
   t: (typeof STUDIO_WORKSPACE_I18N)[Language];
   elapsed: number;
   allDone: boolean;
+  /* For long-running flows (video) we stretch the stage pacing so the
+   * shooting checklist still feels like "constant progress" instead of
+   * finishing in 48s and then sitting at "Rolling" for 5+ extra min. */
+  expectedSeconds?: number;
+  customTitle?: string;
+  customSub?: string;
 }
 
-function GenerationProgress({ language, t, elapsed, allDone }: GenerationProgressProps) {
+function GenerationProgress({ language, t, elapsed, allDone, expectedSeconds, customTitle, customSub }: GenerationProgressProps) {
   const stages = SHOOTING_STAGES_I18N[language] ?? SHOOTING_STAGES_I18N.en;
+  const totalSeconds = expectedSeconds ?? IMAGE_EXPECTED_SECONDS;
+  const secondsPerStage = totalSeconds / stages.length;
   const lastIdx = stages.length - 1;
-  // Active stage advances every SECONDS_PER_STAGE, capped at the last index.
-  const activeIdx = Math.min(Math.floor(elapsed / SECONDS_PER_STAGE), lastIdx);
+  // Active stage advances proportionally; last stage stays in loop after.
+  const activeIdx = Math.min(Math.floor(elapsed / secondsPerStage), lastIdx);
 
   return (
     <div className="flex flex-col items-center text-center py-6">
       <h2 className="text-[22px] md:text-[24px] font-semibold text-carbon tracking-[-0.03em] mb-2">
-        {t.generatingTitle}
+        {customTitle ?? t.generatingTitle}
       </h2>
       <p className="text-[13px] text-carbon/50 max-w-md leading-[1.7] mb-8">
-        {t.generatingSub}
+        {customSub ?? t.generatingSub}
       </p>
 
       <div className="w-full max-w-md space-y-1.5">
@@ -2186,6 +2228,7 @@ function GenerationError({ t, error, onClose, onRetry, isAdmin }: GenerationErro
 // ─────────────────────────────────────────────────────────────────────────
 interface OutputLightboxProps {
   asset: Asset;
+  language: Language;
   t: (typeof STUDIO_WORKSPACE_I18N)[Language];
   onClose: () => void;
   onToggleStyleMemory: () => void;
@@ -2204,7 +2247,7 @@ interface OutputLightboxProps {
 }
 
 function OutputLightbox({
-  asset, t, onClose, onToggleStyleMemory, onRegenerate,
+  asset, language, t, onClose, onToggleStyleMemory, onRegenerate,
   onApplyVariation, onOpenCastingForVariation, variationInFlight,
   onApplyVideo, videoInFlight,
 }: OutputLightboxProps) {
@@ -2219,6 +2262,20 @@ function OutputLightbox({
   const [variationError, setVariationError] = useState<StudioError | null>(null);
   // Video form state
   const [videoFormOpen, setVideoFormOpen] = useState(false);
+  // Elapsed seconds while a video is generating — drives the shooting-stage
+  // pacing in the GenerationProgress overlay. Reset to 0 when not in flight.
+  const [videoElapsed, setVideoElapsed] = useState(0);
+  useEffect(() => {
+    if (!videoInFlight) {
+      setVideoElapsed(0);
+      return;
+    }
+    const startedAt = Date.now();
+    const id = window.setInterval(() => {
+      setVideoElapsed(Math.floor((Date.now() - startedAt) / 1000));
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [videoInFlight]);
   // Canonical 10 fashion video styles (mirror of backend VideoStyle type).
   // Order: PRESERVE modes first (safer — input image preserved), then
   // ANIMATED modes (more dramatic motion, more drift risk). Default is
@@ -2407,21 +2464,32 @@ function OutputLightbox({
           <aside className="bg-white rounded-[20px] p-6 md:p-7 lg:overflow-y-auto lg:max-h-[85vh]">
 
             {/* In-flight overlay — takes over the panel while a /variation
-                or /video call is in flight. Variations finish in 20-40s,
-                videos in 2-4 minutes. */}
-            {(variationInFlight || videoInFlight) && (
+                or /video call is in flight.
+                  - Variations (20-40s): simple centred spinner
+                  - Video (4-9 min): full shooting-stages checklist scaled
+                    to the expected duration so progress feels constant. */}
+            {videoInFlight && (
+              <GenerationProgress
+                language={language}
+                t={t}
+                elapsed={videoElapsed}
+                allDone={false}
+                expectedSeconds={VIDEO_EXPECTED_SECONDS_BY_DURATION[videoDuration]}
+                customTitle={t.vidGenTitle}
+                customSub={t.vidGenSubMin(Math.round(VIDEO_EXPECTED_SECONDS_BY_DURATION[videoDuration] / 60))}
+              />
+            )}
+            {variationInFlight && !videoInFlight && (
               <div className="py-10 flex flex-col items-center text-center">
                 <Loader2 className="h-7 w-7 text-carbon/50 animate-spin mb-4" />
                 <p className="text-[14px] font-medium text-carbon mb-1">
-                  {videoInFlight ? t.vidProcessing : t.varProcessing}
+                  {t.varProcessing}
                 </p>
-                {!videoInFlight && variationInFlight && (
-                  <p className="text-[12px] text-carbon/50">
-                    {variationInFlight === 'color' ? t.varColorLabel :
-                     variationInFlight === 'background' ? t.varBgLabel :
-                     t.varModelLabel}
-                  </p>
-                )}
+                <p className="text-[12px] text-carbon/50">
+                  {variationInFlight === 'color' ? t.varColorLabel :
+                   variationInFlight === 'background' ? t.varBgLabel :
+                   t.varModelLabel}
+                </p>
               </div>
             )}
 
