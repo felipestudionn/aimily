@@ -2386,13 +2386,20 @@ function OutputLightbox({
                       onKeyDown={(e) => { if (e.key === 'Enter' && variationInput.trim()) void submitColorBgVariation(); }}
                     />
                     {variationError && (
-                      <p className="text-[12px] text-red-700 leading-relaxed">
-                        {variationError.code === 'pool_empty' ? t.errPoolEmpty :
-                         variationError.code === 'ai_failed' ? t.errAiFailed :
-                         variationError.code === 'rate_limit' ? t.errRateLimit :
-                         variationError.code === 'network' ? t.errNetwork :
-                         t.errGeneric}
-                      </p>
+                      <div className="text-[12px] leading-relaxed">
+                        <p className="text-red-700">
+                          {variationError.code === 'pool_empty' ? t.errPoolEmpty :
+                           variationError.code === 'ai_failed' ? t.errAiFailed :
+                           variationError.code === 'rate_limit' ? t.errRateLimit :
+                           variationError.code === 'network' ? t.errNetwork :
+                           t.errGeneric}
+                        </p>
+                        {variationError.detail && (
+                          <p className="mt-1.5 text-carbon/45 font-mono text-[11px] break-words">
+                            {variationError.detail}
+                          </p>
+                        )}
+                      </div>
                     )}
                     <div className="flex items-center justify-between gap-2">
                       <button
@@ -2466,13 +2473,20 @@ function OutputLightbox({
                       className="w-full px-4 py-3 text-[13px] text-carbon bg-carbon/[0.03] rounded-[12px] border border-carbon/[0.06] focus:border-carbon/25 focus:outline-none transition-colors placeholder:text-carbon/30"
                     />
                     {videoError && (
-                      <p className="text-[12px] text-red-700 leading-relaxed">
-                        {videoError.code === 'pool_empty' ? t.errPoolEmpty :
-                         videoError.code === 'ai_failed' ? t.errAiFailed :
-                         videoError.code === 'rate_limit' ? t.errRateLimit :
-                         videoError.code === 'network' ? t.errNetwork :
-                         t.errGeneric}
-                      </p>
+                      <div className="text-[12px] leading-relaxed">
+                        <p className="text-red-700">
+                          {videoError.code === 'pool_empty' ? t.errPoolEmpty :
+                           videoError.code === 'ai_failed' ? t.errAiFailed :
+                           videoError.code === 'rate_limit' ? t.errRateLimit :
+                           videoError.code === 'network' ? t.errNetwork :
+                           t.errGeneric}
+                        </p>
+                        {videoError.detail && (
+                          <p className="mt-1.5 text-carbon/45 font-mono text-[11px] break-words">
+                            {videoError.detail}
+                          </p>
+                        )}
+                      </div>
                     )}
                     <div className="flex items-center justify-between gap-2">
                       <button
