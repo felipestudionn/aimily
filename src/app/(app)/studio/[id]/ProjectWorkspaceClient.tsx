@@ -67,6 +67,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   castingUseModel: string;
   castingCancel: string;
   castingSelected: string;
+  lightboxDownloadAllZip: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -111,6 +112,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Use this model',
     castingCancel: 'Cancel',
     castingSelected: 'Selected',
+    lightboxDownloadAllZip: 'Download all (ZIP)',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -155,6 +157,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Usar este modelo',
     castingCancel: 'Cancelar',
     castingSelected: 'Seleccionado',
+    lightboxDownloadAllZip: 'Descargar todo (ZIP)',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -199,6 +202,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Utiliser ce mannequin',
     castingCancel: 'Annuler',
     castingSelected: 'Sélectionné',
+    lightboxDownloadAllZip: 'Tout télécharger (ZIP)',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -243,6 +247,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Usa questo modello',
     castingCancel: 'Annulla',
     castingSelected: 'Selezionato',
+    lightboxDownloadAllZip: 'Scarica tutto (ZIP)',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -287,6 +292,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Dieses Modell verwenden',
     castingCancel: 'Abbrechen',
     castingSelected: 'Ausgewählt',
+    lightboxDownloadAllZip: 'Alles herunterladen (ZIP)',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -331,6 +337,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Usar este modelo',
     castingCancel: 'Cancelar',
     castingSelected: 'Selecionado',
+    lightboxDownloadAllZip: 'Descarregar tudo (ZIP)',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -375,6 +382,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Dit model gebruiken',
     castingCancel: 'Annuleren',
     castingSelected: 'Geselecteerd',
+    lightboxDownloadAllZip: 'Alles downloaden (ZIP)',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -419,6 +427,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Använd denna modell',
     castingCancel: 'Avbryt',
     castingSelected: 'Vald',
+    lightboxDownloadAllZip: 'Ladda ner allt (ZIP)',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -463,6 +472,7 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingUseModel: 'Bruk denne modellen',
     castingCancel: 'Avbryt',
     castingSelected: 'Valgt',
+    lightboxDownloadAllZip: 'Last ned alt (ZIP)',
   },
 };
 
@@ -1685,6 +1695,13 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
                   <Star className={`h-3.5 w-3.5 ${asset.is_style_memory ? 'fill-current' : ''}`} />
                   Style Memory
                 </button>
+                <a
+                  href={`/api/studio/download-zip?asset_id=${asset.id}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium bg-white/10 text-white hover:bg-white/20 transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {t.lightboxDownloadAllZip}
+                </a>
                 <a
                   href={downloadHref('master')}
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white text-carbon text-[13px] font-semibold tracking-[-0.01em] hover:bg-white/90 transition-colors"
