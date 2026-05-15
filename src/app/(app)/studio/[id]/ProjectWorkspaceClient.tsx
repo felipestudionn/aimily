@@ -17,6 +17,7 @@ import {
   AlertCircle,
   RefreshCw,
   Download,
+  User,
 } from 'lucide-react';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
@@ -68,6 +69,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   castingCancel: string;
   castingSelected: string;
   lightboxDownloadAllZip: string;
+  modelBlockEmpty: string;
+  modelBlockSub: string;
+  modelBlockChange: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -113,6 +117,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Cancel',
     castingSelected: 'Selected',
     lightboxDownloadAllZip: 'Download all (ZIP)',
+    modelBlockEmpty: 'Pick a model',
+    modelBlockSub: 'Click to browse the casting',
+    modelBlockChange: 'Change',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -158,6 +165,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Cancelar',
     castingSelected: 'Seleccionado',
     lightboxDownloadAllZip: 'Descargar todo (ZIP)',
+    modelBlockEmpty: 'Elegir modelo',
+    modelBlockSub: 'Haz click para ver el casting',
+    modelBlockChange: 'Cambiar',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -203,6 +213,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Annuler',
     castingSelected: 'Sélectionné',
     lightboxDownloadAllZip: 'Tout télécharger (ZIP)',
+    modelBlockEmpty: 'Choisir un mannequin',
+    modelBlockSub: 'Clique pour parcourir le casting',
+    modelBlockChange: 'Changer',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -248,6 +261,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Annulla',
     castingSelected: 'Selezionato',
     lightboxDownloadAllZip: 'Scarica tutto (ZIP)',
+    modelBlockEmpty: 'Scegli un modello',
+    modelBlockSub: 'Clicca per sfogliare il casting',
+    modelBlockChange: 'Cambia',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -293,6 +309,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Abbrechen',
     castingSelected: 'Ausgewählt',
     lightboxDownloadAllZip: 'Alles herunterladen (ZIP)',
+    modelBlockEmpty: 'Modell auswählen',
+    modelBlockSub: 'Klicke, um das Casting zu durchsuchen',
+    modelBlockChange: 'Ändern',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -338,6 +357,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Cancelar',
     castingSelected: 'Selecionado',
     lightboxDownloadAllZip: 'Descarregar tudo (ZIP)',
+    modelBlockEmpty: 'Escolher modelo',
+    modelBlockSub: 'Clica para ver o casting',
+    modelBlockChange: 'Mudar',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -383,6 +405,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Annuleren',
     castingSelected: 'Geselecteerd',
     lightboxDownloadAllZip: 'Alles downloaden (ZIP)',
+    modelBlockEmpty: 'Kies een model',
+    modelBlockSub: 'Klik om de casting te bekijken',
+    modelBlockChange: 'Wijzigen',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -428,6 +453,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Avbryt',
     castingSelected: 'Vald',
     lightboxDownloadAllZip: 'Ladda ner allt (ZIP)',
+    modelBlockEmpty: 'Välj en modell',
+    modelBlockSub: 'Klicka för att bläddra i castingen',
+    modelBlockChange: 'Ändra',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -473,6 +501,9 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     castingCancel: 'Avbryt',
     castingSelected: 'Valgt',
     lightboxDownloadAllZip: 'Last ned alt (ZIP)',
+    modelBlockEmpty: 'Velg en modell',
+    modelBlockSub: 'Klikk for å bla i castingen',
+    modelBlockChange: 'Endre',
   },
 };
 
@@ -657,10 +688,7 @@ export default function ProjectWorkspaceClient(props: Props) {
   const [orientation, setOrientation] = useState<Orientation>('vertical');
   const [framing, setFraming] = useState<Framing>('medium');
   const [light, setLight] = useState<LightDirection>('soft');
-  const [castingDrawerId, setCastingDrawerId] = useState<string | null>(null);
-  const castingDrawerModel = castingDrawerId
-    ? props.models.find((m) => m.id === castingDrawerId) ?? null
-    : null;
+  const [castingPickerOpen, setCastingPickerOpen] = useState(false);
   // Derived so the lightbox re-renders when the underlying asset changes
   // (e.g. after a Style Memory toggle updates recentAssets).
   const lightboxAsset = lightboxAssetId
@@ -685,10 +713,6 @@ export default function ProjectWorkspaceClient(props: Props) {
     }, 250);
     return () => window.clearInterval(id);
   }, [generating]);
-
-  const filteredModels = genderFilter === 'all'
-    ? props.models
-    : props.models.filter((m) => m.gender === genderFilter);
 
   const uploadImage = async (file: File, kind: 'product' | 'reference'): Promise<string | null> => {
     const fd = new FormData();
@@ -1076,9 +1100,19 @@ export default function ProjectWorkspaceClient(props: Props) {
                 />
               </div>
 
-              {/* Upload squares — product + reference */}
+              {/* Three visual input blocks — Producto · Referencia · Modelo.
+                  Equal-size aspect-square cards at the top of the form so the
+                  three pieces of input the user provides feel symmetric and
+                  immediate. The number of blocks adapts to type:
+                    still_life → 1 (Producto)
+                    tryon      → 2 (Producto + Modelo)
+                    editorial  → 3 (Producto + Referencia + Modelo) */}
               <div className="md:col-span-2">
-                <div className={`grid gap-4 ${type === 'editorial' ? 'grid-cols-2' : 'grid-cols-1 max-w-[340px]'}`}>
+                <div className={`grid gap-4 ${
+                  type === 'editorial' ? 'grid-cols-1 sm:grid-cols-3' :
+                  type === 'tryon' ? 'grid-cols-1 sm:grid-cols-2' :
+                  'grid-cols-1 max-w-[340px]'
+                }`}>
                   <UploadSquare
                     label="Foto del producto"
                     required
@@ -1107,6 +1141,16 @@ export default function ProjectWorkspaceClient(props: Props) {
                         setReferenceUploading(false);
                       }}
                       onClear={() => setReferenceImageUrl('')}
+                    />
+                  )}
+                  {(type === 'editorial' || type === 'tryon') && (
+                    <ModelBlock
+                      label="Modelo"
+                      required={type === 'editorial' || type === 'tryon'}
+                      model={modelId ? props.models.find((m) => m.id === modelId) ?? null : null}
+                      onOpenPicker={() => setCastingPickerOpen(true)}
+                      onClear={() => setModelId(null)}
+                      t={t}
                     />
                   )}
                 </div>
@@ -1144,57 +1188,6 @@ export default function ProjectWorkspaceClient(props: Props) {
                       </option>
                     ))}
                   </select>
-                </div>
-              )}
-
-              {/* Model casting selector — filters + larger grid (3+ rows always visible) */}
-              {(type === 'editorial' || type === 'tryon') && (
-                <div className="md:col-span-2">
-                  <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
-                    <label className="block text-[13px] font-medium text-carbon/70 tracking-[-0.02em]">
-                      Modelo del casting Aimily ({filteredModels.length} de {props.models.length})
-                    </label>
-                    <SegmentedPill<GenderFilter>
-                      options={[
-                        { id: 'all', label: 'Todos' },
-                        { id: 'female', label: 'Mujer' },
-                        { id: 'male', label: 'Hombre' },
-                      ]}
-                      value={genderFilter}
-                      onChange={setGenderFilter}
-                      size="sm"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-3 max-h-[680px] overflow-y-auto p-3 bg-carbon/[0.02] rounded-[14px]">
-                    {filteredModels.map((m) => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setCastingDrawerId(m.id)}
-                        className={`group relative aspect-[3/4] rounded-[10px] overflow-hidden transition-all duration-200 hover:scale-[1.05] hover:z-10 hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)] ${
-                          modelId === m.id
-                            ? 'ring-2 ring-carbon ring-offset-2 ring-offset-shade'
-                            : 'opacity-85 hover:opacity-100'
-                        }`}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={m.headshot_url} alt={m.name} className="h-full w-full object-cover" />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent pt-6 pb-2 px-2">
-                          <p className="text-white text-[11px] font-medium tracking-[-0.01em] truncate">{m.name}</p>
-                          {(m.complexion || m.hair_style) && (
-                            <p className="text-white/70 text-[9px] uppercase tracking-[0.08em] truncate">
-                              {[m.complexion, m.hair_style].filter(Boolean).join(' · ')}
-                            </p>
-                          )}
-                        </div>
-                        {modelId === m.id && (
-                          <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-carbon text-white flex items-center justify-center">
-                            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               )}
 
@@ -1380,17 +1373,19 @@ export default function ProjectWorkspaceClient(props: Props) {
           />
         )}
 
-        {/* Casting drawer — preview a model before committing */}
-        {castingDrawerModel && (
-          <CastingDrawer
-            model={castingDrawerModel}
-            isSelected={modelId === castingDrawerModel.id}
+        {/* Casting picker — grid + filter + click instant-selects */}
+        {castingPickerOpen && (
+          <CastingPicker
+            models={props.models}
+            selectedId={modelId}
+            initialGenderFilter={genderFilter}
             t={t}
-            onClose={() => setCastingDrawerId(null)}
-            onUse={() => {
-              setModelId(castingDrawerModel.id);
-              setCastingDrawerId(null);
+            onClose={() => setCastingPickerOpen(false)}
+            onSelect={(id) => {
+              setModelId(id);
+              setCastingPickerOpen(false);
             }}
+            onFilterChange={setGenderFilter}
           />
         )}
       </div>
@@ -1846,21 +1841,115 @@ function OutputLightbox({ asset, t, onClose, onToggleStyleMemory, onRegenerate }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// CastingDrawer — right-anchored slide-in drawer showing a richer view of
-// a single aimily_model: bigger headshot, attribute pills (gender,
-// complexion, hair style/color), description, and a primary "Use this
-// model" CTA. Lets the user inspect before committing — the casting bank
-// thumbnails now open this drawer instead of selecting directly.
+// ModelBlock — the third equal-size aspect-square block in the form grid,
+// matching UploadSquare's visual weight. Empty state: avatar icon + CTA
+// to open the casting picker. Filled state: headshot + name + "Change"
+// pill + clear (X). Single click on the empty card opens the picker.
 // ─────────────────────────────────────────────────────────────────────────
-interface CastingDrawerProps {
-  model: AimilyModel;
-  isSelected: boolean;
+interface ModelBlockProps {
+  label: string;
+  required?: boolean;
+  model: AimilyModel | null;
+  onOpenPicker: () => void;
+  onClear: () => void;
   t: (typeof STUDIO_WORKSPACE_I18N)[Language];
-  onClose: () => void;
-  onUse: () => void;
 }
 
-function CastingDrawer({ model, isSelected, t, onClose, onUse }: CastingDrawerProps) {
+function ModelBlock({ label, required, model, onOpenPicker, onClear, t }: ModelBlockProps) {
+  const hasModel = !!model;
+  return (
+    <div className="flex flex-col">
+      <div className="mb-2 flex items-baseline gap-1.5">
+        <span className="text-[13px] font-medium text-carbon tracking-[-0.02em]">{label}</span>
+        {required && <span className="text-[11px] text-carbon/40">·  obligatorio</span>}
+      </div>
+
+      <button
+        type="button"
+        onClick={onOpenPicker}
+        className={`relative aspect-square rounded-[16px] overflow-hidden cursor-pointer transition-all text-left
+          ${hasModel
+            ? 'bg-carbon/[0.04]'
+            : 'bg-carbon/[0.03] border-2 border-dashed border-carbon/15 hover:border-carbon/35 hover:bg-carbon/[0.06]'}
+        `}
+      >
+        {hasModel && model ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={model.headshot_url} alt={model.name} className="h-full w-full object-cover" />
+            {/* Clear pill — same affordance as UploadSquare */}
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClear();
+                }
+              }}
+              className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm transition-colors cursor-pointer"
+              aria-label="Quitar modelo"
+            >
+              <X className="h-4 w-4 text-carbon" />
+            </span>
+            {/* Name + change CTA, gradient overlay at the bottom */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent pt-10 pb-3 px-4">
+              <p className="text-white text-[14px] font-semibold tracking-[-0.01em] truncate">
+                {model.name}
+              </p>
+              {(model.complexion || model.hair_style) && (
+                <p className="text-white/70 text-[10px] uppercase tracking-[0.08em] truncate mt-0.5">
+                  {[model.complexion, model.hair_style].filter(Boolean).join(' · ')}
+                </p>
+              )}
+              <span
+                className="mt-2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/90 text-carbon text-[11px] font-medium"
+              >
+                {t.modelBlockChange}
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+            <div className="h-12 w-12 rounded-full bg-carbon/[0.06] flex items-center justify-center">
+              <User className="h-5 w-5 text-carbon/50" />
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-[13px] font-medium text-carbon">{t.modelBlockEmpty}</p>
+              <p className="text-[11px] text-carbon/45">{t.modelBlockSub}</p>
+            </div>
+          </div>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CastingPicker — fullscreen modal for choosing a model. Filter pills at
+// the top (Todos/Mujer/Hombre), responsive grid of headshot tiles, click
+// on a tile = INSTANT select and close. No intermediate detail step — the
+// tile overlay (name + complexion · hair style) is enough info to decide
+// for most users. "Super fácil" per Felipe's directive.
+// ─────────────────────────────────────────────────────────────────────────
+interface CastingPickerProps {
+  models: AimilyModel[];
+  selectedId: string | null;
+  initialGenderFilter: GenderFilter;
+  t: (typeof STUDIO_WORKSPACE_I18N)[Language];
+  onClose: () => void;
+  onSelect: (id: string) => void;
+  onFilterChange: (filter: GenderFilter) => void;
+}
+
+function CastingPicker({
+  models, selectedId, initialGenderFilter, t, onClose, onSelect, onFilterChange,
+}: CastingPickerProps) {
+  const [filter, setFilter] = useState<GenderFilter>(initialGenderFilter);
+
+  // Lock body scroll + Escape to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -1872,94 +1961,92 @@ function CastingDrawer({ model, isSelected, t, onClose, onUse }: CastingDrawerPr
     };
   }, [onClose]);
 
-  const genderLabel = model.gender === 'female' ? 'Mujer' : model.gender === 'male' ? 'Hombre' : null;
-  const pills: string[] = [
-    ...(genderLabel ? [genderLabel] : []),
-    ...(model.complexion ? [model.complexion] : []),
-    ...(model.hair_color ? [model.hair_color] : []),
-    ...(model.hair_style ? [model.hair_style] : []),
-  ];
+  const filtered = filter === 'all' ? models : models.filter((m) => m.gender === filter);
+
+  const updateFilter = (next: GenderFilter) => {
+    setFilter(next);
+    onFilterChange(next);
+  };
 
   return (
     <div
-      className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex justify-end"
+      className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-sm flex items-stretch justify-center overflow-y-auto"
       onClick={onClose}
     >
-      <aside
-        className="bg-white w-full max-w-[460px] h-full overflow-y-auto shadow-[-12px_0_40px_rgba(0,0,0,0.15)]"
+      <div
+        className="relative w-full max-w-[1300px] mx-auto p-4 md:p-8 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close X */}
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-between border-b border-carbon/[0.06]">
-          <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
-            Casting Aimily
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t.castingCancel}
-            className="h-9 w-9 rounded-full bg-carbon/[0.04] hover:bg-carbon/[0.08] text-carbon/55 flex items-center justify-center transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="px-6 py-6">
-          <div className="rounded-[16px] overflow-hidden bg-carbon/[0.04] aspect-[3/4]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={model.headshot_url} alt={model.name} className="h-full w-full object-cover" />
-          </div>
-
-          <h2 className="mt-5 text-[24px] font-semibold text-carbon tracking-[-0.03em] leading-tight">
-            {model.name}
-          </h2>
-
-          {pills.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {pills.map((p, i) => (
-                <span
-                  key={`${p}-${i}`}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-carbon/[0.04] text-[11px] text-carbon/70 capitalize"
-                >
-                  {p}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {model.description && (
-            <p className="mt-5 text-[13px] text-carbon/65 leading-[1.7]">
-              {model.description}
+        {/* Sticky header — title + filter + close */}
+        <div className="sticky top-0 z-10 bg-shade/95 backdrop-blur rounded-[20px] mb-4 px-5 py-4 flex items-center justify-between gap-4 flex-wrap shadow-sm">
+          <div>
+            <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35">
+              Casting Aimily
+            </span>
+            <p className="text-[18px] font-semibold text-carbon tracking-[-0.02em] leading-tight">
+              {filtered.length}
+              <span className="text-carbon/40"> / {models.length}</span>
             </p>
-          )}
-
-          {isSelected && (
-            <div className="mt-5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-carbon/[0.04] text-[11px] font-medium text-carbon/60">
-              <Check className="h-3 w-3" strokeWidth={2.5} />
-              {t.castingSelected}
-            </div>
-          )}
+          </div>
+          <div className="flex items-center gap-3 ml-auto">
+            <SegmentedPill<GenderFilter>
+              options={[
+                { id: 'all', label: 'Todos' },
+                { id: 'female', label: 'Mujer' },
+                { id: 'male', label: 'Hombre' },
+              ]}
+              value={filter}
+              onChange={updateFilter}
+              size="sm"
+            />
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t.castingCancel}
+              className="h-10 w-10 rounded-full bg-carbon/[0.06] hover:bg-carbon/[0.1] text-carbon/55 flex items-center justify-center transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Footer CTAs — sticky so they're always reachable on long descriptions */}
-        <div className="sticky bottom-0 bg-white border-t border-carbon/[0.06] px-6 py-4 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-full text-[12px] font-medium border border-carbon/[0.12] text-carbon/60 hover:border-carbon/30 transition-colors"
-          >
-            {t.castingCancel}
-          </button>
-          <button
-            type="button"
-            onClick={onUse}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-carbon text-white text-[13px] font-semibold tracking-[-0.01em] hover:bg-carbon/90 transition-colors"
-          >
-            {t.castingUseModel}
-            <ArrowRight className="h-4 w-4" />
-          </button>
+        {/* Grid — click tile = instant select + close. The thumbnail overlay
+            shows enough info (name + complexion · hair) for fast decisions. */}
+        <div className="bg-white rounded-[20px] p-4 md:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {filtered.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => onSelect(m.id)}
+                className={`group relative aspect-[3/4] rounded-[14px] overflow-hidden transition-all duration-200 hover:scale-[1.03] hover:z-10 hover:shadow-[0_12px_32px_rgba(0,0,0,0.15)] ${
+                  selectedId === m.id
+                    ? 'ring-2 ring-carbon ring-offset-2 ring-offset-white'
+                    : 'opacity-90 hover:opacity-100'
+                }`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={m.headshot_url} alt={m.name} className="h-full w-full object-cover" />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent pt-8 pb-2 px-3 text-left">
+                  <p className="text-white text-[12px] font-semibold tracking-[-0.01em] truncate">
+                    {m.name}
+                  </p>
+                  {(m.complexion || m.hair_style) && (
+                    <p className="text-white/70 text-[9px] uppercase tracking-[0.08em] truncate mt-0.5">
+                      {[m.complexion, m.hair_style].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                </div>
+                {selectedId === m.id && (
+                  <div className="absolute top-2 right-2 h-7 w-7 rounded-full bg-carbon text-white flex items-center justify-center">
+                    <Check className="h-4 w-4" strokeWidth={2.5} />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
-      </aside>
+      </div>
     </div>
   );
 }
