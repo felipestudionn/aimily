@@ -147,11 +147,11 @@ export function PoweredBy() {
                 </p>
               </div>
 
-              {/* CATEGORY 5 — Photoshoot */}
+              {/* CATEGORY 5 — Photoshoot (realistic floor for a professional editorial session) */}
               <div className="border-t border-carbon/[0.08] pt-3 mb-4 flex-1">
                 <div className="flex items-baseline justify-between mb-1.5">
                   <span className="text-[13.5px] text-carbon/85 font-medium">{pb.category5}</span>
-                  <span className="text-carbon font-mono tabular-nums text-[14px]">~€500</span>
+                  <span className="text-carbon font-mono tabular-nums text-[14px]">~€2.000</span>
                 </div>
                 <p className="text-[11.5px] italic text-carbon/45 leading-[1.4]">
                   {pb.photoshootCaveat}
@@ -170,7 +170,7 @@ export function PoweredBy() {
                 <span className="text-[13px] text-carbon/55 uppercase tracking-[0.15em] font-semibold">{pb.totalLabel}</span>
                 <span className="flex items-baseline tabular-nums">
                   <span className="text-[20px] font-light text-carbon/55 mr-1.5">€</span>
-                  <span className="text-[40px] font-light tracking-[-0.03em] text-carbon leading-none">1.257</span>
+                  <span className="text-[40px] font-light tracking-[-0.03em] text-carbon leading-none">2.757</span>
                   <span className="text-[13px] text-carbon/55 ml-1">/mes</span>
                 </span>
               </div>
