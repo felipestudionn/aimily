@@ -28,7 +28,37 @@
 
 export type VideoTier = 'pro' | 'std';
 export type VideoDuration = '5' | '10' | '15';
+
+/* ── Legacy motion presets (kept for backwards compat in old assets) ── */
 export type VideoMotion = 'subtle' | 'walk' | 'pan' | 'zoom' | 'turn' | 'dolly';
+
+/* ── Canonical 10 fashion video styles ─────────────────────────────────
+ * Replaces the previous 6 generic motion presets. Each style maps to a
+ * specific channel + brand archetype + intent + pace combination that
+ * fashion industry actually uses. Names stay English (brand vocabulary).
+ *
+ *   PRESERVE MODE — subject stays in pose, only micro-motion. The input
+ *                   image IS the result, just with breath, gaze, light.
+ *                   Use when you want the photo to come subtly alive.
+ *
+ *   ANIMATED MODE — subject can change position (walk, turn) but face,
+ *                   garment, scene type all stay identical. Use when
+ *                   you want a real motion piece.
+ *
+ * Either way, the input image is the absolute visual baseline. The
+ * STYLE_PREAMBLE clamps identity, garment, scene, and lighting across
+ * every frame. */
+export type VideoStyle =
+  | 'editorial-stillness'   // preserve · painterly tableau alive
+  | 'direct-address'        // preserve · eye contact + slow turn
+  | 'wind-light'            // preserve · environmental motion
+  | 'avant-garde'           // preserve · sculptural tension
+  | 'product-macro'         // preserve · craft detail focus
+  | 'campaign-hero'         // animated · cinematic narrative beat
+  | 'runway-reveal'         // animated · rotation showcase
+  | 'playful-bounce'        // animated · joy/social energy
+  | 'street-kinetic'        // animated · urban documentary
+  | 'slow-reveal';          // animated · luxury patience build-up
 
 /* Two prompt families — picked per provider based on its moderation policy.
  *
@@ -67,10 +97,100 @@ export const MOTION_PROMPTS_RICH: Record<VideoMotion, string> = {
   dolly: 'The subject takes a slow deliberate step forward toward the camera, gaze steady, a soft cinematic dolly-in deepens the intimacy. The subject is present, alive, looking back at the viewer',
 };
 
+/* ════════════════════════════════════════════════════════════════════════
+   IMAGE-PRESERVATION PREAMBLES — clamped before every style motion.
+
+   The input image is the absolute visual baseline. The AI must not drift
+   the face, the garment, the scene type, the lighting, or the color
+   palette across the clip. The style-specific motion is ADDITIVE on top
+   of this baseline.
+
+   Two preambles for the two modes:
+     - PRESERVE: stricter — subject stays in pose, only micro-motion
+     - ANIMATED: less strict on pose, but identity / garment / scene
+                 stay identical
+   ════════════════════════════════════════════════════════════════════════ */
+
+const PRESERVE_PREAMBLE =
+  'ABSOLUTE FRAME PRESERVATION: every frame of this video must match the input image exactly in composition, pose, framing, lighting, color, and visual elements. The subject does NOT change position. The camera does NOT move significantly. The garment is identical pixel by pixel — same colorway, same silhouette, same materials, same construction. The face and hair are identical to the input. Only micro-motion is added on top: breath, gaze direction, fabric drift in soft air, hair drift, light shifts. This is a still image brought subtly to life, not a new motion piece. Every frame should look like a slight time-shift of the input photo, never a different photo.';
+
+const ANIMATED_PREAMBLE =
+  'ABSOLUTE IDENTITY + GARMENT + STYLE PRESERVATION: the input image is the first frame and the visual baseline for every frame after. Preserve identically across the entire clip: the subject\'s face / facial features / hair color and style / skin tone (this is the identity, non-negotiable). The exact garment — same colorway, same silhouette, same materials, same construction. The lighting quality and direction. The color palette and grade. The location type and atmosphere. Only the motion described below is allowed to differ from the input. Every frame must still read as the same person, wearing the same outfit, in the same world.';
+
+/* ════════════════════════════════════════════════════════════════════════
+   The 10 canonical fashion video styles. Each entry maps to:
+     mode    — preserve vs animated (drives which preamble is used)
+     motion  — the specific motion vocabulary for THIS style
+     styleRef — brand references that anchor the look
+   The final prompt is: preamble + motion + styleRef + wrapper.
+   ════════════════════════════════════════════════════════════════════════ */
+
+interface VideoStyleDefinition {
+  mode: 'preserve' | 'animated';
+  motion: string;
+  styleRef: string;
+}
+
+export const VIDEO_STYLE_PROMPTS: Record<VideoStyle, VideoStyleDefinition> = {
+  'editorial-stillness': {
+    mode: 'preserve',
+    motion: 'The subject stays exactly in pose, fully still. The only motion is: chest rises softly with a slow breath, fabric drapes shift in soft air, hair catches the light with micro-drift, light glows gently. Painterly tableau, every frame composed like a still photograph in subtle motion.',
+    styleRef: 'Bottega Veneta campaign film, Khaite editorial film, Lemaire film, The Row film',
+  },
+  'direct-address': {
+    mode: 'preserve',
+    motion: 'The subject holds the pose from the input image exactly. The eyes meet the camera with quiet, sustained eye contact. A single slow breath visible. Optionally, a slight head turn within the same plane — no body change. The gaze carries the entire clip.',
+    styleRef: 'Calvin Klein campaign portrait, Acne Studios portrait film, Carhartt portrait, Lemaire portrait',
+  },
+  'wind-light': {
+    mode: 'preserve',
+    motion: 'The subject is still in the input pose, fully composed. Around the subject: wind moves through fabric and hair in gentle waves, sunlight shifts softly across the scene, dust particles or atmosphere catch in the light. The subject\'s gaze drifts softly. Loop-friendly, dream-like.',
+    styleRef: 'Self-Portrait campaign film, Zimmermann editorial film, Cecilie Bahnsen film',
+  },
+  'avant-garde': {
+    mode: 'preserve',
+    motion: 'The subject holds the input pose with monumental, sculptural presence — almost statuesque. Only the slightest breath visible. Slow, unsettling pacing. Deep shadows preserved from the input. The composition stays brutalist and intentional, identical to the input image throughout.',
+    styleRef: 'Rick Owens runway film, Comme des Garçons campaign, Yohji Yamamoto film',
+  },
+  'product-macro': {
+    mode: 'preserve',
+    motion: 'The subject is still and serves as context. Focus on the product / garment surface — fabric weave, stitching, hardware, texture all visible and intimate. Fabric moves subtly in soft air, light plays across the material. The composition stays anchored to the input image.',
+    styleRef: 'Hermès craft film, Loewe leather film, ARC\'TERYX product story, The Row craft film',
+  },
+  'campaign-hero': {
+    mode: 'animated',
+    motion: 'Cinematic fashion campaign film. The first frame matches the input image. The subject becomes alive — a slow cinematic dolly-in toward them, the head lifts to meet the camera, eyes connect with the viewer, hair and fabric move with the body. The garment and identity stay pixel-perfect.',
+    styleRef: 'Hereu campaign film, Loewe campaign, Jacquemus campaign, Lemaire campaign',
+  },
+  'runway-reveal': {
+    mode: 'animated',
+    motion: 'Editorial runway-style rotation. The first frame matches the input image. A smooth orbital camera arc reveals the outfit from front to side and back, while the subject holds a confident pose throughout the rotation. Subtle micro-movements of fabric and hair as the camera moves.',
+    styleRef: 'Net-a-Porter runway b-roll, fashion show entry, editorial lookbook spin',
+  },
+  'playful-bounce': {
+    mode: 'animated',
+    motion: 'Joyful fashion campaign film, social-native energy. First frame matches the input. The subject moves with playful confidence — a sudden smile, a quick head turn, hair flips, gaze sparkles at the camera. Light leaks catch the lens, film grain, slight handheld bounce. The garment and identity stay identical.',
+    styleRef: 'Jacquemus campaign, Loewe campaign, Diesel film, JW Anderson campaign',
+  },
+  'street-kinetic': {
+    mode: 'animated',
+    motion: 'Urban street-style fashion film, documentary aesthetic. First frame matches the input. Handheld camera follows the subject moving through the scene with confident street pace, slight motion blur at the frame edges. Occasionally glances at the camera. The garment stays pixel-perfect.',
+    styleRef: 'Off-White lookbook film, Carhartt WIP campaign, Heaven by Marc Jacobs',
+  },
+  'slow-reveal': {
+    mode: 'animated',
+    motion: 'Luxury fashion film with patient reveal. First frame matches the input image as the wide composition. A slow cinematic crane-down OR a gradual dolly-back from a macro detail builds tension toward the final wide shot. Every transition deliberate. The subject is present, alive with quiet breath. Garment and scene stay identical.',
+    styleRef: 'Cartier high-jewelry campaign film, Hermès short film, The Row campaign film',
+  },
+};
+
 export interface VideoGenInput {
   imageUrl: string;
   productName: string;
-  motion: VideoMotion;
+  /* Either a canonical style (preferred) OR a legacy motion preset.
+   * If style is set, motion is ignored. */
+  style?: VideoStyle;
+  motion?: VideoMotion;
   duration: VideoDuration;
   tier: VideoTier;
   userPrompt?: string;
@@ -95,16 +215,26 @@ export interface VideoProvider {
 }
 
 /* ── Shared prompt builder ──────────────────────────────────────────────── */
-type PromptStyle = 'safe' | 'rich';
+type PromptVariant = 'safe' | 'rich';
 
-function buildVideoPrompt(input: VideoGenInput, style: PromptStyle = 'rich'): string {
-  const presets = style === 'safe' ? MOTION_PROMPTS_SAFE : MOTION_PROMPTS_RICH;
-  const motionDesc = presets[input.motion] || presets.subtle;
+/* Map legacy motion presets to a default style if no style is provided.
+ * Keeps existing callsites working during the transition window. */
+const LEGACY_MOTION_TO_STYLE: Record<VideoMotion, VideoStyle> = {
+  subtle: 'editorial-stillness',
+  walk: 'street-kinetic',
+  pan: 'editorial-stillness',
+  zoom: 'product-macro',
+  turn: 'runway-reveal',
+  dolly: 'campaign-hero',
+};
 
-  if (style === 'safe') {
-    /* SAFE / Sora: camera-first, no human-action verbs. Anchored as
-     * legitimate editorial content to lower the chance of moderation
-     * flagging the (AI-generated) face as a deepfake. */
+function buildVideoPrompt(input: VideoGenInput, variant: PromptVariant = 'rich'): string {
+  /* Sora's classifier is too aggressive for the rich subject-action
+   * vocabulary — keep the legacy SAFE prompt path for it. */
+  if (variant === 'safe') {
+    const presets = MOTION_PROMPTS_SAFE;
+    const motionKey: VideoMotion = input.motion || 'subtle';
+    const motionDesc = presets[motionKey] || presets.subtle;
     const parts = [
       `Fashion editorial b-roll, lookbook-style motion piece. Garment as the subject: ${input.productName}.`,
       `${motionDesc}.`,
@@ -116,20 +246,33 @@ function buildVideoPrompt(input: VideoGenInput, style: PromptStyle = 'rich'): st
     return parts.join(' ');
   }
 
-  /* RICH / Happy Horse, Kling: subject-first, alive, looking at camera.
-   * Vocabulary a fashion film director would actually use. The subject
-   * is the protagonist; the camera serves the subject. Bodegón-style
-   * cinematic pacing — every frame composed, painterly stillness with
-   * breath underneath. */
+  /* RICH path — Happy Horse, Kling. Uses the new 10-style canonical
+   * system with image-preservation preambles. The input image is the
+   * absolute visual baseline; style-specific motion is additive. */
+
+  // Determine the style — explicit param, or legacy motion fallback.
+  const resolvedStyle: VideoStyle =
+    input.style || LEGACY_MOTION_TO_STYLE[input.motion || 'subtle'] || 'editorial-stillness';
+  const styleDef = VIDEO_STYLE_PROMPTS[resolvedStyle];
+  const preamble = styleDef.mode === 'preserve' ? PRESERVE_PREAMBLE : ANIMATED_PREAMBLE;
+
   const parts = [
-    `Cinematic fashion editorial portrait video, painterly composition, slow contemplative pace. Featured: ${input.productName}.`,
-    `${motionDesc}.`,
+    /* 1. Preservation preamble — clamps identity/garment/scene across the
+     *    whole clip. This is the LAW the rest of the prompt operates under. */
+    preamble,
+    /* 2. Fashion editorial framing. */
+    `This is a cinematic fashion editorial video featuring: ${input.productName}.`,
+    /* 3. Style-specific motion description (the only thing that varies between
+     *    the 10 styles). */
+    styleDef.motion,
+    /* 4. Style references — anchor the visual / pacing vocabulary to specific
+     *    fashion films the AI will recognise. */
+    `Style reference: ${styleDef.styleRef}.`,
+    /* 5. Universal craft directives. */
     'Director-of-photography lighting: cinematic, soft directional key light, shallow depth of field, natural fabric and skin texture, color graded to film stock.',
-    'Style reference: Hereu campaign film, Jacquemus campaign, Khaite editorial film, Rohe fashion film, Bottega Veneta campaign — every frame should feel like a still photograph in subtle, alive motion.',
-    'The subject is present and alive — gaze, breath, posture all read as a real moment, not a frozen mannequin.',
     'No text, no watermark, no brand logos added.',
   ];
-  if (input.userPrompt?.trim()) parts.push(`Art direction: ${input.userPrompt.trim()}.`);
+  if (input.userPrompt?.trim()) parts.push(`Additional art direction: ${input.userPrompt.trim()}.`);
   return parts.join(' ');
 }
 
@@ -177,8 +320,14 @@ export const klingProvider: VideoProvider = {
     const taskId: string | undefined = data?.task_id;
     if (!taskId) throw new Error('Kling create returned no task_id');
 
-    for (let i = 0; i < 40; i++) {
-      await new Promise((r) => setTimeout(r, 6000));
+    /* Kling 2.1 Pro takes 2-5 min typically, up to 7 min at peak. We
+     * cap at ~4.6 min to stay under Vercel's 300s function maxDuration.
+     * If we still timeout at peak Magnific load, we lose €1 to Magnific
+     * but the Studio user's pack output is still refunded by the route's
+     * catch-all refund path. That's a cost-of-doing-business issue with
+     * Kling at peak; longer term the fix is webhook-based async retrieval. */
+    for (let i = 0; i < 56; i++) {
+      await new Promise((r) => setTimeout(r, 5000)); // 5s × 56 = 280s = 4m40s
       const statusRes = await fetch(`${endpoint}/${taskId}`, {
         headers: { 'x-freepik-api-key': apiKey },
       });
@@ -199,7 +348,7 @@ export const klingProvider: VideoProvider = {
       }
       if (status === 'FAILED') throw new Error('Kling FAILED');
     }
-    throw new Error('Kling polling timed out after 4 minutes');
+    throw new Error(`Kling polling timed out after 4m40s (task_id: ${taskId})`);
   },
 };
 

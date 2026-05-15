@@ -14,6 +14,7 @@ import {
 import {
   getActiveVideoProvider,
   type VideoMotion,
+  type VideoStyle,
   type VideoDuration,
   type VideoTier,
 } from '@/lib/studio/video-providers';
@@ -50,6 +51,9 @@ export const maxDuration = 300;
 
 interface VideoBody {
   source_asset_id: string;
+  /* Canonical style (preferred). When set, motion is ignored. */
+  video_style?: VideoStyle;
+  /* Legacy motion preset — kept for backwards compat. */
   motion?: VideoMotion;
   duration?: VideoDuration;
   tier?: VideoTier;
@@ -57,6 +61,10 @@ interface VideoBody {
 }
 
 const VALID_MOTIONS: VideoMotion[] = ['subtle', 'walk', 'pan', 'zoom', 'turn', 'dolly'];
+const VALID_STYLES: VideoStyle[] = [
+  'editorial-stillness', 'direct-address', 'wind-light', 'avant-garde', 'product-macro',
+  'campaign-hero', 'runway-reveal', 'playful-bounce', 'street-kinetic', 'slow-reveal',
+];
 
 export async function POST(req: NextRequest) {
   let userId: string | undefined;
@@ -81,7 +89,12 @@ export async function POST(req: NextRequest) {
     const motion: VideoMotion = VALID_MOTIONS.includes(body.motion as VideoMotion)
       ? (body.motion as VideoMotion)
       : 'subtle';
-    const duration: VideoDuration = body.duration === '10' ? '10' : '5';
+    const videoStyle: VideoStyle | undefined = VALID_STYLES.includes(body.video_style as VideoStyle)
+      ? (body.video_style as VideoStyle)
+      : undefined;
+    const duration: VideoDuration =
+      body.duration === '15' ? '15' :
+      body.duration === '10' ? '10' : '5';
     const tier: VideoTier = body.tier === 'std' ? 'std' : 'pro';
 
     // ── 3. Load source asset + verify ownership ──────────────────────────
@@ -144,6 +157,7 @@ export async function POST(req: NextRequest) {
       const result = await provider.generate({
         imageUrl: sourceAsset.url,
         productName,
+        style: videoStyle,
         motion,
         duration,
         tier,
