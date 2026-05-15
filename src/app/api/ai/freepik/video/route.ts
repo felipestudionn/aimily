@@ -35,6 +35,11 @@ const KLING_PRO_ENDPOINT =
   'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1-pro';
 const KLING_STD_ENDPOINT =
   'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1-std';
+// POST goes to the tiered endpoint; GET status lives on the unified path
+// (no -pro/-std suffix). Freepik API quirk — the tiered URL returns 404
+// for valid task_ids on GET. Validated 2026-05-16.
+const KLING_STATUS_ENDPOINT =
+  'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1';
 
 type VideoTier = 'pro' | 'std';
 type VideoDuration = '5' | '10';
@@ -121,7 +126,7 @@ async function createAndPollKling(params: {
   // Video generation takes longer than images. Poll up to ~4 minutes.
   for (let i = 0; i < 40; i++) {
     await new Promise((r) => setTimeout(r, 6000));
-    const statusRes = await fetch(`${endpoint}/${taskId}`, {
+    const statusRes = await fetch(`${KLING_STATUS_ENDPOINT}/${taskId}`, {
       headers: { 'x-freepik-api-key': FREEPIK_API_KEY! },
     });
     if (!statusRes.ok) continue;

@@ -321,6 +321,12 @@ function buildVideoPrompt(input: VideoGenInput, variant: PromptVariant = 'rich')
    ═══════════════════════════════════════════════════════════════════════════ */
 const KLING_PRO_ENDPOINT = 'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1-pro';
 const KLING_STD_ENDPOINT = 'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1-std';
+/* Freepik API quirk: POST creates under tier-specific paths (kling-v2-1-pro /
+ * kling-v2-1-std), but GET for task status lives on the unified path without
+ * the suffix. Hitting the tiered URL with a task_id returns 404 even for
+ * valid tasks. Discovered 2026-05-16 after Studio tasks completed upstream
+ * but our checkStatus reported pending forever. */
+const KLING_STATUS_ENDPOINT = 'https://api.freepik.com/v1/ai/image-to-video/kling-v2-1';
 
 function klingEndpoint(tier: VideoTier): string {
   return tier === 'std' ? KLING_STD_ENDPOINT : KLING_PRO_ENDPOINT;
@@ -362,19 +368,17 @@ export const klingProvider: VideoProvider = {
     const apiKey = process.env.FREEPIK_API_KEY;
     if (!apiKey) throw new Error('FREEPIK_API_KEY not configured');
 
-    /* Kling endpoint is tier-specific for create but task status is
-     * available on either — try Pro first, fall back to Std. Most
-     * Studio gens are Pro so this rarely costs the second roundtrip. */
-    const tryUrl = async (endpoint: string) => {
-      const res = await fetch(`${endpoint}/${taskId}`, {
-        headers: { 'x-freepik-api-key': apiKey },
-      });
-      return res.ok ? res.json() : null;
-    };
+    const res = await fetch(`${KLING_STATUS_ENDPOINT}/${taskId}`, {
+      headers: { 'x-freepik-api-key': apiKey },
+    });
+    if (!res.ok) {
+      // 4xx/5xx — log enough to debug but don't fail the asset yet.
+      const body = await res.text().catch(() => '');
+      console.warn('[Kling] status check non-ok', res.status, body.slice(0, 200));
+      return { status: 'pending' };
+    }
 
-    const data = (await tryUrl(KLING_PRO_ENDPOINT)) ?? (await tryUrl(KLING_STD_ENDPOINT));
-    if (!data) return { status: 'pending' }; // 404/other — treat as still-in-progress
-
+    const data = await res.json();
     const sd = data.data || {};
     const status = sd.status as string | undefined;
     if (status === 'COMPLETED') {
