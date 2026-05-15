@@ -91,6 +91,11 @@ interface StudioGenerateBody {
   orientation?: Orientation;
   framing?: Framing;
   light?: LightDirection;
+  /* CIS-equivalent free-text fields filled by the user via the form.
+   * Each is optional; combined into a single BRAND CONTEXT line. */
+  brand_mood?: string;
+  brand_palette?: string;
+  target_consumer?: string;
 }
 
 /* OpenAI gpt-image-1.5 size map. The model accepts these three aspect-ratio
@@ -293,6 +298,9 @@ export async function POST(req: NextRequest) {
         scene,
         style_reference_url,
         user_prompt,
+        brand_mood: body.brand_mood,
+        brand_palette: body.brand_palette,
+        target_consumer: body.target_consumer,
       });
 
       formData.append('prompt', gptPrompt);
@@ -400,6 +408,9 @@ export async function POST(req: NextRequest) {
         scene,
         style_reference_url,
         user_prompt,
+        brand_mood: body.brand_mood,
+        brand_palette: body.brand_palette,
+        target_consumer: body.target_consumer,
       });
 
       formData.append('prompt', gptPrompt);
@@ -509,8 +520,23 @@ function buildStudioGptPrompt(p: {
   scene: string | undefined;
   style_reference_url: string | undefined;
   user_prompt: string | undefined;
+  brand_mood?: string;
+  brand_palette?: string;
+  target_consumer?: string;
 }): string {
   const { type, product_name, category, scene, style_reference_url, user_prompt } = p;
+
+  /* User-provided brand context — only injected when at least one field
+   * is non-empty. Single line so the prompt stays terse. Goes BEFORE
+   * user_prompt so the free-text "additional direction" can still
+   * override on conflicts. */
+  const ctxBits: string[] = [];
+  if (p.brand_mood?.trim()) ctxBits.push(`mood — ${p.brand_mood.trim()}`);
+  if (p.brand_palette?.trim()) ctxBits.push(`palette references — ${p.brand_palette.trim()}`);
+  if (p.target_consumer?.trim()) ctxBits.push(`target consumer — ${p.target_consumer.trim()}`);
+  const brandContextLine = ctxBits.length
+    ? `BRAND CONTEXT (informs scene, mood, environment — NEVER the product itself): ${ctxBits.join('; ')}.`
+    : '';
 
   if (type === 'editorial') {
     // VERBATIM from editorial.ts:613-626
@@ -527,6 +553,7 @@ function buildStudioGptPrompt(p: {
       scene ? `Scene: ${scene}.` : '',
       `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
       `Style: magazine editorial quality, natural lighting, realistic skin texture.`,
+      brandContextLine,
       user_prompt ? `Additional direction: ${user_prompt}` : '',
     ].filter(Boolean).join(' ');
   }
@@ -546,6 +573,7 @@ function buildStudioGptPrompt(p: {
         : '',
       `ANATOMY: exactly 2 arms, 2 legs, 2 feet, 10 fingers. No extra limbs.`,
       `Style: editorial fashion quality, realistic skin texture.`,
+      brandContextLine,
       user_prompt ? `Additional direction: ${user_prompt}` : '',
     ].filter(Boolean).join(' ');
   }
@@ -560,6 +588,7 @@ function buildStudioGptPrompt(p: {
     scene ? `Scene: ${scene}.` : '',
     `ABSOLUTE NO-HUMAN RULE: no model, no face, no hands, no feet, no limbs. Zero humans.`,
     `Style: magazine editorial quality, natural lighting, realistic textures.`,
+    brandContextLine,
     user_prompt ? `Additional direction: ${user_prompt}` : '',
   ].filter(Boolean).join(' ');
 }

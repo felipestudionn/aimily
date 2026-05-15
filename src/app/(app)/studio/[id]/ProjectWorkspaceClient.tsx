@@ -73,6 +73,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   modelBlockEmpty: string;
   modelBlockSub: string;
   modelBlockChange: string;
+  ctxMoodLabel: string;
+  ctxMoodPh: string;
+  ctxPaletteLabel: string;
+  ctxPalettePh: string;
+  ctxConsumerLabel: string;
+  ctxConsumerPh: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -122,6 +128,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Pick a model',
     modelBlockSub: 'Click to browse the casting',
     modelBlockChange: 'Change',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editorial · minimal · raw…',
+    ctxPaletteLabel: 'Palette',
+    ctxPalettePh: 'cream · navy · burnt orange…',
+    ctxConsumerLabel: 'Consumer',
+    ctxConsumerPh: 'urban professional 25-35…',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -171,6 +183,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Elegir modelo',
     modelBlockSub: 'Haz click para ver el casting',
     modelBlockChange: 'Cambiar',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editorial · minimal · raw…',
+    ctxPaletteLabel: 'Paleta',
+    ctxPalettePh: 'crudo · marino · naranja quemado…',
+    ctxConsumerLabel: 'Cliente',
+    ctxConsumerPh: 'profesional urbano 25-35…',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -220,6 +238,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Choisir un mannequin',
     modelBlockSub: 'Clique pour parcourir le casting',
     modelBlockChange: 'Changer',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'éditorial · minimal · raw…',
+    ctxPaletteLabel: 'Palette',
+    ctxPalettePh: 'crème · marine · orange brûlé…',
+    ctxConsumerLabel: 'Client',
+    ctxConsumerPh: 'professionnel urbain 25-35…',
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -269,6 +293,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Scegli un modello',
     modelBlockSub: 'Clicca per sfogliare il casting',
     modelBlockChange: 'Cambia',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editoriale · minimal · raw…',
+    ctxPaletteLabel: 'Palette',
+    ctxPalettePh: 'crema · blu navy · arancio bruciato…',
+    ctxConsumerLabel: 'Cliente',
+    ctxConsumerPh: 'professionista urbano 25-35…',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -318,6 +348,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Modell auswählen',
     modelBlockSub: 'Klicke, um das Casting zu durchsuchen',
     modelBlockChange: 'Ändern',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editorial · minimal · raw…',
+    ctxPaletteLabel: 'Palette',
+    ctxPalettePh: 'creme · marine · gebranntes Orange…',
+    ctxConsumerLabel: 'Kunde',
+    ctxConsumerPh: 'urbaner Professional 25-35…',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -367,6 +403,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Escolher modelo',
     modelBlockSub: 'Clica para ver o casting',
     modelBlockChange: 'Mudar',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editorial · minimal · raw…',
+    ctxPaletteLabel: 'Paleta',
+    ctxPalettePh: 'creme · marinho · laranja queimado…',
+    ctxConsumerLabel: 'Cliente',
+    ctxConsumerPh: 'profissional urbano 25-35…',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -416,6 +458,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Kies een model',
     modelBlockSub: 'Klik om de casting te bekijken',
     modelBlockChange: 'Wijzigen',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editorial · minimal · raw…',
+    ctxPaletteLabel: 'Palet',
+    ctxPalettePh: 'crème · marineblauw · gebrand oranje…',
+    ctxConsumerLabel: 'Klant',
+    ctxConsumerPh: 'urban professional 25-35…',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -465,6 +513,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Välj en modell',
     modelBlockSub: 'Klicka för att bläddra i castingen',
     modelBlockChange: 'Ändra',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editorial · minimal · raw…',
+    ctxPaletteLabel: 'Palett',
+    ctxPalettePh: 'gräddvit · marin · bränd orange…',
+    ctxConsumerLabel: 'Kund',
+    ctxConsumerPh: 'urban professional 25-35…',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -514,6 +568,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     modelBlockEmpty: 'Velg en modell',
     modelBlockSub: 'Klikk for å bla i castingen',
     modelBlockChange: 'Endre',
+    ctxMoodLabel: 'Mood',
+    ctxMoodPh: 'editorial · minimal · raw…',
+    ctxPaletteLabel: 'Palett',
+    ctxPalettePh: 'krem · marine · brent oransje…',
+    ctxConsumerLabel: 'Kunde',
+    ctxConsumerPh: 'urban profesjonell 25-35…',
   },
 };
 
@@ -736,6 +796,11 @@ interface GeneratePayload {
   orientation?: Orientation;
   framing?: Framing;
   light?: LightDirection;
+  /* CIS-equivalent free-text fields the user fills in the form. Each is
+   * optional; the backend only injects them into the prompt when truthy. */
+  brand_mood?: string;
+  brand_palette?: string;
+  target_consumer?: string;
 }
 
 interface Asset {
@@ -832,6 +897,9 @@ export default function ProjectWorkspaceClient(props: Props) {
   const [orientation, setOrientation] = useState<Orientation>('vertical');
   const [framing, setFraming] = useState<Framing>('medium');
   const [light, setLight] = useState<LightDirection>('soft');
+  const [brandMood, setBrandMood] = useState('');
+  const [brandPalette, setBrandPalette] = useState('');
+  const [targetConsumer, setTargetConsumer] = useState('');
   const [castingPickerOpen, setCastingPickerOpen] = useState(false);
   // Derived so the lightbox re-renders when the underlying asset changes
   // (e.g. after a Style Memory toggle updates recentAssets).
@@ -894,6 +962,9 @@ export default function ProjectWorkspaceClient(props: Props) {
       orientation,
       framing,
       light,
+      brand_mood: brandMood.trim() || undefined,
+      brand_palette: brandPalette.trim() || undefined,
+      target_consumer: targetConsumer.trim() || undefined,
     };
   };
 
@@ -1395,6 +1466,49 @@ export default function ProjectWorkspaceClient(props: Props) {
                       onChange={setLight}
                       size="sm"
                     />
+                  </div>
+
+                  {/* CIS-equivalent free-text inputs — optional. When the
+                      user fills any, the backend injects them as a single
+                      BRAND CONTEXT line in the prompt. When empty, nothing
+                      is added (parity with editorial GPT path stays clean). */}
+                  <div className="pt-3 mt-3 border-t border-carbon/[0.05] grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
+                        {t.ctxMoodLabel}
+                      </label>
+                      <input
+                        type="text"
+                        value={brandMood}
+                        onChange={(e) => setBrandMood(e.target.value)}
+                        placeholder={t.ctxMoodPh}
+                        className="w-full px-3 py-2 text-[13px] text-carbon bg-white rounded-[10px] border border-carbon/[0.08] focus:border-carbon/25 focus:outline-none transition-colors placeholder:text-carbon/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
+                        {t.ctxPaletteLabel}
+                      </label>
+                      <input
+                        type="text"
+                        value={brandPalette}
+                        onChange={(e) => setBrandPalette(e.target.value)}
+                        placeholder={t.ctxPalettePh}
+                        className="w-full px-3 py-2 text-[13px] text-carbon bg-white rounded-[10px] border border-carbon/[0.08] focus:border-carbon/25 focus:outline-none transition-colors placeholder:text-carbon/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-1.5">
+                        {t.ctxConsumerLabel}
+                      </label>
+                      <input
+                        type="text"
+                        value={targetConsumer}
+                        onChange={(e) => setTargetConsumer(e.target.value)}
+                        placeholder={t.ctxConsumerPh}
+                        className="w-full px-3 py-2 text-[13px] text-carbon bg-white rounded-[10px] border border-carbon/[0.08] focus:border-carbon/25 focus:outline-none transition-colors placeholder:text-carbon/30"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
