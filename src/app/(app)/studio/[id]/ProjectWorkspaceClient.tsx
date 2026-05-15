@@ -16,6 +16,7 @@ import {
   Check,
   AlertCircle,
   RefreshCw,
+  Download,
 } from 'lucide-react';
 import { SegmentedPill } from '@/components/ui/segmented-pill';
 import { useLanguage, type Language } from '@/contexts/LanguageContext';
@@ -47,6 +48,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
   valNoProduct: string;
   valNoModel: string;
   valNoOutputs: string;
+  lightboxDownloadMaster: string;
+  lightboxDownloadFormat: string;
+  lightboxClose: string;
+  lightboxLoading: string;
+  lightboxFormatsProcessing: string;
+  lightboxOpenAria: string;
 }> = {
   en: {
     stagePreparing: 'Preparing references',
@@ -72,6 +79,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Upload a product photo first.',
     valNoModel: 'Pick a model from the casting bank.',
     valNoOutputs: "You're out of outputs. Buy another pack.",
+    lightboxDownloadMaster: 'Download master',
+    lightboxDownloadFormat: 'Download',
+    lightboxClose: 'Close',
+    lightboxLoading: 'Loading formats…',
+    lightboxFormatsProcessing: 'Formats are still processing — try again in a moment.',
+    lightboxOpenAria: 'Open output',
   },
   es: {
     stagePreparing: 'Preparando referencias',
@@ -97,6 +110,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Sube primero una foto del producto.',
     valNoModel: 'Selecciona un modelo del casting.',
     valNoOutputs: 'No tienes outputs disponibles. Compra otro pack.',
+    lightboxDownloadMaster: 'Descargar master',
+    lightboxDownloadFormat: 'Descargar',
+    lightboxClose: 'Cerrar',
+    lightboxLoading: 'Cargando formatos…',
+    lightboxFormatsProcessing: 'Los formatos siguen procesándose — vuelve en un momento.',
+    lightboxOpenAria: 'Abrir output',
   },
   fr: {
     stagePreparing: 'Préparation des références',
@@ -122,6 +141,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: "Charge d'abord une photo du produit.",
     valNoModel: 'Choisis un mannequin du casting.',
     valNoOutputs: "Tu n'as plus d'outputs. Achète un autre pack.",
+    lightboxDownloadMaster: 'Télécharger le master',
+    lightboxDownloadFormat: 'Télécharger',
+    lightboxClose: 'Fermer',
+    lightboxLoading: 'Chargement des formats…',
+    lightboxFormatsProcessing: "Les formats sont encore en traitement — réessaie dans un instant.",
+    lightboxOpenAria: "Ouvrir l'output",
   },
   it: {
     stagePreparing: 'Preparazione dei riferimenti',
@@ -147,6 +172,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Carica prima una foto del prodotto.',
     valNoModel: 'Scegli un modello dal casting.',
     valNoOutputs: 'Non hai output disponibili. Compra un altro pack.',
+    lightboxDownloadMaster: 'Scarica master',
+    lightboxDownloadFormat: 'Scarica',
+    lightboxClose: 'Chiudi',
+    lightboxLoading: 'Caricamento formati…',
+    lightboxFormatsProcessing: 'I formati sono ancora in elaborazione — riprova tra un momento.',
+    lightboxOpenAria: 'Apri output',
   },
   de: {
     stagePreparing: 'Referenzen werden vorbereitet',
@@ -172,6 +203,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Lade zuerst ein Produktfoto hoch.',
     valNoModel: 'Wähle ein Modell aus dem Casting.',
     valNoOutputs: 'Keine Outputs mehr übrig. Kaufe ein weiteres Pack.',
+    lightboxDownloadMaster: 'Master herunterladen',
+    lightboxDownloadFormat: 'Herunterladen',
+    lightboxClose: 'Schließen',
+    lightboxLoading: 'Formate werden geladen…',
+    lightboxFormatsProcessing: 'Die Formate werden noch verarbeitet — versuche es gleich erneut.',
+    lightboxOpenAria: 'Output öffnen',
   },
   pt: {
     stagePreparing: 'Preparando referências',
@@ -197,6 +234,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Carrega primeiro uma foto do produto.',
     valNoModel: 'Escolhe um modelo do casting.',
     valNoOutputs: 'Não tens outputs disponíveis. Compra outro pack.',
+    lightboxDownloadMaster: 'Descarregar master',
+    lightboxDownloadFormat: 'Descarregar',
+    lightboxClose: 'Fechar',
+    lightboxLoading: 'A carregar formatos…',
+    lightboxFormatsProcessing: 'Os formatos ainda estão a ser processados — tenta de novo num momento.',
+    lightboxOpenAria: 'Abrir output',
   },
   nl: {
     stagePreparing: "Referenties voorbereiden",
@@ -222,6 +265,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Upload eerst een productfoto.',
     valNoModel: 'Kies een model uit de casting.',
     valNoOutputs: 'Je hebt geen outputs meer. Koop een ander pack.',
+    lightboxDownloadMaster: 'Master downloaden',
+    lightboxDownloadFormat: 'Downloaden',
+    lightboxClose: 'Sluiten',
+    lightboxLoading: 'Formaten laden…',
+    lightboxFormatsProcessing: 'Formaten worden nog verwerkt — probeer het zo opnieuw.',
+    lightboxOpenAria: 'Output openen',
   },
   sv: {
     stagePreparing: 'Förbereder referenser',
@@ -247,6 +296,12 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Ladda upp ett produktfoto först.',
     valNoModel: 'Välj en modell från castingen.',
     valNoOutputs: 'Du har inga outputs kvar. Köp ett annat pack.',
+    lightboxDownloadMaster: 'Ladda ner master',
+    lightboxDownloadFormat: 'Ladda ner',
+    lightboxClose: 'Stäng',
+    lightboxLoading: 'Laddar format…',
+    lightboxFormatsProcessing: 'Formaten bearbetas fortfarande — försök igen om ett ögonblick.',
+    lightboxOpenAria: 'Öppna output',
   },
   no: {
     stagePreparing: 'Forbereder referanser',
@@ -272,8 +327,51 @@ const STUDIO_WORKSPACE_I18N: Record<Language, {
     valNoProduct: 'Last opp et produktbilde først.',
     valNoModel: 'Velg en modell fra castingen.',
     valNoOutputs: 'Du har ingen outputs igjen. Kjøp en annen pakke.',
+    lightboxDownloadMaster: 'Last ned master',
+    lightboxDownloadFormat: 'Last ned',
+    lightboxClose: 'Lukk',
+    lightboxLoading: 'Laster formater…',
+    lightboxFormatsProcessing: 'Formatene behandles fortsatt — prøv igjen om et øyeblikk.',
+    lightboxOpenAria: 'Åpne output',
   },
 };
+
+/* ── Format taxonomy ──────────────────────────────────────────────────────
+ * The 12 sharp-derived channel formats, grouped for the lightbox UI.
+ * Labels stay in English everywhere (brand vocabulary — same convention as
+ * "Capsule / Editorial / Full Campaign" tier names). Group headers stay
+ * English too — universal loanwords in every supported locale. */
+interface FormatRow {
+  format_key: string;
+  storage_url: string;
+  width: number;
+  height: number;
+  file_size: number;
+}
+
+const FORMAT_NAMES: Record<string, string> = {
+  'instagram-square': 'Instagram square',
+  'instagram-portrait': 'Instagram portrait',
+  'instagram-story': 'Instagram story',
+  'tiktok-vertical': 'TikTok vertical',
+  'pinterest': 'Pinterest',
+  'facebook-ad': 'Facebook ad',
+  'linkedin': 'LinkedIn',
+  'twitter': 'Twitter / X',
+  'web-hero': 'Web hero',
+  'ecommerce-pdp': 'E-commerce PDP',
+  'print-a4': 'Print A4',
+  'email-banner': 'Email banner',
+};
+
+const FORMAT_GROUPS: Array<{ label: string; formats: string[] }> = [
+  { label: 'Social', formats: ['instagram-square', 'instagram-portrait', 'instagram-story', 'tiktok-vertical', 'pinterest'] },
+  { label: 'Ads', formats: ['facebook-ad', 'linkedin', 'twitter'] },
+  { label: 'Web', formats: ['web-hero'] },
+  { label: 'Ecommerce', formats: ['ecommerce-pdp'] },
+  { label: 'Print', formats: ['print-a4'] },
+  { label: 'Email', formats: ['email-banner'] },
+];
 
 /* ── Failure-mode taxonomy ─────────────────────────────────────────────── */
 type StudioErrorCode =
@@ -394,6 +492,12 @@ export default function ProjectWorkspaceClient(props: Props) {
   const lastPayloadRef = useRef<GeneratePayload | null>(null);
   const [recentAssets, setRecentAssets] = useState<Asset[]>(props.assets);
   const [outputsRemaining, setOutputsRemaining] = useState(props.outputs_remaining);
+  const [lightboxAssetId, setLightboxAssetId] = useState<string | null>(null);
+  // Derived so the lightbox re-renders when the underlying asset changes
+  // (e.g. after a Style Memory toggle updates recentAssets).
+  const lightboxAsset = lightboxAssetId
+    ? recentAssets.find((a) => a.id === lightboxAssetId) ?? null
+    : null;
 
   /* Drive elapsed timer + auto-advance stages while a request is in flight.
    * Stage 0 → 1 at 1.6s (preparing → AI), stage 2 (formats) fires after the
@@ -875,16 +979,31 @@ export default function ProjectWorkspaceClient(props: Props) {
           </div>
         )}
 
-        {/* Gallery — wider grids on widescreen so the user sees more outputs per fold */}
+        {/* Gallery — wider grids on widescreen so the user sees more outputs per fold.
+            Click thumbnail = open lightbox. ★ Style Memory button stops propagation
+            so it doesn't double as a "view detail" click. */}
         {recentAssets.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-7 gap-4">
             {recentAssets.map((a) => (
-              <div key={a.id} className="group relative bg-white rounded-[16px] overflow-hidden">
+              <div
+                key={a.id}
+                className="group relative bg-white rounded-[16px] overflow-hidden cursor-pointer transition-all hover:shadow-[0_8px_32px_rgba(0,0,0,0.06)]"
+                onClick={() => setLightboxAssetId(a.id)}
+                role="button"
+                tabIndex={0}
+                aria-label={t.lightboxOpenAria}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setLightboxAssetId(a.id);
+                  }
+                }}
+              >
                 <div className="relative aspect-[3/4]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a.url} alt={a.name} className="h-full w-full object-cover" />
                   <button
-                    onClick={() => toggleStyleMemory(a.id, a.is_style_memory)}
+                    onClick={(e) => { e.stopPropagation(); toggleStyleMemory(a.id, a.is_style_memory); }}
                     className={`absolute top-3 right-3 h-9 w-9 rounded-full flex items-center justify-center transition-all ${
                       a.is_style_memory
                         ? 'bg-carbon text-white'
@@ -902,6 +1021,17 @@ export default function ProjectWorkspaceClient(props: Props) {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Lightbox overlay (renders only when an asset is selected) */}
+        {lightboxAsset && (
+          <OutputLightbox
+            key={lightboxAsset.id}
+            asset={lightboxAsset}
+            t={t}
+            onClose={() => setLightboxAssetId(null)}
+            onToggleStyleMemory={() => toggleStyleMemory(lightboxAsset.id, lightboxAsset.is_style_memory)}
+          />
         )}
       </div>
     </main>
@@ -1078,6 +1208,192 @@ function GenerationError({ t, error, onClose, onRetry, isAdmin }: GenerationErro
             {t.errorRetry}
           </button>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// OutputLightbox — fullscreen overlay showing the master + the 12 derived
+// formats grouped by channel. Each format row has its own download button.
+// Master image gets a prominent "Download master" CTA. The ★ Style Memory
+// toggle is mirrored from the gallery so users don't lose the action while
+// inspecting an output.
+//
+// Formats are lazy-loaded from /api/studio/output-formats?asset_id=X on
+// open. If the array is empty, we show a "still processing" hint with a
+// manual reload button.
+// ─────────────────────────────────────────────────────────────────────────
+interface OutputLightboxProps {
+  asset: Asset;
+  t: (typeof STUDIO_WORKSPACE_I18N)[Language];
+  onClose: () => void;
+  onToggleStyleMemory: () => void;
+}
+
+function OutputLightbox({ asset, t, onClose, onToggleStyleMemory }: OutputLightboxProps) {
+  const [formats, setFormats] = useState<FormatRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [, setReloadKey] = useState(0);
+
+  // Lazy-load formats. Re-runs when reloadKey changes (manual retry).
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/studio/output-formats?asset_id=${asset.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setFormats(Array.isArray(data.formats) ? data.formats : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [asset.id]);
+
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    // Prevent page scroll while overlay is open
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  const formatsByKey = new Map(formats.map((f) => [f.format_key, f] as const));
+  const downloadHref = (formatKey: string) =>
+    `/api/studio/download?asset_id=${asset.id}&format_key=${formatKey}`;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-stretch justify-center overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-[1500px] mx-auto p-4 md:p-8 flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button — top right, fixed within container */}
+        <button
+          onClick={onClose}
+          aria-label={t.lightboxClose}
+          className="absolute top-6 right-6 z-10 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur text-white flex items-center justify-center transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 lg:gap-8 min-h-[80vh]">
+          {/* LEFT — master image */}
+          <div className="flex flex-col">
+            <div className="flex-1 flex items-center justify-center rounded-[20px] overflow-hidden bg-black/30 min-h-[400px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={asset.url}
+                alt={asset.name}
+                className="max-h-[80vh] max-w-full object-contain"
+              />
+            </div>
+            {/* Master meta + primary actions */}
+            <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-white">
+                <p className="text-[14px] font-medium tracking-[-0.01em]">{asset.name}</p>
+                <p className="text-[12px] text-white/55 capitalize">{asset.asset_type}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onToggleStyleMemory}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium transition-colors ${
+                    asset.is_style_memory
+                      ? 'bg-white text-carbon'
+                      : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                >
+                  <Star className={`h-3.5 w-3.5 ${asset.is_style_memory ? 'fill-current' : ''}`} />
+                  Style Memory
+                </button>
+                <a
+                  href={downloadHref('master')}
+                  className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white text-carbon text-[13px] font-semibold tracking-[-0.01em] hover:bg-white/90 transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  {t.lightboxDownloadMaster}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT — formats panel */}
+          <aside className="bg-white rounded-[20px] p-6 md:p-7 overflow-y-auto max-h-[85vh]">
+            {loading ? (
+              <div className="flex items-center gap-3 text-carbon/55 py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-[13px]">{t.lightboxLoading}</span>
+              </div>
+            ) : formats.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-[13px] text-carbon/55 leading-[1.7] mb-4">
+                  {t.lightboxFormatsProcessing}
+                </p>
+                <button
+                  onClick={() => setReloadKey((k) => k + 1)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium bg-carbon/[0.04] text-carbon/60 hover:bg-carbon/[0.08]"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  {t.errorRetry}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {FORMAT_GROUPS.map((group) => {
+                  const groupFormats = group.formats
+                    .map((k) => formatsByKey.get(k))
+                    .filter(Boolean) as FormatRow[];
+                  if (groupFormats.length === 0) return null;
+                  return (
+                    <section key={group.label}>
+                      <h3 className="text-[10px] tracking-[0.2em] uppercase font-semibold text-carbon/35 mb-3">
+                        {group.label}
+                      </h3>
+                      <ul className="space-y-1.5">
+                        {groupFormats.map((f) => (
+                          <li
+                            key={f.format_key}
+                            className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-[10px] bg-carbon/[0.02] hover:bg-carbon/[0.04] transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-medium text-carbon truncate">
+                                {FORMAT_NAMES[f.format_key] || f.format_key}
+                              </p>
+                              <p className="text-[11px] text-carbon/40 tabular-nums">
+                                {f.width}×{f.height}
+                                {f.file_size > 0 && (
+                                  <span className="ml-2">{(f.file_size / 1024).toFixed(0)} KB</span>
+                                )}
+                              </p>
+                            </div>
+                            <a
+                              href={downloadHref(f.format_key)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium bg-carbon text-white hover:bg-carbon/90 transition-colors shrink-0"
+                            >
+                              <Download className="h-3 w-3" />
+                              {t.lightboxDownloadFormat}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
     </div>
   );
