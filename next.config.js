@@ -50,6 +50,13 @@ const nextConfig = {
               "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https: http:",
+              // media-src controls <video> and <audio> sources. Without it the
+              // browser falls back to default-src 'self' and blocks any external
+              // media — Studio's generated videos live on Supabase Storage so
+              // we must whitelist that origin (plus data: / blob: for any
+              // in-page playback). Same permissive policy as img-src — video
+              // sources are validated server-side per asset.
+              "media-src 'self' data: blob: https: http:",
               "frame-src 'self' https://js.stripe.com https://challenges.cloudflare.com https://td.doubleclick.net https://*.googletagmanager.com",
               "font-src 'self' https://fonts.gstatic.com",
               // Google Ads enhanced conversions POST to two endpoints:
